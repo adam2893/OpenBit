@@ -7386,3 +7386,153 @@ A note on the data rather than the port: a portfolio row can read "It was a stro
 
 The regression that ran with this section is the usual set: every family probe at zero residue, the residue census at zero, coverage 109 of 109 captured and 107 recoverable, the port-versus-game gap at zero, the scripted push run clean and the bench run to the end of its trace.
 
+## 78. The catwalk: a four-rung ladder, twelve ways to spend a year, and twenty-five tables
+
+### 78.1 The family
+
+The `a16_model` pool is twenty-five tables and 802 rows. Every one of them is wired into the year; ten of them are drawn inside a branch rather than standing as a card of their own, which the last column below marks.
+
+| table | rows | columns |
+| --- | --- | --- |
+| `a16_model-agency-model-sabotage` | 8 | `Method`, `Method String`, `Log Version`, `Result Snippet`, `Target Discovers Hero Snippet`, `Risk Score`, `Sabotage Score`, `Commonness Score` |
+| `a16_model-agency-names` | 14 (drawn inside a branch) | `Format`, `Prefix`, `Suffix`, `Min Age`, `Max Age`, `Typical Gender`, `Commonness Score` |
+| `a16_model-audition-feedback` | 20 | `Reason`, `Min Looks`, `Max Looks`, `Min Modeling Skill`, `Max Modeling Skill` |
+| `a16_model-audition-snippets` | 60 | `Snippet`, `Hero Gender`, `Min Attitude`, `Max Attitude`, `Min Poise`, `Max Poise`, `Min Quirkiness`, `Max Quirkiness`, `Difficulty Score` |
+| `a16_model-campaign-summary-color` | 17 | `String`, `Min Reception`, `Max Reception` |
+| `a16_model-career-progression` | 5 | `Model Type`, `Jobs To Promotion`, `Minimum Looks`, `Minimum Health`, `Minimum Profile`, `Can Be Famous`, `Stress Score`, `Min Salary`, `Max Salary`, `Min Age`, `Max Age`, `Too Old Age`, `Diseases` |
+| `a16_model-categories` | 51 (drawn inside a branch) | `Category`, `Industry`, `Minimum Model Type`, `Min Typical Model Age`, `Max Typical Model Age`, `Commonness Score` |
+| `a16_model-companies` | 18 (drawn inside a branch) | `Format`, `Prefix`, `Suffix`, `Industry` |
+| `a16_model-fashion-show-pivotal-moments` | 16 | `Category`, `Requires Model`, `Body`, `CTA`, `Choice 1`, `Success Odds 1`, `Success Feedback 1`, `Success Narrative 1`, `Success Performance Impact 1`, `Failure Feedback 1`, `Failure Narrative 1`, `Failure Performance Impact 1`, `Choice 2`, `Success Odds 2`, `Success Feedback 2`, `Success Narrative 2`, `Success Performance Impact 2`, `Failure Feedback 2`, `Failure Narrative 2`, `Failure Performance Impact 2`, `Choice 3`, `Success Odds 3`, `Success Feedback 3`, `Success Narrative 3`, `Success Performance Impact 3`, `Failure Feedback 3`, `Failure Narrative 3`, `Failure Performance Impact 3`, `Choice 4`, `Success Odds 4`, `Success Feedback 4`, `Success Narrative 4`, `Success Performance Impact 4`, `Failure Feedback 4`, `Failure Narrative 4`, `Failure Performance Impact 4` |
+| `a16_model-fashion-show-venues` | 24 (drawn inside a branch) | `Venue`, `Uses Indefinite Article`, `Min Profile`, `Max Profile` |
+| `a16_model-fashion-week-feedback` | 19 | `String`, `Min Performance`, `Max Performance` |
+| `a16_model-fired-color` | 27 | `String`, `Age`, `Looks`, `Modeling Skill`, `Botched Surgery`, `Disease`, `Pregnancy` |
+| `a16_model-gifts` | 51 | `Item Name`, `Gender`, `Elite`, `Color Variants`, `Short Name`, `Indefinite Article`, `Plural`, `Can Be Refurbished`, `Min Value`, `Max Value`, `Appreciates`, `Commonness Score` |
+| `a16_model-gig-types` | 5 | `Job Type`, `Industries`, `Commonness Score` |
+| `a16_model-go-see-action-poses` | 28 | `Snippet`, `Log Refusal Snippet`, `Log Snippet`, `Agree Performance Impact`, `Refuse Performance Impact`, `Commonness Score` |
+| `a16_model-go-see-interview-questions` | 23 | `Question`, `CTA`, `Default Choice`, `Default Choice Impact`, `Choice 1`, `Choice 1 Impact`, `Choice 2`, `Choice 2 Impact`, `Choice 3`, `Choice 3 Impact`, `Choice 4`, `Choice 4 Impact`, `Choice 5`, `Choice 5 Impact`, `Choice 6`, `Choice 6 Impact`, `Choice 7`, `Choice 7 Impact`, `Choice 8`, `Choice 8 Impact`, `Choice 9`, `Choice 9 Impact`, `Choice 10`, `Choice 10 Impact`, `Choice 11`, `Choice 11 Impact`, `Choice 12`, `Choice 12 Impact`, `Choice 13`, `Choice 13 Impact`, `Choice 14`, `Choice 14 Impact`, `Choice 15`, `Choice 15 Impact`, `Choice 16`, `Choice 16 Impact`, `Choice 17`, `Choice 17 Impact`, `Choice 18`, `Choice 18 Impact`, `Choice 19`, `Choice 19 Impact`, `Choice 20`, `Choice 20 Impact` |
+| `a16_model-go-see-performance-review` | 23 | `String`, `Log Version`, `Min Impression`, `Max Impression` |
+| `a16_model-headshot-background` | 23 (drawn inside a branch) | `Background`, `Professionalism Score`, `Commonness Score` |
+| `a16_model-headshot-expressions` | 34 (drawn inside a branch) | `Expression`, `Professionalism Score`, `Commonness Score` |
+| `a16_model-headshot-outfits` | 55 | `Outfit Snippet`, `Hero Gender`, `Professionalism Score`, `Commonness Score` |
+| `a16_model-industries` | 10 (drawn inside a branch) | `Industry`, `Commonness Score`, `Country Blacklist` |
+| `a16_model-photo-shoot-facial-expression` | 34 | `Snippet`, `Choice 1`, `Narrative 1`, `Impact Score 1`, `Choice 2`, `Narrative 2`, `Impact Score 2`, `Choice 3`, `Narrative 3`, `Impact Score 3`, `Choice 4`, `Narrative 4`, `Impact Score 4`, `Difficulty Score` |
+| `a16_model-photo-shoot-poses` | 72 | `Body Snippet`, `Lover Argument Snippet`, `Feedback Log Snippet`, `Body Part Model Only`, `Video Shoot Only`, `Lover Argue Score`, `Agree Performance Impact`, `Disagree Performance Impact`, `Happiness Impact`, `Health Impact`, `Disease` |
+| `a16_model-products` | 62 (drawn inside a branch) | `Product Name`, `Category`, `Typical Model Gender` |
+| `a16_model-publication-titles` | 103 (drawn inside a branch) | `Name`, `Gender`, `Type`, `Local Publication`, `Industry`, `Min Profile`, `Max Profile`, `Commonness Score` |
+
+### 78.2 A model at sixteen
+
+The hero joins at rank 0 and is paid the rank's salary band every year whether or not the year brings a job, as the other career families are. The industry is drawn from `a16_model-industries-enc` (a row on a country blacklist the hero lives in is skipped), then a category of that industry from `a16_model-categories-enc`, then an agency name, a rival, and one product from the hero's own category. The agency name and the publication and gig names all come from the same substitution: one alternative of the table's `Format` cell, its own prefix and suffix lists, a colour from the shared company-colour pool, and a first name and surname, with every bracket the port cannot fill dropped.
+
+### 78.3 The ladder
+
+| rank | model type | jobs to promotion | minimum looks | minimum profile | salary | ages |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | Body Part Model | 0 | 50 | 0 | $65000 - $80000 | 18 - 75 |
+| 1 | Stock Photo Model | 8 | 65 | 20 | $85000 - $95000 | 20 - 65 |
+| 2 | Catalog Model | 24 | 75 | 40 | $100000 - $130000 | 22 - 55 |
+| 3 | Elite Model | 35 | 85 | 60 | $200000 - $250000 | 24 - 45 |
+| 4 | Supermodel | 0 | 95 | 80 | $500000 - $15000000 | 26 - 45 |
+
+A promotion needs the rank's jobs-to-promotion count, its minimum looks, its minimum profile, its minimum health and the hero still being inside the age band; the fourth rung is the one that can make the hero famous.
+
+### 78.4 The year
+
+The branches are tried in order, rarest first, and the first one that fires owns the card. The year's salary is paid before the chain, so every card carries the same wage line.
+
+| chance | branch | what it draws |
+| --- | --- | --- |
+| 0.04 | A dirty trick | one of eight `a16_model-agency-model-sabotage-enc` rows, risked against the hero's skill; a caught model loses profile |
+| 0.05 | The agency lets me go | a `fired-color` row whose flag columns the hero can actually satisfy; the agency is emptied and the rank reset |
+| 0.10 | A fashion show | a venue inside the hero's profile band and a pivotal moment of the hero's category, with one of the row's own choices and its own odds |
+| 0.08 | An ad campaign | a `publication-titles` row inside the profile band, then a `campaign-summary-color` row inside the reception band |
+| 0.08 | Fashion week | a `fashion-week-feedback` row inside the performance band |
+| 0.12 | A photo shoot | a `photo-shoot-poses` row, with the partner argument as an agree-or-refuse choice |
+| 0.06 | A facial-expression shoot | a `photo-shoot-facial-expression` row and one of its four choices |
+| 0.10 | A go-see | one of three rolls: an interview question with its own choice and impact, an action pose agreed to or refused, or a performance review inside the impression band |
+| 0.10 | Headshots | an outfit for the hero's gender, an expression and a background, scored for professionalism |
+| 0.12 | An audition / a booking | an `audition-snippets` row inside the attitude, poise and quirkiness bands; a booking pays a fee, adds a job and a point of skill |
+| 0.07 | A gift | a `gifts` row for the hero's gender, elite rows only from the fourth rung |
+| 0.14 | A day on set | a `gig-types` row and a company name, paid a fee |
+| else | A year on the catwalk | the fallback card, which still raises profile by a point |
+
+### 78.5 The runway
+
+The fashion-show pool writes a card as a body paragraph plus per-choice columns. The venue takes its indefinite article when the venue table asks for one ('an abandoned asylum'), the card takes one of the row's filled choices, and the odds are the choice's own `Success Odds N` adjusted by the hero's poise on a hundred-point scale. A win appends the choice's own success feedback and writes its success narrative as the journal line; a loss writes the failure pair. The pool's narrative columns are written in the first person already, so they are printed as they stand.
+
+### 78.6 The tokens
+
+The family asks for four keys the port did not have, and every other token in its 802 rows was already answered.
+
+| token | answer |
+| --- | --- |
+| `<model>` / `<model-possessive>` | the hero's rival at the agency, drawn at sixteen, with the possessive formed properly |
+| `<model-product>` | one product of the hero's own category, remembered for the year so a card and its journal line agree |
+| `<model-product-name>` | the same product, claimed only while a catwalk card is being rendered |
+
+### 78.7 The bugs
+
+1. `Hero` carries no gender field at all: the port reads the gender through `heroToken("gender", false)`, which returns 'male' or 'female'. Five call sites in the new block assumed a member and the build stopped on all five.
+2. The headshot expression pool was first written as a single nested ternary that the compiler could not even parse ('expected :'). It is now an ordinary pool built from the table then weighted.
+3. The go-see review speaks about the reviewer, not the hero, and its string is second person. It is now resolved with the reviewer's own pronoun pair and passed through the port's second-to-first-person converter, which also supplies the journal line.
+4. A facial-expression brief reads 'They wanted me to look sultry'; the first pass printed 'They wanted look sultry'.
+5. The headshot card first read 'I wore paisley button-up shirt, pouty, against trees'. The three pools are bare noun phrases with no articles in the data, so the card now labels them: 'Outfit: ... Expression: ... Background: ...'.
+
+### 78.8 Shortcuts
+
+* One agency, no agency hopping: a row that fires the hero empties the agency field and the next year can only be spent as a freelancer, because the port has no re-hire branch.
+* The catwalk fallback always produces a card, so a model year is never a silent year; the price is that the fallback is about a third of all model cards.
+* Fees are flat: a booking pays a thousand plus profile, a day on set pays five hundred plus profile, and neither is scaled by the publication or the campaign.
+* No photo gallery: the headshot outfit, expression and background are remembered on the hero for the report but nothing reads them back later.
+* The `Disease`, `Botched Surgery` and `Pregnancy` rows of the fired pool are unreachable, because the port models none of the three.
+
+### 78.9 Verification
+
+Thirty seeds in both genders, run to sixty with only this family switched on: 589 family events, no failing run, and every bracketed token in every title, body and log line resolved. All twenty-two branches were then counted over forty seeds in both genders (749 model cards): a year on the catwalk 273, a fashion show 76, fashion week 50, headshots 50, an ad campaign 49, a photo shoot 39, a booking 28, a day on set 27, the agency lets me go 26, an audition 25, a facial-expression shoot 24, a dirty trick 22, a gift 22, a go-see 20 and the go-see review 18. Sixteen of the twenty-five tables own a card; the other nine are drawn inside a branch, which a needle scan over 4,553 rendered cards confirms for every one of them.
+
+Eight cards, sampled by hand:
+
+    A dirty trick
+    You lined Emmett Nym's favorite shoes with glue.
+    I was caught lining his favorite shoes with glue.
+
+    The agency lets me go
+    They said they don't work with the elderly.
+    I am no longer with Rising Dawn Talent Agency.
+
+    A fashion show
+    Venue: an abandoned asylum. You're sitting in hair and makeup when the designer informs you the show's theme is "Moonlit Romance" and instructs you to maintain a facial expression that makes sense for the theme. I chose to Give a coy smile.
+    I intrigued an audience with a coy smile as I walked the runway at a romance-themed fashion show.
+
+    An ad campaign
+    Campaign: Healthy Lifetimes. The director of marketing for their 7 Degrees of the 7 Seas said your ad didn't get the reception she was hoping for.
+    I shot a campaign for 7 Degrees of the 7 Seas that ran in Healthy Lifetimes.
+
+    Fashion week
+    She says you've got to make better choices if you intend to have a long modeling career.
+    She says I've got to make better choices if I intend to have a long modeling career.
+
+    A facial-expression shoot
+    They wanted me to look sultry. I went with Give bedroom eyes.
+    I gave the camera bedroom eyes during a shoot after being told to look sultry.
+
+    A go-see
+    What do you think about our brand? I answered: It's top-of-the-line.
+    I nailed the interview at the go-see.
+
+    A booking
+    They asked me to be sophisticated.
+    I booked the job.
+
+    A gift
+    A client sent me a Club Sake Tube Dress.
+    I was gifted a Club Sake Tube Dress worth $22,056.
+
+    A year on the catwalk
+    I worked the casual dining circuit as a body part model.
+    I spent the year modelling.
+
+A note on the data rather than the port: the campaign pool's reception lines are written from the client's side and address the hero directly ('your ad didn't get the reception she was hoping for'), so the card reads as second person while the journal line that follows is first person. The port prints both as the pools wrote them.
+
+The regression that ran with this section is the usual set: twenty-one family probes at zero residue, the residue census at zero, coverage 109 of 109 captured and 107 recoverable, the port-versus-game gap at zero, the scripted push run clean and the bench run to the end of its trace.
+

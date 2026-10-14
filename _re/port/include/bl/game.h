@@ -546,6 +546,16 @@ struct Hero {
   bool finStarted = false;   // the inherited first position is a one-off
   int finAdvisorRep = 0, finSkill = 40, finAppetite = 40, finTips = 0;
   long long finInvested = 0, finEarned = 0, finCash = 0;
+  // --- The catwalk (REPORT.en.md 78) --------------------------------------
+  bool model = false;
+  std::string modelAgency, modelType, modelCategory, modelIndustry, modelCompany;
+  std::string modelProduct, modelGift, modelVenue, modelPublication, modelOutfit;
+  std::string modelExpression, modelBackground, modelRival, modelRivalGender;
+  bool modelElite = false, modelFamous = false, modelRivalFemale = false;
+  int modelRank = 0, modelProfile = 20, modelSkill = 40, modelAttitude = 50;
+  int modelPoise = 50, modelQuirkiness = 50, modelJobs = 0, modelShows = 0, modelStress = 0;
+  long long modelSalary = 0, modelEarned = 0;
+
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'
