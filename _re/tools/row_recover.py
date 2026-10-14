@@ -65,6 +65,19 @@ REGISTRY = {
     "ScenarioScriptEventParentMarriesStepparent": [
         "My mother has married my new stepfather, {name}.",
     ],
+    # Menu scenes ("a16_stepparent-cruelty-scenarios-enc"-style cards) hold only
+    # the card; their option labels and outcome lines are C# literals. These
+    # templates are the outcome lines recovered by pairing each captured card
+    # with the Scenario record that follows it in the trace (REPORT.en.md 41).
+    "ScenarioLoveFirstKiss": [
+        "I had my first kiss with {name}. I made sure to not slip {partnerobj} any tongue.",
+        "I tongue-kissed {name}. It was my first kiss.",
+        "I could have had my first kiss with {name} but instead I ran away from {partnerobj}.",
+    ],
+    "ScenarioOfferFood": ["I started eating {food}.", ""],
+    "ScenarioOpportunityCasino": ["I went with some friends to {casino}.", ""],
+    "ScenarioCustomAttack": ["I {attackverb} my {victim}'s {attackpart}!"],
+    "ScenarioEthicsFindObject": ["I turned in {findarticle} that I found.", ""],
 }
 
 

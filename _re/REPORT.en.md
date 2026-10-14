@@ -2311,3 +2311,149 @@ reports it as a normal game_only/port_only diff.
 The metadata dump the first command reads is produced by
 `python3 tools/metadata_strings.py list --limit 100000 --raw` (71223 literals, 282 of them
 `data/` paths).
+
+## 41. Menu scenes: the five classes whose text is only in the executable
+
+The menu bucket was the one place where "match the card against a CSV row" could not
+work, and 41.1 explains why. 41.2 is the method that did work — the game's own trace
+already contains the answer, one record later — and 41.4 lists the five classes this
+bought, which took coverage from 38/90 to 42/90.
+
+### 41.1 Why the CSV route cannot reach these
+
+The menu tables hold the card and nothing else. a16_stepparent-cruelty-scenarios-enc
+has columns Scenario (second person card), Log Version (first person card) and a gender
+column; there is no option column anywhere, and no other table carries the option
+labels. A whole-corpus grep for the question the cards end with returns nothing:
+
+    grep -rc "What will you do?" gamedata_plain/     -> no file
+    grep -rc "How will you attack" gamedata_plain/   -> no file
+
+The card text, the button labels and the outcome sentence are C# string literals in
+global-metadata.dat. They are present (41.3) but the literal table is sorted
+alphabetically, so a literal's index says nothing about which scene it belongs to —
+neighbouring indices are unrelated lines. Keyword search finds a literal only if you
+already know what it says.
+
+### 41.2 The pairing method: one record later in the trace
+
+A captured trace stores, per age, the queue of records the game pushed to its UI and
+the lines it wrote to the LifeLog. Reading that queue in order gives the pairing for
+free:
+
+* a menu card is the record whose body ends in one of the game's questions
+  (What will you do? / Will you join them? / How will you behave? / How will you attack ...?);
+* the record that follows it has cls == "Scenario" — a result card, not a scene —
+  its title is the label of the button the player pressed and its body is the outcome
+  sentence;
+
+That is enough to rebuild a class: card (from the class itself), label set and outcome
+sentences (from the paired result records), and the branch that was taken (by matching
+the age's log line against the outcome templates).
+
+    ScenarioStepparentCruelty age  1
+      card   Your stepfather pranked you by convincing you that you are invisible. | What will you do?
+      label  I won't play those games
+      result You told your mother about your stepfather's behavior.
+      log    My stepfather convinced me that I'm invisible. I told my mother about his behavior.
+
+Note what the log is: the card's first-person Log Version, then the outcome sentence,
+joined into one line. The two halves come from different assets — the card from the CSV,
+the outcome from the executable.
+
+    ScenarioCustomAttack      age  5   card How will you attack your stepfather?  label Ouch  result You kicked your stepfather's face!
+    ScenarioPetDiscipline     age 11   card Your vizsla, Hazel, just ate your fruit snacks. | What will you do?
+                                       label Isn't she cute?  result You rewarded your vizsla, Hazel, with a Porterhouse steak.
+
+Tools: /tmp/qdir/menu_evidence.py (per class: cards, ages, log lines) and
+/tmp/qdir/menu_pairs.py (per instance: card, label, result, next log). Both accept a
+trace that is either a dict with ages or a bare list, because the captures differ.
+
+### 41.3 The literals behind them
+
+Literal indices in the metadata string table (recoverable with
+tools/metadata_strings.py grep <pat>; the file contains NUL bytes, so grep needs -a):
+
+| kind | index | text |
+|---|---|---|
+| card | 48637 | You have an opportunity to have your first kiss with a {0} from your class named {1}. |
+| card | 23258 | How will you attack {0}? |
+| card | 39444 | Some of your friends are eating {0}. |
+| card | 39445 | Some of your friends are going to a local casino called {0}. |
+| card | 70591 | {0}, you find a {1}. |
+| card | 48895 | You just observed {0} call {1} {2}! |
+| outcome | 24317 | I had my first kiss with {0}. I made sure to not slip {1} any tongue. |
+| outcome | 25281 | I tongue-kissed {0}. It was my first kiss. |
+| outcome | 23832 | I could have had my first kiss with {0} but instead I ran away from {1}. |
+| outcome | 25157 | I started eating {0}. |
+| outcome | 25791 | I went with some friends to {0}. |
+| outcome | 25526 | I turned in {0} that I found. |
+| outcome | 69566 | {0} I forgave {1}. |
+| label | 28365 / 28366 / 36401 | Kiss {0} but definitely no tongue / Kiss {0} with tongue / Run away from {0} |
+| label | 27968 / 31820 | Join them / No thanks |
+
+### 41.4 The five classes, and where each drawn value comes from
+
+| class | drawn value | source |
+|---|---|---|
+| ScenarioLoveFirstKiss | the classmate and its pronoun | personName("classmate") and the hero's sex: opposite-sex noun + object pronoun |
+| ScenarioOfferFood | the food | a16_food-enc, weighted by Commonness Score |
+| ScenarioOpportunityCasino | the venue | companyName("Casino", life) — the Casino row of a16_company-name-structure-enc offers <color> Casino Resort, which is exactly the captured "Rosebud Casino Resort" |
+| ScenarioCustomAttack | verb, body part, victim | a16_custom-attack-actions-enc (Action / Past Verb / Commonness Score), a16_custom-attack-body-parts-enc (Body Part), and the first alive relative in Life::family |
+| ScenarioEthicsFindObject | the findable | nothing: the findables are a code array. duffle bag (literal 57755) is modelled and the line carries a shortcut: comment |
+
+Rendering happens in Sim::renderScenarioClass (port/src/sim.cpp): a need() lambda
+decides per token whether the body or any option log asks for it, a drawFrom() lambda
+does the weighted table read, and the values are substituted into the card and into the
+chosen branch's log. ScenarioCustomAttack is the one class with a single no-button
+branch, so its sentence is built wholly from draws.
+
+### 41.5 Effect on coverage
+
+    captured scenarios: 90  recoverable: 38 -> 42
+
+| bucket | before | after |
+|---|---|---|
+| narrative | 26 / 41 (63%) | 26 / 41 (63%) |
+| menu | 12 / 28 (43%) | 16 / 28 (57%) |
+| minigame | 2 / 21 (10%) | 2 / 21 (10%) |
+
+tools/row_recover.py REGISTRY gained the five classes, so a captured instance of any
+of them now replays through the port instead of being skipped.
+
+### 41.6 Verification
+
+    ./build/blsim --script /tmp/qdir/menutest2.json        (seed 12345, US, male, forced pushes)
+
+    age 1  ScenarioLoveFirstKiss       card ...with a girl from your class named Beyawnce Gnolls.
+                                       log  I had my first kiss with Beyawnce Gnolls. I made sure to not slip her any tongue.
+    age 2  ScenarioLoveFirstKiss       log  I tongue-kissed Tank Sea. It was my first kiss.
+    age 3  ScenarioLoveFirstKiss       log  I could have had my first kiss with Catrina Woodworker but instead I ran away from her.
+    age 4  ScenarioOfferFood           log  I started eating poutine.
+    age 6  ScenarioOpportunityCasino   card Some of your friends are going to a local casino called Gung Ho Casino Resort.
+                                       log  I went with some friends to Gung Ho Casino Resort.
+    age 7  ScenarioCustomAttack        card How will you attack your mother?   log I bit my mother's face!
+    age 8  ScenarioEthicsFindObject    log  I turned in a duffle bag that I found.
+
+The classmate names above come from the placeholder name pool (§34), not from the
+game's own classmate object. Regression: residue census still reports
+"distinct residue tokens 0" across 48 runs x 95 years, and tools/bench.sh replays
+/tmp/trace_c10.json for 35 years without an abort — its age-34 casino divergence is now a
+draw difference inside a replayed class (port "Infinity Oklahoma City Casino" vs game
+"Johnson Resort & Gaming"), which is what that bench is for.
+
+### 41.7 What is left in the menu bucket
+
+Twelve of the twenty-eight captured menu instances have a card but no outcome line in any
+capture, so there is no evidence for their branches and the port keeps drawing its own
+scene instead of replaying them:
+
+    ScenarioInsultRelative (card: "You just observed a firearms activist call your mother foolhardy!")
+    ScenarioEthicsBreakSomething, ScenarioSchoolBully, ScenarioSchoolActivityJoin,
+    ScenarioEncounterProstitute, ScenarioSocialMediaJoinPush, ScenarioFriendUnfriendInbound,
+    ScenarioMediaOnlyFansArguePush, ScenarioDiseaseContract, ScenarioLoverLeaves, ScenarioLoveDate,
+    ScenarioRetentionLover
+
+Their cards are recoverable (the literals exist) but the labels are not guessable from the
+card sequences — a capture that presses the buttons is what unblocks them.
+

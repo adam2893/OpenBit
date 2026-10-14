@@ -238,6 +238,31 @@ const RegScenario kScenarios[] = {
     {"ScenarioScriptEventDiseaseContract", "", "Diagnosis",
      "Your {parent} is suffering from {disease}.", 1,
      {{"", "My {parent} is suffering from {disease}."}}},
+    // Menu scenes: card, option labels and outcome lines are C# literals with no
+    // CSV row. Each was recovered by pairing the captured card with the Scenario
+    // record that follows it in the trace (REPORT.en.md 41).
+    {"ScenarioLoveFirstKiss", "Love", "First Kiss",
+     "You have an opportunity to have your first kiss with a {partner} from your class named {name}.\n\nWhat will you do?",
+     3,
+     {{"Kiss {name} but definitely no tongue",
+       "I had my first kiss with {name}. I made sure to not slip {partnerobj} any tongue."},
+      {"Kiss {name} with tongue", "I tongue-kissed {name}. It was my first kiss."},
+      {"Run away from {name}",
+       "I could have had my first kiss with {name} but instead I ran away from {partnerobj}."}}},
+    {"ScenarioOfferFood", "Friends", "Food",
+     "Some of your friends are eating {food}.\n\nWill you join them?", 2,
+     {{"Join them", "I started eating {food}."},
+      {"No thanks", ""}}},
+    {"ScenarioOpportunityCasino", "Friends", "Casino",
+     "Some of your friends are going to a local casino called {casino}.\n\nWill you join them?", 2,
+     {{"Join them", "I went with some friends to {casino}."},
+      {"No thanks", ""}}},
+    {"ScenarioCustomAttack", "", "Attack", "How will you attack your {victim}?", 1,
+     {{"", "I {attackverb} my {victim}'s {attackpart}!"}}},
+    {"ScenarioEthicsFindObject", "Ethics", "Found Item",
+     "While on your walk, you find a {find}.\n\nWhat will you do?", 2,
+     {{"Turn it in", "I turned in {findarticle} that I found."},
+      {"Keep it", ""}}},
 };
 // Real-world date gates for the two dated dumb-scenario sets. Holiday rows name
 // the holiday; calendar rows carry 'Month' + 'Date' (one real day each).
@@ -1627,6 +1652,64 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
       substAll(body, "{disease}", disease);
     }
   }
+  // Menu scenes draw their nouns at render time. Their cards, option labels and
+  // outcome lines are C# string literals, not CSV rows, so the values come from
+  // the same tables the game draws from (REPORT.en.md 41).
+  const auto need = [&](const char* tok) {
+    if (body.find(tok) != std::string::npos) return true;
+    for (int i = 0; i < s->n; ++i)
+      if (std::string(s->choices[i].log).find(tok) != std::string::npos) return true;
+    return false;
+  };
+  const auto drawFrom = [&](const char* table, const char* weightCol, const char* valueCol) {
+    ensureTable(table);
+    const Table& t = tbl(table);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    const size_t row = weightedPickOf(t, weightCol, pool, rng_);
+    return row == size_t(-1) ? std::string() : lower(trim(t.at(row, valueCol)));
+  };
+  std::string partner, partnerObj;
+  if (need("{partner}")) {
+    // The classmate the scene offers is the hero's opposite sex, and the game
+    // spells the object pronoun to match it.
+    partner = life.hero.female ? "boy" : "girl";
+    partnerObj = life.hero.female ? "him" : "her";
+    substAll(body, "{partner}", partner);
+  }
+  std::string food;
+  if (need("{food}")) {
+    food = drawFrom("a16_food-enc", "Commonness Score", "Food");
+    if (!food.empty()) substAll(body, "{food}", food);
+  }
+  std::string casino;
+  if (need("{casino}")) {
+    casino = companyName("Casino", life);  // the Casino format is '<color> Casino Resort'
+    if (!casino.empty()) substAll(body, "{casino}", casino);
+  }
+  std::string findWord, findPhrase;
+  if (need("{find}")) {
+    // shortcut: the findable is a code array in the game, not a table, so only
+    // the captured one (metadata #70591) is modelled; extend on more captures.
+    findWord = "duffle bag";
+    findPhrase = "a duffle bag";
+    substAll(body, "{find}", findWord);
+  }
+  std::string victim, attackVerb, attackPart;
+  if (need("{victim}")) {
+    // The game attaches the scene to whoever it fired on (the capture hit the
+    // stepfather); the port names the first alive relative, mother as fallback.
+    // shortcut: no step-relative model yet, upgrade with the full family graph.
+    for (const Person& fam : life.family)
+      if (fam.alive) {
+        victim = fam.relation;
+        break;
+      }
+    if (victim.empty()) victim = "mother";
+    attackVerb = drawFrom("a16_custom-attack-actions-enc", "Commonness Score", "Past Verb");
+    attackPart = drawFrom("a16_custom-attack-body-parts-enc", "Commonness Score", "Body Part");
+    substAll(body, "{victim}", victim);
+  }
   if (s->n > 0) {
     // A single-entry list is the no-button form (label ""), so it must not consume
     // a draw: only a real multi-branch scene randomizes its pick.
@@ -1643,6 +1726,21 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     if (!item.empty()) substAll(log, "{item}", item);
     if (!channel.empty()) substAll(log, "{channel}", channel);
     if (!disease.empty()) substAll(log, "{disease}", disease);
+    if (!partner.empty()) {
+      substAll(log, "{partner}", partner);
+      substAll(log, "{partnerobj}", partnerObj);
+    }
+    if (!food.empty()) substAll(log, "{food}", food);
+    if (!casino.empty()) substAll(log, "{casino}", casino);
+    if (!findWord.empty()) {
+      substAll(log, "{find}", findWord);
+      substAll(log, "{findarticle}", findPhrase);
+    }
+    if (!victim.empty()) {
+      substAll(log, "{victim}", victim);
+      substAll(log, "{attackverb}", attackVerb);
+      substAll(log, "{attackpart}", attackPart);
+    }
     out.narrative = log;
   } else {
     // No buttons: the game writes the sentence straight into its LifeLog.
