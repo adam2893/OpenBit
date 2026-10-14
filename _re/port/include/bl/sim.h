@@ -129,6 +129,7 @@ class Sim {
   void makeModel(Life& life);
   void makeLuxury(Life& life);
   void makeBoating(Life& life);
+  void makePrisoner(Life& life);
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
@@ -426,6 +427,9 @@ class Sim {
   bool modelLive_ = false;
   std::map<std::string, std::string> sportProCache_;  // one opponent team per season card
   std::map<std::string, std::string> boatCache_;      // one craft name / part / mishap per boat card
+  std::map<std::string, std::string> prisonCache_;    // one inmate / nickname / gift per prison card
+  bool prisonLive_ = false;
+  bool prisonForced_ = false;  // the script asked for a sentence (REPORT.en.md 82)
   bool boatLive_ = false;
   bool luxuryLive_ = false;
   Rng musicRng_;

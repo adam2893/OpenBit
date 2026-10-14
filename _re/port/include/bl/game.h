@@ -84,6 +84,23 @@ struct Hero {
   bool inPrison = false;
   int prisonYearsLeft = 0;
   std::string prisonJob;  // the 'as a laundry attendant' half of the job line
+  // Prison life (REPORT.en.md 82): the nickname the yard gives you, the gang,
+  // the inmate across the yard, the letters, the canteen gifts and the parole
+  // board. The sentence itself (inPrison / prisonYearsLeft) is section 45's.
+  bool prisonPrompt = false;    // the script asked for a sentence, as a probe hook
+  bool prisonServed = false;    // the forced sentence has been served
+  std::string prisonNickname;
+  std::string prisonGang, prisonGangType, prisonGangShort;
+  int prisonGangPower = 0, prisonGangViolence = 0;
+  bool prisonGangMember = false;
+  int prisonRespect = 10;       // the yard's opinion of the hero, 0-100
+  std::string prisonEnemy;      // the inmate the year's card is about
+  bool prisonEnemyFemale = false;
+  int prisonFights = 0, prisonWins = 0;
+  std::string prisonLetterFrom, prisonLetterTopic;
+  std::string prisonGift;
+  int prisonParoleTries = 0;
+  long long prisonCanteen = 0, prisonEarned = 0;
   // Set when the hero is left with no surviving parent before 18; the orphan
   // dumb-scenario set is gated on it (REPORT.en.md 46).
   bool orphan = false;

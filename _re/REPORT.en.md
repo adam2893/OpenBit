@@ -8093,3 +8093,188 @@ Sample cards:
       You attempt to divert, but it's too late, and the mine detonates, blasting a massive hole in your boat.
       My speedboat is gone.
       I struck a sea mine in my speedboat, and it blasted a massive hole in my boat.
+
+## 82. The sentence: a yard with its own economy, nine ways to spend a year inside, and ten prison tables
+
+Section 45 put the hero in prison: a conviction card, a countdown, the passing of
+years. It never put anybody else in the cell. The four pools that give the yard its
+cast -- nicknames, gangs, letters, gifts -- were sitting in the data unwired, and with
+them the parole board. This section wires all seven of the remaining prison tables
+(the four above plus the parole questions, the jobs pool being already wired) and gives
+the sentence a year worth reading.
+
+### 82.1 The family
+
+| table | rows | columns read by the port |
+| --- | --- | --- |
+| a16_prison-bully-inbound-scenarios-enc | 48 | Scenario, Log Version, Gender, Bully Action, Hero Action |
+| a16_prison-bully-outbound-scenarios-enc | 42 | Scenario, Log Version, Gender, Will Do, Will Let |
+| a16_prison-gangs-enc | 10 | Gang Index, Male Name, Female Name, Type, Description, Short Description, Power, Violence, Required Respect |
+| a16_prison-gifts-enc | 64 | Name, Short Name, Use Some Article, Is Plural, From Lover Only, Crazy Gift, Negative Gift, Gender, Confiscate Score, Min Age |
+| a16_prison-jobs-enc | 38 | Job, Description, Daily Rate, Commonness Score (already wired in section 45) |
+| a16_prison-letters-enc | 60 | Audience, Topic, Min Relationship Strength, Max Relationship Strength |
+| a16_prison-nicknames-enc | 279 | Nickname, Gender, Is Prefix |
+| a16_prison-parole-questions-enc | 10 | Commonness, Question, CTA, Choice 1..20, Choice N Score |
+| a16_prisoner-crimes-enc | 138 | Crime, Seriousness Score, Is Violent, Commonness Score (section 45) |
+| a16_prisoner-juvenile-crimes-enc | 86 | Crime, Seriousness Score, Is Violent, Commonness Score (section 45) |
+| a16_dumb-scenarios-prison-enc | 64 | the section 45 dumb-scenario pool |
+
+Seven hundred and twenty-three rows in the ten prison pools, plus the two crime
+tables and the dumb pool. Thirty of the 279 nicknames are prefixes (Chunky, Cock-Eyed,
+Fat, Stanky), which is the one piece of structure in an otherwise flat list.
+
+### 82.2 The sentence
+
+The sentence itself is section 45's. A crime rolls once a year from eighteen at 2%,
+the crime's Seriousness Score picks a term from 1/2/3/5/10 years, and the year logs the
+job, the yard and the countdown. What this section adds is the probe hook: a script may
+ask for a sentence with "prison": true, which raises the conviction roll to certainty,
+forces a minimum of eight years, and marks the life as served once. It exists so the
+thirty-seed probe can spend a life inside instead of waiting for a 2% roll. It is a
+harness, not behaviour: without the flag the table above is the game's.
+
+### 82.3 The year
+
+The years inside are a first-hit-wins chain, rarest first, on top of the job:
+
+| chance | branch | what it draws |
+| --- | --- | --- |
+| 0.35 | a job (only when none is held) | a16_prison-jobs-enc, weighted on Commonness Score |
+| always | the job's pay | Daily Rate x 365, e.g. 3 x 365 = 1,095 a year |
+| 1 | Intake (only while nameless) | a16_prison-nicknames-enc filtered on the hero's gender; a prefix row becomes prefix + surname (Fat Iglesio) |
+| 0.60 | The parole board (last two years, three tries) | a16_prison-parole-questions-enc weighted on Commonness; four of its answers are offered, the chosen score decides |
+| 0.12 | The gang's business (members only) | respect += Power/25, and a scuffle when Violence >= 50 |
+| 0.12 | The strong arm | a16_prison-bully-outbound-scenarios-enc |
+| 0.18 | A gift | a16_prison-gifts-enc filtered on gender, Min Age and From Lover Only |
+| 0.22 | Trouble in the yard | a16_prison-bully-inbound-scenarios-enc |
+| 0.25 | A letter | a16_prison-letters-enc filtered on audience and relationship strength |
+| 0.40 | A gang offer | a16_prison-gangs-enc with Required Respect <= the hero's respect, weighted on Power |
+| else | the section 45 dumb pool | a16_dumb-scenarios-prison-enc |
+
+The parole board is the only branch with real consequences: a score of 4 or 5 releases
+the hero, a 3 is a delay, and a 1 or 2 costs three points of respect. Gangs are the
+other ladder: the ten rows ask for respect from 0 (Wrinkly Sneaks) to 90 (Bitizen
+Mafia, Killbillies), so the yard hands out membership the way the rest of the game
+hands out a promotion.
+
+Every branch writes the drawn inmate, the letter's writer or the gift's sender into
+the card and into the journal line, so the two columns of the same row agree.
+
+### 82.4 The tokens
+
+The family needs no new token: its only keys are <name> and <name-possessive> (a
+hundred and eighty uses between them), and <name> is answered globally, as the
+citizen's first name, further up the resolver. What it does need is a rule about
+repetition. A prison row often carries the same reference token in both of its
+columns -- a16_prison-bully-outbound's "called <him/her> <insult>" is written in the
+Scenario and again in the Log Version -- and resolving each column separately draws
+two different insults: the card said the guard was called a dead dick while the
+journal said count dickula. The year's bindRefs step draws each of the row's reference
+tokens (insult, musician, celebrity, drug-illegal and the rest) exactly once and
+substitutes the same value into both cells before either is resolved.
+
+The pronoun pairs need no work either: an inmate is drawn per card, its gender is
+flipped into the row while the card renders, and <rb>/<rb2> fall back to the same
+draw because the card's columns are resolved in order.
+
+### 82.5 The bugs and the notes
+
+1. The gang's business card was an event with an empty table: the branch set no
+   row, so the journal entry claimed nothing had happened. It now marks
+   a16_prison-gangs-enc.
+2. The two-instruction insult above -- the single most visible defect of the family,
+   because the same row is printed twice on the same screen.
+3. The release line was glued onto the card's narrative with a newline, so one
+   journal entry read "The board voted to release me on parole\nI was released from
+   prison." It is now its own line, and main.cpp prints it before the narrative.
+4. A tooling note worth keeping: the event's row id is the CSV file index, with the
+   header at index 0, so a debug script that subtracts one to look the row up reads
+   the neighbour and concludes the wrong thing. I spent a round convinced the thirty
+   prefix nicknames never fired -- they fire, sixteen times in sixty sentences.
+5. Data notes. A gift row's Name is written without an article in one case ("I got
+   letter of support in the canteen"). The bully tables' Gender column is blank on
+   forty-two of the forty-eight inbound rows, so it is read as the hero's gender
+   rather than the other inmate's.
+
+### 82.6 Shortcuts
+
+- The forced sentence and the certain conviction are the probe's, as above.
+- The parole board offers four of the eighteen to twenty answers a question holds,
+  chosen uniformly; the real screen offers the whole list.
+- The bully pools' Gender column is read as the hero's gender (the data is nearly
+  empty there, see above).
+- A letter's Topic cell is folded to the first person by a literal replacement of
+  " you" and " your", because toFirstPerson only rewrites a leading subject.
+- There is no gang war, no shiv, no solitary, no yard economy and no canteen to spend
+  the pay in: prisonCanteen and the rest of the section's state exist for the card to
+  write, not for a system behind them. In particular prisonCache_ and prisonLive_ are
+  declared and cleared but never read -- the family has no token that is only valid
+  while a prison card renders.
+- A prison job pays Daily Rate x 365 regardless of the passed in-game year length.
+
+### 82.7 Verification
+
+The probe is /tmp/qdir/prisres.py: thirty seeds times both genders to age sixty with
+{"prison": true}, family tables only, every angle bracket left in a title, body, log
+line or extra line counted.
+
+    prison events 420 rc failures 0
+    RESIDUE 0
+
+Last-mark histogram:
+
+    a16_prison-gangs-enc                            88
+    a16_prisoner-crimes-enc                         60
+    a16_prison-nicknames-enc                        60
+    a16_prison-bully-inbound-scenarios-enc          58
+    a16_prison-letters-enc                          53
+    a16_prison-parole-questions-enc                 52
+    a16_prison-bully-outbound-scenarios-enc         34
+    a16_prison-gifts-enc                            15
+
+Every one of the seven new pools is a card's own table. Full regression after the last
+build: allprobes 25/25 with residue 0, rescensus 0 distinct residue tokens,
+coverage 109 captured / 107 recoverable, portgap gap 0, covpush rc 0, bench rc 0 to
+age 34.
+
+Sample cards:
+
+    I have been convicted of fishing without a license and sentenced to 8 years in prison!
+
+    Intake
+    The yard settles on a name: Fat Iglesio.
+    I was given the nickname Fat Iglesio in prison
+
+    A gang offer
+    Brain Brothas: You must have very high smarts to join this gang.
+    I turned down the Brain Brothas
+
+    Trouble in the yard
+    Your cellmate, Ladye Royal, will never let you choose what to watch on the TV
+    because he is always watching "13 Reasons Why".
+    My cellmate, Ladye Royal, wouldn't let me choose what to watch on the TV.
+
+    The strong arm
+    You told a prison guard that Ladye Royal called him a peon.
+    I told a guard that Ladye Royal called him a peon.
+
+    The parole board
+    Do you feel that you've been rehabilitated?
+    The board threw my file in the bin
+
+    The parole board
+    What has been the best part of prison?  (chosen: I've learned a lot)
+    The board voted to release me on parole
+    I was released from prison.
+
+    A letter
+    A letter arrived from Beyawnce Gnolls.
+    Beyawnce Gnolls told me he misses me
+
+    A gift
+    Maylor Shift sent me some ramen noodles.
+    I got some ramen noodles in the canteen
+
+    The gang's business
+    The Brain Brothas kept the yard quiet.
+    I did my part for the Brain Brothas

@@ -937,6 +937,14 @@ bool Sim::load(std::string* error) {
       "a16_prisoner-juvenile-crimes-enc",            // same columns, juvenile court
       "a16_prison-jobs-enc",                         // Job,Description,Daily Rate,Commonness Score
       "a16_dumb-scenarios-prison-enc",               // the prison year's own pool
+      // The sentence (REPORT.en.md 82): seven more of the prison family.
+      "a16_prison-parole-questions-enc",
+      "a16_prison-nicknames-enc",
+      "a16_prison-gangs-enc",
+      "a16_prison-gifts-enc",
+      "a16_prison-letters-enc",
+      "a16_prison-bully-inbound-scenarios-enc",
+      "a16_prison-bully-outbound-scenarios-enc",
       "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
@@ -3298,6 +3306,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   luxuryCache_.clear();   // one island / chef / watch per luxury card
   sportProCache_.clear(); // one opponent per season card
   boatCache_.clear();     // one craft name / part / mishap per boat card
+  prisonCache_.clear();   // one inmate / nickname / letter / gift per prison card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -3979,7 +3988,12 @@ bool Sim::forceScenarioClass(const std::string& cls, int choice) {
 bool Sim::maybeConvicted(Life& life, AgeUp& out) {
   Hero& h = life.hero;
   if (h.inPrison || h.age < 10) return false;
-  if (!prisonRng_.chance(0.02)) return false;
+  // The script can ask for a sentence (REPORT.en.md 82's probe hook): at 18 the
+  // hero is convicted once, and otherwise the 2%/year draw is unchanged.
+  if (prisonForced_) {
+    if (h.prisonServed || h.age < 18) return false;
+  }
+  if (!prisonRng_.chance(prisonForced_ ? 1.0 : 0.02)) return false;
   const bool juvenile = h.age < 18;
   const char* name = juvenile ? "a16_prisoner-juvenile-crimes-enc" : "a16_prisoner-crimes-enc";
   if (!ensureTable(name)) return false;
@@ -3988,11 +4002,13 @@ bool Sim::maybeConvicted(Life& life, AgeUp& out) {
   if (row == size_t(-1)) return false;
   static const int kSentence[] = {1, 2, 3, 5, 10};
   const int ser = std::max(1, std::min(5, int(t.num(row, "Seriousness Score"))));
-  const int years = kSentence[ser - 1];
+  // The probe hook asks for a sentence long enough to spend: eight years.
+  const int years = prisonForced_ ? std::max(8, kSentence[ser - 1]) : kSentence[ser - 1];
   h.inPrison = true;
   h.prisonYearsLeft = years;
   h.prisonJob.clear();
   h.employed = false;
+  if (prisonForced_) h.prisonServed = true;
   // The year's family lines were written before this scenario was picked and
   // belong to no row, so they survive the reset.
   const std::vector<std::string> extra = out.extra;
@@ -4011,38 +4027,440 @@ bool Sim::maybeConvicted(Life& life, AgeUp& out) {
 // (dumbSetRows gates it), the hero may pick up a prison job, and the sentence
 // counts down to the game's own release line 'I was released from prison.'
 // (literal #1959).
+// One prison year (REPORT.en.md 82). The sentence itself is section 45's: the
+// conviction draw in maybeConvicted sets inPrison and prisonYearsLeft, and this
+// function spends the year. The family's own tables are the nickname the yard
+// hands out, the gangs, the yard's bullies (both directions), the letters, the
+// canteen gifts and the parole board's quiz.
 bool Sim::prisonYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.inPrison) return false;
   h.employed = false;  // no career lines while inside
-  std::string jobLine;
-  if (h.prisonJob.empty() && prisonRng_.chance(0.35) && ensureTable("a16_prison-jobs-enc")) {
+  const std::string hg = heroToken("gender", false);
+  prisonLive_ = true;
+  std::string cardTable, title, body, line;
+  std::string dumbTable;
+  size_t cardRow = 0, dumbRow = 0;
+  long long take = 0;
+  int happy = 0;
+  const std::vector<std::string> lifecycle = out.extra;
+  out.extra.clear();
+
+  auto say = [&](const std::string& s) {
+    if (line.empty()) line = spyUpperFirst(s);
+    else out.extra.push_back(spyUpperFirst(s));
+  };
+  auto add = [&](const std::string& s) { out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const char* name, int row) {
+    cardTable = name;
+    cardRow = row < 0 ? 0 : size_t(row);
+  };
+  // A local replace: replaceAll is not visible in this translation unit.
+  auto sub = [](std::string text, const std::string& from, const std::string& to) {
+    if (from.empty()) return text;
+    for (size_t p = text.find(from); p != std::string::npos; p = text.find(from, p + to.size()))
+      text.replace(p, from.size(), to);
+    return text;
+  };
+  // A pool of rows whose column is either blank or one of the wanted values.
+  auto pool = [&](const char* name, const char* col, const std::vector<std::string>& wants) {
+    std::vector<size_t> v;
+    if (!ensureTable(name)) return v;
+    const Table& t = tbl(name);
+    if (!t.has(col)) return v;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string cv = lower(trim(t.at(r, col)));
+      if (cv.empty()) { v.push_back(r); continue; }
+      for (const std::string& w : wants) if (cv == w) { v.push_back(r); break; }
+    }
+    return v;
+  };
+  auto drawOf = [&](const char* name, const std::string& weightCol,
+                    const std::vector<size_t>& v) -> size_t {
+    if (v.empty() || !ensureTable(name)) return size_t(-1);
+    const Table& t = tbl(name);
+    if (weightCol.empty() || !t.has(weightCol.c_str())) return v[prisonRng_.below(v.size())];
+    return weightedPickOf(t, weightCol, v, prisonRng_);
+  };
+  auto cell = [&](const char* name, size_t r, const char* col) -> std::string {
+    if (!ensureTable(name)) return std::string();
+    const Table& t = tbl(name);
+    if (!t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  // Every scenario in the family names the other inmate with <name>, and the log
+  // line must agree with the card, so the name is substituted before resolving.
+  std::string enemy = h.prisonEnemy;
+  bool enemyFemale = h.prisonEnemyFemale;
+  if (enemy.empty()) {
+    enemy = personName("stranger");
+    if (enemy.empty()) enemy = "an inmate";
+    enemyFemale = prisonRng_.chance(0.5);
+    h.prisonEnemy = enemy;
+    h.prisonEnemyFemale = enemyFemale;
+  }
+  auto inmate = [&](std::string text) {
+    text = sub(text, "<name-possessive>", enemy + "'s");
+    text = sub(text, "<name>", enemy);
+    return text;
+  };
+  // The card and the journal are two columns of the same row, and both may carry
+  // the same reference token (a16_prison-bully-outbound's "called <him/her>
+  // <insult>" appears in both): the draw has to be made once, or the hero is
+  // insulted differently on the card and in the journal.
+  auto bindRefs = [&](std::string a, std::string c) {
+    static const char* const kRefs[] = {"insult", "insult-plural", "musician", "celebrity",
+                                        "celebrity-male", "celebrity-female", "drug-illegal",
+                                        "drug", "alcohol", "random-person",
+                                        "random-person-indefinite"};
+    for (const char* key : kRefs) {
+      const std::string tag = std::string("<") + key + ">";
+      if (a.find(tag) == std::string::npos && c.find(tag) == std::string::npos) continue;
+      const std::string v = referenceToken(key);
+      if (v.empty()) continue;
+      a = sub(a, tag, v);
+      c = sub(c, tag, v);
+    }
+    return std::make_pair(a, c);
+  };
+  // One fight, the same arithmetic in both directions.
+  auto scuffle = [&]() {
+    const double odds = std::min(0.9, std::max(0.15,
+        0.35 + (double(h.prisonRespect) + double(h.health)) / 250.0));
+    ++h.prisonFights;
+    if (prisonRng_.unit() < odds) { ++h.prisonWins; return true; }
+    return false;
+  };
+  // A sentence-serving line every year: the job pays, canteen money accumulates.
+  if (!h.prisonJob.empty() && ensureTable("a16_prison-jobs-enc")) {
+    const Table& jt = tbl("a16_prison-jobs-enc");
+    double rate = 0;
+    for (size_t r = 0; r < jt.size(); ++r)
+      if (trim(jt.at(r, "Description")) == h.prisonJob) { rate = jt.num(r, "Daily Rate"); break; }
+    if (rate > 0) {
+      take = static_cast<long long>(rate) * 365;
+      h.money += take;
+      h.prisonCanteen += take;
+      h.prisonEarned += take;
+      add("My prison job paid me " + money(take) + " this year.");
+    }
+  } else if (h.prisonJob.empty() && prisonRng_.chance(0.35) && ensureTable("a16_prison-jobs-enc")) {
     const Table& jt = tbl("a16_prison-jobs-enc");
     const size_t jr = weightedPick(jt, "Commonness Score", prisonRng_);
     if (jr != size_t(-1)) {
       // a16_prison-jobs-enc spells the {0} of 'I started a prison job {0}.'
       // (literal #25148) in its Description column: 'as a laundry attendant'.
       h.prisonJob = trim(jt.at(jr, "Description"));
-      jobLine = "I started a prison job " + h.prisonJob + ".";
+      add("I started a prison job " + h.prisonJob + ".");
     }
   }
-  std::string table;
-  size_t row = 0;
-  bool rendered = false;
-  if (pickDumbScenario(life, &table, &row)) {
-    rendered = renderRow(tbl(table.c_str()), row, life, out, forcedChoice);
+
+  // (1) Intake: the yard hands out the nickname, once per sentence.
+  if (h.prisonNickname.empty()) {
+    const std::vector<std::string> wants = {hg, "both"};
+    const std::vector<size_t> v = pool("a16_prison-nicknames-enc", "Gender", wants);
+    const size_t r = drawOf("a16_prison-nicknames-enc", "", v);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_prison-nicknames-enc");
+      std::string nick = resolve(trim(t.at(r, "Nickname")));
+      // An Is Prefix nickname is the adjective half of 'Fat <surname>'.
+      if (t.flag(r, "Is Prefix"))
+        nick = nick + " " + (h.lastName.empty() ? std::string("the new fish") : h.lastName);
+      h.prisonNickname = nick;
+      title = "Intake";
+      body = "The yard settles on a name: " + nick + ".";
+      say("I was given the nickname " + nick + " in prison");
+      h.prisonRespect = std::min(100, h.prisonRespect + 2);
+      mark("a16_prison-nicknames-enc", int(r));
+    }
   }
-  if (!jobLine.empty()) out.extra.push_back(jobLine);
+
+  // (2) The parole board. It sees the hero in the last two years of the
+  //     sentence, at most three times, and its quiz is the family's own.
+  if (title.empty() && h.prisonYearsLeft <= 2 && h.prisonParoleTries < 3 &&
+      prisonRng_.chance(0.6) && ensureTable("a16_prison-parole-questions-enc")) {
+    const Table& t = tbl("a16_prison-parole-questions-enc");
+    const size_t r = weightedPick(t, "Commonness", prisonRng_);
+    if (r != size_t(-1)) {
+      // The board offers four of the row's filled answers; each carries a score.
+      std::vector<std::pair<std::string, int>> all;
+      for (int n = 1; n <= 20; ++n) {
+        const std::string cc = "Choice " + std::to_string(n);
+        const std::string sc = "Choice " + std::to_string(n) + " Score";
+        if (!t.has(cc.c_str()) || !t.has(sc.c_str())) continue;
+        const std::string txt = resolve(trim(t.at(r, cc.c_str())));
+        if (txt.empty()) continue;
+        all.push_back(std::make_pair(txt, int(t.num(r, sc.c_str()))));
+      }
+      if (all.size() >= 2) {
+        std::vector<std::pair<std::string, int>> opts;
+        for (int n = 0; n < 4 && opts.size() < all.size(); ++n) {
+          const size_t pick = prisonRng_.below(all.size());
+          bool dup = false;
+          for (const std::pair<std::string, int>& o : opts) if (o.first == all[pick].first) dup = true;
+          if (!dup) opts.push_back(all[pick]);
+        }
+        const size_t chosen = (forcedChoice >= 0 && size_t(forcedChoice) < opts.size())
+                              ? size_t(forcedChoice) : prisonRng_.below(opts.size());
+        const int score = opts[chosen].second;
+        ++h.prisonParoleTries;
+        title = "The parole board";
+        body = resolve(trim(t.at(r, "Question")));
+        out.cta = t.has("CTA") ? trim(t.at(r, "CTA")) : "How will you respond?";
+        out.choice = opts[chosen].first;
+        if (score >= 4) {
+          say("The board voted to release me on parole");
+          h.prisonYearsLeft = 1;  // the countdown below frees the hero this year
+          happy += 3;
+        } else if (score == 3) {
+          say("The board was not convinced");
+          h.prisonRespect = std::max(0, h.prisonRespect - 1);
+        } else {
+          say("The board threw my file in the bin");
+          h.prisonRespect = std::max(0, h.prisonRespect - 3);
+          happy -= 2;
+        }
+        mark("a16_prison-parole-questions-enc", int(r));
+      }
+    }
+  }
+
+  // (3) A gang offer, once the hero is respected enough for one.
+  if (title.empty() && !h.prisonGangMember && h.prisonYearsLeft > 1) {
+    std::vector<size_t> fit;
+    if (ensureTable("a16_prison-gangs-enc")) {
+      const Table& gt = tbl("a16_prison-gangs-enc");
+      for (size_t r = 0; r < gt.size(); ++r)
+        if (int(gt.num(r, "Required Respect")) <= h.prisonRespect) fit.push_back(r);
+    }
+    const size_t r = drawOf("a16_prison-gangs-enc", "Power", fit);
+    if (r != size_t(-1) && prisonRng_.chance(0.4)) {
+      const Table& gt = tbl("a16_prison-gangs-enc");
+      const bool female = hg == "female";
+      const std::string gname = cell("a16_prison-gangs-enc", r, female ? "Female Name" : "Male Name");
+      const std::string desc = cell("a16_prison-gangs-enc", r, "Description");
+      const std::string shortd = cell("a16_prison-gangs-enc", r, "Short Description");
+      const bool join = forcedChoice == 0 || (forcedChoice < 0 && prisonRng_.chance(0.5));
+      title = "A gang offer";
+      body = gname + ": " + desc;
+      if (join) {
+        h.prisonGangMember = true;
+        h.prisonGang = gname;
+        h.prisonGangType = cell("a16_prison-gangs-enc", r, "Type");
+        h.prisonGangShort = shortd;
+        h.prisonGangPower = int(gt.num(r, "Power"));
+        h.prisonGangViolence = int(gt.num(r, "Violence"));
+        h.prisonRespect = std::min(100, h.prisonRespect + 4);
+        say("I joined the " + gname + ", " + shortd);
+        mark("a16_prison-gangs-enc", int(r));
+      } else {
+        say("I turned down the " + gname);
+        h.prisonRespect = std::max(0, h.prisonRespect - 1);
+        mark("a16_prison-gangs-enc", int(r));
+      }
+    }
+  }
+
+  // (4) The gang's own business, once the hero is in one.
+  if (title.empty() && h.prisonGangMember && prisonRng_.chance(0.12)) {
+    title = "The gang's business";
+    mark("a16_prison-gangs-enc", -1);
+    h.prisonRespect = std::min(100, h.prisonRespect + h.prisonGangPower / 25);
+    if (h.prisonGangViolence >= 50) {
+      body = "The " + h.prisonGang + " wanted a message sent.";
+      if (scuffle()) { say("I sent it and the yard noticed"); happy += 1; }
+      else { say("I took the beating for the " + h.prisonGang); h.health = std::max(0, h.health - 5); happy -= 2; }
+    } else {
+      body = "The " + h.prisonGang + " kept the yard quiet.";
+      say("I did my part for the " + h.prisonGang);
+    }
+  }
+
+  // (5) The yard's bullies. An inbound row is somebody else picking on the hero;
+  //     a row flagged Hero Action is one the hero gets to answer.
+  if (title.empty() && prisonRng_.chance(0.22)) {
+    const std::vector<std::string> wants = {hg, ""};
+    const std::vector<size_t> v = pool("a16_prison-bully-inbound-scenarios-enc", "Gender", wants);
+    const size_t r = drawOf("a16_prison-bully-inbound-scenarios-enc", "", v);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_prison-bully-inbound-scenarios-enc");
+      title = "Trouble in the yard";
+      const std::pair<std::string, std::string> bound =
+          bindRefs(trim(t.at(r, "Scenario")),
+                   t.has("Log Version") ? trim(t.at(r, "Log Version")) : std::string());
+      body = resolve(inmate(bound.first));
+      const std::string log = resolve(inmate(bound.second.empty() ? bound.first : bound.second));
+      if (t.flag(r, "Hero Action")) {
+        if (scuffle()) { say(log + " I hit back and won."); h.prisonRespect = std::min(100, h.prisonRespect + 6); happy += 2; }
+        else { say(log + " I hit back and lost."); h.health = std::max(0, h.health - 6); h.prisonRespect = std::max(0, h.prisonRespect - 3); happy -= 2; }
+      } else {
+        say(log);
+        h.prisonRespect = std::max(0, h.prisonRespect - 2);
+        happy -= 2;
+      }
+      mark("a16_prison-bully-inbound-scenarios-enc", int(r));
+    }
+  }
+
+  // (6) The hero as the bully. A row flagged Will Let is one the target answers.
+  if (title.empty() && prisonRng_.chance(0.12)) {
+    const std::vector<std::string> wants = {hg, ""};
+    const std::vector<size_t> v = pool("a16_prison-bully-outbound-scenarios-enc", "Gender", wants);
+    const size_t r = drawOf("a16_prison-bully-outbound-scenarios-enc", "", v);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_prison-bully-outbound-scenarios-enc");
+      title = "The strong arm";
+      const std::pair<std::string, std::string> bound =
+          bindRefs(trim(t.at(r, "Scenario")),
+                   t.has("Log Version") ? trim(t.at(r, "Log Version")) : std::string());
+      body = resolve(inmate(bound.first));
+      const std::string log = resolve(inmate(bound.second.empty() ? bound.first : bound.second));
+      if (t.flag(r, "Will Let")) {
+        if (scuffle()) { say(log + " The yard saw who runs it."); h.prisonRespect = std::min(100, h.prisonRespect + 5); }
+        else { say(log + " It did not go my way."); h.health = std::max(0, h.health - 5); h.prisonRespect = std::max(0, h.prisonRespect - 3); }
+      } else {
+        say(log);
+        h.prisonRespect = std::min(100, h.prisonRespect + 4);
+        happy += 1;
+      }
+      mark("a16_prison-bully-outbound-scenarios-enc", int(r));
+    }
+  }
+
+  // (7) A letter from the outside. The Audience column names the writer and the
+  //     relationship window decides whether that writer is close enough.
+  if (title.empty() && prisonRng_.chance(0.25) && ensureTable("a16_prison-letters-enc")) {
+    const Table& t = tbl("a16_prison-letters-enc");
+    std::vector<size_t> v;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string aud = lower(trim(t.at(r, "Audience")));
+      if (aud == "all") { v.push_back(r); continue; }
+      if (aud == "lover" && h.relationshipOn && !h.loverName.empty()) { v.push_back(r); continue; }
+    }
+    std::vector<size_t> fit;
+    for (size_t r : v) {
+      const double lo = t.has("Min Relationship Strength") ? t.num(r, "Min Relationship Strength") : 0;
+      const double hi = t.has("Max Relationship Strength") ? t.num(r, "Max Relationship Strength") : 0;
+      if (lo > 0 && double(h.relationship) < lo) continue;
+      if (hi > 0 && double(h.relationship) > hi) continue;
+      fit.push_back(r);
+    }
+    const size_t r = fit.empty() ? size_t(-1) : fit[prisonRng_.below(fit.size())];
+    if (r != size_t(-1)) {
+      const bool lover = lower(trim(t.at(r, "Audience"))) == "lover";
+      const std::string from = lover ? h.loverName : personName("friend");
+      const bool fromFemale = lover ? h.loverFemale : prisonRng_.chance(0.5);
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = fromFemale;
+      std::string topic = resolve(trim(t.at(r, "Topic")));
+      // The Topic column is written to the hero ('told you to stay strong'), so
+      // the second person has to be folded into the first for the journal.
+      for (size_t p = topic.find(" you"); p != std::string::npos; p = topic.find(" you", p + 4))
+        topic.replace(p, 4, " me");
+      for (size_t p = topic.find(" your"); p != std::string::npos; p = topic.find(" your", p + 5))
+        topic.replace(p, 5, " my");
+      title = "A letter";
+      body = "A letter arrived from " + (from.empty() ? std::string("someone outside") : from) + ".";
+      say((from.empty() ? std::string("Someone outside") : from) + " " + topic);
+      pronounOtherSet_ = false;
+      pronounOtherFemale_ = false;
+      happy += 1;
+      mark("a16_prison-letters-enc", int(r));
+    }
+  }
+
+  // (8) A canteen gift. The confiscate score is the chance the guards take it.
+  if (title.empty() && prisonRng_.chance(0.18)) {
+    const std::vector<std::string> wants = {hg, ""};
+    const std::vector<size_t> v = pool("a16_prison-gifts-enc", "Gender", wants);
+    std::vector<size_t> fit;
+    if (ensureTable("a16_prison-gifts-enc")) {
+      const Table& gt = tbl("a16_prison-gifts-enc");
+      for (size_t r : v) {
+        if (gt.flag(r, "From Lover Only") && !(h.relationshipOn && !h.loverName.empty())) continue;
+        if (int(gt.num(r, "Min Age")) > h.age) continue;
+        fit.push_back(r);
+      }
+    }
+    const size_t r = drawOf("a16_prison-gifts-enc", "", fit);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_prison-gifts-enc");
+      std::string what = resolve(trim(t.at(r, "Name")));
+      if (t.flag(r, "Use Some Article")) what = "some " + what;
+      const std::string giver = t.flag(r, "From Lover Only") && !h.loverName.empty()
+                                ? h.loverName : personName("friend");
+      const double conf = t.has("Confiscate Score") ? t.num(r, "Confiscate Score") : 1;
+      h.prisonGift = what;
+      title = "A gift";
+      body = (giver.empty() ? std::string("Someone") : giver) + " sent me " + what + ".";
+      if (prisonRng_.unit() < conf / 10.0) {
+        say("The guards confiscated my " + what);
+        happy -= 1;
+      } else {
+        say("I got " + what + " in the canteen");
+        happy += t.flag(r, "Negative Gift") ? -1 : 2;
+        if (t.flag(r, "Crazy Gift")) add("It was a crazy thing to send");
+      }
+      mark("a16_prison-gifts-enc", int(r));
+    }
+  }
+
+  // (9) Everything else is the section-45 prison dumb-scenario pool.
+  bool rendered = false;
+  if (title.empty() && pickDumbScenario(life, &dumbTable, &dumbRow)) {
+    out.extra = lifecycle;
+    rendered = renderRow(tbl(dumbTable.c_str()), dumbRow, life, out, forcedChoice);
+  }
+  if (!rendered && !lifecycle.empty()) out.extra = lifecycle;
+
+  if (!title.empty()) {
+    out.table = cardTable;
+    out.row_id = std::to_string(cardRow + 1);
+    out.title = title;
+    out.body = spyUpperFirst(body);
+    if (out.body.empty()) out.body = out.title + ".";
+    if (out.body.back() != '.' && out.body.back() != '!' && out.body.back() != '?' &&
+        out.body.back() != '"') out.body += '.';
+    if (!line.empty()) out.narrative = line;
+    std::vector<std::string> kept = lifecycle;
+    for (const std::string& e : out.extra) kept.push_back(e);
+    out.extra = kept;
+    out.happiness += happy;
+    rendered = true;
+  }
+
   if (--h.prisonYearsLeft <= 0) {
     h.inPrison = false;
     h.prisonYearsLeft = 0;
     h.prisonJob.clear();
+    h.prisonNickname.clear();
+    h.prisonGang.clear();
+    h.prisonGangType.clear();
+    h.prisonGangShort.clear();
+    h.prisonGangMember = false;
+    h.prisonRespect = 10;
+    h.prisonEnemy.clear();
+    h.prisonParoleTries = 0;
+    h.prisonPrompt = false;
     // shortcut: a juvenile sentence reuses the adult release line; the literal
     // table has no juvenile-release string (#9564 is re-entry, #24122 escape).
+    // The release is its own line, not a newline glued onto the card's: main.cpp
+    // prints the extra lines before the narrative, so a joined string would show
+    // both sentences on one journal entry.
     if (out.narrative.empty()) out.narrative = "I was released from prison.";
-    else out.narrative += "\nI was released from prison.";
+    else out.extra.push_back("I was released from prison.");
+    rendered = true;
   }
-  return rendered || !jobLine.empty() || !out.narrative.empty();
+  prisonLive_ = false;
+  return rendered;
+}
+
+void Sim::makePrisoner(Life& life) {
+  Hero& h = life.hero;
+  prisonForced_ = true;
+  h.prisonPrompt = true;
+  h.prisonServed = false;
+  h.prisonRespect = 10;
 }
 
 void Sim::makeVampire(Life& life) {
