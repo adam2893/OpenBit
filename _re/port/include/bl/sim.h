@@ -123,6 +123,7 @@ class Sim {
   void makeMilitary(Life& life);
   void makeAthlete(Life& life);
   void makeBusiness(Life& life);
+  void makeRacing(Life& life);
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
@@ -333,6 +334,11 @@ class Sim {
   std::string businessFormat(const char* table, const std::string& industry);
   std::string businessSupplier(const std::string& industry);
   std::string businessProductName(const std::string& format);
+  bool racingYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string racingToken(const std::string& token);
+  bool racingCardRow(Life& life, AgeUp& out, const std::string& table, size_t row,
+                     int forcedChoice, bool moment, int* success);
+  void racingBuyCar(long long budget);
   std::string sportsToken(const std::string& token);
   std::string warToken(const std::string& token);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
@@ -378,6 +384,9 @@ class Sim {
   Rng sportsRng_;
   Rng bizRng_;
   std::map<std::string, std::string> bizCache_;  // one product / rival / supplier per card
+  Rng racingRng_;
+  std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
+  bool racingLive_ = false;
   Rng musicRng_;
   Rng politicsRng_;
   Rng miscRng_;

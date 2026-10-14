@@ -469,6 +469,39 @@ struct Hero {
   long long bizRevenue = 0;
   long long bizCosts = 0;
   long long bizProfit = 0;
+
+  // The car and the races (REPORT.en.md 75). The hero owns one car, drawn from
+  // a16_car-models-enc, and races it in its own category.
+  bool racing = false;
+  std::string carMake;
+  std::string carModel;
+  std::string carType;   // a16_car-models-enc 'Type', also <car-type>
+  std::string carName;   // "Make Model", the <car> token
+  std::string carClass;  // 'Racing Class': C/B/A/S
+  std::string racerCategory;  // the car's first Race Type Whitelist entry
+  std::string racerRival;     // the rival racer's name
+  std::string racerSponsor;
+  std::string racerCup;
+  std::string racerTrack;
+  std::string racerGarage;   // the shop the car lives at
+  std::string racerPitCrew;
+  std::string racerMechanic;
+  std::string racerJacket;
+  int carCondition = 100;    // 0..100: repairs and races move it
+  int carHandling = 40;
+  int carSpeed = 40;
+  int carAcceleration = 40;
+  int carDurability = 40;
+  int carMods = 0;           // how many race-car mods are bolted on
+  int racerRank = 0;         // 0 Bronze, 1 Silver, 2 Gold, 3 Platinum
+  int racerWins = 0;
+  int racerLosses = 0;
+  int racerRivalCraziness = 40;
+  int racerProfessionalism = 50;
+  int racerFans = 0;
+  long long carValue = 0;
+  long long racerWinnings = 0;
+  long long racerSpend = 0;
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'

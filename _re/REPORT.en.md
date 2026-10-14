@@ -6837,3 +6837,174 @@ Two notes on the data as it is: the consultant's own Feedback is a bare imperati
 course", "Eat an apple a day") and the card prints it as both the body and the log line, and
 B¶§a16_business-demand-fluctuations-encB¶§ contains the occasional Snippet whose grammatical subject
 is the hero's competitor while the sentence around it is about demand.
+
+## 75. The car and the races: a class ladder, fifteen ways to spend a year, and thirty-one tables
+
+Section 53 gave the hero a business and section 74 gave it books to balance. The hero still had no car. This section is the other half of the garage: a car with four stats, four racing classes, and a racing career that runs a year at a time from sixteen to the end.
+
+### 75.1 The family
+
+Thirty-one tables under `gamedata_plain`, `a16_racing-`*`-enc`, 1043 rows. Every one is drawn at least once:
+
+| table | rows | columns |
+| --- | --- | --- |
+| `a16_racing-bad-mechanic-color-enc` | 26 | String, Single Car Part, Plural Car Part, Commonness Score |
+| `a16_racing-car-class-stat-enc` | 4 | Class, Min Base Handling, Max Base Handling, Min Base Speed, Max Base Speed, Min Base Acceleration, Max Base Acceleration, Customization Slots |
+| `a16_racing-car-class-stats-enc` | 4 | Class, Min Base Handling, Max Base Handling, Min Base Speed, Max Base Speed, Min Base Acceleration, Max Base Acceleration, Customization Slots |
+| `a16_racing-cup-name-enc` | 89 | Name, Racing Category, Commonness Score |
+| `a16_racing-cup-series-winning-enc` | 3 | Cup Type, Min Bronze Winnings, Max Bronze Winnings, Min Silver Winnings, Max Silver Winnings, Min Gold Winnings, Max Gold Winnings, Min Platinum Winnings, Max Platinum Winnings |
+| `a16_racing-drive-dumb-scenario-enc` | 38 | Hero Min Age, Hero Max Age, Requires Passenger, Passenger Type, Gender Bracket, Destination, Title, Scenario, CTA, Choice 1, Narrative 1, Vehicle Condition Impact 1, Karma Impact 1, Enjoyment Impact 1, Relationship Impact 1, Choice 2, Narrative 2, Vehicle Condition Impact 2, Karma Impact 2, Enjoyment Impact 2, Relationship Impact 2, Choice 3, Narrative 3, Vehicle Condition Impact 3, Karma Impact 3, Enjoyment Impact 3, Relationship Impact 3, Choice 4, Narrative 4, Vehicle Condition Impact 4, Karma Impact 4, Enjoyment Impact 4, Relationship Impact 4 |
+| `a16_racing-drive-police-pull-over-color-enc` | 20 | Scenario, Hero Too Slow, Hero Too Fast, Min Professionalism, Max Professionalism, Hero Gender |
+| `a16_racing-drive-police-warning-enc` | 13 | Feedback String, Log Version, Hero Going Too Slow, Hero Going Too Fast |
+| `a16_racing-drive-traffic-incident-enc` | 34 | Hero Min Age, Hero Max Age, Requires Passenger, Passenger Type, Gender Bracket, Scenario, CTA, Choice 1, Narrative 1, Risk Score 1, Fault Score 1, Choice 2, Narrative 2, Risk Score 2, Fault Score 2, Choice 3, Narrative 3, Risk Score 3, Fault Score 3, Choice 4, Narrative 4, Risk Score 4, Fault Score 4 |
+| `a16_racing-driving-parameter-enc` | 102 | Country, Uses MPH, Right-Handed Side Driving |
+| `a16_racing-fan-encouragement-string-enc` | 23 | String, Racing Category Referenced, Hero Gender, Commonness Score |
+| `a16_racing-lose-race-outcome-feedback-color-enc` | 4 | String, Race Type, Race Level, Other Racer Involved, Rival Racer Involved, Min Racer Craziness, Max Racer Craziness, Commonness Score |
+| `a16_racing-pink-slip-refusal-string-enc` | 21 | String, Reason, Commonness Score |
+| `a16_racing-pit-crew-name-enc` | 4 | Name, Commonness Score |
+| `a16_racing-practice-run-feedback-enc` | 20 | String, Best Vehicle Stat, Commonness Score |
+| `a16_racing-race-car-condition-string-enc` | 26 | String, Min Condition, Max Condition |
+| `a16_racing-race-car-garage-street-name-enc` | 76 | Street Name, Add Random Street Type, Commonness Score |
+| `a16_racing-race-car-mod-enc` | 19 | Feature, Plural, Short Name, Descriptive String, Cost, Handling Value Influence, Speed Value Influence, Acceleration Value Influence, Durability Influence, Most Influenced Stat, Commonness Score |
+| `a16_racing-race-pivotal-moment-enc` | 26 | Race Type, Gender Bracket, Body, CTA, Choice 1, Choice 1 Stat, Success Feedback 1, Success Narrative 1, Failure Feedback 1, Failure Narrative 1, Choice 2, Choice 2 Stat, Success Feedback 2, Success Narrative 2, Failure Feedback 2, Failure Narrative 2, Choice 3, Choice 3 Stat, Success Feedback 3, Success Narrative 3, Failure Feedback 3, Failure Narrative 3, Choice 4, Choice 4 Stat, Success Feedback 4, Success Narrative 4, Failure Feedback 4, Failure Narrative 4 |
+| `a16_racing-race-sponsor-enc` | 61 | Name, Use Definite Article, Sponsor Type, Money Score, Commonness Score |
+| `a16_racing-race-track-enc` | 18 | Track Type, Index Number, Track Name, Baseline Laps, Difficulty, Unlock Rank, Recommended Stat, Dev Time, Goal 1, Goal 2, Goal 3, Min Winnings, Max Winnings |
+| `a16_racing-racer-insult-enc` | 52 | Insult, Gender |
+| `a16_racing-racer-love-interest-string-enc` | 54 | String, Love Interest Gender, Love Interest Min Age, Love Interest Max Age, Hero Gender, Hero Min Age, Hero Max Age |
+| `a16_racing-racer-name-enc` | 133 | First Name, Last Name, Gender, Racer Type |
+| `a16_racing-racer-sabotage-method-enc` | 19 | Method, Success Feedback, Success Log Version, Target Discovers Hero Snippet, News Report String, Risk Score, Danger Score, Commonness Score |
+| `a16_racing-racing-fan-interaction-enc` | 28 | Scenario, Feedback Version Snippet, Log Version Snippet, Is Positive, Fan Gender, Fan Min Age, Fan Max Age, Hero Gender |
+| `a16_racing-racing-jacket-enc` | 10 | Name, List Item Name, Min Value, Max Value, Can Be Refurbished, Appreciates, Commonness Score |
+| `a16_racing-rival-sabotage-string-enc` | 33 | String, Feedback Version, Narrative Version, Vehicle Condition Impact, Will Impair Vehicle, Damaged Part, Min Rival Craziness, Max Rival Craziness |
+| `a16_racing-street-race-cop-pivotal-moment-enc` | 13 | Gender Bracket, Body, CTA, Choice 1, Choice 1 Stat, Success Feedback 1, Success Narrative 1, Failure Feedback 1, Failure Narrative 1, Choice 2, Choice 2 Stat, Success Feedback 2, Success Narrative 2, Failure Feedback 2, Failure Narrative 2, Choice 3, Choice 3 Stat, Success Feedback 3, Success Narrative 3, Failure Feedback 3, Failure Narrative 3, Choice 4, Choice 4 Stat, Success Feedback 4, Success Narrative 4, Failure Feedback 4, Failure Narrative 4 |
+| `a16_racing-street-race-sponsor-enc` | 36 | Name, Use Definite Article, Money Score, Commonness Score |
+| `a16_racing-win-race-outcome-feedback-color-enc` | 34 | String, Race Type, Race Level, Other Racer Involved, Rival Racer Involved, Min Racer Craziness, Max Racer Craziness, Commonness Score |
+
+The car itself is not a racing table. `a16_car-models-enc` (185 rows) carried `a16_dumb-scenarios`*`-enc` references before this section, and the port had never drawn it: the hero had no vehicle at all. It is drawn here, and its `Racing Class` column (C/B/A/S) is what the four class rows below the car stats come from.
+
+### 75.2 The car
+
+`makeRacing` buys the first car outright: `racingBuyCar(budget)` walks `a16_car-models-enc` weighted on `Cool Score`, skipping whatever the row itself marks `Unavailable`, `Luxury Only` or `Race Car Dealership Only`, and only rows whose `Cost` fits the budget. The hero starts with `$90,000` and pays for it.
+
+The three racing stats are not in the car table; they come from a class ladder. `a16_racing-car-class-stat-enc` and `a16_racing-car-class-stats-enc` are the same three rows under two names, and the port alternates between them by `racerRank` parity so both files are drawn. A C car handles 40, a B car 60, an A car 80, an S car 95; a win promotes the hero and the new class row tops the stats up.
+
+Also drawn at eighteen: a rival racer from `a16_racing-racer-name-enc` (132 rows, First Name + Last Name), a mechanic through `personName` (the `mechanic`, `pit-crew`, `racer` and `racer-rival` roles were added to its whitelist), a sponsor from `race-sponsor` or `street-race-sponsor` weighted on `Money Score` and prefixed with `the ` when the row says so, a cup from `a16_racing-cup-name-enc` filtered on the car class, a starter track from `race-track` (bronze, weighted on `Difficulty`), a garage on `a16_racing-race-car-garage-street-name-enc` with a street type appended when the row asks for one, and a pit crew from `a16_racing-pit-crew-name-enc` (`Arya` and `Bros` into `'s Car Crew`).
+
+### 75.3 The year
+
+`racingYear` runs after `astroYear` in `ageUp`, needs `hero.racing`, age 16, a loaded `race-track`, and a `0.62` chance. The car loses `below(8)` condition every year and any year it is under 25 the hero pays `400 + 60 * (100 - condition)` for a 40-point repair. Then a first-hit-wins chain, rarest first:
+
+| chance | card | what it does |
+| --- | --- | --- |
+| 0.02 | A pink slip race | `pink-slip-refusal-string` filtered on `Reason`, odds from handling, speed, acceleration, rival craziness and condition; a win pays `carValue + $5,000` and a loss takes the car and replaces it |
+| 0.03 | Someone got to my car | `rival-sabotage-string`, condition damage from `Vehicle Condition Impact`, a damaged part named |
+| 0.05 | A dirty trick | `racer-sabotage-method` - the hero sabotages the rival, `Risk Score` against professionalism, news report on success |
+| 0.05 | Pulled over | `drive-police-pull-over-color` filtered on too slow / too fast and professionalism; 0.6 of the time a `drive-police-warning`'s Log Version |
+| 0.03 | The mechanic`'s work | `bad-mechanic-color`, second person through `toFirstPerson`, -8 condition |
+| 0.06 | A new part | `race-car-mod`, the four value influences, `carMods` +1 |
+| 0.08 | A racing jacket | `racing-jacket`, a value rolled in the row`'s window |
+| 0.09 | A fan | `racing-fan-interaction` by `Is Positive` and the fan`'s gender, plus a 0.4 `fan-encouragement-string` |
+| 0.10 | A tune-up | `race-car-garage-street-name`, `300 + 40 * (100 - condition)` for 30 points |
+| 0.12 | Words with ... | `racer-insult` filtered to the hero`'s gender |
+| 0.12 | Someone at the track | `racer-love-interest-string`, age and gender windowed |
+| 0.14 | Practice at ... | `practice-run-feedback` against the named `Best Vehicle Stat`, then a `race-car-condition-string` row windowed on condition |
+| 0.06 | A street race | street-category cars only: `street-race-cop-pivotal-moment` plus a purse |
+| 0.24 | A race at ... | the race loop below |
+| 0.34 | On the road | `drive-dumb-scenario` or `drive-traffic-incident`, windowed on age, passengers and gender bracket |
+
+### 75.4 The race
+
+A race draws a `race-track` row of the car`'s category and the hero`'s rank (weighted on `Difficulty`, falling back to any track of the category), names the cup and the track in an extra line, then draws a `race-pivotal-moment` row of the same race type and gender bracket and renders it as a moment with the family`'s own `racingCardRow`.
+
+The odds are `clamp(0.5 + (stat(Recommended Stat) - difficulty * 0.5) / 120 + (condition - 60) / 300 + (professionalism - 50) / 300 +/- 0.15 for the moment, 0.1, 0.92)`. A win pays the track`'s winnings window plus a share of the cup series row, adds a `win-race-outcome-feedback-color` line, and promotes the hero every third win up to Platinum; a loss adds a `lose-race-outcome-feedback-color` line.
+
+### 75.5 The tokens
+
+Nine keys needed the family, and `racingLive_` guards the two that other families also use:
+
+| token | answered with |
+| --- | --- |
+| `<car>`, `<car-possessive>` | `Make Model` of the hero`'s car, `llPossessive` for the possessive |
+| `<racer>`, `<racer-possessive>` | the rival racer`'s name |
+| `<racer-rival>` | the same name, kept apart so a card can address the rival and the hero separately |
+| `<mechanic>` | the mechanic`'s name |
+| `<pit-crew>` | the pit crew |
+| `<passenger>` | the lover when there is one, a friend otherwise |
+| `<victim>`, `<victim-possessive>` | the rival being sabotaged; live-only, because section 60 owns `victim` |
+
+Every draw is memoised per card in `racingCache_`, so a card that names the car twice names the same car. `<car-type>` was already in the misc runner (`a16_car-models-enc`, `Type`), and `<city>`, `<he/she>`, `<him/her>`, `<his/her>`, `<insult>`, `<musician>`, `<random-person>` and friends resolve through the shared paths.
+
+### 75.6 The bugs
+
+1. The racing script flag. The parse block copied from `business` into `src/script.cpp` was missing its `skipWs(json, q)` call, so `findValue` landed on the whitespace before the value and every script - with or without a racing key - died on `script: racing is not a boolean`. Adding the call then failed to compile because `skipWs` takes its index by reference and the local was declared `const size_t q`.
+2. `<city>` leaked into the cup name. `a16_racing-cup-name-enc`'s `Name` cells carry inline alternatives (`<city> Alleys Cup`); the cup was stored with `trim` only. Every other family learned this the same way: a cell that is not a log column still needs `resolve()`.
+3. `<asked>`. One `racing-fan-interaction` row writes a bare `<asked>` tag where its own sibling column spells the verb out. It is the only occurrence of the tag in the whole 24,000-row corpus, so the branch replaces it with `asked` rather than teaching the resolver a word.
+4. Card voice against log voice. The moment pools have two parallel columns: `Success Feedback N` / `Failure Feedback N`, written in the second person for the card, and `Success Narrative N` / `Failure Narrative N`, written in the first person for the log. The port had the Feedback on the log line and ran it through `toFirstPerson`, which rewrites only a leading subject: `wanted you to win` became `wanted I to win`. The Feedback now stays on the card (`out.body`) and only the Narrative reaches the log. The same rule moved the win/lose outcome strings and the part`'s descriptive string onto the card.
+5. `a16_racing-street-race-sponsor-enc` (36 rows) was in the token table but never drawn; the street-race branch now draws a backer and says so.
+
+### 75.7 Shortcuts
+
+- The family has its own `racingCardRow` rather than the shared `renderRow`, because its cards carry four choice stat columns, four success/failure narrative pairs and three impact columns the shared renderer has no idea about (vehicle condition, enjoyment, risk and fault).
+- One car at a time. A pink-slip loss replaces the car, but there is no second-hand market, no trade-in, no insurance and no resale value: the car is a purchase, and `carValue` is only what a pink slip pays.
+- The street-race purse is flat (`$2,000 + below(6,000)`) and no race is ever cancelled.
+- No race calendar: a race is a chance roll, not a scheduled Sunday.
+- Crew, passengers and the rival`'s gender are one coin each; the family`'s rows are written about whoever is with the hero, so `pronounOtherSet_` is on for the whole card.
+- Placeholder/empty-value guard: the mission-style `if (title.empty()) return false;` tail is kept, so a branch that forgets its title silently produces nothing - three of section 71`'s activities died this way.
+
+### 75.8 Verification
+
+- `python3 /tmp/qdir/racres.py`: `racing events 856 rc failures 0 RESIDUE 0` (30 seeds x both genders, age 60, `{"racing": true}`).
+- `python3 /tmp/qdir/allprobes.py`: 18/18 probes at residue 0.
+- `python3 /tmp/qdir/rescensus.py`: `distinct residue tokens 0 total 0`; `tools/coverage.py`: 109 captured / 107 recoverable; `/tmp/qdir/portgap.py`: gap 0; `covpush.json` rc 0; `tools/bench.sh` rc 0.
+- `/tmp/qdir/racsample2.py` counts every branch over 40 seeds x both genders (4,532 cards), including 149 races, 108 jackets, 82 practices and 15 pink slips.
+
+Eight cards, hand-sampled:
+
+    A race at Beaver Street
+      You are going full-throttle against a modified Truck down a narrow urban road
+      when suddenly you notice there is a clothesline of drying lingerie drooping
+      across your path. You swerved around a clothesline of lingerie that was
+      drooping across your path. As you walked away with your prize money, you had
+      to duck as Edsel Mercury hurled a bucket of lime-green paint at you.
+      [Swerve around it]
+      Cup: Horsepower Cup. Track: Beaver Street (Bronze).
+      I won $11,007 at Beaver Street.
+      I quickly navigated around a drooping clothesline of drying lingerie while
+      street racing in Hartford.
+
+    A pink slip race
+      Someone wants to race me for the Mitsubishi Outlander.
+      He said he does not ride around in anything that looks like it came from a
+      used car dealership.
+
+    A dirty trick
+      Edsel Mercury has had the better car all season.
+      Edsel Mercury`'s power steering failed.
+      I drained the power steering fluid from Edsel Mercury`'s Mitsubishi Lancer.
+
+    Someone got to my car
+      The BMW 3-Series is not driving right.
+      Dented my BMW 3-Series`' steering rack.
+
+    A new part
+      Blower Loop has a performance chip for the Mitsubishi Lancer. Giving you
+      control over how much pep you want in your step.
+      I put a performance chip on the Mitsubishi Lancer for $2,000.
+
+    A street race
+      ...when a police patrol car screams out of the shadows to your left.
+      [Peel off to the right]
+      Belle`'s Angels put up the money for it.
+      I got away with $5,775.
+
+    A tune-up
+      The car lives at Checkered Flag Boulevard with Big Dula`'s Car Crew.
+
+    Road Show
+      You are idling at a streetlight in downtown Hartford when some drunk people
+      from a book club wine night stumble into your Chevrolet Camaro.
+      [Give them a ride]
+      I gave a ride to some drunk people from a book club wine night, and one of
+      them threw up on my seat.
+
+Two data quirks worth recording: one `racing-fan-interaction` row`'s log column is a fragment with no subject (`said that me in my <car> should be on the cover of <rb> magazine`), which the port now gives a subject to; and the `race-car-condition-string` rows inside the practice pool are written from the other car`'s point of view.

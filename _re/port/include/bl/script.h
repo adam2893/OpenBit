@@ -63,6 +63,8 @@ struct ScriptSpec {
   bool dealer = false;
   bool hustler = false;
   bool astronaut = false;
+  // The car and the races (REPORT.en.md 75).
+  bool racing = false;
   bool landlord = false;
   bool zoo = false;
   bool model = false;

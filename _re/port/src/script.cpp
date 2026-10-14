@@ -311,6 +311,17 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("business is not a boolean");
   }
 
+  // The car and the races (REPORT.en.md 75).
+  {
+    size_t q = findValue(json, "racing");
+    if (q != std::string::npos) {
+      skipWs(json, q);
+      if (q + 4 <= json.size() && json.compare(q, 4, "true") == 0) spec.racing = true;
+      else if (q + 5 <= json.size() && json.compare(q, 5, "false") == 0) spec.racing = false;
+      else return fail("racing is not a boolean");
+    }
+  }
+
   p = findValue(json, "mafia");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -616,6 +627,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.military) sim.makeMilitary(life);
   if (spec.sports) sim.makeAthlete(life);
   if (spec.business) sim.makeBusiness(life);
+  if (spec.racing) sim.makeRacing(life);
   if (spec.music) sim.makeMusician(life);
   if (spec.politics) sim.makePolitician(life);
   unsigned miscMask = 0;
