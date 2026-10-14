@@ -4302,3 +4302,189 @@ Samples straight out of the port:
 Full regression after the two fixes: {B}rescensus.py{B} distinct residue tokens 0;
 {B}coverage.py{B} 109 captured / 107 recoverable; {B}portgap.py{B} ENTRIES 109 / rendered-by-port
 107 / gap 0; {B}covpush.json{B} rc=0; {B}bench.sh{B} through age 34 with no abort.
+
+## 61. The casino: a house the hero owns, and seventeen kinds of year
+
+The casino family is the second-largest content family in the game and the largest one the port
+had left: 39 tables, 1286 rows, and until now nothing but two of its token paths. It is not a
+menu the hero visits, it is a business the hero owns -- a building with an amenity capacity, a
+game-room capacity and an entertainment capacity, filled with amenities the patrons judge one by
+one, gamblers whose mood the hero manages, acts the hero auditions and books, celebrities who
+arrive with riders, and a ledger that reports on all of it once a year.
+
+### 61.1 The tables
+
+| table (a16_casino-*) | rows | what it is |
+|---|---|---|
+| casino-structure | 5 | the building: Price, Amenity Capacity, Game Room Capacity, Entertainment Capacity |
+| casino-theme | 8 | the house's look, with a Popularity Score |
+| casino-amenity | 75 | Amenity Name, Category, Theme, Cost, Monthly Expenses, Gambler Happiness Impact, Base/Match Popularity Impact |
+| casino-amenity-feedback-scenario | 76 | what the patrons say about one amenity (Category, Theme, Enjoyment Score) |
+| casino-game-room | 9 | the games: Installation Cost, Unit String, capacities, Default House Win Rate, Min/Max Bet |
+| random-game-room-name | 69 | room names with a Game Room Type (not wired -- see 61.5) |
+| random-hero-casino-name | 42 | the hero's casino name with a Casino Type |
+| casino-street-name | 57 | the frontage (Street Name, Add Random Street Type) |
+| casino-ledger-feedback | 17 | the year's balance sheet, gated on a popularity band |
+| casino-dumb-scenario | 25 | the house's own prompt-and-choice card, gated on theme, popularity and facilities |
+| casino-gambler-conversation | 27 | the topics punters bring up |
+| positive-gambler-interaction-scenario | 19 | a punter and the house getting on |
+| negative-gambler-interaction-scenario | 18 | and not getting on |
+| casino-game-room-complaint | 17 | complaints, gated on a gambler-happiness band |
+| gambler-game-room-compliment | 17 | compliments, gated on a higher band |
+| gambler-joins-casino-color | 25 | new faces at the door |
+| banned-gambler-snippet | 22 | the punters who are shown out, gated on craziness |
+| mafia-member-activity-string | 10 | the mob's interest in a house that is doing well |
+| meet-greet-feedback | 20 | the meet and greet, with fame-based and theme-based lines |
+| casino-drink | 56 | the bar (Beverage Type, Drink Has Alcohol, Drink Quality, Happiness Impact) |
+| drink-refusal-string | 33 | turning the drink down, keyed on whether it was alcoholic |
+| casino-gift | 36 | gifts for the regulars, with gender-specific appreciation scores |
+| gambler-compensation-method | 30 | thanking a patron (Method, Feedback String, Log Version) |
+| gambler-encouragement-method | 19 | coaxing one back to the tables (Effectiveness Score) |
+| casino-audition-string | 43 | the audition, gated on an impression band |
+| casino-performance-act | 4 | act types and their base popularity |
+| casino-performance-act-name | 127 | the acts themselves, with Act Type and Theme |
+| casino-performance-act-string | 40 | the show they put on |
+| casino-offer-artist-refusal | 20 | why an act says no |
+| casino-singer-genre | 62 | genre popularity against the house's theme |
+| casino-singer-song | 66 | song titles |
+| celebrity-demand | 22 | what the rider asks for |
+| casino-celebrity-party-scenario | 19 | the party, gated on the celebrity's craziness and flagged positive or negative |
+| casino-celeb-party-death-string | 12 | the worse ending, gated on craziness |
+| casino-collectible | 21 | pieces for the display case (articles, Min/Max Value) |
+| casino-accessory-acquisition-method | 8 | where the house's own swag came from |
+| casino-celebrity-name | 106 | the name pool every other family already draws from |
+| casino-game-room-complaint | 2 | a two-row duplicate of the complaint table |
+| ledger-feedback | 2 | a two-row duplicate of the ledger table |
+
+### 61.2 Building the house
+
+{B}Sim::makeCasino{B} sets {B}ownsCasino{B} and calls {B}Sim::ensureCasinoFields{B}, which is also
+called at the top of every casino year, so a casino built by any route always has a theme, a
+structure, a name, an address, amenities and games. The order matters:
+
+1. the theme is drawn from {B}a16_casino-casino-theme-enc{B} weighted by {B}Popularity Score{B};
+2. the structure row supplies the two capacities the rest of the build spends, {B}Amenity
+   Capacity{B} and {B}Game Room Capacity{B};
+3. the name comes from {B}a16_casino-random-hero-casino-name-enc{B} and the address from
+   {B}a16_casino-casino-street-name-enc{B} plus a house number; the {B}Add Random Street Type{B}
+   flag appends " Street";
+4. the amenities fill the structure's amenity capacity, one per {B}Category{B} so the house never
+   has two of the same thing, and a row that names a {B}Theme{B} only fits a house of that theme.
+   Each row's {B}Base Popularity Impact{B} moves the house's popularity;
+5. the games fill the game-room capacity, drawn without replacement from the nine rows of
+   {B}a16_casino-casino-game-room-enc{B}.
+
+The hero's state is `casinoName`, `casinoTheme`, `casinoStructure`, `casinoStreet`,
+`casinoAmenities` and `casinoGames` (the two lists), `casinoPopularity` (the number the
+ledger, the dumb card and the celebrity visit are all gated on), `casinoGamblers`,
+`casinoGamblerHappiness` (the floor's mood), `casinoGamblerAddiction`, `casinoAct`,
+`casinoActType`, `casinoActPopularity`, `casinoSong`, `casinoCelebrity` and
+`casinoCelebCraziness`.
+
+### 61.3 The casino year
+
+{B}Sim::casinoYear{B} runs from age 18 at 50% a year, drifts the house's popularity by a few
+points every year, and fires exactly one of the following, in this order (the entertainment
+blocks run first because the rest of the list would otherwise eat their chance):
+
+| # | chance | event |
+|---|---|---|
+| 14 | 0.35 | entertainment: with no act in residence an audition is drawn through the Min/Max Impression band (the port reads the impression as the house's popularity) and 40% of offers are refused; the act's type sets its base popularity, a singer act also brings a genre matched against the theme and a song, and a booked act plays a show 35% of the time |
+| 15 | 0.20 | a celebrity: at popularity 45+ a celebrity arrives with a rider demand drawn from the demand table, and on later years the party is drawn through the Min/Max Celeb Craziness band; a negative party can end in the death pool, and the celebrity moves on half the time |
+| 16 | 0.12 | a collectible for the display case, its article taken from the row's flags and its price interpolated in the row's value band |
+| 17 | 0.10 | where one of the house's own accessories came from (the rows are past-tense clauses, "you won a hand with 21") |
+| 1 | 0.15 | the house's own prompt-and-choice card, gated on hero age and gender, on the popularity band, on the theme, and on having an amenity, a game room, a celebrity or an act where the row asks for one. The first choice is the one taken, the same shortcut the UFL card uses |
+| 2 | 0.35 | the ledger, its line drawn through the Min/Max Casino Popularity band |
+| 3 | 0.30 | what the patrons make of one amenity the house actually has: the feedback pool is filtered on the amenity's Category and on the theme |
+| 4 | 0.25 | a punter's conversation topic, wrapped by the port into a sentence |
+| 5 | 0.25 | one gambler crosses paths with the house, the positive or negative pool chosen by the floor's mood |
+| 6 | 0.20 | a complaint when the floor's mood is under 45, a compliment above 70 |
+| 7 | 0.25 | new patrons at the door |
+| 8 | 0.15 | a banned gambler: the punter's craziness is rolled and the row drawn through its band |
+| 9 | 0.12 | the mob takes an interest |
+| 10 | 0.15 | the meet and greet, the pool chosen by whether the hero is famous (30+) and by the house's theme |
+| 11 | 0.20 | a drink at the bar, with a 30% refusal drawn from the rows whose alcohol flag matches the drink |
+| 12 | 0.15 | a gift for a regular, its appreciation score chosen by the punter's gender and its age band checked against the punter |
+| 13 | 0.15 | an unhappy floor is encouraged back to the tables, a happy one thanked with a compensation the house picks |
+
+### 61.4 Tokens
+
+* {B}<hero-casino>B is the data's spelling for the hero's own casino, and it is what the ledger,
+  the dumb card, the conversation and the joins pool all use. It used to be answered by the misc
+  map (a fresh random casino name per card); {B}casinoToken{B} now answers it with the hero's own
+  name and falls back to the same random draw when the hero owns nothing.
+* {B}<casino-gambler>B is one punter per card, and the punter has a gender: the name is drawn
+  with it and the pronoun pair is pointed at the punter, because these pools address the gambler
+  ("<he/she> says his mood plummets..."). Before this the pools mixed a female name with "he".
+* {B}<casino-celebrity>B is the resident celebrity, or a drawn one when the house has none.
+* {B}<casino-room>B and {B}<casino-game>B are one of the hero's own games (a fresh row when the
+  hero owns no house), and {B}<casino-name>B/{B}<casino>B are the house's name.
+* {B}<car-type>B (54 uses across the casino, racing, dealer and vampire families) is the
+  {B}Type{B} column of {B}a16_car-models-enc{B}, added to the shared misc map.
+* The name cells of the gift, demand, collectible, drink and amenity rows carry inline
+  alternatives of their own (a rider item is "<carton/a pack/two packs> of <Marlboro/Camel/...>"),
+  so those cells are resolved before printing, and a new {B}withArticle{B} helper refuses to put
+  a second article in front of a value that already carries one ("a pack of cigarettes").
+
+### 61.5 Shortcuts
+
+* The port has no money ledger for the casino: costs, monthly expenses, the payouts and the
+  collectible prices are narrated, not deducted.
+* {B}a16_casino-casino-game-room-complaint-enc{B} and {B}a16_casino-casino-ledger-feedback-enc{B}
+  are the fuller twins of {B}a16_casino-game-room-complaint-enc{B} and
+  {B}a16_casino-ledger-feedback-enc{B} (2 rows each); the two-row duplicates are unused.
+* {B}random-game-room-name{B} names rooms rather than games, and every {B}<casino-room>B use in the
+  data reads as a game ("in your casino's Blackjack"), so the game table's {B}Game{B} column
+  answers the token and the 69 room names stay unwired.
+* The gambler's own addiction is not modelled; the interaction pools' Min/Max Gambler Addiction
+  windows are not read, only the happiness band is.
+* The hero's fame is the port's {B}fame{B} field with a threshold of 30 for the meet-and-greet
+  fame lines; the game's own fame scale may sit elsewhere.
+* A year-up card cannot route a choice, so the casino dumb card always takes its first choice.
+* The amenity's {B}Cost{B}, {B}Monthly Expenses{B} and {B}Secondary Text Line{B}, the game rooms'
+  installation costs and win rates, the acts' engagement fees and the celebrity rider's price are
+  read but not charged.
+* The audition's impression score is the house's popularity, because the game computes it from
+  the act's own performance and the port has no act statistics per audition.
+
+### 61.6 Verification
+
+Residue probe (seeds 1..30, both genders, ages 60, {B}{"casino": true}{B}, every event whose
+table contains "casino", every {B}<...>{B} token in title, body and log lines counted): 1351
+events, residue 0. The wired tables and their counts over those 60 lives:
+
+    a16_dumb-scenarios-casino-enc                        617
+    a16_casino-casino-ledger-feedback-enc                134
+    a16_casino-casino-audition-string-enc                 92
+    a16_casino-casino-dumb-scenario-enc                   73
+    a16_casino-casino-performance-act-string-enc          63
+    a16_casino-casino-amenity-feedback-scenario-enc       61
+    a16_casino-casino-collectible-enc                     49
+    a16_casino-celebrity-demand-enc                       43
+    a16_casino-casino-gambler-conversation-enc            41
+    a16_casino-casino-accessory-acquisition-method-enc    39
+    a16_casino-positive-gambler-interaction-scenario-enc  37
+    a16_casino-gambler-joins-casino-color-enc             24
+    a16_casino-casino-celebrity-party-scenario-enc        20
+
+Samples straight out of the port:
+
+    Auditions | Each performer walked on stage impersonating a famous icon. The one dressed as
+    Bo Burnham was so convincing, you swore the star was actually there lip-syncing 'Lose
+    Yourself'. They flawlessly impersonated celebrities for a stellar lip-sync number.
+    | I booked Femme Fatale Follies the drag show.
+
+    A celebrity in the house | Travis Barker arrived with a rider that included a Thai massage
+    therapist.
+
+    The party | While partying in your casino's Blackjack, Travis Barker went around the room
+    giving partygoers wedgies. Travis Barker went on a bender and succumbed to an overdose.
+
+    The books | Patrons noted that Lucky Hankey's Clubhouse makes them embarrassed to be from
+    Atlanta.
+
+    House swag | I matched all 3 numbers. | I keep my sunglasses at Lucky Hankey's Clubhouse.
+
+Full regression after the section: {B}rescensus.py{B} distinct residue tokens 0;
+{B}coverage.py{B} 109 captured / 107 recoverable; {B}portgap.py{B} ENTRIES 109 / rendered-by-port
+107 / gap 0; {B}covpush.json{B} rc=0; {B}bench.sh{B} through age 34 with no abort.

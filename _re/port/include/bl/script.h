@@ -67,11 +67,11 @@ struct ScriptSpec {
   bool model = false;
   bool actor = false;
   bool secret_agent = false;
-  bool casino = false;
   bool relationship = false;
   bool spy = false;
   bool fight = false;
   bool black_market = false;
+  bool casino = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

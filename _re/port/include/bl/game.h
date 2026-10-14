@@ -145,6 +145,25 @@ struct Hero {
   int spyMissions = 0;
   std::string spyCover;        // the day job that hides the service
   std::string spyAddress;      // the front's street address
+  // The casino (report 61): the hero owns the house. The amenities and the game
+  // rooms are the two lists the structure's capacity is spent on.
+  bool ownsCasino = false;
+  std::string casinoName;
+  std::string casinoTheme;
+  std::string casinoStructure;
+  std::string casinoStreet;
+  std::string casinoAct;          // the act in residence
+  std::string casinoActType;
+  std::string casinoSong;
+  std::string casinoCelebrity;    // the celebrity the hero last hosted
+  std::vector<std::string> casinoAmenities;
+  std::vector<std::string> casinoGames;
+  int casinoPopularity = 50;
+  int casinoGamblers = 0;
+  int casinoActPopularity = 0;
+  int casinoCelebCraziness = 0;
+  int casinoGamblerHappiness = 60;   // what the floor thinks of the house
+  int casinoGamblerAddiction = 40;   // how deep in the regulars are
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

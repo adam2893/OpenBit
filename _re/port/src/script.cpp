@@ -407,6 +407,7 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("black-market is not a boolean");
   }
 
+
   p = findValue(json, "casino");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -554,6 +555,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.spy) sim.makeSecretAgent(life);
   if (spec.fight) sim.makeFighter(life);
   if (spec.black_market) sim.makeBlackMarketeer(life);
+  if (spec.casino) sim.makeCasino(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.

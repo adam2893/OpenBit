@@ -129,6 +129,7 @@ class Sim {
   void makeSecretAgent(Life& life);
   void makeFighter(Life& life);
   void makeBlackMarketeer(Life& life);
+  void makeCasino(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -253,6 +254,13 @@ class Sim {
   void ensureBmFields(Life& life);
   std::string bmStructureName(const char* tableName);
   std::string bmDrawItem(Life& life);
+  bool casinoYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string casinoToken(const std::string& key);
+  void ensureCasinoFields(Life& life);
+  size_t pickWindow(const std::string& table, const std::string& weightColumn,
+                    const std::string& filterColumn, const std::string& filterValue,
+                    const std::string& loColumn, const std::string& hiColumn,
+                    double value, Rng& rng);
   size_t spyRow(const std::string& table, const std::string& weightColumn,
                 const std::string& filterColumn, const std::string& filterValue,
                 const std::string& flagColumn);
@@ -324,6 +332,7 @@ class Sim {
   Rng spyRng_;
   Rng fightRng_;
   Rng bmRng_;
+  Rng casinoRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -336,6 +345,9 @@ class Sim {
   std::string bmVendor_;   // '<vendor>' in the vendor pool
   std::string bmChemist_;  // '<drug-chemist>' in the police pool
   std::map<std::string, std::string> bmCache_;  // one item / vendor / auctioneer per card
+  std::string casinoGambler_;  // one punter per casino card
+  bool casinoGamblerFemale_ = false;  // and the punter's own gender
+  std::string casinoRoom_;     // one room / game per casino card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card
