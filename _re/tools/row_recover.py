@@ -46,6 +46,25 @@ REGISTRY = {
     "ScenarioFriendMeet": ["I became friends with {name}.", ""],
     "ScenarioRetentionCrime": ["", ""],
     "ScenarioSchoolClassmateActUp": ["", "", "", ""],
+    "ScenarioSocialMediaJoinComplete": ["I signed up for {channel} account."],
+    # Auto-advancing scenes the port renders from kScenarios: the game writes the
+    # sentence straight into its LifeLog, so the template below is only used to
+    # identify the scene's own log line, never to branch on a button.
+    "ScenarioScriptEventSiblingBorn": [
+        "My mother and my father had a baby boy named {name}, my new brother.",
+        "My mother and my father had a baby girl named {name}, my new sister.",
+    ],
+    "ScenarioPetDeath": ["My {animal}, {name}, died while sleeping peacefully."],
+    "ScenarioScriptEventDiseaseContract": [
+        "My mother has been diagnosed with {disease}.",
+        "My mother is suffering from {disease}.",
+        "My mother is no longer suffering from {disease}.",
+    ],
+    "ScenarioFriendNew": ["I am now friends with {name}."],
+    "ScenarioScriptEventParentsBreakUp": ["My parents have divorced."],
+    "ScenarioScriptEventParentMarriesStepparent": [
+        "My mother has married my new stepfather, {name}.",
+    ],
 }
 
 
@@ -78,15 +97,29 @@ def load_tables(re_dir):
             rows = list(csv.reader(open(os.path.join(re_dir, "gamedata_plain", name), newline="")))
         except Exception:
             continue
-        if not rows or "Title" not in rows[0]:
+        if not rows:
             continue
-        ti = rows[0].index("Title")
-        bi = rows[0].index("Body") if "Body" in rows[0] else None
+        head = rows[0]
+        ti = head.index("Title") if "Title" in head else None
+        bi = head.index("Body") if "Body" in head else None
+        # Narrative-only tables keep their sentence in another column: the dumb and
+        # casino tables use "Scenario", the menu tables ("a16_stepparent-cruelty-
+        # scenarios-enc") use "Scenario" for the third-person card and "Log Version"
+        # for the first-person log. Skipping those tables is why a menu class could
+        # have a perfect body match and still be reported unrecoverable.
+        if bi is None:
+            for col in ("Scenario", "Narrative", "String", "Log Version"):
+                if col in head:
+                    bi = head.index(col)
+                    break
+        if ti is None and bi is None:
+            continue
         by_title = {}
         for i, r in enumerate(rows[1:], 1):
-            if len(r) <= ti or not r[ti].strip():
+            key = nkey(r[ti]) if ti is not None and len(r) > ti else ""
+            if ti is not None and not key:
                 continue
-            by_title.setdefault(nkey(r[ti]), []).append((i, r[bi] if bi is not None and len(r) > bi else ""))
+            by_title.setdefault(key, []).append((i, r[bi] if bi is not None and len(r) > bi else ""))
         out[name] = by_title
     return out
 
@@ -113,6 +146,35 @@ def find_row(tables, title, body, prefer):
     return best[2], best[3]
 
 
+
+def find_row_body(tables, body, prefer, min_share=0.7, min_words=4):
+    """Title-less fallback: rank rows by the fraction of the row's long words the
+    captured body spells out. Only used when no title key matched, and only over the
+    class's candidate tables from scen_source (a name-similarity hint, not proof), so a
+    row still has to agree on most of its own long words to win."""
+    gw = set(words(body))
+    if len(gw) < min_words:
+        return None, None
+    best = None
+    for rank, name in enumerate([p for p in (prefer or []) if p in tables]):
+        for key, rows in tables[name].items():
+            for row, tbody in rows:
+                tw = words(tbody)
+                if len(tw) < min_words:
+                    continue
+                shared = sum(1 for w in tw if w in gw)
+                share = shared / len(tw)
+                if share < min_share or shared < min_words:
+                    continue
+                cand = (share, shared, -rank, name, row)
+                if best is None or cand[:3] > best[:3]:
+                    best = cand
+    if best is None:
+        return None, None
+    return best[3], best[4]
+
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("trace", nargs="?", default=os.path.join(RE, "trace_fresh.json"))
@@ -133,6 +195,10 @@ def main():
             cand = classes.get(cls, {}).get("candidates") or []
             prefer = [c["table"] if isinstance(c, dict) else c for c in cand]
             name, row = find_row(tables, s.get("title") or "", s.get("body") or "", prefer)
+            how = "title"
+            if not name:
+                name, row = find_row_body(tables, s.get("body") or "", prefer)
+                how = "body"
             idx = rec["age"] - 1
             if cls in REGISTRY:
                 choice = match_choice(cls, logs)
@@ -146,7 +212,8 @@ def main():
                 continue
             if name and 0 <= idx < len(push):
                 push[idx] = {"table": name, "row": row}
-            report.append({"age": rec["age"], "cls": cls, "title": s.get("title"), "table": name, "row": row})
+            report.append({"age": rec["age"], "cls": cls, "title": s.get("title"), "table": name,
+                            "row": row, "how": how})
     json.dump({"push": push}, open(a.out, "w"), indent=1)
     print("scenarios=%d recovered=%d -> %s" % (len(report), sum(1 for r in report if r["table"]), a.out))
     for r in report:

@@ -34,7 +34,8 @@
       "agent"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioActorAgentDropsHero": {
    "tokens": [
@@ -69,7 +70,8 @@
       "agent"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioActorAgentFilmRole": {
    "tokens": [
@@ -102,7 +104,8 @@
       "film"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioActorAgentShowRole": {
    "tokens": [
@@ -135,7 +138,8 @@
       "agent"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioAircraftDanger": {
    "tokens": [
@@ -165,7 +169,8 @@
       "danger"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioArrangedMarriage": {
    "tokens": [
@@ -216,7 +221,8 @@
       "trip"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioBackToSchoolAgeUpSleepover": {
    "tokens": [
@@ -250,7 +256,8 @@
       "school"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioBlackMarketAuctionHouseAdvice": {
    "tokens": [
@@ -287,6 +294,33 @@
       "advice",
       "market"
      ]
+    },
+    {
+     "table": "a16_black-market-exhibit-dumb-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "black",
+      "market"
+     ],
+     "code_path": true
+    },
+    {
+     "table": "a16_black-market-museum-dumb-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "black",
+      "market"
+     ],
+     "code_path": true
+    },
+    {
+     "table": "a16_black-market-vendor-dumb-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "black",
+      "market"
+     ],
+     "code_path": true
     }
    ]
   },
@@ -318,7 +352,8 @@
       "business"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioBusinessTeamRequest": {
    "tokens": [
@@ -350,7 +385,8 @@
       "team"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioCarAccident": {
    "tokens": [
@@ -535,7 +571,8 @@
       "child"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioChildDiscipline": {
    "tokens": [
@@ -565,7 +602,8 @@
       "child"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioChildWantsPet": {
    "tokens": [
@@ -632,7 +670,8 @@
       "vacation"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioChildhoodPeriod": {
    "tokens": [
@@ -705,7 +744,8 @@
       "hookup"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioCoworkerInappropriate": {
    "tokens": [
@@ -1006,7 +1046,8 @@
       "drugs"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioEthicsFindObject": {
    "tokens": [
@@ -1104,8 +1145,18 @@
       "ex",
       "lover"
      ]
+    },
+    {
+     "table": "a16_ex-lover-hate-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "ex",
+      "lover"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioExLoverInboundRekindle": {
    "tokens": [
@@ -1140,7 +1191,8 @@
       "lover"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioExLoverInboundSext": {
    "tokens": [
@@ -1174,7 +1226,8 @@
       "lover"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioExLoverPaternityTest": {
    "tokens": [
@@ -1208,7 +1261,8 @@
       "lover"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFailingEyesight": {
    "tokens": [
@@ -1237,7 +1291,8 @@
       "paparazzi"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFameStalker": {
    "tokens": [
@@ -1252,7 +1307,8 @@
       "stalker"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFameTalkShow": {
    "tokens": [
@@ -1311,7 +1367,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendAdvice": {
    "tokens": [
@@ -1341,7 +1398,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendConfession": {
    "tokens": [
@@ -1370,7 +1428,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendDrug": {
    "tokens": [
@@ -1399,7 +1458,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendLoverHookup": {
    "tokens": [
@@ -1430,7 +1490,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendPartyInbound": {
    "tokens": [
@@ -1461,7 +1522,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendPrankInbound": {
    "tokens": [
@@ -1491,7 +1553,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendRumorInbound": {
    "tokens": [
@@ -1521,7 +1584,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendThreesome": {
    "tokens": [
@@ -1550,7 +1614,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioFriendWeaponEncounter": {
    "tokens": [
@@ -1580,7 +1645,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioGenderIdentity": {
    "tokens": [
@@ -1602,7 +1668,8 @@
       "identity"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioGhostEncounter": {
    "tokens": [
@@ -1662,7 +1729,8 @@
       "friend"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioHorseRaces": {
    "tokens": [
@@ -1701,7 +1769,8 @@
       "spouse"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioHouseForSaleSpouseSuggests": {
    "tokens": [
@@ -1733,7 +1802,8 @@
       "spouse"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioInsultHero": {
    "tokens": [
@@ -2008,7 +2078,8 @@
       "love"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioLoveHookup": {
    "tokens": [
@@ -2037,7 +2108,8 @@
       "hookup"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioLoveThreesome": {
    "tokens": [
@@ -2218,7 +2290,8 @@
       "nag"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioLoverParentsDisapprove": {
    "tokens": [
@@ -2337,7 +2410,8 @@
       "lover"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMafiaHeroHunted": {
    "tokens": [
@@ -2367,7 +2441,8 @@
       "mafia"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMafiaHeroHuntedCallingCard": {
    "tokens": [
@@ -2400,7 +2475,8 @@
       "mafia"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMafiaHeroRelativeKilled": {
    "tokens": [
@@ -2431,7 +2507,8 @@
       "mafia"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMilitaryDeployment": {
    "tokens": [
@@ -2492,7 +2569,8 @@
       "model"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMusicBandAudition": {
    "tokens": [
@@ -2524,7 +2602,8 @@
       "music"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioMusicSoloAuditionPush": {
    "tokens": [
@@ -2555,7 +2634,8 @@
       "music"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioOfferAlcohol": {
    "tokens": [
@@ -2584,7 +2664,8 @@
       "offer"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioOfferDrug": {
    "tokens": [
@@ -2613,7 +2694,8 @@
       "drug"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioOfferFood": {
    "tokens": [
@@ -2642,7 +2724,8 @@
       "offer"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioOnboardingCustomPeople": {
    "tokens": [
@@ -2701,7 +2784,8 @@
       "casino"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioOpportunityChildhoodMovie": {
    "tokens": [
@@ -3129,7 +3213,8 @@
       "pet"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPetEscapes": {
    "tokens": [
@@ -3248,8 +3333,17 @@
      "shared": [
       "prison"
      ]
+    },
+    {
+     "table": "a16_bully-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "bully"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonConjugalVisit": {
    "tokens": [
@@ -3279,7 +3373,8 @@
       "prison"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonGangRecruitment": {
    "tokens": [
@@ -3309,7 +3404,8 @@
       "prison"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonReceiveGift": {
    "tokens": [
@@ -3339,7 +3435,8 @@
       "prison"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonSnitch": {
    "tokens": [
@@ -3368,7 +3465,8 @@
       "prison"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonWardenEncounter": {
    "tokens": [
@@ -3398,7 +3496,8 @@
       "prison"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioPrisonerProfile": {
    "tokens": [
@@ -3532,7 +3631,8 @@
       "royal"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalCommonerHonorific": {
    "tokens": [
@@ -3564,7 +3664,8 @@
       "royal"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalCommonerNegative": {
    "tokens": [
@@ -3597,8 +3698,17 @@
       "commoner",
       "royal"
      ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 2.0,
+     "shared": [
+      "royal"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalCommonerPositive": {
    "tokens": [
@@ -3631,8 +3741,17 @@
       "commoner",
       "royal"
      ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 2.0,
+     "shared": [
+      "royal"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalNewLaw": {
    "tokens": [
@@ -3662,7 +3781,8 @@
       "royal"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalRevolt": {
    "tokens": [
@@ -3691,7 +3811,8 @@
       "royal"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalSchoolNegative": {
    "tokens": [
@@ -3724,8 +3845,17 @@
       "negative",
       "royal"
      ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 2.0,
+     "shared": [
+      "royal"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalSchoolPositive": {
    "tokens": [
@@ -3758,8 +3888,17 @@
       "positive",
       "royal"
      ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 2.0,
+     "shared": [
+      "royal"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioRoyalTabloid": {
    "tokens": [
@@ -3789,7 +3928,8 @@
       "royal"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSchoolBully": {
    "tokens": [
@@ -3818,7 +3958,8 @@
       "school"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSchoolCheatInbound": {
    "tokens": [
@@ -3913,7 +4054,8 @@
       "school"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSchoolSkipPush": {
    "tokens": [
@@ -3977,7 +4119,8 @@
       "teacher"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSchoolTeacherFlirtInbound": {
    "tokens": [
@@ -4011,7 +4154,8 @@
       "school"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSchoolTeacherSeduce": {
    "tokens": [
@@ -4044,7 +4188,8 @@
       "teacher"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSexualityChallenge": {
    "tokens": [
@@ -4066,7 +4211,8 @@
       "challenge"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSexualityDeclare": {
    "tokens": [
@@ -4081,7 +4227,8 @@
       "sexuality"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSiblingBully": {
    "tokens": [
@@ -4110,7 +4257,8 @@
       "bully"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSiblingSquabble": {
    "tokens": [
@@ -4159,7 +4307,8 @@
       "social"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSocialMediaHack": {
    "tokens": [
@@ -4192,7 +4341,8 @@
       "social"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSocialMediaJoinPush": {
    "tokens": [
@@ -4225,7 +4375,8 @@
       "social"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSocialMediaPromote": {
    "tokens": [
@@ -4258,7 +4409,8 @@
       "social"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSocialMediaTrollInbound": {
    "tokens": [
@@ -4293,8 +4445,18 @@
       "media",
       "social"
      ]
+    },
+    {
+     "table": "a16_social-media-channels-enc",
+     "score": 2.0,
+     "shared": [
+      "media",
+      "social"
+     ],
+     "code_path": true
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSportsHallOfFame": {
    "tokens": [
@@ -4324,7 +4486,8 @@
       "sports"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioStepparentCruelty": {
    "tokens": [
@@ -4340,7 +4503,8 @@
       "stepparent"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioSupervisorSeduce": {
    "tokens": [
@@ -4438,7 +4602,8 @@
       "supervisor"
      ]
     }
-   ]
+   ],
+   "code_path": true
   },
   "ScenarioVampireAgeUpCouncilCommunion": {
    "tokens": [
@@ -4687,7 +4852,8 @@
       "watercraft"
      ]
     }
-   ]
+   ],
+   "code_path": true
   }
  }
 }

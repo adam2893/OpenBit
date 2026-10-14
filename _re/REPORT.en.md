@@ -2078,3 +2078,236 @@ social media influencer runs up to you...' and
 'Your record label asks you to create a song that samples heavily from a David Guetta
 track.' / '... samples heavily from an Imagine Dragons track.' / 'an Arcade Fire track'
 (vowel article). bench.sh on /tmp/trace_c10.json still runs 35 years without abort.
+
+## 39. Coverage, three ways: what is recoverable, what is menu, what is code
+
+The 23% figure in section 15/31 was one number over one denominator, and it made
+the remaining work look like a matching problem. It is not. Splitting the captured
+scenarios by *what kind of thing the game was doing* separates three different
+bottlenecks that need three different pieces of work.
+
+### 39.1 The three buckets
+
+The bucketing lives in `tools/scenario_classes.py`: a captured instance is a **minigame**
+when the class name matches `game|casino|eyeexam|paywall|profilehero|carrepair`, a
+**menu** when the body reads like a choice prompt
+(`what will you do?|will you join|how will you|what do you do?`), and a **narrative**
+line otherwise. Over the 90 captured instances in `obs_corpus`:
+
+| bucket | captured | recovered by a push | share |
+|---|---|---|---|
+| narrative | 41 | 26 | 63% |
+| menu | 28 | 9 | 32% |
+| minigame | 21 | 1 | 5% |
+| **total** | **90** | **35** | **39%** |
+
+The classes behind the narrative bucket: `Scenario` 10,
+`ScenarioScriptEventSiblingBorn` 5, `ScenarioSchoolEnroll` 4,
+`ScenarioFriendMeet` 4, `ScenarioPetDeath` 3, `DumbScenario` 3,
+`ScenarioScriptEventDiseaseContract` 3, `ScenarioFriendNew` 2, then one each
+for `ScenarioCrimePickpocket`, `ScenarioPushSpendTime`, `ScenarioBase`, `ScenarioFailingEyesight`,
+`ScenarioSocialMediaJoinComplete`, `ScenarioRetentionLover` and `ScenarioLoveDate`. The menu
+bucket is 21 classes, dominated by `ScenarioRetentionCrime` 3, `ScenarioStepparentCruelty` 2,
+`ScenarioRetentionFreelanceGig` 2, `ScenarioChildhoodVaccination` 2 and
+`ScenarioIAPConfiguredPush` 2. The minigame bucket is 9 classes: `ScenarioCasinoBet`,
+`ScenarioGameBlackjack` and `ScenarioCasinoOutcome` at 5 each, then `OpportunityCasino`,
+`GameEyeExam`, `EyeExamOutcome`, `ProfileHero`, `CarRepair` and
+`MiniPaywall` at 1 each.
+
+The 32% and 5% are not matching failures. The port has no phone menu layer at
+all - no list of options to push a button in - and no modal minigame screen, so
+there is nothing for a push to address. Those two buckets are implementation
+work, and section 31.3 already lists it.
+
+### 39.2 Why matching cannot close the narrative bucket either
+
+Section 35/36 showed the per-person lifecycle sentences are literals in
+`global-metadata.dat`. The same test applied to the 35 unrecovered gap classes
+(script `/tmp/qdir/meta_match.py`: take every 4-gram window of the captured body and
+look for it as a substring of the 76084 literals dumped by
+`python3 tools/metadata_strings.py list --limit 100000 --raw`) hits in **32 of 35**.
+
+Examples, with the literal index from that dump:
+
+| class | literal |
+|---|---|
+| `ScenarioScriptEventSiblingBorn` | #50446 `Your parents just had a baby {0} named {1}, your new {2}{3}.` |
+| `ScenarioFriendNew` | #43518 `Through the power of your Friendship Bracelet, you are now friends with` |
+| `ScenarioSocialMediaJoinComplete` | #49321 `You signed up for a SoundCloud account.` |
+| `ScenarioGameBlackjack` | #21370 |
+| `ScenarioGameEyeExam` | #39921 |
+| `ScenarioEyeExamOutcome` | #48452 |
+| `ScenarioFailingEyesight` | #50619 |
+| `ScenarioLoveDate` | #46627 |
+| `ScenarioOpportunityCasino` | #39445 |
+| `ScenarioPetDeath` | #50413 |
+| `ScenarioPushSpendTime` | #19115 |
+| `ScenarioRetentionLover` | #49993 |
+
+Only `ScenarioBase`, `ScenarioIAPConfiguredPush` and
+`ScenarioScriptEventDiseaseContract` have no literal: the first two are store and
+bookkeeping paths with no narrative, the third mixes an authored template with a
+CSV draw.
+
+So the sentence is composed in C# and never existed as a row to find. A body-based
+fallback was added to `tools/row_recover.py` anyway - `find_row_body()`, which searches
+only the candidate tables from `obs_corpus/scen_source.json` and ranks rows by how
+much of the captured body their long words cover, requiring a 0.7 share - and it
+is worth keeping for future traces, but it moved the count by exactly one
+(21 -> 22) and **no gap class reaches even 0.5**. For 20 of those classes the
+candidate list is empty: the scene has no table behind it at all.
+
+### 39.3 What did move: the registry of code-composed scenes
+
+The lever that worked is on the port side, not the matcher side. `row_recover.py`
+keeps a `REGISTRY` of scenario classes that are *rendered by the port itself*
+(`Sim::renderScenarioClass`, section 31.1) rather than by a pushed table row. For
+those, a recovered instance is `{"scenario": <class>, "choice": <n>}` instead of
+`{"table": ..., "row": ...}`. The registry held 7 classes; every class the port
+already rendered but the tool could not name was still being counted as a
+failure. Six were added - `ScenarioScriptEventSiblingBorn`, `ScenarioPetDeath`,
+`ScenarioScriptEventDiseaseContract`, `ScenarioFriendNew`,
+`ScenarioScriptEventParentsBreakUp`, `ScenarioScriptEventParentMarriesStepparent`
+- and one class the port was missing was implemented, below. Recovery:
+**22 -> 35 of 90** (narrative bucket 13 -> 26). The two class lists are now
+identical: 13 in the registry, 13 in `kScenarios`.
+
+### 39.4 The two classes implemented this round
+
+**`ScenarioSocialMediaJoinComplete`** (1 captured, universal table). The literal pair
+#49322 `You signed up for {0} account.` (card) / #25101 `I signed up for {0} account.`
+(log) proves the slot is a channel, and `a16_social-media-channels-enc` supplies the
+seven candidates (Facebook, Instagram, TikTok, Twitter, YouTube, Twitch, OnlyFans).
+Rendered: `You signed up for an Instagram account.`
+
+**`ScenarioScriptEventDiseaseContract`** (3 captured). This is the scripted-event
+twin of the already-implemented `ScenarioDiseaseContract`: it names another person,
+and the game writes it in the third person on the card and the first person into
+the LifeLog. The captured card body is `Your mother is suffering from itchy bottom.` -
+which is why the substitution is a "suffering from" draw, not the "has been
+diagnosed with" phrasing section 37 emits for the annual lifecycle lines. Both
+share one draw rule from `a16_disease-types-enc`: only rows with
+`Contracts Organically Score > 0`, weighted by that column, article added when
+the row sets `Uses Indefinite Article`. Rendered:
+`Your mother is suffering from cancer.` / `My mother is suffering from cancer.`
+
+### 39.5 Verification
+
+- The full recovered push for the capture (35 entries, seed 12345, United States,
+  female, 90 years) replays with `rc=0`, zero stderr lines and 74 events - no
+  "unknown scenario class".
+- `tools/coverage.py`: `captured scenarios: 90  recoverable: 35`.
+- `bash tools/bench.sh /tmp/trace_c10.json` still runs 35 years; the remaining
+  diffs are the usual game_only/port_only narrative differences, not crashes.
+- Forced rows: `/tmp/qdir/socialtest.json` and `/tmp/qdir/dztest.json`.
+
+### 39.6 What is left, honestly
+
+| remaining | why |
+|---|---|
+| 28 menu instances (21 classes) | the port has no phone menu layer; the options are a table, the layer is not |
+| 21 minigame instances (9 classes) | modal screens with their own rules (blackjack, casino spins, eye exam, car repair, profile hero, paywall) |
+| 5 narrative classes | `ScenarioFailingEyesight`, `ScenarioLoveDate`, `ScenarioRetentionLover`, `ScenarioCrimePickpocket`, `ScenarioPushSpendTime`: captured card but no log line, so the emitted sentence stays unverified |
+| `Scenario` itself (10) | the generic card; its captured bodies are other scenes, so a push to it would be a guess |
+
+The practical consequence: the automatic-play path is close to closed (63% of
+narrative instances, and the misses are unimplemented subsystems rather than
+unknown text), and the next real gain is the menu layer - 21 classes that all
+already have their option text in the tables.
+
+## 40. The tables the app names in its own code, and the loader that hid them
+
+Section 39 ended with "the next real gain is the menu layer". The gain turned out
+to be smaller than a menu layer and available immediately: the app tells us which
+table a scenario class reads, and the recovery tool was throwing those tables away
+before it ever compared a body.
+
+### 40.1 The `data/<table>` literals
+
+`global-metadata.dat` keeps an authored literal for every table the code loads by
+name, in the form `data/a16_stepparent-cruelty-scenarios-enc`. There are **282** of
+them (of the 1071 tables shipped in `gamedata_plain`). The new tool
+`tools/scen_source_code_tables.py` reads that list, CamelCase-splits each class
+name, and merges the tables whose own name tokens the class covers (>= 0.6 of the
+table's tokens) into the class candidate list at `obs_corpus/scen_source.json` with
+score 2.0. 10 candidates were added across 8 classes; the ones that matter:
+
+| class | code-path table |
+|---|---|
+| `ScenarioStepparentCruelty` | `a16_stepparent-cruelty-scenarios-enc` |
+| `ScenarioPetDiscipline` | `a16_pet-discipline-enc` |
+| `ScenarioSchoolBully` | `a16_bully-scenarios-enc` |
+| `ScenarioOfferFood` | `a16_food-enc` |
+| `ScenarioLoveFirstKiss` | `a16_first-kiss-reactions-enc` |
+| `ScenarioCasinoBet` / `ScenarioCasinoOutcome` / `ScenarioOpportunityCasino` | `a16_dumb-scenarios-casino-enc` |
+
+That is the same conclusion as 39.2 from the other side: the class name and the
+table name are not similar by accident - the app wrote both.
+
+### 40.2 The loader bug behind the 32% menu share
+
+`tools/row_recover.py` builds its row index in `load_tables()`. It used to
+skip every file whose first row has no `Title` column:
+
+    if not rows or "Title" not in rows[0]:`
+        continue
+
+The menu and narrative families have no `Title` - their wording lives in
+`Scenario` / `Log Version` / `Third Person Scenario` - so those tables
+were never indexed. A captured card could share **100%** of a row's long words and
+still be reported unrecoverable, because the row did not exist as far as the
+matcher was concerned. That is exactly what `ScenarioStepparentCruelty` did:
+body share 1.00 against row 33, no recovery.
+
+The index now accepts a body column in this order, and keeps a table with no
+`Title` under the empty title key: `Body`, `Scenario`, `Narrative`,
+`String`, `Log Version`.
+
+### 40.3 Result
+
+| metric | before | after |
+|---|---|---|
+| recoverable of 90 captured instances | 35 | 38 |
+| menu bucket | 9 / 28 (32%) | 12 / 28 (43%) |
+
+The three new pushes are `a16_stepparent-cruelty-scenarios-enc` rows 33 and 31 and
+`a16_bully-scenarios-enc` row 30.
+
+### 40.4 Card column and log column are different columns
+
+164 tables carry both `Scenario` and `Log Version`. The pair is the
+double voice section 37 described for the lifecycle lines, one level down:
+
+    Scenario     Your stepfather pranked you by convincing you that you're invisible.`
+    Log Version  My stepfather pranked me by convincing me that I'm invisible.
+
+The port records the log, so `Sim::renderRow` now tries `Log Version`, then
+`Log` (the spelling in `a16_bully-scenarios-enc` and
+`a16_first-kiss-reactions-enc`), then `Narrative`, `Scenario`, `String`.
+None of the port's previously wired scenario tables has either log column, so
+nothing that already matched could regress - and it did not: the residue census
+(12 seeds x 4 country/gender x 95 years) is still 0 tokens, and the 35-year bench
+run is unchanged.
+
+### 40.5 The bully slot, and what is still unverified
+
+`a16_bully-scenarios-enc` writes its subject as a bare `<bully>` slot. The
+captured card for that class reads `Your classmate, Moe, has been telling everyone on
+social media that you are a teacher's pet.`, so the slot carries a role word plus a
+name, and the port renders it that way (`"classmate, " + name`). That table has no
+first-person column at all - both `Scenario` and `Third Person Scenario` are
+third person - so the port's log line for it still reads `you are a teacher's pet`
+where the game's LifeLog presumably reads `I am`. The capture did not
+include that log line, so it is left as-is rather than guessed, and the bench
+reports it as a normal game_only/port_only diff.
+
+### 40.6 Repro
+
+    python3 tools/scen_source_code_tables.py --write   # merge the data/ literals`
+    python3 tools/coverage.py                          # 38 of 90`
+    python3 tools/scenario_classes.py                  # narrative 26/41, menu 12/28, minigame 1/21`
+    bash tools/bench.sh /tmp/trace_c10.json
+
+The metadata dump the first command reads is produced by
+`python3 tools/metadata_strings.py list --limit 100000 --raw` (71223 literals, 282 of them
+`data/` paths).

@@ -224,6 +224,20 @@ const RegScenario kScenarios[] = {
      "to play the trombone while smacking other students with the trombone slide.\n\nWhat will you do?",
      4,
      {{"Ignore her antics", ""}, {"Report her to the principal", ""}, {"Attack her", ""}, {"Laugh at her", ""}}},
+    // Captured card: "You signed up for an OnlyFans account." (metadata literal
+    // #49322 "You signed up for {0} account."); the matching LifeLog literal is
+    // #25101, the first-person form "I signed up for {0} account.". The channel is
+    // drawn from a16_social-media-channels-enc (7 rows, Facebook..OnlyFans).
+    {"ScenarioSocialMediaJoinComplete", "", "Social Media",
+     "You signed up for {channel} account.", 1,
+     {{"", "I signed up for {channel} account."}}},
+    // The scripted-event twin of ScenarioDiseaseContract: this class names another
+    // person, and the game writes the sentence in the third person on the card
+    // ("Your mother is suffering from itchy bottom.", captured) and in the first
+    // person into the LifeLog (#9389/#9394 templates name <disease-new>/<disease-old>).
+    {"ScenarioScriptEventDiseaseContract", "", "Diagnosis",
+     "Your {parent} is suffering from {disease}.", 1,
+     {{"", "My {parent} is suffering from {disease}."}}},
 };
 // Real-world date gates for the two dated dumb-scenario sets. Holiday rows name
 // the holiday; calendar rows carry 'Month' + 'Date' (one real day each).
@@ -374,7 +388,7 @@ std::string Sim::personName(const std::string& token) {
   }
   static const char* kPeople[] = {"friend", "teacher", "classmate", "coworker", "co-worker",
                                   "parent", "lover", "employee", "boss", "spouse", "sibling",
-                                  "neighbour", "neighbor", "stranger", "child"};
+                                  "neighbour", "neighbor", "stranger", "child", "bully"};
   bool person = false;
   for (const char* p : kPeople) if (key == p) person = true;
   if (key == "company") return "the company";
@@ -383,6 +397,10 @@ std::string Sim::personName(const std::string& token) {
   const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
   const size_t row = weightedPick(names, "Commonness Score", rng_);
   const std::string name = names.at(row, "First Name") + " " + names.at(row, "Last Name");
+  // a16_bully-scenarios-enc uses a bare <bully> slot. The captured card renders it
+  // as a role plus a name ("Your classmate, Moe, has been telling everyone on
+  // social media that you are a teacher's pet."), so the slot keeps the role word.
+  if (key == "bully") return possessive ? name + "'s" : "classmate, " + name;
   return possessive ? name + "'s" : name;
 }
 
@@ -1417,7 +1435,13 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   // Narrative-only shapes: the filler table has 'String', the employee one
   // 'Scenario'. They carry no choice columns, so there is nothing to branch on.
   if (!t.has("Title") && !t.has("Body")) {
-    static const char* kNarrativeCols[] = {"Narrative", "Scenario", "String"};
+    // Narrative-only tables keep the card's wording in "Scenario" and, in the
+    // menu families (a16_stepparent-cruelty-scenarios-enc, a16_pet-discipline-enc),
+    // the first-person sentence the game writes into the LifeLog in "Log Version"
+    // ("Your stepfather pranked you..." vs "My stepfather pranked me..."). The log
+    // is what this port records, so the log column wins; a16_bully-scenarios-enc
+    // and a16_first-kiss-reactions-enc spell it "Log".
+    static const char* kNarrativeCols[] = {"Log Version", "Log", "Narrative", "Scenario", "String"};
     for (const char* c : kNarrativeCols) {
       if (t.has(c)) {
         out.narrative = resolve(t.at(row, c));
@@ -1570,6 +1594,39 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     name = personName("classmate");
     substAll(body, "{name}", name);
   }
+
+  std::string channel;
+  if (body.find("{channel}") != std::string::npos) {
+    // The channel is a real table (a16_social-media-channels-enc, 7 rows). The
+    // game's own card literal is "You signed up for {0} account." (metadata
+    // #49322) with the article baked into the drawn value, so build it the same
+    // way: a/an + the Channel column.
+    ensureTable("a16_social-media-channels-enc");
+    const Table& ct = tbl("a16_social-media-channels-enc");
+    if (ct.size() > 0) {
+      const std::string cname = trim(ct.at(rng_.below(uint32_t(ct.size())), "Channel"));
+      channel = articleFor(cname) + cname;
+      substAll(body, "{channel}", channel);
+    }
+  }
+
+  std::string disease;
+  if (body.find("{disease}") != std::string::npos) {
+    // Same draw the family lifecycle lines use (lifecycleLines): only rows that
+    // contract organically are eligible, and the article is the row's own flag.
+    ensureTable("a16_disease-types-enc");
+    const Table& dt = tbl("a16_disease-types-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < dt.size(); ++r)
+      if (dt.num(r, "Contracts Organically Score") > 0) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = weightedPickOf(dt, "Contracts Organically Score", pool, rng_);
+      disease = lower(trim(dt.at(row, "Disease")));
+      if (!trim(dt.at(row, "Uses Indefinite Article")).empty() && !disease.empty())
+        disease = articleFor(disease) + disease;
+      substAll(body, "{disease}", disease);
+    }
+  }
   if (s->n > 0) {
     // A single-entry list is the no-button form (label ""), so it must not consume
     // a draw: only a real multi-branch scene randomizes its pick.
@@ -1584,6 +1641,8 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     }
     substAll(log, "{parent}", "mother");
     if (!item.empty()) substAll(log, "{item}", item);
+    if (!channel.empty()) substAll(log, "{channel}", channel);
+    if (!disease.empty()) substAll(log, "{disease}", disease);
     out.narrative = log;
   } else {
     // No buttons: the game writes the sentence straight into its LifeLog.
