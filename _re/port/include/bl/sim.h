@@ -349,6 +349,9 @@ class Sim {
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
   bool celebAppYear(Life& life, AgeUp& out, int forcedChoice);
   bool movieYear(Life& life, AgeUp& out, int forcedChoice);
+  // The generic pastime pool with a person (REPORT.en.md 97).
+  bool spendTimeYear(Life& life, AgeUp& out, int forcedChoice);
+  int pickPastime(std::string& tail);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);
@@ -470,6 +473,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // matched value-for-value against the game's own snapshots, so the region
   // must not come out of rng_.
   Rng placeRng_;
+  Rng spendRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

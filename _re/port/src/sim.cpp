@@ -556,6 +556,29 @@ void splitOn(const std::string& s, char sep, std::vector<std::string>& out) {
   out.push_back(cur);
 }
 
+// '<a/b/c>' is a one-of list the content tables write inline ('to pick
+// <apples/oranges/strawberries/...>' in a16_pastimes-enc). The first '/' inside
+// the pair turns it into a list; a token without one ('<musician>') is handed on
+// to the resolver untouched. REPORT.en.md 97.
+std::string fillOneOf(const std::string& s, Rng& rng) {
+  std::string out;
+  for (size_t i = 0; i < s.size();) {
+    if (s[i] != '<') { out += s[i++]; continue; }
+    const size_t close = s.find('>', i);
+    if (close == std::string::npos) { out += s.substr(i); break; }
+    const std::string inner = s.substr(i + 1, close - i - 1);
+    if (inner.find('/') == std::string::npos) {
+      out += s.substr(i, close - i + 1);
+    } else {
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      out += parts[rng.below(uint32_t(parts.size()))];
+    }
+    i = close + 1;
+  }
+  return out;
+}
+
 }  // namespace
 
 Sim::Sim(std::string reDir, uint64_t seed)
@@ -598,7 +621,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
-      placeRng_(seed ^ 0x38d01377beb34b6dULL) {}
+      placeRng_(seed ^ 0x38d01377beb34b6dULL),
+      spendRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0xa0761d6478bd642fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -950,6 +974,7 @@ bool Sim::load(std::string* error) {
       "a16_pet-names-enc",                           // Animal,Name,Color,Gender
   "a16_pet-death-types-enc",
   "a16_pet-pastimes-enc",
+  "a16_pastimes-enc",
   "a16_pet-treats-enc",
   "a16_pet-releases-enc",
   "a16_pet-release-filler-enc",
@@ -3499,6 +3524,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (politicalYear(life, out, forcedChoice)) return true;
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (movieYear(life, out, forcedChoice)) return true;
+  if (spendTimeYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -23442,6 +23468,101 @@ bool Sim::movieYear(Life& life, AgeUp& out, int forcedChoice) {
   out.extra.push_back("That was movie number " + std::to_string(h.moviesWatched) + ".");
   out.narrative = opt.pal ? "I went with " + h.loverName + " to go see " + film + "."
                           : "I went to the theater to see " + film + ".";
+  return true;
+}
+
+int Sim::pickPastime(std::string& tail) {
+  if (!ensureTable("a16_pastimes-enc")) return -1;
+  const Table& t = tbl("a16_pastimes-enc");
+  // The Holiday column is the Christmas-season half of the pool: the loader
+  // reads it and GetRandomPastime() @0x73f2d0ca3c branches on IsChristmasSeason().
+  // The port's own calendar gate is the month its holiday set already gives
+  // Christmas (kHoliday at src/sim.cpp:499); with no date fixed the pool is the
+  // 224 ordinary rows.
+  const bool holiday = dateMonth_ == 12;
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r)
+    if (t.flag(r, "Holiday") == holiday) pool.push_back(r);
+  if (pool.empty()) return -1;
+  const size_t row = pool[spendRng_.below(uint32_t(pool.size()))];
+  tail = resolve(fillOneOf(trim(t.at(row, "Pastime")), spendRng_));
+  return int(row) + 1;
+}
+
+bool Sim::spendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule the other code-built cards take.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 6) return false;
+  // shortcut: the invite reaches the game through ScenarioPushSpendTime's own
+  // eligibility test (ScenarioIsEligibleForRandomPush @0x73f3ce99f8), which is
+  // code-side, so the coin that says someone asks this year is the port's.
+  if (!spendRng_.chance(0.10)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // Who can ask. Both slots of the card carry a name - the body's second slot
+  // and the 'Go with {0}' choice - so the parents stay out of the pool: the port
+  // never names them (include/bl/sim.h:49).
+  struct Who { std::string relation; std::string name; int age; bool lover; };
+  std::vector<Who> who;
+  for (const Person& p : life.family)
+    if (p.alive && !p.name.empty()) who.push_back({p.relation, p.name, p.age, false});
+  if (h.relationshipOn && !h.loverName.empty()) {
+    // The partner's word off the port's own two fields: the status the life
+    // reached and the gender it was drawn with.
+    const std::string word = h.loverStatus == "married"
+                                 ? (h.loverFemale ? "wife" : "husband")
+                                 : (h.loverFemale ? "girlfriend" : "boyfriend");
+    who.push_back({word, h.loverName, h.loverAge, true});
+  }
+  if (who.empty()) return false;
+  const Who& them = who[spendRng_.below(uint32_t(who.size()))];
+
+  // The game's own willingness test weights the invite by the relationship
+  // (GetTotalHeroRelationshipStrength), so the partner's own score decides and a
+  // relative takes a flat coin; a refusal here is the year without an invite,
+  // not a card of its own.
+  const bool willing =
+      them.lover ? spendRng_.chance(h.relationship / 100.0) : spendRng_.chance(0.5);
+  if (!willing) return false;
+
+  std::string tail;
+  const int pastimeRow = pickPastime(tail);
+  if (pastimeRow < 0) return false;
+
+  // <person-relationship>: the game's template renders the relation with the
+  // name set off by commas ('my little brother, Jimbo,'), which is the form both
+  // accept narratives below expect.
+  const std::string rel = "my " + them.relation + ", " + them.name + ",";
+  // HeroTakesOther() @0x73f2a066b0 is code-side (a list of relationship words it
+  // tests), so the port reads the direction off the ages: someone older takes
+  // you out.
+  const bool heroTakes = them.age <= h.age;
+  const bool go = spendRng_.chance(0.5);
+
+  out = AgeUp();
+  out.table = "a16_pastimes-enc";
+  out.row_id = std::to_string(pastimeRow);
+  out.title = "Spend Time";  // the game's own button literal, #39665
+  out.body = "Your " + them.relation + ", " + them.name + ", wants to go with you.";
+  out.cta = "What will you do?";
+  out.choice = go ? "Go with " + them.name : "Refuse to go with " + them.name;
+  if (!go) {
+    // shortcut: no literal holds the hero refusing a pastime invite (the
+    // '<person-relationship> refused ...' lines are the person's refusal), so
+    // this one line of the card is the port's own prose.
+    out.happiness = pointsForImpact(0);
+    out.narrative = "I decided not to go.";
+    return true;
+  }
+  if (them.lover) h.relationship = h.relationship + 5 > 100 ? 100 : h.relationship + 5;
+  out.happiness = pointsForImpact(1);
+  // The two accept lines are the game's: 'I took <person-relationship>
+  // <pastime>.' (#25284) when the hero does the taking, '<person-relationship>
+  // took me <pastime>.' (#9369) when the other one does.
+  out.narrative =
+      heroTakes ? "I took " + rel + " " + tail + "." : "My " + rel.substr(3) + " took me " + tail + ".";
   return true;
 }
 

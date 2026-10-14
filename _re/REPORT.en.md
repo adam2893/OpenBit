@@ -11962,3 +11962,286 @@ home card  (seed 6, male, 20 years, relationship True)
 Its own census: 493 cards over 160 lives, 28 companion options over 19 distinct lover names, the base options Go see it 147, Watch the movie instead 130, Go see a comedy 116, Go see a documentary 72, the option mix {watch 363, home 130, companion 28}, the happiness histogram {-1: 60, 1: 70, 4: 335, 8: 28}, the 363 ledger lines all monotone, and {0: 40, 1: 20, 2: 24, 3: 4, 4: 24, 5: 11, 6: 37} cards per life.
 
 The full regression after the section: 39 probes at residue 0 (the new `movres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 97. The generic pastime pool: the table three other features already drew from, and a
+card the game pushes that the port has to coin
+
+Every family so far arrived with a table nobody else read. This one is the opposite:
+`a16_pastimes-enc` is the generic half of a family whose private halves the port already
+runs - the pet, the mob and the commune each draw a pool of their own and each writes the
+same sentence with its own subject - and the generic table had no consumer at all. The card
+that reads it is not a table either. The game reaches it through a push scenario whose body
+and both choices survive as metadata literals, and whose one missing line is the one the
+port had to write (97.2).
+
+### 97.1 The family
+
+`a16_pastimes-enc` is 271 rows of `Pastime,Holiday`: 224 rows with an empty gate and 47
+carrying an `x`, 269 distinct tails (two are duplicated - `to dinner` and `to pick
+flowers`) and 18 rows that are not plain tails. A cell is a TAIL, not a sentence: the verb
+belongs to the caller, so the table reads `to the park`, `bowling`, `golfing`, `to the
+gym`, `to the movies`, `to watch a play`.
+
+The private halves are already in the port, each with its own draw:
+`a16_pet-pastimes-enc` (src/sim.cpp:11107, the card `Time with <pet>`),
+`a16_mafia-pastimes-enc` (src/sim.cpp:9513, the card `An evening with the family`) and
+`a16_cult-communard-spend-time-enc` (src/sim.cpp:8164, `Time with my followers`), with
+`a16_zoo-animal-spend-time-color-enc` beside them. Four sibling tables and four cards, one
+per subculture, and nothing read the generic pool they are variants of.
+
+The consumer is code-side and the dump names it: `class DataPastime`
+(il2cpp_dump.txt:12628, the `Pastime` string plus its `Holiday` flag), the holder field
+`_pastimeSet` (il2cpp_dump.txt:17276), `LoadPastimeSet()` @0x73f2b72520 and the picker
+`GetRandomPastime()` @0x73f2d0ca3c. The picker disassembles into array fills, a
+`CountNotNull`, a branch on `IsChristmasSeason()` and a
+`GetRandomNumber(System.Int32,System.Int32)` - which is what the `Holiday` column is for:
+the 47 gated rows are the season half of the pool.
+
+Four scenario classes hold a `_pastime` string, and two of them carry the card shape. The
+pull class `ScenarioRelationshipSpendTimeGeneral` (il2cpp_dump.txt:49726, `_person` 0x170,
+`_hero` 0x178, `_life` 0x180, `_pastime` 0x188) and the push class
+`ScenarioPushSpendTime` (il2cpp_dump.txt:41798, `_parent` 0x170, `_lover` 0x178,
+`_child` 0x180, `_sibling` 0x188, `_person` 0x190, `_takingHero` 0x198, `_pastime`
+0x1a0, `_isPersonYourFather` 0x1a8), with `ScenarioMobsterSpendTimePush`
+(il2cpp_dump.txt:43878) and the skip-school family `ScenarioSchoolSkipPush`
+(il2cpp_dump.txt:50410, `_student` 0x170, `_classmate` 0x178, `_pastime` 0x180) after
+them. The pull class s `RefreshScenario()` @0x73f2a05b64 reads the year pair off
+`[person+0x120]` and `[hero+0x20]` for its first-time-this-year branch, calls
+`LivesInSamePlaceAsHero()` @0x73f30e6b28, tests willingness through a vtable slot, calls
+`ImpactKarma` on the person (1 or -1) and then `TryPushSeasonsScenario()`,
+`HandleFirstTimeThisYear()`, `ShowSpendTimeFeedback()`, `HandleAchievements()` and
+`GetRelationshipImpactByPerson()` @0x73f2a06864. Its `PrepareBracketParser()`
+@0x73f2a05c90 fills the person dictionary and calls `GetRandomPastime()`,
+`RelationshipTemplate()` @0x73f30e3bc8, `get_PlaceOfResidence()` @0x73f30d6494 and
+`get_Country()` @0x73f2ec51ec: two slots, the pastime and the person.
+
+### 97.2 The card, its literals, and the one line with no string to read
+
+The two slots are in no table. The corpus has no captured spend-time card and no content
+file spells the sentence, so the vocabulary is the metadata literals again - and this family s
+literals are thin: exactly ten strings carry `<person-relationship>`, and they are
+refusals and acceptances rather than a card.
+
+~~~
+token        #9352 <pastime>                 #9364 <person-relationship>
+refusal      #9365 <person-relationship> refused to go <pastime> with me.
+             #9366 ... with you.            #9367 <person-relationship> refused to see me.
+             #9368 ... to see you.
+acceptance   #9369 <person-relationship> took me <pastime>.
+             #9370 ... took you <pastime>
+             #25284 I took <person-relationship> <pastime>.
+             #49542 You took <person-relationship> <pastime>.
+impossible   #48109 You can not spend time with <person-relationship> because <he/she>
+             lives in <person-place> and you live in <hero-place>.
+named forms  #19880 Family {0}, {1}, refused to go {2} with me.
+             #30722 My bandmate, {0}, refused to go {1} with me.
+             #30755 My communard, {0}, refused to go {1} with me.
+             #30992 My {0}, {1}, refused to go {2} with me.
+~~~
+
+The card that carries those two slots is a push, and its text is five more literals: the body
+`Your {0}, {1}, wants to go with you.` (#50800, inside the 50795-50809 cluster of
+`Your {0}, {1}, ...` sibling lines), the two choices `Go with {0}` (#21961) and
+`Refuse to go with {0}` (#35522), and the title, which is the game s own button `Spend
+Time` (#39665) with `Spend Time With All` (#39666) and `Spend time with {0}` (#39678)
+beside it. The port took the push shape for exactly that reason: every slot of the card is a
+game literal - the body, both choices and both acceptance lines - where the pull class s own
+sentence has no body string at all, only the two template slots.
+
+One line has nothing to read. No literal has the hero refusing a pastime invite: the refusals
+above are the person saying no to the hero, and the two hero-side refusals near the family
+(#24944 `I refused to go with my ` and #24945 `I refused to go with my {0}{1} on {2}.`)
+are holiday lines. So the refusal narrative is the port s own prose, marked in the code as
+such and listed as a shortcut in 97.5.
+
+### 97.3 Who can ask, and the four gates
+
+`Sim::spendTimeYear` (src/sim.cpp:23492) hangs off the year chain right after the movie
+card (src/sim.cpp:3527) and follows the rules the other code-built cards follow. A pushed
+choice owns the year, so `forcedChoice >= 0` returns early; a hero under six cannot be
+asked; the year s invite is a coin on the family s own stream, `spendRng_.chance(0.10)`
+(the stream the constructor adds at src/sim.cpp:625); and the person has to be willing.
+
+That last gate is the game s own. `RefreshScenario()` weighs the invite by the
+relationship - `GetTotalHeroRelationshipStrength()` is what `ShowRefusalFeedback()`
+reads - so the port draws the partner against the hero s own `relationship` score
+(`h.relationship / 100`) and gives a relative a flat coin. A refusal there is not a card: it
+is the year nobody asked, which is the same silence the pull class would show, minus the
+person-side karma.
+
+The pool is the family vector plus the partner. Both slots of the card carry a name -
+#50800 s second slot and the only slot of `Go with {0}` - and the port never names a parent
+(include/bl/sim.h:49 records why), so a parent can fill neither the clause nor the choice
+label and stays out; the siblings, the children and the partner are all named. The partner s
+word comes off the two fields the port already carries, `loverStatus` and `loverFemale`:
+`wife`, `husband`, `girlfriend`, `boyfriend`.
+
+`HeroTakesOther()` @0x73f2a066b0 is code-side - a list of relationship words it tests with
+`Contains` - so the port reads the direction off the ages: the person takes the hero out
+when the person is older, the hero takes them when not. That is what chooses between the two
+acceptance literals, and it is why one sibling can produce either line in different lives.
+
+An accepted invitation also moves the partner s `relationship` by five, clamped at 100 - the
+port s reading of the code-side `GetRelationshipImpactByPerson()`, which the game calls from
+`HandleFirstTimeThisYear()`. A relative moves nothing, because the port keeps no score for
+one.
+
+### 97.4 The pastime, the one-of lists and the Holiday column
+
+`Sim::pickPastime` (src/sim.cpp:23474) draws the tail and returns its row, the same
+provenance rule the movie card uses: `out.row_id` is the real row of the real table. The
+pool is the Holiday split - the 47 gated rows when the life s calendar month is December, the
+month the port s own holiday set already gives Christmas (kHoliday, src/sim.cpp:499), and the
+224 ordinary rows otherwise. A life with no fixed date takes the ordinary half, so the gate is
+deterministic per run rather than a coin of its own.
+
+Eighteen rows are not plain tails. Seventeen write a one-of list inline -
+`<apples/oranges/strawberries/blueberries/peaches/lemons/limes/grapes>`,
+`<mountains/forest/country/city/hills>`, `<checkers/chess/backgammon/Connect 4>`,
+`<plungers/broomsticks/straws/wrapping paper rolls/umbrellas/breadsticks/pool noodles/cue
+sticks/toy lightsabers/rulers/sticks/bamboo shoots>` and the rest - and three name a token
+instead: the two `<musician>` karaoke rows and the boy s choir. `fillOneOf`
+(src/sim.cpp:563) is the one-of half: the first slash inside a pair turns it into a list and
+the member is drawn from the family s stream, while a pair with no slash is handed on
+untouched, so `<musician>` reaches the resolver, which already answers it through
+`referenceToken("musician")` (src/sim.cpp:1699). The filled tail goes through `resolve()`
+like every other rendered string, which is what makes `to watch <musician> music videos` a
+real invitation instead of a raw token.
+
+### 97.5 Shortcuts
+
+1. The invite s coin (0.10 a year) and the relative s willingness (a flat 0.5) are the port s:
+   `ScenarioIsEligibleForRandomPush()` @0x73f3ce99f8 is code-side, and the game also reaches
+   the card from the menu (97.3).
+2. The person takes the hero out when the person is older, the hero takes the person
+   otherwise: `HeroTakesOther()` is a code-side list, not a recovered rule (97.3).
+3. Parents cannot ask, because the port leaves their name empty and the card has no slot that
+   can do without one (97.3).
+4. The refusal narrative is written here: no literal spells the hero refusing a pastime
+   invite (97.2).
+5. An unwilling person produces no card and no person-side karma, where the pull class would
+   have shown a second card (97.3).
+6. The five points the partner gains on an accepted invitation are the port s reading; the
+   game s own impact is code-side (97.3).
+7. The Christmas gate is the port s month rule rather than the game s `IsChristmasSeason()`,
+   and a life with no fixed date never meets the 47 gated rows (97.4).
+8. The two other consumers of the same table are still unwired: `ScenarioSchoolSkipPush`
+   (the skip-school family) and `ScenarioMobsterSpendTimePush` (97.1).
+
+### 97.6 Verification
+
+A new probe (spdres.py) drives 160 lives across both genders, two year budgets and both
+relationship settings, and checks every spend-time card in them: the title, the two slots of
+the body against the choice label, the row the card names, the filled tail against that row s
+own pattern (one-of lists expanded, tokens widened), the acceptance line against the two
+literals, the refusal line, the happiness delta per outcome and no other delta, and a sweep of
+every rendered line for a raw `<...>` token.
+
+~~~
+runs 160 rc failures 0 cards 120 young 16
+choices {'Refuse to': 62, 'Go': 58}
+kinds {go 58, refuse 62, hero takes 34, other takes 24}
+people {'little brother': 57, 'girlfriend': 5, 'boyfriend': 7, 'little sister': 14, 'big brother': 24, 
+    'big sister': 8, 'wife': 4, 'husband': 1}
+happiness {-1: 36, 1: 26, 4: 58}
+distinct pastimes 21 holiday rows drawn 0
+cards per life {0: 100, 1: 29, 2: 15, 3: 10, 4: 2, 5: 1, 6: 3}
+mismatches {}
+samples []
+RESIDUE 0 {}
+~~~
+
+The shapes as the port renders them, straight out of the sample writer:
+
+~~~
+=== young ===
+seed: 10
+gender: male
+years: 60
+relationship: True
+age: 6
+row: 64
+table: a16_pastimes-enc
+title: Spend Time
+body: Your big brother, Dustin, wants to go with you.
+choice: Go with Dustin
+logLines: ['My big brother, Dustin, took me to the country fair.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+
+=== hero-takes ===
+seed: 2
+gender: male
+years: 60
+relationship: True
+age: 35
+row: 200
+table: a16_pastimes-enc
+title: Spend Time
+body: Your little brother, Papi, wants to go with you.
+choice: Go with Papi
+logLines: ['I took my little brother, Papi, to watch a movie under the stars in the park.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+
+=== other-takes ===
+seed: 1
+gender: male
+years: 60
+relationship: True
+age: 37
+row: 221
+table: a16_pastimes-enc
+title: Spend Time
+body: Your little brother, Ricky, wants to go with you.
+choice: Go with Ricky
+logLines: ['My little brother, Ricky, took me to have a sword fight in public using bamboo shoots.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+
+=== lover ===
+seed: 2
+gender: female
+years: 60
+relationship: True
+age: 24
+row: 15
+table: a16_pastimes-enc
+title: Spend Time
+body: Your boyfriend, Later Lim, wants to go with you.
+choice: Go with Later Lim
+logLines: ['I took my boyfriend, Later Lim, to a hockey game.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+
+=== spouse ===
+seed: 6
+gender: male
+years: 60
+relationship: True
+age: 31
+row: 183
+table: a16_pastimes-enc
+title: Spend Time
+body: Your wife, Carli, wants to go with you.
+choice: Go with Carli
+logLines: ['I took my wife, Carli, to work in a community garden.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+
+=== refuse ===
+seed: 1
+gender: male
+years: 60
+relationship: True
+age: 23
+row: 36
+table: a16_pastimes-enc
+title: Spend Time
+body: Your little brother, Ricky, wants to go with you.
+choice: Refuse to go with Ricky
+logLines: ['I decided not to go.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': -1, 'smarts': 0, 'looks': 0}
+~~~
+
+Its own census: 120 cards over 160 lives, 16 of them to a hero of
+twelve or less, the outcome mix {go 58, refuse 62, hero takes 34, other takes 24}, the people {'little brother': 57, 'girlfriend': 5, 'boyfriend': 7, 'little sister': 14, 'big brother': 24, 'big sister': 8, 'wife': 4, 'husband': 1}, the happiness
+histogram {-1: 36, 1: 26, 4: 58}, 21 distinct pastimes with no gated row drawn (a
+date-less pool makes the gated half unreachable) and {0: 100, 1: 29, 2: 15, 3: 10, 4: 2, 5: 1, 6: 3} cards per life.
+
+The full regression after the section: 40 probes at residue 0 (the new `spdres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
