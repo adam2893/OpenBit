@@ -566,7 +566,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       royalRng_(seed ^ 0x2545f4914f6cdd1dULL),
       vampireRng_(seed ^ 0x27d4eb2f165667c5ULL),
       militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL),
-      careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL) {}
+      careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL),
+      sportsRng_(seed ^ 0x94d049bb133111ebULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -582,6 +583,11 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_sports-enc",
+    "a16_sports-leagues-enc",
+    "a16_sports-teams-enc",
+    "a16_sports-positions-enc",
+    "a16_dumb-scenarios-sports-enc",
     "a16_military-ranks-enc",
     "a16_war-scenarios-enc",
       "a16_casino-casino-celebrity-name-enc",        // First Name,Last Name,Gender,Skin,Commonness Score
@@ -980,6 +986,13 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (token == "sport" || token == "league" || token == "team" ||
+               token == "teammate" || token == "coach" || token == "ball" ||
+               token == "referee" || token == "game" || token == "field" ||
+               token == "stadium") {
+      const std::string v = sportsToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
     } else if (token.compare(0, 4, "war-") == 0) {
       const std::string v = warToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
@@ -1821,6 +1834,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
+  if (sportsYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2712,6 +2726,107 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
   h.job = steps[next];
   out.narrative = "I have been promoted to " + h.job + ".";
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Professional athlete (REPORT.en.md 52). a16_sports-enc holds the seven sports
+// and, per sport, its own words for the ball, the stadium, the field, the
+// official and the game; a16_sports-leagues-enc and a16_sports-teams-enc give
+// the league and club (team names carry <a/b/c> alternates), and
+// a16_sports-positions-enc the position for that sport.
+void Sim::makeAthlete(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_sports-enc")) return;
+  const Table& sp = tbl("a16_sports-enc");
+  if (!sp.size()) return;
+  h.sport = trim(sp.at(sportsRng_.below(uint32_t(sp.size())), "Sport"));
+  if (h.sport.empty()) return;
+  h.athlete = true;
+  const std::string gender = h.female ? "female" : "male";
+  const auto pickWhere = [this](const char* table, const char* sportCol, const std::string& want,
+                                const char* nameCol) {
+    ensureTable(table);
+    const Table& t = tbl(table);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has(sportCol) && lower(trim(t.at(r, sportCol))) != want) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) {
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    }
+    if (pool.empty()) return std::string();
+    return trim(t.at(pool[sportsRng_.below(uint32_t(pool.size()))], nameCol));
+  };
+  // Leagues are per sport and per gender; teams are per league index, so the
+  // league name is stored on the hero and the team is drawn from the same sport.
+  if (ensureTable("a16_sports-leagues-enc")) {
+    const Table& lg = tbl("a16_sports-leagues-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < lg.size(); ++r) {
+      if (lower(trim(lg.at(r, "Sport"))) != h.sport) continue;
+      if (lg.has("Gender") && lower(trim(lg.at(r, "Gender"))) != gender) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) {
+      for (size_t r = 0; r < lg.size(); ++r) pool.push_back(r);
+    }
+    if (!pool.empty()) h.league = trim(lg.at(pool[sportsRng_.below(uint32_t(pool.size()))], "Name"));
+  }
+  h.team = pickWhere("a16_sports-teams-enc", "Sport", h.sport, "Name");
+  h.position = pickWhere("a16_sports-positions-enc", "Sport", h.sport, "Position");
+  h.employed = true;
+  if (!h.position.empty()) h.job = h.position;
+}
+
+// The sports pool's own words. '<game>' is the row's 'Game Bracket' for the
+// hero's sport ('pre-<game>' reads 'pre-game'), '<field>' its 'Field Bracket',
+// '<stadium>' its 'Stadium Bracket', and '<ball>' / '<referee>' the same way.
+std::string Sim::sportsToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  if (!h.athlete && token != "coach" && token != "teammate") return std::string();
+  if (token == "sport") return h.sport;
+  if (token == "league") return h.league;
+  if (token == "team") {
+    if (h.team.empty()) return std::string();
+    return resolve(h.team);  // team names carry <a/b/c> alternates
+  }
+  if (token == "coach" || token == "teammate") {
+    return drawFirstName(sportsRng_.chance(0.5)) + " " + drawSurname();
+  }
+  if (!ensureTable("a16_sports-enc")) return std::string();
+  const Table& sp = tbl("a16_sports-enc");
+  const char* col = nullptr;
+  if (token == "game") col = "Game Bracket";
+  else if (token == "field") col = "Field Bracket";
+  else if (token == "stadium") col = "Stadium Bracket";
+  else if (token == "ball") col = "Ball Bracket";
+  else if (token == "referee") col = "Referee Bracket";
+  if (!col) return std::string();
+  for (size_t r = 0; r < sp.size(); ++r) {
+    if (lower(trim(sp.at(r, "Sport"))) == h.sport && sp.has(col)) return trim(sp.at(r, col));
+  }
+  return std::string();
+}
+
+bool Sim::sportsYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.athlete) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 18) return false;
+  if (!ensureTable("a16_dumb-scenarios-sports-enc")) return false;
+  if (!sportsRng_.chance(0.45)) return false;
+  const Table& t = tbl("a16_dumb-scenarios-sports-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (!t.has("Hero Min Age") || h.age >= int(t.num(r, "Hero Min Age"))) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  return renderRow(t, pool[sportsRng_.below(uint32_t(pool.size()))], life, out, forcedChoice);
 }
 
 void Sim::makeMilitary(Life& life) {

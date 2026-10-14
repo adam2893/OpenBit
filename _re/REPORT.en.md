@@ -3451,3 +3451,72 @@ On the remaining rows it is a category word instead - {B}None{B} 57, {B}Abbrevia
 - Unchanged after the change: residue census 0 tokens, {B}tools/coverage.py{B} 109 / 107,
   {B}portgap.py{B} 109 / 107 / gap 0, {B}tools/bench.sh{B} to age 34 with no abort, and the all-109
   push replay exits 0.
+
+## 52. The sports pool: seven sports and each sport's own words
+
+### 52.1 The tables
+
+{B}a16_sports-enc{B} has 7 rows - one per sport - and the columns
+{B}Sport, Fame Score, Season Games, Tie Odds, Max Win Percent, Min Age, Records Include Ties,
+Has Draft, Draft Rounds, Male/Female Draft League, Male/Female Min/Max Salary, Ball Bracket,
+Stadium Bracket, Field Bracket, Referee Bracket, Game Bracket{B}. The bracket columns are the
+words that sport uses: football is {B}football / stadium / field / official / game{B}, basketball
+{B}court{B} for the field - which is why the same sentence renders as {B}your court game{B} in a
+basketball life and {B}your field game{B} in a football one.
+
+Three more tables feed the same cards:
+
+- {B}a16_sports-leagues-enc{B} (15 rows: {B}Index, Sport, Gender, Name, Description, Country Code,
+  Money Score, Hall of Fame{B}) - 'BitLife Football League', "BitLife Women's Basketball
+  Association".
+- {B}a16_sports-teams-enc{B} (313 rows: {B}Index, Sport, Gender, League Index, Name, Country Code,
+  Nearest City, Uses Definite Article{B}) - club names with inline alternates, e.g.
+  {B}Arizona <Swallows/Scorpions/Dry Heat/Red...>{B}.
+- {B}a16_sports-positions-enc{B} (47 rows: {B}Index, Sport, Position, ...{B}) - goalkeeper,
+  defender, midfielder.
+
+{B}a16_dumb-scenarios-sports-enc{B} is the 85-row pool. Its tokens were
+{B}<game>{B} 62, {B}<rb>{B} 50, {B}<teammate>{B} 27, {B}<coach>{B} 23, {B}<lover>{B} 15,
+{B}<field>{B} 13, {B}<league>{B} 11, {B}<stadium>{B} 11, {B}<sport>{B} 6, {B}<insult>{B} 6,
+{B}<rb2>{B} 6, {B}<coach-possessive>{B} 3, {B}<teammate-possessive>{B} 3, {B}<team>{B} 1 - of which only
+the sports words were new; the rest already existed.
+
+### 52.2 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::athlete, Hero::sport, Hero::league, Hero::team,
+  Hero::position{B}.
+- {B}src/sim.cpp{B}: stream {B}sportsRng_{B}; {B}Sim::makeAthlete{B} draws a sport row, then the
+  league for that sport and gender, then a team and a position for the same sport;
+  {B}Sim::sportsToken{B} resolves the words (team names go back through {B}resolve()B{}, because they
+  carry {B}<a/b/c>{B} alternates); {B}Sim::sportsYear{B} renders a pool row on 45% of the years from
+  18 on; {B}ageUp{B} calls it right after {B}careerYear{B}.
+- {B}resolveInto{B} gained one branch for {B}sport / league / team / teammate / coach / ball /
+  referee / game / field / stadium{B}; an unfilled token stays verbatim as everywhere else.
+- {B}include/bl/script.h{B} / {B}src/script.cpp{B}: the {B}"sports"{B} boolean, parsed like
+  {B}"royal" / "military" / "vampire"{B} and applied with {B}sim.makeAthlete(life){B}.
+
+### 52.3 Shortcuts
+
+1. The gate is the script switch. The game reaches the pool through a professional-sports career
+   with a draft, a position and a league index; the port models the sport, the league, the team
+   and the position but not the draft, the season or the contract.
+2. {B}Min Fitness / Min Greatness / Rookie Only{B} and the gender gates on the pool rows are not
+   evaluated - the pool is filtered on {B}Hero Min Age{B} only.
+3. {B}Uses Definite Article{B} on the team table is ignored, so a team that needs 'the' is printed
+   bare.
+4. {B}<coach>{B} and {B}<teammate>{B} are drawn from the port's ordinary name pools; the row's own
+   gender (the pool has separate {B}Playboy{B} / {B}Playgirl{B} rows) is respected only through the
+   card text, not through the coach's name.
+5. Stats, records, awards, injuries and the {B}a16_sports-practice-scenarios-enc{B} family are not
+   wired; only the dumb pool is.
+
+### 52.4 Verification
+
+- Seed 12345 (football): 11 pool rows, e.g. 19 {B}Eight Inch Mile{B}, 20 {B}Fresh Meat{B},
+  26 {B}Merch Madness{B} with {B}<coach>{B} = Quinn Janim and the log {B}I told my coach I didn't know
+  how the team could increase merchandise sales.{B}
+- Seed 777 (basketball): 23 {B}Playgirl{B} renders {B}Dustin Maya notices that you're paying more
+  attention to your bedroom game than your court game.{B} - the basketball {B}Field Bracket{B} word.
+- Seed 4242: 18 {B}GOATs{B}, 20/23 {B}Fair Trade{B} with {B}<stadium>{B} resolved.
+- Unchanged: residue census 0 tokens, {B}tools/coverage.py{B} 109 / 107, {B}portgap.py{B}
+  109 / 107 / gap 0, {B}tools/bench.sh{B} to age 34 with no abort, all-109 push replay exits 0.

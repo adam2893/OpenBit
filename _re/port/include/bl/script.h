@@ -55,6 +55,7 @@ struct ScriptSpec {
   // encounter and conversion screens; the port takes it from the switch.
   bool vampire = false;
   bool military = false;
+  bool sports = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

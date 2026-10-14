@@ -117,6 +117,14 @@ struct Hero {
   // Track ladder; the port walks it and writes the family line shape in the
   // first person ('I started a new position as {job} for {company}.', literal
   // #9408 with <person> = 'I').
+  // Professional athlete (REPORT.en.md 52). a16_sports-enc is seven rows of
+  // sport plus that sport's own bracket words (Ball / Stadium / Field / Referee
+  // / Game Bracket); the league, team and position come from their own tables.
+  bool athlete = false;
+  std::string sport;     // a16_sports-enc 'Sport'
+  std::string league;    // a16_sports-leagues-enc 'Name'
+  std::string team;      // a16_sports-teams-enc 'Name', alternates resolved
+  std::string position;  // a16_sports-positions-enc 'Position'
   std::string careerTrack;  // the raw Seniority Track cell
   int careerStep = 0;       // 0-based index into that track
   int careerYears = 0;
