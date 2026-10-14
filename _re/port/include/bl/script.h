@@ -74,6 +74,13 @@ struct ScriptSpec {
   bool casino = false;
   bool cult = false;
   bool pet = false;
+  // The five studio trades (REPORT.en.md 69).
+  bool producer = false;
+  bool soundcloud = false;
+  bool scout = false;
+  bool composer = false;
+  bool club_takeover = false;
+  bool instrument = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

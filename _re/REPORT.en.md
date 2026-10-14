@@ -5573,3 +5573,195 @@ exact mistake has cost a build. And 64 residue tokens all came from `fan-interac
 row's `Log Version Snippet` says `<rb>` about an alternative drawn in the `Scenario` or `Feedback` column of
 its own row, so reading only the one column leaves the cache empty. The fix is the same warm pass the
 mafia year uses - resolve every bracketed cell of the row in column order before composing the card.
+
+## 69. The studio trades: a producer, a SoundCloud page, a scout, a composer and a club act
+
+Report 54 wired the artist line and report 68 the studio behind it. The family still
+had thirty files nobody read: the five music jobs that are not the artist. This section
+wires all thirty, and along the way generalises three pronoun problems that the whole
+port shares.
+
+### 69.1 The thirty tables
+
+All under `gamedata_plain`, prefix `a16_music-`, suffix `-enc`. Rows in brackets.
+
+Producers: `producer-concert-act` (160) — a single Name column of generated act names
+("Da Real Bruno", "<Quickie/Slickie/Rikki/Licki> Menage"); `producer-stage-name` (65) —
+Name,Hero Gender,Commonness Score, the hero's own stage name ("B.I.G. <hero-last-name>",
+"<hero-last-name> Daddy" male, "<hero-last-name> Mommy" female, so the title is a
+function of the hero's gender and surname); `producer-titles` (48) —
+Scenario Tag,Option 1..5,Situation Description, so one row is five possible titles and a
+description of what the hero did; `producer-genre` (13) —
+Genre,Compatible Genre 1..3,Predominant Country,Popularity Score; `producer-dumb-scenario`
+(50) — a four-choice year-up card; `producer-aspiring-artist-string` (33) —
+String,Artist Genre,Min/Max Vocal Quality; `producer-artist-leave-string` (32) —
+String,Min/Max Artist Popularity; `producer-termination-string` (31).
+
+SoundCloud: `soundcloud-screen-name` (66) — Name,Hero Only,Gender,Commonness Score
+("<hero-last-name><num100-999>", "Notorious_BIT"); `soundcloud-track-instrument` (43) —
+Instrument,Genre,Project Tones, where both Genre and Project Tones are comma lists;
+`soundcloud-track-reception-string` (39) — String,Collab,Genre,Min/Max Reception;
+`soundcloud-comment` (49) — String,Log Version,Track Genre,Min/Max Popularity, and the
+String is the comment as reported while the Log Version is the comment itself;
+`soundcloud-insult` (54) — Insult,Track Genre,Commonness Score;
+`soundcloud-collab-refusal-string` (43); `soundcloud-dumb-scenario` (39).
+
+Talent scouting: `talent-scout-venue-name` (38) — Venue,Event Type,Commonness Score
+("The Liquor <Box/Hole>" with an open mic night, "<city> Amphitheater" with a concert);
+`talent-scout-potential-talent-string` (42) — String,Artist Genre,Min/Max Vocal Quality;
+`talent-scout-artist-rejection-string` (30).
+
+Scoring: `score-production-project-title` (83) — Name,Project Type,Commonness Score;
+`score-production-project-tone` (11) — Tone,Min BPM,Max BPM (romantic 70-100, epic 90-120,
+suspense 60-90, terror 150-180); `score-production-acceptance-string` (31);
+`score-production-rejection-string` (30) — Reason is instrument or BPM.
+
+Club acts: `club-takeover-string` (32) — Scenario,Log Version,Positive,Popularity Impact;
+`club-takeover-stunt` (34) — Scenario,Log Version,Artist Genre,Popularity Impact;
+`club-takeover-stunt-outcome` (31) — the same shape with a Positive flag;
+`club-takeover-second-thought` (34) — String,Artist Gender,Artist Genre.
+
+Names and props: `artist-stage-name` (246) — Stage Name,Gender,Skin,Genre,Commonness Score,
+the table that actually names the acts ("Whitney Spears", "Ted Sheeran", "Mob Barley");
+`names-stage` (184) — Title plus one flag column per genre, titles that are templates of
+their own ("<Easy/Master/Baby/Lil'/Big/Young/Old/Post/...> <musician-first-name>");
+`instruments` (26) — Instrument,Singular Name,Category,Finishes,Min/Max Cost,Can Buy,
+Can Busk,Busk Score,Parent Lessons Score,Cost Score,Difficulty Score,Commonness Score;
+`dinner-location` (51) — String,Gratitude, where gratitude is 1 to 3.
+
+Thirty files, 1668 data rows. Together with the twenty-eight of report 68 the whole music
+family (58 files) is now read by the port.
+
+### 69.2 The five trades
+
+`Sim::makeTrade(Life&, int kind)` sets one flag and draws the act the trade works with:
+kind 1 a producer, 2 a SoundCloud page, 3 a talent scout, 4 a film composer, 5 a club act
+whose nights turn into stunts. Every kind ends with `makeInstrument` (a weighted draw over
+the instrument table, kept on the hero) and `tradeDrawArtist`.
+
+`tradeDrawArtist` is where `artist-stage-name` and `names-stage` come in: the act is a
+stage name filtered by the trade's genre and the act's own gender when the table has a row
+for them ("Debbie Carrey", "Axl Hoes", "Amy VanSant", "Manila Moon", "Duchess Villa"),
+the genre flag column of `names-stage` is the fallback, and a drawn first name plus
+surname is the last resort. The act's popularity and vocal quality are rolled once
+(20 + below(61) and 20 + below(71)) and are the numbers the roster tables window on.
+
+`tradeGenre(Life&)` answers the hero's own genre when the artist line gave them one, else
+draws and stores one, and `producer-genre` supplies one of the three compatible genres for
+the trades to work in.
+
+### 69.3 A year in a trade
+
+`Sim::tradeYear` runs from 16 at 50% a year, picks one of the trades at random when the
+script switches on several, and fires one event. Chances, first hit wins.
+
+Producer: a first client (windowed on the act's vocal quality against Min/Max Vocal
+Quality, title "Signing a client") — 0.18 a concert act, 0.18 a `producer-titles` row
+(the title is one of its five options, the body its situation), 0.16 the four-choice
+producer card, 0.14 the act leaving through the popularity window, 0.12 dinner at a table
+chosen by its gratitude, 0.10 termination, else a session at the desk worth $15,000.
+
+SoundCloud: 0.30 an upload, 0.22 a comment, 0.20 the four-choice SoundCloud card, 0.15 an
+insult, 0.13 a refused collaboration, else a few new followers. The upload draws a track
+title by genre, its instrument and tone from the comma lists, then a reception string
+through the Min/Max Reception window around a reception of
+`20 + followers/8 + below(31)`; followers grow by reception/5 and the card pays
+reception x 30. A track is drawn once per card when the year is not an upload, because
+every SoundCloud row names it.
+
+Scout: a venue and an event type, then an act through the vocal-quality window; half the
+acts are signed (title "Scouting at <venue>") and the other half bounce off the label with
+one of its reasons.
+
+Composer: a project title and type, a tone with its BPM window, a quality of
+`30 + reputation/2 + below(31)` against 55, and either an acceptance ($8,000 to $28,000)
+or a rejection that costs two points of reputation.
+
+Club act: 0.35 a stunt whose Popularity Impact moves the hero's fame, half of them with a
+`club-takeover-stunt-outcome` tail, 0.25 a takeover, 0.20 a second thought, else a night
+at the club.
+
+### 69.4 The tokens
+
+A new guard, `tradeIsToken`, owns `<artist>` (301 uses) and `<artist-possessive>` (40),
+plus `<track>`, `<musician-first-name>`, `<musician-last-name>`, `<musician-name>`,
+`<musician-first-name-letter>`, `<instrument>`, `<project>`, `<project-tone>` and
+`<trade-stage>`. The name fragments have no reference pool — `genesis_master_tags_reference_2`
+holds `musician`, `musician_soundcloud` and `alcohol` for this area and nothing else — so
+they are drawn from the port's own name generator.
+
+One shared fix: `Sim::musicToken` used to answer nothing at all unless the hero had taken
+the artist line, which left `<musician-soundcloud>` leaking out of the SoundCloud reception
+rows when a trade was played without `"music": true`. It now answers for any of the five
+trade flags, prefers the collaborator the card already named, and falls back through the
+reference pools to a drawn name.
+
+### 69.5 Three pronoun problems, generalised
+
+The trade rows exposed three patterns the whole port shares.
+
+**A row's own subject.** Many rows open on `<he/she> says <he/she>'s ...`. Prefixing the
+act's name produced `Harley Shift she says she's taking some time off`. `nameTakesSubject`
+now puts the name on the first pronoun and lets the resolution do the rest:
+`Harley Shift says she's taking some time off to take care of her family.`, and
+`Duchess Villa tells me the pressure is getting to her.`
+
+**Third person about the hero.** `producer-titles` writes its situation as
+`The hero's new cover art was well received by the public`; `heroToFirstPerson` turns it
+into `My new cover art was well received by the public`.
+
+**"you" as an object.** `toFirstPerson` already knew `told`, `gave`, `asked` and friends
+take `me` while other verbs take `I`, but it knew only the past tense, only lowercase
+contractions, and missed verbs the newer rows use. It now carries the present tense and
+more verbs (`tells`, `warns`, `costs`, `hits`, `kisses`, `blames`, `arrested`,
+`replaced` ...) and the capitalised contractions (`You're` -> `I am`, `You'd` -> `I'd`),
+which fixed `They said to not let the door hit I where the good Lord split I` into
+`... hit me ... split me` and `Discovering a piece of yourself you'd forgotten` into
+`... myself I'd forgotten`. The verb list is a hand-kept list and the comment says so.
+
+### 69.6 Shortcuts
+
+- The five trades are a single `tradeYear` behind one flag each; when a script sets
+  several, the year picks one at random instead of playing them all.
+- A year-up card has no prompt to route a choice through, so the port takes the first
+  choice the card offers (the same shortcut as every other dumb-scenario pool).
+- The producer's reputation and the SoundCloud follower count are the only two trade
+  currencies; money is paid as a fee and nothing else about the label is modelled.
+- `instruments` is read for its name and commonness only: costs, lessons and busking
+  scores are not spent.
+- The composer's acceptance threshold (55) and the scout's signing coin (50%) are port
+  inventions; the shipped tables give no odds for either.
+- `artist-stage-name` Skin, `names-stage` Gender, `dinner-location` Gratitude beyond the
+  reputation point are read where they are used and ignored otherwise.
+
+### 69.7 Verification
+
+`/tmp/qdir/traderes.py` plays 30 seeds x both genders to 60 with all six switches on and
+regexes `<[^>]*>` out of every music event's title, body, log lines and extra:
+1316 events, residue 0. Histogram, most common first: talent-scout potential talent 252,
+score project title 155, producer aspiring artist 142, club takeover 132, SoundCloud
+instrument 89, SoundCloud reception 84, club stunt 55, score rejection 54, comment 44,
+concert act 42, stunt outcome 37, score acceptance 36, second thought 34, producer
+titles 34, insult 32, artist leaves 22, collab refusal 20, SoundCloud card 20, producer
+card 16, termination 12, dinner 4.
+
+Cards this run produced: "A hit off the desk" / "Studio: GoldenShowerhead." /
+"I produced a hit for Amy VanSant and took my cut."; "Uploaded to SoundCloud" /
+"Track: Hey Dude." / "I played banjo on it." / "Reception: 38, and 56 followers after
+that." / "Listeners commented that the tempo shift at 2:50 ruined the flow of the track.";
+"Scouting at BitLife Amphitheater" / "I spent the night at BitLife Amphitheater
+(concert)." / "The label signed Debbie Carrey."; "The score is accepted" /
+"Calming Shadowed Drifter (video game), 95 BPM in epic." / "The fee came to $12,501.";
+"A comment" / "Track: an untitled demo. Comment: is the perfect track to give to someone
+you hate." / "She says this is the perfect track to give to someone you hate.";
+"Second thoughts" / "Duchess Villa is not sure about this life." / "Duchess Villa tells me
+the pressure is getting to her."; "Second thoughts" style producer card "Behind the Mic" /
+"Ram Overwood calls you to say he wants a portable sauna added to his rider." /
+"The choice was: As you wish."; the SoundCloud card "Production Value" / "The choice was:
+Ask nicely."
+
+Full regression after the section, all green: `rescensus.py` distinct residue tokens 0;
+`coverage.py` 109 captured / 107 recoverable; `portgap.py` ENTRIES 109 rendered-by-port
+107 gap 0; `covpush.json` rc=0; `bench.sh` to age 34 with no abort. The four neighbouring
+probes were re-run because `toFirstPerson` is shared: mafia, landlord, studio and pet and
+zoo all report residue 0.

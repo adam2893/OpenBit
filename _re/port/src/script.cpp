@@ -431,6 +431,54 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("dealer is not a boolean");
   }
 
+  p = findValue(json, "producer");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.producer = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.producer = false;
+    else return fail("producer is not a boolean");
+  }
+
+  p = findValue(json, "soundcloud");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.soundcloud = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.soundcloud = false;
+    else return fail("soundcloud is not a boolean");
+  }
+
+  p = findValue(json, "scout");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.scout = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.scout = false;
+    else return fail("scout is not a boolean");
+  }
+
+  p = findValue(json, "composer");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.composer = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.composer = false;
+    else return fail("composer is not a boolean");
+  }
+
+  p = findValue(json, "club-takeover");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.club_takeover = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.club_takeover = false;
+    else return fail("club-takeover is not a boolean");
+  }
+
+  p = findValue(json, "instrument");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.instrument = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.instrument = false;
+    else return fail("instrument is not a boolean");
+  }
+
   p = findValue(json, "music");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -577,6 +625,12 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.zoo) sim.makeZoo(life);
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);
+  if (spec.producer) sim.makeTrade(life, 1);
+  if (spec.soundcloud) sim.makeTrade(life, 2);
+  if (spec.scout) sim.makeTrade(life, 3);
+  if (spec.composer) sim.makeTrade(life, 4);
+  if (spec.club_takeover) sim.makeTrade(life, 5);
+  if (spec.instrument) sim.makeInstrument(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.

@@ -292,6 +292,32 @@ struct Hero {
   int musicAlbums = 0;
   int musicCompilations = 0;
   long long musicEarned = 0;
+  // The studio trades (REPORT.en.md 69): the five music jobs that are not the
+  // artist line. Each flag switches one line on; tradeYear walks whichever is
+  // set and every card names the act the trade is working with.
+  bool tradeProducer = false;    // a producer with a roster of artists
+  bool tradeSoundcloud = false;  // an independent uploading to SoundCloud
+  bool tradeScout = false;       // a scout looking for acts for a label
+  bool tradeComposer = false;    // a composer for film, TV and games
+  bool tradeStunts = false;      // an act whose club nights turn into stunts
+  std::string tradeStage;        // the producer stage name / screen name
+  std::string tradeArtist;       // the act on the books right now
+  bool tradeArtistFemale = false;
+  int tradeArtistPop = 0;        // that act's popularity 0-100
+  int tradeArtistVocal = 50;     // their vocal quality, for the roster rows
+  std::string tradeGenre;        // the genre the trade works in
+  std::string tradeTalent;       // the SoundCloud collaborator / scouted act
+  std::string tradeTrack;        // the SoundCloud track on the card
+  std::string tradeInstrument;   // the instrument the hero plays
+  std::string tradeProject;      // the score production project
+  std::string tradeProjectType;  // film / tv / video game
+  std::string tradeTone;         // the tone of that score
+  int tradeBpm = 0;
+  int tradeRep = 20;             // producer reputation 0-100
+  int tradeFollowers = 0;        // SoundCloud followers
+  int tradeClients = 0;          // artists on the producer's books
+  int tradeHits = 0;             // hits produced / scores accepted / acts signed
+  long long tradeEarned = 0;
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

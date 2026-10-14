@@ -138,6 +138,10 @@ class Sim {
   void makePet(Life& life);
   void ensureStudioFields(Life& life);
   std::string musicAlbumDescription();
+  // The five studio trades (REPORT.en.md 69). kind: 1 producer, 2 SoundCloud,
+  // 3 talent scout, 4 composer, 5 club stunts.
+  void makeTrade(Life& life, int kind);
+  void makeInstrument(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -288,6 +292,10 @@ class Sim {
   std::string petToken(const std::string& key);
   void petDraw(Life& life);
   bool studioYear(Life& life, AgeUp& out, int forcedChoice);
+  bool tradeYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string tradeToken(const std::string& key);
+  std::string tradeGenre(Life& life);
+  void tradeDrawArtist(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -372,6 +380,7 @@ class Sim {
   Rng landlordRng_;
   Rng petRng_;
   Rng studioRng_;
+  Rng tradeRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
