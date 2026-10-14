@@ -167,6 +167,10 @@ struct Hero {
   // The anniversary (REPORT.en.md 88): the score ledger of a married life.
   int anniversaries = 0;
   int annGifts = 0;
+  // The gift family's own ledger (REPORT.en.md 89): what the hero handed over
+  // and what he carried out of the shop without paying for.
+  int giftsGiven = 0;
+  int giftsLifted = 0;
     // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
@@ -528,6 +532,10 @@ struct Hero {
   std::string loverStatus;       // "", "dating", "married"
   int relationship = 60;         // the game's own relationship score, 0-100
   int loverCraziness = 0;
+  // The gift (REPORT.en.md 89) needs the partner's pride as well as her
+  // craziness: every refusal row in the two property pools is flagged one or
+  // the other, so the two scores are the traits the pools are read with.
+  int loverPride = 0;
   bool virgin = true;
   std::string exName;            // the most recent ex, kept after a breakup
   bool exFemale = false;

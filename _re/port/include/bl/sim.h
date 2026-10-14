@@ -341,6 +341,8 @@ class Sim {
                           const std::string& filterValue, const std::string& flagColumn, Rng& rng);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
+  // The gift (REPORT.en.md 89): the shop and the two property pools.
+  bool giftYear(Life& life, AgeUp& out, int forcedChoice);
   // The badge table of the anniversary family: the row's five captions and the
   // situation description the feed shows (REPORT.en.md 88).
   std::string annBadgeOption(const std::string& tag, std::string& situation, int* rowOut = nullptr);

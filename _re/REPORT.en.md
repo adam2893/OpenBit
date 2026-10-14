@@ -9721,8 +9721,334 @@ date           Power couple
 ```
 
 The whole regression is green with the section in place: `allprobes.py` runs
-thirty-one probes at residue 0 (the new `annres.py` joins the list),
+thirty-two probes at residue 0 (section 89 adds `giftres.py` to the list),
 `rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109 captured /
 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim
 --script covpush.json` rc 0 with an empty stderr, and `bench.sh
+/tmp/trace_c10.json` reaching age 34 without an abort.
+
+## 89. The gift: one shelf, four price tables, and a partner who can only refuse
+
+Section 88 gave the couple a year. This section gives it a shop. The gift family
+is three files and 478 rows, and it is the first family in this port whose card
+text is not in the corpus at all: the shop writes its own prose, and the tables
+contribute a name, a price, two appreciation scores and - at the expensive end -
+the sentence a partner uses to hand the thing back.
+
+### 89.1 The family
+
+`a16_gifts-enc` is the shelf. 383 rows, twelve columns:
+
+| column | what it holds |
+|--------|---------------|
+| `Gift` | the name as the shop writes it: `Rolex watch`, `diamond earrings`, `SlimFast shake mix` |
+| `Is Singular` | `x` on 337 rows; the 46 blanks take no article |
+| `Use Them` | `x` on 33 (the wearables: the jacket you put on, the sunglasses you put on) |
+| `Is Flowers` | `x` on 12 - every bouquet in the table |
+| `Cost` | 0 to 50000, 46 distinct values, dense below 35 and then a long tail (1500, 1600, 2000, 4500, 10000, 50000) |
+| `Male Appreciation Score` | -5 to 5, no zero anywhere in the column |
+| `Female Appreciation Score` | the same range, and 184 of the 383 rows disagree with the male one |
+| `Min Age` / `Max Age` | 1 to 65 / 2 to 80, with a blank Max Age reading as open |
+| `Commonness Score` | 1 to 5 - the shelf's own weight |
+| `Can Be Shoplifted` | `x` on 267 |
+| `Sack Exclusive` | `x` on 85, and those 85 rows are exactly the cost-0 rows |
+
+The last two columns are the section. `Can Be Shoplifted` is the flag that
+decides whether an unaffordable gift is reachable at all, and `Sack Exclusive`
+is Santa's sack - every free row in the table belongs to a Christmas the port
+does not model, so the shop skips them and a broke hero is left with the lifting
+branch or nothing. 210 of the 383 rows cost 20 or less, 85 of which are the
+sack, so the affordable shelf is 125 rows.
+
+Two of those rows are worth quoting whole:
+
+`@
+Gift                 Is Singular Use Them Is Flowers Cost Male Female MinAge MaxAge Commonness Can Be Shoplifted Sack Exclusive
+Rolex watch          x                       x                 10000  5    5       16            5          x
+shrunken head        x                                         50000  2    -5      18            3          x
+`@
+
+The two refusal pools are the only prose the family ships:
+`a16_gift-rejections-house-enc` (48 rows) and
+`a16_gift-rejections-vehicle-enc` (47 rows). Both are `Excuse, Prideful,
+Crazy, ... Min Value, Max Value, Child Recipient Only, Parent Recipient Only,
+Lover Recipient Only, Min Relationship, Max Relationship, Recipient Min Age,
+Recipient Max Age`. The house pool splits 22 `Prideful` / 26 `Crazy` and
+the vehicle pool 24 / 23, and no row in either table carries both flags or
+neither: the trait is a partition, not a score.
+
+| pool | value window | relationship | recipient age |
+|------|--------------|--------------|---------------|
+| house | Min Value 150000, Max Value 750000 | Min Relationship 70, Max Relationship 50 and 30 | Min Age 18 and 40, Max Age 20 and 23 |
+| vehicle (Car) | 7000 to 100000 | as above | as above |
+| vehicle (Boat) | 30000 to 1000000 | as above | as above |
+| vehicle (Plane) | 100000 to 1000000 | as above | as above |
+
+The vehicle table carries a flag per kind - `Car` on 35 rows, `Boat` on 34,
+`Plane` on 33 - so one row is written for one kind of vehicle, and its
+`<Kind> Min Value` / `<Kind> Max Value` columns are the window that row
+answers to. The sentences are what the section is for, and they all end in a
+refusal:
+
+`@
+<He/She> said <he/she> wants to buy <his/her> own home.
+<He/She> said <he/she> doesn't need your <hand-me-downs/charity>.
+<He/She> said <he/she> couldn't accept a house that <nice/fancy/pricey/costly>.
+<He/She> said <he/she> doesn't feel like the quality of your relationship is good enough to justify a gift of this magnitude.
+<He/She> said the only thing <he/she> wants to fly is a kite.
+<He/She> said <he/she> wouldn't know where to dock it.
+`@
+
+There is no acceptance pool and no shoplifting consequence table anywhere in the
+corpus: a grep for `shoplift`, `loved it` and `gift you gave` over the
+whole of `gamedata_plain` finds nothing else in this family. Both of those
+voices are the port's own, and section 89.6 says where they stop.
+
+The four price tables the pools are answered from are the ones the earlier
+sections already read, and each of them breaks a rule the other three keep:
+
+| table | rows | price column | note |
+|-------|------|--------------|------|
+| `a16_house-types-enc` | 29 | none - `Price Score` | section 66's landlord family already charges `Price Score * 60000` plus jitter |
+| `a16_car-models-enc` | 186 | `Cost` as `$44,990` | the only price table with no `Commonness Score` column at all |
+| `a16_watercraft-enc` | wired by 81 | `Cost` | already in `kTables` since the boat section |
+| `a16_aircraft-enc` | 59 | `Cost` as `$304,000` | `Descriptive Name Override`, and 20 `Luxury Only` rows |
+
+### 89.2 The two paths
+
+`giftYear` hangs off the couple's year, right after the anniversary line in
+`relationshipYear` (src/sim.cpp:23210), so a married anniversary card still
+wins the year it fires. The whole card is one of two paths, and the shop is the
+fallback:
+
+| path | gate | what decides the outcome |
+|------|------|--------------------------|
+| the grand gesture | `h.money >= 100000` and a 0.35 coin | the refusal pool: a matching row means the partner refuses, an empty pool means the gift is taken |
+| the shop | everything else, then a 0.30 coin for the year | the row's own `Cost` against the wallet, then `Can Be Shoplifted`, then the appreciation score |
+
+The gesture walks the four kinds in a random order - house, car, boat, plane -
+and tries each until one yields a card, because a table can be unaffordable at
+one end (an aircraft is never under 43500, a house never under 150000) and a
+partner can be outside every window. The price comes from the kind's own source:
+`Price Score * 60000` for a house with the same `below(20000)` jitter the
+landlord family uses, and the `Cost` column for the other three. The item name
+is `Descriptive Name Override` when the table has one and it is non-empty
+(`Cessna 172S`), otherwise `Make` plus `Model` (`Kia Telluride`,
+`Lexus IS-500`), otherwise `Type` (`sailing cutter`, `geodesic`).
+
+The shop is three filters and a weighted pick. `Sack Exclusive` rows are out
+(the Christmas sack is not a shop), the partner's age has to fall inside
+`Min Age` / `Max Age`, and then the shelf splits in two: everything at or
+under the wallet is affordable, everything above it that carries
+`Can Be Shoplifted` is reachable. The affordable half is picked with
+`weightedPickOf` on `Commonness Score` - the shelf's own weight, so the
+common trinkets dominate and the Rolex stays rare - and only when that half is
+empty does the lifting branch open, on a 0.45 coin.
+
+The outcome is then the row's own two numbers and two flags:
+
+| branch | corpus input | what the card says |
+|--------|--------------|--------------------|
+| bought | `Cost` | `money -= cost`, `I gave <lover> <what>` (or `I sent` when `Is Flowers`) |
+| lifted, clean | `Can Be Shoplifted` | `karma -4`, `I lifted <what> for <lover> without paying` |
+| lifted, caught | the port's own 0.25 | `karma -12`, relationship -4, happiness -3, `I was caught lifting <what> for <lover>` |
+| the reaction | `Male` / `Female Appreciation Score`, read by the partner's gender | `>= 4` loved it (+3 happiness, +score), `> 0` liked it (+1), else hated it (-3) |
+
+and the article comes from `Is Singular`: `a Lush bath set`, `an oil
+diffuser`, `an Xbox Series X`, but `Beats headphones`, `Canon binoculars`
+and `SlimFast shake mix` with nothing in front of them.
+
+### 89.3 The refusals
+
+The corpus answers the expensive half with a sentence, and the sentence is
+chosen by a trait the corpus itself declares: every row of both pools is flagged
+`Prideful` or `Crazy` and never both. The port has no such traits, so it
+maps them onto the two scores the couple already keeps: `loverCraziness` was
+already drawn by `relationshipYear` for the hookup card, and section 89 draws
+`loverPride` next to it, both 0 to 100. A partner at or above 50 is proud, at
+or above 50 on the other is crazy, and the pool is then filtered by that flag,
+by the kind's own flag, by the value window, by `Min` / `Max Relationship`
+against the current score and by the recipient's age.
+
+The consequence of that mapping is the section's interesting result: a partner
+who is neither proud nor crazy has no row to refuse with, and the port takes the
+gift. Over the probe's 100 lives the two pools were read 50 times and the
+acceptance branch fired 6 - which is roughly the 1-in-4 the two independent
+coin flips predict, and it is also the shape of any table that partitions a
+population instead of scoring it.
+
+Two of the recipient flags the port cannot honour: `Child Recipient Only` and
+`Parent Recipient Only` need a child or a parent to hand a house to, and this
+port's families are the hero's siblings and children only. They are skipped,
+which leaves the `Lover Recipient Only` rows and the unmarked ones.
+
+### 89.4 The tokens
+
+This family needs no new token. The refusal sentences are resolved by machinery
+the earlier sections already installed:
+
+- `<He/She>` and `<His/Her>` are the capital twin of the pronoun pair
+  (src/sim.cpp:1764), so the sentence starts with the partner's gender and
+  continues in lower case.
+- `<hand-me-downs/charity>` and `<nice/fancy/pricey/costly>` are inline
+  slash lists, resolved by the same pass that draws `<a/b>` everywhere else.
+- the card's own prose goes through `money()`, so a house in Japan prints in
+  yen and the probe's `90,000` above is the same number in another country.
+- `<rb>` is not used: no pool sentence points back at another line.
+
+`heroToken` gained nothing either - the gift is about the partner, and the
+port already forwards `lover` (src/sim.cpp:22980) for exactly this.
+
+### 89.5 What it caught
+
+Seven things, five of them real bugs and two of them rules the corpus keeps that
+the earlier price readers had never been forced to notice:
+
+1. `a Xbox Series X`. The article rule in the shop tested for a vowel and
+   wrote `a` in front of a name that is pronounced `eks`. The fix is the
+   heuristic the port now carries: vowels and `x` take `an`, and the
+   shortcut line says what that gives up (`a ukulele` is written `an
+   ukulele` and the shop does not carry one).
+2. the karma route. The first version wrote `h.karma -= 4` directly, and the
+   demo driver's `deltas` object - which reports the `AgeUp` fields, not the
+   hero - showed 0 for every lifting card. src/script.cpp:762 applies
+   `ev.karma` and then clamps all five stats, so a direct mutation is applied
+   but invisible. The card now sets `out.karma` and the probe asserts -4 on a
+   clean lift and -12 on a caught one.
+3. `a airboat`. The property prose had a hard-coded article while the shop
+   path had the real one. Both now share `article()`.
+4. the house has no `Cost` column. The price tables read like one shape until
+   this family needed a house: `a16_house-types-enc` prices itself with
+   `Price Score`, and the only code that knows what one point is worth is
+   section 66's landlord purchase (src/sim.cpp:10176). The gift reuses that
+   formula rather than inventing a second one.
+5. `a16_car-models-enc` has no `Commonness Score`. Every other price table
+   in this port has one, so `weightedPickOf` cannot be called on it and the
+   car is picked uniformly. The table in 89.1 is the census of that.
+6. the `Is Singular` blank is "takes no article", not "plural". The 46 blank
+   rows include mass nouns (`SlimFast shake mix`, `CBD oil`) and brand names
+   (`Altoids`) as well as the real plurals (`Beats headphones`,
+   `diamond earrings`), so the flag is read as an article switch and never as
+   a plurality test.
+7. the trait partition. Before the trait map the pool was filtered by value and
+   relationship alone, and the pool then answered for partners who should have
+   had no sentence at all. The flags are not a score, and reading them as one is
+   what 89.3 is about.
+
+### 89.6 Shortcuts
+
+1. the rate and the year. `giftYear` fires on 0.30 of the couple's remaining
+   years, after the anniversary card has had its 0.45. Neither number is in the
+   corpus; the family has no year column at all.
+2. the grand gesture's gate: `money >= 100000` and a 0.35 coin. The corpus's
+   only clue is the value windows, whose floors are 7000 (a car) and 150000 (a
+   house).
+3. the shoplifting consequence: `Can Be Shoplifted` is a permission, not a
+   consequence. The karma -4, the 0.25 caught branch, the -12 and the guard's
+   sentence are the port's own, because no table in `gamedata_plain` carries a
+   shoplifting outcome.
+4. the appreciation reaction ("loved it", "liked it", "hated it") is the port's
+   own phrasing of the two score columns. No table carries the partner's reply.
+5. the trait map is a threshold. `loverPride >= 50` and `loverCraziness >=
+   50` stand in for two flags the corpus has and the port does not, and a
+   partner's two scores are one draw each for the life, not a per-card roll.
+6. the acceptance branch is flat prose. A partner with neither trait has no pool
+   row, and the corpus has no text for a partner who says yes to a house, so the
+   card reads `I bought <lover> <what> as a gift` with a fixed +12 / +5.
+7. one card a year, and the property attempt is never both. A year that refuses
+   a house does not also visit the shop.
+
+### 89.7 Verification
+
+`/tmp/qdir/giftres.py` drives 100 lives - seeds 1 to 50 in both genders, to
+age 80, over the 17 countries of `a16_country-royal-systems-enc`, with
+relationships on and a wealth switch (business, politics, office, actor) cycled
+per seed so the expensive half is reached at all. It selects a card by its own
+ledger line (`I have given N gift(s) and lifted N`), classifies it by the
+body, asserts the karma and happiness the branch owes, checks the ledger is
+monotonic inside a life, and scans every string for an unresolved token:
+
+`@
+runs 100 rc failures 0 events 225 lives with one 86 flowers 10
+kinds {'lifted': 39, 'shop': 118, 'property-refused': 50, 'property': 6, 'caught': 12}
+reactions {'lifted/liked': 20, 'lifted/hated': 11, 'lifted/loved': 8, 'shop/liked': 52,
+           'shop/hated': 43, 'shop/loved': 23, 'property-refused/none': 50,
+           'property/none': 6, 'caught/none': 12}
+tables {'a16_gifts-enc': 169, 'a16_gift-rejections-vehicle-enc': 46,
+        'a16_gift-rejections-house-enc': 4, 'a16_car-models-enc': 4,
+        'a16_watercraft-enc': 1, 'a16_aircraft-enc': 1}
+distinct gift titles 84
+mismatches 0
+RESIDUE 0 []
+`@
+
+Twelve cards, one per branch, with the ledger line the probe selected them by:
+
+`@
+a16_gifts-enc row 33 (Xbox Series X, liked)
+  I gave Larry an Xbox Series X, and Larry liked it.
+  I have given 2 gifts and lifted 1, and our relationship stands at 14%.
+  I gave Larry an Xbox Series X. Larry said thank you.
+
+a16_gifts-enc row 89 (Oil diffuser, loved)
+  I gave Jihanna an oil diffuser, and Jihanna loved it.
+  I have given 4 gifts and lifted 2, and our relationship stands at 51%.
+  I gave Jihanna an oil diffuser. I have never seen Jihanna so pleased.
+
+a16_gifts-enc row 227 (SlimFast shake mix, hated, no article)
+  I gave Rachel SlimFast shake mix, and Rachel hated it.
+  I have given 1 gift and lifted 0, and our relationship stands at 30%.
+  I gave Rachel SlimFast shake mix. Rachel did not even look at it.
+
+a16_gifts-enc row 43 (Beats headphones, plural, no article)
+  I gave Seo Beats headphones, and Seo loved it.
+  I have given 1 gift and lifted 0, and our relationship stands at 47%.
+  I gave Seo Beats headphones. I have never seen Seo so pleased.
+
+a16_gifts-enc row 251 (Single carnation, Is Flowers)
+  I sent Jihanna a single carnation, and Jihanna liked it.
+  I have given 3 gifts and lifted 2, and our relationship stands at 46%.
+  I sent Jihanna a single carnation. Jihanna said thank you.
+
+a16_gifts-enc row 15 (Roomba vacuum, lifted clean)
+  I lifted a Roomba vacuum for Brittany without paying, and Brittany loved it.
+  I have given 1 gift and lifted 1, and our relationship stands at 58%.
+  I stole a Roomba vacuum for Brittany. I have never seen Brittany so pleased.
+
+a16_gifts-enc row 122 (Lush bath set, lifted and hated)
+  I lifted a Lush bath set for Seo without paying, and Seo hated it.
+  I have given 1 gift and lifted 1, and our relationship stands at 27%.
+  I stole a Lush bath set for Seo. Seo did not even look at it.
+
+a16_gifts-enc row 69 (caught at the door)
+  I was caught lifting a globe for Duchess.
+  I have given 0 gifts and lifted 1, and our relationship stands at 39%.
+  A guard stopped me at the door with a globe and Duchess heard.
+
+a16_gift-rejections-vehicle-enc row 39 (offered a hot air balloon)
+  She said the only thing she wants to fly is a kite.
+  I have given 0 gifts and lifted 0, and our relationship stands at 53%.
+  I offered Rachel a hot air balloon and Rachel refused it.
+
+a16_gift-rejections-house-enc row 11 (offered a geodesic)
+  She said she doesn't feel like the quality of your relationship is good enough to justify a gift of this magnitude.
+  I have given 2 gifts and lifted 0, and our relationship stands at 19%.
+  I offered Catrina a geodesic and Catrina refused it.
+
+a16_car-models-enc row 152 (Kia Telluride, bought)
+  I bought Olive a Kia Telluride as a gift.
+  I have given 1 gift and lifted 0, and our relationship stands at 40%.
+  I bought Olive a Kia Telluride.
+
+a16_aircraft-enc row 25 (Cessna 172S, the Descriptive Name Override)
+  I bought Brianna a Cessna 172S as a gift.
+  I have given 2 gifts and lifted 0, and our relationship stands at 62%.
+  I bought Brianna a Cessna 172S.
+`@
+
+The whole regression is green with the section in place: `allprobes.py` runs
+thirty-two probes at residue 0 (the new `giftres.py` joins the list),
+`rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109
+captured / 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap
+0`, `blsim --script covpush.json` rc 0 with an empty stderr, and `bench.sh
 /tmp/trace_c10.json` reaching age 34 without an abort.

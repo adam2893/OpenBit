@@ -1156,6 +1156,10 @@ bool Sim::load(std::string* error) {
       "a16_anniversary-gift-enc",                    // Gift,Cost,..,Appreciation Score,Hero/Lover Gender
       "a16_anniversary-gift-color-enc",              // String,..: the partner's line about the gift
       "a16_anniversary-community-goals-titles-enc",  // Scenario Tag,Option 1..5,Situation Description
+      "a16_gifts-enc",                               // Gift,Is Singular,..,Cost,..,Can Be Shoplifted
+      "a16_gift-rejections-house-enc",               // Excuse,Prideful,Crazy,Min/Max Value,..
+      "a16_gift-rejections-vehicle-enc",             // Excuse,Prideful,Crazy,Car/Boat/Plane Min/Max Value
+      "a16_aircraft-enc",                            // Make,Model,..,Cost,..,Luxury Only
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -23117,6 +23121,7 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.relationship < 0) h.relationship = 0;
   if (h.relationship > 100) h.relationship = 100;
   if (h.loverCraziness == 0) h.loverCraziness = int(relRng_.below(101));
+  if (h.loverPride == 0) h.loverPride = int(relRng_.below(101));
 
   // One row per year: the first pool that fires wins, in the game's own order
   // (ask out -> hook up -> make love -> suspicion -> cheating -> nags ->
@@ -23155,6 +23160,7 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
       h.loverStatus = "dating";
       h.relationship = 60;
       h.loverCraziness = int(relRng_.below(101));
+      h.loverPride = int(relRng_.below(101));
       // shortcut: the game announces the pairing from the Love menu's own
       // code-built string, which is not in the tables, so the port writes it.
       return narrate("I am now dating " + h.loverName + ".", "relationship");
@@ -23199,6 +23205,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   // The anniversary is its own subsystem (REPORT.en.md 88): the date pool, both
   // gift directions and the badge table the feed captions come from.
   if (h.loverStatus == "married" && anniversaryYear(life, out, forcedChoice)) return true;
+  // The gift is the family's own shelf and its own two refusal pools
+  // (REPORT.en.md 89).
+  if (giftYear(life, out, forcedChoice)) return true;
   if (h.relationship < 35 && fire("a16_relationship-counseling-scenarios-enc", 0.10)) { bump(12); return true; }
   if (h.relationship < 30 && fire("a16_breakup-scenarios-enc", 0.30)) {
     h.exName = h.loverName;
@@ -23435,6 +23444,258 @@ bool Sim::anniversaryYear(Life& life, AgeUp& out, int forcedChoice) {
   add("Our relationship stands at " + std::to_string(h.relationship) + "% after " +
       std::to_string(h.anniversaries) + (h.anniversaries == 1 ? " anniversary" : " anniversaries") +
       " and " + std::to_string(h.annGifts) + (h.annGifts == 1 ? " gift." : " gifts."));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
+// The gift (REPORT.en.md 89): the shelf the hero can pay for, and the two
+// property pools that answer for a recipient too proud or too crazy to take a
+// gift at all. It sits in the couple's year, after the anniversary card.
+bool Sim::giftYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.loverName.empty() || forcedChoice >= 0) return false;
+  // The port's own rate: a gift needs no occasion, so a third of the couple's
+  // remaining years are spent on one (REPORT.en.md 89).
+  if (!relRng_.chance(0.30)) return false;
+  if (h.loverCraziness == 0) h.loverCraziness = int(relRng_.below(101));
+  if (h.loverPride == 0) h.loverPride = int(relRng_.below(101));
+  // Every row of both refusal pools is flagged Prideful or Crazy and never
+  // both, so a partner who is neither can only be given to.
+  const bool prideful = h.loverPride >= 50;
+  const bool crazy = h.loverCraziness >= 50;
+
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.loverFemale;
+  rndCache_.clear();
+  rbLast_.clear();
+
+  std::string title, body, line, tableRef;
+  int cardRow = -1;
+  int happy = 0;
+  long long spent = 0;
+  bool lifted = false;
+  auto tell = [&](const std::string& s) { if (!s.empty()) line += line.empty() ? s : " " + s; };
+  auto add = [&](const std::string& s) { if (!s.empty()) out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  // The table's own 'Is Singular' is the article's flag: "a shrunken head"
+  // against the plural nouns ("diamond earrings") it writes bare.
+  auto article = [&](const std::string& name, bool singular) {
+    if (!singular || name.empty()) return name;
+    const char c = static_cast<char>(std::tolower(static_cast<unsigned char>(name[0])));
+    // shortcut: only the vowels and x take 'an' ("an Xbox"); a word the table
+    // happens to spell with a consonant name ("a ukulele") is not covered.
+    const bool an = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' || c == 'x';
+    return std::string(an ? "an " : "a ") + name;
+  };
+  auto minOk = [&](const Table& t, size_t r, const std::string& col, double v) {
+    if (!t.has(col)) return true;
+    const double lo = t.num(r, col);
+    return !(lo > 0 && v < lo);
+  };
+  auto maxOk = [&](const Table& t, size_t r, const std::string& col, double v) {
+    if (!t.has(col)) return true;
+    const double hi = t.num(r, col);
+    return !(hi > 0 && v > hi);
+  };
+
+  // (1) The grand gesture. The house price is the one the landlord family
+  // already charges (Price Score x 60000), a car, boat or plane its own Cost
+  // column, and the offer is only made when the hero can pay for it.
+  if (h.money >= 100000 && relRng_.chance(0.35)) {
+    struct Gesture { const char* ref; const char* price; const char* kind; };
+    static const Gesture kinds[4] = {
+      {"a16_gift-rejections-house-enc",   "a16_house-types-enc", ""},
+      {"a16_gift-rejections-vehicle-enc", "a16_car-models-enc",  "Car"},
+      {"a16_gift-rejections-vehicle-enc", "a16_watercraft-enc",  "Boat"},
+      {"a16_gift-rejections-vehicle-enc", "a16_aircraft-enc",    "Plane"},
+    };
+    const int first = int(relRng_.below(4));
+    for (int i = 0; i < 4 && cardRow < 0; ++i) {
+      const Gesture& g = kinds[(first + i) % 4];
+      if (!ensureTable(g.price) || !ensureTable(g.ref)) continue;
+      const Table& p = tbl(g.price);
+      const Table& pool = tbl(g.ref);
+      const std::string kind = g.kind;
+      std::vector<size_t> items;
+      for (size_t r = 0; r < p.size(); ++r) {
+        if (p.flag(r, "Luxury Only")) continue;  // those belong to the other life
+        const long long price = kind.empty()
+                                    ? static_cast<long long>(p.num(r, "Price Score")) * 60000LL
+                                    : static_cast<long long>(p.num(r, "Cost"));
+        if (price <= 0 || price > h.money) continue;
+        items.push_back(r);
+      }
+      if (items.empty()) continue;
+      const size_t pick = p.has("Commonness Score")
+                              ? weightedPickOf(p, "Commonness Score", items, relRng_)
+                              : items[relRng_.below(uint32_t(items.size()))];
+      if (pick == size_t(-1)) continue;
+      const long long price = kind.empty()
+                                  ? static_cast<long long>(p.num(pick, "Price Score")) * 60000LL +
+                                        static_cast<long long>(relRng_.below(20000))
+                                  : static_cast<long long>(p.num(pick, "Cost"));
+      if (price <= 0 || price > h.money) continue;
+      std::string itemName;
+      if (!kind.empty() && p.has("Descriptive Name Override") &&
+          !trim(p.at(pick, "Descriptive Name Override")).empty()) {
+        itemName = trim(p.at(pick, "Descriptive Name Override"));
+      } else if (!kind.empty() && p.has("Make")) {
+        itemName = trim(p.at(pick, "Make")) + " " + trim(p.at(pick, "Model"));
+      } else {
+        itemName = trim(p.at(pick, "Type"));
+      }
+      const std::string what = article(itemName, true);
+      const std::string loCol = kind.empty() ? std::string("Min Value") : kind + " Min Value";
+      const std::string hiCol = kind.empty() ? std::string("Max Value") : kind + " Max Value";
+      std::vector<size_t> refusals;
+      for (size_t r = 0; r < pool.size(); ++r) {
+        const bool rowPride = pool.flag(r, "Prideful");
+        const bool rowCrazy = pool.flag(r, "Crazy");
+        if (rowPride == rowCrazy) continue;  // a row names one of the two traits
+        if (rowPride && !prideful) continue;
+        if (rowCrazy && !crazy) continue;
+        // The two recipient kinds the port has no person for.
+        if (pool.flag(r, "Child Recipient Only")) continue;
+        if (pool.flag(r, "Parent Recipient Only")) continue;
+        if (!kind.empty() && !pool.flag(r, kind)) continue;
+        if (!minOk(pool, r, loCol, double(price))) continue;
+        if (!maxOk(pool, r, hiCol, double(price))) continue;
+        if (!minOk(pool, r, "Min Relationship", double(h.relationship))) continue;
+        if (!maxOk(pool, r, "Max Relationship", double(h.relationship))) continue;
+        if (!minOk(pool, r, "Recipient Min Age", double(h.loverAge))) continue;
+        if (!maxOk(pool, r, "Recipient Max Age", double(h.loverAge))) continue;
+        refusals.push_back(r);
+      }
+      if (!refusals.empty()) {
+        // The pool's own sentence is the card: '<He/She>' and '<his/her>' read
+        // as the partner because the pronoun pair above says so.
+        const size_t rr = refusals[relRng_.below(uint32_t(refusals.size()))];
+        mark(pool.name(), int(rr));
+        title = "A gift refused";
+        body = trim(resolve(pool.at(rr, "Excuse")));
+        tell("I offered " + h.loverName + " " + what + " and " + h.loverName + " refused it.");
+        add("I offered " + h.loverName + " " + what + " worth " + money(price) +
+            " and was turned down.");
+        h.relationship -= 3;
+        happy -= 2;
+      } else {
+        // No row describes a partner who is neither proud nor crazy, so the
+        // gift is taken and the hero pays for it.
+        mark(p.name(), int(pick));
+        h.money -= price;
+        spent = price;
+        h.relationship += 12;
+        happy += 5;
+        ++h.giftsGiven;
+        title = spyUpperFirst(itemName);
+        body = "I bought " + h.loverName + " " + what + " as a gift";
+        tell("I bought " + h.loverName + " " + what + ".");
+        add("It cost me " + money(price) + ".");
+      }
+    }
+  }
+
+  // (2) The shop, the family's own shelf: a gift the hero pays for, or - when
+  // the wallet will not reach - one the shoplifting flag says he can carry off.
+  if (cardRow < 0 && ensureTable("a16_gifts-enc")) {
+    const Table& t = tbl("a16_gifts-enc");
+    std::vector<size_t> afford, carry;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!trim(t.at(r, "Sack Exclusive")).empty()) continue;  // Santa's sack, not a shop
+      if (!minOk(t, r, "Min Age", double(h.loverAge))) continue;
+      if (!maxOk(t, r, "Max Age", double(h.loverAge))) continue;
+      const long long cost = static_cast<long long>(t.num(r, "Cost"));
+      if (cost <= h.money) afford.push_back(r);
+      else if (t.flag(r, "Can Be Shoplifted")) carry.push_back(r);
+    }
+    size_t r = weightedPickOf(t, "Commonness Score", afford, relRng_);
+    if (r == size_t(-1)) {
+      r = weightedPickOf(t, "Commonness Score", carry, relRng_);
+      if (r == size_t(-1) || !relRng_.chance(0.45)) r = size_t(-1);
+      else lifted = true;
+    }
+    if (r != size_t(-1)) {
+      mark(t.name(), int(r));
+      const std::string gift = trim(resolve(t.at(r, "Gift")));
+      const bool singular = !trim(t.at(r, "Is Singular")).empty();
+      const bool flowers = t.flag(r, "Is Flowers");
+      const long long cost = static_cast<long long>(t.num(r, "Cost"));
+      const int appr = static_cast<int>(t.num(r, h.loverFemale ? "Female Appreciation Score"
+                                                             : "Male Appreciation Score"));
+      const std::string what = article(gift, singular);
+      bool delivered = true;
+      if (lifted) {
+        // The row's own 'Can Be Shoplifted' is all the family has: the karma,
+        // the guard and the fine are the port's own (REPORT.en.md 89).
+        ++h.giftsLifted;
+        out.karma -= 4;
+        if (relRng_.chance(0.25)) {
+          delivered = false;
+          out.karma -= 8;
+          h.relationship -= 4;
+          happy -= 3;
+          title = "Shoplifting";
+          body = "I was caught lifting " + what + " for " + h.loverName;
+          tell("A guard stopped me at the door with " + what + " and " + h.loverName + " heard.");
+          add("The fine and the shame cost me more than the gift would have.");
+        } else {
+          title = spyUpperFirst(gift);
+          body = "I lifted " + what + " for " + h.loverName + " without paying";
+          tell("I stole " + what + " for " + h.loverName + ".");
+        }
+      } else {
+        if (cost > 0) { h.money -= cost; spent = cost; }
+        title = spyUpperFirst(gift);
+        body = "I" + std::string(flowers ? " sent " : " gave ") + h.loverName + " " + what;
+        tell((flowers ? "I sent " : "I gave ") + h.loverName + " " + what + ".");
+      }
+      if (delivered) {
+        ++h.giftsGiven;
+        h.relationship += appr;
+        if (appr >= 4) {
+          happy += 3;
+          body += ", and " + h.loverName + " loved it";
+          tell("I have never seen " + h.loverName + " so pleased.");
+        } else if (appr > 0) {
+          happy += 1;
+          body += ", and " + h.loverName + " liked it";
+          tell(h.loverName + " said thank you.");
+        } else {
+          happy -= 3;
+          body += ", and " + h.loverName + " hated it";
+          tell(h.loverName + " did not even look at it.");
+        }
+      }
+    }
+  }
+
+  if (cardRow < 0) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  if (title.empty()) title = "A gift";
+  if (body.empty()) body = "I thought about a gift for " + h.loverName + " and bought nothing";
+  out.table = tableRef;
+  out.row_id = std::to_string(cardRow + 1);
+  out.title = title;
+  {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.body = body;
+  if (!line.empty()) out.narrative = spyUpperFirst(line);
+  if (happy != 0) out.happiness += happy;
+  h.relationship = std::max(0, std::min(100, h.relationship));
+  if (spent > 0) add("I spent " + money(spent) + " on a gift for " + h.loverName + ".");
+  add("I have given " + std::to_string(h.giftsGiven) +
+      (h.giftsGiven == 1 ? " gift" : " gifts") + " and lifted " +
+      std::to_string(h.giftsLifted) + ", and our relationship stands at " +
+      std::to_string(h.relationship) + "%.");
   pronounOtherSet_ = savedSet;
   pronounOtherFemale_ = savedFemale;
   return true;
