@@ -528,6 +528,24 @@ struct Hero {
   int actorDrama = 0;
   long long actorFee = 0;
   long long actorEarned = 0;
+
+  // --- The market (REPORT.en.md 77) ---------------------------------------
+  bool investing = false;                    // financeYear is live
+  struct FinHolding {
+    std::string symbol;                      // <asset-symbol>
+    std::string name;                        // <company>
+    std::string sector;                      // <sector>
+    bool crypto = false;
+    long long shares = 0;
+    double price = 0;                        // per unit, moved every year
+    double cost = 0;                         // what the hero paid per unit
+  };
+  std::vector<FinHolding> finHoldings;       // the universe the hero trades
+  std::string finAdvisor, finFirm, finSector, finCompany, finSymbol;
+  bool finCrypto = false, finAdvisorFemale = false, finPrivate = false;
+  bool finStarted = false;   // the inherited first position is a one-off
+  int finAdvisorRep = 0, finSkill = 40, finAppetite = 40, finTips = 0;
+  long long finInvested = 0, finEarned = 0, finCash = 0;
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'

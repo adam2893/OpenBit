@@ -74,8 +74,18 @@ Table Table::load(const std::string& path) {
   const char delim = tabs > commas ? '\t' : ',';
   const std::vector<std::vector<std::string>> all = splitRows(text, delim);
 
+  // A few real files carry a junk banner (the file name glued to a word) as the
+  // first non-blank line. A row of three or more cells with fewer than two of
+  // them filled is never a header, so it is skipped as well (REPORT.en.md 77).
+  const auto sparseRow = [](const std::vector<std::string>& row) {
+    if (row.size() < 3) return false;
+    size_t filled = 0;
+    for (const std::string& field : row) if (!field.empty()) ++filled;
+    return filled < 2;
+  };
   size_t header = 0;
-  while (header < all.size() && (isComment(all[header]) || isBlank(all[header]))) ++header;
+  while (header < all.size() &&
+         (isComment(all[header]) || isBlank(all[header]) || sparseRow(all[header]))) ++header;
   if (header >= all.size()) throw std::runtime_error("no header row in table: " + path);
 
   Table t;

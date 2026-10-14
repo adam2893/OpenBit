@@ -7235,3 +7235,154 @@ and is printed as the second log line, after the family's verdict. And the first
 log line of any card may belong to another subsystem: the port prints the
 lifecycle lines that were already in the year before the family's own, which is why a
 review card can open with a relative's diagnosis.
+
+
+## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables
+
+### 77.1 The family
+
+The `a16_financial` family is eighteen tables and 918 rows. Every one of them is a card the hero can draw, an extra line under one, or a list the port draws from while building the market itself.
+
+| table | rows | columns |
+| --- | ---: | --- |
+| `a16_financial-advice-rejections-enc` | 89 | `String` `Intelligence Score` `Stock` `Crypto` |
+| `a16_financial-advisor-drops-hero-color-enc` | 53 | `Feedback Color` `Requires Real Celebrity` `Commonness Score` `Hero Inactive` `Advisor Min Reputation` `Advisor Max Reputation` `Hero Min Net Worth` `Hero Max Net Worth` |
+| `a16_financial-advisor-fire-color-enc` | 29 | `Feedback Color` `Commonness Score` `Advisor Min Reputation` `Advisor Max Reputation` `Hero Min Net Worth` `Hero Max Net Worth` |
+| `a16_financial-advisor-hire-color-enc` | 61 | `Feedback Color` `Requires Real Celebrity` `Commonness Score` `Advisor Min Reputation` `Advisor Max Reputation` `Hero Min Net Worth` `Hero Max Net Worth` |
+| `a16_financial-asset-advice-enc` | 139 | `Feedback` `Prospect Score` `Professional Score` `Stock` `Crypto` |
+| `a16_financial-asset-tips-enc` | 43 | `Tip` `Professional Score` |
+| `a16_financial-crypto-performance-color-enc` | 26 | `String` `Min Delta` `Max Delta` |
+| `a16_financial-cryptocurrencies-enc` | 21 | `Symbol` `Name` `Unit Singular` `Unit Plural` `Expense Score` `Winner Score` |
+| `a16_financial-fund-performance-color-enc` | 23 | `String` `Moved With Sector` `Min Delta` `Max Delta` `Brackets Used` |
+| `a16_financial-headlines-enc` | 75 | `Headline` `Current` `Future` `Market Trend` `Sector Trend` `Asset Trend` |
+| `a16_financial-insider-buy-scenarios-enc` | 14 | `Scenario` `Log Version` |
+| `a16_financial-insider-sell-scenarios-enc` | 13 | `Scenario` `Log Version` |
+| `a16_financial-market-advice-enc` | 136 | `Feedback` `Professional Score` `Current` `Future` `Market Trend` `Sector Trend` |
+| `a16_financial-portfolio-report-color-enc` | 21 | `String` `Min Delta` `Max Delta` |
+| `a16_financial-stock-name-structure-enc` | 8 | `Sector` `Format` `Prefix` `Suffix` `Predefined` |
+| `a16_financial-stock-performance-color-enc` | 36 | `String` `Moved With Sector` `Min Delta` `Max Delta` |
+| `a16_financial-stock-tip-scenarios-enc` | 24 | `Scenario` `Log Version` `Professional Score` (its first two lines are a banner, see 77.5) |
+| `a16_financial-universal-stocks-enc` | 107 | `Symbol` `Name` `Sector` `Min Price` `Max Price` `Winner Score` `Hero Ownership Cap` |
+
+Four of the eighteen are not cards at all. `universal-stocks` is the universe of listed names (symbol, name, sector, a price band, a winner score and an ownership cap); `cryptocurrencies` is the coin list; `stock-name-structure` is the grammar of a private company name; `fund-performance-color` is the advisor fund line. The other fourteen are the year.
+
+### 77.2 The portfolio
+
+At birth `makeFinance` builds a market for the hero: six listed companies drawn from `universal-stocks` weighted by its winner score, each with a price rolled inside its own band, three coins from `cryptocurrencies` at an invented price (the table has no price column), and a private company whose name comes from `stock-name-structure` (a sector-specific format of prefixes, suffixes, a colour and a surname).
+
+A holding is a small struct: symbol, name, sector, a crypto flag, shares, price and cost. The hero holds nothing at first: the scripted lives the harness runs never pay a wage, so the first investing year hands him five shares of the first name as an inheritance, once, and the report says so rather than pretending he bought them. After that he buys with what he has (a fifth of his cash, rounded up to one share when that is all he can afford) and sells when his appetite is low.
+
+Every year the market moves every holding once. The year is either a stock year or a coin year for the stock and crypto tables, but the hero feels a delta per holding: a performance row is drawn (the rows flagged Moved With Sector only when the holding's sector is the year's hot sector, otherwise the whole table), its Min Delta and Max Delta are rolled, the delta is clamped at -75% so one year cannot wipe a position, and the price is multiplied. The card always opens with "My portfolio is worth X." so a reader can follow the position.
+
+### 77.3 The year
+
+One card a year, first hit wins, rarest first. The table lists the chance and what the card needs.
+
+| # | chance | card | needs |
+| ---: | ---: | --- | --- |
+| 1 | 0.05 | The advisor quits | an advisor; the pool is windowed on the advisor's reputation and the hero's net worth |
+| 2 | 0.05 | Dropped | an advisor; same windows; the hero is left with none |
+| 3 | 0.05 | An insider tip (sell) | a position with shares; sells the whole position at the market price |
+| 4 | 0.06 | A tip from the inside (buy) | the hero can afford one share |
+| 5 | 0.07 | A new advisor | the hero has none |
+| 6 | 0.06 | The fund | an advisor; draws `fund-performance-color` and moves the year's return cache |
+| 7 | 0.08 | A stock tip | `stock-tip-scenarios`, skipping the table's own note rows |
+| 8 | 0.10 | In the news | `headlines`, current rows preferred |
+| 9 | 0.12 | The advisor calls / Asking around | `market-advice` with an advisor, `advice-rejections` without one |
+| 10 | 0.12 | Advice about a stock / a coin | `asset-advice` or `asset-tips`, a coin four times in ten |
+| 11 | 0.12 | My portfolio | `portfolio-report-color`, the delta cache set to the year's average move |
+| 12 | 0.14 | A trade | a buy with cash, or a sell when the appetite is low |
+| 13 | else | The market | the biggest mover of the year |
+
+The chain rolls only after the market has moved, and only on a 0.5 chance for the year at all: the market moves in every investing year, but a card is drawn on half of them, which is what keeps the other subsystems breathing room in the year.
+
+### 77.4 The tokens
+
+The family writes seven tokens the rest of the port never sees. `financeIsToken` claims them in the resolveInto chain BEFORE the hero-token branch, because `<company>` would otherwise fall through to the generic "the company" hero token, and before the vampire branch, which claims a handful of the same words.
+
+| token | answer |
+| --- | --- |
+| `<sector>` | the hero's sector, else his first holding's, else technology |
+| `<company>` | the private company name (only while a finance card is live) |
+| `<asset-symbol>` | a symbol of the matching kind: a held stock or coin when he holds one, else any |
+| `<market-singular>` | stock or cryptocurrency |
+| `<market-plural>` | stocks or cryptocurrencies |
+| `<return>` | the year's delta with its sign, as a percentage |
+| `<return-absolute>` | the same magnitude without the sign |
+
+Every one of them is memoised per card, so a row that says `<return>` twice says the same number twice. `financeLive_` is set for the length of a card and restored when the card ends, which is the mechanism that keeps `<company>` from leaking into other families' text.
+
+### 77.5 The bugs
+
+Six, and one of them was in the shared loader rather than the family.
+
+1. **A CSV banner parsed as a header.** `a16_financial-stock-tip-scenarios` opens with two junk lines before its real header (the file name and a note about the ranking), so the loader took the first line as the header, produced a table with one useless column and made every row look like a note. The loader now also skips a first row of three or more cells with fewer than two filled cells. A scan of the corpus showed the rule changes exactly one file, and that a blunter rule (any first row with fewer than two filled cells) would have broken the forty-eight legitimate single-column tables, so the three-cell condition is load-bearing.
+2. **The advisor spoke about the hero in the hero's own voice.** The three advisor pools are written about the advisor ("She said she knows how to spot a bad investment when she sees one"), so the card body now resolves through the scene helper with the advisor's own gender and the first letter raised. Before the fix the body read "she said" on a male advisor and started lower case.
+3. **A note row was drawn as a card.** The stock-tip pool's banner survives the loader fix as a row with an empty Scenario, and the tip branch drew it once, producing a card with no text. The branch now skips a row whose Scenario cell is empty.
+4. **Second-person bodies.** The tip, insider and advice bodies are written in the second person ("A bartender tells you to invest..."), so their leading letter is raised and, where the subject is the hero rather than a stranger, they are marked as the card rather than the journal. The journal line is the pool's own Log version.
+5. **The advisor could never quit in a probe run.** With the branch at 0.03 and the year's 0.5 gate, sixty scripted lives produced no fire at all. Rather than leave the table unwired in practice it was raised to 0.05, matching the drop chance, and verified by a temporary 0.9 run that produced four fires in three lives.
+6. **The hero is poor.** Every scripted life ends at or below zero: the harness enables one family at a time and no family of the port pays a wage for work it does not model. The first portfolio therefore has to be inherited (five shares, once, flagged on the hero) or the whole family would sit at a zero balance forever, the sell pool would never be reachable and the trade card could never buy. The affordability arithmetic was relaxed at the same time: a purchase rounds up to a single share when a fifth of the hero's cash is not enough for one, and gives up when even that is out of reach.
+
+### 77.6 Shortcuts
+
+- One position per name: no lots, no average cost per lot, no options, no shorts.
+- Coins have an invented price (1 to 251) because `cryptocurrencies` carries no price band.
+- The advisor'+AP+'s fund card was added after the first probe: `fund-performance-color` had no other home.
+- `<random-city>` has no table in the corpus: the private company name uses the hero's own city.
+- The -75% clamp on a yearly move is the port's invention; the data bands allow more.
+- The inheritance of five shares is a harness accommodation, not the game's rule.
+- The portfolio statement line ("My statement came in.") is the port's, because `portfolio-report-color` has no Log column.
+- No fees, no dividends, no taxes, no margin call, and the advisor's reputation never moves.
+
+### 77.7 Verification
+
+The probe (`/tmp/qdir/finres.py`, thirty seeds and both genders to sixty) prints 762 finance events, no run failures and zero residue tokens, with sixteen of the eighteen tables as a card's own table: the market 220, crypto 94, headlines 66, a tip 64, rejections 56, insider buy 50, the statement 48, insider sell 40, asset advice 26, asset tips 26, a new advisor 24, a trade 22, the advisor calls 10, the fund 8, the advisor quits 4, dropped 4. The two that never stand alone (the universe and the name grammar) are the market the hero is dealt, and are exercised on every run.
+
+Sample cards, in the port's own words:
+
+
+    In the news
+    stock market price hikes imminent
+    My portfolio is worth $397.
+    The market moved on the news: stock market price hikes imminent.
+
+    A tip from the inside
+    A MILF tells you she is aware of an investment that is guaranteed to make money.
+    An astronomer shared insider information with me about Atlanta Industrial Holdings.
+
+    An insider tip
+    A Redditor just heard from a childhood friend who is now a top executive at Hartford Soil Super Supply and said not to say anything, but he tells you anyway that the company is about to declare bankruptcy.
+    I sold 5 POOP for $482 and made $482.
+
+    The fund
+    The fund suffered considerable losses this year.
+
+    The advisor quits
+    He called you count dickula.
+    I need a new financial advisor now that Montero X has walked out.
+
+    Dropped
+    She said she knows how to spot a bad investment when she sees one.
+    Sugar Moon dropped me as a client.
+
+    My portfolio
+    It was a strong year for your portfolio, which yielded -6% in returns.
+    My statement came in.
+
+    A trade
+    I sold my UTI position.
+    I sold 5 shares of UTI for $241.
+
+    A stock tip
+    A bartender tells you to invest your money in a company called Atlanta Industrial Holdings because its ticker symbol makes him giggle.
+    A thug told me to invest in Atlanta Industrial Holdings because the ticker symbol made him giggle.
+
+    Asking around
+    He said he can't quite figure out what you mean.
+    I asked around about cryptocurrencies and got nothing worth acting on.
+
+
+A note on the data rather than the port: a portfolio row can read "It was a strong year for your portfolio, which yielded -6% in returns." The pool's own adjective and its own delta band disagree, and the port prints the row as written rather than repairing the pool.
+
+The regression that ran with this section is the usual set: every family probe at zero residue, the residue census at zero, coverage 109 of 109 captured and 107 recoverable, the port-versus-game gap at zero, the scripted push run clean and the bench run to the end of its trace.
+

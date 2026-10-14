@@ -589,7 +589,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       hustlerRng_(seed ^ 0x9e3779b97f4a7c15ULL),
       astroRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
       racingRng_(seed ^ 0x94d049bb133111ebULL),
-      actorRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
+      actorRng_(seed ^ 0x2545f4914f6cdd1dULL),
+      financeRng_(seed ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -696,6 +697,25 @@ bool Sim::load(std::string* error) {
     "a16_model-agency-names-enc",
     "a16_actor-films-enc",
     "a16_actor-shows-enc",
+    // The market (REPORT.en.md 77): 18 tables.
+    "a16_financial-advice-rejections-enc",
+    "a16_financial-advisor-drops-hero-color-enc",
+    "a16_financial-advisor-fire-color-enc",
+    "a16_financial-advisor-hire-color-enc",
+    "a16_financial-asset-advice-enc",
+    "a16_financial-asset-tips-enc",
+    "a16_financial-crypto-performance-color-enc",
+    "a16_financial-cryptocurrencies-enc",
+    "a16_financial-fund-performance-color-enc",
+    "a16_financial-headlines-enc",
+    "a16_financial-insider-buy-scenarios-enc",
+    "a16_financial-insider-sell-scenarios-enc",
+    "a16_financial-market-advice-enc",
+    "a16_financial-portfolio-report-color-enc",
+    "a16_financial-stock-name-structure-enc",
+    "a16_financial-stock-performance-color-enc",
+    "a16_financial-stock-tip-scenarios-enc",
+    "a16_financial-universal-stocks-enc",
     "a16_actors-real-enc",
     "a16_secret-agent-agency-fronts-enc",
     "a16_casino-casino-game-room-enc",
@@ -1272,7 +1292,7 @@ std::string Sim::personName(const std::string& token) {
                                   "neighbour", "neighbor", "stranger", "child", "bully",
                                   "crewmate", "colleague", "space-director", "commander",
                                   "mechanic", "pit-crew", "racer", "racer-rival",
-                                  "costar", "agent", "actor", "lead", "studio-exec"};
+                                  "costar", "agent", "actor", "lead", "studio-exec", "advisor", "broker"};
   bool person = false;
   for (const char* p : kPeople) if (key == p) person = true;
   if (key == "company") return "the company";
@@ -1847,6 +1867,16 @@ bool hustlerIsToken(const std::string& token, bool live) {
 // rendering.
 // The screen (REPORT.en.md 76). <production>, <role> and <real-actor> belong
 // to no other family; <costar> is answered for the dumb-scenario pool too.
+bool financeIsToken(const std::string& token, bool live) {
+  std::string k = token;
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    k.resize(k.size() - psuffix.size());
+  if (k == "sector" || k == "asset-symbol" || k == "market-singular" ||
+      k == "market-plural" || k == "return" || k == "return-absolute") return true;
+  return live && k == "company";
+}
+
 bool actorIsToken(const std::string& token, bool live) {
   std::string key = trim(token);
   static const std::string psuffix = "-possessive";
@@ -2114,6 +2144,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (racIsToken(token, racingLive_)) {
       const std::string v = racingToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (financeIsToken(token, financeLive_)) {
+      const std::string v = financeToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (actorIsToken(token, actorLive_)) {
       const std::string v = actorToken(token);
@@ -3067,6 +3101,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.astronaut && astroYear(life, out, forcedChoice)) return true;
   if (life.hero.racing && racingYear(life, out, forcedChoice)) return true;
   if (life.hero.actor && actorYear(life, out, forcedChoice)) return true;
+  if (life.hero.investing && financeYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -3136,6 +3171,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   bizCache_.clear();      // one product / rival / supplier per company card
   racingCache_.clear();   // one rival / mechanic / passenger per car card
   actorCache_.clear();    // one costar / production / role per screen card
+  financeCache_.clear();  // one advisor / ticket per market card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -15806,6 +15842,734 @@ bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
   actorLive_ = false;
   return true;
 }
+
+// ===== the market (REPORT.en.md 77) ========================================
+
+std::string Sim::financeCompany(const std::string& sector) {
+  const char* kTab = "a16_financial-stock-name-structure-enc";
+  if (!ensureTable(kTab)) return std::string();
+  const Table& t = tbl(kTab);
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (!sector.empty() && t.has("Sector") && lower(trim(t.at(r, "Sector"))) == lower(sector)) pool.push_back(r);
+  }
+  if (pool.empty())
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  if (pool.empty()) return std::string();
+  const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+  const auto pickList = [this](const std::string& list) {
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    if (parts.empty()) return std::string();
+    return trim(parts[financeRng_.below(uint32_t(parts.size()))]);
+  };
+  const auto replaceAll = [](std::string s, const std::string& from, const std::string& to) {
+    if (from.empty() || to.empty()) return s;
+    for (size_t at = s.find(from); at != std::string::npos; at = s.find(from, at + to.size()))
+      s.replace(at, from.size(), to);
+    return s;
+  };
+  std::string fmt = t.has("Predefined") ? trim(t.at(row, "Predefined")) : std::string();
+  if (fmt.empty() && t.has("Format")) fmt = pickList(t.at(row, "Format"));
+  if (fmt.empty()) return std::string();
+  if (fmt.find("<color>") != std::string::npos && ensureTable("a16_company-name-color-enc")) {
+    const Table& colors = tbl("a16_company-name-color-enc");
+    if (colors.size())
+      fmt = replaceAll(fmt, "<color>", trim(colors.at(financeRng_.below(uint32_t(colors.size())), "Color")));
+  }
+  if (fmt.find("<suffix>") != std::string::npos && t.has("Suffix")) fmt = replaceAll(fmt, "<suffix>", pickList(t.at(row, "Suffix")));
+  if (fmt.find("<prefix>") != std::string::npos && t.has("Prefix")) fmt = replaceAll(fmt, "<prefix>", pickList(t.at(row, "Prefix")));
+  // There is no city table for <random-city>; the hero's own city stands in (REPORT 77).
+  if (fmt.find("<random-city>") != std::string::npos)
+    fmt = replaceAll(fmt, "<random-city>", hero_ && !hero_->city.empty() ? hero_->city : std::string("Springfield"));
+  if (fmt.find("<random-surname>") != std::string::npos) fmt = replaceAll(fmt, "<random-surname>", drawSurname());
+  std::string clean;
+  for (size_t i = 0; i < fmt.size(); ++i) {
+    if (fmt[i] == '<') {
+      const size_t close = fmt.find('>', i);
+      if (close != std::string::npos) { i = close; clean += ' '; continue; }
+    }
+    clean += fmt[i];
+  }
+  std::string out;
+  for (size_t i = 0; i < clean.size(); ++i) {
+    if (clean[i] == ' ' && !out.empty() && out[out.size() - 1] == ' ') continue;
+    out += clean[i];
+  }
+  return trim(out);
+}
+
+void Sim::makeFinance(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.investing = true;
+  h.finSkill = 40 + int(financeRng_.below(21));
+  h.finAppetite = 40;
+  h.finHoldings.clear();
+  h.finCash = 0;
+  h.finSymbol.clear();
+  h.finAdvisor.clear();
+  h.finAdvisorRep = 0;
+  h.finFirm = "a brokerage";
+  if (ensureTable("a16_financial-universal-stocks-enc")) {
+    const Table& st = tbl("a16_financial-universal-stocks-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < st.size(); ++r) pool.push_back(r);
+    for (int i = 0; i < 6 && !pool.empty(); ++i) {
+      const size_t idx = weightedPickOf(st, "Winner Score", pool, financeRng_);
+      if (idx == size_t(-1)) break;
+      for (size_t j = 0; j < pool.size(); ++j) {
+        if (pool[j] == idx) { pool.erase(pool.begin() + static_cast<long>(j)); break; }
+      }
+      Hero::FinHolding fh;
+      fh.symbol = trim(st.at(idx, "Symbol"));
+      fh.name = trim(st.at(idx, "Name"));
+      fh.sector = lower(trim(st.at(idx, "Sector")));
+      fh.crypto = false;
+      fh.shares = 0;
+      const double lo = st.num(idx, "Min Price");
+      const double hi = st.num(idx, "Max Price");
+      fh.price = hi > lo ? lo + (hi - lo) * financeRng_.unit() : (lo > 0.0 ? lo : 10.0);
+      fh.cost = 0;
+      if (!fh.symbol.empty()) h.finHoldings.push_back(fh);
+    }
+  }
+  // The coins have no price column in the data, so one is rolled (REPORT 77).
+  if (ensureTable("a16_financial-cryptocurrencies-enc")) {
+    const Table& st = tbl("a16_financial-cryptocurrencies-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < st.size(); ++r) pool.push_back(r);
+    for (int i = 0; i < 3 && !pool.empty(); ++i) {
+      const size_t idx = weightedPickOf(st, "Winner Score", pool, financeRng_);
+      if (idx == size_t(-1)) break;
+      for (size_t j = 0; j < pool.size(); ++j) {
+        if (pool[j] == idx) { pool.erase(pool.begin() + static_cast<long>(j)); break; }
+      }
+      Hero::FinHolding fh;
+      fh.symbol = trim(st.at(idx, "Symbol"));
+      fh.name = trim(st.at(idx, "Name"));
+      fh.sector = "cryptocurrency";
+      fh.crypto = true;
+      fh.shares = 0;
+      fh.price = 1.0 + financeRng_.unit() * 250.0;
+      fh.cost = 0;
+      if (!fh.symbol.empty()) h.finHoldings.push_back(fh);
+    }
+  }
+  for (size_t i = 0; i < h.finHoldings.size(); ++i) {
+    if (!h.finHoldings[i].crypto) { h.finSector = h.finHoldings[i].sector; h.finSymbol = h.finHoldings[i].symbol; break; }
+  }
+  // A starting position: a fifth of what the hero has into up to three names,
+  // so the market has something to move and the broker has something to sell.
+  if (h.money >= 20) {
+    for (size_t i = 0; i < h.finHoldings.size() && i < 3; ++i) {
+      Hero::FinHolding& fh = h.finHoldings[i];
+      long long budget = h.money / 5;
+      if (budget < static_cast<long long>(fh.price)) budget = static_cast<long long>(fh.price);
+      if (budget > h.money) continue;
+      const long long shares = static_cast<long long>(double(budget) / fh.price);
+      if (shares <= 0) continue;
+      const long long paid = static_cast<long long>(double(shares) * fh.price);
+      h.money -= paid;
+      fh.shares += shares;
+      fh.cost += double(paid);
+    }
+  }
+  if (h.finSector.empty()) h.finSector = "technology";
+  h.finCompany = financeCompany(h.finSector);
+  if (h.finCompany.empty()) h.finCompany = "a private company";
+  if (h.finSymbol.empty() && !h.finHoldings.empty()) h.finSymbol = h.finHoldings[0].symbol;
+  if (h.finSymbol.empty()) h.finSymbol = "TEA";
+}
+
+std::string Sim::financeToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (!h) return std::string();
+  std::string k = token;
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    k.resize(k.size() - psuffix.size());
+  const auto remembered = [this](const std::string& slot) {
+    std::map<std::string, std::string>::iterator it = financeCache_.find(slot);
+    return it == financeCache_.end() ? std::string() : it->second;
+  };
+  const auto remember = [this](const std::string& slot, const std::string& v) { financeCache_[slot] = v; };
+  if (k == "sector") {
+    std::string v = remembered("sector");
+    if (v.empty()) {
+      v = h->finSector;
+      if (v.empty() && !h->finHoldings.empty()) v = h->finHoldings[0].sector;
+      if (v.empty()) v = "technology";
+      remember("sector", v);
+    }
+    return v;
+  }
+  if (k == "company") {
+    std::string v = remembered("company");
+    if (v.empty()) {
+      v = h->finCompany.empty() ? std::string("a private company") : h->finCompany;
+      remember("company", v);
+    }
+    return v;
+  }
+  if (k == "asset-symbol") {
+    std::string v = remembered("symbol");
+    if (v.empty()) {
+      size_t pick = size_t(-1);
+      for (size_t i = 0; i < h->finHoldings.size(); ++i) {
+        if (h->finHoldings[i].shares > 0 && static_cast<bool>(h->finHoldings[i].crypto) == h->finCrypto) { pick = i; break; }
+      }
+      if (pick == size_t(-1)) {
+        for (size_t i = 0; i < h->finHoldings.size(); ++i) {
+          if (static_cast<bool>(h->finHoldings[i].crypto) == h->finCrypto) { pick = i; break; }
+        }
+      }
+      if (pick == size_t(-1) && !h->finHoldings.empty()) pick = size_t(0);
+      v = pick == size_t(-1) ? std::string("TEA") : h->finHoldings[pick].symbol;
+      if (v.empty()) v = "TEA";
+      remember("symbol", v);
+    }
+    return v;
+  }
+  if (k == "market-singular") return h->finCrypto ? "cryptocurrency" : "stock";
+  if (k == "market-plural") return h->finCrypto ? "cryptocurrencies" : "stocks";
+  if (k == "return" || k == "return-absolute") {
+    std::string d = remembered("delta");
+    if (d.empty()) {
+      d = std::to_string(int(financeRng_.below(31)) - 12);
+      remember("delta", d);
+    }
+    long v = 0;
+    try { v = std::stol(d); } catch (...) { v = 0; }
+    const std::string mag = std::to_string(v < 0 ? -v : v) + "%";
+    if (k == "return") return (v > 0 ? "+" : (v < 0 ? "-" : "")) + mag;
+    return mag;
+  }
+  return std::string();
+}
+
+bool Sim::financeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.investing || h.age < 18) return false;
+  if (!ensureTable("a16_financial-universal-stocks-enc")) return false;
+  if (!financeRng_.chance(0.5)) return false;
+  financeLive_ = true;
+  financeCache_.clear();
+  std::string line, title, body, cardTable;
+  int cardRow = -1;
+  long long take = 0;
+  int happy = 0;
+  auto say = [&](const std::string& v) {
+    if (!v.empty() && line.empty()) {
+      line = spyUpperFirst(v);
+      const char last = line[line.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') line += '.';
+    }
+  };
+  auto add = [&](const std::string& v) {
+    if (!v.empty()) out.extra.push_back(spyUpperFirst(v));
+  };
+  auto cell = [&](const Table& t, size_t r, const std::string& col) {
+    return trim(resolve(t.at(r, col)));
+  };
+  auto numOf = [](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col) || trim(t.at(r, col)).empty()) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto hasCell = [](const Table& t, size_t r, const std::string& col) -> bool {
+    return t.has(col) && !trim(t.at(r, col)).empty();
+  };
+  auto mark = [&](const std::string& tab, int r) {
+    if (r >= 0) { cardTable = tab; cardRow = r; }
+  };
+  auto scene = [&](const Table& t, size_t r, bool otherFemale, const std::string& col) {
+    const bool keepSet = pronounOtherSet_;
+    const bool keepFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = otherFemale;
+    const std::string v = cell(t, r, col);
+    pronounOtherSet_ = keepSet;
+    pronounOtherFemale_ = keepFemale;
+    return v;
+  };
+  // Rows of this family are written about somebody else (the advisor, the insider),
+  // so the pronoun pair points at them and the wanted column is resolved LAST.
+  auto withBrackets = [&](const Table& t, size_t r, const std::string& wantCol, bool otherFemale) {
+    const bool keepSet = pronounOtherSet_;
+    const bool keepFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = otherFemale;
+    for (const std::string& col : t.columns()) {
+      if (col == wantCol) continue;
+      resolve(t.at(r, col));
+    }
+    const std::string v = resolve(t.at(r, wantCol));
+    pronounOtherSet_ = keepSet;
+    pronounOtherFemale_ = keepFemale;
+    return v;
+  };
+  // The trend columns hold a comma list (upward, stable, downward, bubble, collapse);
+  // a blank cell fits any year, and so does a column the table does not have.
+  auto fitTrend = [&](const Table& t, size_t r, const std::string& col, const std::vector<std::string>& want) -> bool {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty()) return true;
+    std::vector<std::string> parts;
+    splitOn(v, ',', parts);
+    for (size_t i = 0; i < parts.size(); ++i) {
+      for (size_t j = 0; j < want.size(); ++j) {
+        if (trim(parts[i]) == want[j]) return true;
+      }
+    }
+    return false;
+  };
+  auto drawRow = [&](const std::string& tab, const std::string& weight) -> size_t {
+    if (!ensureTable(tab)) return size_t(-1);
+    const Table& t = tbl(tab.c_str());
+    if (!t.size()) return size_t(-1);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    return (weight.empty() || !t.has(weight)) ? pool[financeRng_.below(uint32_t(pool.size()))]
+                                              : weightedPickOf(t, weight, pool, financeRng_);
+  };
+  auto advisorFits = [&](const Table& t, size_t r, long long netWorth) -> bool {
+    if (hasCell(t, r, "Advisor Min Reputation") && h.finAdvisorRep < numOf(t, r, "Advisor Min Reputation")) return false;
+    if (hasCell(t, r, "Advisor Max Reputation") && h.finAdvisorRep > numOf(t, r, "Advisor Max Reputation")) return false;
+    if (hasCell(t, r, "Hero Min Net Worth") && netWorth < numOf(t, r, "Hero Min Net Worth")) return false;
+    if (hasCell(t, r, "Hero Max Net Worth") && netWorth > numOf(t, r, "Hero Max Net Worth")) return false;
+    return true;
+  };
+
+  // The market moves every year, before any card is drawn.
+  std::string hotSector = h.finSector;
+  if (hotSector.empty()) hotSector = "technology";
+  std::vector<size_t> perfRow(h.finHoldings.size(), size_t(-1));
+  std::vector<int> perfDelta(h.finHoldings.size(), 0);
+  std::vector<const char*> perfTab(h.finHoldings.size(), "");
+  int bestIndex = -1, bestMag = -1, bestDelta = 0, sumDelta = 0, moved = 0;
+  for (size_t i = 0; i < h.finHoldings.size(); ++i) {
+    Hero::FinHolding& fh = h.finHoldings[i];
+    const char* tab = fh.crypto ? "a16_financial-crypto-performance-color-enc" : "a16_financial-stock-performance-color-enc";
+    if (!ensureTable(tab)) break;
+    const Table& t = tbl(tab);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const bool needsSector = t.has("Moved With Sector") && t.flag(r, "Moved With Sector");
+      if (needsSector && lower(fh.sector) != lower(hotSector)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (pool.empty()) break;
+    const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+    long long lo = numOf(t, row, "Min Delta"), hi = numOf(t, row, "Max Delta");
+    if (hi < lo) { const long long sw = lo; lo = hi; hi = sw; }
+    int delta = int(lo) + int(double(hi - lo) * financeRng_.unit());
+    if (delta < -75) delta = -75;  // shortcut: one year never wipes a position out (REPORT 77)
+    fh.price = std::max(0.01, fh.price * (1.0 + delta / 100.0));
+    perfRow[i] = row; perfDelta[i] = delta; perfTab[i] = tab;
+    sumDelta += delta; moved += 1;
+    const int mag = delta < 0 ? -delta : delta;
+    if (bestIndex < 0 || mag > bestMag) { bestIndex = int(i); bestMag = mag; bestDelta = delta; }
+  }
+  const int avgDelta = moved > 0 ? sumDelta / moved : 0;
+  std::vector<std::string> trends;
+  trends.push_back(bestDelta > 0 ? "upward" : (bestDelta < 0 ? "downward" : "stable"));
+  if (bestDelta >= 35) trends.push_back("bubble");
+  if (bestDelta <= -30) trends.push_back("collapse");
+  if (bestDelta > -3 && bestDelta < 3) trends.push_back("stable");
+  long long portfolio = 0;
+  for (size_t i = 0; i < h.finHoldings.size(); ++i)
+    portfolio += static_cast<long long>(h.finHoldings[i].price * double(h.finHoldings[i].shares));
+  add("My portfolio is worth " + money(portfolio) + ".");
+  const long long netWorth = h.money + portfolio;
+
+  // The first investing year: three positions, a fifth of the hero's money each.
+  bool holds = false;
+  for (size_t i = 0; i < h.finHoldings.size(); ++i) {
+    if (h.finHoldings[i].shares > 0) { holds = true; break; }
+  }
+  if (!holds && h.money >= 20) {
+    int opened = 0;
+    for (size_t i = 0; i < h.finHoldings.size() && opened < 3; ++i) {
+      Hero::FinHolding& fh = h.finHoldings[i];
+      long long budget = h.money / 5;
+      if (budget < static_cast<long long>(fh.price)) budget = static_cast<long long>(fh.price);
+      if (budget > h.money) continue;
+      const long long shares = static_cast<long long>(double(budget) / fh.price);
+      if (shares <= 0) continue;
+      const long long paid = static_cast<long long>(double(shares) * fh.price);
+      h.money -= paid;
+      fh.shares += shares;
+      fh.cost += double(paid);
+      opened += 1;
+    }
+    if (opened > 0) add("I opened " + std::to_string(opened) + " positions to get started.");
+  }
+  if (!holds && !h.finStarted) {
+    // Nothing feeds this hero a paycheque in the scripted lives, so the first
+    // position is inherited rather than bought, once.
+    // shortcut: a cash buy needs an income the scripted runs never have.
+    Hero::FinHolding& fh = h.finHoldings[0];
+    fh.shares += 5;
+    add("I inherited 5 shares of " + fh.symbol + " and started following the market.");
+    h.finStarted = true;
+    holds = true;
+  }
+
+  // (1) The advisor quits on the hero.
+  if (title.empty() && !h.finAdvisor.empty() && financeRng_.chance(0.05) && ensureTable("a16_financial-advisor-fire-color-enc")) {
+    const Table& t = tbl("a16_financial-advisor-fire-color-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (advisorFits(t, r, netWorth)) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+      title = "The advisor quits";
+      body = spyUpperFirst(scene(t, row, h.finAdvisorFemale, "Feedback Color"));
+      say("I need a new financial advisor now that " + h.finAdvisor + " has walked out.");
+      mark("a16_financial-advisor-fire-color-enc", int(row));
+      h.finAdvisor.clear();
+      h.finAdvisorRep = 0;
+      happy -= 2;
+    }
+  }
+  // (2) The advisor drops the hero as a client.
+  if (title.empty() && !h.finAdvisor.empty() && financeRng_.chance(0.05) && ensureTable("a16_financial-advisor-drops-hero-color-enc")) {
+    const Table& t = tbl("a16_financial-advisor-drops-hero-color-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Hero Inactive") && t.flag(r, "Hero Inactive")) continue;
+      if (advisorFits(t, r, netWorth)) pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+      title = "Dropped";
+      body = spyUpperFirst(scene(t, row, h.finAdvisorFemale, "Feedback Color"));
+      say(h.finAdvisor + " dropped me as a client.");
+      mark("a16_financial-advisor-drops-hero-color-enc", int(row));
+      h.finAdvisor.clear();
+      h.finAdvisorRep = 0;
+      happy -= 3;
+    }
+  }
+  // (3) An insider tip to sell.
+  if (title.empty() && financeRng_.chance(0.05) && ensureTable("a16_financial-insider-sell-scenarios-enc")) {
+    size_t pick = size_t(-1);
+    for (size_t i = 0; i < h.finHoldings.size(); ++i)
+      if (h.finHoldings[i].shares > 0) { pick = i; break; }
+    if (pick != size_t(-1)) {
+      const Table& t = tbl("a16_financial-insider-sell-scenarios-enc");
+      const size_t row = financeRng_.below(uint32_t(t.size()));
+      const bool other = financeRng_.chance(0.5);
+      Hero::FinHolding& fh = h.finHoldings[pick];
+      h.finCrypto = fh.crypto;
+      financeCache_.erase("symbol");
+      title = "An insider tip";
+      body = spyUpperFirst(scene(t, row, other, "Scenario"));
+      const long long worth = static_cast<long long>(fh.price * double(fh.shares));
+      const long long gain = worth - static_cast<long long>(fh.cost);
+      say(withBrackets(t, row, "Log Version", other));
+      add("I sold " + std::to_string(fh.shares) + " " + fh.symbol + " for " + money(worth)
+          + (gain >= 0 ? " and made " : " and lost ") + money(gain >= 0 ? gain : -gain) + ".");
+      h.money += worth;
+      h.finEarned += gain;
+      take += worth;
+      fh.shares = 0;
+      fh.cost = 0;
+      mark("a16_financial-insider-sell-scenarios-enc", int(row));
+    }
+  }
+  // (4) An insider tip to buy.
+  if (title.empty() && financeRng_.chance(0.06) && ensureTable("a16_financial-insider-buy-scenarios-enc")) {
+    const Table& t = tbl("a16_financial-insider-buy-scenarios-enc");
+    const size_t row = financeRng_.below(uint32_t(t.size()));
+    const bool other = financeRng_.chance(0.5);
+    size_t pick = size_t(-1);
+    for (size_t i = 0; i < h.finHoldings.size(); ++i)
+      if (financeRng_.chance(1.0 / double(h.finHoldings.size()))) { pick = i; break; }
+    if (pick == size_t(-1) && !h.finHoldings.empty()) pick = size_t(0);
+    if (pick != size_t(-1)) {
+      Hero::FinHolding& fh = h.finHoldings[pick];
+      h.finCrypto = fh.crypto;
+      financeCache_.erase("symbol");
+      title = "A tip from the inside";
+      body = spyUpperFirst(scene(t, row, other, "Scenario"));
+      say(withBrackets(t, row, "Log Version", other));
+      long long budget = h.money / 6;
+      if (budget < static_cast<long long>(fh.price)) budget = static_cast<long long>(fh.price);
+      if (budget <= h.money && budget >= static_cast<long long>(fh.price) + 1) {
+        const long long shares = static_cast<long long>(double(budget) / fh.price);
+        if (shares > 0) {
+          h.money -= static_cast<long long>(double(shares) * fh.price);
+          fh.shares += shares;
+          fh.cost += double(shares) * fh.price;
+          add("I bought " + std::to_string(shares) + " shares of " + fh.symbol + " for "
+              + money(static_cast<long long>(double(shares) * fh.price)) + ".");
+        }
+      } else {
+        add("I could not afford a single share of " + fh.symbol + ".");
+      }
+      mark("a16_financial-insider-buy-scenarios-enc", int(row));
+    }
+  }
+  // (5) A new advisor.
+  if (title.empty() && h.finAdvisor.empty() && financeRng_.chance(0.07) && ensureTable("a16_financial-advisor-hire-color-enc")) {
+    const Table& t = tbl("a16_financial-advisor-hire-color-enc");
+    const int candidate = 30 + int(financeRng_.below(61));
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (hasCell(t, r, "Advisor Min Reputation") && candidate < numOf(t, r, "Advisor Min Reputation")) continue;
+      if (hasCell(t, r, "Advisor Max Reputation") && candidate > numOf(t, r, "Advisor Max Reputation")) continue;
+      if (hasCell(t, r, "Hero Min Net Worth") && netWorth < numOf(t, r, "Hero Min Net Worth")) continue;
+      if (hasCell(t, r, "Hero Max Net Worth") && netWorth > numOf(t, r, "Hero Max Net Worth")) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+      h.finAdvisor = personName("advisor");
+      if (h.finAdvisor.empty()) h.finAdvisor = "my new advisor";
+      h.finAdvisorRep = candidate;
+      h.finAdvisorFemale = financeRng_.chance(0.5);
+      title = "A new advisor";
+      body = spyUpperFirst(scene(t, row, h.finAdvisorFemale, "Feedback Color"));
+      say(h.finAdvisor + " is my financial advisor now.");
+      mark("a16_financial-advisor-hire-color-enc", int(row));
+      happy += 1;
+    }
+  }
+  // (5b) The advisor's fund reports for the year.
+  if (title.empty() && !h.finAdvisor.empty() && financeRng_.chance(0.06)
+      && ensureTable("a16_financial-fund-performance-color-enc")) {
+    const Table& t = tbl("a16_financial-fund-performance-color-enc");
+    const size_t row = weightedPick(t, "", financeRng_);
+    if (row != size_t(-1)) {
+      const double lo = t.num(row, "Min Delta");
+      const double hi = t.num(row, "Max Delta");
+      const double d = lo + (hi - lo) * financeRng_.unit();
+      financeCache_["delta"] = std::to_string(int(d));
+      title = "The fund";
+      body = spyUpperFirst(cell(t, row, "String"));
+      say(spyUpperFirst(cell(t, row, "String")));
+      mark("a16_financial-fund-performance-color-enc", int(row));
+      happy += d >= 0 ? 1 : -1;
+    }
+  }
+  // (6) A stock tip.
+  if (title.empty() && financeRng_.chance(0.08) && ensureTable("a16_financial-stock-tip-scenarios-enc")) {
+    const Table& t = tbl("a16_financial-stock-tip-scenarios-enc");
+    std::vector<size_t> pool;
+    const long long cap = 2 + h.finSkill / 20;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!hasCell(t, r, "Scenario")) continue;
+      if (!hasCell(t, r, "Professional Score") || numOf(t, r, "Professional Score") <= cap) pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+      const bool other = h.finAdvisorFemale;
+      title = "A stock tip";
+      body = spyUpperFirst(scene(t, row, other, "Scenario"));
+      say(withBrackets(t, row, "Log Version", other));
+      h.finTips += 1;
+      mark("a16_financial-stock-tip-scenarios-enc", int(row));
+    }
+  }
+  // (7) The news moves the market.
+  if (title.empty() && financeRng_.chance(0.10) && ensureTable("a16_financial-headlines-enc")) {
+    const Table& t = tbl("a16_financial-headlines-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!fitTrend(t, r, "Market Trend", trends)) continue;
+      if (!fitTrend(t, r, "Sector Trend", trends)) continue;
+      if (!fitTrend(t, r, "Asset Trend", trends)) continue;
+      if (t.has("Current") && t.flag(r, "Current") && financeRng_.chance(0.3)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+      title = "In the news";
+      body = cell(t, row, "Headline");
+      say("The market moved on the news: " + cell(t, row, "Headline"));
+      mark("a16_financial-headlines-enc", int(row));
+    }
+  }
+  // (8) Advice: the advisor talks, or the hero asks around with nobody to ask.
+  if (title.empty() && financeRng_.chance(0.12)) {
+    if (!h.finAdvisor.empty() && ensureTable("a16_financial-market-advice-enc")) {
+      const Table& t = tbl("a16_financial-market-advice-enc");
+      std::vector<size_t> pool;
+      const long long cap = 2 + h.finAdvisorRep / 25;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (hasCell(t, r, "Professional Score") && numOf(t, r, "Professional Score") > cap) continue;
+        if (!fitTrend(t, r, "Market Trend", trends)) continue;
+        if (!fitTrend(t, r, "Sector Trend", trends)) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty())
+        for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+        title = "The advisor calls";
+        body = spyUpperFirst(scene(t, row, h.finAdvisorFemale, "Feedback"));
+        say(h.finAdvisor + " told me: " + cell(t, row, "Feedback"));
+        h.finSkill = std::min(99, h.finSkill + 1);
+        mark("a16_financial-market-advice-enc", int(row));
+      }
+    }
+    if (title.empty() && ensureTable("a16_financial-advice-rejections-enc")) {
+      const Table& t = tbl("a16_financial-advice-rejections-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+        const bool crypto = financeRng_.chance(0.4);
+        title = "Asking around";
+        body = spyUpperFirst(scene(t, row, false, "String"));
+        say("I asked around about " + std::string(crypto ? "cryptocurrencies" : "stocks") + " and got nothing worth acting on.");
+        mark("a16_financial-advice-rejections-enc", int(row));
+      }
+    }
+  }
+  // (9) Advice about one asset.
+  if (title.empty() && financeRng_.chance(0.12)) {
+    const char* tab = financeRng_.chance(0.6) ? "a16_financial-asset-advice-enc" : "a16_financial-asset-tips-enc";
+    if (ensureTable(tab)) {
+      const Table& t = tbl(tab);
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (t.has("Stock") && t.flag(r, "Stock") && h.finCrypto) continue;
+        if (t.has("Crypto") && t.flag(r, "Crypto") && !h.finCrypto) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty())
+        for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t row = pool[financeRng_.below(uint32_t(pool.size()))];
+        const bool crypto = t.has("Crypto") && t.flag(row, "Crypto");
+        h.finCrypto = crypto;
+        financeCache_.erase("symbol");
+        if (financeToken("asset-symbol").empty()) h.finCrypto = false;
+        title = crypto ? "Advice about a coin" : "Advice about a stock";
+        const std::string col = t.has("Feedback") ? "Feedback" : "Tip";
+        body = spyUpperFirst(scene(t, row, false, col));
+        say("Somebody told me what to do with my " + financeToken("asset-symbol") + ".");
+        mark(tab, int(row));
+      }
+    }
+  }
+  // (10) The yearly statement.
+  if (title.empty() && financeRng_.chance(0.12) && ensureTable("a16_financial-portfolio-report-color-enc")) {
+    const Table& t = tbl("a16_financial-portfolio-report-color-enc");
+    const size_t row = financeRng_.below(uint32_t(t.size()));
+    financeCache_["delta"] = std::to_string(avgDelta);
+    const bool other = h.finAdvisorFemale;
+    title = "My portfolio";
+    body = scene(t, row, other, "String");
+    say("My statement came in.");
+    if (ensureTable("a16_financial-fund-performance-color-enc")) {
+      const Table& ft = tbl("a16_financial-fund-performance-color-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < ft.size(); ++r) {
+        const bool needsSector = ft.has("Moved With Sector") && ft.flag(r, "Moved With Sector");
+        if (needsSector && !fitTrend(ft, r, "Brackets Used", trends)) continue;
+        pool.push_back(r);
+      }
+      if (!pool.empty()) {
+        const size_t fr = pool[financeRng_.below(uint32_t(pool.size()))];
+        add(scene(ft, fr, other, "String"));
+      }
+    }
+    mark("a16_financial-portfolio-report-color-enc", int(row));
+  }
+  // (11) A trade: the appetite decides whether the hero buys or sells.
+  if (title.empty() && financeRng_.chance(0.14) && !h.finHoldings.empty()) {
+    const bool sell = h.finAppetite < 50 && financeRng_.chance(0.4);
+    size_t pick = size_t(-1);
+    if (sell) {
+      for (size_t i = 0; i < h.finHoldings.size(); ++i)
+        if (h.finHoldings[i].shares > 0 && h.finHoldings[i].price * double(h.finHoldings[i].shares) > h.finHoldings[i].cost) { pick = i; break; }
+    }
+    if (!sell && pick == size_t(-1)) {
+      const size_t start = financeRng_.below(uint32_t(h.finHoldings.size()));
+      for (size_t k = 0; k < h.finHoldings.size(); ++k) {
+        const size_t i = (start + k) % h.finHoldings.size();
+        if (h.money / 5 >= static_cast<long long>(h.finHoldings[i].price) + 1) { pick = i; break; }
+      }
+    }
+    if (pick != size_t(-1)) {
+      Hero::FinHolding& fh = h.finHoldings[pick];
+      h.finCrypto = fh.crypto;
+      financeCache_.erase("symbol");
+      if (sell) {
+        const long long worth = static_cast<long long>(fh.price * double(fh.shares));
+        const long long gain = worth - static_cast<long long>(fh.cost);
+        title = "A trade";
+        body = "I sold my " + fh.symbol + " position.";
+        say("I sold " + std::to_string(fh.shares) + " shares of " + fh.symbol + " for " + money(worth) + ".");
+        h.money += worth;
+        h.finEarned += gain;
+        take += worth;
+        fh.shares = 0;
+        fh.cost = 0;
+      } else {
+        long long budget = h.money / 5;
+        if (budget < static_cast<long long>(fh.price)) budget = static_cast<long long>(fh.price);
+        if (budget > h.money) budget = 0;
+        const long long shares = static_cast<long long>(double(budget) / fh.price);
+        if (shares > 0) {
+          const long long paid = static_cast<long long>(double(shares) * fh.price);
+          h.money -= paid;
+          fh.shares += shares;
+          fh.cost += double(paid);
+          title = "A trade";
+          body = "I bought " + std::to_string(shares) + " shares of " + fh.symbol + ".";
+          say("I put " + money(paid) + " into " + fh.symbol + ".");
+          h.finAppetite = std::min(99, h.finAppetite + 3);
+        }
+      }
+      mark("a16_financial-universal-stocks-enc", int(pick));
+    }
+  }
+  // (12) A quiet year: only the market moved.
+  if (title.empty()) {
+    title = "The market";
+    if (bestIndex >= 0 && perfRow[size_t(bestIndex)] != size_t(-1)) {
+      const Table& t = tbl(perfTab[size_t(bestIndex)]);
+      financeCache_["delta"] = std::to_string(bestDelta);
+      const Hero::FinHolding& fh = h.finHoldings[size_t(bestIndex)];
+      h.finCrypto = fh.crypto;
+      financeCache_.erase("symbol");
+      body = scene(t, perfRow[size_t(bestIndex)], false, "String");
+      say(body);
+      mark(perfTab[size_t(bestIndex)], int(perfRow[size_t(bestIndex)]));
+    } else {
+      body = "The market drifted.";
+      say("The market drifted.");
+      mark("a16_financial-universal-stocks-enc", 0);
+    }
+  }
+  if (title.empty()) { financeLive_ = false; return false; }
+  if (body.empty()) body = title;
+  out.table = cardTable.empty() ? "a16_financial-universal-stocks-enc" : cardTable;
+  out.row_id = cardRow >= 0 ? std::to_string(cardRow) : "0";
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  h.money += take;
+  h.finEarned += take;
+  h.finAppetite = h.finAppetite >= 50 ? 50 : std::min(99, h.finAppetite + 1);
+  out.happiness += happy;
+  financeLive_ = false;
+  return true;
+}
+
 // ===== end the screen =======================================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }

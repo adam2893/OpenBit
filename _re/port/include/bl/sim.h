@@ -125,6 +125,7 @@ class Sim {
   void makeBusiness(Life& life);
   void makeRacing(Life& life);
   void makeActor(Life& life);
+  void makeFinance(Life& life);
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
@@ -341,6 +342,9 @@ class Sim {
                      int forcedChoice, bool moment, int* success);
   bool actorYear(Life& life, AgeUp& out, int forcedChoice);
   std::string actorToken(const std::string& token);
+  bool financeYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string financeToken(const std::string& token);
+  std::string financeCompany(const std::string& sector);
   void racingBuyCar(long long budget);
   std::string sportsToken(const std::string& token);
   std::string warToken(const std::string& token);
@@ -389,10 +393,13 @@ class Sim {
   std::map<std::string, std::string> bizCache_;  // one product / rival / supplier per card
   Rng racingRng_;
   Rng actorRng_;
+  Rng financeRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
   bool actorLive_ = false;
+  std::map<std::string, std::string> financeCache_;  // one advisor / ticket per market card
+  bool financeLive_ = false;
   Rng musicRng_;
   Rng politicsRng_;
   Rng miscRng_;

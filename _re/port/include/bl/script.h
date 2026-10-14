@@ -69,6 +69,7 @@ struct ScriptSpec {
   bool zoo = false;
   bool model = false;
   bool actor = false;
+  bool finance = false;    // the market (REPORT.en.md 77)
   bool secret_agent = false;
   bool relationship = false;
   bool spy = false;
