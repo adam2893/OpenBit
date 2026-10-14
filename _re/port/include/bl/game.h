@@ -555,6 +555,15 @@ struct Hero {
   int modelRank = 0, modelProfile = 20, modelSkill = 40, modelAttitude = 50;
   int modelPoise = 50, modelQuirkiness = 50, modelJobs = 0, modelShows = 0, modelStress = 0;
   long long modelSalary = 0, modelEarned = 0;
+  // The luxuries (REPORT.en.md 79).
+  bool luxury = false;
+  std::string luxWatch, luxIsland, luxIslandType, luxSociety, luxSocietyRankName;
+  std::string luxFeature, luxChef, luxCuisine, luxEvent, luxCharity, luxMovie;
+  bool luxIslandOwned = false, luxSocietyMember = false;
+  bool luxAircraft = true, luxCar = true, luxBoat = true;
+  int luxIslandSize = 0, luxSocietyRank = 0, luxEvents = 0, luxSpaVisits = 0;
+  long long luxValue = 0, luxSpent = 0, luxWindfall = 0;
+
 
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'

@@ -127,6 +127,7 @@ class Sim {
   void makeActor(Life& life);
   void makeFinance(Life& life);
   void makeModel(Life& life);
+  void makeLuxury(Life& life);
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
@@ -350,6 +351,11 @@ class Sim {
   std::string modelToken(const std::string& token);
   std::string modelName(const char* table);
   int modelRankIndex() const;
+  // The luxuries (REPORT.en.md 79).
+  bool luxuryYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string luxuryToken(const std::string& token);
+  std::string luxIslandName(const std::string& islandType);
+
   void racingBuyCar(long long budget);
   std::string sportsToken(const std::string& token);
   std::string warToken(const std::string& token);
@@ -400,6 +406,7 @@ class Sim {
   Rng actorRng_;
   Rng financeRng_;
   Rng modelRng_;
+  Rng luxuryRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
@@ -407,7 +414,9 @@ class Sim {
   std::map<std::string, std::string> financeCache_;  // one advisor / ticket per market card
   bool financeLive_ = false;
   std::map<std::string, std::string> modelCache_;  // one rival / product / look per catwalk card
+  std::map<std::string, std::string> luxuryCache_;  // one island / chef / watch per luxury card
   bool modelLive_ = false;
+  bool luxuryLive_ = false;
   Rng musicRng_;
   Rng politicsRng_;
   Rng miscRng_;

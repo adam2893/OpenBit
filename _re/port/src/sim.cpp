@@ -591,7 +591,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       racingRng_(seed ^ 0x94d049bb133111ebULL),
       actorRng_(seed ^ 0x2545f4914f6cdd1dULL),
       financeRng_(seed ^ 0x6a09e667f3bcc909ULL),
-      modelRng_(seed ^ 0xbb67ae8584caa73bULL) {}
+      modelRng_(seed ^ 0xbb67ae8584caa73bULL),
+      luxuryRng_(seed ^ 0x510e527fade682d1ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -743,6 +744,30 @@ bool Sim::load(std::string* error) {
     "a16_model-photo-shoot-poses-enc",
     "a16_model-products-enc",
     "a16_model-publication-titles-enc",
+    // The luxuries (REPORT.en.md 79): 22 tables.
+    "a16_luxury-celebrity-chef-name-enc",
+    "a16_luxury-charity-organization-enc",
+    "a16_luxury-default-island-name-enc",
+    "a16_luxury-exotic-watch-brand-enc",
+    "a16_luxury-island-color-snippet-enc",
+    "a16_luxury-island-data-enc",
+    "a16_luxury-island-structure-spend-time-enc",
+    "a16_luxury-island-vacation-dumb-scenario-enc",
+    "a16_luxury-luxury-aircraft-special-feature-enc",
+    "a16_luxury-luxury-car-special-feature-enc",
+    "a16_luxury-luxury-watercraft-special-feature-enc",
+    "a16_luxury-secret-societie-enc",
+    "a16_luxury-secret-society-discussion-topic-enc",
+    "a16_luxury-secret-society-game-enc",
+    "a16_luxury-secret-society-rule-enc",
+    "a16_luxury-spa-treatment-color-enc",
+    "a16_luxury-spa-treatment-enc",
+    "a16_luxury-spa-vip-treatment-enc",
+    "a16_luxury-vip-event-chef-cuisines-enc",
+    "a16_luxury-vip-event-feedback-color-string-enc",
+    "a16_luxury-vip-movie-enc",
+    "a16_luxury-vip-nightclub-event-enc",
+
     "a16_actors-real-enc",
     "a16_secret-agent-agency-fronts-enc",
     "a16_casino-casino-game-room-enc",
@@ -1895,6 +1920,17 @@ bool hustlerIsToken(const std::string& token, bool live) {
 // rendering.
 // The screen (REPORT.en.md 76). <production>, <role> and <real-actor> belong
 // to no other family; <costar> is answered for the dumb-scenario pool too.
+// The luxuries (REPORT.en.md 79). '<island>' is the hero's own island; no
+// other family writes that tag.
+bool luxIsToken(const std::string& token, bool live) {
+  std::string k = trim(token);
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    k.resize(k.size() - psuffix.size());
+  (void)live;
+  return k == "island" || k == "island-name";
+}
+
 bool modelIsToken(const std::string& token, bool live) {
   std::string k = token;
   // trim
@@ -2183,6 +2219,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else { out += v; rbLast_ = v; }
     } else if (racIsToken(token, racingLive_)) {
       const std::string v = racingToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (luxIsToken(token, luxuryLive_)) {
+      const std::string v = luxuryToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else { out += v; rbLast_ = v; }
 } else if (modelIsToken(token, modelLive_)) {
@@ -3147,6 +3187,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.actor && actorYear(life, out, forcedChoice)) return true;
   if (life.hero.investing && financeYear(life, out, forcedChoice)) return true;
   if (life.hero.model && modelYear(life, out, forcedChoice)) return true;
+  if (life.hero.luxury && luxuryYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -3218,6 +3259,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   actorCache_.clear();    // one costar / production / role per screen card
   financeCache_.clear();  // one advisor / ticket per market card
   modelCache_.clear();    // one rival / product / look per catwalk card
+  luxuryCache_.clear();   // one island / chef / watch per luxury card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -17385,6 +17427,642 @@ bool Sim::modelYear(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 // ===== end the screen =======================================================
+
+
+// ===== the luxuries (REPORT.en.md 79) =======================================
+
+std::string Sim::luxIslandName(const std::string& islandType) {
+  if (!ensureTable("a16_luxury-default-island-name-enc")) return "Island";
+  const Table& t = tbl("a16_luxury-default-island-name-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string it = trim(t.at(r, "Island Type"));
+    if (!islandType.empty() && !it.empty() && lower(it) != lower(islandType)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty())
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  if (pool.empty()) return "Island";
+  size_t row = t.has("Commonness Score") ? weightedPickOf(t, "Commonness Score", pool, luxuryRng_)
+                                         : size_t(-1);
+  if (row == size_t(-1)) row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+  std::string name = trim(resolve(t.at(row, "Name")));
+  // The pool's own names are templates ('<random-first-name> Island').
+  auto fill = [&](std::string& v, const std::string& tag, const std::string& value) {
+    size_t at = 0;
+    while ((at = v.find(tag, at)) != std::string::npos) {
+      v.replace(at, tag.size(), value);
+      at += value.size();
+    }
+  };
+  fill(name, "<random-first-name>", drawFirstName(luxuryRng_.chance(0.5)));
+  fill(name, "<random-surname>", drawSurname());
+  name = trim(resolve(name));
+  if (name.empty()) name = "Island";
+  return name;
+}
+
+void Sim::makeLuxury(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.luxury = true;
+  h.luxValue = 0;
+  h.luxSpent = 0;
+  h.luxIslandOwned = false;
+  h.luxIslandSize = 0;
+  h.luxSocietyMember = false;
+  h.luxSocietyRank = 0;
+  h.luxEvents = 0;
+  h.luxSpaVisits = 0;
+  h.luxAircraft = h.luxCar = h.luxBoat = true;
+  // No other enabled family pays the hero enough for an island, a watch or a
+  // club membership, so the luxury life starts with a fortune (shortcut,
+  // REPORT.en.md 79 - the same device section 77 uses for the portfolio).
+  h.luxWindfall = 200000000;
+  h.money += h.luxWindfall;
+  luxuryLive_ = false;
+  luxuryCache_.clear();
+}
+
+std::string Sim::luxuryToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (!h) return std::string();
+  std::string k = trim(token);
+  bool poss = false;
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    poss = true;
+    k.resize(k.size() - psuffix.size());
+  }
+  if (k == "island" || k == "island-name") {
+    const std::string v = h->luxIsland.empty() ? std::string("my island") : h->luxIsland;
+    return poss ? llPossessive(v) : v;
+  }
+  return std::string();
+}
+
+bool Sim::luxuryYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.luxury || h.age < 18) return false;
+  if (!ensureTable("a16_luxury-spa-treatment-enc")) return false;
+  if (!luxuryRng_.chance(0.55)) return false;
+  luxuryLive_ = true;
+  luxuryCache_.clear();
+  std::string line, title, body, cardTable;
+  int cardRow = -1;
+  int happy = 0;
+  std::vector<std::string> notes;
+  auto say = [&](const std::string& v) {
+    if (!v.empty() && line.empty()) {
+      line = spyUpperFirst(v);
+      const char last = line[line.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') line += '.';
+    }
+  };
+  auto add = [&](const std::string& v) { if (!v.empty()) notes.push_back(spyUpperFirst(v)); };
+  auto cell = [&](const Table& t, size_t r, const std::string& col) {
+    return trim(resolve(t.at(r, col)));
+  };
+  auto numOf = [](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col) || trim(t.at(r, col)).empty()) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto hasCell = [](const Table& t, size_t r, const std::string& col) -> bool {
+    return t.has(col) && !trim(t.at(r, col)).empty();
+  };
+  auto flagOf = [](const Table& t, size_t r, const std::string& col) -> bool {
+    return !col.empty() && t.has(col) && t.flag(r, col);
+  };
+  auto mark = [&](const std::string& tab, int r) {
+    if (r >= 0) { cardTable = tab; cardRow = r; }
+  };
+  auto drawRow = [&](const std::string& tab, const std::string& weight) -> size_t {
+    if (!ensureTable(tab)) return size_t(-1);
+    const Table& t = tbl(tab.c_str());
+    if (!t.size()) return size_t(-1);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (weight.empty() || !t.has(weight)) return pool[luxuryRng_.below(uint32_t(pool.size()))];
+    const size_t row = weightedPickOf(t, weight, pool, luxuryRng_);
+    return row == size_t(-1) ? pool[luxuryRng_.below(uint32_t(pool.size()))] : row;
+  };
+  auto roll = [&](long long lo, long long hi) -> long long {
+    if (hi <= lo) return lo;
+    return lo + static_cast<long long>(double(hi - lo) * luxuryRng_.unit());
+  };
+  auto spend = [&](long long v) -> bool {
+    if (v <= 0) return true;
+    if (h.money < v) return false;
+    h.money -= v;
+    h.luxSpent += v;
+    return true;
+  };
+  auto flush = [&]() {
+    for (const std::string& n : notes) out.extra.push_back(n);
+    notes.clear();
+  };
+
+  // The holdings pay for the lifestyle.
+  const long long income = std::max<long long>(3000000, static_cast<long long>(h.luxValue / 10));
+  h.money += income;
+  add("My holdings brought in " + money(income) + " this year.");
+  if (h.luxWindfall > 0) {
+    add("I came into " + money(h.luxWindfall) + ".");
+    h.luxWindfall = 0;
+  }
+
+  // (1) A secret society, and the fee it charges.
+  if (title.empty() && !h.luxSocietyMember && luxuryRng_.chance(0.05)
+      && ensureTable("a16_luxury-secret-societie-enc")) {
+    const Table& t = tbl("a16_luxury-secret-societie-enc");
+    const size_t row = t.size() ? luxuryRng_.below(uint32_t(t.size())) : size_t(-1);
+    if (row != size_t(-1)) {
+      const std::string nm = cell(t, row, "Name");
+      const long long fee = numOf(t, row, "Entry Fee");
+      title = "A secret society";
+      body = nm + ": " + cell(t, row, "Secondary Text") + ". "
+             + cell(t, row, "Membership Requirement Text");
+      if (!spend(fee)) {
+        say("I could not cover the " + money(fee) + " entry fee for " + nm);
+      } else if (luxuryRng_.unit() < 0.7) {
+        h.luxSocietyMember = true;
+        h.luxSociety = nm;
+        h.luxSocietyRank = 0;
+        h.luxSocietyRankName = cell(t, row, "Rank 1");
+        say(cell(t, row, "Join Color String") + " I was inducted into " + nm + ": "
+            + cell(t, row, "Society Motto"));
+        happy += 3;
+        h.karma += int(numOf(t, row, "Karma Impact"));
+        h.looks = std::min(100, std::max(0, h.looks + int(numOf(t, row, "Looks Impact"))));
+        h.health = std::min(100, std::max(0, h.health + int(numOf(t, row, "Health Impact"))));
+        h.smarts = std::min(100, std::max(0, h.smarts + int(numOf(t, row, "Smarts Impact"))));
+        h.discipline += int(numOf(t, row, "Willpower Impact"));
+      } else {
+        say(cell(t, row, "Rejection Strings"));
+        happy -= 1;
+      }
+      mark("a16_luxury-secret-societie-enc", int(row));
+    }
+  }
+
+  // (2) An exotic watch.
+  if (title.empty() && h.luxWatch.empty() && luxuryRng_.chance(0.05)
+      && ensureTable("a16_luxury-exotic-watch-brand-enc")) {
+    const Table& t = tbl("a16_luxury-exotic-watch-brand-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (numOf(t, r, "Min Cost") <= h.money) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      const long long cost = roll(numOf(t, row, "Min Cost"), numOf(t, row, "Max Cost"));
+      if (spend(cost)) {
+        h.luxWatch = cell(t, row, "Make") + " " + cell(t, row, "Model");
+        h.luxValue += cost;
+        title = "An exotic watch";
+        body = "The watch: " + h.luxWatch + ". Cost: " + money(cost) + ".";
+        say("I bought a " + h.luxWatch + " for " + money(cost));
+        happy += 2;
+        mark("a16_luxury-exotic-watch-brand-enc", int(row));
+      }
+    }
+  }
+
+  // (3) A bigger island.
+  if (title.empty() && h.luxIslandOwned && h.luxIslandSize < 2 && luxuryRng_.chance(0.05)
+      && ensureTable("a16_luxury-island-data-enc")) {
+    const Table& t = tbl("a16_luxury-island-data-enc");
+    size_t row = size_t(-1);
+    for (size_t r = 0; r < t.size(); ++r)
+      if (lower(trim(t.at(r, "Island Type"))) == lower(h.luxIslandType)) { row = r; break; }
+    if (row != size_t(-1)) {
+      const std::string sizeName = h.luxIslandSize == 0 ? "Medium" : "Large";
+      const long long cost = roll(numOf(t, row, sizeName + " Minimum Cost"),
+                                  numOf(t, row, sizeName + " Maximum Cost"));
+      if (h.money >= cost && spend(cost)) {
+        h.luxIslandSize += 1;
+        h.luxValue += cost;
+        title = "A bigger island";
+        body = "My island is now " + lower(sizeName) + ". Cost: " + money(cost) + ".";
+        say("I bought the " + lower(sizeName) + " expansion for my island for " + money(cost));
+        happy += 3;
+        mark("a16_luxury-island-data-enc", int(row));
+      }
+    }
+  }
+
+  // (4) A private island.
+  if (title.empty() && !h.luxIslandOwned && luxuryRng_.chance(0.06)
+      && ensureTable("a16_luxury-island-data-enc")) {
+    const Table& t = tbl("a16_luxury-island-data-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (numOf(t, r, "Small Minimum Cost") <= h.money) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      const long long cost = roll(numOf(t, row, "Small Minimum Cost"),
+                                  numOf(t, row, "Small Maximum Cost"));
+      if (spend(cost)) {
+        h.luxIslandType = lower(cell(t, row, "Island Type"));
+        h.luxIslandSize = 0;
+        h.luxIslandOwned = true;
+        h.luxIsland = luxIslandName(h.luxIslandType);
+        h.luxValue += cost;
+        title = "A private island";
+        body = "The island: " + h.luxIsland + " (" + h.luxIslandType + "). Cost: " + money(cost) + ".";
+        say("I bought " + h.luxIsland + ", a private " + h.luxIslandType + " island, for " + money(cost));
+        happy += 5;
+        mark("a16_luxury-island-data-enc", int(row));
+      }
+    }
+  }
+
+  // (5) A rule put to the vote at the society.
+  if (title.empty() && h.luxSocietyMember && luxuryRng_.chance(0.06)
+      && ensureTable("a16_luxury-secret-society-rule-enc")) {
+    const Table& t = tbl("a16_luxury-secret-society-rule-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string cs = trim(t.at(r, "Compatible Society"));
+      if (!cs.empty() && lower(cs) != lower(h.luxSociety)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      // The third column is literally '"Yea" is Correct'; read it by position.
+      const std::string yeaCol = t.columns().size() > 3 ? t.columns()[2] : std::string();
+      const bool yeaSays = flagOf(t, row, yeaCol);
+      const bool heroYea = luxuryRng_.chance(0.5);
+      const std::string rule = cell(t, row, "Rule");
+      title = "A vote at the " + h.luxSociety;
+      body = "The society voted on: " + rule + ".";
+      say("The " + h.luxSociety + " voted on: " + rule + ". I voted " + (heroYea ? "Yea" : "Nay"));
+      if (heroYea == yeaSays) { add("I was on the winning side."); happy += 2; }
+      else { add("I was outvoted."); happy -= 1; }
+      mark("a16_luxury-secret-society-rule-enc", int(row));
+    }
+  }
+
+  // (6) A game night at the society.
+  if (title.empty() && h.luxSocietyMember && luxuryRng_.chance(0.06)
+      && ensureTable("a16_luxury-secret-society-game-enc")) {
+    const Table& t = tbl("a16_luxury-secret-society-game-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string cs = trim(t.at(r, "Compatible Society"));
+      if (!cs.empty() && lower(cs) != lower(h.luxSociety)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      const std::string game = cell(t, row, "Game");
+      title = "Games at the " + h.luxSociety;
+      body = "We played " + game + ".";
+      say("The " + h.luxSociety + " spent the evening playing " + game);
+      happy += 2;
+      mark("a16_luxury-secret-society-game-enc", int(row));
+    }
+  }
+
+  // (7) A discussion topic at the society.
+  if (title.empty() && h.luxSocietyMember && luxuryRng_.chance(0.06)
+      && ensureTable("a16_luxury-secret-society-discussion-topic-enc")) {
+    const Table& t = tbl("a16_luxury-secret-society-discussion-topic-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string cs = trim(t.at(r, "Compatible Society"));
+      if (!cs.empty() && lower(cs) != lower(h.luxSociety)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      const std::string subj = cell(t, row, "Subject");
+      title = "A discussion";
+      body = spyUpperFirst(subj) + ".";
+      if (hasCell(t, row, "Feedback Snippet")) add(cell(t, row, "Feedback Snippet"));
+      say("The " + h.luxSociety + " discussed " + subj);
+      happy += 1;
+      mark("a16_luxury-secret-society-discussion-topic-enc", int(row));
+    }
+  }
+
+  // (8) A charity gala.
+  if (title.empty() && luxuryRng_.chance(0.08) && ensureTable("a16_luxury-charity-organization-enc")) {
+    const Table& t = tbl("a16_luxury-charity-organization-enc");
+    const size_t row = t.size() ? luxuryRng_.below(uint32_t(t.size())) : size_t(-1);
+    if (row != size_t(-1)) {
+      const std::string nm = cell(t, row, "Name");
+      const std::string abbr = cell(t, row, "Abbreviation");
+      const bool bad = flagOf(t, row, "Is Bad Charity");
+      const std::string full = nm + (abbr.empty() ? std::string() : " (" + abbr + ")");
+      const long long gift = 1000000LL * (1 + static_cast<long long>(luxuryRng_.below(10)));
+      title = "A charity gala";
+      body = full + ": a donation of " + money(gift) + ".";
+      if (spend(gift)) {
+        say("I donated " + money(gift) + " to " + full);
+        h.karma += bad ? -3 : 3;
+        happy += bad ? -1 : 2;
+        if (bad) add("They are not a good charity.");
+        mark("a16_luxury-charity-organization-enc", int(row));
+      } else {
+        say("I could not afford the donation to " + nm);
+      }
+    }
+  }
+
+  // (9) A special feature for the jet, the car or the yacht.
+  if (title.empty() && luxuryRng_.chance(0.12)) {
+    const int kind = int(luxuryRng_.below(3));
+    const char* tab = kind == 0 ? "a16_luxury-luxury-aircraft-special-feature-enc"
+                     : kind == 1 ? "a16_luxury-luxury-car-special-feature-enc"
+                                 : "a16_luxury-luxury-watercraft-special-feature-enc";
+    const char* noun = kind == 0 ? "private jet" : kind == 1 ? "car" : "yacht";
+    if (ensureTable(tab)) {
+      const Table& t = tbl(tab);
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        // The hero's yacht is a sailing yacht (shortcut, REPORT.en.md 79).
+        if (kind == 2 && !t.flag(r, "Sailing Yacht")) continue;
+        if (numOf(t, r, "Cost") > h.money) continue;
+        pool.push_back(r);
+      }
+      if (!pool.empty()) {
+        const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+        const long long cost = numOf(t, row, "Cost");
+        if (spend(cost)) {
+          const std::string feat = cell(t, row, "Feature");
+          h.luxFeature = feat;
+          h.luxValue += cost;
+          title = "A new toy";
+          body = spyUpperFirst(feat) + ": " + cell(t, row, "Profile Color")
+                 + " Cost: " + money(cost) + ".";
+          say("I had a " + feat + " installed on my " + noun + " for " + money(cost));
+          happy += 2;
+          mark(tab, int(row));
+        }
+      }
+    }
+  }
+
+  // (10) Something built on the island.
+  if (title.empty() && h.luxIslandOwned && luxuryRng_.chance(0.09)
+      && ensureTable("a16_luxury-island-structure-spend-time-enc")) {
+    const Table& t = tbl("a16_luxury-island-structure-spend-time-enc");
+    const size_t row = drawRow("a16_luxury-island-structure-spend-time-enc", "Commonness Score");
+    if (row != size_t(-1)) {
+      const std::string stype = cell(t, row, "Structure Type");
+      // The pool has no cost column; the price is invented (shortcut).
+      const long long cost = 5000000LL + 1000000LL * static_cast<long long>(luxuryRng_.below(20));
+      title = "A new structure on the island";
+      body = "A " + stype + " for " + (h.luxIsland.empty() ? std::string("my island") : h.luxIsland)
+             + ". Cost: " + money(cost) + ".";
+      if (spend(cost)) {
+        // Resolve the card text first so the log's '<rb>' points at it.
+        const std::string sstr = cell(t, row, "String");
+        const std::string slog = trim(resolve(t.at(row, "Log Version")));
+        add(sstr);
+        say(slog);
+        h.luxValue += cost;
+        happy += 2;
+        mark("a16_luxury-island-structure-spend-time-enc", int(row));
+      } else {
+        say("I could not afford a " + stype + " for the island");
+      }
+    }
+  }
+
+  // (11) Island life, colour.
+  if (title.empty() && h.luxIslandOwned && luxuryRng_.chance(0.09)
+      && ensureTable("a16_luxury-island-color-snippet-enc")) {
+    const Table& t = tbl("a16_luxury-island-color-snippet-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string it = trim(t.at(r, "Island Type"));
+      if (!it.empty() && lower(it) != lower(h.luxIslandType)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = t.has("Commonness Score") ? weightedPickOf(t, "Commonness Score", pool, luxuryRng_)
+                                                   : size_t(-1);
+      const size_t pick = row == size_t(-1) ? pool[luxuryRng_.below(uint32_t(pool.size()))] : row;
+      const std::string sstr = cell(t, pick, "String");
+      const std::string slog = trim(resolve(t.at(pick, "Log Version")));
+      title = "Island life";
+      body = spyUpperFirst(sstr) + ".";
+      say(slog);
+      happy += 1;
+      mark("a16_luxury-island-color-snippet-enc", int(pick));
+    }
+  }
+
+  // (12) A day at the spa.
+  if (title.empty() && luxuryRng_.chance(0.20) && ensureTable("a16_luxury-spa-treatment-enc")) {
+    const Table& t = tbl("a16_luxury-spa-treatment-enc");
+    const size_t row = t.size() ? luxuryRng_.below(uint32_t(t.size())) : size_t(-1);
+    if (row != size_t(-1)) {
+      const std::string nm = cell(t, row, "Name");
+      const std::string cat = cell(t, row, "Category");
+      const long long cost = numOf(t, row, "Cost");
+      title = "A spa day";
+      body = spyUpperFirst(nm) + " (" + cat + "). Cost: " + money(cost) + ".";
+      if (spend(cost)) {
+        h.looks = std::min(100, h.looks + int(numOf(t, row, "Looks Impact")));
+        h.health = std::min(100, h.health + int(numOf(t, row, "Health Impact")));
+        happy += int(numOf(t, row, "Happiness Impact"));
+        h.luxSpaVisits += 1;
+        const size_t vip = drawRow("a16_luxury-spa-vip-treatment-enc", "Commonness Score");
+        if (vip != size_t(-1)) {
+          const Table& vt = tbl("a16_luxury-spa-vip-treatment-enc");
+          add("The spa also brought me " + cell(vt, vip, "Treatment") + ".");
+        }
+        bool said = false;
+        if (luxuryRng_.chance(0.6) && ensureTable("a16_luxury-spa-treatment-color-enc")) {
+          const Table& ct = tbl("a16_luxury-spa-treatment-color-enc");
+          const size_t cr = drawRow("a16_luxury-spa-treatment-color-enc", "Commonness Score");
+          if (cr != size_t(-1)) {
+            const std::string sstr = cell(ct, cr, "String");
+            const std::string slog = trim(resolve(ct.at(cr, "Log Version")));
+            add(sstr);
+            say(slog);
+            said = true;
+          }
+        }
+        if (!said) say("I spent the day at the spa, where I had a " + nm);
+        mark("a16_luxury-spa-treatment-enc", int(row));
+      } else {
+        say("I could not afford the " + nm);
+      }
+    }
+  }
+
+  // (13) A vacation on the island.
+  if (title.empty() && h.luxIslandOwned && luxuryRng_.chance(0.14)
+      && ensureTable("a16_luxury-island-vacation-dumb-scenario-enc")) {
+    const Table& t = tbl("a16_luxury-island-vacation-dumb-scenario-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (hasCell(t, r, "Subject Min Age") && h.age < int(numOf(t, r, "Subject Min Age"))) continue;
+      if (hasCell(t, r, "Subject Max Age") && h.age > int(numOf(t, r, "Subject Max Age"))) continue;
+      const std::string gb = lower(trim(t.at(r, "Gender Bracket")));
+      if (gb == "male" || gb == "female") continue;  // the pool is written about the hero
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t row = pool[luxuryRng_.below(uint32_t(pool.size()))];
+      flush();
+      if (renderRow(t, row, life, out, forcedChoice)) {
+        luxuryLive_ = false;
+        return true;
+      }
+    }
+  }
+
+  // (14) A night out.
+  if (title.empty() && luxuryRng_.chance(0.26)
+      && ensureTable("a16_luxury-vip-event-feedback-color-string-enc")) {
+    const Table& t = tbl("a16_luxury-vip-event-feedback-color-string-enc");
+    const size_t row = drawRow("a16_luxury-vip-event-feedback-color-string-enc", "Commonness Score");
+    if (row != size_t(-1)) {
+      const std::string etype = lower(cell(t, row, "Event Type"));
+      const std::string remark = cell(t, row, "String");
+      std::string extra;
+      std::string what = etype.empty() ? std::string("party") : etype;
+      if (etype == "movie premiere" && ensureTable("a16_luxury-vip-movie-enc")) {
+        const size_t mr = drawRow("a16_luxury-vip-movie-enc", "Commonness Score");
+        if (mr != size_t(-1)) {
+          const Table& mt = tbl("a16_luxury-vip-movie-enc");
+          extra = "The film was " + cell(mt, mr, "Title") + ", a " + lower(cell(mt, mr, "Genre"))
+                  + " picture.";
+        }
+      } else if (etype == "nightclub" && ensureTable("a16_luxury-vip-nightclub-event-enc")) {
+        const size_t nr = drawRow("a16_luxury-vip-nightclub-event-enc", "Commonness Score");
+        if (nr != size_t(-1)) {
+          const Table& nt = tbl("a16_luxury-vip-nightclub-event-enc");
+          extra = "It was a " + cell(nt, nr, "Event Type") + ".";
+        }
+      } else {
+        std::string cuisine;
+        if (ensureTable("a16_luxury-vip-event-chef-cuisines-enc")) {
+          const size_t cr = drawRow("a16_luxury-vip-event-chef-cuisines-enc", "");
+          if (cr != size_t(-1)) cuisine = cell(tbl("a16_luxury-vip-event-chef-cuisines-enc"), cr, "Cuisine Type");
+        }
+        std::string chef;
+        if (ensureTable("a16_luxury-celebrity-chef-name-enc")) {
+          const size_t chr_ = drawRow("a16_luxury-celebrity-chef-name-enc", "Commonness Score");
+          if (chr_ != size_t(-1)) chef = cell(tbl("a16_luxury-celebrity-chef-name-enc"), chr_, "Name");
+        }
+        if (!chef.empty()) {
+          extra = "The chef was " + chef;
+          if (!cuisine.empty()) extra += ", cooking " + cuisine + " food";
+          extra += ".";
+        } else if (!cuisine.empty()) {
+          extra = "The food was " + cuisine + ".";
+        }
+      }
+      title = "A night out";
+      body = spyUpperFirst(remark) + (extra.empty() ? std::string() : " " + extra);
+      if (!extra.empty()) add(extra);
+      say(remark);
+      h.luxEvents += 1;
+      happy += int(numOf(t, row, "Enjoyment Score")) - 2;
+      mark("a16_luxury-vip-event-feedback-color-string-enc", int(row));
+      (void)what;
+    }
+  }
+
+  // (15) A quiet year between the yacht and the island.
+  if (title.empty()) {
+    // An ordinary year of the lifestyle: one of the three small pools.
+    const int kind = int(luxuryRng_.below(3));
+    happy += 1;
+    if (kind == 1 && ensureTable("a16_luxury-spa-treatment-enc")) {
+      const Table& t = tbl("a16_luxury-spa-treatment-enc");
+      const size_t row = t.size() ? luxuryRng_.below(uint32_t(t.size())) : size_t(-1);
+      if (row != size_t(-1)) {
+        const std::string nm = cell(t, row, "Name");
+        const long long cost = numOf(t, row, "Cost");
+        title = "The good life";
+        body = "My own spa: " + lower(nm) + ". Cost: " + money(cost) + ".";
+        if (spend(cost)) {
+          h.looks = std::min(100, h.looks + int(numOf(t, row, "Looks Impact")));
+          h.health = std::min(100, h.health + int(numOf(t, row, "Health Impact")));
+          h.luxSpaVisits += 1;
+          say("I had a " + nm + " at home and it cost " + money(cost));
+          mark("a16_luxury-spa-treatment-enc", int(row));
+        }
+      }
+    } else if (kind == 2 && ensureTable("a16_luxury-vip-event-feedback-color-string-enc")) {
+      const Table& t = tbl("a16_luxury-vip-event-feedback-color-string-enc");
+      const size_t row = drawRow("a16_luxury-vip-event-feedback-color-string-enc", "Commonness Score");
+      if (row != size_t(-1)) {
+        const std::string et = cell(t, row, "Event Type");
+        title = "The good life";
+        body = "A quiet " + (et.empty() ? std::string("evening") : et) + ". "
+               + spyUpperFirst(cell(t, row, "String"));
+        say("I spent the year enjoying the money, most recently at a "
+            + (et.empty() ? std::string("party") : et));
+        h.luxEvents += 1;
+        mark("a16_luxury-vip-event-feedback-color-string-enc", int(row));
+      }
+    }
+    if (title.empty()) {
+      const size_t vip = drawRow("a16_luxury-spa-vip-treatment-enc", "Commonness Score");
+      title = "The good life";
+      if (vip != size_t(-1)) {
+        const Table& vt = tbl("a16_luxury-spa-vip-treatment-enc");
+        const std::string tr = cell(vt, vip, "Treatment");
+        body = "The staff brought me " + tr + ".";
+        say("I spent the year enjoying the money, starting with " + tr);
+        mark("a16_luxury-spa-vip-treatment-enc", int(vip));
+      } else {
+        body = "I spent the year between "
+               + (h.luxIsland.empty() ? std::string("the yacht") : h.luxIsland)
+               + " and the club.";
+        say("I spent the year enjoying the money");
+      }
+    }
+  }
+
+  // The society's ranks, earned by showing up.
+  if (h.luxSocietyMember && h.luxSocietyRank < 2 && luxuryRng_.chance(0.12)
+      && ensureTable("a16_luxury-secret-societie-enc")) {
+    const Table& t = tbl("a16_luxury-secret-societie-enc");
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (cell(t, r, "Name") != h.luxSociety) continue;
+      const std::string col = "Rank " + std::to_string(h.luxSocietyRank + 2);
+      const std::string next = t.has(col) ? trim(resolve(t.at(r, col))) : std::string();
+      if (!next.empty()) {
+        h.luxSocietyRank += 1;
+        h.luxSocietyRankName = next;
+        add("The " + h.luxSociety + " promoted me to " + next + ".");
+      }
+      break;
+    }
+  }
+
+  if (title.empty()) { luxuryLive_ = false; return false; }
+  flush();
+  out.table = cardTable.empty() ? "a16_luxury-spa-treatment-enc" : cardTable;
+  if (cardRow >= 0) out.row_id = std::to_string(cardRow + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  out.happiness += happy;
+  luxuryLive_ = false;
+  return true;
+}
+
+// ===== end the luxuries (REPORT.en.md 79) ===================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 

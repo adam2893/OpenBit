@@ -371,12 +371,12 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("finance is not a boolean");
   }
 
-  p = findValue(json, "model");
+  p = findValue(json, "luxury");
   if (p != std::string::npos) {
     skipWs(json, p);
-    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.model = true;
-    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.model = false;
-    else return fail("model is not a boolean");
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.luxury = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.luxury = false;
+    else return fail("luxury is not a boolean");
   }
 
   p = findValue(json, "secret-agent");
@@ -647,6 +647,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.actor) sim.makeActor(life);
   if (spec.finance) sim.makeFinance(life);
   if (spec.model) sim.makeModel(life);
+  if (spec.luxury) sim.makeLuxury(life);
   if (spec.music) sim.makeMusician(life);
   if (spec.politics) sim.makePolitician(life);
   unsigned miscMask = 0;

@@ -7536,3 +7536,151 @@ A note on the data rather than the port: the campaign pool's reception lines are
 
 The regression that ran with this section is the usual set: twenty-one family probes at zero residue, the residue census at zero, coverage 109 of 109 captured and 107 recoverable, the port-versus-game gap at zero, the scripted push run clean and the bench run to the end of its trace.
 
+
+## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables
+
+The `a16_luxury` family is the money side of the game. Everywhere else in the port the hero earns a wage, runs a business or wins a purse; here he simply has money, and the family is the catalogue of what money buys: a private island, an exotic watch, a secret society, a spa, a night out among famous people, and a small aircraft-carrier of accessories for the jet, the car and the boat.
+
+Behavioural sources, all under `/Users/Adam/Documents/bitlife/_re/gamedata_plain`:
+
+
+### 79.1 The family
+
+Twenty-two tables, 734 rows. Every one of them is drawn by the year.
+
+| table | rows | columns |
+| --- | --- | --- |
+| `a16_luxury-celebrity-chef-name-enc` | 15 | Name, Commonness Score |
+| `a16_luxury-charity-organization-enc` | 32 | Name, Abbreviation, Is Bad Charity |
+| `a16_luxury-default-island-name-enc` | 96 | Name, Island Type, Commonness Score |
+| `a16_luxury-exotic-watch-brand-enc` | 6 | Make, Model, Min Cost, Max Cost |
+| `a16_luxury-island-color-snippet-enc` | 43 | Snippet, Island Type, Commonness Score |
+| `a16_luxury-island-data-enc` | 3 | Island Type, Small/Medium/Large Minimum + Maximum Cost, Eligible Countries |
+| `a16_luxury-island-structure-spend-time-enc` | 36 | String, Log Version, Structure Type, Commonness Score |
+| `a16_luxury-island-vacation-dumb-scenario-enc` | 18 | Subject, Subject Min/Max Age, Gender Bracket, Title, Body, CTA, Choice 1-4, Narrative 1-4, Relationship Impact 1-4, Karma Impact 1-4 |
+| `a16_luxury-luxury-aircraft-special-feature-enc` | 16 | Feature, Profile Color, Cost, Compatible Category, Commonness Score |
+| `a16_luxury-luxury-car-special-feature-enc` | 14 | Feature, Profile Color, Cost, Compatible Category, Commonness Score |
+| `a16_luxury-luxury-watercraft-special-feature-enc` | 16 | Feature, Profile Color, Cost, the six category flags (Sailing Yacht, Sailboat, Research Vessel, Cruise Ship, Submarine, Pirate Ship), Commonness Score |
+| `a16_luxury-secret-societie-enc` | 10 | Name, Secondary Text, Membership Requirement Text, Rank 1-3, Looks/Health/Happiness/Smarts/Willpower/Karma Impact, Join Color String, Rejection Strings, Society Motto, Entry Fee |
+| `a16_luxury-secret-society-discussion-topic-enc` | 80 | Subject, Compatible Society, Feedback Snippet, Commonness Score |
+| `a16_luxury-secret-society-game-enc` | 50 | Game, Compatible Society, Commonness Score |
+| `a16_luxury-secret-society-rule-enc` | 60 | Rule, Compatible Society, "Yea" is Correct, Commonness Score |
+| `a16_luxury-spa-treatment-color-enc` | 15 | String, Log Version, Commonness Score |
+| `a16_luxury-spa-treatment-enc` | 30 | Name, Category, Cost, Looks Impact, Health Impact, Happiness Impact |
+| `a16_luxury-spa-vip-treatment-enc` | 40 | Treatment, Commonness Score |
+| `a16_luxury-vip-event-chef-cuisines-enc` | 22 | Cuisine Type (one column) |
+| `a16_luxury-vip-event-feedback-color-string-enc` | 49 | String, Event Type, Enjoyment Score, Commonness Score |
+| `a16_luxury-vip-movie-enc` | 68 | Title, Genre, Commonness Score |
+| `a16_luxury-vip-nightclub-event-enc` | 15 | Event Type, Commonness Score |
+
+Four of the tables are catalogues with no text of their own: `island-data` (three island types x three sizes), `exotic-watch-brand` (six watches), `spa-vip-treatment` (forty small luxuries) and `vip-event-chef-cuisines` (twenty-one cuisines that are only ever concatenated after a chef name). The rest carry a String, a Log Version or a Scenario.
+
+### 79.2 The fortune
+
+Nothing else in the port pays enough for a tropical island, so the family gives the hero the money itself and then a reason to spend it:
+
+- `makeLuxury` rolls a one-off windfall of `200,000,000` into `h.money` and prints `I came into $X.` in the journal. Shortcut: it is the same device `section 77` uses for the first portfolio.
+- the year pays `max(3,000,000, luxValue/10)` of "holdings" income, so the lifestyle is self-financing once it starts.
+- the island ladder is the real one from `a16_luxury-island-data-enc`: icy 55M / 125M / 500M, temperate 100M / 300M / 750M, tropical 300M / 475M / 1,000M. A private island is bought at the Small price, a bigger island at the Medium then the Large one.
+- the cheapest watch in `a16_luxury-exotic-watch-brand-enc` is a Rolex Paul Newman Daytona at 1.75M and the dearest a Graff Diamonds Hallucination at 105M; a watch is only offered when the hero can afford its `Min Cost`.
+- the society entry fee is the flat 10,000,000 every row of `a16_luxury-secret-societie-enc` carries.
+
+### 79.3 The year
+
+Sixteen branches, first one to fire wins, rarest first. Each branch is `if (title.empty() && gate && chance(p) && ensureTable(...))`.
+
+| # | chance | card | what it draws from |
+| --- | --- | --- | --- |
+| 1 | 0.05 | A secret society | `secret-societie` when the hero is not a member: fee 10,000,000, a 0.7 induction roll, then Rank 1 name, Join Color String and Society Motto, or the Rejection Strings |
+| 2 | 0.05 | An exotic watch | `exotic-watch-brand` rows the hero can afford, cost rolled in Min..Max |
+| 3 | 0.05 | A bigger island | `island-data` Medium then Large price, when the hero owns a Small or Medium island |
+| 4 | 0.06 | A private island | `island-data` Small price plus a name from `default-island-name` filtered on Island Type |
+| 5 | 0.06 | A vote at the society | `secret-society-rule` filtered on Compatible Society; the hero votes Yea or Nay on a coin and the row `"Yea" is Correct` flag decides whether that was the winning side (+2 happiness, or -1 and 'I was outvoted.') |
+| 6 | 0.06 | Games at the society | `secret-society-game`, same filter |
+| 7 | 0.06 | A discussion | `secret-society-discussion-topic`, same filter, plus the Feedback Snippet as an extra line |
+| 8 | 0.08 | A charity gala | `charity-organization`: a donation of 1-10M; the `Is Bad Charity` flag flips the karma from +3 to -3 |
+| 9 | 0.12 | A new toy | `luxury-aircraft-special-feature`, `luxury-car-special-feature` or `luxury-watercraft-special-feature` by a coin; the watercraft pool filters on the Sailing Yacht flag |
+| 10 | 0.09 | A new structure on the island | `island-structure-spend-time` with the String resolved before the Log Version so the row's own `<rb>` points at the card text |
+| 11 | 0.09 | Island life | `island-color-snippet` filtered on the hero's island type |
+| 12 | 0.20 | A spa day | `spa-treatment` cost and impacts, one `spa-vip-treatment` extra, and 0.6 of the time a `spa-treatment-color` colour card |
+| 13 | 0.14 | the island vacation card | `island-vacation-dumb-scenario` delegated to the shared row renderer with the Subject age and Gender Bracket gates checked first |
+| 14 | 0.26 | A night out | `vip-event-feedback-color-string`; a movie premiere adds a `vip-movie` title and genre, a nightclub adds a `vip-nightclub-event` type, anything else a `celebrity-chef-name` and a `vip-event-chef-cuisines` cuisine |
+| 15 | else | The good life | one of three small pools by coin: `spa-vip-treatment` (the staff brought me X), a spa treatment at home, or a quiet `vip-event-feedback-color-string` row |
+| 16 | 0.12 | a society promotion | when the hero is a member: Rank 2 then Rank 3 from the society's own row |
+
+The year ends the way every family year does: `out.table`, `out.row_id`, `out.title`, `out.body` and the first-person journal line are filled, the year's own extra lines are appended after the lifecycle lines already in `out.extra`, happiness moves, `luxuryLive_` is restored, and an empty title means the year simply had no card.
+
+### 79.4 The tokens
+
+The family needs exactly one new token:
+
+- `<island>` and `<island>` with the possessive suffix, answered from `h.luxIsland` with `my island` as the fallback, remembered per card in `luxuryCache_` so two mentions in one card agree.
+
+Everything else the family writes was already answered: `<person>` (89 uses), `<musician>`, `<celebrity>`, `<city>`, `<random-person-indefinite>`, `<random-first-name-male>`, `<random-surname>`, `<hero-last-name>`, `<country-other>`, the pronoun pairs and a great many inline lists. `<Island/Isle>` and `<Isle/Island>` are ordinary slash alternatives.
+
+### 79.5 The bugs
+
+1. The construction list. The wiring patch's append helper wrote the new seed on a fresh line, so the initialiser list ended `modelRng_(...) {}` then `luxuryRng_(...) {}` - two closing braces and an unbuildable file. The line is now `modelRng_(...),
+      luxuryRng_(...) {}`.
+2. `replaceAll` is not visible in this translation unit. The island-name substitution was written with the helper the other name builders use, which lives in another file; the fix is a local `fill(std::string&, const std::string& tag, const std::string& value)` loop.
+3. A missing lambda. `luxuryYear` called a `hasCell` it never defined - the same helper the finance and actor years define locally. It now sits next to `numOf` and `flagOf`.
+4. The fallback card lied about its table. When no branch fired, the card inherited whatever `out.table` had been left at, so 432 of 854 luxury cards were filed as `a16_luxury-spa-treatment` even when they were a `vip-treatment` line. The fallback now draws and marks a real row.
+5. The fallback was half the year. With the everyday chances at 0.06/0.08/0.12/0.16 and every gated branch often closed, the boring card was 50% of the family. The chances are now 0.08/0.12/0.20/0.26 and the fallback itself is spread over three pools, which takes it to about a third and gives the spa, the night out and the small luxuries their own share.
+
+Two smaller things: the cuisine keeps the pool's own capitalisation (`cooking Filipino food`), and the society card body got a separator so the motto does not run into the requirement sentence. The wiring patch also collapsed a duplicated `model` parse block that a twice-run script had left in `src/script.cpp`.
+
+### 79.6 Shortcuts
+
+- the 200,000,000 windfall, without which no island is reachable in a scripted life (no other enabled family pays a wage)
+- `a16_luxury-island-structure-spend-time` has no cost column, so a structure costs an invented 5-24M
+- one sailing yacht: the watercraft feature pool is filtered on the Sailing Yacht flag and the hero never buys a second boat
+- the society Membership Requirement Text is prose that names no stat the port tracks, so membership is a roll, not a check
+- donations are a flat 1-10M; the charity Abbreviation and Secondary Text are printed but the organisation never returns
+- the island colour pool is filtered on the island type, and an icy island has nine of the forty-three snippets, which is why the branch is rare in the histogram
+- the delegated vacation card can name a different `<person>` in the journal than on the card, because the shared dumb-scenario pools draw that token on every resolution - a cross-family limitation, not this family's bug
+
+### 79.7 Verification
+
+- `/tmp/qdir/luxres.py` (30 seeds x both genders to age 60 with `{"luxury": true}`) prints `luxury events 849 rc failures 0` and `RESIDUE 0`.
+- last-mark histogram: vip-event-feedback 220, spa-treatment 214, spa-vip-treatment 97, charity 62, aircraft feature 39, watch 38, car feature 34, island-data 30, secret-societie 30, watercraft feature 26, island-vacation 18, island-structure 16, society-game 12, society-discussion 6, society-rule 5, island-colour 2.
+- `/tmp/qdir/luxcov.py` (a needle scan over 1,085 luxury cards) proves the six tables that are never a card's own table are still drawn: celebrity-chef-name 103, spa-treatment-color 159, spa-vip-treatment 270, vip-event-chef-cuisines 103, vip-nightclub-event 27, vip-movie 19, default-island-name 2.
+- all 22 family probes residue 0, `rescensus` `distinct residue tokens 0 total 0`, the scenario registry at 109 captured / 107 recoverable, the port gap 0, the push script rc 0 and the bench reaching age 34.
+
+    A private island
+    The island: Seaside Island (icy). Cost: $83,951,926.
+    I bought Seaside Island, a private icy island, for $83,951,926.
+
+    A secret society
+    Jacked Rabbits: A secret society for health nuts. You must be extremely healthy to join this society.
+    Aren't you PUMPED?! I was inducted into Jacked Rabbits: No pain, no gain.
+
+    A vote at the Broken Mirror Society
+    The society voted on: It is okay to look good for special occasions.
+    The Broken Mirror Society voted on: It is okay to look good for special occasions. I voted Yea. I was on the winning side.
+
+    An exotic watch
+    The watch: Graff Diamonds Hallucination. Cost: $90,939,758.
+    I bought a Graff Diamonds Hallucination for $90,939,758.
+
+    A new structure on the island
+    A secret lair for Seaside Island. Cost: $10,000,000.
+    I practiced my best sphinxlike laugh in my island's secret lair.
+
+    A new toy
+    Alligator leather seats: Corner the croc market! Cost: $750,000.
+    I had alligator leather seats installed on my private jet for $750,000.
+
+    A night out
+    Your dinner companions, Manny Jacinto and a mean girl you did not know, only wanted to talk about crypto. The chef was Ina Garden, cooking Panamanian food.
+
+    The good life
+    A quiet wedding. The couple shared their first dance as newlyweds to 'I Will Always Love You'.
+    I spent the year enjoying the money, most recently at a wedding.
+
+    A charity gala
+    Mothers For Everything Real Safe (MFERS): a donation of $7,000,000.
+    I donated $7,000,000 to Mothers For Everything Real Safe (MFERS)
+
+    Games at the League of Extraordinary Idiots
+    We played telephone.
+    The League of Extraordinary Idiots spent the evening playing telephone.
