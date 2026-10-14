@@ -12245,3 +12245,219 @@ histogram {-1: 36, 1: 26, 4: 58}, 21 distinct pastimes with no gated row drawn (
 date-less pool makes the gated half unreachable) and {0: 100, 1: 29, 2: 15, 3: 10, 4: 2, 5: 1, 6: 3} cards per life.
 
 The full regression after the section: 40 probes at residue 0 (the new `spdres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 98. The skip-school card: the same pastime pool asked for by a classmate, and the three
+actions a push scenario's own literals hold
+
+The pastime pool has a second consumer, and it is the one 97 named and left unwired:
+ScenarioSchoolSkipPush. It is a push aimed at a pupil rather than at an adult, so it does not
+arrive on the school year's own coin either - it is a rule of its own, tried before the school
+year claims the year - and all three of its actions come out of the family's own literals. Where
+97 had to write exactly one line by hand, this card writes none: its refusal borrows the
+generic choice pair 97 already renders.
+
+### 98.1 The family
+
+`class ScenarioSchoolSkipPush : Scenario` (il2cpp_dump.txt:50410) holds three fields and one
+of them is the pool: `_student` (SimOccupationStudent, 0x170), `_classmate` (SimClassmate,
+0x178) and `_pastime` (System.String, 0x180). Its methods are `.ctor()` `0x73f2a6402c`,
+`RefreshScenario()` `0x73f2a64110`, `ChoiceSelectedAtIndex(System.Int32)` `0x73f2a6499c`,
+`GetClassmateSkipper(System.Boolean)` `0x73f2a64494` and
+`ScenarioIsEligibleForRandomPush()` `0x73f2a65248`.
+
+RefreshScenario has the shape the other push cards have: a one-time dictionary fill (nine
+`FillDictionary` calls) and then `mov w0, #1; bl GetClassmateSkipper` with the result stored at
+`[x19+0x178]` - the scenario picks the classmate who will do the skipping itself, and the
+argument is the literal `1`. The card's text is not in the disassembly at all: those fills name
+the game's own dictionary ids, so the vocabulary lives in the metadata, not in the code. The
+classmate is therefore both a field and a draw, and the port's one classmate is the same
+person the school year already uses (98.3).
+
+What that vocabulary is, by id: the push body `#50285` - `Your classmate, {0}, wants you to skip
+class with {1} and go {2} instead.` - the title `#39189` `Skipping School`, the two actions that
+are the family's own, `#39183` `Skip school` and `#39179` `Skip class and do something else`,
+and the three outcomes `#25105` `I skipped school and went {0} with my classmate, {1}.`,
+`#25104` `I skipped school and went {0} instead.` and `#24954` `I refused to skip school with my
+classmate, {0}.`. Beside them sit the achievement `#39184` `Skip secondary school 3+ times` -
+the literal that says which school levels the card belongs to (98.3) - and a set of app-side
+forms the port has no surface for, because it has no confirmation dialog: `#39175` `Skip School`,
+`#39181` and `#39182` `Skip it` and `Skip it altogether`, `#39363` `So, skip school?`, `#11941`
+`Are you sure you want to skip school?`, `#46539` `Where else would I skip?` and `#49324`
+`You skipped school and went {0} instead.`.
+
+The refusal action is not among the family's own. The card has three actions and only two of
+them are its literals; the third is the generic pair 97 already renders, `Refuse to go with {0}`
+(`#35522`). Two cards of different families refusing in the same words is the game's own habit,
+not an invention of the port.
+
+### 98.2 The card
+
+The port builds the year like this (Sim::skipSchoolYear, src/sim.cpp:23574): the body is
+`Your classmate, <name>, wants you to skip class with <him|her> and go <tail> instead.`, the
+second slot filled from `h.schoolClassmateFemale`, the third from the pool (98.4); the title is
+`Skipping School`; the prompt is the port's usual `What will you do?`; and the single choice is
+one of three, drawn with equal weight:
+
+- `Skip school` (`#39183`) - the hero goes with the classmate. The narrative is `#25105`,
+  `I skipped school and went <tail> with my classmate, <name>.`, and it names the classmate
+  again, so the line and the body share one name.
+- `Skip class and do something else` (`#39179`) - the hero skips with nobody. The narrative is
+  `#25104`, `I skipped school and went <second tail> instead.`
+- `Refuse to go with <name>` (`#35522`) - the narrative is `#24954`,
+  `I refused to skip school with my classmate, <name>.`
+
+The three outcomes are the port's own happiness readings in the units the rest of the port uses:
+`pointsForImpact(2)` (eight) for going with the classmate, `pointsForImpact(1)` (four) for going
+somewhere else alone, and `pointsForImpact(0)` (the plus or minus one) for refusing. There is no
+ledger line: the family has no stat line for a skipped class, and inventing one would put prose
+of the port's own into a card that needs none.
+
+### 98.3 Who can ask: the four gates
+
+1. A forced choice suppresses the year, the rule every code-built card in the port takes.
+2. The hero has to be in school at all - `h.schooling`.
+3. The hero has to be in secondary school. The gate reads the band off the age rather than off
+   `h.schoolLevel`, because that field is only brought up to date by the school year itself and
+   therefore goes stale in any year another rule claims: `schoolLevelFor()` (src/sim.cpp:20287)
+   gives 2 at 11 to 13 and 3 at 14 to 17, which is the middle and high school the achievement
+   literal counts, and level 4 (college, 18 to 22) is out.
+4. A classmate has to exist - `h.schoolClassmate`, which the port draws once when the school
+   starts (src/sim.cpp:20369, `personName("classmate")` and a coin for the gender) and the
+   scenario re-draws in the cards that need one (src/sim.cpp:22165, :24943-24948,
+   :25051-25056).
+
+Who the classmate is comes from the game, but the coin that says a classmate asks this year does
+not: `ScenarioIsEligibleForRandomPush()` `0x73f2a65248` is code-side and the port reads the
+whole gate as 0.12 a year on the feature's own stream (98.5).
+
+The placement in the chain is part of the gate. The rule is tried before the school year itself
+(src/sim.cpp:3518), not after it: a push aimed at a pupil has to get its chance on a school
+year, and the school year claims the year at 0.6 on its own coin, so a rule parked behind it
+would be starved to the point of never firing. It draws on its own stream, so no earlier
+subsystem's sequence moves - and 97's own probe was re-run afterwards to show exactly that: the
+spend-time census is bit-for-bit what 97 recorded (98.6).
+
+### 98.4 The pastime, the second draw, and the trouble
+
+The pastime itself is the same draw 97 performs, and it is the same call: `pickPastime()` now
+takes the stream it draws from (src/sim.cpp:23474, `int Sim::pickPastime(Rng& rng, std::string&
+tail)`), so each feature keeps its own sequence. 97's call site passes `spendRng_`
+(src/sim.cpp:23632) and this card passes `skipRng_` (include/bl/sim.h:477, seeded in the
+constructor, src/sim.cpp:626).
+
+The 'skip class and do something else' action draws a SECOND tail from the pool: the body named
+the place the classmate proposed, and the hero who goes alone goes somewhere else. The row the
+card carries - `out.row_id`, the row of the pastime it names - therefore follows the narrative
+rather than the body: it is the body's row when the hero keeps the invite or refuses, and the
+second draw's row when the hero goes elsewhere. The probe checks both by matching the named tail
+against that row's own pattern (98.6).
+
+A skipped class costs trouble. `h.schoolTrouble` is the school family's own counter and it is
+read in four places - at three or more it costs a grade point (src/sim.cpp:20538), it decays by one a
+year (:20542), at two it can open the school's trouble card (:20608), and a row can require it
+(:20773, `Requires Trouble`) - so this card is the second writer of it after the school year's
+own events and it adds one on any skip, with the classmate or alone.
+
+### 98.5 Shortcuts
+
+1. The 0.12 coin is the port's: `ScenarioIsEligibleForRandomPush()` `0x73f2a65248` is code-side,
+   and the card is also reachable from the game's own push scheduler, which the port does not
+   model.
+2. The level band is read off the age rather than off `h.schoolLevel`, which goes stale (98.3).
+3. The three actions are drawn with equal weight; the game's own weighting is in the scenario's
+   code, not in a table.
+4. 'Skip class and do something else' takes a second draw from the same pool; the game's second
+   place is whatever its own logic picks, and the port reads it as another pastime (98.4).
+5. The happiness numbers (eight, four, plus or minus one) are the port's reading; the game's own
+   impacts are code-side.
+6. The trouble the skip costs is the port's reading of the school family's own counter (98.4).
+7. The classmate who asks is the one classmate the port keeps, where `GetClassmateSkipper()`
+   picks one out of the class each time.
+8. The confirmation forms (`#39363`, `#11941`, `#46539`, `#39175`, `#39181`, `#39182`) stay
+   unrendered: the port has no dialog surface, so the card is a single screen with three
+   actions, the same shape the other code-built cards take.
+9. `ScenarioMobsterSpendTimePush` is now the last consumer of the pastime pool that is still
+   unwired.
+
+### 98.6 Verification
+
+A new probe (skpres.py) drives 80 school lives across both genders and two year budgets and
+checks every skip-school card in them: the title, the body's name, the pronoun against the
+classmate's own gender, the choice label against the body's name, the row the card carries
+against the tail the narrative names (the body's row when the hero keeps the invite or refuses,
+the second draw's row when the hero goes alone), each of the three narratives against its
+literal, the happiness delta per outcome and no other delta, and a sweep of every rendered line
+for a raw `<...>` token. The lives have school switched on, which is what makes a pupil exist at
+all: the earlier pastime probe ran lives with no school and saw no skip card.
+
+~~~
+runs 80 rc failures 0 cards 60 other pastime cards 69
+kinds {'refuse': 12, 'alone': 32, 'with classmate': 16}
+pronouns {'her': 36, 'him': 24}
+happiness {1: 12, 4: 32, 8: 16}
+distinct pastimes 12 top [('to scare random people while pretending to be statues', 4), ('to the shooting range', 4), ('to watch the Moon with a high-powered telescope', 4)]
+ages {12: 8, 13: 4, 14: 12, 15: 8, 16: 20, 17: 8}
+cards per life {0: 32, 1: 36, 2: 12}
+mismatches {}
+samples []
+RESIDUE 0 {}
+~~~
+
+The shapes as the port renders them, straight out of the sample writer:
+
+~~~
+
+=== with classmate ===
+seed: 9
+gender: male
+years: 20
+age: 15
+row: 236
+table: a16_pastimes-enc
+title: Skipping School
+body: Your classmate, Carli Raitchison, wants you to skip class with her and go to attend a juggling class instead.
+choice: Skip school
+logLines: ['I skipped school and went to attend a juggling class with my classmate, Carli Raitchison.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+=== alone ===
+seed: 2
+gender: male
+years: 20
+age: 16
+row: 219
+table: a16_pastimes-enc
+title: Skipping School
+body: Your classmate, Duke Combs, wants you to skip class with her and go crocheting instead.
+choice: Skip class and do something else
+logLines: ['I skipped school and went to scare random people while pretending to be statues instead.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 4, 'smarts': 0, 'looks': 0}
+=== refuse ===
+seed: 2
+gender: male
+years: 20
+age: 15
+row: 206
+table: a16_pastimes-enc
+title: Skipping School
+body: Your classmate, Duke Combs, wants you to skip class with her and go to listen to a funk band instead.
+choice: Refuse to go with Duke Combs
+logLines: ['I refused to skip school with my classmate, Duke Combs.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 1, 'smarts': 0, 'looks': 0}
+~~~
+
+Its own census: 60 cards over 80 lives, every one of them at a secondary-school age {12: 8,
+13: 4, 14: 12, 15: 8, 16: 20, 17: 8}, the outcome mix {with classmate 16, alone 32, refuse 12},
+the pronouns {'her': 36, 'him': 24}, the happiness histogram {1: 12, 4: 32, 8: 16}, 12 distinct
+pastimes and {0: 32, 1: 36, 2: 12} cards per life. The same run counted 69 spend-time cards
+beside them in the same lives, which is the coexistence the draw order is for.
+
+The section's own regression is the one that matters most here: the 97 probe was re-run after
+this card was wired, and its census is unchanged - `cards 120`, the same 62 refusals and 58
+acceptances, the same 34-and-24 split of who took whom, the same people and happiness
+histograms. A rule that draws on its own stream and coins on its own budget leaves its
+neighbour's numbers alone, and this is that claim measured rather than asserted.
+
+The full regression after the section: `REGRESSION`
+
+The full regression after the section: 41 probes at residue 0 (the new `skpres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+

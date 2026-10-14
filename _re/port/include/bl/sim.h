@@ -351,7 +351,11 @@ class Sim {
   bool movieYear(Life& life, AgeUp& out, int forcedChoice);
   // The generic pastime pool with a person (REPORT.en.md 97).
   bool spendTimeYear(Life& life, AgeUp& out, int forcedChoice);
-  int pickPastime(std::string& tail);
+  // The skip-school card (REPORT.en.md 98): the second consumer of the same pool.
+  bool skipSchoolYear(Life& life, AgeUp& out, int forcedChoice);
+  // The row draw and the one-of pick come out of the caller's stream, so every
+  // feature keeps its own draw sequence (REPORT.en.md 97, 98).
+  int pickPastime(Rng& rng, std::string& tail);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);
@@ -474,6 +478,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // must not come out of rng_.
   Rng placeRng_;
   Rng spendRng_;
+  Rng skipRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

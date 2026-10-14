@@ -622,7 +622,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
-      spendRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0xa0761d6478bd642fULL) {}
+      spendRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0xa0761d6478bd642fULL),
+      skipRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3510,6 +3511,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
   if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
+  // The skip-school card (REPORT.en.md 98) is a push aimed at a pupil, so it is
+  // tried before the school year itself claims the year; it draws on its own
+  // stream (include/bl/sim.h skipRng_), so no earlier subsystem's sequence moves.
+  if (skipSchoolYear(life, out, forcedChoice)) return true;
   if (life.hero.schooling && schoolYear(life, out, forcedChoice)) return true;
   if (backToSchoolYear(life, out, forcedChoice)) return true;
   if (life.hero.podcaster && podcastYear(life, out, forcedChoice)) return true;
@@ -23471,7 +23476,7 @@ bool Sim::movieYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
-int Sim::pickPastime(std::string& tail) {
+int Sim::pickPastime(Rng& rng, std::string& tail) {
   if (!ensureTable("a16_pastimes-enc")) return -1;
   const Table& t = tbl("a16_pastimes-enc");
   // The Holiday column is the Christmas-season half of the pool: the loader
@@ -23484,8 +23489,8 @@ int Sim::pickPastime(std::string& tail) {
   for (size_t r = 0; r < t.size(); ++r)
     if (t.flag(r, "Holiday") == holiday) pool.push_back(r);
   if (pool.empty()) return -1;
-  const size_t row = pool[spendRng_.below(uint32_t(pool.size()))];
-  tail = resolve(fillOneOf(trim(t.at(row, "Pastime")), spendRng_));
+  const size_t row = pool[rng.below(uint32_t(pool.size()))];
+  tail = resolve(fillOneOf(trim(t.at(row, "Pastime")), rng));
   return int(row) + 1;
 }
 
@@ -23528,7 +23533,7 @@ bool Sim::spendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!willing) return false;
 
   std::string tail;
-  const int pastimeRow = pickPastime(tail);
+  const int pastimeRow = pickPastime(spendRng_, tail);
   if (pastimeRow < 0) return false;
 
   // <person-relationship>: the game's template renders the relation with the
@@ -23563,6 +23568,76 @@ bool Sim::spendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
   // took me <pastime>.' (#9369) when the other one does.
   out.narrative =
       heroTakes ? "I took " + rel + " " + tail + "." : "My " + rel.substr(3) + " took me " + tail + ".";
+  return true;
+}
+
+bool Sim::skipSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule every other code-built card takes.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // Secondary school: the family's own achievement literal counts 'Skip secondary
+  // school 3+ times' (#39184), which is middle school and high school in the
+  // port's own bands (schoolLevelFor, src/sim.cpp:20283). The band is read off the
+  // age, not off h.schoolLevel: that field is only brought up to date by the
+  // school year itself, so it goes stale in a year another rule claims.
+  const int lvl = schoolLevelFor(h.age);
+  if (!h.schooling || lvl < 2 || lvl > 3 || h.schoolClassmate.empty()) return false;
+  // shortcut: ScenarioIsEligibleForRandomPush @0x73f2a65248 is code-side, so the
+  // coin that says a classmate asks this year is the port's; it runs on the
+  // feature's own stream (src/sim.h skipRng_).
+  if (!skipRng_.chance(0.12)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  std::string tail;
+  const int pastimeRow = pickPastime(skipRng_, tail);
+  if (pastimeRow < 0) return false;
+
+  // GetClassmateSkipper(System.Boolean) @0x73f2a64494 picks the classmate out of
+  // the class who will skip; the port keeps the one classmate the school field
+  // drew (src/sim.cpp:20365). The body's second slot is the object pronoun the
+  // classmate is asked about.
+  const std::string other = h.schoolClassmateFemale ? "her" : "him";
+
+  // The three actions the family's literals hold. 'Skip school' (#39183) and
+  // 'Skip class and do something else' (#39179) are its own; the refusal comes
+  // from the generic pair this card family shares (REPORT.en.md 97).
+  struct Opt { std::string label; int kind; };  // 0 with the classmate, 1 alone, 2 refuse
+  const Opt opts[3] = {
+      {"Skip school", 0},
+      {"Skip class and do something else", 1},
+      {"Refuse to go with " + h.schoolClassmate, 2},
+  };
+  const Opt& opt = opts[skipRng_.below(3)];
+
+  out = AgeUp();
+  out.table = "a16_pastimes-enc";
+  out.title = "Skipping School";  // #39189
+  out.body = "Your classmate, " + h.schoolClassmate + ", wants you to skip class with " + other +
+             " and go " + tail + " instead.";  // #50285
+  out.cta = "What will you do?";
+  out.choice = opt.label;
+  out.row_id = std::to_string(pastimeRow);
+  if (opt.kind == 2) {
+    out.happiness = pointsForImpact(0);
+    out.narrative =
+        "I refused to skip school with my classmate, " + h.schoolClassmate + ".";  // #24954
+    return true;
+  }
+  // Going somewhere else is the same day with a second draw from the pool, so the
+  // row the narrative names becomes that second one.
+  std::string where = tail;
+  if (opt.kind == 1) {
+    const int aloneRow = pickPastime(skipRng_, where);
+    if (aloneRow > 0) out.row_id = std::to_string(aloneRow);
+  }
+  // The port's own consequence: the counter the school year already keeps goes up
+  // on any skip (the game's own fallout for a skip is code-side).
+  h.schoolTrouble += 1;
+  out.happiness = pointsForImpact(opt.kind == 0 ? 2 : 1);
+  out.narrative = opt.kind == 0
+      ? "I skipped school and went " + where + " with my classmate, " + h.schoolClassmate + "."  // #25105
+      : "I skipped school and went " + where + " instead.";  // #25104
   return true;
 }
 
