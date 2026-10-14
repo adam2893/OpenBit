@@ -219,6 +219,7 @@ class Sim {
   // draw while the hero is a vampire.
   bool vampireYear(Life& life, AgeUp& out, int forcedChoice);
   bool militaryYear(Life& life, AgeUp& out, int forcedChoice);
+  bool careerYear(Life& life, AgeUp& out, int forcedChoice);
   std::string warToken(const std::string& token);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
@@ -258,6 +259,7 @@ class Sim {
   // The vampire branch's own stream.
   Rng vampireRng_;
   Rng militaryRng_;
+  Rng careerRng_;
   std::vector<std::string> warCountries_;  // the three countries one war row names
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;

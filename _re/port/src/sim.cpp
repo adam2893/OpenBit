@@ -565,7 +565,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       familyRng_(seed ^ 0x51ed270b2f5a1c31ULL),
       royalRng_(seed ^ 0x2545f4914f6cdd1dULL),
       vampireRng_(seed ^ 0x27d4eb2f165667c5ULL),
-      militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL) {}
+      militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL),
+      careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1819,6 +1820,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   //      given seed -- is untouched (REPORT.en.md 45).
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
+  if (careerYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2655,6 +2657,63 @@ bool Sim::vampireYear(Life& life, AgeUp& out, int forcedChoice) {
 // game's own lines are code-side literals (#24115 enlist, #24507 officer,
 // #24373 promotion, #25005 retirement); the war pool is a16_war-scenarios-enc,
 // four stages of escalating country-vs-country text.
+// ---------------------------------------------------------------------------
+// The hero's own job (REPORT.en.md 51). a16_careers-enc has 168 rows; the
+// Seniority Track cell is either a real ladder ('Cameraman, Camera Operator,
+// Director of Photography, ...') or a category word (None / Abbreviated /
+// Working Class / Corporate), in which case the port keeps the Career name as
+// the title. The company name comes from the existing companyName() generator.
+// shortcut: the careers table's own eligibility columns (Required Education,
+// Required Major, Min/Max Age, Min Intelligence/Appearance/Health/Karma, drug
+// tests, clear criminal record, licences) are not evaluated; hiring is a draw.
+bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.military || h.militaryPending) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  // The hero has no career row until one is drawn: 'employed' alone is set by
+  // the school state at 18 (line 1762 of this file), so the career is keyed on
+  // the empty track instead.
+  if (h.careerTrack.empty()) {
+    if (h.age < 18) return false;
+    if (!careerRng_.chance(0.6)) return false;
+    if (!ensureTable("a16_careers-enc")) return false;
+    const Table& t = tbl("a16_careers-enc");
+    if (!t.size()) return false;
+    const size_t row = careerRng_.below(uint32_t(t.size()));
+    const std::string track = trim(t.at(row, "Seniority Track"));
+    std::vector<std::string> steps;
+    if (track.find(',') != std::string::npos) splitOn(track, ',', steps);
+    for (std::string& st : steps) st = trim(st);
+    const std::string title = steps.empty() ? trim(t.at(row, "Career")) : steps[0];
+    if (title.empty()) return false;
+    const std::string company = companyName(t.at(row, "Company Type"), life);
+    h.job = title;
+    h.employed = true;
+    h.careerTrack = track;
+    h.careerStep = 0;
+    h.careerYears = 0;
+    out.narrative = "I started a new position as " + title +
+                    (company.empty() ? "." : " for " + company + ".");
+    return true;
+  }
+
+  // Promotions: one rung every four years of service, while the track has one.
+  ++h.careerYears;
+  if (h.careerTrack.find(',') == std::string::npos) return false;
+  if (h.careerYears % 4 != 0) return false;
+  std::vector<std::string> steps;
+  splitOn(h.careerTrack, ',', steps);
+  for (std::string& st : steps) st = trim(st);
+  const size_t next = size_t(h.careerStep) + 1;
+  if (next >= steps.size() || steps[next].empty()) return false;
+  h.careerStep = int(next);
+  h.job = steps[next];
+  out.narrative = "I have been promoted to " + h.job + ".";
+  return true;
+}
+
 void Sim::makeMilitary(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;

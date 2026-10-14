@@ -3383,3 +3383,71 @@ to write again: a length argument that does not equal the literal's length silen
    country-leader table exists in the 1071.
 6. The relative-side lifecycle templates (#9384 / #9391 / #9393 / #9395) are not emitted for family
    members who serve; only the hero's own lines are.
+
+## 51. The hero's own job: walking a16_careers-enc
+
+### 51.1 What was missing
+
+The port had a family model that gives every relative a job, a company and a promotion
+(section 37), and the hero had a {B}job{B} string that only the military branch ever filled
+(section 50). {B}a16_careers-enc{B} - 168 rows, {B}Career, Company Type, Seniority Track,
+Seniority Track Years, Starting Salary, Salary Cap, Too Old Age, ...{B} - was already loaded for
+the relatives' job titles, but the hero never walked it.
+
+### 51.2 The ladder is only sometimes a ladder
+
+{B}Seniority Track{B} is a real ladder on a minority of rows: {B}Cameraman, Camera Operator,
+Director of Photography, ...{B}, {B}Probationary Firefighter, Firefighter, Fire Equipment
+Operator, Lieutenant, ...{B}, {B}Pilot Trainee, Co-Pilot, Pilot, Airline Captain, Chief Pilot{B}.
+On the remaining rows it is a category word instead - {B}None{B} 57, {B}Abbreviated{B} 29,
+{B}Working Class{B} 24, {B}Corporate{B} 10, empty 3 (counted in section 37). Those rows get the
+{B}Career{B} name as their title, and the port does not invent a ladder for them.
+
+### 51.3 Lines
+
+- Hiring reuses the family template #{B}9408{B} {B}<person> started a new position as <job-title> for
+  <company>.{B} with {B}<person>{B} = {B}I{B}, which is how the game already writes the hero's version
+  of the relative templates (section 36): {B}I started a new position as {job} for {company}.{B}
+- Promotion reuses #{B}9390{B} {B}<person> has been promoted to <job-title>.{B} in the same way:
+  {B}I have been promoted to {job}.{B}
+- The company comes from the existing {B}companyName(){B} generator and the row's own
+  {B}Company Type{B}, which is why a job can read {B}for Santa's Workshop, North Pole Industries{B}.
+
+### 51.4 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::careerTrack{B} (the raw {B}Seniority Track{B} cell),
+  {B}Hero::careerStep{B}, {B}Hero::careerYears{B}.
+- {B}src/sim.cpp{B}: private stream {B}careerRng_{B} (ctor initialiser, line 569);
+  {B}Sim::careerYear{B} (line 2669) hires from 18 on a 0.6 chance, then advances one rung every four
+  years of service while the track has one; {B}ageUp{B} calls it at line 1823, after the military
+  branch and before the conviction draw.
+- Keyed on the empty track rather than on {B}employed{B}: the school state already sets
+  {B}employed = !student{B} when the hero leaves school (line 1762), so an {B}if (!h.employed){B} gate
+  never fired. This is the sort of thing only a run shows - the first build produced zero career
+  lines for every seed.
+
+### 51.5 Shortcuts
+
+1. The careers table's eligibility columns are not evaluated: {B}Required Education{B},
+   {B}Required Major{B}, {B}Min/Max Age{B}, {B}Min Intelligence/Appearance/Health/Karma{B},
+   {B}Has Drug Tests{B}, {B}Requires Clear Criminal Record{B}, the licence and vehicle requirements.
+   Hiring is a uniform draw, so a life can become a Pilot with no pilot's licence.
+2. Promotions are a clock (four years), not the game's performance/attribute roll; {B}Seniority
+   Track Years{B} is on the row but the rule that consumes it was not read.
+3. Raises are not implemented, so #{B}24368{B} {B}I have been given a raise of {0}. My salary is now
+   {1}.{B} is unused; {B}Starting Salary{B} and {B}Salary Cap{B} are loaded but not spent.
+4. Quitting and being fired (#{B}24870{B}, #{B}25653{B}) are not emitted, and {B}Too Old Age{B} does not
+   force a retirement line.
+5. The hero holds one job at a time and the job never changes industry, so the {B}Company Type{B}
+   stays whatever the first hire drew.
+
+### 51.6 Verification
+
+- Seed 777: 18 {B}I started a new position as Entry-Level Groomer for Cadence.{B}, 22 {B}I have been
+  promoted to Experienced Groomer.{B}, 26 {B}I have been promoted to Head Groomer.{B} - a real
+  three-rung track.
+- Seed 12345: 21 {B}I started a new position as Puppeteer for Dynamite.{B}; seed 4242: 19
+  {B}I started a new position as Elf for Santa's Workshop, North Pole Industries.{B}
+- Unchanged after the change: residue census 0 tokens, {B}tools/coverage.py{B} 109 / 107,
+  {B}portgap.py{B} 109 / 107 / gap 0, {B}tools/bench.sh{B} to age 34 with no abort, and the all-109
+  push replay exits 0.

@@ -113,6 +113,13 @@ struct Hero {
   std::string militaryPay;     // Salary Average of that row, verbatim ('$19,200')
   bool militaryOfficer = false;
   int militaryYears = 0;
+  // The hero's own job (REPORT.en.md 51). a16_careers-enc gives the Seniority
+  // Track ladder; the port walks it and writes the family line shape in the
+  // first person ('I started a new position as {job} for {company}.', literal
+  // #9408 with <person> = 'I').
+  std::string careerTrack;  // the raw Seniority Track cell
+  int careerStep = 0;       // 0-based index into that track
+  int careerYears = 0;
 };
 
 class GameState {
