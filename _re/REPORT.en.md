@@ -10560,7 +10560,300 @@ A run of cards, one per branch, in the order the probe found them:
   LargeSee | A person with the username LargeSee called you a tampon taker on Twitter.
 ~~~
 
-The full regression after the section: thirty-four probes at residue 0, the residue
+The full regression after the section: thirty-five probes at residue 0 (the new `b2sres.py` joins the list), the residue
 census at "distinct residue tokens 0 total 0", coverage at "captured scenarios: 109
 recoverable: 107", the port gap at "ENTRIES 109 rendered-by-port 107 gap 0", the push
 script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away
+
+The `a16_backtoschool` family is the largest unwired block left with real card text: fourteen
+files and 357 rows, none of them referenced by the port before this section. Ten of those files
+are wired here (264 rows) as the four events that share one year of a schoolchild's life - a
+field trip whose museum theme decides what the class does, a school dance that needs a theme and
+a companion before it can produce a verdict, a prom that can only happen once in a life, and a
+house party whose rowdiness the port picks and whose hookup sentence comes out of its own table.
+The remaining four files are the sleepover invitation and its acceptance feedback; they are
+deferred to the next section because they are a four-choice card rather than a feedback line.
+
+### 92.1 The family
+
+| file | rows | columns that matter |
+|---|---|---|
+| `a16_backtoschool-field-trip-location-enc` | 14 | Location, Theme, Hero Min Age, Hero Max Age |
+| `a16_backtoschool-field-trip-color-enc` | 37 | String, Focus, Theme |
+| `a16_backtoschool-school-dance-theme-enc` | 6 | the theme name |
+| `a16_backtoschool-school-dance-event-feedback-enc` | 34 | String, Companion Type, Dance Theme, Hero Enjoyment Score, NPC Enjoyment Score (if applicable) |
+| `a16_backtoschool-school-dance-rejection-color-enc` | 34 | String, Hurtfulness Score, Commonness Score |
+| `a16_backtoschool-prom-win-color-enc` | 23 | String, Gave Speech, Commonness Score |
+| `a16_backtoschool-prom-lose-color-enc` | 20 | String, Commonness Score |
+| `a16_backtoschool-house-party-color-enc` | 30 | String, Log Version, Rowdiness Level, Commonness Score |
+| `a16_backtoschool-house-party-hookup-enc` | 38 | String, Rowdiness Level |
+| `a16_backtoschool-house-party-parental-absence-color-enc` | 28 | String, Commonness Score |
+
+Four of these ten files are not card text at all, they are join keys. The field trip's location
+carries a `Theme` (art, science, history, or blank on thirteen rows) and a Hero Min/Max Age
+window of 6..17; its colour rows carry the same `Theme` column, so the museum the child visits
+selects the pool of things that happen inside it. The dance's `Theme` column is a bare list of
+six themes - TikTok Memes, Hoedown, Masquerade, Vampires vs. Werewolves, Decades, Euphoria - and
+the feedback rows point back at it through `Dance Theme`, blank on some rows so that they fit
+any theme. The party's `Rowdiness Level` is `chill`, `lively` or `wild`, ten rows each,
+and the hookup table repeats the same three words in a column that is blank on seventeen of its
+thirty-eight rows. `Companion Type` on the dance feedback is the counterpart of the same idea:
+`none`, `friend`, `lover`, or a list of two.
+
+The pools are small enough to quote. The field trip's Focus column splits the 37 colour rows into
+goofing off (16), learning (12) and socializing (9); the dance's Companion Type splits 34 rows
+into blank (7), none (9), `friend,lover` (8), `lover` (6) and three smaller spellings of the
+same pair; the party's forty-eight party-and-hookup rows are the three levels with a blank group
+in the middle. The prom is the only event with no theme at all: it is a win table and a lose
+table, and fifteen of the twenty-three win rows carry the `Gave Speech` flag.
+
+### 92.2 The four events
+
+One card a year, drawn by availability rather than by a ladder - the lesson of section 87 is that
+a branch whose pool is empty must not be able to poison the window of a later branch, so the year
+is a weighted draw over the branches that can actually fire:
+
+| branch | weight | when it can fire |
+|---|---|---|
+| a field trip | 8 | age 6..18, a location with a theme inside its age window, a colour row matching it |
+| a school dance | 8 | age 14..18 |
+| the prom | 12 | age 16..18 and never before in this life |
+| a house party | 6 | age 14..18 |
+
+The prom carries the largest weight because it can fire exactly once in a life: a card that is
+available every other year of school must not crowd out the one that is not. The four results:
+
+- **The field trip.** The location is drawn from the rows whose age window contains the child and
+  whose `Theme` is not blank; the colour row is then drawn from the rows whose `Theme` matches
+  or is blank. `Focus` decides the effects: learning adds 2 smarts and 1 happiness, socializing
+  3 happiness and 1 relationship, goofing off 4 happiness and loses 2 discipline. The ledger line
+  counts trips: `That was field trip number N to X.`
+- **The school dance.** A theme is drawn from the six. The companion is the lover when there is
+  one, and otherwise the classmate the port already keeps (`schoolClassmate`, drawn once and
+  remembered). The refusal branch fires when the lover's relationship is below 45 or on a 20%
+  coin: the rejection rows are drawn by `Commonness Score` and their `Hurtfulness Score` (1..5)
+  is subtracted from happiness - and from the relationship as well, but only when the person
+  doing the refusing is the lover. The acceptance branch draws a feedback row whose `Dance
+  Theme` is blank or the drawn theme and whose `Companion Type` fits the companion: `lover`
+  or `friend,lover` for a partner, `friend` or `none` for a classmate. The row's `Hero
+  Enjoyment Score` moves happiness and its `NPC Enjoyment Score` moves the relationship, the
+  latter only for a partner. A row whose Companion Type is `none` means the child went alone,
+  and the log says so.
+- **The prom.** One attempt a life, at 16 or later. The vote is won when looks are at least 60 or
+  on a 25% coin; a win draws from the win table (8 happiness, 2 looks, and 2 more when the row is
+  one of the fifteen that carry `Gave Speech`) and a loss from the lose table (4 happiness).
+  The title follows the hero's gender: `Prom king` or `Prom queen`.
+- **The house party.** The parents' absence is drawn first, by `Commonness Score`, from the
+  table of reasons (a convention, a reunion, a relative, a medical trip abroad). Then the port
+  rolls the rowdiness itself - `chill` below 0.40, `lively` below 0.75, `wild` above, because
+  the corpus ships the three levels in equal numbers and no score to choose between them - and
+  draws a colour row of that level or a blank one. `chill` adds 3 happiness, `lively` 4 and 1
+  discipline, `wild` 5 happiness, 3 discipline and 1 karma. A 45% coin then hooks the child up
+  with the lover or with the same classmate, drawing a hookup row of the same level and appending
+  its sentence to the party. The ledger counts parties: `I have hosted N house parties.`
+
+### 92.3 The tokens
+
+This family needed no new resolver, which is worth stating because three of the last four
+sections did. Every token its 306 string rows use - `<classmate>`, `<celebrity>`,
+`<musician-indefinite>`, `<city>`, `<country-possessive>`, `<hero-first-name>`,
+`<drug-illegal>`, the numbered `<numA-B>` forms - is already handled. `<song>` and
+`<movie>` look like tokens but are not: they are the stems of inline slash lists that the
+generic list resolver eats. The one thing the section had to add is a guard: a row whose text
+still holds a bracket after resolution is skipped rather than printed, which is the same shortcut
+sections 90 and 91 took for the handful of rows that name a thing the port has no pool for.
+
+### 92.4 What it caught
+
+1. **Placement was worth more than the weights.** The family was first called from the end of the
+   year chain, next to the social media year, where roughly fifty other families had already had
+   their chance; two hundred lives produced a card or two. It now runs immediately after the
+   school family (`src/sim.cpp:3401`, just below `schoolYear` at `src/sim.cpp:3400`), where
+   the year is still young and the child's own school life has priority.
+2. **A text search needs a scope.** The first patch searched for the branch marker `} else if
+   (kind == 1) {` and found the wrong family: that string occurs fourteen times in `src/sim.cpp`,
+   and the patch clobbered a branch belonging to somebody else. The recovery was to throw the file
+   away (`git checkout -- src/sim.cpp`) and re-apply every edit with the search anchored at
+   `s.index('bool Sim::backToSchoolYear')` and an assertion that the replaced range contains no
+   other function definition.
+3. **The corpus writes a sentence that starts with a pronoun token.** Rows such as `<he/she>
+   told you that you were the best kisser...` resolve to a lowercase `she` in the port. The
+   field trip, dance and hookup bodies now go through the capitalising helper, so the card reads
+   `She told you...`.
+4. **A trailing space hides the full stop.** Several rows end `...talking about it. `, and the
+   tail's last-character test sees the space, not the period, and appends another one, which is
+   how a card ends `It. .`. The tail now trims trailing whitespace before the test.
+5. **The party had no title.** Its three levels produce the card body, but the row belongs to a
+   colour table with no title of its own, so the card fell back to the year's default. It now
+   reads `A house party`, and the four events have four titles.
+6. **The prom needed a wider window.** At 17..18 the prom produced two cards in two hundred
+   lives, because it has to win a weighted draw against every other family in the same year.
+   Opening it at 16 is the port's own choice and is what makes the event visible at all.
+7. **One corpus row is missing an article and it is not the port's fault.** The parents' absence
+   table can produce `My parents went to visit theme park, so I hosted a house party.` - the
+   inline list on that row offers bare nouns where the rest of the table offers `an` phrases.
+   The card is left exactly as the corpus wrote it.
+
+### 92.5 Shortcuts
+
+1. The family fires on 30% of the school years for which it is eligible. It ships no gate column;
+   the rate is the port's own, chosen so the four events are visible without owning the year.
+2. The four weights (8, 8, 12, 6) are the port's own. The prom's 12 exists only because it can
+   fire once a life.
+3. The party's rowdiness roll (0.40 / 0.75) is the port's own; the corpus ships three equally
+   common levels and no score to rank them by.
+4. Every colour pool is drawn with `weightedPick` on `Commonness Score`, which falls back to
+   a uniform draw when a table has no such column.
+5. The dance's other half is the classmate the port already keeps; the corpus's `Child`,
+   `Son` and `Daughter` audiences and its friend list do not exist in the port, so a stranger
+   of the right gender stands in.
+6. The prom's win condition (looks at least 60, or a 25% coin) and the dance's refusal condition
+   (a relationship below 45, or a 20% coin) are both the port's own; the corpus supplies the
+   result tables and nothing that decides between them.
+7. The four sleepover files (93 rows) are not wired: their invitation is a four-choice card with
+   its own narrative and four impact columns per choice, which is a section of its own.
+8. One card a year, like every other family in this port.
+
+### 92.6 Verification
+
+The probe is `/tmp/qdir/b2sres.py`: 240 lives (relationships on and off x sixty seeds x both
+genders, to age 30, in the United States, with the school flag set), selecting every event
+whose table starts with `a16_backtoschool` and checking each card against every candidate row
+of its own table - the body's head and tail, the narrative's phrase, the exact stat deltas and a
+sweep for leftover brackets:
+
+~~~
+$ python3 /tmp/qdir/b2sres.py
+runs 240 rc failures 0 cards 373
+kinds {'trip': 280, 'party': 38, 'party-hookup': 30, 'dance': 42, 'dance-refused': 5, 'prom-win': 8}
+tables {'a16_backtoschool-field-trip-color-enc': 280, 'a16_backtoschool-house-party-color-enc': 38,
+        'a16_backtoschool-school-dance-event-feedback-enc': 42,
+        'a16_backtoschool-school-dance-rejection-color-enc': 5,
+        'a16_backtoschool-prom-win-color-enc': 8}
+mismatches {}
+ deltas trip hap {4: 104, 3: 112, 1: 64} dis {-2: 104, 0: 176} smarts {0: 216, 2: 64}
+ deltas dance hap {4: 26, 3: 8, 0: 4, 2: 4} dis {0: 42} smarts {}
+ deltas refused hap {-1: 4, -2: 1} dis {} smarts {}
+ deltas prom-win hap {8: 4, 10: 4} dis {} smarts {}
+ deltas prom-lose hap {} dis {} smarts {}
+ deltas party hap {6: 16, 7: 8, 8: 4, 4: 8, 3: 2} dis {0: 18, -1: 16, -3: 4} smarts {}
+RESIDUE 0 []
+~~~
+
+The proportions are what the tables say they should be. Trip happiness is 4 (goofing off), 3
+(socializing) or 1 (learning) and never anything else; the 2 smarts appear on exactly the 64
+learning cards; the dance happiness values 4, 3, 2 and 0 are the `Hero Enjoyment Score`
+column of the feedback rows and the refusals are -1 and -2, which is `Hurtfulness` against a
+classmate rather than a partner; the two prom wins are 8 and 10, the second being one of the
+fifteen `Gave Speech` rows; and the party's {-1} discipline is `lively` while {-3} is `wild`
+with its karma.
+
+
+Thirteen cards, one per branch the section can reach - three field trips by Focus, four dances by
+companion and by verdict, four parties by rowdiness and hookup, and both prom verdicts:
+
+~~~
+trip-learning  (a16_backtoschool-field-trip-color-enc row 14)
+  A field trip
+  You learned about the history of San Diego, including an event that happened back in 1912 when a rogue goat was elected town mayor after wandering onto the ballot.
+  | That was field trip number 1 to the newest historical  gallery in San Diego.
+  | My class went to the newest historical  gallery in San Diego on a field trip.
+  deltas {"discipline": 0, "happiness": 1, "karma": 0, "looks": 0, "smarts": 2}
+
+trip-socializing  (a16_backtoschool-field-trip-color-enc row 30)
+  A field trip
+  You discovered that both you and Ned Shirin love Halsey and spent the entire time talking about it.
+  | That was field trip number 1 to an interactive museum of history with digitally enhanced exhibits.
+  | My class went to an interactive museum of history with digitally enhanced exhibits on a field trip.
+  deltas {"discipline": 0, "happiness": 3, "karma": 0, "looks": 0, "smarts": 0}
+
+trip-goofing  (a16_backtoschool-field-trip-color-enc row 18)
+  A field trip
+  When nobody was looking, you quickly donned a beret and fake mustache, slipped into the French Expressionist gallery, and began shouting, "Oh, l'ombre" in your best French accent.
+  | That was field trip number 1 to an interactive art gallery with virtual experience exhibits.
+  | My class went to an interactive art gallery with virtual experience exhibits on a field trip.
+  deltas {"discipline": -2, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+dance-with-lover  (a16_backtoschool-school-dance-event-feedback-enc row 2)
+  The school dance
+  She told you that you were the best kisser she'd ever locked lips with.
+  | My big sister, Olive, started a new position as Accountant for Beefcake.
+  | I went to the school dance with Carli.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+dance-classmate  (a16_backtoschool-school-dance-event-feedback-enc row 24)
+  The school dance
+  She showed up in an elaborate outfit from the Revolutionary War, and kept up an accent the entire night.
+  | My mother passed away at the age of 52.
+  | I went to the school dance with my classmate Ray Lee Carter.
+  deltas {"discipline": 0, "happiness": 2, "karma": 0, "looks": 0, "smarts": 0}
+
+dance-alone  (a16_backtoschool-school-dance-event-feedback-enc row 33)
+  The school dance
+  To the dismay of your classmates, you live streamed the entire dance.
+  | I went to the school dance on my own.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+dance-refused  (a16_backtoschool-school-dance-rejection-color-enc row 2)
+  The school dance
+  She says she just doesn't think of you in that way.
+  | Bruno Mercury turned me down for the school dance.
+  deltas {"discipline": 0, "happiness": -1, "karma": 0, "looks": 0, "smarts": 0}
+
+party-chill  (a16_backtoschool-house-party-color-enc row 11)
+  A house party
+  You and your guests put cucumber masks on your faces and listened to meditation music.
+  | I have hosted 1 house party.
+  | My parents went to visit theme park, so I hosted a house party.
+  deltas {"discipline": 0, "happiness": 3, "karma": 0, "looks": 0, "smarts": 0}
+
+party-lively  (a16_backtoschool-house-party-color-enc row 1)
+  A house party
+  Some guests held a silly voices competition in your backyard.
+  | I have hosted 1 house party.
+  | My parents went for a college reunion, so I hosted a house party.
+  deltas {"discipline": -1, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+party-wild  (a16_backtoschool-house-party-color-enc row 28)
+  A house party
+  One of your guests invited in a random lounge singer, who performed for everyone all night.
+  | I have hosted 1 house party.
+  | My parents went to try a famous twelve-course meal at a seafood restaurant the next town over, so I hosted a house party.
+  deltas {"discipline": -3, "happiness": 5, "karma": -1, "looks": 0, "smarts": 0}
+
+party-hookup  (a16_backtoschool-house-party-color-enc row 2)
+  A house party
+  Your guests played a chill round of Candy Land in your living room. He asked you to sign his underwear with a Sharpie before returning to the party.
+  | I have hosted 1 house party.
+  | My parents went to try a famous twelve-course meal at a Filipino-fusion restaurant the next town over, so I hosted a house party. I hooked up with Ned Shirin at my own party.
+  deltas {"discipline": 0, "happiness": 6, "karma": 0, "looks": 0, "smarts": 0}
+
+prom-win  (a16_backtoschool-prom-win-color-enc row 9)
+  Prom king
+  You passed the crown around the room so that everyone could try it on.
+  | My mother is no longer suffering from sleep apnea.
+  | I was voted prom king.
+  deltas {"discipline": 0, "happiness": 8, "karma": 0, "looks": 2, "smarts": 0}
+
+prom-lose  (a16_backtoschool-prom-lose-color-enc row 19)
+  Prom king
+  You were crushed at first, but then figured that you wouldn't even remember this once you graduated.
+  | I lost the vote for prom king.
+  deltas {"discipline": 0, "happiness": -4, "karma": 0, "looks": 0, "smarts": 0}
+
+~~~
+
+The capitalised `She told you...` and the single full stop after `...talking about it.` are
+the two grammar fixes of this section, visible in the dance and field trip cards.
+
+Added one node to the log format: the card's own ledger line comes first in `logLines`, the
+narrative second, which is the same order every other family uses.
+
+
+The full regression after the section: thirty-five probes at residue 0 (the new `b2sres.py`
+joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at
+`captured scenarios: 109 recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port
+107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+

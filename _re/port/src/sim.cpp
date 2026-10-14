@@ -1169,6 +1169,16 @@ bool Sim::load(std::string* error) {
       "a16_username-structure-enc",                  // Format
       "a16_username-adjectives-enc",                 // Adjective,Gender,Min Age,Max Age
       "a16_username-nouns-enc",                      // Noun,Gender,Min Age,Max Age
+      "a16_backtoschool-field-trip-location-enc",      // Location,Theme,Hero Min/Max Age
+      "a16_backtoschool-field-trip-color-enc",         // String,Focus,Theme
+      "a16_backtoschool-school-dance-theme-enc",       // Theme
+      "a16_backtoschool-school-dance-event-feedback-enc",  // String,Companion Type,Dance Theme
+      "a16_backtoschool-school-dance-rejection-color-enc", // String,Hurtfulness Score
+      "a16_backtoschool-prom-win-color-enc",           // String,Gave Speech
+      "a16_backtoschool-prom-lose-color-enc",          // String
+      "a16_backtoschool-house-party-color-enc",        // String,Log Version,Rowdiness Level
+      "a16_backtoschool-house-party-hookup-enc",       // String,Rowdiness Level
+      "a16_backtoschool-house-party-parental-absence-color-enc",  // String
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3388,6 +3398,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (careerYear(life, out, forcedChoice)) return true;
   if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
   if (life.hero.schooling && schoolYear(life, out, forcedChoice)) return true;
+  if (backToSchoolYear(life, out, forcedChoice)) return true;
   if (life.hero.podcaster && podcastYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
   if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
@@ -24210,6 +24221,309 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
               (h.socialHacks == 1 ? " time" : " times");
   ledger += ".";
   out.extra.push_back(spyUpperFirst(ledger));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The school year (REPORT.en.md 92): the trip, the dance, the prom and the
+// party. Ten tables, at most one of the four a school year.
+// ---------------------------------------------------------------------------
+bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (forcedChoice >= 0 || h.age < 6 || h.age > 18) return false;
+  // The port's own rate: the family ships no gate column at all, so a third of
+  // the school years carry one of the four events (REPORT.en.md 92).
+  if (!relRng_.chance(0.30)) return false;
+
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;  // the cards speak to the hero ("You learned that")
+  pronounOtherFemale_ = h.female;
+  rndCache_.clear();
+  rbLast_.clear();
+
+  std::string title, body, line, tableRef;
+  int cardRow = -1;
+  int happy = 0, disc = 0, smarts = 0, looks = 0, karmaD = 0, relD = 0;
+  auto tell = [&](const std::string& s2) { if (!s2.empty()) line += line.empty() ? s2 : " " + s2; };
+  auto add = [&](const std::string& s2) { if (!s2.empty()) out.extra.push_back(spyUpperFirst(s2)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  auto numOf = [](const Table& t, size_t r, const std::string& c) {
+    return t.has(c) ? t.num(r, c) : 0.0;
+  };
+  auto windowOk = [&](const Table& t, size_t r, const std::string& lo, const std::string& hi,
+                      double age) {
+    if (t.has(lo)) { const double v = t.num(r, lo); if (v > 0 && age < v) return false; }
+    if (t.has(hi)) { const double v = t.num(r, hi); if (v > 0 && age > v) return false; }
+    return true;
+  };
+  auto contains = [](const std::string& hay, const std::string& needle) {
+    return hay.find(needle) != std::string::npos;
+  };
+
+  // The four events, offered only when their own tables have a row the hero can
+  // take. A bare "roll < X" ladder poisons a later window when an earlier
+  // branch has nothing to draw (REPORT.en.md 87), so only live branches weigh.
+  const bool tripOk = ensureTable("a16_backtoschool-field-trip-location-enc") &&
+                      ensureTable("a16_backtoschool-field-trip-color-enc");
+  const bool danceOk = h.age >= 14 &&
+                       ensureTable("a16_backtoschool-school-dance-event-feedback-enc") &&
+                       ensureTable("a16_backtoschool-school-dance-theme-enc") &&
+                       ensureTable("a16_backtoschool-school-dance-rejection-color-enc");
+  const bool promOk = !h.b2sPromDone && h.age >= 16 &&
+                      ensureTable("a16_backtoschool-prom-win-color-enc") &&
+                      ensureTable("a16_backtoschool-prom-lose-color-enc");
+  const bool partyOk = h.age >= 14 &&
+                       ensureTable("a16_backtoschool-house-party-color-enc") &&
+                       ensureTable("a16_backtoschool-house-party-parental-absence-color-enc") &&
+                       ensureTable("a16_backtoschool-house-party-hookup-enc");
+  struct Cand { double weight; int kind; };
+  std::vector<Cand> cands;
+  // The prom happens once in a life, so while the hero is 17 or 18 it carries
+  // the largest share of the four (REPORT.en.md 92).
+  const double kFieldTrip = 8, kDance = 8, kProm = 12, kParty = 6;
+  if (tripOk) cands.push_back(Cand{kFieldTrip, 0});
+  if (danceOk) cands.push_back(Cand{kDance, 1});
+  if (promOk) cands.push_back(Cand{kProm, 2});
+  if (partyOk) cands.push_back(Cand{kParty, 3});
+  if (cands.empty()) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  double total = 0;
+  for (size_t i = 0; i < cands.size(); ++i) total += cands[i].weight;
+  double roll = relRng_.unit() * total;
+  int kind = cands.back().kind;
+  for (size_t i = 0; i < cands.size(); ++i) {
+    if (roll < cands[i].weight) { kind = cands[i].kind; break; }
+    roll -= cands[i].weight;
+  }
+
+  if (kind == 0) {
+    // --- the field trip: a location whose own Theme picks the colour row ----
+    const Table& loc = tbl("a16_backtoschool-field-trip-location-enc");
+    const Table& col = tbl("a16_backtoschool-field-trip-color-enc");
+    std::vector<size_t> locs;
+    for (size_t r = 0; r < loc.size(); ++r)
+      if (!trim(loc.at(r, "Theme")).empty() &&
+          windowOk(loc, r, "Hero Minimum Age", "Hero Maximum Age", h.age))
+        locs.push_back(r);
+    if (locs.empty()) {
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      return false;
+    }
+    const size_t lr = pickFrom(locs, relRng_);
+    const std::string place = trim(resolve(loc.at(lr, "Location")));
+    const std::string theme = lower(trim(loc.at(lr, "Theme")));
+    std::vector<size_t> rows;
+    for (size_t r = 0; r < col.size(); ++r) {
+      const std::string t2 = lower(trim(col.at(r, "Theme")));
+      if (t2.empty() || t2 == theme) rows.push_back(r);
+    }
+    if (rows.empty()) {
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      return false;
+    }
+    const size_t cr = pickFrom(rows, relRng_);
+    const std::string focus = lower(trim(col.at(cr, "Focus")));
+    mark("a16_backtoschool-field-trip-color-enc", int(cr));
+    title = "A field trip";
+    body = spyUpperFirst(resolve(col.at(cr, "String")));
+    ++h.b2sTrips;
+    // The row's own Focus column is the only outcome signal in the family.
+    if (focus == "learning") { smarts += 2; happy += 1; }
+    else if (focus == "socializing") { happy += 3; relD += 1; }
+    else { happy += 4; disc -= 2; }  // goofing off
+    tell("My class went to " + place + " on a field trip.");
+    add("That was field trip number " + std::to_string(h.b2sTrips) + " to " + place + ".");
+  } else if (kind == 1) {
+    // --- the school dance: a theme, a companion and that companion's answer --
+    const Table& fb = tbl("a16_backtoschool-school-dance-event-feedback-enc");
+    const Table& th = tbl("a16_backtoschool-school-dance-theme-enc");
+    const Table& rj = tbl("a16_backtoschool-school-dance-rejection-color-enc");
+    std::vector<size_t> themes;
+    for (size_t r = 0; r < th.size(); ++r)
+      if (!trim(th.at(r, "Theme")).empty()) themes.push_back(r);
+    const std::string theme =
+        themes.empty() ? std::string() : trim(th.at(pickFrom(themes, relRng_), "Theme"));
+    const std::string themeLower = lower(theme);
+    // The companion is the hero's partner when there is one and a classmate
+    // otherwise. The corpus's 34 refusal rows are written for whoever is asked,
+    // so both of them can be told no (REPORT.en.md 92).
+    const bool hasLover = h.relationshipOn && !h.loverName.empty();
+    std::string who = h.loverName;
+    bool whoFemale = h.loverFemale;
+    if (!hasLover) {
+      if (h.schoolClassmate.empty()) {
+        h.schoolClassmate = personName("classmate");
+        h.schoolClassmateFemale = relRng_.chance(0.5);
+      }
+      who = h.schoolClassmate;
+      whoFemale = h.schoolClassmateFemale;
+    }
+    const bool no = (hasLover && h.relationship < 45) || relRng_.chance(0.20);
+    if (no) {
+      const size_t r = weightedPick(rj, "Commonness Score", relRng_);
+      const double hurt = numOf(rj, r, "Hurtfulness Score");
+      mark("a16_backtoschool-school-dance-rejection-color-enc", int(r));
+      pronounOtherFemale_ = whoFemale;
+      body = spyUpperFirst(resolve(rj.at(r, "String")));
+      title = "The school dance";
+      tell(who + " turned me down for the school dance.");
+      happy -= int(hurt);
+      if (hasLover) relD -= int(hurt);
+    } else {
+      std::vector<size_t> rows;
+      for (size_t r = 0; r < fb.size(); ++r) {
+        const std::string ct = lower(trim(fb.at(r, "Companion Type")));
+        const std::string dt = lower(trim(fb.at(r, "Dance Theme")));
+        if (!dt.empty() && dt != themeLower) continue;
+        if (ct.empty()) continue;
+        if (hasLover ? (!contains(ct, "lover") && !contains(ct, "friend"))
+                     : (!contains(ct, "friend") && ct != "none"))
+          continue;
+        rows.push_back(r);
+      }
+      if (rows.empty()) {
+        pronounOtherSet_ = savedSet;
+        pronounOtherFemale_ = savedFemale;
+        return false;
+      }
+      const size_t r = pickFrom(rows, relRng_);
+      const std::string ct = lower(trim(fb.at(r, "Companion Type")));
+      mark("a16_backtoschool-school-dance-event-feedback-enc", int(r));
+      pronounOtherFemale_ = whoFemale;
+      body = spyUpperFirst(resolve(fb.at(r, "String")));
+      title = "The school dance";
+      happy += int(numOf(fb, r, "Hero Enjoyment Score"));
+      if (hasLover) relD += int(numOf(fb, r, "NPC Enjoyment Score (if applicable)"));
+      if (ct == "none") tell("I went to the school dance on my own.");
+      else if (hasLover) tell("I went to the school dance with " + who + ".");
+      else tell("I went to the school dance with my classmate " + who + ".");
+      ++h.b2sDances;
+    }
+  } else if (kind == 2) {
+    // --- the prom: one vote a life, and the crown is the hero's looks -------
+    h.b2sPromDone = true;
+    const bool win = h.looks >= 60 || relRng_.chance(0.25);
+    const char* table = win ? "a16_backtoschool-prom-win-color-enc"
+                            : "a16_backtoschool-prom-lose-color-enc";
+    const Table& t = tbl(table);
+    const size_t r = weightedPick(t, "Commonness Score", relRng_);
+    mark(table, int(r));
+    body = resolve(t.at(r, "String"));
+    title = h.female ? "Prom queen" : "Prom king";
+    const std::string crown = h.female ? "queen" : "king";
+    if (win) {
+      happy += 8;
+      looks += 2;
+      tell("I was voted prom " + crown + ".");
+      if (t.has("Gave Speech") && t.flag(r, "Gave Speech")) {
+        happy += 2;
+        tell("I gave the class a speech they will not forget.");
+      }
+    } else {
+      happy -= 4;
+      tell("I lost the vote for prom " + crown + ".");
+    }
+  } else {
+    // --- the house party: the parents' own excuse, then the rowdiness -------
+    const Table& col = tbl("a16_backtoschool-house-party-color-enc");
+    const Table& ab = tbl("a16_backtoschool-house-party-parental-absence-color-enc");
+    const Table& hk = tbl("a16_backtoschool-house-party-hookup-enc");
+    const size_t ar = weightedPick(ab, "Commonness Score", relRng_);
+    const std::string why = trim(resolve(ab.at(ar, "String")));
+    // The corpus ships three equally common levels and no roll of its own.
+    const double lv = relRng_.unit();
+    const std::string level = lv < 0.40 ? "chill" : (lv < 0.75 ? "lively" : "wild");
+    std::vector<size_t> rows;
+    for (size_t r = 0; r < col.size(); ++r) {
+      const std::string l2 = lower(trim(col.at(r, "Rowdiness Level")));
+      if (l2.empty() || l2 == level) rows.push_back(r);
+    }
+    if (rows.empty()) {
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      return false;
+    }
+    const size_t cr = pickFrom(rows, relRng_);
+    mark("a16_backtoschool-house-party-color-enc", int(cr));
+    title = "A house party";
+    // The colour row's own inline list is what its Log Version points at, so
+    // the feed line has to resolve first (REPORT.en.md 88).
+    body = spyUpperFirst(resolve(col.at(cr, "String")));
+    ++h.b2sParties;
+    if (level == "chill") { happy += 3; }
+    else if (level == "lively") { happy += 4; disc -= 1; }
+    else { happy += 5; disc -= 3; karmaD -= 1; }
+    tell("My parents went " + why + ", so I hosted a house party.");
+    if (relRng_.chance(0.45)) {
+      const bool hasLover = h.relationshipOn && !h.loverName.empty();
+      std::string partner = h.loverName;
+      bool partnerFemale = h.loverFemale;
+      if (!hasLover) {
+        if (h.schoolClassmate.empty()) {
+          h.schoolClassmate = personName("classmate");
+          h.schoolClassmateFemale = relRng_.chance(0.5);
+        }
+        partner = h.schoolClassmate;
+        partnerFemale = h.schoolClassmateFemale;
+      }
+      std::vector<size_t> hrs;
+      for (size_t r = 0; r < hk.size(); ++r) {
+        const std::string l2 = lower(trim(hk.at(r, "Rowdiness Level")));
+        if (l2.empty() || l2 == level) hrs.push_back(r);
+      }
+      if (!hrs.empty()) {
+        const size_t hr = pickFrom(hrs, relRng_);
+        pronounOtherFemale_ = partnerFemale;
+        body += " " + spyUpperFirst(resolve(hk.at(hr, "String")));
+        tell("I hooked up with " + partner + " at my own party.");
+        if (hasLover) relD += 2; else happy += 3;
+      }
+    }
+    add("I have hosted " + std::to_string(h.b2sParties) +
+        (h.b2sParties == 1 ? " house party." : " house parties."));
+  }
+
+  if (cardRow < 0) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  // A row whose own text still needs a token the port has no source for is
+  // skipped rather than printed with a bracket (REPORT.en.md 91).
+  if (body.find('<') != std::string::npos || line.find('<') != std::string::npos) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  if (title.empty()) title = "A school year";
+  if (body.empty()) body = "Nothing much came of the school year";
+  while (!body.empty() && (body[body.size() - 1] == ' ' || body[body.size() - 1] == '\t'))
+    body.pop_back();
+  {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.table = tableRef;
+  out.row_id = std::to_string(cardRow + 1);
+  out.title = title;
+  out.body = body;
+  if (!line.empty()) out.narrative = spyUpperFirst(line);
+  if (happy != 0) out.happiness += happy;
+  if (disc != 0) out.discipline += disc;
+  if (smarts != 0) out.smarts += smarts;
+  if (looks != 0) out.looks += looks;
+  if (karmaD != 0) out.karma += karmaD;
+  if (relD != 0) h.relationship = std::max(0, std::min(100, h.relationship + relD));
   pronounOtherSet_ = savedSet;
   pronounOtherFemale_ = savedFemale;
   return true;

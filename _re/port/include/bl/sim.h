@@ -348,6 +348,8 @@ class Sim {
   bool conversationYear(Life& life, AgeUp& out, int forcedChoice);
   // The social media year, and the handle generator a stranger's name needs.
   bool socialYear(Life& life, AgeUp& out, int forcedChoice);
+// The school year (REPORT.en.md 92): a trip, a dance, the prom or a party.
+bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   std::string makeUsername(int age, bool female, Rng& rng);
   // A troll card names the same stranger in its body and in its log, so the
   // handle is pinned while that one card renders.

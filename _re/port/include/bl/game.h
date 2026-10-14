@@ -186,6 +186,9 @@ struct Hero {
   int socialPromotions = 0;
   int socialCollabs = 0;
   int socialHacks = 0;
+  // The school year (REPORT.en.md 92): the trip, the dance, the
+  // prom and the party, and the one prom vote a life gets.
+  int b2sTrips = 0; int b2sDances = 0; int b2sParties = 0; bool b2sPromDone = false;
     // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
