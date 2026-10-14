@@ -1178,7 +1178,11 @@ bool Sim::load(std::string* error) {
       "a16_backtoschool-prom-lose-color-enc",          // String
       "a16_backtoschool-house-party-color-enc",        // String,Log Version,Rowdiness Level
       "a16_backtoschool-house-party-hookup-enc",       // String,Rowdiness Level
-      "a16_backtoschool-house-party-parental-absence-color-enc",  // String
+      "a16_backtoschool-house-party-parental-absence-color-enc",
+      "a16_backtoschool-sleepover-invitation-dumb-enc",  // Title,Scenario,CTA,choice grid
+      "a16_backtoschool-sleepover-acceptance-feedback-string-enc",  // both sides of the night
+      "a16_backtoschool-sleepover-activitie-enc",      // Activity,invite + age-up string
+      "a16_backtoschool-sleepover-invitation-rejection-color-enc",  // String - Hero,String - NPC
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -2555,6 +2559,19 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string v = hero_ == nullptr ? std::string() : hero_->socialChannel;
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else out += v;
+    } else if (token == "sleepover-companion-possessive") {
+      // The same classmate, in the possessive: ten of the invitation's own
+      // narratives say "<sleepover-companion-possessive> mother" (REPORT.en.md 93).
+      const std::string v = hero_ == nullptr ? std::string() : hero_->schoolClassmate;
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v + "'s";
+    } else if (token == "sleepover-companion") {
+      // The sleepover tables name the friend they are about, and the port knows
+      // one classmate - the same one the dance and the house party use. The year
+      // draws it before the card resolves, so this case only reads it back.
+      const std::string v = hero_ == nullptr ? std::string() : hero_->schoolClassmate;
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
     } else if (token == "username") {
       // <username> is somebody else's handle - the stranger who names the hero
       // on his own channel - so it is generated, not read back. The corpus uses
@@ -3625,11 +3642,34 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
     // through AttributeAdjustmentPointsForImpactScore before touching the
     // attribute. The draw for a score of 0 is the only RNG here, and the game
     // makes it in this same order (Karma .. Appearance).
-    out.karma = pointsForImpact(int(t.num(row, "Karma Impact" + suffix)));
-    out.discipline = pointsForImpact(int(t.num(row, "Discipline Impact" + suffix)));
-    out.happiness = pointsForImpact(int(t.num(row, "Happiness Impact" + suffix)));
-    out.smarts = pointsForImpact(int(t.num(row, "Intelligence Impact" + suffix)));
-    out.looks = pointsForImpact(int(t.num(row, "Appearance Impact" + suffix)));
+    // An absent column is not a score of 0: the table maps a score of 0 to a
+    // drawn -1 or +1, so reading a column the row does not carry moved smarts
+    // and looks on every card that spells its own impacts differently
+    // (REPORT.en.md 93). Only a column the row really has is applied, and
+    // Intelligence/Appearance also answer to the scenario family's own
+    // Smarts/Looks spelling (20 and 8 choice tables use it).
+    struct ChoiceImpact {
+      const char* engine;
+      const char* scenario;
+      int AgeUp::*field;
+    };
+    const ChoiceImpact imps[5] = {
+        {"Karma Impact", nullptr, &AgeUp::karma},
+        {"Discipline Impact", nullptr, &AgeUp::discipline},
+        {"Happiness Impact", nullptr, &AgeUp::happiness},
+        {"Intelligence Impact", "Smarts Impact", &AgeUp::smarts},
+        {"Appearance Impact", "Looks Impact", &AgeUp::looks},
+    };
+    for (const ChoiceImpact& im : imps) {
+      const std::string col = std::string(im.engine) + suffix;
+      if (t.has(col)) {
+        out.*(im.field) = pointsForImpact(int(t.num(row, col)));
+        continue;
+      }
+      if (im.scenario == nullptr) continue;
+      const std::string alt = std::string(im.scenario) + suffix;
+      if (t.has(alt)) out.*(im.field) = pointsForImpact(int(t.num(row, alt)));
+    }
   }
   return true;
 }
@@ -24281,15 +24321,22 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
                        ensureTable("a16_backtoschool-house-party-color-enc") &&
                        ensureTable("a16_backtoschool-house-party-parental-absence-color-enc") &&
                        ensureTable("a16_backtoschool-house-party-hookup-enc");
+  const bool sleepoverOk =
+      h.age >= 7 && h.age <= 17 &&
+      ensureTable("a16_backtoschool-sleepover-invitation-dumb-enc") &&
+      ensureTable("a16_backtoschool-sleepover-acceptance-feedback-string-enc") &&
+      ensureTable("a16_backtoschool-sleepover-activitie-enc") &&
+      ensureTable("a16_backtoschool-sleepover-invitation-rejection-color-enc");
   struct Cand { double weight; int kind; };
   std::vector<Cand> cands;
   // The prom happens once in a life, so while the hero is 17 or 18 it carries
   // the largest share of the four (REPORT.en.md 92).
-  const double kFieldTrip = 8, kDance = 8, kProm = 12, kParty = 6;
+  const double kFieldTrip = 8, kDance = 8, kProm = 12, kParty = 6, kSleepover = 7;
   if (tripOk) cands.push_back(Cand{kFieldTrip, 0});
   if (danceOk) cands.push_back(Cand{kDance, 1});
   if (promOk) cands.push_back(Cand{kProm, 2});
   if (partyOk) cands.push_back(Cand{kParty, 3});
+  if (sleepoverOk) cands.push_back(Cand{kSleepover, 4});
   if (cands.empty()) {
     pronounOtherSet_ = savedSet;
     pronounOtherFemale_ = savedFemale;
@@ -24433,7 +24480,7 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
       happy -= 4;
       tell("I lost the vote for prom " + crown + ".");
     }
-  } else {
+  } else if (kind == 3) {
     // --- the house party: the parents' own excuse, then the rowdiness -------
     const Table& col = tbl("a16_backtoschool-house-party-color-enc");
     const Table& ab = tbl("a16_backtoschool-house-party-parental-absence-color-enc");
@@ -24491,6 +24538,91 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     add("I have hosted " + std::to_string(h.b2sParties) +
         (h.b2sParties == 1 ? " house party." : " house parties."));
+  } else if (kind == 4) {
+    // --- the sleepover: an invitation, an answer, then the night itself -----
+    const Table& inv = tbl("a16_backtoschool-sleepover-invitation-dumb-enc");
+    const Table& acc = tbl("a16_backtoschool-sleepover-acceptance-feedback-string-enc");
+    const Table& act = tbl("a16_backtoschool-sleepover-activitie-enc");
+    const Table& rej = tbl("a16_backtoschool-sleepover-invitation-rejection-color-enc");
+    if (h.schoolClassmate.empty()) {
+      h.schoolClassmate = personName("classmate");
+      h.schoolClassmateFemale = relRng_.chance(0.5);
+    }
+    const std::string pal = h.schoolClassmate;
+    const bool palFemale = h.schoolClassmateFemale;
+    std::vector<size_t> invs;
+    for (size_t r = 0; r < inv.size(); ++r)
+      if (windowOk(inv, r, "Hero Min Age", "Hero Max Age", h.age)) invs.push_back(r);
+    if (invs.empty()) {
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      return false;
+    }
+    const size_t ir = pickFrom(invs, relRng_);
+    // The row says who does the asking; where it allows both, a coin decides.
+    const bool bothWays = inv.flag(ir, "Hero Invites") && inv.flag(ir, "NPC Invites");
+    const bool heroAsks = inv.flag(ir, "Hero Invites") && (bothWays ? relRng_.chance(0.5) : true);
+    std::string activity;
+    {
+      std::vector<size_t> acts;
+      for (size_t r = 0; r < act.size(); ++r)
+        if (!trim(act.at(r, "Activity")).empty()) acts.push_back(r);
+      if (!acts.empty()) activity = lower(trim(act.at(pickFrom(acts, relRng_), "Activity")));
+    }
+    // The answer is the port's own coin: the rejection rows ship a Believability
+    // Score and no gate, so nothing in the family says how often a friend says
+    // yes (REPORT.en.md 93).
+    const bool turnedDown = relRng_.chance(heroAsks ? 0.25 : 0.35);
+    if (turnedDown) {
+      const size_t rr = weightedPick(rej, "Commonness Score", relRng_);
+      mark("a16_backtoschool-sleepover-invitation-rejection-color-enc", int(rr));
+      title = "A sleepover invitation";
+      pronounOtherFemale_ = palFemale;
+      body = spyUpperFirst(resolve(rej.at(rr, heroAsks ? "String - NPC" : "String - Hero")));
+      tell(heroAsks ? "I asked " + pal + " to sleep over, and " + pal + " said no."
+                    : pal + " asked me to sleep over, and I said no.");
+      happy -= 2;
+    } else {
+      mark("a16_backtoschool-sleepover-invitation-dumb-enc", int(ir));
+      pronounOtherFemale_ = palFemale;
+      // The acceptance row is the night's own log line. It has to fit the
+      // activity when it names one, and the host's side of it is the side where
+      // the hero did the asking.
+      std::vector<size_t> accs;
+      for (size_t r = 0; r < acc.size(); ++r) {
+        if (!windowOk(acc, r, "Hero Min Age", "Hero Max Age", h.age)) continue;
+        const std::string a2 = lower(trim(acc.at(r, "Sleepover Activity")));
+        if (!a2.empty() && a2 != activity) continue;
+        accs.push_back(r);
+      }
+      if (!accs.empty()) {
+        const size_t ar = weightedPickOf(acc, "Commonness Score", accs, relRng_);
+        add(resolve(acc.at(ar, heroAsks ? "Push Scenario Version"
+                                        : "Invited To A Sleepover Version")));
+        happy += int(numOf(acc, ar, "Hero Enjoyment"));
+      }
+      if (activity.empty()) {
+        add(heroAsks ? "I invited " + pal + " to sleep over."
+                     : pal + " invited me to sleep over.");
+      } else {
+        for (size_t r = 0; r < act.size(); ++r) {
+          if (lower(trim(act.at(r, "Activity"))) != activity) continue;
+          if (heroAsks) add(resolve(act.at(r, "Sleepover Invite Friend String")));
+          add(resolve(act.at(r, "Sleepover Age-Up String")));
+          break;
+        }
+        add(heroAsks ? "I invited " + pal + " to sleep over to " + activity + "."
+                     : "I slept over at " + pal + "'s place to " + activity + ".");
+      }
+      ++h.b2sSleepovers;
+      add("That was sleepover number " + std::to_string(h.b2sSleepovers) + ".");
+      // The row's own four choices are the card: the night is what the family
+      // wrote, so renderRow picks the branch and the tail adds the enjoyment on
+      // top of the points that branch carries (REPORT.en.md 93).
+      renderRow(inv, ir, life, out, forcedChoice);
+      title = out.title;
+      body = out.body;
+    }
   }
 
   if (cardRow < 0) {
@@ -24507,6 +24639,11 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   if (title.empty()) title = "A school year";
   if (body.empty()) body = "Nothing much came of the school year";
+  // The corpus keeps the trailing space a row's Title column can carry
+  // ('Slumbering Scares ', 14 of the sleepover's 25 rows). The body has been
+  // trimmed here since section 92; the title joins it (REPORT.en.md 93).
+  while (!title.empty() && (title[title.size() - 1] == ' ' || title[title.size() - 1] == '\t'))
+    title.pop_back();
   while (!body.empty() && (body[body.size() - 1] == ' ' || body[body.size() - 1] == '\t'))
     body.pop_back();
   {

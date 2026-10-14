@@ -10852,8 +10852,285 @@ Added one node to the log format: the card's own ledger line comes first in `log
 narrative second, which is the same order every other family uses.
 
 
-The full regression after the section: thirty-five probes at residue 0 (the new `b2sres.py`
+The full regression after the section: thirty-six probes at residue 0 (the new `slpres.py`
 joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at
 `captured scenarios: 109 recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port
 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
 
+
+## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing
+
+The four files section 92 left behind are the family's last ninety-three rows, and the only
+part of it that is a choice card: an invitation with four ways to spend the night, the night's
+own log line written from either side of it, the four activities that can fill it, and the
+twenty-eight excuses a refusal arrives in. They join the school year instead of getting a
+function of their own, because the year already carries the gate (age 6..18), the rate, the
+pronoun save and restore, the ledger and the tail that appends the full stop - and because
+rendering the card through the shared choice-card path is what turned up the bug in 93.3.
+
+### 93.1 The family
+
+| file | rows | columns that matter |
+|---|---|---|
+| `a16_backtoschool-sleepover-invitation-dumb-enc` | 25 | Hero Min/Max Age, Hero Invites, NPC Invites, Crazy, Randomize Choices, Gender Bracket, Title, Scenario, CTA, Choice 1..4 with a Narrative and five impacts each |
+| `a16_backtoschool-sleepover-acceptance-feedback-string-enc` | 36 | Invited To A Sleepover Version, Push Scenario Version, Sleepover Activity, Hero Min/Max Age, Hero Enjoyment, NPC Enjoyment, Commonness Score |
+| `a16_backtoschool-sleepover-activitie-enc` | 4 | Activity, Sleepover Invite Friend String, Sleepover Age-Up String |
+| `a16_backtoschool-sleepover-invitation-rejection-color-enc` | 28 | String - Hero, String - NPC, Believability Score, Commonness Score, Hero Minimum/Maximum Age |
+
+The invitation's age window is eleven overlapping spellings of 7..17, with `(7,17)` and
+`(10,17)` on seven rows each. Twenty-three of the twenty-five rows let the hero do the
+asking and twenty-three let the friend, and twenty-one allow both, so a coin decides the
+direction on almost every row; only two rows are friend-only. `Gender Bracket` is the literal
+`<sleepover-companion>` on all twenty-five rows - the table is written for whichever friend it
+is about - `Crazy` is set on six rows and `Randomize Choices` on seventeen, and neither is
+read (93.4). The CTA is `What will you do?`, with a trailing space on nineteen of the
+twenty-five rows, which the card carries and the log does not.
+
+The twenty-five titles are five strings, fourteen of which keep the trailing space the column
+carries: `Slumbering Scares ` (7), `Sleepover Shenanigans` (6), `Nighttime Nonsense` (5),
+`Midnight Mayhem ` (4), `Bedtime Beauty ` (3). The year's own tail trims it (93.4). The
+cards' own cells name the friend 113 times as `<sleepover-companion>` and twelve times in the
+possessive, alongside the family's usual machinery: `<rb>` twelve, `<car-type>` five,
+`<rb2>` four, `<random-first-name>` three and one `<num7-15>`. Every one of those resolves
+through a table the port already had except the two companion spellings, which are the two new
+cases in 93.2.
+
+### 93.2 The invitation, the answer, and the night
+
+The row says who asks. `Hero Invites` and `NPC Invites` are both set on twenty-one rows, so
+the port coins the direction there and lets a single-sided row decide itself; the direction is
+then what picks the column the port reads for the refusal (`String - NPC` when the hero did the
+asking, `String - Hero` when the friend did) and which half of the acceptance table it uses.
+
+The companion is the classmate the port already keeps for the dance and the house party
+(92.5 item 5) - the corpus's own friend list does not exist here, so a classmate of the right
+gender stands in. The year draws that classmate before the card resolves, which is why the two
+resolver cases only read it back:
+
+~~~
+} else if (token == "sleepover-companion-possessive") {
+  // The same classmate, in the possessive: ten of the invitation's own
+  // narratives say "<sleepover-companion-possessive> mother" (REPORT.en.md 93).
+  const std::string v = hero_ == nullptr ? std::string() : hero_->schoolClassmate;
+  if (v.empty()) out += text.substr(i, close - i + 1);
+  else out += v + "'s";
+} else if (token == "sleepover-companion") {
+  // The sleepover tables name the friend they are about, and the port knows
+  // one classmate - the same one the dance and the house party use. The year
+  // draws it before the card resolves, so this case only reads it back.
+  const std::string v = hero_ == nullptr ? std::string() : hero_->schoolClassmate;
+  if (v.empty()) out += text.substr(i, close - i + 1);
+  else out += v;
+}
+~~~
+
+The activity comes first, out of the four-row table, because the acceptance rows point back at
+it through their own `Sleepover Activity` column - `play video games` on eight, `watch a
+movie` on six, `bake together` and `camp in the backyard` on four each, and blank on
+fourteen, which is a row that fits any activity.
+
+The answer itself is the port's coin. The rejection table ships a `Believability Score` (two
+on seven rows, three and four on six each, five on five, one on four) and a
+`Commonness Score`, and nothing that says how often a friend says yes, so the port asks with a
+0.25 coin when the hero did the inviting and 0.35 when the friend did. A refusal marks the
+rejection row, titles the card `A sleepover invitation`, upper-cases the direction's own
+string and takes two happiness. An acceptance marks the invitation row, keeps the classmate's
+gender for the pronouns, then picks the log line out of the acceptance table - filtered to the
+row's age window and to its activity, and weighted by `Commonness Score` (three on twelve
+rows) - and adds its `Hero Enjoyment` (four on twelve rows, three on seven, one and five on
+six each, two on five) on top of the points the night's own choice carries. The activity's own
+two strings follow, the host's side of it only when the hero did the asking, and then the
+port's own sentence and the ledger line.
+
+Last comes the night itself: `renderRow(inv, ir, life, out, forcedChoice)` renders the
+invitation row's four choices with their own narratives and impacts, and the year copies the
+title and body back out of it so the tail cannot clobber them with something else. The branch
+table of the whole year is now:
+
+| branch | weight | available when |
+|---|---|---|
+| field trip | 8 | age 6..18, the family's own gate |
+| school dance | 8 | the same |
+| prom | 12 | once a life, and the life is at least 15 |
+| house party | 6 | age 6..18 |
+| sleepover | 7 | age 7..17 and all four tables load |
+
+### 93.3 The impact columns the port had been inventing
+
+`renderRow` reads five impact columns per choice, and it used to read all five
+unconditionally. An absent column is not a score of zero in this engine: `Table::num` returns
+0 for a column the table does not have, and `pointsForImpact(0)` is not a no-op either - the
+game maps a score of 0 to a coin that pays -1 or +1. So every choice card whose table spelled
+its impacts differently from the engine's canonical five was silently moving two attributes.
+Fifty-eight tables in the corpus carry a `Choice 1` column; the engine's own spellings are
+`Karma Impact` (68 tables), `Happiness Impact` (48), `Discipline Impact` (44),
+`Intelligence Impact` (28) and `Appearance Impact` (28), while the scenario family the
+dumb-scenario and school families belong to writes `Smarts Impact` (20 tables) and
+`Looks Impact` (8) instead. Both were being read as absent, and both paid the coin.
+
+The first probe run of this section is the proof: 41 smarts changes (16 draws of +1 and 25 of
+-1), 40 looks and 23 karma across 110 cards, none of which any of the four tables asked for.
+The fix reads each column only if the table has it, and lets Intelligence and Appearance also
+answer to the scenario family's spelling:
+
+~~~
+// An absent column is not a score of 0: the table maps a score of 0 to a
+// drawn -1 or +1, so reading a column the row does not carry moved smarts
+// and looks on every card that spells its own impacts differently
+// (REPORT.en.md 93). Only a column the row really has is applied, and
+// Intelligence/Appearance also answer to the scenario family's own
+// Smarts/Looks spelling (20 and 8 choice tables use it).
+struct ChoiceImpact {
+  const char* engine;
+  const char* scenario;
+  int AgeUp::*field;
+};
+const ChoiceImpact imps[5] = {
+    {"Karma Impact", nullptr, &AgeUp::karma},
+    {"Discipline Impact", nullptr, &AgeUp::discipline},
+    {"Happiness Impact", nullptr, &AgeUp::happiness},
+    {"Intelligence Impact", "Smarts Impact", &AgeUp::smarts},
+    {"Appearance Impact", "Looks Impact", &AgeUp::looks},
+};
+for (const ChoiceImpact& im : imps) {
+  const std::string col = std::string(im.engine) + suffix;
+  if (t.has(col)) { out.*(im.field) = pointsForImpact(int(t.num(row, col))); continue; }
+  if (im.scenario == nullptr) continue;
+  const std::string alt = std::string(im.scenario) + suffix;
+  if (t.has(alt)) out.*(im.field) = pointsForImpact(int(t.num(row, alt)));
+}
+~~~
+
+The distinction that matters for reading the numbers afterwards: a blank cell inside a column
+the table really has is a score of 0, and a score of 0 really does draw -1 or +1. The
+invitation's own cells are mostly like that - of the hundred Smarts cells 66 are blank, of the
+hundred Looks cells 89 are blank, of the hundred Karma cells 69 - so a card can honestly move
+smarts by 1 on a row that never mentions smarts. What it must not do is move it on a table that
+has no Smarts column at all, which is what the port was doing.
+
+`Relationship Impact` is the busiest column in the invitation table (86 of its 100 cells are
+non-blank: +1 on 35, -1 on 28, -2 on 12, +2 on 11) and it is not applied, because it is the
+friend's relationship and the port keeps no friend relationship - the same shortcut the dance
+and the party already document. `Friend Impact`, which the dumb-scenario friend set uses, is
+unapplied for the same reason.
+
+### 93.4 Shortcuts
+
+1. The 0.30 school-year rate and the sleepover's weight of 7 against the year's other four
+   (8, 8, 12, 6) are the port's own, and the 7 exists only to keep one card a year spread over
+   five branches.
+2. The refusal coin (0.25 when the hero asks, 0.35 when the friend does) is the port's own. The
+   corpus ships a `Believability Score` and no decider.
+3. `Crazy` (6 rows) and `Randomize Choices` (17 rows) are unread. The port's `renderRow`
+   always draws the branch from the seed, which is the effect `Randomize Choices` asks for, and
+   `Crazy` has no column in the port's card model to land on.
+4. The classmate stands in for the corpus's friend list, as in 92.5 item 5. Its gender is the
+   port's own 50/50 and is not read off the name, so a female name can carry a male pronoun in
+   the corpus's own sentence.
+5. `<car-type>`, `<random-first-name>` and `<num7-15>` resolve through tables the port
+   already had; `<rb>`, `<rb2>` and the inline slash lists go through the scenario token
+   machinery `renderRow` already runs.
+6. The card's title has its trailing space trimmed by the year's tail, which trimmed only the
+   body before this section. The trim stays in that tail and not in `renderRow`, because
+   `renderRow` also renders the rows the benchmark pushes out of the captured trace, and a
+   title the game itself kept is not the port's to change.
+7. `Relationship Impact` and `Friend Impact` are unmapped (93.3). One card a year.
+
+### 93.5 Verification
+
+The probe is `/tmp/qdir/slpres.py`: 240 lives (relationships on and off x sixty seeds x both
+genders, to age 30, in the United States, with the school flag set), selecting every event whose
+table starts with `a16_backtoschool-sleepover` and checking each card against the candidate
+rows of its own table - the refusal's direction and column, the acceptance's activity and age
+window, the choice against the row's own four cells, the narrative against the matching
+`Narrative N`, the deltas against that branch's impacts plus the acceptance row's enjoyment,
+the ledger counter's monotonicity and a sweep for leftover brackets:
+
+~~~
+runs 240 rc failures 0 cards 110
+kinds {'accepted': 70, 'refused': 40, 'refused-pal': 16, 'refused-hero': 24}
+tables {'a16_backtoschool-sleepover-invitation-dumb-enc': 70, 'a16_backtoschool-sleepover-invitation-rejection-color-enc': 40}
+choice index {1: 20, 2: 16, 3: 16, 4: 18}
+activities {'watch a movie': 28, 'camp in the backyard': 18, 'bake together': 20, 'play video games': 4}
+ledger lines 70 bad 0
+happiness {6: 8, -2: 40, 7: 8, 0: 4, -5: 8, -7: 4, 10: 4, 5: 8, 1: 4, 2: 4, 3: 4, -4: 4, 9: 4, 4: 6}
+smarts {1: 28, -1: 32, 8: 8, 4: 2} looks {-1: 40, 4: 4, 1: 22, -4: 4} karma {-4: 16, 1: 14, -1: 16, -8: 8, 8: 4, 4: 12}
+mismatches {}
+acceptance line seen {'y': 70}
+RESIDUE 0 []
+~~~
+
+The proportions are what the tables say. The forty refusals split sixteen to twenty-four by who
+did the asking and every one of them costs exactly the two happiness the port charges; the
+seventy acceptances touch all four choices of the night (20, 16, 16, 18) and the same four
+activities the table has, with `play video games` rarest because it is the one the acceptance
+table only fits on eight of its rows. The happiness values are `points(2) = 8` and
+`points(-2) = -8` plus an enjoyment of 1..5, the -5 and -7 being the low enjoyment of a
+negative branch, and every smarts and looks value is a score-0 coin, which is the corpus's own
+blank cell doing what the game does with it. The ledger line is monotonic on all seventy cards
+and no card carries a bracket.
+
+Six cards, one for each choice of the night and one refusal from each direction:
+
+~~~
+choice1  (a16_backtoschool-sleepover-invitation-dumb-enc row 7)
+  Slumbering Scares
+  During your sleepover with Ned Shirin, you notice a giant spider crawling up the wall.
+  | My little brother, Duke, started elementary school.
+  | During your sleepover, you and Ned Shirin took turns lighting blue darts and giggling, and it was all fun and games until he ripped a monster that set off the smoke alarm.
+  | You and Ned Shirin watched a movie at his house.
+  | I slept over at Ned Shirin's place to watch a movie.
+  | That was sleepover number 1.
+  | During our sleepover, Ned Shirin and I saw a giant spider climbing up the wall and stomped it.
+  deltas {"discipline": 0, "happiness": 6, "karma": -4, "looks": -1, "smarts": 1}
+
+choice2  (a16_backtoschool-sleepover-invitation-dumb-enc row 12)
+  Sleepover Shenanigans
+  Carli Raitchison wants to build a fort during your sleepover.
+  | During your sleepover, you and she snuck out of the house at night and got spooked by a stray cat and ran back inside.
+  | Carli Raitchison agreed to sleep over at your house and bake together.
+  | You and Carli Raitchison got busy baking at her house.
+  | I invited Carli Raitchison to sleep over to bake together.
+  | That was sleepover number 1.
+  | I told Carli Raitchison I didn't want to build a fort during our sleepover, because I am a pacifist.
+  deltas {"discipline": 0, "happiness": 0, "karma": 1, "looks": 1, "smarts": -1}
+
+choice3  (a16_backtoschool-sleepover-invitation-dumb-enc row 19)
+  Nighttime Nonsense
+  During your sleepover, you try to show Ray Lee Carter your Lego collection, but she is totally not interested.
+  | Just before falling asleep, she apologized to you in advance, saying she sometimes screams profanities in her sleep. Unfortunately, it was one of those times.
+  | Ray Lee Carter agreed to sleep over at your house and bake together.
+  | You and Ray Lee Carter got busy baking at her house.
+  | I invited Ray Lee Carter to sleep over to bake together.
+  | That was sleepover number 1.
+  | After attempting to show my Lego collection with no success to Ray Lee Carter during our sleepover, I completely went off, calling her an uncultured swine.
+  deltas {"discipline": 0, "happiness": -7, "karma": -4, "looks": -1, "smarts": 1}
+
+choice4  (a16_backtoschool-sleepover-invitation-dumb-enc row 4)
+  Sleepover Shenanigans
+  During your sleepover with Maria Scary, you find an old bag of mystery candy in the cupboard.
+  | During your sleepover, you and she gathered all the blankets and pillows in the house, built an epic fort in the living room, climbed inside, and played truth or dare.
+  | Maria Scary agreed to sleep over at your house and watch a movie together.
+  | You and Maria Scary watched a movie at her house.
+  | I invited Maria Scary to sleep over to watch a movie.
+  | That was sleepover number 1.
+  | During our sleepover, Maria Scary and I found a bag of mystery candy and sold it to our friend Aubrey, claiming it was a bag of authentic Everlasting Gobstoppers.
+  deltas {"discipline": 0, "happiness": 5, "karma": -8, "looks": 1, "smarts": -1}
+
+refused-by-friend  (a16_backtoschool-sleepover-invitation-rejection-color-enc row 3)
+  A sleepover invitation
+  He said his parents grounded him for drawing on the wall with a permanent marker.
+  | I asked John Myth to sleep over, and John Myth said no.
+  deltas {"discipline": 0, "happiness": -2, "karma": 0, "looks": 0, "smarts": 0}
+
+refused-by-hero  (a16_backtoschool-sleepover-invitation-rejection-color-enc row 19)
+  A sleepover invitation
+  You told Lakira Hips that you can't sleep over at his house because there's a new roblox challenge and you need to practice.
+  | Lakira Hips asked me to sleep over, and I said no.
+  deltas {"discipline": 0, "happiness": -2, "karma": 0, "looks": 0, "smarts": 0}
+~~~
+
+The full regression after the section: thirty-six probes at residue 0 (the new `slpres.py`
+joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109
+recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push
+script at rc 0 with empty stderr, and the benchmark reaching age 34.
