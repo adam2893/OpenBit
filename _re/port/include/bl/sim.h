@@ -128,6 +128,7 @@ class Sim {
   void makeMisc(Life& life, unsigned mask);
   void makeSecretAgent(Life& life);
   void makeFighter(Life& life);
+  void makeBlackMarketeer(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -189,6 +190,7 @@ class Sim {
   // '<celebrity>', '<random-person>', '<random-first-name-male>', ...).
   std::string referenceToken(const std::string& token);
   std::string circumstancePublic();
+  std::string circumstanceHome();
   std::string vacationDestination();
   std::string vacationCruise();
   // '<hero-name>', '<hero:age>', '<city>', '<country-other>', ... read the live
@@ -246,6 +248,11 @@ class Sim {
   std::string spyToken(const std::string& key);
   std::string spyFrontName(const std::string& businessType);
   std::string fightToken(const std::string& key);
+  bool bmYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string bmToken(const std::string& key);
+  void ensureBmFields(Life& life);
+  std::string bmStructureName(const char* tableName);
+  std::string bmDrawItem(Life& life);
   size_t spyRow(const std::string& table, const std::string& weightColumn,
                 const std::string& filterColumn, const std::string& filterValue,
                 const std::string& flagColumn);
@@ -316,6 +323,7 @@ class Sim {
   Rng relRng_;
   Rng spyRng_;
   Rng fightRng_;
+  Rng bmRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -325,6 +333,9 @@ class Sim {
   std::string fightArena_;          // '<fighting-arena>' of this card
   bool fightSelf_ = false;          // the fight-er persona tables mean the hero
   std::map<std::string, std::string> fightCache_;  // one circumstance per card
+  std::string bmVendor_;   // '<vendor>' in the vendor pool
+  std::string bmChemist_;  // '<drug-chemist>' in the police pool
+  std::map<std::string, std::string> bmCache_;  // one item / vendor / auctioneer per card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

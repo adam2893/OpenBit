@@ -145,6 +145,21 @@ struct Hero {
   int spyMissions = 0;
   std::string spyCover;        // the day job that hides the service
   std::string spyAddress;      // the front's street address
+  // The black market (report 60): the hero deals in items whose provenance is
+  // best left out of the paperwork, sells them through their own auction house,
+  // and shows the best finds in a museum of their own.
+  bool blackMarket = false;
+  std::string bmAuctionHouse;
+  std::string bmMuseum;
+  std::string bmItem;            // the item on the block, article included
+  std::string bmItemPossessive;
+  std::string bmItemShort;
+  bool bmItemPlural = false;
+  bool bmFake = false;
+  std::string bmCategory;        // the auction category the item belongs to
+  long long bmValue = 0;         // what the auction house can get for it
+  int bmItems = 0;
+  int bmAppeal = 40;             // what the museum's visitors think of it
   // The fight career (REPORT.en.md 59): a level, a league position (1 is the top
   // of the card), a form score, reputation, street cred and a stamina pool.
   bool fighter = false;

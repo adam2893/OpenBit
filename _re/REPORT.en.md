@@ -4139,3 +4139,166 @@ A training year from the same seed:
 Regression: distinct residue tokens 0, coverage 109 captured / 107 recoverable,
 port gap 0, the coverage push pass returns 0, and the ten-year bench reaches age
 34 with no abort.
+
+## 60. The black market: eight item pools, an auction house, and a museum of dubious provenance
+
+The black-market family is the largest content family the port had not touched: 24 tables,
+734 rows, no code. It is not a career in the game's sense -- there is no job title and no
+promotion clock -- it is a second economy the hero runs on the side: buy an item from a
+vendor, move it through an auction house the hero owns, keep the best finds in a museum of
+their own, and take the occasional side job for a street chemist or a taxidermist.
+
+### 60.1 The tables
+
+| table (a16_black-market-*) | rows | what it is |
+|---|---|---|
+| antiques | 51 | one item pool (Item Name, Fake Name, Short Name, Possessive Name, ...) |
+| art | 41 | one item pool (Title, Artist, Genre, ...) |
+| automobiles | 50 | one item pool (Make, Model, Type, ...) |
+| fashion | 52 | one item pool |
+| gemstones | 18 | one item pool (Gemstone, Min/Max Carats, First Carat Price, ...) |
+| historical-artifacts | 48 | one item pool |
+| sports-memorabilia | 49 | one item pool |
+| weapons | 42 | one item pool |
+| auction-house-names | 3 | Format, Prefix, Suffix -- the hero's own house |
+| auctioneer-color | 43 | String + Auction Category comma list + Plural flag + Commonness Score |
+| museum-name | 18 | Name + Commonness Score |
+| museum-report-color | 20 | String + Min/Max Appeal |
+| purchase-requests | 43 | String + Min/Max Friendliness + Auction Category + Arms Dealer Only + Wildlife Smuggler Only |
+| street-chemist-products | 17 | Name + Can Be Cut + Min/Max Price + Health/Happiness/Smarts/Looks Impact + Risk Score |
+| street-chemist-cut-ingredients | 58 | Ingredient + Commonness Score + Can Be Fatal |
+| chemist-feedback-color | 45 | String + Hero Gender + Boosted Stat + Commonness Score |
+| police-intoxicated-warning | 20 | Scenario + Commonness Score |
+| police-intoxicated-hero-color | 21 | Scenario + Boosted Stat + Hero Gender |
+| taxidermist-business-names | 8 | Format, Prefix, Suffix |
+| taxidermy-discard-locations | 29 | Location + String + Commonness Score + Risk Score |
+| exhibit-dumb-scenarios | 24 | the hero's museum, on the shared dumb runner |
+| museum-dumb-scenarios | 15 | the same |
+| vendor-dumb-scenarios | 12 | the same |
+| auction-categories | 7 | a weight list for the eight item pools (not loaded -- see 60.4) |
+
+The eight item pools share one shape: {B}Item Name, Fake Name, Short Name, Possessive Name,
+Uses Indefinite Article, Uses Definite Article, Plural, Can Be Refurbished, Min Value, Max
+Value, Unique, Can Be Fake, Appreciates, Commonness Score, Appeal Score, Storage Unit Only,
+Black Market Only, ID{B}. {B}art{B} replaces the name column with {B}Title{B} and adds
+{B}Artist{B} and {B}Genre{B}; {B}automobiles{B} splits it into {B}Make{B} and {B}Model{B};
+{B}gemstones{B} is {B}Gemstone{B} plus carat columns. The article the item needs is baked into
+the row as a flag rather than a word, which is why the port reads the flag and prepends
+{B}a{B} or {B}the{B} itself.
+
+### 60.2 The implementation
+
+{B}Hero{B} gained the black-market state ({B}blackMarket{B}, {B}bmAuctionHouse{B},
+{B}bmMuseum{B}, the drawn item as {B}bmItem{B} / {B}bmItemPossessive{B} / {B}bmItemShort{B}
+plus {B}bmItemPlural{B} and {B}bmFake{B}, {B}bmCategory{B}, {B}bmValue{B}, {B}bmItems{B},
+{B}bmAppeal{B}); {B}Sim{B} gained its own {B}bmRng_{B} stream ({B}seed ^
+0x8f1bbcdc9e3779b1ULL{B}), the per-card caches {B}bmVendor_{B} and {B}bmChemist_{B}, and the
+methods {B}makeBlackMarketeer{B}, {B}ensureBmFields{B}, {B}bmStructureName{B},
+{B}bmDrawItem{B}, {B}bmToken{B} and {B}bmYear{B}.
+
+{B}bmDrawItem{B} picks one of the eight pools, draws a row by {B}Commonness Score{B} and
+fills the card: the name comes from the first column that exists among {B}Item Name{B},
+{B}Title{B}, {B}Gemstone{B} and {B}Make{B} ({B}Make{B} plus {B}Model{B} for a car), the item
+is fake at 40% only when the row's {B}Can Be Fake{B} flag is set and a {B}Fake Name{B}
+exists, the article is taken from the {B}Uses Indefinite Article{B} /
+{B}Uses Definite Article{B} flags, and the value is interpolated inside the row's
+{B}Min Value{B}..{B}Max Value{B} band.
+
+{B}bmYear{B} runs from age 18 at 45% a year and picks one of five days, in this order:
+
+1. street chemist, 22% -- draw a {B}street-chemist-products{B} row, roll its price band, draw a
+   cut ingredient, add a hospital line 25% of the time when the ingredient's {B}Can Be Fatal{B}
+   flag is set, then a {B}chemist-feedback-color{B} string gated on {B}Hero Gender{B}, with the
+   product's Happiness/Smarts/Looks impact applied.
+2. police stop, 14% -- a {B}police-intoxicated-warning{B} scenario plus a
+   {B}police-intoxicated-hero-color{B} scenario whose {B}Boosted Stat{B} names the stat that
+   moved; the pronoun pair is pointed at the officer so {B}<he/she>{B} is the cop, not the hero.
+3. taxidermy, 14% -- a business name from the {B}Format{B}/{B}Prefix{B}/{B}Suffix{B} row, a
+   discard location, and a 25% dog-walker line when that location's {B}Risk Score{B} is 4 or
+   higher.
+4. museum report, 20% -- a {B}museum-report-color{B} string admitted through the Min/Max
+   {B}Appeal{B} window against {B}bmAppeal{B} (three attempts, then accept), which moves the
+   museum's appeal and the hero's happiness.
+5. otherwise a sale -- draw an item, pay 55% of its value, draw an auctioneer patter string
+   whose {B}Auction Category{B} list contains the item's category and whose {B}Plural{B} flag
+   matches the item's number, add a buyer line from {B}purchase-requests{B} filtered on the
+   same category with the pronoun pair on the buyer, and finish with either {B}Sold for
+   $N{B} or, 30% of the time when the item was fake, {B}The buyer's appraiser called it a
+   fake{B}.
+
+{B}bmToken{B} serves {B}<item>{B}, {B}<item-short>{B} and the possessive, {B}<auction-house>{B},
+{B}<museum>{B}, {B}<vendor>{B}, {B}<drug-chemist>{B}, {B}<auctioneer>{B} and
+{B}<taxidermist>{B}; {B}resolveInto{B} routes to it through {B}bmIsToken{B}, which sits beside
+{B}fightIsToken{B} in the anonymous namespace and strips the {B}-possessive{B} suffix with the
+{B}psuffix.size(){B} idiom that the older pools had to learn twice.
+
+The three dumb pools ride the shared runner: {B}makeBlackMarketeer{B} sets misc bits 9, 10 and
+11, and {B}miscPoolYear{B} gained {B}{"a16_black-market-exhibit-dumb-scenarios-enc", 18,
+0.25}{B}, the museum pool and the vendor pool at the same age and chance.
+
+Two helpers were generalised rather than duplicated: {B}spyRow{B}/{B}spySnippet{B} became
+{B}pickRow{B}/{B}pickSnippet{B} with an explicit {B}Rng&{B} parameter, and the old names stayed
+as one-line wrappers passing {B}spyRng_{B}, so none of the 36 spy call sites changed.
+
+### 60.3 Two tokens the family needed
+
+The first probe (30 seeds, both genders, 1541 black-market events) found two leaks, both real:
+
+* {B}<circumstance-home>{B} in the exhibit pool. Report 38 captured all three circumstance
+  pools by calling {B}DataHub.GetRandomCircumstance*(){B} live, but only the public pool was
+  wired, because until now no wired table used the other two. The home pool is now coded from
+  that capture: 55 fixed scenes plus the one {B}<musician>{B} slot the game renders as
+  {B}While chilling in bed listening to <article> <musician>{B}. Its twin,
+  {B}<circumstance-return>{B} (50 scenes plus three musician slots), still has no wired table
+  and stays unwired.
+* {B}<blue/red/yellow/orange/green>{B} in the street-chemist line: the cut ingredient cell is
+  itself an inline alternative list, so the port now resolves that cell before printing it
+  instead of reading the {B}Ingredient{B} column raw.
+
+### 60.4 Shortcuts
+
+* The eight item pools are drawn uniformly; {B}a16_black-market-auction-categories-enc{B}
+  carries a weight per category and is not loaded, so the category mix is flat.
+* {B}Unique{B}, {B}Appreciates{B}, {B}Can Be Refurbished{B}, {B}Storage Unit Only{B} and
+  {B}Black Market Only{B} are not modelled: the port has no storage unit, no refurbishment
+  action and no second market to contrast with.
+* The sale is a same-year round trip at a fixed 55% of value; the game lets the hero hold an
+  item and let it appreciate.
+* The museum's {B}Appeal{B} is only a filter for its feedback pool; exhibits are not tracked,
+  and the museum's own dumb pool draws the items it mentions from the same eight pools.
+* {B}purchase-requests{B}' {B}Arms Dealer Only{B} and {B}Wildlife Smuggler Only{B} flags are
+  read as part of the pool the category filter already narrows.
+* The police warning rows begin with a lowercase {B}<he/she>{B} in the shipped data
+  ({B}<he/she>{B} {B}said you look like you're over analyzing every little thing.{B}), so the
+  rendered card starts lowercase exactly like the data does.
+* Two columns of the taxidermy table ({B}Cost{B}-style numbers) and the taxidermist's own
+  business model are not modelled; the hero is paid nothing for the job.
+
+### 60.5 Verification
+
+Residue probe (seeds 1..30, both genders, ages 60, {B}{"black-market": true}{B}, every event
+whose table is a black-market table, every {B}<...>{B} token in title, body and log lines
+counted): 1542 events, residue 0. Split by table: exhibit 491, museum 365, vendor 299,
+auctioneer 167, street chemist 92, museum report 47, taxidermy 42, police 39.
+
+Samples straight out of the port:
+
+    A risky buy | I picked up a plastic javelin for $211. The auctioneer, Court Villa:
+    "Mark Wahlberg once owned it". | Sold for $385.
+
+    A new find | I picked up a Qing silk cheongsam for $789009. The auctioneer, Rollins
+    Obinna: "it's not every day you see something this valuable for sale". A buyer: she says
+    she is going to the opera and wants to show it off. | Sold for $1,434,562.
+
+    Cutting the product | I cut a batch of ascorbic acid and moved it for $1537. The cut:
+    cinnamon. You suddenly look less tragic!
+
+    Work for the taxidermist | I did a job for Luka's Taxidermy Services and dumped the
+    leftovers in a landfill.
+
+    Court's Museum of Unnatural History | Visitors said they learned more about the world by
+    going through your museum than they did in primary school.
+
+Full regression after the two fixes: {B}rescensus.py{B} distinct residue tokens 0;
+{B}coverage.py{B} 109 captured / 107 recoverable; {B}portgap.py{B} ENTRIES 109 / rendered-by-port
+107 / gap 0; {B}covpush.json{B} rc=0; {B}bench.sh{B} through age 34 with no abort.

@@ -574,7 +574,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       miscRng_(seed ^ 0xd6e8feb86659fd93ULL),
       relRng_(seed ^ 0x1b873593e6546b64ULL),
       spyRng_(seed ^ 0x7f4a7c15d1b54a3dULL),
-      fightRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
+      fightRng_(seed ^ 0x2545f4914f6cdd1dULL),
+      bmRng_(seed ^ 0x8f1bbcdc9e3779b1ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -763,6 +764,32 @@ bool Sim::load(std::string* error) {
       "a16_fight-coach-quality-color-string-enc",
       "a16_fight-doping-challenge-color-string-enc",
       "a16_fight-wild-encounter-color",
+      // The black market (report 60): eight item pools, the auction house that
+      // moves them, the museum that shows them off, the street chemist and the
+      // taxidermist, plus the three dumb pools that ride the shared runner.
+      "a16_black-market-antiques-enc",
+      "a16_black-market-art-enc",
+      "a16_black-market-automobiles-enc",
+      "a16_black-market-fashion-enc",
+      "a16_black-market-gemstones-enc",
+      "a16_black-market-historical-artifacts-enc",
+      "a16_black-market-sports-memorabilia-enc",
+      "a16_black-market-weapons-enc",
+      "a16_black-market-auction-house-names-enc",
+      "a16_black-market-auctioneer-color-enc",
+      "a16_black-market-chemist-feedback-color-enc",
+      "a16_black-market-museum-name-enc",
+      "a16_black-market-museum-report-color-enc",
+      "a16_black-market-police-intoxicated-hero-color-enc",
+      "a16_black-market-police-intoxicated-warning-enc",
+      "a16_black-market-purchase-requests-enc",
+      "a16_black-market-street-chemist-cut-ingredients-enc",
+      "a16_black-market-street-chemist-products-enc",
+      "a16_black-market-taxidermist-business-names-enc",
+      "a16_black-market-taxidermy-discard-locations-enc",
+      "a16_black-market-exhibit-dumb-scenarios-enc",
+      "a16_black-market-museum-dumb-scenarios-enc",
+      "a16_black-market-vendor-dumb-scenarios-enc",
   };
   try {
     for (const char* name : kTables) {
@@ -937,6 +964,68 @@ static const char* const kCircumstancePublicScenes[] = {
     "While walking through the cemetery",
 };
 
+// The home pool (section 38): 56 slots, 55 fixed scenes plus one
+// '<musician>' slot, so the artist is drawn from a16_musicians-enc and the
+// article follows the name ('listening to an Arctic Monkeys'). The return pool
+// (53 slots) still has no wired table, so it stays unwired.
+static const char* const kCircumstanceHomeScenes[] = {
+    "While at home watching scary airplane landing videos on YouTube",
+    "While at home having a conversation with your imaginary friend",
+    "While at home massaging your feet",
+    "While taking a nap on your couch",
+    "While checking yourself out in your full size mirror",
+    "While relaxing on the couch Googling yourself",
+    "While meditating in your living room",
+    "While at home recording YouTube videos",
+    "While putting away dishes in the kitchen",
+    "While reorganizing the silverware drawer",
+    "While scrubbing the toilet in your bathroom",
+    "While cleaning some moldy food out of the refrigerator",
+    "While stepping out of the shower fully nude",
+    "While taking selfies in your bed",
+    "While at home watching street fight videos on YouTube",
+    "While in your bedroom pretending to be in a music video",
+    "While reading in bed at night",
+    "While planting geraniums in the garden",
+    "While in the bathroom plucking your eyebrows",
+    "While taking out the stinky trash at home",
+    "While folding the laundry",
+    "While watching the news in your living room",
+    "While at home experimenting with how many grapes you can fit in your mouth",
+    "While in bed fantasizing about your celebrity crush",
+    "While curled up on the couch playing BitLife",
+    "While mopping the floor at home",
+    "While changing the air filter in your air conditioner",
+    "While at home fantasizing about your dream vacation",
+    "While vacuuming the house",
+    "While at home plunging a clogged toilet",
+    "While making your bed in the morning",
+    "While at home stalking people on the internet",
+    "While at home cathartically shouting out obscenities",
+    "While making an egg salad in your kitchen",
+    "While at home wrapping a gift for a friend",
+    "While tossing a salad in your kitchen",
+    "While cooking a healthy, yet savory, dinner",
+    "While sitting on the toilet trying to work out your constipation issues",
+    "While exfoliating the dead skin on your face",
+    "While up late watching the Home Shopping Network",
+    "While washing the dishes",
+    "While practicing yoga in your yard",
+    "While dancing alone around your bedroom",
+    "While walking around your house naked",
+    "While kicking back watching sports from your couch",
+    "While in your bathroom clipping your overgrown toenails",
+    "While walking around the house talking to yourself",
+    "While using the bathroom late at night",
+    "While lying on the couch at night",
+    "While watering the plants at home",
+    "While relaxing and listening to music at home",
+    "While at home working on your twerking skills",
+    "While at home creepily watching the neighbors from a window",
+    "While laying in bed at night experiencing insomnia",
+    "While at home practicing your foreign accents",
+};
+
 static std::string articleFor(const std::string& word) {
   const bool vowel = !word.empty() && std::string("aeiouAEIOU").find(word[0]) != std::string::npos;
   return vowel ? "an " : "a ";
@@ -949,6 +1038,15 @@ std::string Sim::circumstancePublic() {
   const std::string who = referenceToken("musician");
   if (who.empty()) return kCircumstancePublicScenes[rng_.below(uint32_t(n))];
   return std::string(slot == n ? "While at " : "On your way to ") + articleFor(who) + who + " concert";
+}
+
+std::string Sim::circumstanceHome() {
+  const size_t n = sizeof(kCircumstanceHomeScenes) / sizeof(*kCircumstanceHomeScenes);
+  const size_t slot = rng_.below(uint32_t(n + 1));  // the last slot draws a musician
+  if (slot < n) return kCircumstanceHomeScenes[slot];
+  const std::string who = referenceToken("musician");
+  if (who.empty()) return kCircumstanceHomeScenes[rng_.below(uint32_t(n))];
+  return "While chilling in bed listening to " + articleFor(who) + who;
 }
 
 // '<vacation-destination>' and '<vacation-cruise>' only occur in
@@ -1143,6 +1241,18 @@ std::string spyLowerFirst(std::string text) {
   return text;
 }
 
+bool bmIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  static const char* kKeys[] = {"item", "item-short", "exhibit", "auction-house", "museum",
+                                "vendor", "drug-chemist", "auctioneer", "taxidermist"};
+  for (const char* k : kKeys)
+    if (key == k) return true;
+  return false;
+}
+
 bool fightIsToken(const std::string& token) {
   std::string key = token;
   const std::string psuffix = "-possessive";
@@ -1331,6 +1441,8 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else out += value;
     } else if (token == "circumstance-public") {
       out += circumstancePublic();
+    } else if (token == "circumstance-home") {
+      out += circumstanceHome();
     } else if (token == "musician-indefinite") {
       // The indefinite twin of '<musician>': the reference pool holds the bare
       // name, the article is added here (report 38).
@@ -1360,6 +1472,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else out += v;
     } else if (fightIsToken(token)) {
       const std::string v = fightToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += v;
+    } else if (bmIsToken(token)) {
+      const std::string v = bmToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else out += v;
     } else if (token == "a" || token == "a/an") {
@@ -2169,6 +2285,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (spyYear(life, out, forcedChoice)) return true;
   if (fightYear(life, out, forcedChoice)) return true;
+  if (bmYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2231,6 +2348,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   relNameCache_.clear();  // one <name> per card
   spyCache_.clear();      // one target / client / colleague name per spy card
   fightCache_.clear();    // one circumstance phrase per fight card
+  bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   spyAgentIsOther_ = false;
   if (row >= t.size()) return false;
   // The year's family lifecycle lines were written before the scenario was
@@ -4547,6 +4665,393 @@ bool Sim::fightYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---------------------------------------------------------- the black market
+// REPORT.en.md 60. Four businesses in one flag: an auction house that moves the
+// items, a museum that shows them off, a street chemist who cuts the product,
+// and a taxidermist who needs the leftovers gone. The eight item pools share a
+// column shape (name / fake name / short name / possessive / article flags /
+// value band), so they are read by column name rather than by index.
+void Sim::makeBlackMarketeer(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.blackMarket = true;
+  // The exhibit, museum and vendor pools ride the shared dumb-scenario runner.
+  h.miscMask |= (1u << 9) | (1u << 10) | (1u << 11);
+  ensureBmFields(life);
+  h.bmAppeal = 35 + int(bmRng_.below(31));
+}
+
+// The auction house, the museum, and the two faces of the trade are named once
+// and reused for the rest of the life.
+void Sim::ensureBmFields(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.bmAuctionHouse.empty())
+    h.bmAuctionHouse = bmStructureName("a16_black-market-auction-house-names-enc");
+  if (h.bmMuseum.empty()) {
+    const size_t r = pickRow("a16_black-market-museum-name-enc", "Commonness Score", "", "", "", bmRng_);
+    if (r != size_t(-1))
+      h.bmMuseum = resolve(trim(tbl("a16_black-market-museum-name-enc").at(r, "Name")));
+  }
+  if (h.bmMuseum.empty()) h.bmMuseum = "Memory Lane Museum";
+  if (bmVendor_.empty()) bmVendor_ = drawFirstName(bmRng_.chance(0.5)) + " " + drawSurname();
+  if (bmChemist_.empty()) bmChemist_ = drawFirstName(bmRng_.chance(0.5)) + " " + drawSurname();
+}
+
+// The auction house and the taxidermist ship the same Format/Prefix/Suffix
+// structure table, which is the business-name shape the port already knows.
+std::string Sim::bmStructureName(const char* tableName) {
+  if (!ensureTable(tableName)) return std::string();
+  const Table& st = tbl(tableName);
+  if (st.size() == 0) return std::string();
+  const size_t row = bmRng_.below(uint32_t(st.size()));
+  const auto pickList = [this](const std::string& list) {
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    return parts.empty() ? std::string() : trim(parts[bmRng_.below(uint32_t(parts.size()))]);
+  };
+  std::string fmt = pickList(st.at(row, "Format"));
+  if (fmt.empty()) return std::string();
+  if (fmt.find("<color>") != std::string::npos && ensureTable("a16_company-name-color-enc")) {
+    const Table& colors = tbl("a16_company-name-color-enc");
+    if (colors.size())
+      fmt = spySwap(fmt, "<color>", trim(colors.at(bmRng_.below(uint32_t(colors.size())), "Color")));
+  }
+  if (fmt.find("<suffix>") != std::string::npos) fmt = spySwap(fmt, "<suffix>", pickList(st.at(row, "Suffix")));
+  if (fmt.find("<prefix>") != std::string::npos) fmt = spySwap(fmt, "<prefix>", pickList(st.at(row, "Prefix")));
+  if (fmt.find("<city>") != std::string::npos)
+    fmt = spySwap(fmt, "<city>", hero_ ? hero_->city : std::string());
+  if (fmt.find("<random-first-name-possessive>") != std::string::npos)
+    fmt = spySwap(fmt, "<random-first-name-possessive>", drawFirstName(bmRng_.chance(0.5)) + "'s");
+  if (fmt.find("<random-first-name>") != std::string::npos)
+    fmt = spySwap(fmt, "<random-first-name>", drawFirstName(bmRng_.chance(0.5)));
+  if (fmt.find("<random-surname>") != std::string::npos) fmt = spySwap(fmt, "<random-surname>", drawSurname());
+  std::string out = resolve(fmt);
+  std::string clean;
+  for (size_t i = 0; i < out.size(); ++i) {
+    if (out[i] == '<') {
+      const size_t close = out.find('>', i);
+      if (close != std::string::npos) { i = close; continue; }
+    }
+    clean += out[i];
+  }
+  while (clean.find("  ") != std::string::npos) clean.replace(clean.find("  "), 2, " ");
+  return trim(clean);
+}
+
+// One item off one of the eight pools. The name, the fake name, the possessive
+// and the value band all come from the same row, and the row stays on the hero
+// until it is sold.
+std::string Sim::bmDrawItem(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  static const struct BmPool { const char* table; const char* category; } kPools[] = {
+      {"a16_black-market-antiques-enc", "antiques"},
+      {"a16_black-market-art-enc", "art"},
+      {"a16_black-market-automobiles-enc", "auto"},
+      {"a16_black-market-fashion-enc", "fashion"},
+      {"a16_black-market-gemstones-enc", "gemstone"},
+      {"a16_black-market-historical-artifacts-enc", "historical artifact"},
+      {"a16_black-market-sports-memorabilia-enc", "sports memorabilia"},
+      {"a16_black-market-weapons-enc", "weapon"},
+  };
+  const BmPool& pool = kPools[bmRng_.below(uint32_t(sizeof(kPools) / sizeof(kPools[0])))];
+  if (!ensureTable(pool.table)) return std::string();
+  const Table& t = tbl(pool.table);
+  if (t.size() == 0) return std::string();
+  const size_t picked = pickRow(pool.table, "Commonness Score", "", "", "", bmRng_);
+  const size_t row = picked == size_t(-1) ? bmRng_.below(uint32_t(t.size())) : picked;
+  auto colOf = [&t](std::initializer_list<const char*> names) -> std::string {
+    for (const char* n : names)
+      if (t.has(n)) return std::string(n);
+    return std::string();
+  };
+  const std::string nameCol = colOf({"Item Name", "Title", "Gemstone", "Make"});
+  std::string name = nameCol.empty() ? std::string() : trim(t.at(row, nameCol));
+  if (t.has("Model")) name = trim(t.at(row, "Make")) + " " + trim(t.at(row, "Model"));
+  const std::string fake = t.has("Fake Name") ? trim(t.at(row, "Fake Name")) : std::string();
+  const bool canFake = t.has("Can Be Fake") && t.flag(row, "Can Be Fake") && !fake.empty();
+  const bool faking = canFake && bmRng_.chance(0.4);
+  const std::string shown = faking ? fake : name;
+  if (shown.empty()) return std::string();
+  const bool indefinite = t.has("Uses Indefinite Article") && t.flag(row, "Uses Indefinite Article");
+  const bool definite = t.has("Uses Definite Article") && t.flag(row, "Uses Definite Article");
+  const std::string display =
+      indefinite ? articleFor(shown) + shown : (definite ? "the " + shown : shown);
+  h.bmItem = display;
+  h.bmItemPossessive = t.has("Possessive Name") && !trim(t.at(row, "Possessive Name")).empty()
+                           ? trim(t.at(row, "Possessive Name"))
+                           : shown + "'s";
+  h.bmItemShort = t.has("Short Name") && !trim(t.at(row, "Short Name")).empty()
+                      ? trim(t.at(row, "Short Name"))
+                      : shown;
+  h.bmItemPlural = t.has("Plural") && t.flag(row, "Plural");
+  h.bmFake = faking;
+  h.bmCategory = pool.category;
+  const std::string lo = colOf({"Min Value", "Min Cost"});
+  const std::string hi = colOf({"Max Value", "Max Cost"});
+  const double vlo = lo.empty() ? 0.0 : t.num(row, lo);
+  const double vhi = hi.empty() ? vlo : t.num(row, hi);
+  const double value = vhi > vlo ? vlo + (vhi - vlo) * bmRng_.unit() : vhi;
+  h.bmValue = int(value);
+  return display;
+}
+
+std::string Sim::bmToken(const std::string& key) {
+  if (hero_ == nullptr) return std::string();
+  std::string base = key;
+  const std::string suffix = "-possessive";
+  bool possessive = false;
+  if (base.size() > suffix.size() && base.compare(base.size() - suffix.size(), suffix.size(), suffix) == 0) {
+    possessive = true;
+    base.resize(base.size() - suffix.size());
+  }
+  if (life_ != nullptr) ensureBmFields(*const_cast<Life*>(life_));
+  const Hero& h = *hero_;
+  auto cached = [&](const std::string& kind, const std::string& fallback) -> std::string {
+    std::string& slot = bmCache_[kind];
+    if (slot.empty()) slot = fallback;
+    return slot;
+  };
+  auto drawn = [&]() { return drawFirstName(bmRng_.chance(0.5)) + " " + drawSurname(); };
+  if (base == "item" || base == "exhibit") {
+    const std::string item = h.bmItem.empty() && life_ != nullptr
+                                 ? bmDrawItem(*const_cast<Life*>(life_))
+                                 : cached("item", h.bmItem);
+    if (item.empty()) return std::string();
+    if (!possessive) return item;
+    return h.bmItemPossessive.empty() ? item + "'s" : h.bmItemPossessive;
+  }
+  if (base == "item-short") return h.bmItemShort.empty() ? bmToken("item") : h.bmItemShort;
+  if (base == "auction-house") return h.bmAuctionHouse;
+  if (base == "museum") return h.bmMuseum;
+  if (base == "vendor") return cached("vendor", bmVendor_.empty() ? drawn() : bmVendor_);
+  if (base == "drug-chemist") return cached("chemist", bmChemist_.empty() ? drawn() : bmChemist_);
+  if (base == "auctioneer") return cached("auctioneer", drawn());
+  if (base == "taxidermist")
+    return cached("taxidermist", bmStructureName("a16_black-market-taxidermist-business-names-enc"));
+  return std::string();
+}
+
+bool Sim::bmYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.blackMarket || h.age < 18) return false;
+  if (!bmRng_.chance(0.45)) return false;
+  ensureBmFields(life);
+  std::string title, body, line, tableRef, rowRef;
+  std::vector<std::string> extra;
+  int happiness = 0, smarts = 0, looks = 0, discipline = 0, karma = 0;
+  auto say = [&body](const std::string& s) {
+    if (!s.empty()) body += body.empty() ? s : " " + s;
+  };
+  auto tell = [&line](const std::string& s) {
+    if (!s.empty()) line += line.empty() ? s : " " + s;
+  };
+  const auto listHas = [](const std::string& list, const std::string& want) {
+    if (trim(list).empty()) return false;
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    for (std::string& p : parts)
+      if (lower(trim(p)) == want) return true;
+    return false;
+  };
+  // Retries for the Min/Max windows pickRow cannot express; a couple of attempts
+  // and then whatever was drawn, so a pool is never empty.
+  const auto window = [&](const char* t, const char* weight, const char* fcol, const std::string& fval,
+                          const char* loCol, const char* hiCol, double value) -> size_t {
+    for (int attempt = 0; attempt < 3; ++attempt) {
+      const size_t r = pickRow(t, weight, fcol, fval, "", bmRng_);
+      if (r == size_t(-1)) return size_t(-1);
+      const Table& tt = tbl(t);
+      if (loCol != nullptr && tt.has(loCol)) {
+        const double lo = tt.num(r, loCol);
+        if (lo > 0 && value < lo) continue;
+      }
+      if (hiCol != nullptr && tt.has(hiCol)) {
+        const double hi = tt.num(r, hiCol);
+        if (hi > 0 && value > hi) continue;
+      }
+      return r;
+    }
+    return pickRow(t, weight, fcol, fval, "", bmRng_);
+  };
+
+  if (bmRng_.chance(0.22)) {
+    // The street chemist: a product, a cutting agent, and the year's numbers.
+    const size_t p = pickRow("a16_black-market-street-chemist-products-enc", "", "", "", "", bmRng_);
+    if (p != size_t(-1)) {
+      const Table& t = tbl("a16_black-market-street-chemist-products-enc");
+      const std::string product = trim(t.at(p, "Name"));
+      const int lo = int(t.num(p, "Min Price")), hi = int(t.num(p, "Max Price"));
+      const int price = lo + int(bmRng_.below(uint32_t(std::max(1, hi - lo + 1))));
+      title = "Cutting the product";
+      tableRef = t.name();
+      rowRef = std::to_string(p + 1);
+      say("I cut a batch of " + product + " and moved it for $" + std::to_string(price) + ".");
+      const size_t c = pickRow("a16_black-market-street-chemist-cut-ingredients-enc", "Commonness Score",
+                               "", "", "", bmRng_);
+      if (c != size_t(-1)) {
+        const Table& ci = tbl("a16_black-market-street-chemist-cut-ingredients-enc");
+        say("The cut: " + resolve(trim(ci.at(c, "Ingredient"))) + ".");
+        if (ci.has("Can Be Fatal") && ci.flag(c, "Can Be Fatal") && bmRng_.chance(0.25)) {
+          tell("One of my customers ended up in hospital.");
+          happiness -= 4;
+        }
+      }
+      const size_t f = pickRow("a16_black-market-chemist-feedback-color-enc", "Commonness Score", "Hero Gender",
+                               h.female ? "female" : "male", "", bmRng_);
+      if (f != size_t(-1)) {
+        const std::string fb =
+            resolve(trim(tbl("a16_black-market-chemist-feedback-color-enc").at(f, "String")));
+        if (!fb.empty()) say(spySentence(fb));
+      }
+      if (t.has("Happiness Impact")) happiness += int(t.num(p, "Happiness Impact"));
+      if (t.has("Smarts Impact")) smarts += int(t.num(p, "Smarts Impact"));
+      if (t.has("Looks Impact")) looks += int(t.num(p, "Looks Impact"));
+    }
+  } else if (bmRng_.chance(0.14)) {
+    // A police stop: the warning is addressed to the hero, the second row is the
+    // officer reading the hero's face.
+    const size_t w = pickRow("a16_black-market-police-intoxicated-warning-enc", "Commonness Score",
+                             "", "", "", bmRng_);
+    const size_t hh = pickRow("a16_black-market-police-intoxicated-hero-color-enc", "", "Hero Gender",
+                              h.female ? "female" : "male", "", bmRng_);
+    if (w != size_t(-1) || hh != size_t(-1)) {
+      title = "Stopped and searched";
+      const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = bmRng_.chance(0.5);
+      if (w != size_t(-1)) {
+        const Table& t = tbl("a16_black-market-police-intoxicated-warning-enc");
+        say(spySentence(resolve(trim(t.at(w, "Scenario")))));
+        tableRef = t.name();
+        rowRef = std::to_string(w + 1);
+      }
+      if (hh != size_t(-1)) {
+        const Table& t = tbl("a16_black-market-police-intoxicated-hero-color-enc");
+        tell(spySentence(resolve(trim(t.at(hh, "Scenario")))));
+        const std::string stat = t.has("Boosted Stat") ? trim(t.at(hh, "Boosted Stat")) : std::string();
+        if (stat == "Happiness") happiness += 2;
+        else if (stat == "Smarts") smarts += 2;
+        else if (stat == "Looks") looks += 2;
+      }
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+    }
+  } else if (bmRng_.chance(0.14)) {
+    // Taxidermy: a job, a place to leave what is left over, and the risk of the
+    // location's own Risk Score catching up with the hero.
+    const size_t d = pickRow("a16_black-market-taxidermy-discard-locations-enc", "Commonness Score",
+                             "", "", "", bmRng_);
+    if (d != size_t(-1)) {
+      const Table& t = tbl("a16_black-market-taxidermy-discard-locations-enc");
+      title = "Work for the taxidermist";
+      const std::string biz = bmToken("taxidermist");
+      say("I did a job for " + (biz.empty() ? std::string("the taxidermist") : biz) +
+          " and dumped the leftovers " + resolve(trim(t.at(d, "String"))) + ".");
+      tableRef = t.name();
+      rowRef = std::to_string(d + 1);
+      if (t.num(d, "Risk Score") >= 4 && bmRng_.chance(0.25)) {
+        tell("A dog walker found it and called it in.");
+        happiness -= 3;
+      }
+    }
+  } else if (bmRng_.chance(0.20)) {
+    // The museum report is gated on the collection's appeal, which the items the
+    // hero keeps moving through raise.
+    const size_t m = window("a16_black-market-museum-report-color-enc", "", "", "", "Min Appeal",
+                            "Max Appeal", h.bmAppeal);
+    if (m != size_t(-1)) {
+      const Table& t = tbl("a16_black-market-museum-report-color-enc");
+      title = h.bmMuseum;
+      say(spySentence(resolve(trim(t.at(m, "String")))));
+      tableRef = t.name();
+      rowRef = std::to_string(m + 1);
+      h.bmAppeal = std::max(0, std::min(100, h.bmAppeal + (h.bmItems > 0 ? 2 : -3)));
+      happiness += h.bmAppeal > 50 ? 2 : -1;
+    }
+  } else {
+    // Buy low, sell at auction: the item, the auctioneer's patter, a buyer with
+    // a reason, and the sale -- unless the buyer's appraiser looks twice.
+    const std::string item = bmDrawItem(life);
+    if (!item.empty()) {
+      const int price = int(double(h.bmValue) * 0.55);
+      h.bmItems++;
+      title = h.bmFake ? "A risky buy" : "A new find";
+      tableRef = "a16_black-market-antiques-enc";
+      rowRef = "1";
+      say("I picked up " + item + " for $" + std::to_string(price) + ".");
+      if (ensureTable("a16_black-market-auctioneer-color-enc")) {
+        const Table& t = tbl("a16_black-market-auctioneer-color-enc");
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < t.size(); ++r) {
+          const std::string cat = t.at(r, "Auction Category");
+          if (!trim(cat).empty() && !listHas(cat, h.bmCategory) && !listHas(cat, h.bmCategory + "s"))
+            continue;
+          const bool plural = t.flag(r, "Plural");
+          if (plural != h.bmItemPlural) continue;
+          pool.push_back(r);
+        }
+        if (pool.empty())
+          for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+        if (!pool.empty()) {
+          const size_t r = pool[bmRng_.below(uint32_t(pool.size()))];
+          say("The auctioneer, " + bmToken("auctioneer") + ": \"" + resolve(trim(t.at(r, "String"))) + "\".");
+          tableRef = t.name();
+          rowRef = std::to_string(r + 1);
+        }
+      }
+      if (ensureTable("a16_black-market-purchase-requests-enc")) {
+        const Table& t = tbl("a16_black-market-purchase-requests-enc");
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < t.size(); ++r) {
+          const std::string cat = t.at(r, "Auction Category");
+          if (trim(cat).empty()) continue;
+          if (!listHas(cat, h.bmCategory) && !listHas(cat, h.bmCategory + "s")) continue;
+          pool.push_back(r);
+        }
+        if (!pool.empty()) {
+          const size_t r = pool[bmRng_.below(uint32_t(pool.size()))];
+          const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+          pronounOtherSet_ = true;
+          pronounOtherFemale_ = bmRng_.chance(0.5);
+          say("A buyer: " + resolve(trim(t.at(r, "String"))));
+          pronounOtherSet_ = savedSet;
+          pronounOtherFemale_ = savedFemale;
+        }
+      }
+      if (h.bmFake && bmRng_.chance(0.30)) {
+        tell("The buyer's appraiser called it a fake.");
+        happiness -= 4;
+      } else {
+        tell("Sold for " + money(h.bmValue) + ".");
+        happiness += 3;
+      }
+    }
+  }
+
+  if (title.empty() && body.empty() && line.empty()) return false;
+  out = AgeUp();
+  out.table = tableRef.empty() ? "a16_black-market-auctioneer-color-enc" : tableRef;
+  out.row_id = rowRef;
+  out.title = title.empty() ? "The black market" : title;
+  out.body = body;
+  out.narrative = line;
+  out.extra = extra;
+  out.happiness = happiness;
+  out.smarts = smarts;
+  out.looks = looks;
+  out.discipline = discipline;
+  out.karma = karma;
+  return true;
+}
+
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
 bool Sim::miscPoolYear(Life& life, AgeUp& out, int forcedChoice) {
@@ -4560,6 +5065,9 @@ bool Sim::miscPoolYear(Life& life, AgeUp& out, int forcedChoice) {
     {"a16_dumb-scenarios-actor-enc", 16, 0.30},
     {"a16_dumb-scenarios-secret-agent-enc", 21, 0.25},
     {"a16_dumb-scenarios-casino-enc", 21, 0.30},
+    {"a16_black-market-exhibit-dumb-scenarios-enc", 18, 0.25},
+    {"a16_black-market-museum-dumb-scenarios-enc", 18, 0.25},
+    {"a16_black-market-vendor-dumb-scenarios-enc", 18, 0.25},
   };
   hero_ = &life.hero;
   life_ = &life;

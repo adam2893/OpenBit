@@ -71,6 +71,7 @@ struct ScriptSpec {
   bool relationship = false;
   bool spy = false;
   bool fight = false;
+  bool black_market = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;
