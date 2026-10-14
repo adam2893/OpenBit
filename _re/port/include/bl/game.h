@@ -84,6 +84,9 @@ struct Hero {
   bool inPrison = false;
   int prisonYearsLeft = 0;
   std::string prisonJob;  // the 'as a laundry attendant' half of the job line
+  // Set when the hero is left with no surviving parent before 18; the orphan
+  // dumb-scenario set is gated on it (REPORT.en.md 46).
+  bool orphan = false;
 };
 
 class GameState {

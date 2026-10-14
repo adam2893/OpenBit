@@ -2912,3 +2912,86 @@ it needs a birth-roll probability the port has not found, and three new tokens
 Orphanhood needs only `<rb>` and a gate. Military service has no table the port
 has located yet. The order of work after this section is therefore: orphanhood,
 then royalty once its probability is read, then military.
+
+## 46. Orphanhood, and the family mortality that has to come first
+
+Section 45 closed the prison branch. This one closes the orphan branch, and it
+had to bring something else with it: a hero only becomes an orphan if his
+parents can die, and until now nothing in the port could kill a relative.
+
+### 46.1 The entry line and the pool
+
+| evidence | what it is |
+| --- | --- |
+| literal #70722 '`{0}I have been sent to an orphanage for the remainder of {1} childhood.`' | the hero's own entry line, first person (its second-person twin is #47060 'With no surviving parents, you{0} have been sent to an orphanage ...') |
+| a16_dumb-scenarios-orphan-enc, 15 rows | the orphanage's own scenario pool: 'Starstruck', 'Please Sir', 'New Kid on the Block', 'No Good at Goodbyes', 'Bunk mates', 'Wish list', 'Abuse of Power', 'A Big Bully', 'A runner', 'Special orders', 'Self Improvement', ... |
+| literal #17014 'DUMB_SCENARIO_TYPE_ORPHAN' | the category name, which is the k == 0 slot of the roulette in pickDumbScenario |
+| literals #37803/#37804 (ScenarioOrphanageEnter, ScenarioOrphanageProfile), #33027 'Orphanage', #47466 'Years at Orphanage' | the interactive orphanage menu and its lifetime stat, still unported |
+
+Every row of the pool is gated Hero Min Age 5-17 and carries only tokens the
+port already renders (`<rb>` 8, plus the inline `<a/b/c>` option pools), so the
+pool needed no token work; it needed the gate. The gate is now
+`Hero::orphan` (`include/bl/game.h:87-89`), accepted by the roulette at
+`src/sim.cpp:1606` exactly the way prison is accepted at `1569`.
+
+### 46.2 Family mortality
+
+The port's relatives now age and can die. The line is the game's own person
+template -- 'Your {0}, {1}, passed away at the age of {2}.' (literal #50746),
+or without a name 'Your {0} passed away at the age of {1}.' (#50594) -- written
+in the first person the hero's family lines use, the shape '#30974 My {0}, {1},
+died of starvation.' already has. It lands at `src/sim.cpp:1325-1338`, before
+every other thing a relative can do in a year, so a dead parent cannot also have
+a baby or change jobs that year.
+
+Two `shortcut:` notes travel with it:
+
+1. The mortality curve (0.5%/year from 30, 2%/year from 45, +0.4%/year after)
+   is port-side. The game's per-relative life table has not been read. The young
+   tail is not cosmetic: without it a parent never dies before the hero turns
+   18, and the orphan branch would be dead code.
+2. Leaving the orphanage is silent. The literal table has no such line -- the
+   game's orphanage is a menu the hero walks out of -- so the state simply ends
+   at 18.
+
+The rolls run on their own stream, `Sim::familyRng_` (`include/bl/sim.h:226`,
+`seed ^ 0x51ed270b2f5a1c31` at `src/sim.cpp:565`), for the same reason the
+conviction draw got one in section 45: a family death drawn from `rng_` would
+shift every later draw for a given seed and move the port's own fidelity
+numbers.
+
+### 46.3 Verification
+
+* Fourteen seeds over 95 years produced 30 'passed away' lines and one natural
+  orphanhood: seed 55 was sent to the orphanage at 13 and drew three orphan pool
+  rows ('I did my best to ignore it when I saw another orphan being returned to
+  the orphanage.', 'I practiced simple acts of kindness at the orphanage in
+  hopes that it would make me more adoptable.').
+* The path was also exercised at a forced death rate (0.5, not committed), which
+  is how the pool was confirmed to render its own titles: 'Bunk mates', 'Self
+  Improvement', 'Starstruck' (adoption by Madonna), 'No Good at Goodbyes',
+  'A Big Bully', 'New Kid on the Block', 'Wish list', 'Abuse of Power'.
+  The forced run also caught a real bug: the orphan test counted a parent as
+  surviving whenever the relation was still in the list, so a hero whose
+  parents had just died was not sent to the orphanage. The check now reads the
+  `alive` flag (`src/sim.cpp:1462`).
+* `python3 tools/coverage.py` still reports 109 captured / 107 recoverable,
+  `/tmp/qdir/portgap.py` 107 rendered / gap 0, `/tmp/qdir/rescensus.py` zero
+  residue tokens, and `bash tools/bench.sh /tmp/trace_c10.json` still runs 34
+  years without an abort.
+
+### 46.4 The state-branch ledger
+
+| state | ground truth | tables | gate | status |
+| --- | --- | --- | --- | --- |
+| prison | literals only | 4 tables | Hero::inPrison | done, section 45 |
+| orphanhood | literals only | 1 pool | Hero::orphan + parent deaths | done, this section |
+| royalty | none | a16_country-royal-systems-enc, a16_royal-house-names-enc | birth roll, probability unread | next, blocked on that number |
+| vampire | 4 trace lines | 44 tables | not located | later |
+| military | none | not located | not located | later |
+
+Royalty is the last of the three whose text side is already in tables the port
+can read; what it is missing is the probability of being born into a royal
+family (field NumTimesRandomlyBornIntoRoyalty, setter at file offset 0x31d747c)
+and three new tokens (`<highest-royal-name>`, `<other-royal-name>`, the
+numbered celebrity slots). Reading that one number is the next step.

@@ -222,6 +222,8 @@ class Sim {
   // shift the draws every other subsystem makes from rng_ for a given seed
   // (the port's earlier features kept the main stream intact on purpose).
   Rng prisonRng_;
+  // Family mortality and any other event that must not shift the main stream.
+  Rng familyRng_;
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;
   // Next age-up's forced row, set by forceScenario() and cleared when it fires.

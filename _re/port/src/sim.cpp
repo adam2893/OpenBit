@@ -559,7 +559,10 @@ void splitOn(const std::string& s, char sep, std::vector<std::string>& out) {
 }  // namespace
 
 Sim::Sim(std::string reDir, uint64_t seed)
-    : reDir_(std::move(reDir)), rng_(seed), prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL) {}
+    : reDir_(std::move(reDir)),
+      rng_(seed),
+      prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL),
+      familyRng_(seed ^ 0x51ed270b2f5a1c31ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -597,6 +600,7 @@ bool Sim::load(std::string* error) {
       "a16_prisoner-juvenile-crimes-enc",            // same columns, juvenile court
       "a16_prison-jobs-enc",                         // Job,Description,Daily Rate,Commonness Score
       "a16_dumb-scenarios-prison-enc",               // the prison year's own pool
+      "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
   };
@@ -1317,6 +1321,23 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
     const std::string who =
         "My " + p.relation + (p.name.empty() ? std::string() : ", " + p.name + ",");
 
+    // Death comes before everything else the relative might do this year. The
+    // game's own person template is 'Your {0}, {1}, passed away at the age of
+    // {2}.' (literal #50746) or, without a name, 'Your {0} passed away at the
+    // age of {1}.' (#50594); the hero's family lines are first person in the
+    // port, the shape '#30974 My {0}, {1}, died of starvation.' already uses.
+    // shortcut: the mortality curve (0.5%/year from 30, 2%/year from 45,
+    // +0.4%/year after) is port-side; the game's per-relative life table has not
+    // been read. The young tail is what makes a childhood orphan possible at
+    // all -- without it the hero's parents never die before he turns 18.
+    const double deathChance =
+        p.age < 30 ? 0.0 : (p.age < 45 ? 0.005 : 0.02 + 0.004 * double(p.age - 45));
+    if (p.age >= 30 && familyRng_.chance(deathChance)) {
+      out.push_back(who + " passed away at the age of " + std::to_string(p.age) + ".");
+      p.alive = false;
+      continue;
+    }
+
     // A mother can have another child. The real line names both parents, the
     // baby, the new relation and whether it was planned: "My mother and my
     // stepfather had a baby girl named Inka Tuominen, my new half sister. She
@@ -1428,6 +1449,25 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
     }
   }
   for (Person& nb : newborns) life.family.push_back(nb);
+  // With no surviving parent the hero is sent to an orphanage: literal #70722
+  // '{0}I have been sent to an orphanage for the remainder of {1} childhood.'.
+  if (!life.hero.orphan && life.hero.age < 18) {
+    bool mother = false, father = false;
+    for (const Person& p : life.family) {
+      // A surviving parent is one that is still in the list and alive; the
+      // relation is what the line calls them, the flag is what matters here.
+      if (p.relation == "mother" && p.alive) mother = true;
+      if (p.relation == "father" && p.alive) father = true;
+    }
+    if (!mother && !father) {
+      life.hero.orphan = true;
+      out.push_back("I have been sent to an orphanage for the remainder of my childhood.");
+    }
+  } else if (life.hero.orphan && life.hero.age >= 18) {
+    // shortcut: the game has no literal for leaving the orphanage (its
+    // orphanage has its own menu), so the state simply ends at 18.
+    life.hero.orphan = false;
+  }
   return out;
 }
 
@@ -1510,6 +1550,7 @@ const char* const kDumbHoliday = "a16_dumb-scenarios-holiday-enc";
 const char* const kDumbCalendar = "a16_dumb-scenarios-calendar-enc";
 const char* const kDumbFriend = "a16_dumb-scenarios-friend-enc";
 const char* const kDumbPrison = "a16_dumb-scenarios-prison-enc";
+const char* const kDumbOrphan = "a16_dumb-scenarios-orphan-enc";
 
 std::vector<size_t> Sim::dumbSetRows(const char* name, const Life& life) {
   std::vector<size_t> rows;
@@ -1560,7 +1601,9 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
     if (life.hero.inPrison && k != 1) continue;
     const char* set = nullptr;
     if (k == 0) {
-      continue;  // orphan set (0x73f2eb3574): the port's hero always has a mother
+      // Orphan set (0x73f2eb3574): accepted only once both parents are dead.
+      if (!life.hero.orphan) continue;
+      set = kDumbOrphan;
     } else if (k == 1) {
       // In prison the category is the prison set itself. Not in prison -> the
       // holiday/universal roulette at 0x73f2eb3734:
