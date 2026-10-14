@@ -164,6 +164,20 @@ struct Hero {
   int casinoCelebCraziness = 0;
   int casinoGamblerHappiness = 60;   // what the floor thinks of the house
   int casinoGamblerAddiction = 40;   // how deep in the regulars are
+
+  // The commune (report 62): the hero founds a cult and keeps it believing.
+  bool cultLeader = false;
+  std::string cultName;
+  std::string cultPhilosophy;      // alien / armageddon / new age / antiestablishment
+  std::string cultTotem;
+  std::string cultHonorific;       // what the followers call the hero
+  std::string cultProperty;        // compound / hunting lodge / hermitage ...
+  std::string cultHome;            // the commune street address
+  std::string cultDoctrine;        // the rule currently in force
+  std::vector<std::string> cultStructures;   // the buildings the commune has
+  int cultLoyalty = 55;            // what the followers believe
+  int cultCharisma = 50;           // how well the hero holds a room
+  int communards = 0;              // how many followers there are
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

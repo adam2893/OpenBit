@@ -130,6 +130,7 @@ class Sim {
   void makeFighter(Life& life);
   void makeBlackMarketeer(Life& life);
   void makeCasino(Life& life);
+  void makeCult(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -255,8 +256,12 @@ class Sim {
   std::string bmStructureName(const char* tableName);
   std::string bmDrawItem(Life& life);
   bool casinoYear(Life& life, AgeUp& out, int forcedChoice);
+  bool cultYear(Life& life, AgeUp& out, int forcedChoice);
   std::string casinoToken(const std::string& key);
+  std::string cultToken(const std::string& key);
+  std::string cultHonorificPick();
   void ensureCasinoFields(Life& life);
+  void ensureCultFields(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -333,6 +338,7 @@ class Sim {
   Rng fightRng_;
   Rng bmRng_;
   Rng casinoRng_;
+  Rng cultRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -348,6 +354,10 @@ class Sim {
   std::string casinoGambler_;  // one punter per casino card
   bool casinoGamblerFemale_ = false;  // and the punter's own gender
   std::string casinoRoom_;     // one room / game per casino card
+  std::string cultCommunard_;  // one follower per cult card
+  bool cultCommunardFemale_ = false;
+  std::string cultExCommunard_;   // one ex-follower per cult card
+  std::map<std::string, std::string> cultCache_;
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

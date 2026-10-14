@@ -4488,3 +4488,163 @@ Samples straight out of the port:
 Full regression after the section: {B}rescensus.py{B} distinct residue tokens 0;
 {B}coverage.py{B} 109 captured / 107 recoverable; {B}portgap.py{B} ENTRIES 109 / rendered-by-port
 107 / gap 0; {B}covpush.json{B} rc=0; {B}bench.sh{B} through age 34 with no abort.
+
+## 62. The commune: a doctrine, a totem, and forty-five tables behind one follower at a time
+
+The cult family is the commune the hero founds rather than joins: the game hands
+you a name, a philosophy out of five, a totem, a title and a shed in the woods,
+and then spends the rest of your life measuring how much the people living there
+still believe you. Forty-five tables, 1769 rows, all of them under
+`a16_cult-`.
+
+### 62.1 The tables
+
+| rows | table | what it carries |
+| --- | --- | --- |
+| 66 | random-commune-names | name + five philosophy flags, one of which is the commune's own |
+| 20 | default-totem | Item Name, Philosophy |
+| 60 | honorific-name-structure | Honorific ("Guru <hero-first-name>"), Gender, Hero Is Leader |
+| 5 | commune-property-types | Type, Price Score, Street Type ("Commune") |
+| 72 | commune-street-names | Street Name, Add Random Street Type |
+| 16 | commune-structure | Project, Minimum/Maximum Cost, Appeal Impact, Bonus Appeal Impact (Philosophy) |
+| 48 | commune-structure-feedback | Scenario, Log Version, Structure |
+| 75 | doctrine-rules | the rule, the breach, the lecture, the obedient reply, the leave string, Disobedience Can Be Fatal |
+| 43 | devotion-demonstration | Scenario Snippet, Death Snippet, Success Snippet, Risk Score |
+| 22 | body-discard-locations | Location, String, Risk Score |
+| 29 | communard-apply-color | String, Min/Max Loyalty |
+| 74 | communard-conversation | Audience, Conversation, Philosophy, Controversy Score |
+| 20 | communard-doubts | String, Min/Max Loyalty |
+| 71 | communard-educate | Topic, Philosophy, Loyalty Impact |
+| 58 | communard-leave-scenario | Scenario Snippet, Reason, Min/Max Loyalty |
+| 11 | communard-punishment | Method, Feedback Scenario, Log Version, Loyalty Impact |
+| 26 | communard-rewards | Scenario, Loyalty Impact |
+| 49 | communard-rumor | outbound and inbound Scenario, Philosophy, sender and receiver gender/age |
+| 78 | communard-spend-time | Pastime, Philosophy |
+| 26 | communard-warning | Scenario, Risk Score |
+| 38 | commune-dumb-scenarios | the prompt card: Title, Body, CTA, four choices with Narrative and Impact columns |
+| 14 | commune-ledger-color | String, Min/Max Loyalty |
+| 61 | commune-teaching | Scenario, Topic, Philosophy, Engagement Score |
+| 12 | healing-ceremony | Ceremony Type, Feedback Snippet, Effectiveness Score |
+| 6 | empowerments | String |
+| 15 | gratitude-scenarios | String, Min/Max Loyalty |
+| 85 | drug-shared-experience | String Snippet (past tense), Log Version, Drug, Experience Type |
+| 64 | drug-solo-experience | String Snippet (gerund), Drug, Experience Type |
+| 17 | spiritual-journey-drugs | Name, Min/Max Price Per Dose, three dose Risk Scores |
+| 80 | affirmation-film-titles | Title, Philosophy, Engagement Score |
+| 36 | affirmation-receptions | String, Min/Max Reception |
+| 81 | drum-circle-artists | Artist Name, Engagement Score, Philosophy Engagement Bonus |
+| 61 | fast-hunger-foods | Food, Plural, Uses Indefinite Article |
+| 19 | fast-hunger-reasons | Reason |
+| 31 | fast-reasons | Reason, Scenario Snippet, Philosophy, Engagement Score |
+| 36 | recruitment-location | Location, Uses Indefinite Article, Success Score, Police Score |
+| 62 | recruitment-message | Message, Philosophy, Success Score, Risk Score |
+| 13 | outreach-mission-heckles | String and Log Version, both heckles |
+| 24 | workshop-products | Product Name, Plural, prices, Optimal Location, Difficulty |
+| 27 | anti-commune-nag-scenario | Audience, Snippet, Log Version, audience age window |
+| 16 | ex-communard-dissent-scenario | Scenario, Log Version, Min/Max Craziness |
+| 17 | expel-beg-scenario | String, Min/Max Loyalty |
+| 23 | totem-disrespect | String, Log Version, Min/Max Loyalty |
+| 32 | totem-inspiration | String, Humorous |
+| 30 | totem-lecture | String |
+
+### 62.2 Founding the commune
+
+`Sim::ensureCultFields` draws the name row through the `Hero Founded Cult`
+flag and reads whichever of the four philosophy flags (Armageddon, New Age,
+Antiestablishment, Alien) is set - that flag is the commune's philosophy, and it
+filters almost every later table. The totem, the honorific (by Gender and the
+`Hero Is Leader` flag) and the property type follow, then an address from the
+street-name pool with the `Add Random Street Type` flag appending " Street".
+`Sim::makeCult` turns the flag on, rolls three to seven followers, and sets
+loyalty 55 / charisma 45-65. `makeSecretAgent`-style, nothing is charged: the
+property, the totem and the first followers are free, which is a shortcut
+recorded in 62.5.
+
+### 62.3 What a year in the commune looks like
+
+`Sim::cultYear` runs from age 18 at 55% a year, drifts loyalty by -3..+3, and
+fires exactly one event. Blocks are ordered from the rarest chance to the
+commonest so that no block is starved by the ones ahead of it:
+
+| chance | event |
+| --- | --- |
+| 0.06 | a workshop sells the commune's product at the Optimal Location |
+| 0.08 | a fast is called, and the commune dreams about food |
+| 0.08 | a film about the commune, graded by Engagement Score, or a drum circle |
+| 0.08 | an ex-follower dissents, or the neighbours nag |
+| 0.10 | a shared or solo trip on the commune's supply |
+| 0.10 | the totem is lectured about, praised, or disrespected |
+| 0.10 | a healing ceremony plus an empowerment plus gratitude |
+| 0.10 | a rumour travels through the commune |
+| 0.10 | a doubt, an application, or a warning - a warning with Risk Score 4+ can expel |
+| 0.10 | a new building, or feedback about one already built |
+| 0.12 | a demonstration of devotion, which can kill the follower |
+| 0.12 | a follower is rewarded |
+| 0.15 | a doctrine is enforced, taught, or broken |
+| 0.15 | time spent with a follower, or a conversation about the philosophy |
+| 0.18 | a teaching session, and 30% of the time a follower leaves over it |
+| 0.20 | recruitment at a location, using a message, with the police watching |
+| 0.25 | the commune's own prompt card, first choice taken |
+| 0.30 | the ledger: the followers are blissful, or they are not |
+
+Loyalty is the spine. The window tables (`Min Loyalty`/`Max Loyalty`)
+are read through `pickWindow` against the current score, so a happy commune
+gets gratitude and a sour one gets doubts and warnings; a warning that scores 4+
+can expel a follower, a devotion demonstration that fails its `Risk Score`
+roll kills one, and `communards` is decremented either way.
+
+### 62.4 Tokens
+
+Six new tokens, all answered by `Sim::cultToken`:
+
+- `<communard>` - one follower per card, cached, and the pronoun pair is
+  flipped to point at that follower because the follower-facing pools are
+  written about them ("<he/she> says he's being solicited to join an MLM vitamin
+  cult").
+- `<communard-possessive>` - the same name with an apostrophe s.
+- `<ex-communard>` - a second cached name, drawn only when an ex-follower row
+  needs one.
+- `<totem>`, `<honorific>` - the commune's own objects.
+- `<commune-other>` and `<cult>` / `<cult-name>` - another commune, and
+  this one.
+
+### 62.5 Shortcuts
+
+- Founding is free: property, totem, first followers and the honorific cost
+  nothing. Later buildings print their cost and subtract nothing.
+- `Appeal Score`, `Enjoyment Score` and `Value Percentage` on the
+  structure rows are read but not compounded into a commune-wide appeal figure.
+- `Controversy Score` only buys charisma at 3+, never conflict.
+- Drugs carry no addiction; a bad dose is a hospital line, not a stat.
+- Policing is a roll in the recruitment block only; no other event can be caught.
+- The doctrine in force is one string on the hero, replaced each time a rule is
+  enforced, and `Disobedience Can Be Fatal` kills a follower 25% of the time.
+- Three philosophy-specific tables are filtered by philosophy and fall back to
+  the unfiltered pool when the filtered one is empty, because several rows leave
+  the philosophy cell blank.
+
+### 62.6 Verification
+
+Thirty seeds across both genders to age 60 with `"cult": true` produced 1180
+cult events and zero residual tokens, counted over title, body and every log
+line. The family splits 87 workshop, 72 fast, 68 gratitude, 61 solo trip, 60 drum
+circle, 60 rumour, 58 shared trip, 55 prompt card, 52 reward, 50 devotion, 47 nag,
+47 structure feedback, 46 totem inspiration, 40 ledger, 38 film, 38 teaching, 34
+dissent, 34 recruitment, 34 disrespect, 32 time, 29 lecture, 26 warning, 20 each
+application/punishment/message/conversation, 16 doubt, 16 doctrine.
+
+Two bugs were found by that probe and fixed. The heckle log line points at a
+bracket in the heckle's own String column with `<rb>`, so the String now has
+to be resolved first and the Log Version second from the same row - picking them
+as two independent draws left `<rb>` in the text twice. The Scenario Snippet
+of `devotion-demonstration` is a base-form verb phrase while its Success
+Snippet is a gerund or noun phrase, so they cannot share the frame "A follower
+...": the log now reads "A follower volunteered to climb Mt. Everest in my
+honour." with "The outcome: climbing Mt. Everest." And the solo drug snippets are
+all gerunds, so they read "I remember feeling telepathically connected to Mike
+Tyson during the trip." rather than "I feeling ...".
+
+The full suite stays green: residue 0, 109 captured / 107 recoverable scenarios,
+port entries 109 with 107 rendered and gap 0, `covpush` rc 0, and the bench
+reaches age 34 without an abort.
+
