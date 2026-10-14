@@ -361,6 +361,10 @@ class Sim {
   // The friend-advice card (REPORT.en.md 100): a friend's question, capped at
   // two showings per life. It draws on its own stream (advRng_).
   bool friendAdviceYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-prank card (REPORT.en.md 101): a friend pranks the hero out of
+  // a16_friend-pranks-enc and the hero picks one of the card's four reactions.
+  // It carries no presented cap and draws on its own stream (prankRng_).
+  bool friendPrankYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -493,6 +497,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng mobRng_;
   // The friend-advice card's own stream (REPORT.en.md 100).
   Rng advRng_;
+  // The friend-prank card's own stream (REPORT.en.md 101).
+  Rng prankRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
