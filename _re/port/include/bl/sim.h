@@ -116,6 +116,9 @@ class Sim {
   // a16_royal-house-names-enc. runScript calls it before birthLines, so the
   // birth line and the hero snapshot both carry the state (REPORT.en.md 47).
   void makeRoyal(Life& life);
+  // The royal year (REPORT.en.md 87): the twelve a16_royal-* pools.
+  bool royalYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string royalPaper();
 
   // Turns a life into a vampire and gives it a familiar. runScript calls it when
   // the script says "vampire": true (REPORT.en.md 48).
@@ -455,7 +458,9 @@ class Sim {
   std::map<std::string, std::string> schoolCache_;  // one teacher / classmate / principal per school card
   bool schoolLive_ = false;
   std::map<std::string, std::string> polCache_;  // one party / rival / bribe per political card
+  std::map<std::string, std::string> royalCache_;  // one paper / subject / celebrity per royal card
   bool polLive_ = false;
+  bool royalLive_ = false;
   std::map<std::string, std::string> podCache_;  // one guest / episode title per podcast card
   bool podLive_ = false;
   bool boatLive_ = false;

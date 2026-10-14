@@ -9215,13 +9215,255 @@ And an office card, where the bracket is a spouse and nine options are offered:
 > party. / Late one night in my office, I terminated an intern on the spot after
 > she suggested giving me oral pleasure as a means to help reduce stress.
 
-The whole regression after the change: 29 probes at `rc=0 residue=0` (actres 694,
+The whole regression after the change: 30 probes at `rc=0 residue=0` (actres 694,
 astres 792, bizres 3592, bmres 1655, boatres 1468, casres 1342, cultres 1168,
 dlres 1518, fightres 1259, finres 748, hustres 1393, ltres 1624, luxres 853,
 mafiares 1306, modres 589, ofcres 1703, outres 1029, petres 2468, podres 2574,
-polres 1763, prisres 428, racres 847, schres 583, spores 611, spyres 550, stures
+polres 1763, prisres 428, racres 847, royres 2591, schres 583, spores 611, spyres 550, stures
 1156, traderes 1316, vampres 3297, zoores 1454), `rescensus.py` `distinct residue
 tokens 0 total 0`, `coverage.py` 109 captured / 107 recoverable, `portgap.py`
 `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim --script covpush.json` rc 0 with
 33078 bytes of stdout and an empty stderr, and `bench.sh /tmp/trace_c10.json`
 reaching age 34 without an abort.
+
+## 87. The royal year: a family that spoke to nobody, and a branch ladder that poisoned its own tail
+
+Section 47 put a crown on the hero's head: it wired the seat, the house and the
+three tokens a monarch's titles need, and it left the twelve tables the royal
+family actually speaks through to the generic renderer. The generic renderer
+applies Karma, Discipline, Happiness, Intelligence and Appearance -- the five
+impacts of `pointsForImpact`'s jump table -- and nothing else, so a reign in the
+port was a random walk of unrelated events with no regard, no tabloids and no
+subjects. This section wires the family: eleven more tables, a regard of its own,
+and a year that is one card about one person.
+
+Four bugs justify it. The branch ladder was written as a chain of `if (roll < X)`
+tests with **no lower bound**, so a branch whose pool had no eligible row fell
+through to a *later* test that also matched: the first probe showed 586
+beheadings against a five percent window, one monarch in four ending a subject.
+`<newspaper>`, `<castle>`, `<country-adjectival>` and `<country-possessive>`
+never reached `heroToken` at all, because `resolve` only forwards a token that
+starts with `hero-` or stands in an explicit list -- 876 leaked occurrences.
+`<hero-royal-name>` had no case anywhere. And the two commoner pools resolved
+their feedback snippet before the scenario, so the `<rb>` the feedback points at
+had nothing to point at.
+
+### 87.1 The family
+
+Twelve tables, 580 rows, of which section 47 had wired exactly one:
+
+| table | rows | what it holds |
+|---|---|---|
+| `a16_royal-house-names-enc` | 159 | Name, Estate, Palace, Castle, Country Code, Commonness Score (wired by 47) |
+| `a16_royal-celebrity-interaction-scenarios-enc` | 59 | List Item, Scenario, Past/Present Tense Snippet, enjoyment and respect |
+| `a16_royal-school-negative-scenarios-enc` | 54 | Teacher, Classmate, Scenario, Feedback/Log Version Snippet |
+| `a16_royal-punishments-enc` | 44 | Snippet, UK/Japan/Arab Only |
+| `a16_royal-tabloid-scenarios-enc` | 38 | Scenario, Log Version, regard band, age band, seat and country gates |
+| `a16_royal-school-positive-scenarios-enc` | 37 | as the negative pool |
+| `a16_royal-rewards-enc` | 37 | Snippet, UK/Japan/Arab Only |
+| `a16_royal-commoner-negative-scenarios-enc` | 34 | Scenario, Feedback/Log Version Snippet, regard band, seat flags |
+| `a16_royal-executions-enc` | 33 | Method, Scenario, Log Version, Hero Scenario, Death Snippet, Pain Score |
+| `a16_royal-public-disservice-scenarios-enc` | 29 | Scenario, Log Version, Public Outrage Snippet, Respect Impact (-4/-5) |
+| `a16_royal-public-service-scenarios-enc` | 28 | Scenario, Log Version, Respect Impact (+3) |
+| `a16_royal-commoner-positive-scenarios-enc` | 28 | as the negative pool, with a Min Respect band |
+
+Every pool of the family gates on the same handful of columns -- `Hero Gender`,
+a `Hero Min Age`/`Hero Max Age` or `Min Age`/`Max Age` window, a `Min Respect`/
+`Max Respect` band, `Hero Has Lover`, `Is Highest Ranking Royal` /
+`Is Not Highest Ranking Royal`, and `UK Only` / `Japan Only` / `Arab Only` --
+so the port writes one `eligible` predicate and every branch draws through it.
+
+The executions pool is two cards in one table. `Scenario` is a subject being
+executed on the hero's order ("You had Kayne YBY disemboweled."); `Hero Scenario`
+is the hero being executed ("You have been publicly hanged!") and `Death Snippet`
+is the fragment a death line is built from. The punishments and rewards pools hold
+fragments rather than sentences ("two weeks in the royal dungeon", "a stoning"), so
+the port builds the sentence around them.
+
+### 87.2 The seat
+
+`Sim::makeRoyal` (section 47) now also draws the castle from the house table's
+`Castle` column, and it draws a **rank**. Half the royals are first in line and the
+rest are a rank or two below, otherwise every `Is Not Highest Ranking Royal` row in
+four pools is unreachable and the family only ever speaks to an heir. The rank picks
+the seat column (`Rank 1 Female`, `Rank 2 Male`, ...), and a rank whose column is
+empty falls back a step.
+
+The hero gains nine fields (include/bl/game.h):
+
+```
+std::string royalCastle;
+int royalRespect = 50;      // the country's regard, 0..100
+int royalYears = 0;         // how long the reign has lasted
+int royalOutrages = 0;
+int royalSentences = 0;     // subjects punished
+int royalGifts = 0;         // subjects rewarded
+int royalExecutions = 0;    // subjects executed on the hero's order
+std::string royalNewspaper;
+std::string royalSubject;
+```
+
+### 87.3 The year
+
+`Sim::royalYear`, called from `ageUp` immediately after the boating line, takes the
+year outright. The first version was a single roll against a chain of windows, which
+is the shape every earlier family uses and which does not survive an optional
+branch: when a window's pool has no eligible row the chain falls through to the
+*next* test that also matches, so the year lands in a branch it was never offered.
+Here the year is instead a **weighted draw over the branches that are available**:
+`have(name)` asks whether the pool holds a row the hero passes, an unavailable
+branch is not in the draw at all, and the weights are the old window widths.
+
+| weight | branch | what moves |
+|---|---|---|
+| 8 | the tabloid | regard - 3 |
+| 8 | an ungrateful subject | regard - 2, happiness - 2 |
+| 8 | a loyal subject | regard + 2, happiness + 2 |
+| 8 | a royal duty | the row's Respect Impact (+3) |
+| 8 | a royal disgrace | the row's Respect Impact (-4/-5), outrages + 1 |
+| 8 | an invitation (18+) | the row's Enjoyment Score and Respect Impact |
+| 6 | at school, negative (a pupil) | regard - 2, happiness - 2 |
+| 6 | at school, positive (a pupil) | regard + 2, happiness + 1 |
+| 5 | an execution on the hero's order (top seat) | regard - 4, happiness - 3 |
+| 7 | a subject punished (regard < 45) | regard - 2, happiness - 1 |
+| 7 | a subject rewarded (regard > 55) | regard + 2, happiness + 1 |
+| 18 | a quiet year at the seat | nothing |
+
+Before the draw, one event is not a card but a consequence: a regard at or below
+eight is deposed. That branch keeps a quarter chance of firing in any one year,
+draws an execution method from the family's own table, builds the death line from
+the `Death Snippet` ("being executed by public hanging" becomes "public hanging"),
+marks the life dead and lets the driver end it. Without the chance, a country that
+hated its monarch executed him in the first year it could.
+
+The subject of the year's card is one person, drawn once, so the card and the
+journal name the same man ("Kay Shift was sentenced to a stoning for
+disrespecting the crown." / "I sentenced Kay Shift to a stoning."). The regard is
+clamped at every write, and every card ends with the ledger line
+`"The country's regard for me is N%."`, taken from the port's own counter and not
+from the data, which is the family's substitute for the game's respect bar.
+
+### 87.4 The tokens
+
+Four tokens had no handler and three of them could not reach the one they needed.
+`heroToken` gained `hero-title` (the seat, or the hero's job, or "citizen"),
+`hero-royal-name` (seat + first name), `newspaper` and `castle`. The names are
+built at the seat: the paper is composed from the country with five shapes
+("the %s Times", "%s Daily", "the %s Herald", "the %s Gazette", "%s Post"),
+because **no table in the corpus holds a newspaper name** -- 76 occurrences of
+`<newspaper>` and nothing behind them, so the port invents one and says so.
+
+`resolve`'s gate is the trap: a token reaches `heroToken` only when it starts with
+`hero-`/`hero:` or stands in an explicit list, so adding a case to `heroToken` is
+silent until the name is added there too. `country-adjectival`,
+`country-possessive`, `newspaper` and `castle` were added to that list.
+
+The invitation card needed the pronoun pair pointed the other way: the pool's
+`<him/her>` and `<he/she>` refer to the **celebrity**, not to the hero, and with the
+pair unset every celebrity was "him". The card now draws its own guest, sets
+`pronounOtherSet_ = true` and `pronounOtherFemale_` from that guest's gender, and
+substitutes `<celebrity>` and `<celebrity2>` before resolving -- so "Margot Robbie
+asks if you're brave enough to slam dance in the mosh pit with **her**".
+
+### 87.5 The bugs
+
+1. **The ladder poisoned its own tail.** Every branch was `if (roll < X)` with no
+   lower bound. A branch whose pool had no eligible row fell through to a later
+   window that also matched, and the execution branch was the widest later window
+   (`roll < 0.68`): the first probe found 586 executions against a 5% window. Fixed
+   by the availability draw above -- the lesson generalises, and every family with
+   an optional branch needs it.
+2. **The dispatch list.** `<newspaper>` 76, `<castle>` 20, `<country-adjectival>`
+   36 and `<country-possessive>` 24 occurrences leaked; the cases existed but the
+   gate did not forward them.
+3. **`<hero-royal-name>`** (110 occurrences) had no case in `heroToken` at all.
+4. **Column order in the commoner pools.** The feedback snippet was resolved before
+   the scenario, so the `<rb>` in "Painted X-rated graffiti of your face with
+   <rb>" pointed at nothing (36 leaks). The scenario is resolved first even when the
+   card shows the feedback -- the section 57 rule.
+5. **A duplicate RNG.** `Rng royalRng_` already existed in include/bl/sim.h with its
+   own seed constant from section 47; adding a second one is a compile error
+   (`duplicate member royalRng_`, `multiple initializations given for non-static
+   member`). Every family added after this one greps the header first.
+6. **A dangling `c_str()`.** The seat column was built inside a ternary of two
+   temporary `std::string`s; the column name is now hoisted into a local.
+7. **A body with no full stop.** The commoner pools end mid-sentence ("Tried to
+   touch your crown"), so the card's own tail adds the full stop unless the body
+   already ends in one.
+
+### 87.6 Shortcuts
+
+- The rank distribution (half the royals first in line, the rest a rank or two
+  down) is the port's own. The real distribution was not read out of the binary.
+- The newspaper name is composed, not drawn: the corpus has no newspaper table.
+- The hero's execution is triggered by regard alone; the game's own mortality roll
+  (`checkDeath`) still runs afterwards.
+- School cards fire while the hero's `schooling` flag is set, which the script
+  driver enables per life; a royal who never boards a school in the driver never
+  sees them.
+- A subject is one person per year, reused by every branch that names one, so the
+  punished subject and the executed subject of a single year cannot be two people.
+
+### 87.7 Verification
+
+`/tmp/qdir/royres.py` drives thirty seeds across both genders to age sixty in each
+of the seventeen countries that have a royal system, with the family and the school
+enabled, and reads back every event whose title belongs to the family. The final
+run:
+
+```
+runs 60 rc failures 0 royal years 2591
+  The palace               (none)                                         681
+  In the papers            a16_royal-tabloid-scenarios-enc                353
+  A royal disgrace         a16_royal-public-disservice-scenarios-enc      332
+  A royal duty             a16_royal-public-service-scenarios-enc         319
+  An ungrateful subject    a16_royal-commoner-negative-scenarios-enc      241
+  An invitation            a16_royal-celebrity-interaction-scenarios-enc  231
+  A sentence               a16_royal-punishments-enc                      187
+  An execution             a16_royal-executions-enc                        69
+  At school                a16_royal-school-positive-scenarios-enc         59
+  At school                a16_royal-school-negative-scenarios-enc         55
+  A revolt                 a16_royal-executions-enc                        26
+  A loyal subject          a16_royal-commoner-positive-scenarios-enc       20
+  A royal gift             a16_royal-rewards-enc                           18
+RESIDUE 0 []
+```
+
+Eleven tables are a card's own mark; `a16_royal-house-names-enc` is a setup pool
+(the seat and the castle) and is never a card, and the quiet year carries no table
+at all, which is why the histogram above counts by title as well. Ten cards, one
+per branch:
+
+```
+In the papers      The Denmark Post published a scathing article claiming you
+                   hunted, killed, and ate the last black rhino in existence,
+                   causing the species to go extinct.
+                   regard 24%
+An ungrateful subject  Tried to touch your crown.
+                   regard 33%
+A loyal subject    Respectfully bowed to you / Thanked you for making the country
+                   better
+An invitation      While attending an international benefit concert, Carol Crozier
+                   asks if you're brave enough to slam dance in the mosh pit with her.
+At school          Kravitz Shott says that in her classroom, she is the Marchioness.
+An execution       You had Kayne YBY disemboweled. / I had Kayne YBY disemboweled.
+A sentence         Maylor Malone was sentenced to a spanking for disrespecting the
+                   crown. / I sentenced Maylor Malone to a spanking.
+A royal gift       Micky Stonemason was granted a lily from the royal garden for
+                   loyalty to the crown. / I granted Micky Stonemason a lily ...
+A royal disgrace   You helped some of your inexperienced friends land kush jobs as
+                   corporate executives.
+                   The country is outraged over helping some inexperienced friends
+                   get jobs as corporate executives.
+A revolt           You have been pulled to pieces on the rack!
+                   I had ruled for 48 years.
+The palace         Another year passed at the palace.
+                   I spent the year at the palace, Duke of Denmark.
+```
+
+The whole regression is green with the section in place: `allprobes.py` runs
+thirty probes at residue 0 (the new `royres.py` joins the list), `rescensus.py`
+`distinct residue tokens 0 total 0`, `coverage.py` 109 captured / 107 recoverable,
+`portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim --script
+covpush.json` rc 0 with 33078 bytes of stdout and an empty stderr, and
+`bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.

@@ -985,6 +985,17 @@ bool Sim::load(std::string* error) {
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
       "a16_royal-house-names-enc",                   // Name,Estate,Palace,Castle,Country Code,Commonness Score
+      "a16_royal-tabloid-scenarios-enc",             // Scenario,Log Version,Min/Max Respect,Hero Gender,Is Highest Ranking Royal,UK Only,Japan Only (REPORT.en.md 87)
+      "a16_royal-commoner-positive-scenarios-enc",
+      "a16_royal-commoner-negative-scenarios-enc",
+      "a16_royal-school-positive-scenarios-enc",
+      "a16_royal-school-negative-scenarios-enc",
+      "a16_royal-public-service-scenarios-enc",
+      "a16_royal-public-disservice-scenarios-enc",
+      "a16_royal-celebrity-interaction-scenarios-enc",
+      "a16_royal-rewards-enc",
+      "a16_royal-punishments-enc",
+      "a16_royal-executions-enc",
       "a16_vampire-dumb-scenario-enc",               // the vampire's own pool (REPORT.en.md 48)
       "a16_vampire-name-enc",                        // Type,Name,Skin: female / male / surname
       "a16_vampire-assault-method-enc",
@@ -1692,6 +1703,16 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
   if (key == "gender" || key == "hero-gender" || key == "hero:gender") return h.female ? "female" : "male";
   if (key == "city" || key == "hero:current_city") return h.city;
   if (key == "country" || key == "hero-country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
+  // REPORT.en.md 87: the royal pools ask for the seat, the castle and the paper,
+  // and heroToken answered none of the three (a16_royal-* uses them 40, 13 and
+  // 76 times).
+  if (key == "hero-title") return h.royalSeat.empty() ? (h.job.empty() ? std::string("citizen") : h.job) : h.royalSeat;
+  if (key == "hero-royal-name") {
+    const std::string title = h.royalSeat.empty() ? std::string("Citizen") : h.royalSeat;
+    return h.firstName.empty() ? title : title + " " + h.firstName;
+  }
+  if (key == "newspaper") return h.royalNewspaper.empty() ? std::string("the papers") : h.royalNewspaper;
+  if (key == "castle") return h.royalCastle.empty() ? std::string("the palace") : h.royalCastle;
   if (key == "country-other" || key == "country2" || key == "hero:country_other") {
     if (countries_.empty()) return std::string();
     for (int tries = 0; tries < 12; ++tries) {
@@ -2480,7 +2501,9 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (token.compare(0, 5, "hero-") == 0 || token.compare(0, 5, "hero:") == 0 ||
                token == "city" || token == "country" || token == "country2" ||
                token == "country-other" || token == "country-other-adjectival" ||
-               token == "country possessive" || token == "first name") {
+               token == "country-adjectival" || token == "country-possessive" ||
+               token == "country possessive" || token == "newspaper" || token == "castle" ||
+               token == "first name") {
       std::string key = token;
       bool possessive = false;
       const std::string suffix = "-possessive";
@@ -3311,6 +3334,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.podcaster && podcastYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
   if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
+  if (life.hero.royal && royalYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
   if (businessYear(life, out, forcedChoice)) return true;
   if (musicYear(life, out, forcedChoice)) return true;
@@ -3415,6 +3439,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   officeCache_.clear();   // one employee / company per office card
   schoolCache_.clear();   // one teacher / classmate / principal per school card
   polCache_.clear();      // one party / rival / bribe per political card
+  royalCache_.clear();    // one paper / subject / celebrity per royal card
   podCache_.clear();      // one guest / episode title per podcast card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
@@ -21624,6 +21649,337 @@ bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
   return renderRow(t, row, life, out, forcedChoice);
 }
 
+
+// ------------------------------------------------------------------ the crown
+// REPORT.en.md 87. Section 47 made the hero royal, gave him a house, a seat and
+// three tokens, and left the family's twelve scenario pools unwired, so a
+// monarch's year was section 47's own dumb set and nothing else. This is the
+// year those pools describe: a tabloid story about him, a commoner who adores
+// or despises him, a school card while he is still a pupil, public service and
+// public disservice, a red-carpet invitation from a celebrity, a subject
+// rewarded, a subject punished, and -- for a top seat whose regard has
+// collapsed -- an execution, his own order or his own head.
+std::string Sim::royalPaper() {
+  // shortcut: the real game names the tabloids, and no table in the corpus
+  // holds a single newspaper name, so the port composes one from the country.
+  if (hero_ == nullptr) return std::string("the papers");
+  static const char* const kShapes[] = {"the %s Times", "%s Daily", "the %s Herald",
+                                        "the %s Gazette", "the %s Post", "%s Today"};
+  std::string name = kShapes[royalRng_.below(6)];
+  const std::string slot = "%s";
+  const size_t at = name.find(slot);
+  if (at != std::string::npos)
+    name = name.substr(0, at) + hero_->country + name.substr(at + slot.size());
+  return name;
+}
+
+bool Sim::royalYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.royal || h.royalSeat.empty() || forcedChoice >= 0) return false;
+  ++h.royalYears;
+  if (h.royalNewspaper.empty()) h.royalNewspaper = royalPaper();
+  royalLive_ = true;
+  royalCache_.clear();
+  rndCache_.clear();
+  rbLast_.clear();
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+
+  std::string code;
+  for (const Country& c : countries_) {
+    if (lower(c.name) == lower(h.country)) { code = lower(c.code); break; }
+  }
+  static const char* const kArab[] = {"ae", "sa", "jo", "ma", "qa", "kw", "bh", "om"};
+  bool arab = false;
+  for (size_t i = 0; i < sizeof(kArab) / sizeof(kArab[0]); ++i) if (code == kArab[i]) arab = true;
+
+  std::string title, body, line, tableRef;
+  int cardRow = -1;
+  int happy = 0;
+
+  auto sub = [](const std::string& s, const std::string& from, const std::string& to) {
+    if (from.empty() || to.empty()) return s;
+    std::string o = s;
+    size_t at = o.find(from, 0);
+    while (at != std::string::npos) { o.replace(at, from.size(), to); at = o.find(from, at + to.size()); }
+    return o;
+  };
+  auto tell = [&](const std::string& s) { if (!s.empty()) line += line.empty() ? s : " " + s; };
+  auto add = [&](const std::string& s) { if (!s.empty()) out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  auto numOf = [&](const Table& t, size_t r, const char* col) -> int {
+    return t.has(col) ? static_cast<int>(t.num(r, col)) : 0;
+  };
+  auto windowOk = [&](const Table& t, size_t r, const char* loCol, const char* hiCol, int v) -> bool {
+    if (t.has(loCol)) { const std::string s = trim(t.at(r, loCol)); if (!s.empty() && v < static_cast<int>(t.num(r, loCol))) return false; }
+    if (t.has(hiCol)) { const std::string s = trim(t.at(r, hiCol)); if (!s.empty() && v > static_cast<int>(t.num(r, hiCol))) return false; }
+    return true;
+  };
+  // Every row of every pool of the family gates on the same handful of things:
+  // the hero's gender, an age window, the regard band, whether he has a partner,
+  // whether he holds the country's top seat, and the country.
+  auto eligible = [&](const Table& t, size_t r) -> bool {
+    if (t.has("Hero Gender")) {
+      const std::string g = lower(trim(t.at(r, "Hero Gender")));
+      if (!g.empty() && g != "both" && g != "all" && g != (h.female ? "female" : "male")) return false;
+    }
+    if (!windowOk(t, r, "Hero Min Age", "Hero Max Age", h.age)) return false;
+    if (!windowOk(t, r, "Min Age", "Max Age", h.age)) return false;
+    if (!windowOk(t, r, "Min Respect", "Max Respect", h.royalRespect)) return false;
+    if (t.has("Hero Has Lover") && t.flag(r, "Hero Has Lover") && h.loverName.empty()) return false;
+    if (t.has("Is Highest Ranking Royal") && t.flag(r, "Is Highest Ranking Royal") && h.royalRank != 1) return false;
+    if (t.has("Is Not Highest Ranking Royal") && t.flag(r, "Is Not Highest Ranking Royal") && h.royalRank == 1) return false;
+    if (t.has("UK Only") && t.flag(r, "UK Only") && code != "gb" && code != "uk") return false;
+    if (t.has("Japan Only") && t.flag(r, "Japan Only") && code != "jp") return false;
+    if (t.has("Arab Only") && t.flag(r, "Arab Only") && !arab) return false;
+    return true;
+  };
+  const Table* t = nullptr;
+  size_t r = 0;
+  auto draw = [&](const char* name) -> bool {
+    if (!ensureTable(name)) return false;
+    const Table& tb = tbl(name);
+    std::vector<size_t> pool;
+    for (size_t i = 0; i < tb.size(); ++i) if (eligible(tb, i)) pool.push_back(i);
+    if (pool.empty()) return false;
+    t = &tb;
+    r = pool[royalRng_.below(uint32_t(pool.size()))];
+    return true;
+  };
+  auto finish = [&]() -> bool {
+    out.table = tableRef;
+    out.row_id = cardRow >= 0 ? std::to_string(cardRow + 1) : std::string();
+    out.title = title;
+    if (!body.empty()) {
+      const char last = body[body.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+    }
+    out.body = body;
+    if (!line.empty()) out.narrative = spyUpperFirst(line);
+    if (happy != 0) out.happiness += happy;
+    h.royalRespect = std::max(0, std::min(100, h.royalRespect));
+    add("The country's regard for me is " + std::to_string(h.royalRespect) + "%.");
+    royalLive_ = false;
+    royalCache_.clear();
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return true;
+  };
+  // The subject of the year's card: drawn once so the card and the journal name
+  // the same person.
+  const std::string person = drawFirstName(royalRng_.chance(0.5)) + " " + drawSurname();
+  // 1. The throne is lost: a top seat whose regard has collapsed is deposed, and
+  //    the pool says how. The port's own mortality is checkDeath's roll; this one
+  //    is event-driven, so the flag is cleared here and the driver ends the life
+  //    after this year (REPORT.en.md 87).
+  if (h.royalRespect <= 8 && royalRng_.chance(0.25) && ensureTable("a16_royal-executions-enc")) {
+    const Table& ex = tbl("a16_royal-executions-enc");
+    const size_t row = royalRng_.below(uint32_t(ex.size()));
+    mark(ex.name(), int(row));
+    const std::string death = sub(trim(resolve(ex.at(row, "Death Snippet"))), "being ", "");
+    title = "A revolt";
+    body = spyUpperFirst(trim(resolve(ex.at(row, "Hero Scenario"))));
+    line = "My subjects deposed me and I was " + death + ".";
+    add("I had ruled for " + std::to_string(h.royalYears) + (h.royalYears == 1 ? " year." : " years."));
+    life.alive = false;
+    return finish();
+  }
+
+  // The year's card is a weighted draw over the branches that are AVAILABLE
+  // this year - the pool has a row the hero passes and the branch's own guard
+  // holds. A single roll and fall-through starved the tail: a window whose pool
+  // was empty (school for a grown royal, an execution for a rank-2 heir, a gift
+  // for a country whose regard never climbs) fell through and left 55% of the
+  // probe's royal years as the quiet card (REPORT.en.md 87).
+  auto have = [&](const char* name) -> bool {
+    if (!ensureTable(name)) return false;
+    const Table& tb = tbl(name);
+    for (size_t i2 = 0; i2 < tb.size(); ++i2) if (eligible(tb, i2)) return true;
+    return false;
+  };
+  static const char* const kTabloid = "a16_royal-tabloid-scenarios-enc";
+  static const char* const kCommonerNeg = "a16_royal-commoner-negative-scenarios-enc";
+  static const char* const kCommonerPos = "a16_royal-commoner-positive-scenarios-enc";
+  static const char* const kService = "a16_royal-public-service-scenarios-enc";
+  static const char* const kDisservice = "a16_royal-public-disservice-scenarios-enc";
+  static const char* const kCelebrity = "a16_royal-celebrity-interaction-scenarios-enc";
+  static const char* const kSchoolNeg = "a16_royal-school-negative-scenarios-enc";
+  static const char* const kSchoolPos = "a16_royal-school-positive-scenarios-enc";
+  static const char* const kExecutions = "a16_royal-executions-enc";
+  static const char* const kPunishments = "a16_royal-punishments-enc";
+  static const char* const kRewards = "a16_royal-rewards-enc";
+  struct RoyalCand { double weight; int kind; };
+  std::vector<RoyalCand> cands;
+  auto offer = [&](double w, int kind, bool guard, const char* name) {
+    if (guard && have(name)) cands.push_back(RoyalCand{w, kind});
+  };
+  offer(8, 2, true, kTabloid);
+  offer(8, 3, true, kCommonerNeg);
+  offer(8, 4, true, kCommonerPos);
+  offer(8, 5, true, kService);
+  offer(8, 6, true, kDisservice);
+  offer(8, 7, h.age >= 18, kCelebrity);
+  offer(6, 8, h.schooling, kSchoolNeg);
+  offer(6, 9, h.schooling, kSchoolPos);
+  offer(5, 10, h.royalRank == 1, kExecutions);
+  offer(7, 11, h.royalRespect < 45, kPunishments);
+  offer(7, 12, h.royalRespect > 55, kRewards);
+  offer(18, 0, true, "a16_royal-house-names-enc");   // the quiet year, kind 0
+
+  int kind = 0;
+  double total = 0;
+  for (const RoyalCand& c : cands) total += c.weight;
+  const double pick = royalRng_.unit() * total;
+  double acc = 0;
+  for (const RoyalCand& c : cands) { acc += c.weight; if (pick < acc) { kind = c.kind; break; } }
+
+  // 0. A quiet year at the seat.
+  if (kind == 0) {
+    const std::string seat = h.royalCastle.empty() ? std::string("the palace") : h.royalCastle;
+    title = "The palace";
+    body = "Another year passed at " + seat + ".";
+    line = "I spent the year at " + seat + ", " + h.royalSeat + " of " + h.country + ".";
+    return finish();
+  }
+
+  // 2. The tabloid, the family's most characteristic card.
+  if (kind == 2 && draw(kTabloid)) {
+    mark(t->name(), int(r));
+    title = "In the papers";
+    body = spyUpperFirst(trim(resolve(cardRefBind(t->at(r, "Scenario"), royalCache_, royalRng_))));
+    tell(trim(resolve(cardRefBind(t->at(r, "Log Version"), royalCache_, royalRng_))));
+    h.royalRespect -= 3;
+    return finish();
+  }
+
+  // 3. A commoner who is not impressed, or 4. one who is. The card shows the
+  //    feedback snippet and the journal takes the log version, which is the fan
+  //    pool's shape. The row's own column order is Scenario, Feedback Snippet,
+  //    Log Version Snippet: the scenario owns the inline list that the two
+  //    snippet cells point at with '<rb>', so it is resolved first even when the
+  //    card shows the feedback (REPORT.en.md 57, 87).
+  if ((kind == 3 || kind == 4) && draw(kind == 3 ? kCommonerNeg : kCommonerPos)) {
+    mark(t->name(), int(r));
+    title = kind == 3 ? "An ungrateful subject" : "A loyal subject";
+    const std::string scen = trim(resolve(cardRefBind(t->at(r, "Scenario"), royalCache_, royalRng_)));
+    const std::string fb = trim(resolve(cardRefBind(t->at(r, "Feedback Snippet"), royalCache_, royalRng_)));
+    body = spyUpperFirst(fb.empty() ? scen : fb);
+    tell(trim(resolve(cardRefBind(t->at(r, "Log Version Snippet"), royalCache_, royalRng_))));
+    h.royalRespect += kind == 3 ? -2 : 2;
+    happy += kind == 3 ? -2 : 2;
+    return finish();
+  }
+
+  // 5. The public duty and 6. the public disservice. Both carry their own
+  //    Respect Impact, which is what moves the standing.
+  if ((kind == 5 || kind == 6) && draw(kind == 5 ? kService : kDisservice)) {
+    mark(t->name(), int(r));
+    title = kind == 5 ? "A royal duty" : "A royal disgrace";
+    body = spyUpperFirst(trim(resolve(cardRefBind(t->at(r, "Scenario"), royalCache_, royalRng_))));
+    tell(trim(resolve(cardRefBind(t->at(r, "Log Version"), royalCache_, royalRng_))));
+    h.royalRespect += numOf(*t, r, "Respect Impact");
+    if (kind == 6) {
+      ++h.royalOutrages;
+      const std::string outrage = trim(resolve(cardRefBind(t->at(r, "Public Outrage Snippet"), royalCache_, royalRng_)));
+      if (!outrage.empty()) add("The country is outraged over " + outrage + ".");
+      happy -= 2;
+    } else if (h.royalRespect > 60) {
+      happy += 2;
+    }
+    return finish();
+  }
+
+  // 7. A red-carpet invitation from a celebrity (adults only). The card and the
+  //    pool's past-tense snippet are two different sentences about the same
+  //    celebrity, so both go through the card's reference cache.
+  if (kind == 7 && draw(kCelebrity)) {
+    mark(t->name(), int(r));
+    title = "An invitation";
+    // The pool's '<him/her>' and '<he/she>' refer to the CELEBRITY, not to the
+    // hero, so the invitation draws its own guest and points the alternative
+    // pronoun pair at that person's gender. Without this every celebrity was
+    // 'him' (REPORT.en.md 87).
+    const bool celFemale = royalRng_.chance(0.5);
+    const std::string cel = drawFirstName(celFemale) + " " + drawSurname();
+    const std::string cel2 = drawFirstName(celFemale) + " " + drawSurname();
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = celFemale;
+    const std::string scen = sub(sub(trim(t->at(r, "Scenario")), "<celebrity2>", cel2), "<celebrity>", cel);
+    const std::string pastCell = sub(sub(trim(t->at(r, "Past Tense Snippet")), "<celebrity2>", cel2),
+                                   "<celebrity>", cel);
+    body = spyUpperFirst(trim(resolve(cardRefBind(scen, royalCache_, royalRng_))));
+    const std::string past = trim(resolve(cardRefBind(pastCell, royalCache_, royalRng_)));
+    if (!past.empty()) tell("I " + past + ".");
+    happy += numOf(*t, r, "Enjoyment Score");
+    h.royalRespect += numOf(*t, r, "Respect Impact");
+    return finish();
+  }
+
+  // 8. School, while the royal is still a pupil: a teacher or a classmate who is
+  //    not impressed, or 9. one who is. The pools name them with '<teacher>' and
+  //    '<classmate>', so the family draws its own and substitutes them into the
+  //    log cell as well.
+  if ((kind == 8 || kind == 9) && draw(kind == 8 ? kSchoolNeg : kSchoolPos)) {
+    mark(t->name(), int(r));
+    if (h.schoolTeacher.empty()) h.schoolTeacher = personName("teacher");
+    if (h.schoolClassmate.empty()) h.schoolClassmate = personName("classmate");
+    std::string scen = sub(sub(trim(t->at(r, "Scenario")), "<teacher>", h.schoolTeacher),
+                           "<classmate>", h.schoolClassmate);
+    std::string lv = sub(sub(trim(t->at(r, "Log Version Snippet")), "<teacher>", h.schoolTeacher),
+                         "<classmate>", h.schoolClassmate);
+    title = "At school";
+    body = spyUpperFirst(trim(resolve(cardRefBind(scen, royalCache_, royalRng_))));
+    tell(trim(resolve(cardRefBind(lv, royalCache_, royalRng_))));
+    h.royalRespect += kind == 8 ? -2 : 2;
+    happy += kind == 8 ? -2 : 1;
+    return finish();
+  }
+
+  // 10. A subject executed on the hero's order (top seat only).
+  if (kind == 10 && draw(kExecutions)) {
+    mark(t->name(), int(r));
+    title = "An execution";
+    body = spyUpperFirst(trim(resolve(cardRefBind(sub(trim(t->at(r, "Scenario")), "<person>", person),
+                                                 royalCache_, royalRng_))));
+    tell(trim(resolve(cardRefBind(sub(trim(t->at(r, "Log Version")), "<person>", person),
+                                  royalCache_, royalRng_))));
+    ++h.royalExecutions;
+    h.royalRespect -= 4;
+    happy -= 3;
+    return finish();
+  }
+
+  // 11. A subject punished (when the regard is already low) and 12. a subject
+  //     rewarded (when it is high). The snippet pools hold a fragment ('two
+  //     weeks in the royal dungeon'), so the sentence is built around it.
+  if ((kind == 11 || kind == 12) && draw(kind == 11 ? kPunishments : kRewards)) {
+    const std::string what = trim(resolve(cardRefBind(t->at(r, "Snippet"), royalCache_, royalRng_)));
+    if (!what.empty()) {
+      mark(t->name(), int(r));
+      title = kind == 11 ? "A sentence" : "A royal gift";
+      body = spyUpperFirst(person + (kind == 11
+              ? " was sentenced to " + what + " for disrespecting the crown."
+              : " was granted " + what + " for loyalty to the crown."));
+      line = kind == 11 ? ("I sentenced " + person + " to " + what + ".")
+                        : ("I granted " + person + " " + what + ".");
+      if (kind == 11) { ++h.royalSentences; h.royalRespect -= 2; happy -= 1; }
+      else            { ++h.royalGifts;     h.royalRespect += 2; happy += 1; }
+      return finish();
+    }
+  }
+
+  // The drawn branch had no usable row after all: a quiet year at the seat.
+  {
+    const std::string seat = h.royalCastle.empty() ? std::string("the palace") : h.royalCastle;
+    title = "The palace";
+    body = "Another year passed at " + seat + ".";
+    line = "I spent the year at " + seat + ", " + h.royalSeat + " of " + h.country + ".";
+    return finish();
+  }
+}
+
 void Sim::makeMusician(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -22497,8 +22853,18 @@ void Sim::makeRoyal(Life& life) {
   // invented seat (17 of them have one: Belgium, Denmark, Japan, ...).
   if (row == size_t(-1)) return;
   h.royal = true;
+  // A birth is not always the heir: half the royals are first in line, the rest
+  // are a rank or two below, which is what the family's 'Is Not Highest Ranking
+  // Royal' rows window on. Shortcut: the real distribution was not read out of
+  // the binary. REPORT.en.md 87.
   h.royalRank = 1;
-  h.royalSeat = trim(rs.at(row, h.female ? "Rank 1 Female" : "Rank 1 Male"));
+  const double rankRoll = rng_.unit();
+  if (rankRoll > 0.80 && !trim(rs.at(row, h.female ? "Rank 3 Female" : "Rank 3 Male")).empty())
+    h.royalRank = 3;
+  else if (rankRoll > 0.50 && !trim(rs.at(row, h.female ? "Rank 2 Female" : "Rank 2 Male")).empty())
+    h.royalRank = 2;
+  const std::string seatCol = "Rank " + std::to_string(h.royalRank) + (h.female ? " Female" : " Male");
+  h.royalSeat = trim(rs.at(row, seatCol));
   const std::string code = lower(trim(rs.at(row, "Country Code")));
   const Table& hn = tbl("a16_royal-house-names-enc");
   std::vector<size_t> pool;
@@ -22508,7 +22874,12 @@ void Sim::makeRoyal(Life& life) {
     pool.push_back(r);
   }
   const size_t house = weightedPickOf(hn, "Commonness Score", pool, rng_);
-  if (house != size_t(-1)) h.royalHouse = resolve(hn.at(house, "Name"));
+  if (house != size_t(-1)) {
+    h.royalHouse = resolve(hn.at(house, "Name"));
+    // The seat's own estate/palace/castle: the '<castle>' in the service and
+    // reward pools is the hero's, not a stranger's (REPORT.en.md 87).
+    if (hn.has("Castle")) h.royalCastle = trim(resolve(hn.at(house, "Castle")));
+  }
 }
 
 std::string Sim::royalToken(const std::string& token) {

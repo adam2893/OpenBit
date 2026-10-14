@@ -152,6 +152,18 @@ struct Hero {
   int royalRank = 0;       // 1 = the country's top seat
   std::string royalSeat;   // 'King' / 'Emperor' / 'Prince', from the seat table
   std::string royalHouse;  // a16_royal-house-names-enc 'Name'
+  // The royal year (REPORT.en.md 87). Section 47 gave the hero a house and a
+  // seat and stopped there, so the family's twelve scenario pools were dead
+  // weight. These are the numbers those pools window on.
+  std::string royalCastle;   // the a16_royal-house-names-enc 'Castle' of the house
+  int royalRespect = 50;     // 0..100, what the subjects think of the hero
+  int royalYears = 0;        // years spent on the throne
+  int royalOutrages = 0;     // public disservices that stuck to him
+  int royalSentences = 0;    // subjects punished
+  int royalGifts = 0;        // subjects rewarded
+  int royalExecutions = 0;   // subjects executed on his order
+  std::string royalNewspaper;  // the paper that covers him
+  std::string royalSubject;    // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
   // 0x1e9); the port models only "is one" and the two people a vampire card
