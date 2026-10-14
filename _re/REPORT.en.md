@@ -314,7 +314,7 @@ The game ships its whole content library as Unity TextAssets:
 3. [obs] Those 4 bytes are always `0x17xxxxxx`: top six bits `0b000101` = ARM64 **B (unconditional branch)**, and the sign-extended imm26 is **negative** (roughly -15 to -19 MB) => each site branches forward into shadow memory.
 4. [obs] The pages holding those 59 sites are **rwxp** in /proc/maps (`73db5e3000-73db5e7000 rwxp off 0x31dd000`, `73db5e7000-73db5ef000 rwxp off 0x31e1000`, `73db5f1000-73db5f5000 rwxp off 0x31eb000`), while the rest of the library stays r-xp => the mod raised those pages with mprotect: this is the ShadowHook inline-hook site.
 5. [correction] Section 13's earlier claim ("58 sites still show the original prologue, only 0x31ddad0 has an adrp patch") is **wrong** — it came from mis-addressed reads. The correct finding: **all 59 hook sites are patched in place**.
-6. [obs] The hooked addresses are **not** method entries: `Game.UIIAPManager::GodModePurchased`'s methodPointer sits at file offset 0x31e24e8 and its first 16 bytes (`fe0f1bf8 fa6701a9 f85f02a9 f65703a9`) match the file, unpatched; likewise `BitizenshipPurchased`(0x31e1b54), `CareerActorPurchased`(0x31e66e8), `GoldenPacifierPurchased`(0x31e9078), `RestorePurchases`(0x31f9bbc), `get_Inst`(0x31e19e0). => The patches sit at interior check points (0x31ddad0-0x31f5040), consistent with name-based method resolution plus interior interception.
+6. [obs] The hooked addresses are **not** method entries: `Game.UIIAPManager::GodModePurchased's methodPointer sits at file offset 0x31e24e8 and its first 16 bytes (`fe0f1bf8 fa6701a9 f85f02a9 f65703a9`) match the file, unpatched; likewise `BitizenshipPurchased`(0x31e1b54), `CareerActorPurchased`(0x31e66e8), `GoldenPacifierPurchased`(0x31e9078), `RestorePurchases`(0x31f9bbc), `get_Inst`(0x31e19e0). => The patches sit at interior check points (0x31ddad0-0x31f5040), consistent with name-based method resolution plus interior interception.
 7. [unk] The exact trampoline destination is unresolved: decoding the B relative offset lands on read-only data or a segment gap, so no executable stub could be read; the trampoline layout stays unknown (it does not affect the "hooked" conclusion — the byte diff and the RWX pages are direct evidence).
 
 
@@ -1180,15 +1180,15 @@ metadata literal blob (71223 literals) shows them as string literals:
 
 | literal | index | text |
 |---------|-------|------|
-| #9389 | 523412 | `'<person> has been diagnosed with <disease-new>.'` |
-| #9390 | 523459 | `'<person> has been promoted to <job-title>.'` |
-| #9385 | 523216 | `'<person> graduated from <high-school>.'` |
-| #24360 | 941449 | `'I have been diagnosed with {0}.'` |
-| #2617 | 360098 | `' is suffering from '` |
+| #9389 | 523412 | '<person> has been diagnosed with <disease-new>.'` |
+| #9390 | 523459 | '<person> has been promoted to <job-title>.'` |
+| #9385 | 523216 | '<person> graduated from <high-school>.'` |
+| #24360 | 941449 | 'I have been diagnosed with {0}.'` |
+| #2617 | 360098 | ' is suffering from '` |
 
 Corroborating negatives: `grep` over all of `gamedata_plain/` finds none of "started middle school",
 "graduated from high school", "has been promoted" or "suffering from the"; "middle school" appears only
-as the UI action `'Go to middle school'` (#21921) — the sentence itself is assembled from fragments at
+as the UI action 'Go to middle school'` (#21921) — the sentence itself is assembled from fragments at
 runtime.
 
 ### 28.4 The templating engine is the same one scenario1 uses
@@ -1734,8 +1734,8 @@ per-person sentence set, written with bracket slots rather than `{0}` placeholde
 | #9408 | `<person> started a new position as <job-title> for <company>.` |
 
 58 literals contain `<person>` overall. The hero-first-person variants are the `{0}` format strings the
-game feeds through `string.Format` (e.g. #23450 `'I am suffering from {0}.'`, #50732
-`'Your {0}, {1}, is no longer suffering from {2}.'`, #50446 `'Your parents just had a baby {0} named
+game feeds through `string.Format` (e.g. #23450 'I am suffering from {0}.'`, #50732
+'Your {0}, {1}, is no longer suffering from {2}.'`, #50446 'Your parents just had a baby {0} named
 {1}, your new {2}{3}.'`), and their slots are filled from the same state.
 
 So the blocker is not the templating (the resolver already handles every slot form these use, including
@@ -1811,10 +1811,10 @@ diagnosed and father bunions at age 8).
 - Job lines: `a16_careers-enc` (169 rows) for the title ladder, and
   `a16_company-name-structure-enc` (105 rows) for the employer. The company cell is
   a template over the pools beside it: `Aircraft Dealer` stores
-  `'<color> <suffix>, <city> <suffix>'` — two comma-separated *alternatives*, with
+  '<color> <suffix>, <city> <suffix>'` — two comma-separated *alternatives*, with
   `<suffix>` and `<color>` drawn from that same row's Suffix column and from
   `a16_company-name-color-enc`. Substituting a whole row's Format verbatim produces
-  the literal `'<color> <suffix>'` in the line; the observed live company names are
+  the literal '<color> <suffix>'` in the line; the observed live company names are
   single-word or `<city> <suffix>` shapes (`Helsinki Travel`, `Shears Air`,
   `Oklahoma City Family Medical Center`).
 
@@ -2798,7 +2798,7 @@ the port. That is why the two lists are deliberately ordered alike and why a
 blank label is preferred to a guessed one.
 
 Three classes still resolve to a code-side pool the port cannot read
-(`ScenarioIAPConfiguredPush`'s five offers, `ScenarioBase`'s film data, the
+(`ScenarioIAPConfiguredPush's five offers, `ScenarioBase's film data, the
 bullies' third-person sentences): each is a `DataHub`-style switch over
 literals, the same shape as the circumstance pools of section 38, and each
 needs one live sampling session, not a CSV read.
@@ -2923,7 +2923,7 @@ parents can die, and until now nothing in the port could kill a relative.
 
 | evidence | what it is |
 | --- | --- |
-| literal #70722 '`{0}I have been sent to an orphanage for the remainder of {1} childhood.`' | the hero's own entry line, first person (its second-person twin is #47060 'With no surviving parents, you{0} have been sent to an orphanage ...') |
+| literal #70722 '`{0}I have been sent to an orphanage for the remainder of {1} childhood.' | the hero's own entry line, first person (its second-person twin is #47060 'With no surviving parents, you{0} have been sent to an orphanage ...') |
 | a16_dumb-scenarios-orphan-enc, 15 rows | the orphanage's own scenario pool: 'Starstruck', 'Please Sir', 'New Kid on the Block', 'No Good at Goodbyes', 'Bunk mates', 'Wish list', 'Abuse of Power', 'A Big Bully', 'A runner', 'Special orders', 'Self Improvement', ... |
 | literal #17014 'DUMB_SCENARIO_TYPE_ORPHAN' | the category name, which is the k == 0 slot of the roulette in pickDumbScenario |
 | literals #37803/#37804 (ScenarioOrphanageEnter, ScenarioOrphanageProfile), #33027 'Orphanage', #47466 'Years at Orphanage' | the interactive orphanage menu and its lifetime stat, still unported |
@@ -3982,7 +3982,7 @@ Pronouns inside mission rows always speak with the hero's gender, because the mi
 - `resignation-reasons` writes the agent in the third person, so its pronouns are swapped to the first person before rendering.
 - `assassination-body-disposal-methods` ends its snippets on a possessive ("buried `<victim-possessive>`"), so joined with a location the sentence reads "I buried a prostitute's in a landfill" — the data's own shape, kept as shipped rather than rewritten.
 - The nine colour pools are unused by design.
-- `honeypot-agent-disguises`, `stealth-cover-hiding-place`'s `Hiding Place` and a few others are read for their text only; the family's own scoring columns are advisory.
+- `honeypot-agent-disguises`, `stealth-cover-hiding-place's `Hiding Place` and a few others are read for their text only; the family's own scoring columns are advisory.
 
 ### 58.6 Verification
 
@@ -6280,7 +6280,7 @@ Eight family keys, plus three the family shares with the reference pools:
 | `<hustle-street>` | the corner of the year, "the street" as a fallback |
 | `<hustle-instrument>` | the hero's instrument, "guitar" as a fallback |
 | `<hustle-box>` | the collection box, "hat" as a fallback |
-| `<victim>`, `<victim-possessive>`, `<victim-possesive>` | the mark of the card, then the indefinite-person reference pool, then "a passer-by"; the possessive form appends `'s`. The data spells the key both ways and the misspelling is folded in |
+| `<victim>`, `<victim-possessive>`, `<victim-possesive>` | the mark of the card, then the indefinite-person reference pool, then "a passer-by"; the possessive form appends 's`. The data spells the key both ways and the misspelling is folded in |
 | `<amount>` | the card's take |
 | `<item>` | the scam item of the card, remembered per card so two mentions agree |
 | `<insult>` | a row of `insults` filtered on the hero's gender, remembered per card |
@@ -6542,7 +6542,7 @@ the family's 492 distinct tokens was already answered by the port: `<rb>` (225),
 `resolve()` handles itself. The two destination keys carry "the " when the drawn destination's
 row is flagged `Uses Definite Article` / `Requires Definite Article`.
 
-Four people keys are new roles in `Sim::personName`'s whitelist (crewmate, colleague,
+Four people keys are new roles in `Sim::personName's whitelist (crewmate, colleague,
 space-director and commander), so a crewmate is a drawn name like "Duke Combs" and the card's own
 back-reference agrees with the name it printed. `<country-demonym>` occurs exactly once in the
 whole corpus - inside `probe-names` - so it is answered locally by scanning the country roster
@@ -6888,7 +6888,7 @@ The car itself is not a racing table. `a16_car-models-enc` (185 rows) carried `a
 
 The three racing stats are not in the car table; they come from a class ladder. `a16_racing-car-class-stat-enc` and `a16_racing-car-class-stats-enc` are the same three rows under two names, and the port alternates between them by `racerRank` parity so both files are drawn. A C car handles 40, a B car 60, an A car 80, an S car 95; a win promotes the hero and the new class row tops the stats up.
 
-Also drawn at eighteen: a rival racer from `a16_racing-racer-name-enc` (132 rows, First Name + Last Name), a mechanic through `personName` (the `mechanic`, `pit-crew`, `racer` and `racer-rival` roles were added to its whitelist), a sponsor from `race-sponsor` or `street-race-sponsor` weighted on `Money Score` and prefixed with `the ` when the row says so, a cup from `a16_racing-cup-name-enc` filtered on the car class, a starter track from `race-track` (bronze, weighted on `Difficulty`), a garage on `a16_racing-race-car-garage-street-name-enc` with a street type appended when the row asks for one, and a pit crew from `a16_racing-pit-crew-name-enc` (`Arya` and `Bros` into `'s Car Crew`).
+Also drawn at eighteen: a rival racer from `a16_racing-racer-name-enc` (132 rows, First Name + Last Name), a mechanic through `personName` (the `mechanic`, `pit-crew`, `racer` and `racer-rival` roles were added to its whitelist), a sponsor from `race-sponsor` or `street-race-sponsor` weighted on `Money Score` and prefixed with `the ` when the row says so, a cup from `a16_racing-cup-name-enc` filtered on the car class, a starter track from `race-track` (bronze, weighted on `Difficulty`), a garage on `a16_racing-race-car-garage-street-name-enc` with a street type appended when the row asks for one, and a pit crew from `a16_racing-pit-crew-name-enc` (`Arya` and `Bros` into 's Car Crew`).
 
 ### 75.3 The year
 
@@ -6899,13 +6899,13 @@ Also drawn at eighteen: a rival racer from `a16_racing-racer-name-enc` (132 rows
 | 0.02 | A pink slip race | `pink-slip-refusal-string` filtered on `Reason`, odds from handling, speed, acceleration, rival craziness and condition; a win pays `carValue + $5,000` and a loss takes the car and replaces it |
 | 0.03 | Someone got to my car | `rival-sabotage-string`, condition damage from `Vehicle Condition Impact`, a damaged part named |
 | 0.05 | A dirty trick | `racer-sabotage-method` - the hero sabotages the rival, `Risk Score` against professionalism, news report on success |
-| 0.05 | Pulled over | `drive-police-pull-over-color` filtered on too slow / too fast and professionalism; 0.6 of the time a `drive-police-warning`'s Log Version |
-| 0.03 | The mechanic`'s work | `bad-mechanic-color`, second person through `toFirstPerson`, -8 condition |
+| 0.05 | Pulled over | `drive-police-pull-over-color` filtered on too slow / too fast and professionalism; 0.6 of the time a `drive-police-warning's Log Version |
+| 0.03 | The mechanic's work | `bad-mechanic-color`, second person through `toFirstPerson`, -8 condition |
 | 0.06 | A new part | `race-car-mod`, the four value influences, `carMods` +1 |
-| 0.08 | A racing jacket | `racing-jacket`, a value rolled in the row`'s window |
-| 0.09 | A fan | `racing-fan-interaction` by `Is Positive` and the fan`'s gender, plus a 0.4 `fan-encouragement-string` |
+| 0.08 | A racing jacket | `racing-jacket`, a value rolled in the row's window |
+| 0.09 | A fan | `racing-fan-interaction` by `Is Positive` and the fan's gender, plus a 0.4 `fan-encouragement-string` |
 | 0.10 | A tune-up | `race-car-garage-street-name`, `300 + 40 * (100 - condition)` for 30 points |
-| 0.12 | Words with ... | `racer-insult` filtered to the hero`'s gender |
+| 0.12 | Words with ... | `racer-insult` filtered to the hero's gender |
 | 0.12 | Someone at the track | `racer-love-interest-string`, age and gender windowed |
 | 0.14 | Practice at ... | `practice-run-feedback` against the named `Best Vehicle Stat`, then a `race-car-condition-string` row windowed on condition |
 | 0.06 | A street race | street-category cars only: `street-race-cop-pivotal-moment` plus a purse |
@@ -6914,9 +6914,9 @@ Also drawn at eighteen: a rival racer from `a16_racing-racer-name-enc` (132 rows
 
 ### 75.4 The race
 
-A race draws a `race-track` row of the car`'s category and the hero`'s rank (weighted on `Difficulty`, falling back to any track of the category), names the cup and the track in an extra line, then draws a `race-pivotal-moment` row of the same race type and gender bracket and renders it as a moment with the family`'s own `racingCardRow`.
+A race draws a `race-track` row of the car's category and the hero's rank (weighted on `Difficulty`, falling back to any track of the category), names the cup and the track in an extra line, then draws a `race-pivotal-moment` row of the same race type and gender bracket and renders it as a moment with the family's own `racingCardRow`.
 
-The odds are `clamp(0.5 + (stat(Recommended Stat) - difficulty * 0.5) / 120 + (condition - 60) / 300 + (professionalism - 50) / 300 +/- 0.15 for the moment, 0.1, 0.92)`. A win pays the track`'s winnings window plus a share of the cup series row, adds a `win-race-outcome-feedback-color` line, and promotes the hero every third win up to Platinum; a loss adds a `lose-race-outcome-feedback-color` line.
+The odds are `clamp(0.5 + (stat(Recommended Stat) - difficulty * 0.5) / 120 + (condition - 60) / 300 + (professionalism - 50) / 300 +/- 0.15 for the moment, 0.1, 0.92)`. A win pays the track's winnings window plus a share of the cup series row, adds a `win-race-outcome-feedback-color` line, and promotes the hero every third win up to Platinum; a loss adds a `lose-race-outcome-feedback-color` line.
 
 ### 75.5 The tokens
 
@@ -6924,10 +6924,10 @@ Nine keys needed the family, and `racingLive_` guards the two that other familie
 
 | token | answered with |
 | --- | --- |
-| `<car>`, `<car-possessive>` | `Make Model` of the hero`'s car, `llPossessive` for the possessive |
-| `<racer>`, `<racer-possessive>` | the rival racer`'s name |
+| `<car>`, `<car-possessive>` | `Make Model` of the hero's car, `llPossessive` for the possessive |
+| `<racer>`, `<racer-possessive>` | the rival racer's name |
 | `<racer-rival>` | the same name, kept apart so a card can address the rival and the hero separately |
-| `<mechanic>` | the mechanic`'s name |
+| `<mechanic>` | the mechanic's name |
 | `<pit-crew>` | the pit crew |
 | `<passenger>` | the lover when there is one, a friend otherwise |
 | `<victim>`, `<victim-possessive>` | the rival being sabotaged; live-only, because section 60 owns `victim` |
@@ -6937,9 +6937,9 @@ Every draw is memoised per card in `racingCache_`, so a card that names the car 
 ### 75.6 The bugs
 
 1. The racing script flag. The parse block copied from `business` into `src/script.cpp` was missing its `skipWs(json, q)` call, so `findValue` landed on the whitespace before the value and every script - with or without a racing key - died on `script: racing is not a boolean`. Adding the call then failed to compile because `skipWs` takes its index by reference and the local was declared `const size_t q`.
-2. `<city>` leaked into the cup name. `a16_racing-cup-name-enc`'s `Name` cells carry inline alternatives (`<city> Alleys Cup`); the cup was stored with `trim` only. Every other family learned this the same way: a cell that is not a log column still needs `resolve()`.
+2. `<city>` leaked into the cup name. `a16_racing-cup-name-enc's `Name` cells carry inline alternatives (`<city> Alleys Cup`); the cup was stored with `trim` only. Every other family learned this the same way: a cell that is not a log column still needs `resolve()`.
 3. `<asked>`. One `racing-fan-interaction` row writes a bare `<asked>` tag where its own sibling column spells the verb out. It is the only occurrence of the tag in the whole 24,000-row corpus, so the branch replaces it with `asked` rather than teaching the resolver a word.
-4. Card voice against log voice. The moment pools have two parallel columns: `Success Feedback N` / `Failure Feedback N`, written in the second person for the card, and `Success Narrative N` / `Failure Narrative N`, written in the first person for the log. The port had the Feedback on the log line and ran it through `toFirstPerson`, which rewrites only a leading subject: `wanted you to win` became `wanted I to win`. The Feedback now stays on the card (`out.body`) and only the Narrative reaches the log. The same rule moved the win/lose outcome strings and the part`'s descriptive string onto the card.
+4. Card voice against log voice. The moment pools have two parallel columns: `Success Feedback N` / `Failure Feedback N`, written in the second person for the card, and `Success Narrative N` / `Failure Narrative N`, written in the first person for the log. The port had the Feedback on the log line and ran it through `toFirstPerson`, which rewrites only a leading subject: `wanted you to win` became `wanted I to win`. The Feedback now stays on the card (`out.body`) and only the Narrative reaches the log. The same rule moved the win/lose outcome strings and the part's descriptive string onto the card.
 5. `a16_racing-street-race-sponsor-enc` (36 rows) was in the token table but never drawn; the street-race branch now draws a backer and says so.
 
 ### 75.7 Shortcuts
@@ -6948,8 +6948,8 @@ Every draw is memoised per card in `racingCache_`, so a card that names the car 
 - One car at a time. A pink-slip loss replaces the car, but there is no second-hand market, no trade-in, no insurance and no resale value: the car is a purchase, and `carValue` is only what a pink slip pays.
 - The street-race purse is flat (`$2,000 + below(6,000)`) and no race is ever cancelled.
 - No race calendar: a race is a chance roll, not a scheduled Sunday.
-- Crew, passengers and the rival`'s gender are one coin each; the family`'s rows are written about whoever is with the hero, so `pronounOtherSet_` is on for the whole card.
-- Placeholder/empty-value guard: the mission-style `if (title.empty()) return false;` tail is kept, so a branch that forgets its title silently produces nothing - three of section 71`'s activities died this way.
+- Crew, passengers and the rival's gender are one coin each; the family's rows are written about whoever is with the hero, so `pronounOtherSet_` is on for the whole card.
+- Placeholder/empty-value guard: the mission-style `if (title.empty()) return false;` tail is kept, so a branch that forgets its title silently produces nothing - three of section 71's activities died this way.
 
 ### 75.8 Verification
 
@@ -6979,12 +6979,12 @@ Eight cards, hand-sampled:
 
     A dirty trick
       Edsel Mercury has had the better car all season.
-      Edsel Mercury`'s power steering failed.
-      I drained the power steering fluid from Edsel Mercury`'s Mitsubishi Lancer.
+      Edsel Mercury's power steering failed.
+      I drained the power steering fluid from Edsel Mercury's Mitsubishi Lancer.
 
     Someone got to my car
       The BMW 3-Series is not driving right.
-      Dented my BMW 3-Series`' steering rack.
+      Dented my BMW 3-Series' steering rack.
 
     A new part
       Blower Loop has a performance chip for the Mitsubishi Lancer. Giving you
@@ -6994,11 +6994,11 @@ Eight cards, hand-sampled:
     A street race
       ...when a police patrol car screams out of the shadows to your left.
       [Peel off to the right]
-      Belle`'s Angels put up the money for it.
+      Belle's Angels put up the money for it.
       I got away with $5,775.
 
     A tune-up
-      The car lives at Checkered Flag Boulevard with Big Dula`'s Car Crew.
+      The car lives at Checkered Flag Boulevard with Big Dula's Car Crew.
 
     Road Show
       You are idling at a streetlight in downtown Hartford when some drunk people
@@ -7007,4 +7007,4 @@ Eight cards, hand-sampled:
       I gave a ride to some drunk people from a book club wine night, and one of
       them threw up on my seat.
 
-Two data quirks worth recording: one `racing-fan-interaction` row`'s log column is a fragment with no subject (`said that me in my <car> should be on the cover of <rb> magazine`), which the port now gives a subject to; and the `race-car-condition-string` rows inside the practice pool are written from the other car`'s point of view.
+Two data quirks worth recording: one `racing-fan-interaction` row's log column is a fragment with no subject (`said that me in my <car> should be on the cover of <rb> magazine`), which the port now gives a subject to; and the `race-car-condition-string` rows inside the practice pool are written from the other car's point of view.
