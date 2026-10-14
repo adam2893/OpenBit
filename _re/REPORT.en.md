@@ -3929,3 +3929,66 @@ marriage-nags 22, ex-rekindle 13, booty-call 11, ex-hate 5, classmate-flirt 4.
 Regression with the subsystem on: `rescensus` 0 distinct residue tokens, `tools/coverage.py` 109
 captured / 107 recoverable, `portgap.py` ENTRIES 109 rendered-by-port 107 gap 0, `tools/bench.sh` to
 age 34 with no abort, and the all-109 push replay exits 0.
+## 58. The secret-agent family: one service, five kinds of job, and a briefing assembled from sixty tables
+
+The `a16_secret-agent-*` family is the largest unwired family in the shipped data: 60 tables, 1838 rows. It is not a scenario pool, it is a career: a hiring line, five kinds of job with their own briefing tables, a result table, and a shelf of agency furniture. Nine of the sixty are pure UI colour pools (`agency-front-color`, `client-mission-terminated-color`, `hack-mission-briefing-color`, `hack-mission-file-color`, `honeypot-approach-color`, `honeypot-meeting-scenario-color`, `honeypot-misssion-briefing-color` — the data's own typo — `potential-agent-background-check-color`, `stealth-alarm-color`): the port has no colour channel, so those nine stay unused by design. The other 51 are read.
+
+### 58.1 The tables
+
+The hiring and identity side: `random-hero-agency-names` 43, `rival-agency-names` 34, `code-names` 78, `mission-code-names` 47, `potential-agent-color` 37, `potential-agent-careers` 82, `agency-fronts` 16, `agency-front-names` 16, `agency-street-names` 34, `agency-gadgets` 16, `security-features` 13, `resignation-reasons` 14.
+
+The job side: `mission-target-people` 55, `mission-summary-feedback` 20, `train-scenarios` 30, `warnings` 20, `warn-agent-retorts` 21, `missing-agent-reveal-snippet` 18, `gadget-positive-snippet` 16, `gadget-negative-snippet` 48.
+
+Per type: assassination has `assassination-methods` 11, `assassination-mission-methods` 12, `assassination-locations` 10, `assassination-client-reasons` 22, `assassination-target-activities` 55, `assassination-target-opportunity-snippets` 17, `assassination-body-disposal-methods` 7, `assassination-body-disposal-locations` 7; stealth has `stealth-item-targets` 20, `stealth-mission-locations` 30, `stealth-mission-obstacles` 40, `stealth-cover-encounters` 30, `stealth-cover-hiding-place` 20, `stealth-door-noises` 17, `stealth-obstacle-stories` 29, `stealth-obstacle-assassinations` 11; honeypot has `honeypot-target-preferences` 18, `honeypot-agent-disguises` 105, `honeypot-agent-approach-style` 8, `honeypot-meeting-locations` 9, `honeypot-date-locations` 84, `honeypot-target-hobbies` 13, `honeypot-sting-actions` 33, `honeypot-sting-locations` 20; hacking has `hack-mission-file-name` 100, `hack-drive-names` 61, `infiltration-passwords` 36; intel has `spy-on-person-intel` 37 and `snoop-person-activity` 15. The client-side ambience is `distraction-random-people` 17 and `distraction-people-activities` 19.
+
+### 58.2 The career line
+
+`Hero` gained `secretAgent`, `spyAgency`, `spyCodeName`, `spySpec`, `spyProficiency` (0-100), `spyMissions`, `spyCover` and `spyAddress`. `Sim::makeSecretAgent` (src/sim.cpp) draws the agency from `random-hero-agency-names` weighted by `Commonness Score`, the code name from `code-names` (its `Gender` column is blank or [female/male], so a blank cell matches anyone) weighted the same way, the specialization from `potential-agent-color` `Specialization`, a cover job from `potential-agent-careers` `Occupation`, and turns `spyProficiency` into `20 + below(21)`. Both the agency name and the code name go through `resolve(trim(...))` before they are stored: their cells are themselves bracket templates (`<P/G/V/D>-Wagon`), and a stored raw bracket would leak into every later string that names the agent. The cover address is a house number plus a street from `agency-street-names`. The hero also gets `miscMask` bit 7, so the `a16_dumb-scenarios-secret-agent` pool rides along with the career.
+
+`Sim::spyYear` runs for a serving agent of 18 or more and fires on 35% of years. Each year is one of four things:
+
+1. **A year on the range** (25%, only while proficiency is below 80): `train-scenarios` filtered by the hero's specialization, with the drawing colleague's name substituted for `<agent-spy>` through the `spyAgentIsOther_` flag. Proficiency gains 2.
+2. **Resignation** (4%, after three missions and at proficiency 45 or more): `resignation-reasons` filtered by the hero's gender, the pronoun swapped to the first person, and the career ends — `secretAgent` off, the bit cleared, the agency behind the hero.
+3. **A job.** The type is uniform over stealth, assassination, honeypot, hacking and intel. The target comes from `mission-target-people` through the type's own flag column (`Stealth` / `Assassination` / `Honeypot`; intel tails anybody, so it takes the whole table) weighted by `Commonness Score`, and the row's `Risk Score` feeds the odds: `clamp(0.55 + proficiency/200 - risk*0.04, 0.10, 0.95)`, so a risky target is survivable only for an experienced agent. A resolved target takes an article unless the drawn text already carries one (`<his/her> mistress` does, `corrupt police officer` does not).
+4. Otherwise a mission that cannot be briefed is skipped, never rendered half-built.
+
+The briefing is then assembled from the rest of the family — this is where most of the 51 tables land:
+
+- **assassination**: "The client wants X dead. Suggested method: M. The opportunity comes at the L." The method and the result line come from `assassination-methods`, or — half the time — from `assassination-mission-methods`, which carries whole sentences in its own `Success Snippet` / `Failure Snippet` columns. On a failure the `Retaliatory String` is appended as a second beat with the pronoun forced into object position (it sits in object position in the source: "… electrocuted `<pronoun>` instead!"). `assassination-client-reasons` adds "The client says …" with a freshly drawn client's pronoun pair; `assassination-target-activities` and `assassination-target-opportunity-snippets` add the routine and the opening; `distraction-random-people` plus `distraction-people-activities` add the distraction.
+- **stealth**: the item and verb from `stealth-item-targets` (the `Verbs` cell is a comma list: steal, destroy, photograph), the venue from `stealth-mission-locations` with its article decided by the `Uses Definite/Indefinite Article` flags, then security, the obstacle, the hostile entities `stealth-cover-encounters` expects, the hiding place and the `stealth-door-noises` line that covers the noise. `stealth-obstacle-stories` supplies the cover story told to that obstacle, with the obstacle's own pronoun pair drawn with it.
+- **honeypot**: the mark's weak spot from `honeypot-target-preferences` (weighted by `Turn-On Commonness`), the meeting place from `honeypot-meeting-locations`, an approach from `honeypot-agent-approach-style`, a date location, and the sting from `honeypot-sting-actions` followed by `honeypot-sting-locations`. Every mark-facing string is swapped to the mark's own pronoun before it is resolved, because the target draw assumes the mark is the opposite sex.
+- **hacking**: "Pull the <name> <file type> file off the <drive> drive and leave no trace." from `hack-mission-file-name` and `hack-drive-names`, plus the `infiltration-passwords` hint ("The password hints at X, not Y." — both cells are comma lists).
+- **intel**: "Tail X." plus a `spy-on-person-intel` snippet and a `snoop-person-activity` line, both filtered to the opposite gender from the hero.
+- **the result line**: `mission-summary-feedback` filtered by `Mission Type`, the success/failure flag, and the `Min/Max Agent Proficiency` window — a fresh agent literally cannot draw the veteran's line. It becomes the event's narrative. `gadget-positive-snippet` (on success) or `gadget-negative-snippet` (filtered by `Incorrect Mission Type`, on failure) adds the issued gadget; a successful assassination adds a `assassination-body-disposal-methods` and `…-locations` sentence; a failed one can add a rival agency from `rival-agency-names` or a `missing-agent-reveal-snippet` sighting; a botched sneak job on a guard adds `stealth-obstacle-assassinations`; and every so often a warning goes down the chain — `warnings` plus the colleague's `warn-agent-retorts` answer.
+
+The event table is the drawn feedback row when there is one, and otherwise `mission-summary-feedback` (or `spy-on-person-intel` for intel, which has no feedback rows of its own). The title is `mission-code-names` rendered as "Operation <adjective> <noun>".
+
+### 58.3 The tokens
+
+`spyToken` maps the family's vocabulary: `agent-spy` is the hero's code name — or the colleague's drawn name while `spyAgentIsOther_` is set, which is how the same token serves both `train-scenarios` (where it is the trainee) and `assassination-methods` (where it is the killer); `client-spy` / `client` / `victim` are a drawn name, with `victim` preferring the drawn target; `target` and `target-assassination` are the mission target; `agency`, `code-name`, `specialization`, `cover`, `front`, `agency-rival`, `gadget` (filtered by the hero's specialization, with the `Plural` flag appending an s), `password`, `disguise` (gender-matched), `operation`, `color`, `pronoun`, `friend` and the three name forms. `front` is built from `agency-fronts` and `agency-front-names`: the row's `Format` cell is itself a template (`<city> <suffix>, <color> <suffix>, <random-first-name-possessive> <suffix>`), so the pieces are filled in and any bracket that no piece claims is dropped.
+
+Pronouns inside mission rows always speak with the hero's gender, because the missions are the hero's own career; the two exceptions (`client-reasons`, `obstacle-stories`, `warnings`, `warn-agent-retorts`, the honeypot mark) set `pronounOtherSet_` / `pronounOtherFemale_` around the `resolve` call and restore the pair afterwards, so the runner does not drift for the rest of the year.
+
+### 58.4 Wiring
+
+`include/bl/script.h` carries `bool spy`, parsed from the script's `"spy"` key and passed to `Sim::makeSecretAgent` beside `makeRelationships`. `renderRow` clears `spyCache_` and `spyAgentIsOther_` next to the relationship name cache, so a card cannot inherit the previous card's agent. All rolling uses its own `spyRng_` (`seed ^ 0x7f4a7c15d1b54a3dULL`), which keeps the main sequence unshifted — the same rule every earlier subsystem follows.
+
+### 58.5 Shortcuts
+
+- `spyProficiency` is the only skill model: no training costs, no promotion ladder, no pay, no agency politics.
+- The mission roll ignores the client, the calendar and the country; every serving agent works every type.
+- `mission-target-people` rows carry `Use Indefinite/Definite Article` and `Commonness Score` columns; the article is chosen by the port's `articleFor` and the row by `Commonness Score` alone.
+- `warnings` has a `Risk Score` column and `warn-agent-retorts` has `Min/Max Proficiency` windows; both are ignored and the rows are drawn uniform.
+- `resignation-reasons` writes the agent in the third person, so its pronouns are swapped to the first person before rendering.
+- `assassination-body-disposal-methods` ends its snippets on a possessive ("buried `<victim-possessive>`"), so joined with a location the sentence reads "I buried a prostitute's in a landfill" — the data's own shape, kept as shipped rather than rewritten.
+- The nine colour pools are unused by design.
+- `honeypot-agent-disguises`, `stealth-cover-hiding-place`'s `Hiding Place` and a few others are read for their text only; the family's own scoring columns are advisory.
+
+### 58.6 Verification
+
+The check is the `spy` script key over seeds 1-30 in both genders, ages 60, collecting every event whose table starts with `a16_secret-agent` and scanning title, body and log lines for stray brackets: **567 spy events, residue 0**. The rest of the regression suite is unchanged: `rescensus` reports `distinct residue tokens 0`, `coverage.py` 109 captured / 107 recoverable, `portgap.py` ENTRIES 109 / rendered-by-port 107 / gap 0, `bench.sh` reaches age 34 with no abort, and the 109-slot push script exits 0. A sample assassination reads:
+
+> The client wants a corrupt judge dead. Suggested method: Strangle Them. The opportunity comes at the library. The client says he has it coming and only has himself to blame. The target is usually tossing bread crumbs to some ducks at the local park. Best opening: In his own little world. Distraction: a shifty-looking Instagram model, playing with her hair and glancing over at him.
+
+and its log: "Darknight strangled a corrupt judge with some packing tape! My banana taser let me send 50,000 volts through a corrupt judge's leg. I used acid to dissolve a corrupt judge's body in a landfill."
+

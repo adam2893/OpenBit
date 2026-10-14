@@ -126,6 +126,7 @@ class Sim {
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
+  void makeSecretAgent(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -234,6 +235,18 @@ class Sim {
   std::string miscToken(const std::string& key);
   bool miscPoolYear(Life& life, AgeUp& out, int forcedChoice);
   std::string relationshipToken(const std::string& key);
+  // The secret-agent mission pools (report 58): one mission per year, its
+  // briefing built from the type's own tables and its outcome from
+  // a16_secret-agent-mission-summary-feedback-enc.
+  bool spyYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string spyToken(const std::string& key);
+  std::string spyFrontName(const std::string& businessType);
+  size_t spyRow(const std::string& table, const std::string& weightColumn,
+                const std::string& filterColumn, const std::string& filterValue,
+                const std::string& flagColumn);
+  std::string spySnippet(const std::string& table, const std::string& column,
+                         const std::string& weightColumn, const std::string& filterColumn,
+                         const std::string& filterValue, const std::string& flagColumn);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
   bool relEligible(const Table& t, size_t row, const Life& life) const;
   void ensureOfficeFields(Life& life);
@@ -288,6 +301,11 @@ class Sim {
   Rng politicsRng_;
   Rng miscRng_;
   Rng relRng_;
+  Rng spyRng_;
+  std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
+  std::string spyColleague_;   // the other agent a train/warning row names
+  bool spyAgentIsOther_ = false;
+  std::map<std::string, std::string> spyCache_;  // one name per token per card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

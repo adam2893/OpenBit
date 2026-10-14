@@ -134,6 +134,17 @@ struct Hero {
   std::string office;         // that country's title for the level
   std::string jurisdiction;   // what '<jurisdiction>' prints
   std::string jurisdictionAdj;  // its adjective: national / provincial / city / local
+  // Secret agent (REPORT.en.md 58). a16_secret-agent-random-hero-agency-names-enc
+  // names the agency, a16_secret-agent-code-names-enc the code name (gender
+  // filtered), a16_secret-agent-potential-agent-color-enc the specialization.
+  bool secretAgent = false;
+  std::string spyAgency;
+  std::string spyCodeName;
+  std::string spySpec;         // assassination / stealth / honeypot / hacking
+  int spyProficiency = 0;      // 0-100, the gate on mission-summary-feedback
+  int spyMissions = 0;
+  std::string spyCover;        // the day job that hides the service
+  std::string spyAddress;      // the front's street address
   // Bit i = the misc dumb-scenario pool i is switched on (REPORT.en.md 56).
   unsigned miscMask = 0;
   // Relationship state (REPORT.en.md 57). The pools in the lover family gate
