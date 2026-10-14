@@ -126,6 +126,14 @@ struct Hero {
   // Recording artist (REPORT.en.md 54). a16_music-genres-enc names the genre,
   // a16_music-names-albums-enc and a16_music-names-songs-enc the works (both
   // carry per-genre flag columns), a16_music-names-bands-enc the band.
+  // Elected office (REPORT.en.md 55). a16_country-political-systems-enc holds,
+  // per country, which office levels exist and what each level is called
+  // ('president', 'prime minister', 'mayor'), plus the noun for its region.
+  bool politician = false;
+  std::string officeLevel;    // national / regional / city / local
+  std::string office;         // that country's title for the level
+  std::string jurisdiction;   // what '<jurisdiction>' prints
+  std::string jurisdictionAdj;  // its adjective: national / provincial / city / local
   bool musician = false;
   std::string musicGenre;  // a16_music-genres-enc 'Genre'
   std::string bandName;    // a16_music-names-bands-enc 'Title'

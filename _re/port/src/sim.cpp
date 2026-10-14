@@ -569,7 +569,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL),
       sportsRng_(seed ^ 0x94d049bb133111ebULL),
       bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
-      musicRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xa0761d6478bd642fULL) {}
+      musicRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xa0761d6478bd642fULL),
+      politicsRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -585,6 +586,9 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_dumb-scenarios-political-campaign-enc",
+    "a16_dumb-scenarios-political-office-enc",
+    "a16_country-political-systems-enc",
     "a16_dumb-scenarios-album-enc",
     "a16_dumb-scenarios-music-enc",
     "a16_music-names-bands-enc",
@@ -1003,6 +1007,14 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "facility-singular" || token == "facility-multiple" ||
                token == "product") {
       const std::string v = businessToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
+    } else if (token == "jurisdiction" || token == "jurisdiction-possessive" ||
+               token == "political-office" || token == "political-office-possessive" ||
+               token == "opponent" || token == "opponent-possessive" ||
+               token == "country-other-possessive" ||
+               token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
+      const std::string v = politicalToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else out += v;
     } else if (token == "album-title" || token.compare(0, 10, "song-title") == 0 ||
@@ -1861,6 +1873,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (sportsYear(life, out, forcedChoice)) return true;
   if (businessYear(life, out, forcedChoice)) return true;
   if (musicYear(life, out, forcedChoice)) return true;
+  if (politicalYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2770,6 +2783,145 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
 // titles tables carry one flag column per genre, so the genre picks the album,
 // the song and the band. Album titles and stage names carry <a/b/c> alternates
 // and <hero-name> slots, both handled by re-resolving the drawn title.
+// ---------------------------------------------------------------------------
+// Elected office (REPORT.en.md 55). a16_country-political-systems-enc is the
+// only place the game says what each country calls its offices, so the hero's
+// country picks the row, its availability flags pick the level, and the level's
+// Title column picks the office. The pool then gates itself on US Only /
+// UK Only / National / Regional / City / Local, which the port can honour
+// exactly because it knows both the country code and the level.
+// The office fields are needed by the campaign pool too - a candidate is asking
+// for votes for an office they do not hold yet - so they are drawn on demand.
+void Sim::ensureOfficeFields(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_country-political-systems-enc");
+  if (!t.size()) return;
+  size_t row = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (lower(trim(t.at(r, "Country"))) == lower(h.country)) { row = r; break; }
+  }
+  if (row == size_t(-1)) return;
+  struct Level { const char* key; const char* flag; const char* title; };
+  const Level levels[4] = {{"national", "National Office Available", "Title National"},
+                           {"regional", "Regional Office Available", "Title Regional"},
+                           {"city", "City Office Available", "Title City"},
+                           {"local", "Local Office Available", "Title Local"}};
+  std::vector<Level> open;
+  for (const Level& lv : levels) {
+    if (t.has(lv.flag) && t.flag(row, lv.flag) && t.has(lv.title) &&
+        !trim(t.at(row, lv.title)).empty())
+      open.push_back(lv);
+  }
+  if (open.empty()) return;
+  const Level pick = open[politicsRng_.below(uint32_t(open.size()))];
+  h.officeLevel = pick.key;
+  // '<jurisdiction>' is the place the office covers: the country itself at the
+  // national level, the country's own word for its regions at the regional one
+  // ('state', 'province'), the hero's city, or the neighbourhood.
+  // The templates say 'your <jurisdiction>', so the slot is the level's noun
+  // rather than a place name: 'your country', 'your state', 'your city'.
+  // The regional noun is the country's own word for its regions.
+  if (h.officeLevel == "national") h.jurisdiction = "country";
+  else if (h.officeLevel == "regional")
+    h.jurisdiction = t.has("Region Jurisdiction") ? trim(t.at(row, "Region Jurisdiction")) : std::string("state");
+  else if (h.officeLevel == "city") h.jurisdiction = "city";
+  else h.jurisdiction = "neighborhood";
+  if (h.jurisdiction.empty()) h.jurisdiction = "country";
+  // '<jurisdiction adjective>' is the same level as an adjective: the country
+  // table carries the region's own word ('provincial' for a province).
+  if (h.officeLevel == "national") h.jurisdictionAdj = "national";
+  else if (h.officeLevel == "regional")
+    h.jurisdictionAdj = t.has("Region Jurisdiction Adjective")
+                            ? trim(t.at(row, "Region Jurisdiction Adjective"))
+                            : std::string("regional");
+  else if (h.officeLevel == "city") h.jurisdictionAdj = "city";
+  else h.jurisdictionAdj = "local";
+  if (h.jurisdictionAdj.empty()) h.jurisdictionAdj = h.officeLevel;
+  // The title column itself carries the token: the region's office is written
+  // '<jurisdiction adjective> governor' (or 'mayor', 'premier'), so it is
+  // resolved once the level's adjective is known. The guard in politicalToken
+  // is ordered so that this lookup does not need the office to exist yet.
+  h.office = resolve(trim(t.at(row, pick.title)));
+}
+
+void Sim::makePolitician(Life& life) {
+  ensureOfficeFields(life);
+  if (life.hero.office.empty()) return;
+  life.hero.politician = true;
+}
+
+std::string Sim::politicalToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  std::string office = h.office;
+  std::string juris = h.jurisdiction;
+  std::string jurisAdj = h.jurisdictionAdj;
+  if (office.empty() && life_) {
+    ensureOfficeFields(*const_cast<Life*>(life_));
+    office = hero_->office;
+    juris = hero_->jurisdiction;
+    jurisAdj = hero_->jurisdictionAdj;
+  }
+  const std::string psuffix = "-possessive";
+  const bool possessive =
+      token.size() > psuffix.size() &&
+      token.compare(token.size() - psuffix.size(), psuffix.size(), psuffix) == 0;
+  const std::string key = possessive ? token.substr(0, token.size() - psuffix.size()) : token;
+  if (key == "country-other") return heroToken("country-other", possessive);
+  if (key == "opponent") {
+    const std::string name = drawFirstName(politicsRng_.chance(0.5)) + " " + drawSurname();
+    return possessive ? name + "'s" : name;
+  }
+  if (key == "jurisdiction") return possessive ? juris + "'s" : juris;
+  if (key == "jurisdiction adjective" || key == "jurisdiction-adjective") return jurisAdj;
+  // The office itself is only needed for these two keys, so the guard sits here
+  // and not above: the title column's own '<jurisdiction adjective>' token is
+  // resolved while the office string is still being built.
+  if (office.empty()) return std::string();
+  if (key == "political-office") return possessive ? office + "'s" : office;
+  if (key == "opponent") {
+    const std::string name = drawFirstName(politicsRng_.chance(0.5)) + " " + drawSurname();
+    return possessive ? name + "'s" : name;
+  }
+  return std::string();
+}
+
+bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 18) return false;
+  // The campaign pool runs whether or not the hero holds office; the office
+  // pool needs the office. Both take the same coin.
+  const bool campaign = !h.politician || politicsRng_.chance(0.5);
+  const char* pool = campaign ? "a16_dumb-scenarios-political-campaign-enc"
+                              : "a16_dumb-scenarios-political-office-enc";
+  if (!h.politician && !politicsRng_.chance(0.25)) return false;
+  if (!ensureTable(pool)) return false;
+  if (!politicsRng_.chance(0.4)) return false;
+  const Table& t = tbl(pool);
+  std::string ccode;
+  for (const Country& c : countries_) {
+    if (lower(c.name) == lower(h.country)) { ccode = lower(c.code); break; }
+  }
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.flag(r, "US Only") && ccode != "us") continue;
+    if (t.flag(r, "UK Only") && ccode != "gb" && ccode != "uk") continue;
+    if (h.politician) {
+      if (t.flag(r, "National") && h.officeLevel != "national") continue;
+      if (t.flag(r, "Regional") && h.officeLevel != "regional") continue;
+      if (t.flag(r, "City") && h.officeLevel != "city") continue;
+      if (t.flag(r, "Local") && h.officeLevel != "local") continue;
+    }
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  return renderRow(t, rows[politicsRng_.below(uint32_t(rows.size()))], life, out, forcedChoice);
+}
+
 void Sim::makeMusician(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -2910,8 +3062,11 @@ std::string Sim::businessName(const std::string& industry) {
 std::string Sim::businessToken(const std::string& token) {
   if (!hero_) return std::string();
   const Hero& h = *hero_;
-  const bool possessive = token.size() > 10 && token.compare(token.size() - 10, 10, "-possessive") == 0;
-  const std::string key = possessive ? token.substr(0, token.size() - 10) : token;
+  const std::string psuffix = "-possessive";
+  const bool possessive =
+      token.size() > psuffix.size() &&
+      token.compare(token.size() - psuffix.size(), psuffix.size(), psuffix) == 0;
+  const std::string key = possessive ? token.substr(0, token.size() - psuffix.size()) : token;
   if (key == "employee" || key == "competitor") {
     const std::string who = key == "competitor" ? businessName(std::string()) : std::string();
     const std::string name = who.empty()

@@ -124,6 +124,7 @@ class Sim {
   void makeAthlete(Life& life);
   void makeBusiness(Life& life);
   void makeMusician(Life& life);
+  void makePolitician(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -226,6 +227,9 @@ class Sim {
   bool sportsYear(Life& life, AgeUp& out, int forcedChoice);
   bool businessYear(Life& life, AgeUp& out, int forcedChoice);
   bool musicYear(Life& life, AgeUp& out, int forcedChoice);
+  bool politicalYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string politicalToken(const std::string& token);
+  void ensureOfficeFields(Life& life);
   std::string musicToken(const std::string& token);
   std::string musicTitle(const char* table, const std::string& genre);
   std::string businessToken(const std::string& token);
@@ -274,6 +278,7 @@ class Sim {
   Rng sportsRng_;
   Rng bizRng_;
   Rng musicRng_;
+  Rng politicsRng_;
   std::vector<std::string> warCountries_;  // the three countries one war row names
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;

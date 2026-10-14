@@ -3646,3 +3646,92 @@ they appear as a family rather than one repeated token.
 - No angle-bracket token survives in a music run (0 residual of ~170 checked strings per seed, three
   seeds); residue census 0; {B}tools/coverage.py{B} 109 / 107; {B}portgap.py{B} 109 / 107 / gap 0;
   {B}tools/bench.sh{B} to age 34 with no abort; all-109 push replay exits 0.
+## 55. The politics pool: an office drawn per country, and a title that holds a token
+
+### 55.1 What the tables hold
+
+`a16_country-political-systems-enc` is 102 rows, one per country. Each row declares which of four
+levels the country actually elects - National Office Available, Regional Office Available, City
+Office Available, Local Office Available - and gives the office title for each: Title National,
+Title National Adjective, Title Regional, Title Regional Adjective, Title Regional Specific, Title
+City, Title Local. Two more columns describe the region the office sits in: Region Jurisdiction
+(the noun, e.g. province, state, prefecture) and Region Jurisdiction Adjective (provincial, state,
+prefectural).
+
+The title column is where this table stops being a lookup. Afghanistan and Algeria are not the
+exception: Title Regional reads `<jurisdiction adjective> governor` for most countries, and only a
+minority spell the office out (`mayor`, `premier`, `governor`). The value the game stores is
+therefore a string that still has to be resolved, and the row that resolves it is the same row that
+supplies the jurisdiction adjective. The port resolves the title after the level is known rather
+than storing the raw cell.
+
+Two pools render the token names back into prose. `a16_dumb-scenarios-political-office-enc` (90
+rows) is the officeholder's life: a corruption rumour, a veto, a state dinner. `a16_dumb-scenarios-
+political-campaign-enc` (64 rows) is the candidate's: a smear, a debate, a rally. Both are gated:
+US Only, UK Only, and one flag per level (National / Regional / City / Local) pick which pool rows a
+given country and office can use, and Hero Gender / Hero Has Lover / Lover Gender gate the personal
+rows. Counter per pool file, over both pools: `<jurisdiction>` is by far the most common at 29
+occurrences in the campaign pool alone, then `<jurisdiction-possessive>` 13, `<opponent-possessive>`
+11, `<political-office>` 5, `<opponent>` 4, and single hits of `<country-other>`,
+`<country-other-possessive>`, `<num10-25>` and `<num5000-10000>`. `<jurisdiction adjective>`
+appears five times - and not in either pool file, but inside the country table's Title Regional cell,
+which is why it reaches a rendered line even though neither pool names it.
+
+### 55.2 What the port does
+
+- `Hero` (`include/bl/game.h`) gains `politician`, `officeLevel`, `office`,
+  `jurisdiction` and `jurisdictionAdj`.
+- `Sim::ensureOfficeFields` (src/sim.cpp:2795) draws the campaign from the country row: it walks the
+  four `* Office Available` flags in level order, picks one of the available levels, then sets the
+  jurisdiction noun from Region Jurisdiction (`country`, or `city` / `neighborhood` when the
+  column is empty, never an empty token), the jurisdiction adjective from the new column, and only
+  then resolves the title cell, so `<jurisdiction adjective> governor` becomes `provincial
+  governor` using the adjective that was just drawn.
+- `Sim::makePolitician` (src/sim.cpp:2849) is `ensureOfficeFields` plus `politician = true` - the
+  two are split because a candidate asking for votes holds nothing yet but still needs both the
+  office and the jurisdiction named.
+- `Sim::politicalToken` (src/sim.cpp:2855) resolves `jurisdiction`, `jurisdiction-possessive`,
+  `jurisdiction adjective` (the pool's space spelling and the hyphen spelling both land here),
+  `political-office`, `political-office-possessive`, `opponent`, `opponent-possessive`,
+  `country-other` and `country-other-possessive`. The opponent is a fresh name from the port's
+  pools drawn on its own stream; `country-other` reuses `heroToken` so the rival country is not
+  the hero's own.
+- `Sim::politicalYear` (src/sim.cpp:2891) runs from 18. A hero who holds no office has a 25% chance
+  of a campaign row (the campaign pool); a politician on 40% of years renders one of the two pools,
+  picking between office and campaign on the same `politicsRng_` stream.
+- `resolveInto` (src/sim.cpp:1012) takes the whole token family, including the spaced spelling.
+- `include/bl/script.h` / `src/script.cpp`: the `"politics"` boolean, parsed and applied like
+  `"business"` and `"music"`.
+- A campaign row renders while the hero still holds nothing, so the port draws the office on demand
+  from `politicalToken` (`ensureOfficeFields` on the const-cast `life_*`) instead of leaving the
+  row half-rendered; the office guard sits below the jurisdiction keys so the title's own token can be
+  resolved while the title is still being built.
+
+### 55.3 Shortcuts
+
+1. The gate is the script switch; the game reaches the pools through the Politics menu and its
+   campaign.
+2. `US Only` / `UK Only` and the four level flags are not evaluated, so a country that elects no
+   regional office can still be handed a regional campaign row.
+3. `Hero Has Lover` / `Lover Gender` are not evaluated; `<num5000-10000>` campaign donations and
+   `<num10-25>` slush amounts come from the generic number pools, not from any finance model.
+4. Elections are never held: a politician stays in the same office for life, there is no term, no
+   approval rating and no loss.
+5. The title cell is resolved with the drawn adjective, but the country table's Title National
+   Adjective / Title Regional Adjective / Title City columns (which hold words like presidential)
+   are not otherwise used, since the pool text only ever asks for the `<jurisdiction adjective>`
+   spelling.
+6. Only the two dumb-scenario pools are wired - `a16_political-*` careers, the ballot and the
+   campaign-finance family are not.
+
+### 55.4 Verification
+
+- Three seeds over United States, India and the United Kingdom: 0 angle-bracket tokens survive in
+  the office and campaign rows, before the fixes 18 did; residue census 0 distinct tokens;
+  `tools/coverage.py` 109 / 107; `portgap.py` 109 / 107 / gap 0; `tools/bench.sh` to age 34 with no
+  abort; all-109 push replay exits 0.
+- Two bugs of the same shape as the war-token one were found and fixed here: `compare(size - 10, 10,
+  "-possessive")` never matches an 11-character suffix, so every possessive token in the business and
+  politics pools was leaking its raw token, and the same offset was used to cut the key
+  (`token.substr(0, token.size() - 10)`). Both now go through `psuffix.size()`.
+
