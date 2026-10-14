@@ -567,7 +567,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       vampireRng_(seed ^ 0x27d4eb2f165667c5ULL),
       militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL),
       careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL),
-      sportsRng_(seed ^ 0x94d049bb133111ebULL) {}
+      sportsRng_(seed ^ 0x94d049bb133111ebULL),
+      bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -583,6 +584,10 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_dumb-scenarios-business-enc",
+    "a16_business-name-structure-enc",
+    "a16_business-products-enc",
+    "a16_business-industries-enc",
     "a16_sports-enc",
     "a16_sports-leagues-enc",
     "a16_sports-teams-enc",
@@ -986,6 +991,13 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (token == "employee" || token == "employee-possessive" ||
+               token == "competitor" || token == "competitor-possessive" ||
+               token == "facility-singular" || token == "facility-multiple" ||
+               token == "product") {
+      const std::string v = businessToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
     } else if (token == "sport" || token == "league" || token == "team" ||
                token == "teammate" || token == "coach" || token == "ball" ||
                token == "referee" || token == "game" || token == "field" ||
@@ -1835,6 +1847,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
+  if (businessYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2734,6 +2747,147 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
 // official and the game; a16_sports-leagues-enc and a16_sports-teams-enc give
 // the league and club (team names carry <a/b/c> alternates), and
 // a16_sports-positions-enc the position for that sport.
+// ---------------------------------------------------------------------------
+// Business owner (REPORT.en.md 53). The pool is a16_dumb-scenarios-business-enc
+// (168 rows) and it gates itself with Industry Whitelist / Industry Blacklist,
+// Requires Single Facility / Requires Multiple Facilities and Business Size, so
+// the hero needs exactly one new state: which industry the business is in.
+void Sim::makeBusiness(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_business-industries-enc")) return;
+  const Table& t = tbl("a16_business-industries-enc");
+  if (!t.size()) return;
+  h.industry = trim(t.at(bizRng_.below(uint32_t(t.size())), "Industry"));
+  if (h.industry.empty()) return;
+  h.ownsBusiness = true;
+}
+
+// A rival's name, using the same mechanical Format/Prefix/Suffix substitution as
+// companyName() but reading a16_business-name-structure-enc.
+std::string Sim::businessName(const std::string& industry) {
+  if (!ensureTable("a16_business-name-structure-enc")) return std::string();
+  const Table& st = tbl("a16_business-name-structure-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < st.size(); ++r) {
+    if (industry.empty() || lower(trim(st.at(r, "Industry"))) == lower(industry)) pool.push_back(r);
+  }
+  if (pool.empty()) {
+    for (size_t r = 0; r < st.size(); ++r) pool.push_back(r);
+  }
+  if (pool.empty()) return std::string();
+  const size_t row = pool[bizRng_.below(uint32_t(pool.size()))];
+  const auto pickList = [this](const std::string& list) {
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    return parts.empty() ? std::string() : trim(parts[bizRng_.below(uint32_t(parts.size()))]);
+  };
+  const auto replaceAll = [](std::string s, const std::string& from, const std::string& to) {
+    if (from.empty() || to.empty()) return s;
+    for (size_t at = s.find(from); at != std::string::npos; at = s.find(from, at + to.size()))
+      s.replace(at, from.size(), to);
+    return s;
+  };
+  std::string fmt = trim(st.at(row, "Predefined"));
+  if (fmt.empty()) fmt = pickList(st.at(row, "Format"));
+  if (fmt.empty()) return std::string();
+  if (fmt.find("<color>") != std::string::npos && ensureTable("a16_company-name-color-enc")) {
+    const Table& colors = tbl("a16_company-name-color-enc");
+    if (colors.size())
+      fmt = replaceAll(fmt, "<color>", trim(colors.at(bizRng_.below(uint32_t(colors.size())), "Color")));
+  }
+  if (fmt.find("<suffix>") != std::string::npos) fmt = replaceAll(fmt, "<suffix>", pickList(st.at(row, "Suffix")));
+  if (fmt.find("<prefix>") != std::string::npos) fmt = replaceAll(fmt, "<prefix>", pickList(st.at(row, "Prefix")));
+  if (fmt.find("<city>") != std::string::npos) fmt = replaceAll(fmt, "<city>", hero_ ? hero_->city : std::string());
+  if (fmt.find("<random-first-name-possessive>") != std::string::npos)
+    fmt = replaceAll(fmt, "<random-first-name-possessive>", drawFirstName(bizRng_.chance(0.5)) + "'s");
+  if (fmt.find("<random-first-name>") != std::string::npos)
+    fmt = replaceAll(fmt, "<random-first-name>", drawFirstName(bizRng_.chance(0.5)));
+  if (fmt.find("<random-surname>") != std::string::npos) fmt = replaceAll(fmt, "<random-surname>", drawSurname());
+  // Anything still unfilled (an unknown bracket) is dropped rather than printed.
+  std::string clean;
+  for (size_t i = 0; i < fmt.size(); ++i) {
+    if (fmt[i] == '<') {
+      const size_t close = fmt.find('>', i);
+      if (close != std::string::npos) { i = close; continue; }
+    }
+    clean += fmt[i];
+  }
+  while (!clean.empty() && clean.find("  ") != std::string::npos) clean.replace(clean.find("  "), 2, " ");
+  return trim(clean);
+}
+
+std::string Sim::businessToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  const bool possessive = token.size() > 10 && token.compare(token.size() - 10, 10, "-possessive") == 0;
+  const std::string key = possessive ? token.substr(0, token.size() - 10) : token;
+  if (key == "employee" || key == "competitor") {
+    const std::string who = key == "competitor" ? businessName(std::string()) : std::string();
+    const std::string name = who.empty()
+                                 ? drawFirstName(bizRng_.chance(0.5)) + " " + drawSurname()
+                                 : who;
+    return possessive ? name + "'s" : name;
+  }
+  if (!h.ownsBusiness) return std::string();
+  if (!ensureTable("a16_business-industries-enc")) return std::string();
+  const Table& ind = tbl("a16_business-industries-enc");
+  if (key == "facility-singular" || key == "facility-multiple") {
+    const char* col = key == "facility-singular" ? "Facility Name" : "Facility Name Plural";
+    for (size_t r = 0; r < ind.size(); ++r) {
+      if (lower(trim(ind.at(r, "Industry"))) == lower(h.industry) && ind.has(col))
+        return trim(ind.at(r, col));
+    }
+    return std::string();
+  }
+  if (key == "product") {
+    if (!ensureTable("a16_business-products-enc")) return std::string();
+    const Table& prod = tbl("a16_business-products-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < prod.size(); ++r) {
+      if (lower(trim(prod.at(r, "Industry"))) == lower(h.industry)) pool.push_back(r);
+    }
+    if (pool.empty()) return std::string();
+    const std::string list = prod.at(pool[bizRng_.below(uint32_t(pool.size()))], "Product");
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    if (parts.empty()) return std::string();
+    return trim(parts[bizRng_.below(uint32_t(parts.size()))]);
+  }
+  return std::string();
+}
+
+bool Sim::businessYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsBusiness) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 18) return false;
+  if (!ensureTable("a16_dumb-scenarios-business-enc")) return false;
+  if (!bizRng_.chance(0.4)) return false;
+  const Table& t = tbl("a16_dumb-scenarios-business-enc");
+  const auto listHas = [](const std::string& list, const std::string& want) {
+    if (trim(list).empty()) return false;
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    for (std::string& p : parts)
+      if (lower(trim(p)) == want) return true;
+    return false;
+  };
+  const std::string mine = lower(trim(h.industry));
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.has("Hero Min Age") && h.age < int(t.num(r, "Hero Min Age"))) continue;
+    if (t.has("Industry Whitelist") && !trim(t.at(r, "Industry Whitelist")).empty() &&
+        !listHas(t.at(r, "Industry Whitelist"), mine)) continue;
+    if (t.has("Industry Blacklist") && listHas(t.at(r, "Industry Blacklist"), mine)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  return renderRow(t, pool[bizRng_.below(uint32_t(pool.size()))], life, out, forcedChoice);
+}
+
 void Sim::makeAthlete(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;

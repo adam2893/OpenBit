@@ -122,6 +122,7 @@ class Sim {
   void makeVampire(Life& life);
   void makeMilitary(Life& life);
   void makeAthlete(Life& life);
+  void makeBusiness(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -222,6 +223,9 @@ class Sim {
   bool militaryYear(Life& life, AgeUp& out, int forcedChoice);
   bool careerYear(Life& life, AgeUp& out, int forcedChoice);
   bool sportsYear(Life& life, AgeUp& out, int forcedChoice);
+  bool businessYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string businessToken(const std::string& token);
+  std::string businessName(const std::string& industry);
   std::string sportsToken(const std::string& token);
   std::string warToken(const std::string& token);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
@@ -264,6 +268,7 @@ class Sim {
   Rng militaryRng_;
   Rng careerRng_;
   Rng sportsRng_;
+  Rng bizRng_;
   std::vector<std::string> warCountries_;  // the three countries one war row names
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;

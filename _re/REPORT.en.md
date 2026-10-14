@@ -3520,3 +3520,67 @@ the sports words were new; the rest already existed.
 - Seed 4242: 18 {B}GOATs{B}, 20/23 {B}Fair Trade{B} with {B}<stadium>{B} resolved.
 - Unchanged: residue census 0 tokens, {B}tools/coverage.py{B} 109 / 107, {B}portgap.py{B}
   109 / 107 / gap 0, {B}tools/bench.sh{B} to age 34 with no abort, all-109 push replay exits 0.
+
+## 53. The business pool: an industry, its facilities and its rivals
+
+### 53.1 The tables
+
+- {B}a16_business-industries-enc{B} - 25 rows, {B}Industry, Country Whitelist, Country Blacklist, Product
+  Launch Cost, Facility Name, Facility Name Plural, ...{B}. The singular/plural pair is what the pool
+  prints as {B}<facility-singular>{B} / {B}<facility-multiple>{B} ('brewery' / 'breweries'), which is why
+  the card talks about your stores, your factories or your offices depending only on the industry.
+- {B}a16_business-products-enc{B} - 282 rows, {B}Industry, Product, Product Name Base, Unit, Unit Plural,
+  Avg Unit Price, ...{B}. {B}Product{B} is a comma-separated list per industry, so {B}<product>{B} draws one
+  entry from the list.
+- {B}a16_business-name-structure-enc{B} - 25 rows, {B}Industry, Format, Prefix, Suffix, Predefined{B} - the
+  rival names. Format is the same mechanical template as the company names in section 37
+  ({B}<city> <suffix>, <color> <suffix>, <random-first-name-possessive> <suffix>{B}).
+- {B}a16_business-product-names-enc{B} - 260 rows, {B}Specific Industry, Specific Product, Format,
+  Commonness Score, Hero Owns Company{B}; loaded, but the port's {B}<product>{B} currently draws from
+  {B}a16_business-products-enc{B} instead.
+
+{B}a16_dumb-scenarios-business-enc{B} is 168 rows and gates itself harder than any pool so far:
+{B}Industry Whitelist{B}, {B}Industry Blacklist{B}, {B}Requires Single Facility{B},
+{B}Requires Multiple Facilities{B} and {B}Business Size{B} sit beside the usual age and gender columns.
+Its tokens are {B}<employee>{B} 277, {B}<rb>{B} 109, {B}<facility-singular>{B} 89, {B}<product>{B} 53,
+{B}<employee-possessive>{B} 29, {B}<competitor-possessive>{B} 28, {B}<facility-multiple>{B} 13,
+{B}<insult>{B} 13, {B}<country-other>{B} 7, {B}<competitor>{B} 5 - five of them new.
+
+### 53.2 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::ownsBusiness, Hero::industry{B}.
+- {B}src/sim.cpp{B}: stream {B}bizRng_{B} (line 571); {B}Sim::makeBusiness{B} (line 2755) draws one industry;
+  {B}Sim::businessName{B} (line 2769) builds a rival company from the name structure table with the same
+  {B}<color> / <suffix> / <prefix> / <city> / <random-first-name(-possessive)> / <random-surname>{B}
+  substitution as the company names, dropping any bracket it cannot fill;
+  {B}Sim::businessToken{B} (line 2821) resolves {B}employee / employee-possessive / competitor /
+  competitor-possessive / facility-singular / facility-multiple / product{B};
+  {B}Sim::businessYear{B} (line 2861) renders a pool row on 40% of the years from 18, filtering on
+  {B}Hero Min Age{B}, the whitelist and the blacklist; {B}ageUp{B} calls it at line 1850.
+- {B}include/bl/script.h{B} / {B}src/script.cpp{B}: the {B}"business"{B} boolean, parsed like
+  {B}"sports"{B} and applied with {B}sim.makeBusiness(life){B}.
+
+### 53.3 Shortcuts
+
+1. The gate is the script switch; the game reaches the pool through the Business menu and its
+   company, employees and facilities.
+2. {B}Requires Single Facility / Requires Multiple Facilities / Business Size{B} are not evaluated, and
+   the hero has no facility count, so a row that wants several stores can fire for a one-room
+   business.
+3. {B}Min Fitness{B}-style attribute gates and the country whitelist on the industry table are
+   ignored.
+4. {B}<employee>{B} / {B}<competitor>{B} are names from the port's own pools; the rival company uses the
+   industry table only when an industry is passed, and the pool's {B}<competitor>{B} does not say which
+   industry the rival is in, so it draws from all 25.
+5. Salaries, profits, launches and the whole {B}a16_business-launch-*{B} family are not wired.
+
+### 53.4 Verification
+
+- Seed 12345: 9 pool rows, e.g. 20 {B}Employee Relations{B} with {B}<employee>{B} = Morgan Degler jamming
+  to Beck, 27 {B}Customer Review{B} about 'white pearl earrings' (the industry's product).
+- Seed 777: 10 rows, e.g. 29 {B}Situation{B} with {B}<competitor>{B} = 'Ultra Beauty Barn', 37
+  {B}Employee Performance{B} with the log {B}I sent Glow Sea home after witnessing him place clothes on
+  hangers that don't correctly correspond with their size.{B}
+- No angle-bracket token survives in the business run (0 of 0 checked lines); residue census 0;
+  {B}tools/coverage.py{B} 109 / 107; {B}portgap.py{B} 109 / 107 / gap 0; {B}tools/bench.sh{B} to age 34 with no
+  abort; all-109 push replay exits 0.

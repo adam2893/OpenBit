@@ -120,6 +120,11 @@ struct Hero {
   // Professional athlete (REPORT.en.md 52). a16_sports-enc is seven rows of
   // sport plus that sport's own bracket words (Ball / Stadium / Field / Referee
   // / Game Bracket); the league, team and position come from their own tables.
+  // Business owner (REPORT.en.md 53). a16_business-industries-enc gives the
+  // industry and its facility words, a16_business-products-enc the products,
+  // a16_business-name-structure-enc the rival companies' names.
+  bool ownsBusiness = false;
+  std::string industry;  // a16_business-industries-enc 'Industry'
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'
