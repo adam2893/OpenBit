@@ -797,6 +797,11 @@ bool Sim::load(std::string* error) {
     "a16_dumb-scenarios-political-campaign-enc",
     "a16_dumb-scenarios-political-office-enc",
     "a16_country-political-systems-enc",
+    "a16_political-bribes-enc",
+    "a16_political-headlines-enc",
+    "a16_political-laws-enc",
+    "a16_political-parties-enc",
+    "a16_political-rumors-enc",
     "a16_dumb-scenarios-album-enc",
     "a16_dumb-scenarios-music-enc",
     "a16_music-names-bands-enc",
@@ -1686,7 +1691,7 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
   // hero carries it as a bool, and heroToken used to answer nothing for the key.
   if (key == "gender" || key == "hero-gender" || key == "hero:gender") return h.female ? "female" : "male";
   if (key == "city" || key == "hero:current_city") return h.city;
-  if (key == "country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
+  if (key == "country" || key == "hero-country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
   if (key == "country-other" || key == "country2" || key == "hero:country_other") {
     if (countries_.empty()) return std::string();
     for (int tries = 0; tries < 12; ++tries) {
@@ -2023,6 +2028,15 @@ bool podIsToken(const std::string& token, bool live) {
   return key == "podcast" || key == "podcast-name" || key == "episode-title";
 }
 
+bool polIsToken(const std::string& token, bool live) {
+  if (!live) return false;
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  return key == "amount" || key == "party" || key == "approval" || key == "rival";
+}
+
 bool schoolIsToken(const std::string& token, bool live) {
   if (!live) return false;
   std::string key = token;
@@ -2329,6 +2343,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (polIsToken(token, polLive_)) {
+      const std::string v = politicalCareerToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (hustlerIsToken(token, hustlerLive_)) {
@@ -3396,6 +3414,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   prisonCache_.clear();   // one inmate / nickname / letter / gift per prison card
   officeCache_.clear();   // one employee / company per office card
   schoolCache_.clear();   // one teacher / classmate / principal per school card
+  polCache_.clear();      // one party / rival / bribe per political card
   podCache_.clear();      // one guest / episode title per podcast card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
@@ -4774,7 +4793,39 @@ void Sim::ensureOfficeFields(Life& life) {
 void Sim::makePolitician(Life& life) {
   ensureOfficeFields(life);
   if (life.hero.office.empty()) return;
-  life.hero.politician = true;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.politician = true;
+  // The party the hero stands for (REPORT.en.md 86). The pool names a party in
+  // the hero's own country's column where it has one and gates itself on the
+  // office level, so a city councillor runs for a party that runs locally.
+  if (ensureTable("a16_political-parties-enc")) {
+    const Table& t = tbl("a16_political-parties-enc");
+    const std::string ctry = lower(heroToken("hero-country", false));
+    std::string col = "Name";
+    if (ctry.find("australia") != std::string::npos && t.has("AU Name")) col = "AU Name";
+    else if ((ctry.find("united kingdom") != std::string::npos || ctry.find("england") != std::string::npos) && t.has("UK Name")) col = "UK Name";
+    else if (ctry.find("united states") != std::string::npos && t.has("US Name")) col = "US Name";
+    const char* level = h.officeLevel == "national" ? "National"
+                      : h.officeLevel == "regional" ? "Regional"
+                      : h.officeLevel == "city" ? "City" : "Local";
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!t.has(col) || trim(t.at(r, col)).empty()) continue;
+      if (t.has(level) && !t.flag(r, level)) continue;
+      pool.push_back(r);
+    }
+    // The country columns are almost empty, so an empty pool falls back to the
+    // generic names rather than to no party at all.
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r)
+        if (t.has("Name") && !trim(t.at(r, "Name")).empty()) pool.push_back(r);
+    const size_t r = weightedPickOf(t, "Commonness Score", pool, politicsRng_);
+    if (r != size_t(-1)) h.politicalParty = spyUpperFirst(trim(t.at(r, col)));
+  }
+  if (h.politicalRival.empty())
+    h.politicalRival = drawFirstName(politicsRng_.chance(0.5)) + " " + drawSurname();
 }
 
 std::string Sim::miscToken(const std::string& key) {
@@ -20598,6 +20649,10 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
 // podCache_, which is what keeps a card and its journal line naming the same
 // person. <City> is the pools' own capitalised spelling of <city>.
 std::string Sim::podRefBind(const std::string& cell) {
+  return cardRefBind(cell, podCache_, podRng_);
+}
+
+std::string Sim::cardRefBind(const std::string& cell, std::map<std::string, std::string>& cache, Rng& rng) {
   std::string out = cell;
   static const char* kRefs[][2] = {
     {"random-person-indefinite", "random-person-indefinite"},
@@ -20613,6 +20668,8 @@ std::string Sim::podRefBind(const std::string& cell) {
     {"friend", "friend"},
     {"insult", "insult"},
     {"lover", "lover"},
+    {"opponent", "opponent"},
+    {"rival", "rival"},
   };
   // The tags the reference table does not answer: the hero's city, a full name
   // (the episode titles carry one) and <friend>. The name table is also the one
@@ -20629,13 +20686,13 @@ std::string Sim::podRefBind(const std::string& cell) {
       drawnKnown = true;
       return hero_->loverName;
     }
-    if (base == "random-full-name" || base == "friend") {
+    if (base == "random-full-name" || base == "friend" || base == "opponent" || base == "rival") {
       // shortcut: the name table is the one the port already names people from,
       // so a <friend> is not filtered on the hero's own gender.
       if (!ensureTable("a16_casino-casino-celebrity-name-enc")) return std::string();
       const Table& n = tbl("a16_casino-casino-celebrity-name-enc");
       if (n.size() == 0 || !n.has("First Name")) return std::string();
-      const size_t r = weightedPick(n, "Commonness Score", podRng_);
+      const size_t r = weightedPick(n, "Commonness Score", rng);
       if (r == size_t(-1)) return std::string();
       if (n.has("Gender")) {
         drawnFemale = lower(trim(n.at(r, "Gender"))) == "female";
@@ -20654,12 +20711,12 @@ std::string Sim::podRefBind(const std::string& cell) {
     if (out.find(tag) == std::string::npos && out.find(ptag) == std::string::npos) continue;
     const std::string slot = std::string("ref:") + kRefs[k][1];
     std::string v;
-    std::map<std::string, std::string>::iterator it = podCache_.find(slot);
-    if (it != podCache_.end()) v = it->second;
+    std::map<std::string, std::string>::iterator it = cache.find(slot);
+    if (it != cache.end()) v = it->second;
     else {
       v = draw(kRefs[k][1]);
-      podCache_[slot] = v;
-      if (drawnKnown) podCache_[std::string("refg:") + kRefs[k][1]] = drawnFemale ? "f" : "m";
+      cache[slot] = v;
+      if (drawnKnown) cache[std::string("refg:") + kRefs[k][1]] = drawnFemale ? "f" : "m";
     }
     if (v.empty()) continue;
     const std::string pv = llPossessive(v);
@@ -21027,6 +21084,10 @@ bool Sim::podcastYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = line;
   }
 
+  // The card is done resolving; the next family's <rb> must not read this
+  // card's drawn reference. REPORT.en.md 86.
+  rndCache_.clear();
+  rbLast_.clear();
   add("My show " + show + " has " + std::to_string(h.podcastListeners) + " listeners.");
   add("My credibility is " + std::to_string(h.podcastCredibility) + " and my popularity is " +
       std::to_string(h.podcastPopularity) + ".");
@@ -21043,6 +21104,394 @@ bool Sim::podcastYear(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 // ===== end the podcast (REPORT.en.md 85) =====================================
+
+// ===== the politician's year (REPORT.en.md 86) =====
+
+std::string Sim::politicalCareerToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (h == nullptr) return std::string();
+  std::string key = token;
+  bool possessive = false;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - psuffix.size());
+  }
+  if (key == "amount") return polCache_["amount"];
+  if (key == "approval") return std::to_string(h->politicalApproval) + "%";
+  if (key == "party") {
+    const std::string v = h->politicalParty.empty() ? std::string("my party") : h->politicalParty;
+    return possessive ? llPossessive(v) : v;
+  }
+  if (key == "rival") {
+    std::string v = polCache_["rival"];
+    if (v.empty()) {
+      if (h->politicalRival.empty())
+        h->politicalRival = drawFirstName(politicsRng_.chance(0.5)) + " " + drawSurname();
+      v = h->politicalRival;
+      polCache_["rival"] = v;
+    }
+    return possessive ? llPossessive(v) : v;
+  }
+  return std::string();
+}
+
+// The office pool carries one impact column per issue the press follows, and the
+// issue names are the headlines' own vocabulary - a column set renderRow's jump
+// table cannot read, so the office card renders itself. REPORT.en.md 86.
+bool Sim::politicalOfficeCard(Life& life, AgeUp& out, const Table& t, size_t row, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!t.has("Body") || trim(t.at(row, "Body")).empty()) return false;
+  const bool savedOther = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  rndCache_.clear();
+  rbLast_.clear();
+  polLive_ = true;
+  polCache_.clear();
+
+  static const char* kStanding[][2] = {
+    {"Ethics", "Ethics Impact"},
+    {"Social", "Social Impact"},
+    {"Environment", "Environment Impact"},
+    {"Economy", "Economy Impact"},
+    {"Education", "Education Impact"},
+    {"Crime", "Crime Impact"},
+    {"Healthcare", "Healthcare Impact"},
+    {"Immigration", "Immigration Impact"},
+    {"Foreign Policy", "Foreign Policy Impact"},
+    {"National Security", "National Security Impact"},
+  };
+  for (size_t i = 0; i < sizeof(kStanding) / sizeof(kStanding[0]); ++i)
+    if (h.politicalStanding.find(kStanding[i][0]) == h.politicalStanding.end())
+      h.politicalStanding[kStanding[i][0]] = 50;
+
+  // The row's Gender Bracket names the person the card is about (a rival, a
+  // spouse), so the pronoun pair follows that person when the name table knows
+  // one; otherwise it stays the hero's. Shortcut: an unknown bracket keeps the
+  // hero's pair.
+  if (t.has("Gender Bracket")) {
+    std::string bracket = trim(t.at(row, "Gender Bracket"));
+    while (!bracket.empty() && (bracket[0] == '<' || bracket[0] == ' ')) bracket.erase(0, 1);
+    while (!bracket.empty() && (bracket[bracket.size() - 1] == '>' || bracket[bracket.size() - 1] == ' '))
+      bracket.erase(bracket.size() - 1);
+    if (!bracket.empty()) {
+      cardRefBind("<" + bracket + ">", polCache_, politicsRng_);
+      std::map<std::string, std::string>::iterator g = polCache_.find("refg:" + bracket);
+      if (g != polCache_.end()) {
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = (g->second == "f");
+      }
+    }
+  }
+
+  // Every cell of the row is resolved in column order before anything is
+  // printed: the narrative columns refer back to alternatives drawn in the body
+  // columns through <rb>. REPORT.en.md 57.
+  std::map<std::string, std::string> cells;
+  const std::vector<std::string> cols = t.columns();
+  for (size_t ci = 0; ci < cols.size(); ++ci) {
+    if (cols[ci].empty()) continue;
+    const std::string v = trim(t.at(row, cols[ci]));
+    cells[cols[ci]] = v.empty() ? v : trim(resolve(cardRefBind(v, polCache_, politicsRng_)));
+  }
+  std::map<std::string, std::string>& cc = cells;
+  auto cell = [&cc](const std::string& col) -> std::string {
+    std::map<std::string, std::string>::iterator it = cc.find(col);
+    return it == cc.end() ? std::string() : it->second;
+  };
+
+  std::vector<int> labels_at;
+  std::vector<std::string> labels;
+  // The office pool runs to nine options on a row; the campaign pool only
+  // reaches four. REPORT.en.md 86.
+  for (int i = 1; i <= 12; ++i) {
+    const std::string lb = cell(std::string("Choice ") + std::to_string(i));
+    if (lb.empty()) continue;
+    labels_at.push_back(i);
+    labels.push_back(lb);
+  }
+  // 'Randomize Choices' is the pool asking for the options to be presented in a
+  // different order on every run; Fisher-Yates over the filled options.
+  if (t.flag(row, "Randomize Choices")) {
+    for (size_t i = labels.size(); i > 1; --i) {
+      const size_t j = politicsRng_.below(uint32_t(i));
+      std::swap(labels_at[i - 1], labels_at[j]);
+      std::swap(labels[i - 1], labels[j]);
+    }
+  }
+  int pick = 0;
+  if (forcedChoice >= 0 && size_t(forcedChoice) < labels.size()) pick = forcedChoice;
+  else if (!labels.empty()) pick = int(politicsRng_.below(uint32_t(labels.size())));
+  const int n = labels.empty() ? 0 : labels_at[size_t(pick)];
+
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = cell("Title");
+  if (out.title.empty()) out.title = spyUpperFirst(trim(h.office));
+  std::string body = spyUpperFirst(cell("Body"));
+  if (!body.empty()) {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.body = body;
+  out.cta = cell("CTA");
+  if (!labels.empty()) out.choice = labels[size_t(pick)];
+  std::string narr = n > 0 ? cell(std::string("Narrative ") + std::to_string(n)) : std::string();
+  if (narr.empty()) narr = cell("Narrative");
+  if (!narr.empty()) {
+    const char last = narr[narr.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') narr += '.';
+    out.narrative = spyUpperFirst(narr);
+  }
+
+  int moved = 0;
+  int happy = 0;
+  if (n > 0) {
+    for (size_t i = 0; i < sizeof(kStanding) / sizeof(kStanding[0]); ++i) {
+      const std::string col = std::string(kStanding[i][1]) + " " + std::to_string(n);
+      if (!t.has(col)) continue;
+      const int v = int(t.num(row, col));
+      if (v == 0) continue;
+      std::map<std::string, int>::iterator it = h.politicalStanding.find(kStanding[i][0]);
+      if (it == h.politicalStanding.end()) continue;
+      it->second = std::max(0, std::min(100, it->second + v * 2));
+      ++moved;
+      if (kStanding[i][0] == std::string("Ethics")) happy += v > 0 ? 1 : -1;
+    }
+    if (moved > 0) {
+      int sum = 0, cnt = 0;
+      for (std::map<std::string, int>::const_iterator it = h.politicalStanding.begin(); it != h.politicalStanding.end(); ++it) {
+        if (it->first == "Ethics") continue;
+        sum += it->second;
+        ++cnt;
+      }
+      if (cnt > 0) h.politicalApproval = std::max(0, std::min(100, sum / cnt));
+    }
+    // The office pool rates the winner on 'Approval Impact', the campaign pool on
+    // 'Campaign Impact'; both move the same rating here. REPORT.en.md 86.
+    const char* acol_base = nullptr;
+    if (t.has("Approval Impact 1")) acol_base = "Approval Impact";
+    else if (t.has("Campaign Impact 1")) acol_base = "Campaign Impact";
+    if (acol_base != nullptr) {
+      const std::string acol = std::string(acol_base) + " " + std::to_string(n);
+      if (t.has(acol)) {
+        h.politicalApproval = std::max(0, std::min(100, h.politicalApproval + int(t.num(row, acol)) * 3));
+        happy += int(t.num(row, acol)) > 0 ? 1 : -1;
+      }
+    }
+  }
+
+  out.extra.push_back("My approval rating is " + std::to_string(h.politicalApproval) + "%.");
+  if (h.politicalLaws > 0)
+    out.extra.push_back("I have signed " + std::to_string(h.politicalLaws) + (h.politicalLaws == 1 ? " law." : " laws."));
+  if (h.politicalScandals > 0)
+    out.extra.push_back(h.politicalScandals == 1 ? std::string("One scandal is following me.")
+                                                 : std::to_string(h.politicalScandals) + " scandals are following me.");
+  if (!h.politicalParty.empty()) out.extra.push_back("I stand for the " + h.politicalParty + " party.");
+  out.happiness += happy;
+  pronounOtherSet_ = savedOther;
+  pronounOtherFemale_ = savedOtherFemale;
+  polLive_ = false;
+  return true;
+}
+
+bool Sim::politicalCareerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.politician || h.office.empty()) return false;
+  if (forcedChoice >= 0) return false;  // a script wants the pool's choice card
+  h.politicalServed += 1;
+
+  // The press follows ten issues and the rating is their mean; Ethics is kept
+  // apart, because nobody votes on it.
+  static const char* kIssues[] = {"Crime", "Economy", "Education", "Environment",
+                                  "Foreign Policy", "Healthcare", "Immigration",
+                                  "National Security", "Social", "Ethics"};
+  for (size_t i = 0; i < sizeof(kIssues) / sizeof(kIssues[0]); ++i)
+    if (h.politicalStanding.find(kIssues[i]) == h.politicalStanding.end()) h.politicalStanding[kIssues[i]] = 50;
+  auto recompute = [&]() {
+    int sum = 0, cnt = 0;
+    for (std::map<std::string, int>::const_iterator it = h.politicalStanding.begin(); it != h.politicalStanding.end(); ++it) {
+      if (it->first == "Ethics") continue;
+      sum += it->second;
+      ++cnt;
+    }
+    if (cnt > 0) h.politicalApproval = std::max(0, std::min(100, sum / cnt));
+  };
+  recompute();
+
+  const bool savedOther = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  polLive_ = true;
+  polCache_.clear();
+
+  std::string title, body, line, choice, tableRef, extra;
+  int cardRow = -1;
+  int happy = 0;
+  const double roll = politicsRng_.unit();
+
+  if (roll < 0.06) {
+    // A bribe, offered at the level the hero actually holds.
+    if (ensureTable("a16_political-bribes-enc")) {
+      const Table& b = tbl("a16_political-bribes-enc");
+      const char* level = h.officeLevel == "national" ? "National"
+                        : h.officeLevel == "regional" ? "Regional"
+                        : h.officeLevel == "city" ? "City" : "Local";
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < b.size(); ++r) {
+        if (!b.has("Scenario") || trim(b.at(r, "Scenario")).empty()) continue;
+        if (b.has(level) && !b.flag(r, level)) continue;
+        pool.push_back(r);
+      }
+      if (!pool.empty()) {
+        const size_t r = pool[politicsRng_.below(uint32_t(pool.size()))];
+        long long lo = b.has("Min Amount") ? static_cast<long long>(b.num(r, "Min Amount")) : 0;
+        long long hi = b.has("Max Amount") ? static_cast<long long>(b.num(r, "Max Amount")) : lo;
+        if (hi < lo) hi = lo;
+        const long long span = hi - lo + 1;
+        const long long amount = lo + (span > 1 ? static_cast<long long>(politicsRng_.below(uint32_t(span))) : 0);
+        polCache_["amount"] = money(amount);
+        title = "A bribe";
+        body = trim(resolve(cardRefBind(trim(b.at(r, "Scenario")), polCache_, politicsRng_)));
+        const std::string logv = trim(resolve(cardRefBind(trim(b.at(r, "Log Version")), polCache_, politicsRng_)));
+        const bool take = politicsRng_.chance(0.5);
+        if (take) {
+          h.money += amount;
+          h.politicalBribe += amount;
+          h.politicalStanding["Ethics"] = std::max(0, h.politicalStanding["Ethics"] - 6);
+          line = (logv.empty() ? std::string() : logv + " ") + "I took it.";
+          choice = "Take " + money(amount);
+          if (politicsRng_.chance(0.33)) {
+            h.politicalScandals += 1;
+            extra = "A reporter asked where " + money(amount) + " of my money came from.";
+            happy -= 3;
+          }
+        } else {
+          h.politicalStanding["Ethics"] = std::min(100, h.politicalStanding["Ethics"] + 4);
+          line = (logv.empty() ? std::string() : logv + " ") + "I turned it down.";
+          choice = "Turn it down";
+          happy += 1;
+        }
+        tableRef = b.name();
+        cardRow = int(r) + 1;
+      }
+    }
+  } else if (roll < 0.18) {
+    // A bill, and the public's reaction to it.
+    if (ensureTable("a16_political-laws-enc")) {
+      const Table& l = tbl("a16_political-laws-enc");
+      if (l.size() > 0) {
+        const size_t r = politicsRng_.below(uint32_t(l.size()));
+        const std::string law = spyLowerFirst(trim(resolve(cardRefBind(trim(l.at(r, "Law")), polCache_, politicsRng_))));
+        const int impact = l.has("Approval Impact") ? int(l.num(r, "Approval Impact")) : 0;
+        title = "A bill on your desk";
+        body = "A bill to " + law + " reached your desk, and you signed it into law.";
+        line = "I signed a law to " + law + ".";
+        h.politicalLaws += 1;
+        h.politicalApproval = std::max(0, std::min(100, h.politicalApproval + impact * 2));
+        happy += impact > 0 ? 1 : -1;
+        tableRef = l.name();
+        cardRow = int(r) + 1;
+      }
+    }
+  } else if (roll < 0.30) {
+    // The rumour table is written both ways round: the Outbound column is what
+    // the hero says about somebody else, the Inbound pair is what is printed
+    // about the hero.
+    if (ensureTable("a16_political-rumors-enc")) {
+      const Table& rm = tbl("a16_political-rumors-enc");
+      if (rm.size() > 0) {
+        const size_t r = politicsRng_.below(uint32_t(rm.size()));
+        const std::string outw = trim(resolve(cardRefBind(trim(rm.at(r, "Outbound")), polCache_, politicsRng_)));
+        const std::string inb = rm.has("Inbound Scenario")
+                                    ? trim(resolve(cardRefBind(trim(rm.at(r, "Inbound Scenario")), polCache_, politicsRng_)))
+                                    : std::string();
+        const std::string inl = rm.has("Inbound Log Version")
+                                    ? trim(resolve(cardRefBind(trim(rm.at(r, "Inbound Log Version")), polCache_, politicsRng_)))
+                                    : std::string();
+        tableRef = rm.name();
+        cardRow = int(r) + 1;
+        if (politicsRng_.chance(0.5) && !outw.empty() && !h.politicalRival.empty()) {
+          title = "A rumour, planted";
+          body = "You told a reporter that " + h.politicalRival + " " + spyLowerFirst(outw) + ".";
+          line = "I let it be known that " + h.politicalRival + " " + outw + ".";
+          h.politicalApproval = std::min(100, h.politicalApproval + 2);
+          h.politicalStanding["Ethics"] = std::max(0, h.politicalStanding["Ethics"] - 2);
+        } else if (!inb.empty()) {
+          title = "A rumour about you";
+          body = "A tabloid printed that you " + spyLowerFirst(inb) + ".";
+          line = "A tabloid printed that I " + (inl.empty() ? inb : inl) + ".";
+          h.politicalApproval = std::max(0, h.politicalApproval - 5);
+          h.politicalScandals += 1;
+          happy -= 2;
+        }
+      }
+    }
+  } else if (roll < 0.55) {
+    // The year's headline, and the issue it moves.
+    if (ensureTable("a16_political-headlines-enc")) {
+      const Table& hl = tbl("a16_political-headlines-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < hl.size(); ++r)
+        if (hl.has("Headline") && !trim(hl.at(r, "Headline")).empty()) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t r = pool[politicsRng_.below(uint32_t(pool.size()))];
+        const std::string issue = hl.has("Issue") ? trim(hl.at(r, "Issue")) : std::string();
+        const std::string head = trim(resolve(cardRefBind(trim(hl.at(r, "Headline")), polCache_, politicsRng_)));
+        title = (issue.empty() || issue == "Decoy") ? "In the papers" : "The year's issue: " + issue;
+        body = head;
+        line = "The papers led with: " + head;
+        std::map<std::string, int>::iterator it = h.politicalStanding.find(issue);
+        if (it != h.politicalStanding.end()) {
+          it->second = std::max(0, std::min(100, it->second + (politicsRng_.chance(0.5) ? 2 : -2)));
+          recompute();
+        }
+        tableRef = hl.name();
+        cardRow = int(r) + 1;
+      }
+    }
+  }
+
+  if (title.empty() || body.empty()) {
+    pronounOtherSet_ = savedOther;
+    pronounOtherFemale_ = savedOtherFemale;
+    polLive_ = false;
+    return false;  // the office pool card runs instead
+  }
+
+  out.table = tableRef;
+  out.row_id = std::to_string(cardRow < 0 ? 1 : cardRow);
+  out.title = title;
+  body = spyUpperFirst(body);
+  if (!body.empty()) {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.body = body;
+  out.cta = "What will you do?";
+  if (!choice.empty()) out.choice = choice;
+  if (!line.empty()) {
+    const char last = line[line.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') line += '.';
+    out.narrative = spyUpperFirst(line);
+  }
+  if (!extra.empty()) out.extra.push_back(extra);
+  out.extra.push_back("My approval rating is " + std::to_string(h.politicalApproval) + "%.");
+  if (h.politicalLaws > 0)
+    out.extra.push_back("I have signed " + std::to_string(h.politicalLaws) + (h.politicalLaws == 1 ? " law." : " laws."));
+  if (h.politicalScandals > 0)
+    out.extra.push_back(h.politicalScandals == 1 ? std::string("One scandal is following me.")
+                                                 : std::to_string(h.politicalScandals) + " scandals are following me.");
+  if (!h.politicalParty.empty()) out.extra.push_back("I stand for the " + h.politicalParty + " party.");
+  out.happiness += happy;
+  pronounOtherSet_ = savedOther;
+  pronounOtherFemale_ = savedOtherFemale;
+  polLive_ = false;
+  return true;
+}
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
@@ -21123,6 +21572,9 @@ bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
                               : "a16_dumb-scenarios-political-office-enc";
   if (!h.politician && !politicsRng_.chance(0.25)) return false;
   if (!ensureTable(pool)) return false;
+  // The officeholder's own business comes first: a bribe, a law, a rumour or the
+  // year's headline, and only then the pool card (REPORT.en.md 86).
+  if (politicalCareerYear(life, out, forcedChoice)) return true;
   if (!politicsRng_.chance(0.4)) return false;
   const Table& t = tbl(pool);
   std::string ccode;
@@ -21148,16 +21600,28 @@ bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
         if (g != (h.loverFemale ? "female" : "male")) continue;
       }
     }
-    if (h.politician) {
-      if (t.flag(r, "National") && h.officeLevel != "national") continue;
-      if (t.flag(r, "Regional") && h.officeLevel != "regional") continue;
-      if (t.flag(r, "City") && h.officeLevel != "city") continue;
-      if (t.flag(r, "Local") && h.officeLevel != "local") continue;
+    // The four level columns are a SET of levels a row is available at, not four
+    // independent exclusions: a row ticked at every level (the campaign pool
+    // ticks most of its rows at all four) is available everywhere, and the old
+    // test dropped it at every level in turn. A row with no tick is general.
+    // REPORT.en.md 86.
+    const bool anyLevel = t.flag(r, "National") || t.flag(r, "Regional") ||
+                          t.flag(r, "City") || t.flag(r, "Local");
+    if (anyLevel) {
+      const char* mine = h.officeLevel == "national" ? "National"
+                       : h.officeLevel == "regional" ? "Regional"
+                       : h.officeLevel == "city" ? "City" : "Local";
+      if (!t.flag(r, mine)) continue;
     }
     rows.push_back(r);
   }
   if (rows.empty()) return false;
-  return renderRow(t, rows[politicsRng_.below(uint32_t(rows.size()))], life, out, forcedChoice);
+  const size_t row = rows[politicsRng_.below(uint32_t(rows.size()))];
+  // Both pools move one standing per issue and gate a pronoun pair on the row's
+  // Gender Bracket, which renderRow's jump table cannot read, so both cards
+  // render through the political renderer. REPORT.en.md 86.
+  if (politicalOfficeCard(life, out, t, row, forcedChoice)) return true;
+  return renderRow(t, row, life, out, forcedChoice);
 }
 
 void Sim::makeMusician(Life& life) {

@@ -8968,3 +8968,260 @@ spyres 564, stures 1145, traderes 1326, vampres 3297, zoores 1440),
 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`,
 `blsim --script covpush.json` rc 0 with 33078 bytes of stdout and an empty
 stderr, and `bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.
+
+## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions
+
+Section 55 put the hero in an office: it wired the campaign ladder, the four
+office levels and the per-country titles, and it left the two pools the office
+actually speaks through to the generic renderer. That renderer applies Karma,
+Discipline, Happiness, Intelligence and Appearance -- the five impacts of
+`pointsForImpact`'s jump table -- and nothing else. Both political dumb
+pools carry eleven impact columns per option (a rating column plus ten issue
+standings), so every choice the hero made in eight years in office was read by
+nobody and his standing never moved. This section wires the rest of the family
+and gives those two pools a renderer of their own.
+
+Three bugs justify it. The four office-level columns were read as four
+**exclusions**, so a row ticked at all four levels was dropped at every level in
+turn -- eleven of the campaign pool's sixty-four rows were reachable before, and
+forty-three after. `<hero-country>` had no case in `heroToken` and leaked in
+thirty-two places. And the party and the rival that the cards name were never
+drawn at all, so `<party>`, `<rival>` and `<opponent>` had nothing behind them.
+
+### 86.1 The family
+
+Seven tables, 404 rows of scenario data, plus the two dumb pools section 55
+already reached:
+
+| table | rows | what it holds |
+|---|---|---|
+| `a16_political-headlines-enc` | 196 | Issue, Headline, War |
+| `a16_political-rumors-enc` | 90 | Outbound, Inbound Scenario, Inbound Log Version |
+| `a16_political-laws-enc` | 87 | Index, Law, Approval Impact (-5..5) |
+| `a16_political-bribes-enc` | 31 | Scenario, Log Version, Min Amount, Max Amount, four level flags |
+| `a16_political-parties-enc` | 7 | Name, US Name, UK Name, AU Name, Appeal Score, Commonness Score, level flags |
+| `a16_dumb-scenarios-political-office-enc` | 90 | twelve options a row at most, a `lover` gender bracket |
+| `a16_dumb-scenarios-political-campaign-enc` | 64 | four options a row, a `opponent` gender bracket |
+
+The headline table is the year's ISSUE rather than a story: each row carries one
+of eleven Issue values (Crime, Economy, Education, Environment, Foreign Policy,
+Healthcare, Immigration, National Security, Social, War and a Decoy), and the
+issue pillar drifts when the row is drawn. The rumours pool has two directions in
+one table: an Outbound row is a claim the hero plants about his rival (approval
+up, Ethics down), an Inbound row is a claim printed about him (approval down, one
+more scandal). The bribes pool is gated by the four level columns like the rest
+of the family.
+
+### 86.2 The office
+
+`Sim::makePolitician` now finishes the job section 55 left: it draws the
+party from `a16_political-parties-enc` -- the column follows the hero's country
+(`australia` -> AU Name, `united kingdom`/`england` -> UK Name, `united states` -> US
+Name, otherwise Name), a row is kept when it has no level column at all or when
+its own level column is ticked, and the winner is drawn with
+`weightedPickOf(t, "Commonness Score", pool, politicsRng_)` -- and picks a rival name.
+
+The year keeps ten standings lowercased into a `std::map<std::string,int>
+politicalStanding` (include/bl/game.h), all seeded at 50 on the hero's first
+year in office: Crime, Economy, Education, Environment, Foreign Policy,
+Healthcare, Immigration, National Security, Social and Ethics. Approval is the
+mean of the NINE issue standings -- Ethics is deliberately outside it and only
+feeds the happiness delta, because a bribe does not make the voters happier. The
+rating is clamped to 0..100 at every write.
+
+### 86.3 The year
+
+`Sim::politicalCareerYear` runs before section 55's 0.4 gate and takes the
+year outright with one `politicsRng_.unit()` roll drawn ONCE -- four ordered
+thresholds, rarest first, the same discipline every later family follows:
+
+| roll | branch | what moves |
+|---|---|---|
+| < 0.06 | a bribe | money and Ethics; a 1-in-3 scandal |
+| < 0.18 | a law | the bill's Approval Impact, laws + 1 |
+| < 0.30 | a rumour | Outbound: approval + 2, Ethics - 2. Inbound: approval - 5, scandals + 1 |
+| < 0.55 | a headline | that issue's standing drifts and the rating is recomputed |
+| else | the pool card | `politicalOfficeCard` |
+
+The bribe branch draws a level-gated row and offers the hero
+`Min Amount..Max Amount`; the coin is a flat 0.5. Taking it adds the money,
+adds to `politicalBribe`, costs six Ethics and rolls the scandal at 1-in-3
+-- and the log says where the money went, because the scandal row and the bribe
+row are not otherwise related. Refusing it pays four Ethics.
+
+The law branch signs the bill unconditionally: the port has no legislature.
+`Issue == "Decoy"` rows get the title `"In the papers"` instead of the issue name,
+because the row's Issue cell is the sentinel, not a pillar.
+
+The headline branch is where the issue pillars actually move: the row's Issue
+names a standing, which drifts plus or minus two, and the rating is recomputed
+from the new mean.
+
+`Sim::politicalOfficeCard` renders BOTH dumb pools, and it is the part that
+section 55 never had:
+
+1. the row's `Gender Bracket` names the person the card is about -- a spouse in
+   the office pool (four rows), the rival in the campaign pool (ten rows). The
+   bracket is drawn once through `cardRefBind` and cached, and its gender
+   switches the pronoun pair to that person, so `<he/she>` in the body is about
+   the rival rather than the hero. An unknown bracket keeps the hero's pair;
+2. every cell of the row is resolved in column order into a `cells` map BEFORE
+   anything is printed -- the section 57 rule, because the Narrative column refers
+   back through `<rb>` to an alternative drawn in the Body column;
+3. the options are collected from `Choice 1..12` (the office pool reaches nine;
+   the campaign pool only four) and shuffled Fisher-Yates when the row ticks
+   `Randomize Choices`;
+4. the rating column is `Approval Impact N` in the office pool and `Campaign
+   Impact N` in the campaign pool -- reading one name blindly scored nothing;
+5. each of the ten issue impacts is applied at twice its value and the rating
+   column at three times it, then the approval mean is recomputed, so a card
+   moves both the issue and the rating;
+6. the tail is the same four journal lines everywhere: the rating, the laws
+   signed, the scandals following and the party.
+
+`forcedChoice` indexes the FILLED option list, never the column number -- the
+section 75 convention.
+
+### 86.4 The tokens
+
+One new globally answered token and two new reference tokens:
+
+| token | where it comes from |
+|---|---|
+| `<hero-country>` | `heroToken`, the `country` case (src/sim.cpp:1694) |
+| `<opponent>`, `<rival>` | `cardRefBind`'s name-table branch, drawn once per card and cached |
+
+`cardRefBind(const std::string& cell, std::map<std::string,std::string>& cache, Rng& rng)`
+is the podcast binder from section 85 generalised out of `podRefBind`, which is now
+one line of delegation. Its name-table branch covers `random-full-name`, `friend`,
+`opponent` and `rival`, drawing the name with `weightedPick(n, "Commonness
+Score", rng)` and caching the gender under `refg:<base>` so the bracket can
+read it. Caching is what makes the card and its own journal line name the same
+person.
+
+`heroToken` also grew the `gender` case in section 84; together with this
+section's `hero-country` that is the whole of the token layer the political
+family needed.
+
+### 86.5 The bugs
+
+1. **A level column is a set, not a test.** The section 55 gate was
+   `if (t.flag(r, "National") && h.officeLevel != "national") continue;`
+   repeated for all four levels. A row ticked at all four -- which is most of the
+   campaign pool -- is excluded by the second test at every office level, so
+   only eleven of sixty-four campaign rows could ever be drawn. Replaced with a
+   single membership test: if the row ticks any level, the hero's own level
+   must be ticked. Campaign row coverage 11 -> 43 of 64.
+2. **`<hero-country>` had no case.** `heroToken` answered `country`,
+   `country possessive` and `hero:current_country` but not `hero-country`, and its
+   fall-through returns an empty string, so the token vanished silently in
+   thirty-two places. Added to the same case.
+3. **The political impacts were read by nobody.** The generic renderer's impact
+   table is the five-attribute jump table; the eleven political columns were
+   never consulted, so no political choice had any effect at all. That is the
+   whole reason the section exists, and it is why the two pools now own a
+   renderer.
+4. **The rating column has two names.** `a16_dumb-scenarios-political-office-enc`
+   rates the winner on `Approval Impact N`; the campaign pool rates him on
+   `Campaign Impact N`. The renderer picks the base from the table's own header
+   rather than assuming.
+5. **A missing include.** The new `std::map` field failed the header with
+   `include/bl/game.h:227:8: error: no template named 'map' in namespace 'std';
+   did you mean 'max'?` -- `#include <map>` is now in game.h.
+6. **A dirty back-reference cache across families.** `podcastYear` built its
+   closing line after the last card and never cleared `rndCache_`/`rbLast_`, so
+   the next family's `<rb>` could read the podcast's drawn value. Both are now
+   cleared before the line.
+
+### 86.6 Shortcuts
+
+- There are no elections. `politicalServed` counts years in office and
+  `officeLevel` only moves through section 55's career line; nothing in the
+  port can lose a seat. <!-- shortcut: no election cycle, add when a ballot exists -->
+- Laws are signed by one signature. There is no legislature, no vote and no
+  opposition, so the law branch always succeeds. <!-- shortcut: single-signature laws -->
+- The rival is a name, not an opponent: nothing he does is simulated, and the
+  rumour branches only move approval and Ethics. <!-- shortcut: rival is a name -->
+- Voters are a single number. The real game has per-issue voter groups; here
+  approval is the mean of the nine standings. <!-- shortcut: one approval number -->
+- The bribe amount is drawn once and reused in the body, the option and the
+  journal, so the three agree. <!-- shortcut: one drawn amount -->
+- An unknown gender bracket keeps the hero's pronoun pair.
+- Decoy headlines are titled `"In the papers"` because their Issue cell is a
+  sentinel rather than a pillar.
+
+### 86.7 Verification
+
+`/tmp/qdir/polres.py` drives thirty seeds and both genders to age 60 with
+`{"politics": true}` and reports `political events 1763 rc failures 0` and
+`RESIDUE 0`. The last-mark histogram is headlines 613, laws 305, rumors 266,
+campaign 219, office 204, bribes 156; `a16_political-parties-enc` is never a card's
+own mark because it is a setup pool read once at the start -- the same position
+`a16_podcast-genre-enc` holds in section 85.
+
+A bribe, accepted:
+
+> A bribe
+> A wealthy businessman offers you $1,291,239 to introduce him to the investment
+> bankers that you know.
+> Choice: Take $1,291,239
+> My approval rating is 49%. / I have signed 1 law. / One scandal is following
+> me. / I stand for the Democrat party. / A wealthy businessman offered me a
+> bribe of $1,291,239 to introduce him to the investment bankers that I know. I
+> took it.
+
+A bill on the desk:
+
+> A bill on your desk
+> A bill to illegalize the assignment of homework reached your desk, and you
+> signed it into law.
+> My approval rating is 53%. / I have signed 1 law. / I stand for the Democrat
+> party. / I signed a law to illegalize the assignment of homework.
+
+An inbound rumour (the hero is the subject, and `<rb>` carries the same
+sentence into the journal):
+
+> A rumour about you
+> A tabloid printed that you cut in line.
+> My approval rating is 45%. / One scandal is following me. / I stand for the
+> Democrat party. / A tabloid printed that I cut in line.
+
+An outbound rumour (the rival is the subject, and his name is a person):
+
+> A rumour, planted
+> You told a reporter that Morgan Dollar steals sugar packets from Starbucks.
+> My approval rating is 52%. / I stand for the Democrat party. / I let it be
+> known that Morgan Dollar steals sugar packets from Starbucks.
+
+The campaign pool, which section 55 could barely reach:
+
+> Manager Madness
+> You've just received notification that your campaign manager no longer
+> believes in your vision for running the country and has quit to join Manila
+> Cendes' team.
+> Choice: Continue without a manager
+> My approval rating is 38%. / 3 scandals are following me. / When my
+> good-for-nothing campaign manager quit, I decided we didn't need a manager.
+
+And an office card, where the bracket is a spouse and nine options are offered:
+
+> Enticing Intern
+> While working alone at your desk late one evening, you look up to discover a
+> female intern has entered your office. She begins to express sympathy for how
+> hard you've been working lately and asks if she can help you relieve some
+> stress.
+> Choice: Terminate her internship immediately
+> My approval rating is 58%. / I have signed 3 laws. / I stand for the Democrat
+> party. / Late one night in my office, I terminated an intern on the spot after
+> she suggested giving me oral pleasure as a means to help reduce stress.
+
+The whole regression after the change: 29 probes at `rc=0 residue=0` (actres 694,
+astres 792, bizres 3592, bmres 1655, boatres 1468, casres 1342, cultres 1168,
+dlres 1518, fightres 1259, finres 748, hustres 1393, ltres 1624, luxres 853,
+mafiares 1306, modres 589, ofcres 1703, outres 1029, petres 2468, podres 2574,
+polres 1763, prisres 428, racres 847, schres 583, spores 611, spyres 550, stures
+1156, traderes 1316, vampres 3297, zoores 1454), `rescensus.py` `distinct residue
+tokens 0 total 0`, `coverage.py` 109 captured / 107 recoverable, `portgap.py`
+`ENTRIES 109 rendered-by-port 107 gap 0`, `blsim --script covpush.json` rc 0 with
+33078 bytes of stdout and an empty stderr, and `bench.sh /tmp/trace_c10.json`
+reaching age 34 without an abort.

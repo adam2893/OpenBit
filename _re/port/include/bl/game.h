@@ -6,6 +6,7 @@
 //   "class Game.UIIAPManager : System.Object"    (dump line 128447, 267 methods)
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -210,6 +211,21 @@ struct Hero {
   std::string office;         // that country's title for the level
   std::string jurisdiction;   // what '<jurisdiction>' prints
   std::string jurisdictionAdj;  // its adjective: national / provincial / city / local
+  // The politician's year (REPORT.en.md 86). a16_political-parties-enc is the
+  // party the hero stands for, a16_political-laws-enc what he signs,
+  // a16_political-bribes-enc what he is offered, a16_political-rumors-enc what
+  // is said about him and a16_political-headlines-enc what the press prints.
+  // The standing map is the office pool's own model: one entry per issue the
+  // a16_political-headlines-enc Issue column names, and the approval rating is
+  // their average.
+  std::string politicalParty;  // the party's name in the hero's country
+  std::string politicalRival;  // the name a rumour is planted about
+  int politicalApproval = 50;
+  int politicalServed = 0;
+  int politicalLaws = 0;
+  int politicalScandals = 0;
+  long long politicalBribe = 0;
+  std::map<std::string, int> politicalStanding;
   // Secret agent (REPORT.en.md 58). a16_secret-agent-random-hero-agency-names-enc
   // names the agency, a16_secret-agent-code-names-enc the code name (gender
   // filtered), a16_secret-agent-potential-agent-color-enc the specialization.

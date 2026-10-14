@@ -260,6 +260,9 @@ class Sim {
   bool businessYear(Life& life, AgeUp& out, int forcedChoice);
   bool musicYear(Life& life, AgeUp& out, int forcedChoice);
   bool politicalYear(Life& life, AgeUp& out, int forcedChoice);
+  bool politicalCareerYear(Life& life, AgeUp& out, int forcedChoice);
+  bool politicalOfficeCard(Life& life, AgeUp& out, const Table& t, size_t row, int forcedChoice);
+  std::string politicalCareerToken(const std::string& token);
   std::string politicalToken(const std::string& token);
   std::string miscToken(const std::string& key);
   bool miscPoolYear(Life& life, AgeUp& out, int forcedChoice);
@@ -382,6 +385,7 @@ class Sim {
   bool podcastCard(Life& life, AgeUp& out, const Table& t, size_t row, int forcedChoice);
   std::string podcastToken(const std::string& token);
   std::string podRefBind(const std::string& cell);
+  std::string cardRefBind(const std::string& cell, std::map<std::string, std::string>& cache, Rng& rng);
   // The yearly conviction draw that puts the hero in prison.
   bool maybeConvicted(Life& life, AgeUp& out);
   // The symptom card is the one scenario whose title, body and log line all come
@@ -450,6 +454,8 @@ class Sim {
   bool officeLive_ = false;
   std::map<std::string, std::string> schoolCache_;  // one teacher / classmate / principal per school card
   bool schoolLive_ = false;
+  std::map<std::string, std::string> polCache_;  // one party / rival / bribe per political card
+  bool polLive_ = false;
   std::map<std::string, std::string> podCache_;  // one guest / episode title per podcast card
   bool podLive_ = false;
   bool boatLive_ = false;
