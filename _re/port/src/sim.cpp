@@ -624,7 +624,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
       spendRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0xa0761d6478bd642fULL),
       skipRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL),
-      mobRng_(seed ^ 0xa0761d6478bd642fULL ^ 0xe7037ed1a0b428dbULL) {}
+      mobRng_(seed ^ 0xa0761d6478bd642fULL ^ 0xe7037ed1a0b428dbULL),
+      advRng_(seed ^ 0xe7037ed1a0b428dbULL ^ 0x8ebc6af09c88c6e3ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1237,6 +1238,7 @@ bool Sim::load(std::string* error) {
       "a16_wedding-venues-enc",                      // Venue,Uses Definite Article,Cost Score
       "a16_school-classmate-flirt-scenarios-enc",     // Feedback Scenario,Log Version
       "a16_friend-lover-scenarios-enc",              // Scenario,Log Version,Hero/Friend Min/Max Age
+      "a16_friend-advice-enc",                       // Scenario,Log Version,Hero/Friend age+gender,..
       "a16_coworker-hookup-scenarios-enc",           // Inbound/Outbound Scenario,Sender Gender
       "a16_disease-types-enc",                       // Disease,..: '<disease>' in the lover pools
       "a16_secret-agent-random-hero-agency-names-enc",  // Name,..: the hero's agency
@@ -3531,6 +3533,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (movieYear(life, out, forcedChoice)) return true;
   if (spendTimeYear(life, out, forcedChoice)) return true;
+  // The friend-advice card (REPORT.en.md 100) is a friend's push, so it is tried
+  // before the relationship year's own events. It draws on its own stream
+  // (include/bl/sim.h advRng_), so no earlier subsystem's sequence moves.
+  if (friendAdviceYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -23730,6 +23736,140 @@ bool Sim::mobsterSpendYear(Life& life, AgeUp& out, int forcedChoice) {
   else if (senior) h.mafiaStanding -= 1;
   out.narrative = "I told Family " + rankTitle + ", " + name +
                   " that I was too busy to go " + tail + " with " + them + ".";  // #25253
+  return true;
+}
+
+// ScenarioFriendAdvice (il2cpp_dump.txt:40742) is a friend asking the hero for
+// advice: the card's own text and its journal line both come out of
+// a16_friend-advice-enc, one row per question, gated on the hero's age and on
+// the friend's age, gender and circumstances (REPORT.en.md 100).
+bool Sim::friendAdviceYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // ScenarioIsEligibleForRandomPush @0x73f3c40fd8: 18 or older, not in prison, a
+  // friend to ask, and PresentedCountForScenario < 2 -- the card shows at most
+  // twice in a life.
+  if (h.age < 18 || h.inPrison || life.advicePresented >= 2) return false;
+  // shortcut: the class carries no push rate (the friend subsystem opens the
+  // card), and the friend is a real SimPerson whose Script state and marriage
+  // the game reads. Here the friend is a slot the port draws, so the coin, the
+  // friend's job / study / marriage and the Friend Min Relationship column (nine
+  // rows ask for 70, one for 80, one for 50) are the port's, read as satisfied.
+  if (!advRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_friend-advice-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card: personName() draws a fresh one per call, so the
+  // friend token is settled here and substituted into both cells first.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = advRng_.chance(0.5);
+  const bool friendJob = advRng_.chance(0.6);
+  const bool friendStudent = !friendJob && advRng_.chance(0.5);
+  const bool friendMarried = advRng_.chance(0.3);
+  const int friendAge = h.age;  // the port's friend stands at the hero's own age
+
+  const Table& t = tbl("a16_friend-advice-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string scn = trim(t.at(r, "Scenario"));
+    const std::string log = trim(t.at(r, "Log Version"));
+    if (scn.empty()) continue;
+    // shortcut: two rows write the friend's partner ('<friend-lover>',
+    // '<friend-lover-possessive>'), a person the port has no pool for, so those
+    // rows are skipped rather than filled with a wrong name.
+    if (scn.find("<friend-lover") != std::string::npos ||
+        log.find("<friend-lover") != std::string::npos)
+      continue;
+    const int heroMin = int(t.num(r, "Hero Min Age"));
+    const int heroMax = int(t.num(r, "Hero Max Age"));
+    if (heroMin > 0 && h.age < heroMin) continue;
+    if (heroMax > 0 && h.age > heroMax) continue;
+    const std::string hg = lower(trim(t.at(r, "Hero Gender")));
+    if (hg == "male" && h.female) continue;
+    if (hg == "female" && !h.female) continue;
+    const int fMin = int(t.num(r, "Friend Min Age"));
+    const int fMax = int(t.num(r, "Friend Max Age"));
+    if (fMin > 0 && friendAge < fMin) continue;
+    if (fMax > 0 && friendAge > fMax) continue;
+    const std::string fg = lower(trim(t.at(r, "Friend Gender")));
+    if (fg == "male" && friendFemale) continue;
+    if (fg == "female" && !friendFemale) continue;
+    if (t.flag(r, "Friend Has Job") && !friendJob) continue;
+    if (t.flag(r, "Friend Is Married") && !friendMarried) continue;
+    if (t.flag(r, "Friend Is Student") && !friendStudent) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[advRng_.below(uint32_t(pool.size()))];
+
+  std::string scenario = trim(t.at(row, "Scenario"));
+  std::string logCell = trim(t.at(row, "Log Version"));
+  substAll(scenario, "<friend-possessive>", friendName + "'s");
+  substAll(scenario, "<friend>", friendName);
+  substAll(logCell, "<friend-possessive>", friendName + "'s");
+  substAll(logCell, "<friend>", friendName);
+  // The card's text draws come out of the card's own stream, and the
+  // alternatives the body picks are the ones the journal line's '<rb>' points
+  // back at, so the body is read first and its draws are kept.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      // A pronoun pair belongs to the resolver (it keys the pair on the friend),
+      // and the friend is already named: only the alternatives are drawn here.
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[advRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = friendFemale;
+  const std::string body = resolve(drawCardText(scenario, true));
+  const std::string line = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  const std::string them = friendFemale ? "her" : "him";
+  const bool good = advRng_.chance(0.5);
+  out = AgeUp();
+  out.table = "a16_friend-advice-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Advice";  // #10893
+  out.body = body;
+  out.cta = "What will you do?";
+  out.choice = good ? "Give " + them + " good advice" : "Give " + them + " bad advice";  // #21756 / #21755
+  if (good) {
+    // The accept branch: ImpactKarma(3) and ImpactDiscipline(2) on the hero, and
+    // a +3 nudge to the friend's relationship with the hero, which the port has
+    // no bar for (shortcut).
+    out.karma = pointsForImpact(3);
+    out.discipline = pointsForImpact(2);
+    out.narrative = line + "\nI gave " + them + " the best advice I could.";  // #69083
+  } else {
+    // The other branch: ImpactKarma(-4), ImpactDiscipline(-3), the same
+    // relationship nudge the other way, and a persistent hero flag the port
+    // keeps no reader for (shortcut).
+    out.karma = pointsForImpact(-4);
+    out.discipline = pointsForImpact(-3);
+    out.narrative = line + "\nI intentionally misled " + them + " by giving " + them +
+                    " bad advice.";  // #69096
+  }
+  ++life.advicePresented;
   return true;
 }
 

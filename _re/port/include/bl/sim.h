@@ -63,6 +63,9 @@ struct Life {
   int year = 0;
   bool alive = true;
   std::vector<Person> family;
+  // The friend-advice card's PresentedCountForScenario counter (REPORT.en.md
+  // 100): the game shows that card at most twice in one life.
+  int advicePresented = 0;
 };
 
 class Sim {
@@ -355,6 +358,9 @@ class Sim {
   bool skipSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The mobster's spend-time card (REPORT.en.md 99): the mafia's own push.
   bool mobsterSpendYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-advice card (REPORT.en.md 100): a friend's question, capped at
+  // two showings per life. It draws on its own stream (advRng_).
+  bool friendAdviceYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -485,6 +491,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng spendRng_;
   Rng skipRng_;
   Rng mobRng_;
+  // The friend-advice card's own stream (REPORT.en.md 100).
+  Rng advRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

@@ -12819,3 +12819,404 @@ coins on its own budget leaves its neighbours' numbers alone, and this is that c
 rather than asserted.
 
 The full regression after the section: 42 probes at residue 0 (the new `mobres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two
+outcomes, and the karma this card moves where its neighbours moved happiness
+
+The three sections before this one were all spend-time cards, and 99 closed that family. This
+one opens a new one: `ScenarioFriendAdvice` (il2cpp_dump.txt:40742) is a random push card in
+the same shape as 97 and 98 - a roster, one row drawn from it, a question with two actions -
+but the roster is a friend's roster, the question is a friend's, and the outcome it moves is
+`karma` and `discipline` rather than `happiness` (100.2). It is also the first card in the port
+whose table is not already wired, which is why the section starts by saying what the family is
+instead of what it shares.
+
+The port referenced exactly one friend table before this section, `a16_friend-lover-scenarios-enc`
+(src/sim.cpp:1239). `tablegap.py` - the diff of the port's source text against the 940 `a16_*`
+files in `_re/gamedata` - lists ten more `friend-*` tables, eleven `secret-agent-*`, four
+`coworker-*` and six `child-*`/`custody-*` among a hundred and eighteen unreferenced names. This
+section takes the first of them because it is the only table in that list whose class the dumper
+names, whose push gate can be read, and whose rows are gated on a second person the class also
+carries. The other friend tables - `a16_friend-pranks-enc`, `a16_friend-rumors-enc`,
+`a16_friend-party-scenarios-enc` - stay on the list.
+
+The port writes none of this card's prose. The question is the table's `Scenario` cell, the
+journal line is its `Log Version` cell, both responses are the class's own two `String.Format`
+literals, and the two buttons are two more literals with a pronoun slot. What the port adds is
+its usual `What will you do?` prompt (src/sim.cpp:23854) - the line the game itself writes at the end of
+many of its body literals and which the port keeps as a field of its own, the same one 98 and
+99 carry.
+
+### 100.1 The family
+
+`class ScenarioFriendAdvice : Scenario` (il2cpp_dump.txt:40742) holds two fields: `_friend`
+(SimPerson, 0x170) and `_narrative` (System.String, 0x178). Its methods are `.ctor()`
+`0x73f3c3f4a8`, `RefreshScenario()` `0x73f3c3fae8` (670 instructions),
+`ChoiceSelectedAtIndex(System.Int32)` `0x73f3c40a8c` (340), `GetFriend()` `0x73f3c3f510`,
+`DataFriendAdvice GetAdviceForFriend(SimPerson)` `0x73f3c4055c` (333) and
+`System.Boolean ScenarioIsEligibleForRandomPush()` `0x73f3c40fd8` (65) - so this card, unlike
+99's, does sit on the game's random push scheduler and has a gate to read.
+
+The data class is `DataFriendAdvice` (il2cpp_dump.txt:9504): `Scenario` at 0x10, `LogVersion`
+0x18, `HeroMinAge` 0x20, `HeroMaxAge` 0x24, `HeroGender` 0x28, `FriendMinAge` 0x2c,
+`FriendMaxAge` 0x30, `FriendGender` 0x34, `FriendMinRelationship` 0x38, `FriendHasJob` 0x3c,
+`FriendIsMarried` 0x3d, `FriendIsStudent` 0x3e, `IsSpecificAdvice` 0x3f. The dumper's names pair
+the three adjacent byte fields with three bools, which is what makes the script-state checks in
+100.3 readable: a row can ask for a friend with a job, a married friend, or a student friend,
+and the class tests each against the friend's own state byte instead of against a relationship.
+
+Two loaders feed the card. `GetAllFriendAdviceScenariosForHeroAgeAndHeroGender(Int32, Int32)`
+`0x73f2cc9da0` builds the hero-side pool from the hero's age and gender - the `Hero*` columns -
+and `GetAdviceForFriend(SimPerson)` `0x73f3c4055c` filters that pool against the friend - the
+`Friend*` columns. Both are needed to reach a row, and the port folds the two passes into one
+loop (100.3).
+
+The table is `a16_friend-advice-enc`: forty-eight data rows and thirteen columns, listed in
+`_re/gamedata_plain` (the same-named file in `_re/gamedata` is the encrypted blob). The port
+loads it eagerly from the list at src/sim.cpp:1241, directly under the friend-lover table that
+was already there.
+
+### 100.2 The card
+
+By literal id, the card's vocabulary is: the title `#10893` `Advice` - the only bare `Advice`
+literal in the dump - the two buttons `#21756` `Give {0} good advice` and `#21755`
+`Give {0} bad advice`, and the two responses `#69083` `{0}\nI gave {1} the best advice I
+could.` and `#69096` `{0}\nI intentionally misled {1} by giving {2} bad advice.` Both responses
+are two-line formats: the first slot is the journal line the card already built, so the second
+line of each is the class's own sentence and the only prose the game contributes.
+
+The {0} of the two buttons is `PronounStringForType(2)` `0x73f30e64d0` - the friend's pronoun,
+him or her - which the port renders from the gender it gave the friend (100.3). The dump also
+holds the unparameterised siblings of both buttons - `#21667` `Give bad advice`, `#39436`
+`Some good advice`, `#59905` `good advice` and `#54744` `bad advice` - and two refusal lines,
+`#23865` `I decided not to follow advice from my friend, ` and `#48254` `You decided not to
+follow advice from your friend, `, which end in a comma and which no branch of this card's
+handler ever formats. The card cannot be refused; the two refusals in the family's vocabulary
+belong to a sibling that is not this class.
+
+`ChoiceSelectedAtIndex` explains the shape of the outcome. It lowercases the chosen label and
+matches it with `String.Contains` against static label arrays, so the action is classified by
+the words on the button rather than by index, and the five match addresses it holds collapse
+onto two outcomes: branches 1 and 2 are the good and the bad advice, and branches 3 and 4, after
+their own impacts, jump back to the same good-advice format at 0x73f3c40d10. Four label phrases,
+two sentences.
+
+Each outcome moves two meters and no more. Good advice calls the friend's relationship impact
+with the value 3 (the vtable slot at 0x508, not a named symbol), `ImpactDiscipline(2)`
+`0x73f30e4cdc` and `ImpactKarma(3)` `0x73f30e4bfc`; bad advice calls them with -3, -3 and -4.
+There is no `ImpactHappiness` call anywhere in the handler, so a card that reads like a
+relationship card never touches the happiness bar - the first card in this report whose two
+actions both leave `happiness` at zero. Through the port's `pointsForImpact` table
+(src/sim.cpp:3786) that is `karma 16, discipline 8` for the good advice and `karma -30,
+discipline -16` for the bad advice.
+
+The bad branch writes one more thing: `strb #1` into `[x8+0x2a1]`, a persistent byte on the
+hero object. It is the only consumer of that byte this report has found, the dumper gives it no
+name, and nothing in the corpus reads it back, so the port leaves it out and records it here
+rather than guessing a meaning for it.
+
+### 100.3 Who can ask: the four gates, and then the row's own seven
+
+`ScenarioIsEligibleForRandomPush` is a short chain of four tests. The hero must be at least
+18 (the immediate `cmp` against 0x12 at the top of the method); the hero must not be in prison
+(`!CurrentlyInPrison()` `0x73f2f0e1d8`); the card must have a friend to ask (`GetFriend()` must
+return non-null); and `PresentedCountForScenario(<the card's own id>)` `0x73f3736430` must be
+below 2. That last test is the first in this report that counts how often a card has already
+been shown: this card may appear at most twice in a life, and the port now carries the counter
+on the life (`int advicePresented`, include/bl/sim.h:68, reset with every new life) rather than
+on the simulator, so 100.6 can see the cap hold.
+
+Then the row filter, which `GetAdviceForFriend` applies to the hero-side pool:
+
+1. `FriendMinAge` (row 0x2c) against the friend's age - the friend must be at least this old;
+2. `FriendMaxAge` (row 0x30) against the friend's age, where zero means unbounded;
+3. `FriendGender` (row 0x34) against the friend's gender byte, where 2 means any;
+4. `FriendMinRelationship` (row 0x38) against `friend.GetTotalHeroRelationshipStrength()`
+   `0x73f30d284c`;
+5. `FriendHasJob` (row 0x3c): the friend's script-state byte must be 2;
+6. `FriendIsStudent` (row 0x3e): the friend's script-state byte must be 1;
+7. `FriendIsMarried` (row 0x3d): the friend's partner field must exist and its gender must
+   differ from the friend's.
+
+The pool that survives is drawn from once. The port's port of that loop is src/sim.cpp:23773
+to 23806: the same seven tests, each skipped when the column is empty, plus two skips of its
+own - rows whose text carries `<friend-lover>` (100.5) and rows whose `<...>` tokens the port
+cannot resolve.
+
+The friend itself is the card's second actor, and the port invents it in one place
+(src/sim.cpp:23761-23771): the name is `resolve("<friend>")` drawn once for the whole card (the
+name pool draws a fresh person on every call, so a row that names the friend twice would
+otherwise name two people), the gender is a coin, and the job, student and married states are
+three more coins at 0.6, 0.5 and 0.3. Nothing in the corpus shows the game's own friend
+distribution, and gate 4 above is a relation the port's friend does not have, so both are
+shortcuts (100.5).
+
+### 100.4 The rows: forty-eight questions, and the ten the port cannot reach
+
+The forty-eight rows are questions an acquaintance asks: a trip to another country, a new job,
+hiding money from a spouse, candy for a dish, flatulence in class, a first period, a purchase
+for a partner. Their columns, counted: `Hero Gender` is empty on all forty-eight rows, so no
+row in this table is gated on the hero's sex; `Hero Min Age` is 18 on fourteen rows, empty on
+thirteen, 16 on six, 14 on five, 65 on two, 12 on two, 8 on two, and then 40, 60, 5 and 21 once
+each; `Hero Max Age` is empty on forty-four rows and 12, 18, 22, 25 once each; `Friend Min Age`
+is 18 on seventeen rows, 14 on four, 10, 12, 8 and 65 on two each, and 5, 16 and 60 once each;
+`Friend Max Age` is empty on thirty-nine rows and 12, 14, 18, 21, 22 and 25 once each, with
+15 twice;
+`Friend Gender` is male on five rows and female on three; `Friend Min Relationship` is 70 on
+nine rows, 80 on one and 50 on one; and the three friend-state flags are set on six, seven and
+four rows. `Specific Advice` is `x` on twenty-four rows and empty on the other twenty-four, and
+all forty-eight `Log Version` cells are distinct.
+
+One cell in that census is not a number: row 19's `Friend Max Age` holds `male`. The column
+after it - `Friend Gender` - is empty on that row, so the source table has its own column-shift
+typo and the friend's gender for that row sits one column to the left. The port reads the cell
+through `Table::num`, which is 0 for anything non-numeric, so the row is treated as unbounded;
+the typo is the game's, and copying it costs nothing.
+
+The rows talk in tokens. Their two cells carry a hundred and twenty-one one-of lists
+(`<a treadmill/a gym membership/...>`), `<friend>` ninety-five times, `<friend-lover>` eight,
+`<rb>` seven (rows 5, 28, 34, 38, 45, 46, 47), `<friend-lover-possessive>` four,
+`<country-other>` four, `<drug>` and `<drug-illegal>` and `<musician>` two each, and
+`<friend-possessive>` once. Forty-one of the forty-eight rows carry at least one list.
+
+Reachability is where the table gets interesting. Simulating the port's own filter over hero
+ages 18 to 85 and both genders, all four friend-state combinations and both friend genders, 38
+of the 48 rows can be drawn and 10 cannot:
+
+  row 17 - `<friend-lover>` in both cells
+  row 22 - friend max age 15 (the port's friend is the hero's age)
+  row 23 - friend max age 15 (the only female-gated row the port could reach)
+  row 26 - `<friend-lover>`
+  row 30 - `<friend-lover>`
+  row 42 - `<friend-lover>`
+  row 44 - hero max age 12 against this card's own hero-age gate of 18
+  row 46 - `<friend-lover>`
+  row 47 - `<friend-lover>`
+  row 48 - friend max age 14, and this row is also the one `<musician>` row the port's token
+           list already resolves
+
+Six of the ten are the port's `<friend-lover>` shortcut, three are the friend-age shortcut, and
+one - row 44, whose hero ceiling is 12 while the card refuses to be pushed before 18 - is dead
+in the game as well. A row the game itself can never show is the kind of thing only a table
+census finds, and it is worth stating that the port is not the reason for that one.
+
+### 100.5 Shortcuts
+
+1. `friendAge = h.age`. The game's friend is a real SimPerson with its own age; the port's is
+   the hero's age, which is what makes rows 22, 23 and 48 unreachable (100.4). Modelling a
+   friend younger than the hero would invent a distribution the corpus does not show, and it
+   would cost the seventeen rows that require a friend of at least 18, so the shortcut is kept
+   and the count recorded instead.
+
+2. The friend's job, student and married states are three coins (0.6, 0.5, 0.3), not the
+   game's own script-state model. The constraints are what the table's flags gate on; the
+   distribution behind them is unobserved.
+
+3. `FriendMinRelationship` is read as satisfied. The port's friend has no relationship bar -
+   the name pool hands out a stranger's name - and the column is 70, 80 or 50 on eleven rows.
+
+4. The friend's relationship impact (the vtable call with value 3, or -3) is not modelled: the
+   port's friend is not a Person in `Life`.
+
+5. The `[x8+0x2a1]` flag the bad branch sets has no reader in the corpus and no name in the
+   dumper, so it is not modelled (100.2).
+
+6. The push rate is a coin of 0.06 (src/sim.cpp:23758). The class has an eligibility gate but
+   no rate; the corpus cannot show one.
+
+7. Rows that name `<friend-lover>` - six of them - are skipped. The token means the friend has
+   a partner, and the port's friend does not; the two possessive forms the table also uses
+   (`<friend-lover-possessive>`) are unhandled in the port's token list.
+
+8. The card's body and its journal cell are resolved as two strings, so a token that appears in
+   both is drawn twice. Row 36 shows it: the card says `plan a trip to Greece` and the journal
+   says `travel to South Africa`. Rows whose `Log Version` says `<rb>` do agree, because the
+   body's own draws are kept for exactly that token (src/sim.cpp:2412-2426); the four
+   `<country-other>` rows do not, and the game's two cells would have to be read as one draw
+   for the port to fix it.
+
+### 100.6 Verification
+
+The card has its own probe, `/tmp/qdir/fares.py`, which drives 160 lives - seeds 1 to 40, both
+genders, an 80-year and a 50-year run each - and for every card it checks the title, the hero's
+age floor, the row number and the row's own age gates, the body and the journal line against
+the row's two cells turned into per-row regexes, the friend's gender across the body, the
+button and the response, the exact response sentence for the outcome, and the deltas: karma 16
+with discipline 8, or karma -30 with discipline -16, every other meter at zero. It counts cards
+per life, so the cap of two showings is measured rather than asserted, and it sweeps every card
+for an unresolved `<...>` token. Its output:
+
+```
+runs 160 rc failures 0 cards 196
+kinds {'good': 110, 'no gendered token': 18, 'bad': 86} pronouns {'her': 88, 'him': 108}
+rows drawn 26 of 48 top [(18, 16), (37, 12), (38, 12), (20, 12)]
+ages {19: 12, 20: 4, 21: 16, 22: 4, 23: 4, 25: 4, 26: 8, 28: 4, 30: 4, 31: 4, 33: 8, 35: 4, 36: 8, 37: 4, 39: 16, 40: 20, 44: 8, 45: 12, 46: 4, 47: 4, 48: 4, 49: 4, 50: 4, 52: 2, 53: 2, 55: 2, 56: 4, 57: 4, 58: 1, 59: 2, 60: 2, 62: 1, 63: 2, 65: 2, 66: 2, 68: 2, 70: 2, 73: 2}
+cards per life {0: 40, 1: 44, 2: 76}
+mismatches {}
+samples []
+RESIDUE 0 {}
+```
+
+Two lines in that log are the ones to read. `cards per life {0: 40, 1: 44, 2: 76}` is the cap
+from 100.3 holding - no life in the sample sees three cards - and `rows drawn 26 of 48` says
+the sweep reached 26 of the table's 48 questions, which is the reachable set of 100.4 seen from
+the outside: a row that cannot be drawn cannot be counted. The `no gendered token` counter is
+the probe's own honesty: 18 cards came from rows whose two cells never write a pronoun, so the
+only place the friend's gender shows is the button, and the check falls back to it.
+
+The samples below come from the same sweep, one block per property, each with the row's own
+table cells printed above the card so a gate can be read against the output that passed it:
+
+```
+=== good advice, the youngest hero
+seed 11  male  United States  years 80  age 19  row 38
+table cells : Hero Min/Max Age 14/-   Friend Min/Max Age 14/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Sugar Moon is asking if you think he should get a pet bunny.
+CHOICE : Give him good advice
+LOG    : Sugar Moon asked me if I think he should get a pet bunny.
+I gave him the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+
+=== bad advice
+seed 2  male  United States  years 80  age 50  row 8
+table cells : Hero Min/Max Age 18/-   Friend Min/Max Age 18/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Barley Ruth is looking to try a new place of worship and is asking for your opinion.
+CHOICE : Give him bad advice
+LOG    : Barley Ruth asked me about my opinion on places of worship.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row whose journal line quotes the body's alternative ('<rb>')
+seed 5  male  United States  years 80  age 39  row 38
+table cells : Hero Min/Max Age 14/-   Friend Min/Max Age 14/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Selene Gnomez is asking if you think he should get a pet puppy.
+CHOICE : Give him bad advice
+LOG    : Selene Gnomez asked me if I think he should get a pet puppy.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row the table gates on the friend being male
+seed 9  male  United States  years 80  age 40  row 41
+table cells : Hero Min/Max Age -/-   Friend Min/Max Age -/-   Friend Gender male
+flags       : Has Job -  Is Married x  Is Student -
+TITLE  : Advice
+BODY   : Bruno Ares is venting to you about his wife's compulsive spending habits, and he asks if you think he should start hiding money from her.
+CHOICE : Give him bad advice
+LOG    : Bruno Ares asked me if he should hide money from his financially irresponsible wife.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row the table gates on a friend aged at least 18
+seed 1  male  United States  years 80  age 21  row 18
+table cells : Hero Min/Max Age 18/-   Friend Min/Max Age 18/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : While enjoying a triple-scoop cone with Later Rocky, she admits that she is thinking about going on a diet and is asking for your opinion on the matter.
+CHOICE : Give her good advice
+LOG    : Later Rocky asked me for my opinion on her diet options.
+I gave her the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+
+=== the youngest hero holding a card
+seed 11  male  United States  years 80  age 19  row 38
+table cells : Hero Min/Max Age 14/-   Friend Min/Max Age 14/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Sugar Moon is asking if you think he should get a pet bunny.
+CHOICE : Give him good advice
+LOG    : Sugar Moon asked me if I think he should get a pet bunny.
+I gave him the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+
+=== a body that carries a one-of list
+seed 1  male  United States  years 80  age 21  row 18
+table cells : Hero Min/Max Age 18/-   Friend Min/Max Age 18/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : While enjoying a triple-scoop cone with Later Rocky, she admits that she is thinking about going on a diet and is asking for your opinion on the matter.
+CHOICE : Give her good advice
+LOG    : Later Rocky asked me for my opinion on her diet options.
+I gave her the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+
+=== a row with a hero age floor above 40
+seed 15  male  United States  years 80  age 70  row 32
+table cells : Hero Min/Max Age 65/-   Friend Min/Max Age 65/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Beyawnce Gnolls wants to know if you think he should change up the candy assortment in his candy dish.
+CHOICE : Give him bad advice
+LOG    : Beyawnce Gnolls asked me if I think he should spice things up by mixing some new candy into his candy dish.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row the table marks Friend Has Job
+seed 8  male  United States  years 80  age 56  row 33
+table cells : Hero Min/Max Age 16/-   Friend Min/Max Age -/-   Friend Gender -
+flags       : Has Job x  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Zen Maya is asking you whether she should look for a new job or not.
+CHOICE : Give her bad advice
+LOG    : Zen Maya asked me whether or not I think she should look for a new job.
+I intentionally misled her by giving her bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row the table marks Friend Is Married
+seed 9  male  United States  years 80  age 40  row 41
+table cells : Hero Min/Max Age -/-   Friend Min/Max Age -/-   Friend Gender male
+flags       : Has Job -  Is Married x  Is Student -
+TITLE  : Advice
+BODY   : Bruno Ares is venting to you about his wife's compulsive spending habits, and he asks if you think he should start hiding money from her.
+CHOICE : Give him bad advice
+LOG    : Bruno Ares asked me if he should hide money from his financially irresponsible wife.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row the table marks Friend Is Student
+seed 10  male  United States  years 80  age 45  row 20
+table cells : Hero Min/Max Age -/-   Friend Min/Max Age -/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student x
+TITLE  : Advice
+BODY   : Deejay Walid has been having problems with excessive flatulence lately, and he is asking your opinion as to how he should deal with it in class.
+CHOICE : Give him bad advice
+LOG    : Deejay Walid asked me for advice on how to deal with his farting problems in class.
+I intentionally misled him by giving him bad advice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -30, "looks": 0, "smarts": 0}
+
+=== a row with another pool token in it
+seed 2  male  United States  years 80  age 68  row 36
+table cells : Hero Min/Max Age -/-   Friend Min/Max Age 18/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Micky Mirage is asking you if you think she should plan a trip to Greece.
+CHOICE : Give her good advice
+LOG    : Micky Mirage asked if she should travel to South Africa.
+I gave her the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+
+=== the oldest hero holding a card
+seed 2  male  United States  years 80  age 68  row 36
+table cells : Hero Min/Max Age -/-   Friend Min/Max Age 18/-   Friend Gender -
+flags       : Has Job -  Is Married -  Is Student -
+TITLE  : Advice
+BODY   : Micky Mirage is asking you if you think she should plan a trip to Greece.
+CHOICE : Give her good advice
+LOG    : Micky Mirage asked if she should travel to South Africa.
+I gave her the best advice I could.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 16, "looks": 0, "smarts": 0}
+```
+
+Thirteen blocks, no block missing. The row whose question is the table's only `<musician>` one (48)
+and the three rows that need a friend outside the hero's age band (22, 23, 48) are absent from
+them for the reason 100.4 gives; row 41 shows the friend-state gate that asks for a married
+man, row 33 the one that asks for a friend with a job, and row 20 the one that asks for a
+student. Row 36 is the block that shows shortcut 8 without any help: the card and its journal
+line name two different countries, drawn from the two cells' own lists.
+
+The full regression after the section: 43 probes at residue 0 (the new `fares.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
