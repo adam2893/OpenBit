@@ -1,0 +1,1643 @@
+#include "bl/sim.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+
+namespace bl {
+namespace {
+
+std::string slurp(const std::string& path) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in) throw std::runtime_error("cannot open " + path);
+  std::ostringstream out;
+  out << in.rdbuf();
+  return out.str();
+}
+
+std::string lower(std::string s) {
+  for (char& c : s) c = char(std::tolower((unsigned char)c));
+  return s;
+}
+
+std::string trim(const std::string& s) {
+  size_t a = 0, b = s.size();
+  while (a < b && (unsigned char)s[a] <= ' ') ++a;
+  while (b > a && (unsigned char)s[b - 1] <= ' ') --b;
+  return s.substr(a, b - a);
+}
+
+// ---- minimal JSON reader ------------------------------------------------
+// gamedata_json/a16_countries-enc.json is a flat array of flat objects, so the
+// object splitter plus a string / string-array reader is all that is needed.
+
+void encodeUtf8(unsigned cp, std::string& out) {
+  if (cp < 0x80) {
+    out += char(cp);
+  } else if (cp < 0x800) {
+    out += char(0xC0 | (cp >> 6));
+    out += char(0x80 | (cp & 0x3F));
+  } else if (cp < 0x10000) {
+    out += char(0xE0 | (cp >> 12));
+    out += char(0x80 | ((cp >> 6) & 0x3F));
+    out += char(0x80 | (cp & 0x3F));
+  } else {
+    out += char(0xF0 | (cp >> 18));
+    out += char(0x80 | ((cp >> 12) & 0x3F));
+    out += char(0x80 | ((cp >> 6) & 0x3F));
+    out += char(0x80 | (cp & 0x3F));
+  }
+}
+
+std::vector<std::pair<size_t, size_t>> topLevelObjects(const std::string& s) {
+  std::vector<std::pair<size_t, size_t>> out;
+  int depth = 0;
+  bool in_string = false, escape = false;
+  size_t begin = 0;
+  for (size_t i = 0; i < s.size(); ++i) {
+    const char c = s[i];
+    if (in_string) {
+      if (escape) escape = false;
+      else if (c == '\\') escape = true;
+      else if (c == '"') in_string = false;
+      continue;
+    }
+    if (c == '"') { in_string = true; continue; }
+    if (c == '{') { if (depth++ == 0) begin = i; }
+    else if (c == '}') { if (--depth == 0) out.emplace_back(begin, i); }
+  }
+  return out;
+}
+
+// Index just past the ':' of "key":, or npos.
+size_t findValue(const std::string& s, const std::string& key, size_t from, size_t end) {
+  const std::string needle = "\"" + key + "\"";
+  size_t p = s.find(needle, from);
+  if (p == std::string::npos || p > end) return std::string::npos;
+  p = s.find(':', p + needle.size());
+  if (p == std::string::npos || p > end) return std::string::npos;
+  return p + 1;
+}
+
+std::string readString(const std::string& s, size_t& i, size_t end) {
+  while (i < end && s[i] != '"') ++i;
+  if (i >= end) return std::string();
+  ++i;
+  std::string out;
+  while (i < end && s[i] != '"') {
+    if (s[i] == '\\' && i + 1 < end) {
+      const char e = s[++i];
+      switch (e) {
+        case 'n': out += '\n'; break;
+        case 't': out += '\t'; break;
+        case 'r': break;
+        case 'u': {
+          if (i + 4 < end) {
+            unsigned cp = unsigned(std::strtoul(s.substr(i + 1, 4).c_str(), nullptr, 16));
+            i += 4;
+            encodeUtf8(cp, out);
+          }
+          break;
+        }
+        default: out += e;
+      }
+      ++i;
+      continue;
+    }
+    out += s[i++];
+  }
+  if (i < end) ++i;
+  return out;
+}
+
+std::string stringField(const std::string& s, const std::string& key, size_t from, size_t end) {
+  size_t i = findValue(s, key, from, end);
+  if (i == std::string::npos) return std::string();
+  return readString(s, i, end);
+}
+
+std::vector<std::string> stringArrayField(const std::string& s, const std::string& key,
+                                          size_t from, size_t end) {
+  std::vector<std::string> out;
+  size_t i = findValue(s, key, from, end);
+  if (i == std::string::npos) return out;
+  while (i < end && s[i] != '[') ++i;
+  if (i >= end) return out;
+  ++i;
+  while (i < end && s[i] != ']') {
+    if (s[i] == '"') out.push_back(readString(s, i, end));
+    else ++i;
+  }
+  return out;
+}
+
+std::vector<Country> loadCountries(const std::string& path) {
+  const std::string text = slurp(path);
+  std::vector<Country> out;
+  for (const auto& obj : topLevelObjects(text)) {
+    Country c;
+    c.name = stringField(text, "<Name>k__BackingField", obj.first, obj.second);
+    c.continent = stringField(text, "<Continent>k__BackingField", obj.first, obj.second);
+    c.code = stringField(text, "<Code>k__BackingField", obj.first, obj.second);
+    c.currency = stringField(text, "<Currency>k__BackingField", obj.first, obj.second);
+    c.language = stringField(text, "<Language>k__BackingField", obj.first, obj.second);
+    c.demonym = stringField(text, "<Demonym>k__BackingField", obj.first, obj.second);
+    c.cities = stringArrayField(text, "Cities", obj.first, obj.second);
+    if (!c.name.empty()) out.push_back(std::move(c));
+  }
+  return out;
+}
+
+// Commonness-Score weighted pick over an explicit candidate pool (weightedPick
+// above picks over a whole table; the birth rows need the age gate applied
+// first).
+
+// Scripted-event scenarios: the game builds these in code from il2cpp string
+// literals (metadata layout in METADATA_STRINGS.en.md), so there is no table row
+// to replay. Every string below is a literal captured from the running game
+// (blh.js Life.LogScenarioPresentation probe, campaign 3) or read out of
+// global-metadata.dat; the brace tokens are the game's own {0}/{1} fill points.
+struct RegChoice {
+  const char* label;  // ScenarioChoice.<Title>
+  const char* log;    // the sentence the game logs for this branch, '' = none
+};
+struct RegScenario {
+  const char* cls;       // real il2cpp class name
+  const char* ext;       // Scenario.ExteriorTitle (card header), '' = none
+  const char* title;     // Scenario.Title
+  const char* body;      // Scenario.Body
+  int n;
+  RegChoice choices[4];  // empty for the scenes the game auto-advances
+};
+const RegScenario kScenarios[] = {
+    {"ScenarioChildhoodVaccination", "", "Vaccination",
+     "Your {parent} is taking you to the doctor's office to get vaccinated.\n\nHow will you behave?",
+     3,
+     {{"Throw a tantrum",
+       "I threw a tantrum when my {parent} took me to the doctor's office to get vaccinated."},
+      {"Bite her", "I bit my {parent} when {parent} took me to the doctor's office to get vaccinated."},
+      {"Try to stay calm",
+       "I remained calm when my {parent} took me to the doctor's office to get vaccinated."}}},
+    {"ScenarioSchoolEnroll", "Education", "Elementary School",
+     "You are starting elementary school.", 0, {}},
+    {"ScenarioFriendMeet", "Friend", "New Friend",
+     "Your classmate, {name}, wants to become your friend.", 2,
+     {{"Become friends with him", "I became friends with {name}."}, {"Reject him", ""}}},
+    {"ScenarioRetentionCrime", "Crime", "Mischief Maker",
+     "You're wondering how much trouble you'll get into if you do something a little bit naughty.\n\nWhat will you do?",
+     2, {{"Ignore the thought", ""}, {"Cause some trouble", ""}}},
+    // Auto-advancing scenes (no buttons). An empty branch log means the game's own
+    // LifeLog sentence for that scene has not been captured yet, so the port logs
+    // the card body; replace it once a capture pairs the two.
+    // LifeLog words the sibling birth in first person about the parents, while the
+    // card talks about "your parents"; the species/gender noun is drawn.
+    {"ScenarioScriptEventSiblingBorn", "", "Baby",
+     "Your parents just had a baby boy named {name}, your new brother.", 1,
+     {{"", "My mother and my father had a baby boy named {name}, my new brother."}}},
+    {"ScenarioScriptEventParentsBreakUp", "", "Divorce", "Your parents have divorced.", 0, {}},
+    {"ScenarioScriptEventParentMarriesStepparent", "", "Wedding",
+     "Your mother has married your new stepfather, {name}, a 42-year old grocer.\n\nThey went to "
+     "Hollywood for their honeymoon.", 0, {}},
+    // Captured LifeLog: "My cat, Ramona, died while sleeping peacefully." The card names
+    // the animal, age and cause; the log is a first-person rewrite, so only the shape is
+    // matched here.
+    {"ScenarioPetDeath", "", "Death",
+     "The family mutt, {name}, died at the age of 12.\n\nHe lived a great life, but sadly passed "
+     "peacefully in the night.", 1,
+     {{"", "My cat, {name}, died while sleeping peacefully."}}},
+    // Captured LifeLog: "I am suffering from tonsillitis." The card and the log each name
+    // a different ailment, both drawn at runtime.
+    {"ScenarioDiseaseContract", "", "Middle Ear Infection",
+     "You are suffering from a middle ear infection.", 1,
+     {{"", "I am suffering from tonsillitis."}}},
+    {"ScenarioFriendNew", "", "My ride or die", "You are now friends with {name}.", 0, {}},
+    {"ScenarioEthicsBreakSomething", "", "Integrity",
+     "You broke your parents's {item} while you were playing.\n\nWhat will you do?", 2,
+     {{"Admit that I broke it", "I admitted to my parents that I broke their {item}."},
+      {"It wasn't me", "I broke my parents's {item} and then lied about it."}}},
+    {"ScenarioSchoolClassmateActUp", "", "Troublemaker",
+     "Your classmate, {name}, is marching around your music teacher, Mrs. {teacher}'s, classroom and pretending "
+     "to play the trombone while smacking other students with the trombone slide.\n\nWhat will you do?",
+     4,
+     {{"Ignore her antics", ""}, {"Report her to the principal", ""}, {"Attack her", ""}, {"Laugh at her", ""}}},
+};
+// Real-world date gates for the two dated dumb-scenario sets. Holiday rows name
+// the holiday; calendar rows carry 'Month' + 'Date' (one real day each).
+int monthNumber(const std::string& name) {
+  static const char* kNames[12] = {"january", "february", "march",     "april",
+                                   "may",     "june",     "july",      "august",
+                                   "september", "october", "november", "december"};
+  const std::string m = lower(trim(name));
+  if (m.empty()) return 0;
+  for (int i = 0; i < 12; ++i)
+    if (m.rfind(kNames[i], 0) == 0) return i + 1;
+  return 0;
+}
+
+bool dumbDateMatches(const Table& t, size_t row, int month, int day) {
+  if (t.has("Type")) {  // holiday set
+    static const struct { const char* name; int month; } kHoliday[] = {
+        {"Halloween", 10}, {"Thanksgiving", 11}, {"Christmas", 12}, {"New Years", 1}};
+    const std::string type = trim(t.at(row, "Type"));
+    for (const auto& h : kHoliday)
+      if (type == h.name) return h.month == month;
+    return false;
+  }
+  if (t.has("Month"))  // calendar set: one row per real day of the year
+    return monthNumber(t.at(row, "Month")) == month && int(t.num(row, "Date")) == day;
+  return true;
+}
+
+const RegScenario* findScenario(const std::string& cls) {
+  for (const RegScenario& s : kScenarios)
+    if (cls == s.cls) return &s;
+  return nullptr;
+}
+// The registry covers only the scenes whose text has been captured, and none of
+// their stat impacts are measured yet, so every branch lands with zero deltas.
+// shortcut: registry deltas are 0 and the parent word is fixed to "mother"
+// (every capture so far), upgrade when a parent object exists in the port.
+void substAll(std::string& text, const std::string& token, const std::string& value) {
+  for (size_t at = text.find(token); at != std::string::npos; at = text.find(token, at + value.size()))
+    text.replace(at, token.size(), value);
+}
+
+// The scripted-scenario table (gamedata_plain/scenario1) writes the hero's
+// family as the game's own object tokens. The port keeps no family graph yet, so
+// <parent> reads as the mother and <him/her> keeps her gender.
+// shortcut: single-parent stand-in; upgrade when Life.Father/Mother exist.
+std::string scriptedFamilyTokens(std::string text) {
+  substAll(text, "<parent>", "mother");
+  substAll(text, "<him/her>", "her");
+  substAll(text, "<his/her>", "her");
+  return text;
+}
+
+size_t weightedPickOf(const Table& t, const std::string& col,
+                      const std::vector<size_t>& pool, Rng& rng) {
+  if (pool.empty()) return size_t(-1);
+  double total = 0;
+  for (size_t r : pool) total += t.num(r, col) > 0 ? t.num(r, col) : 0;
+  if (total <= 0) return pool[rng.below(uint32_t(pool.size()))];
+  double x = rng.unit() * total;
+  for (size_t r : pool) {
+    x -= t.num(r, col) > 0 ? t.num(r, col) : 0;
+    if (x <= 0) return r;
+  }
+  return pool.back();
+}
+
+// The star sign for a date. The game has no zodiac table for this: the sign is
+// derived from the birthday, so the port derives it too.
+const char* zodiacOf(int month, int day) {
+  static const int kFirstDay[12] = {20, 19, 21, 20, 21, 21, 23, 23, 23, 23, 22, 22};
+  static const char* kSign[12] = {"Aquarius", "Pisces",  "Aries",      "Taurus",
+                                  "Gemini",   "Cancer",  "Leo",        "Virgo",
+                                  "Libra",    "Scorpio", "Sagittarius", "Capricorn"};
+  const int m = month < 1 ? 1 : (month > 12 ? 12 : month);
+  return day < kFirstDay[m - 1] ? kSign[(m + 10) % 12] : kSign[m - 1];
+}
+
+void splitOn(const std::string& s, char sep, std::vector<std::string>& out) {
+  std::string cur;
+  for (char c : s) {
+    if (c == sep) { out.push_back(cur); cur.clear(); }
+    else cur += c;
+  }
+  out.push_back(cur);
+}
+
+}  // namespace
+
+Sim::Sim(std::string reDir, uint64_t seed) : reDir_(std::move(reDir)), rng_(seed) {}
+
+const Table& Sim::tbl(const char* name) const {
+  for (const auto& entry : tables_) if (entry.first == name) return entry.second;
+  throw std::out_of_range(std::string("table not loaded: ") + name);
+}
+
+const Table* Sim::table(const std::string& name) const {
+  for (const auto& entry : tables_) if (entry.first == name) return &entry.second;
+  return nullptr;
+}
+
+bool Sim::load(std::string* error) {
+  // The five real tables the loop is wired to. Names are verbatim file names
+  // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
+  static const char* kTables[] = {
+      "a16_casino-casino-celebrity-name-enc",        // First Name,Last Name,Gender,Skin,Commonness Score
+      "a16_dumb-scenarios-universal-enc",            // Index,Hero Min Age,Hero Max Age,...,Choice N,Narrative N,*Impact N
+      // The rest of the yearly dumb-scenario pool: the career set applies to an
+      // employed hero, the holiday and calendar sets are real-date gated
+      // (Sim::setDate). Same column layout as the universal table.
+      "a16_dumb-scenarios-career-enc",
+      "a16_dumb-scenarios-holiday-enc",
+      "a16_dumb-scenarios-calendar-enc",
+      "a16_hero-filler-enc",                         // Condition,String,Hero Min Age,Hero Max Age,Hero Gender,...
+      "a16_employee-recognition-scenarios-enc",      // Scenario,Commonness Score
+      "a16_death-types-enc",                         // Type,Commonness Score,Min Age,Sentence
+      // The age-0 birth lines (Sim::birthLines).
+      "a16_birth-circumstances-enc",                 // Circumstance,Commonness Score,Min/Max Mother Age
+      "a16_careers-enc",                             // Career,Commonness Score,...
+      "a16_pets-enc",                                // Animal,Breed,Wild,Exotic,Black Market,Commonness Score
+      "a16_pet-names-enc",                           // Animal,Name,Color,Gender
+  };
+  try {
+    for (const char* name : kTables) {
+      Table t = Table::load(reDir_ + "/gamedata_plain/" + name);
+      loaded_.push_back(name);
+      tables_.emplace_back(name, std::move(t));
+    }
+    countries_ = loadCountries(reDir_ + "/gamedata_json/a16_countries-enc.json");
+  } catch (const std::exception& e) {
+    if (error) *error = e.what();
+    return false;
+  }
+  if (countries_.empty()) {
+    if (error) *error = "no countries parsed";
+    return false;
+  }
+  return true;
+}
+
+std::string Sim::personName(const std::string& token) {
+  std::string key = token;
+  bool possessive = false;
+  const std::string suffix = "-possessive";
+  if (key.size() > suffix.size() && key.compare(key.size() - suffix.size(), suffix.size(), suffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - suffix.size());
+  }
+  static const char* kPeople[] = {"friend", "teacher", "classmate", "coworker", "co-worker",
+                                  "parent", "lover", "employee", "boss", "spouse", "sibling",
+                                  "neighbour", "neighbor", "stranger", "child"};
+  bool person = false;
+  for (const char* p : kPeople) if (key == p) person = true;
+  if (key == "company") return "the company";
+  if (!person) return std::string();
+
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  const size_t row = weightedPick(names, "Commonness Score", rng_);
+  const std::string name = names.at(row, "First Name") + " " + names.at(row, "Last Name");
+  return possessive ? name + "'s" : name;
+}
+
+std::string Sim::money(long long v) const {
+  std::string sym = "$";
+  if (hero_) {
+    for (const Country& c : countries_) {
+      if (c.name == hero_->country && !c.currency.empty()) { sym = c.currency; break; }
+    }
+  }
+  std::string digits = std::to_string(v < 0 ? -v : v);
+  for (size_t i = digits.size(); i > 3; i -= 3) digits.insert(i - 3, ",");
+  return (v < 0 ? "-" : "") + sym + digits;
+}
+
+// '<number:natural10-12000>', '<number:currency120-5000>', the legacy
+// '<num2-5>' / '<currency5000-550000>' spellings and the '<decnum100-105>'
+// tenths form. The '_roundup_10|100|1000' suffix draws first and rounds the
+// drawn value up (gamedata_plain/genesis_master_tags_number).
+bool Sim::numberToken(const std::string& token, std::string& out) {
+  std::string body = token;
+  long long round = 0;
+  const size_t rp = body.find("_roundup_");
+  if (rp != std::string::npos) { round = std::atoll(body.c_str() + rp + 9); body.resize(rp); }
+  bool currency = false, decimal = false;
+  if (body.compare(0, 15, "number:currency") == 0) { currency = true; body = body.substr(15); }
+  else if (body.compare(0, 14, "number:natural") == 0) body = body.substr(14);
+  else if (body.compare(0, 8, "currency") == 0) { currency = true; body = body.substr(8); }
+  else if (body.compare(0, 6, "decnum") == 0) { decimal = true; body = body.substr(6); }
+  else if (body.compare(0, 3, "num") == 0) body = body.substr(3);
+  else return false;
+  const size_t dash = body.find('-');
+  if (dash == std::string::npos) return false;
+  const long long lo = std::atoll(body.substr(0, dash).c_str());
+  const long long hi = std::atoll(body.substr(dash + 1).c_str());
+  if (hi < lo) return false;
+  if (decimal) {
+    // '<decnum100-105>' -> one decimal place, e.g. 102.4.
+    const long long tenths = (hi - lo) * 10;
+    const long long v = lo * 10 + (tenths > 0 ? static_cast<long long>(rng_.below(uint32_t(tenths + 1))) : 0);
+    out += std::to_string(v / 10) + "." + std::to_string(v % 10);
+    return true;
+  }
+  const long long span = hi - lo + 1;
+  long long v = lo + (span > 1 ? static_cast<long long>(rng_.below(uint32_t(span))) : 0);
+  if (round > 1) v = ((v + round - 1) / round) * round;
+  out += currency ? money(v) : std::to_string(v);
+  return true;
+}
+
+// The bare word tokens are entries of the game's own word pool table
+// genesis_master_tags_reference_2: '<insult>', '<drug>', '<drug-illegal>',
+// '<alcohol>', '<musician>', '<celebrity>', '<celebrity-male|female>',
+// '<random-person>', '<random-person-indefinite>', '<random-first-name-male>',
+// '<random-last-name>', '<body part>' ... Its tag_id column carries the
+// '<reference:name_with_underscores>' spelling and its real 'weight' column
+// decides the draw. A drawn value can itself be another pool (the
+// '<reference:random_first_name>' entry only holds the male and female pools),
+// so the draw repeats. Captured live: '<random-first-name-male>' -> 'Brad',
+// '<random-first-name>' -> 'Buster', '<body part>' -> 'fist'.
+std::string Sim::referenceToken(const std::string& token) {
+  if (!ensureTable("genesis_master_tags_reference_2")) return std::string();
+  const Table& t = tbl("genesis_master_tags_reference_2");
+  std::string key = token;
+  for (char& c : key) if (c == '-') c = '_';
+  if (key == "body_part" || key == "body part") key = "body_part_gender_neutral_can_be_injured";
+  for (int depth = 0; depth < 4; ++depth) {
+    const std::string tag = "<reference:" + key + ">";
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) if (t.at(r, "tag_id") == tag) pool.push_back(r);
+    if (pool.empty()) return std::string();
+    const std::string value = t.at(weightedPickOf(t, "weight", pool, rng_), "tag_value");
+    if (value.compare(0, 11, "<reference:") != 0) return value;
+    key = value.substr(11, value.size() - 12);
+  }
+  return std::string();
+}
+
+// The game does not keep the circumstance pools in a CSV: DataHub
+// 'GetRandomCircumstance()' @0x73f2ce2d08 is a switch over
+// 'Random.Range(0,43)' (cmp w0,#0x2a) whose arms return string literals that
+// only exist in the binary's metadata (report 38). Sampling the function live
+// gives 41 fixed scenes plus two '<musician> concert' slots, so the article
+// there follows the first letter of the drawn name ('an Usher concert').
+// 'GetRandomCircumstanceAtHome()' @0x73f2ce322c and
+// 'GetRandomCircumstanceComingBackFrom()' @0x73f2ce3888 are the same shape
+// (56 and 53 slots); their scenes are captured in report 38 but no wired table
+// uses '<circumstance-home>' or '<circumstance-return>' yet.
+static const char* const kCircumstancePublicScenes[] = {
+    "During a baseball game",
+    "During your lunch break",
+    "On your way to 7-Eleven",
+    "On your way to the airport",
+    "On your way to the dentist",
+    "On your way to the movie theater",
+    "On your way to the shooting range",
+    "While at a cricket match",
+    "While at a festival",
+    "While at a funeral",
+    "While at a gay pride festival",
+    "While at a golf tournament",
+    "While at a hockey game",
+    "While at a party",
+    "While getting a manicure",
+    "While having a picnic",
+    "While on a hike in the mountains",
+    "While on a trip to the mall",
+    "While out fishing",
+    "While out for a walk",
+    "While out getting a coffee",
+    "While out grocery shopping",
+    "While out jogging",
+    "While out riding your bike",
+    "While out running errands",
+    "While playing chess at the park with an old man",
+    "While returning a book to the library",
+    "While returning a movie to a Redbox",
+    "While riding a Segway",
+    "While running the bases in a kickball game",
+    "While shopping at the sex toy store",
+    "While sitting at the train station",
+    "While sitting on a park bench",
+    "While strolling through the park",
+    "While taking out the trash",
+    "While trimming the bush",
+    "While waiting at the bus stop",
+    "While waiting for food at the drive-thru",
+    "While waiting for your Uber driver",
+    "While walking downtown",
+    "While walking through the cemetery",
+};
+
+static std::string articleFor(const std::string& word) {
+  const bool vowel = !word.empty() && std::string("aeiouAEIOU").find(word[0]) != std::string::npos;
+  return vowel ? "an " : "a ";
+}
+
+std::string Sim::circumstancePublic() {
+  const size_t n = sizeof(kCircumstancePublicScenes) / sizeof(*kCircumstancePublicScenes);
+  const size_t slot = rng_.below(uint32_t(n + 2));  // two of the 43 slots draw a musician
+  if (slot < n) return kCircumstancePublicScenes[slot];
+  const std::string who = referenceToken("musician");
+  if (who.empty()) return kCircumstancePublicScenes[rng_.below(uint32_t(n))];
+  return std::string(slot == n ? "While at " : "On your way to ") + articleFor(who) + who + " concert";
+}
+
+// The hero-facing tokens. genesis_master_tags_hero documents the '<hero:...>'
+// spelling; the tables also carry the older '<hero-name>' / '<hero-first-name>'
+// / '<city>' / '<country>' / '<country-other>' forms. The game itself fills a
+// per-life dictionary with '<country>', '<country possessive>', '<city>',
+// '<first name>', '<male name>' and '<body part>' (captured live, report 33).
+std::string Sim::heroToken(const std::string& key, bool possessive) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  const std::string own = possessive ? "'s" : "";
+  if (key == "hero-name" || key == "hero:full_name") return h.firstName + " " + h.lastName + own;
+  if (key == "hero-first-name" || key == "hero:first_name" || key == "first name") return h.firstName + own;
+  if (key == "hero-last-name" || key == "hero:last_name" || key == "hero:last-name") return h.lastName + own;
+  if (key == "hero:age") return std::to_string(h.age);
+  if (key == "hero:bank_balance") return money(h.money);
+  if (key == "hero:money_currency_symbol") { const std::string m = money(0); return m.substr(0, m.size() - 1); }
+  if (key == "city" || key == "hero:current_city") return h.city;
+  if (key == "country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
+  if (key == "country-other" || key == "country2" || key == "hero:country_other") {
+    if (countries_.empty()) return std::string();
+    for (int tries = 0; tries < 12; ++tries) {
+      const std::string& c = countries_[rng_.below(uint32_t(countries_.size()))].name;
+      if (c != h.country) return c;
+    }
+    return std::string();
+  }
+  return std::string();
+}
+
+// '<pronoun>' (a16_death-types-enc writes the hero's own death sentence with it)
+// and the '<candidate.he|she>' pairs of the genesis-md tables, where the
+// candidate being written about is the hero: the alternative follows the hero's
+// gender.
+bool Sim::genderToken(const std::string& token, std::string& out) {
+  if (token == "pronoun") {
+    out += (hero_ && hero_->female) ? "she" : "he";
+    return true;
+  }
+  // Male/female pronoun brackets. BracketParser holds these in
+  // 'static Dictionary<String,Dictionary<GENDER,String>> MaleFemalePronounBracketsForGenderStrings'
+  // (il2cpp_dump.txt:1067) and applies them in
+  // 'ReplaceMaleFemalePronounBracketsInStringForGender(String,Int32)' @0x73f337ce5c;
+  // PRONOUN_TYPE (il2cpp_dump.txt:22199) names HE_SHE and HIS_HER. They are not
+  // random draws: the '/' form would otherwise be picked at random by the bracket
+  // branch below. The game passes the gender of the person the line is about; the
+  // port keys on the hero, which is the same person for every wired table.
+  static const struct { const char* token; const char* male; const char* female; } kPairs[] = {
+    {"he/she", "he", "she"},             {"He/She", "He", "She"},
+    {"him/her", "him", "her"},           {"Him/Her", "Him", "Her"},
+    {"his/her", "his", "her"},           {"His/Her", "His", "Her"},
+    {"his/hers", "his", "hers"},         {"His/Hers", "His", "Hers"},
+    {"himself/herself", "himself", "herself"},
+    {"Himself/Herself", "Himself", "Herself"},
+  };
+  for (const auto& p : kPairs) {
+    if (token == p.token) {
+      out += (hero_ && hero_->female) ? p.female : p.male;
+      return true;
+    }
+  }
+  if (token.compare(0, 10, "candidate.") != 0 || token.find('|') == std::string::npos) return false;
+  std::vector<std::string> options;
+  splitOn(token, '|', options);
+  if (options.size() != 2) return false;
+  options[0] = options[0].substr(10);  // drop the 'candidate.' scope prefix
+  out += (hero_ && hero_->female) ? options[1] : options[0];
+  return true;
+}
+
+std::string Sim::resolve(const std::string& text) {
+  std::map<std::string, std::string> memo;  // one name per token inside one line
+  return resolveInto(text, memo);
+}
+
+std::string Sim::resolveInto(const std::string& text, std::map<std::string, std::string>& memo) {
+  std::string out;
+  for (size_t i = 0; i < text.size();) {
+    if (text[i] != '<') { out += text[i++]; continue; }
+    const size_t close = text.find('>', i + 1);
+    if (close == std::string::npos) { out += text[i++]; continue; }
+    const std::string token = text.substr(i + 1, close - i - 1);
+    if (token.empty()) { out += "<>"; i = close + 1; continue; }
+
+    if (token.compare(0, 8, "grammar:") == 0) {
+      // "<grammar:a/an>" / "<grammar:A/An>" -> the article that fits the word
+      // that follows it, so that word is resolved here and the walk ends.
+      const std::string tail = resolveInto(text.substr(close + 1), memo);
+      const size_t w = tail.find_first_not_of(' ');
+      const bool vowel = w != std::string::npos &&
+                         std::string("aeiouAEIOU").find(tail[w]) != std::string::npos;
+      const bool upper = token.size() > 8 && std::isupper(static_cast<unsigned char>(token[8]));
+      out += upper ? (vowel ? "An" : "A") : (vowel ? "an" : "a");
+      out += tail;
+      return out;
+    }
+    if (genderToken(token, out)) {
+      // handled: a pronoun bracket keyed on the hero's gender
+    } else if (token.find('/') != std::string::npos) {
+      // "<I got a flat tire/I ran out of gas/my battery died>" -> pick one, and
+      // cache the draw for "<rb>" / "<rb1>" / "<rb2>" (report 33).
+      std::vector<std::string> options;
+      splitOn(token, '/', options);
+      std::string drawn;
+      for (const std::string& o : options) if (o.empty()) drawn = "<>";  // "</b>": not an alternative list
+      if (drawn == "<>") out += text.substr(i, close - i + 1);
+      else {
+        drawn = options[rng_.below(uint32_t(options.size()))];
+        if (rndCache_.size() < 8) rndCache_.push_back(drawn);
+        out += drawn;
+      }
+    } else if (token.size() >= 2 && token[0] == 'r' && token[1] == 'b' &&
+               token.find_first_not_of("0123456789", 2) == std::string::npos) {
+      // "<rb>" / "<rb1>" = the first alternative drawn for this scenario, "<rb2>"
+      // the second, up to "<rb4>". Out of range means the game never drew that
+      // many, so the token stays verbatim.
+      const int n = token.size() == 2 ? 1 : std::atoi(token.substr(2).c_str());
+      if (n >= 1 && size_t(n) <= rndCache_.size()) out += rndCache_[size_t(n) - 1];
+      else out += text.substr(i, close - i + 1);
+    } else if (token == "br") {
+      out += '\n';
+    } else if (token.compare(0, 5, "pick:") == 0) {
+      // "<pick:Option 1|Option 2|Option 3>" -> one alternative.
+      std::vector<std::string> options;
+      splitOn(token.substr(5), '|', options);
+      out += options[rng_.below(uint32_t(options.size()))];
+    } else if (token == "circumstance-public") {
+      out += circumstancePublic();
+    } else if (token == "musician-indefinite") {
+      // The indefinite twin of '<musician>': the reference pool holds the bare
+      // name, the article is added here (report 38).
+      const std::string who = referenceToken("musician");
+      if (who.empty()) out += text.substr(i, close - i + 1);
+      else out += articleFor(who) + who;
+    } else if (token.compare(0, 5, "hero-") == 0 || token.compare(0, 5, "hero:") == 0 ||
+               token == "city" || token == "country" || token == "country2" ||
+               token == "country-other" || token == "country possessive" || token == "first name") {
+      std::string key = token;
+      bool possessive = false;
+      const std::string suffix = "-possessive";
+      if (key.size() > suffix.size() && key.compare(key.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        possessive = true;
+        key.resize(key.size() - suffix.size());
+      }
+      const std::string value = heroToken(key, possessive);
+      if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
+      else out += value;
+    } else if (!numberToken(token, out)) {
+      auto it = memo.find(token);
+      if (it == memo.end()) {
+        const std::string pool = referenceToken(token);
+        it = memo.emplace(token, pool.empty() ? personName(token) : pool).first;
+      }
+      if (it->second.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
+      else out += it->second;
+    }
+    i = close + 1;
+  }
+  return out;
+}
+
+Life Sim::createLife(bool female) {
+  Life life;
+  Hero& h = life.hero;
+  h.female = female;
+  h.age = 0;
+
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  const std::string want = female ? "female" : "male";
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (lower(trim(names.at(r, "Gender"))) == want) pool.push_back(r);
+  }
+  const size_t person = pickFrom(pool, rng_);
+  if (person != size_t(-1)) {
+    h.firstName = names.at(person, "First Name");
+    h.lastName = names.at(person, "Last Name");
+  }
+
+  const Country& c = countries_[rng_.below(uint32_t(countries_.size()))];
+  h.country = c.name;
+  h.continent = c.continent;
+  h.money = 0;
+
+  // SimPerson..ctor(bool) draws the person's attributes, then
+  // SimHero.SetupEverythingElseForNewHero rewrites four of them. Both were read
+  // out of the shipping libil2cpp.so: the setup at file offset 0x2a74048 (it
+  // branches on GameVars.LivesStarted <= 1) and the ctor's draw order from a
+  // hooked System.Random stream matched value-for-value against the 22-attribute
+  // hero snapshots of 14 captures.
+  //
+  // The ctor makes nineteen 0..100 draws in its own order, then six draws whose
+  // target attribute is not attributed yet (four small ranges and two
+  // Next(0,100)) -- consumed here so the stream keeps the ctor's shape. homo and
+  // fertility are random in the game as well but are not drawn in this stream,
+  // and fame stayed 0 in all 14 captures.
+  // shortcut: only the six attributes the port models are kept, the other draws
+  // are made and dropped.
+  h.happiness = int(rng_.below(101));   // <Att_happiness>
+  h.health = int(rng_.below(101));      // <Att_health>
+  h.smarts = int(rng_.below(101));      // <Att_intelligence>
+  h.looks = int(rng_.below(101));       // <Att_appearance>
+  h.discipline = int(rng_.below(101));  // <Att_discipline>
+  h.karma = int(rng_.below(101));       // <Att_karma>
+  rng_.below(5);
+  rng_.below(10);
+  rng_.below(5);
+  rng_.below(11);
+  for (int i = 0; i < 13; ++i) rng_.below(101);  // willpower .. dealing
+  rng_.below(100);
+  rng_.below(100);
+
+  h.fame = 0;  // never drawn for a newborn in any of the 14 captures
+  // The four rewritten attributes are not written here: the game runs
+  // SimHero.SetupEverythingElseForNewHero on the newborn's first age increment,
+  // not at birth. Its age-0 snapshot still carries the ctor values
+  // (happiness=0, health=100 in the 35-year capture) while age 1 carries
+  // 81 + Next(0,20) for both. See applyNewbornSetup(), called from the first
+  // ageUp().
+  return life;
+}
+
+// SimHero.SetupEverythingElseForNewHero, first-life branch (LivesStarted <= 1):
+// happiness and health land in 81..100, then one coin decides whether the
+// newborn is book-smart or good-looking. A later life (LivesStarted > 1) draws
+// happiness = 51 + Next(0,50) and health = 81 + Next(0,20) instead and leaves
+// intelligence and appearance at their ctor values; the port plays one life per
+// run, so only the first-life branch applies.
+//
+// The game runs this on the first age increment, so the hero's age-0 record
+// keeps the ctor values. Moving it to the first ageUp() was measured, not
+// guessed: the 35-year capture has game age 0 = {happiness 0, health 100,
+// smarts 63, looks 18, karma 50, discipline 74} and game age 1 = {83, 84, 68,
+// 14, ...}, i.e. the setup values.
+// shortcut: health only ever changes here. In the game every health change goes
+// through SimPerson.ImpactHealth(System.Int32) @0x73f30e487c, which is the sole
+// writer of the Att_health store (@0x73f30e4944): a full instruction scan of
+// libil2cpp.so finds only that store and set_Att_health, which the game never
+// calls. It converts the score with AttributeAdjustmentPointsForImpactScore and
+// clamps to 0..100 exactly like pointsForImpact() does, and the yearly driver is
+// SimHero.ImpactHealth @0x73f2f21f0c, reached virtually from the per-item
+// foreach in SimHero.IncrementAge. No dumb-scenario table carries a Health
+// Impact column, so the yearly +-1 drift and the larger jumps in the 35-year
+// capture (100 84 83 87 88 92) come from systems the port does not model yet:
+// addictions (SimAddiction.AnnualHealthImpact @0x73f2fa8a3c), diseases
+// (UpdateWithFatalDisease @0x73f2fb0d30) and the lifecycle events. Upgrade when
+// those are ported.
+void Sim::applyNewbornSetup(Hero& h) {
+  h.happiness = 81 + int(rng_.below(20));
+  h.health = 81 + int(rng_.below(20));
+  if (rng_.below(2) != 0) {
+    h.smarts = 10 + int(rng_.below(10));
+    h.looks = 61 + int(rng_.below(10));
+  } else {
+    h.happiness = 81 + int(rng_.below(10));
+    h.health = 81 + int(rng_.below(10));
+    h.smarts = 61 + int(rng_.below(10));
+    h.looks = 10 + int(rng_.below(10));
+  }
+}
+
+std::vector<std::string> Sim::birthLines(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;  // '<hero-name>' / '<city>' read the live hero
+  std::vector<std::string> out;
+  const std::string gender = h.female ? "female" : "male";
+
+  // Parent names come from the same celebrity-name table createLife() uses, one
+  // draw per parent, matched to that parent's gender like the real draw does.
+  const auto drawFirst = [this](bool female) { return drawFirstName(female); };
+  const auto career = [this]() {
+    const Table& c = tbl("a16_careers-enc");
+    const size_t row = weightedPick(c, "Commonness Score", rng_);
+    return row == size_t(-1) ? std::string() : lower(trim(c.at(row, "Career")));
+  };
+
+  // Parent ages are drawn first: the circumstance row is gated on the mother's.
+  const int motherAge = 24 + int(rng_.below(22));
+  const int fatherAge = motherAge + int(rng_.below(7)) - 3;
+
+  // 1) Place, gender and the conception circumstance.
+  std::string circumstance;
+  {
+    const Table& t = tbl("a16_birth-circumstances-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (trim(t.at(r, "Circumstance")).empty()) continue;
+      if (!trim(t.at(r, "Min Mother Age")).empty() && motherAge < int(t.num(r, "Min Mother Age"))) continue;
+      if (!trim(t.at(r, "Max Mother Age")).empty() && motherAge > int(t.num(r, "Max Mother Age"))) continue;
+      pool.push_back(r);
+    }
+    const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
+    if (row != size_t(-1)) circumstance = resolve(t.at(row, "Circumstance"));
+  }
+  out.push_back("I was born a " + gender + " in " + h.city + ", " + h.country + "." +
+                (circumstance.empty() ? "" : " " + circumstance));
+
+  // 2) Birthday and sign; the sign is derived from the date, not drawn.
+  static const char* kMonths[12] = {"January", "February", "March",     "April",
+                                    "May",     "June",     "July",      "August",
+                                    "September", "October", "November", "December"};
+  const int month = 1 + int(rng_.below(12));
+  const int day = 1 + int(rng_.below(28));
+  out.push_back(std::string("My birthday is ") + kMonths[month - 1] + " " +
+                std::to_string(day) + ". I am a " + zodiacOf(month, day) + ".");
+
+  // 3) The hero's own name, already drawn by createLife().
+  out.push_back("My name is " + h.firstName + " " + h.lastName + ".");
+
+  // 4/5) Both parents: a real career row (weighted by how common it is) and an age.
+  // The two parents are also the first entries of the family model: the yearly
+  // lifecycle lines talk about them by relation and need their ages and jobs
+  // (section 37). Parents are never named inside those lines, so name stays empty.
+  {
+    // One draw per parent first, then that parent's career: the original order,
+    // so every seed keeps its stream.
+    const std::string motherName = drawFirst(true);
+    Person mother;
+    mother.relation = "mother";
+    mother.female = true;
+    mother.age = motherAge;
+    mother.lastName = h.lastName;
+    mother.job = career();
+    life.family.push_back(mother);
+    out.push_back("My mother is " + motherName + " " + h.lastName + ", a " + mother.job +
+                  " (age " + std::to_string(motherAge) + ").");
+    const std::string fatherName = drawFirst(false);
+    Person father;
+    father.relation = "father";
+    father.age = fatherAge;
+    father.lastName = h.lastName;
+    father.job = career();
+    life.family.push_back(father);
+    out.push_back("My father is " + fatherName + " " + h.lastName + ", a " + father.job +
+                  " (age " + std::to_string(fatherAge) + ").");
+  }
+
+  // 6) An older or younger sibling, about half the time.
+  if (rng_.chance(0.55)) {
+    const bool older = rng_.chance(0.5);
+    const bool sister = rng_.chance(0.5);
+    const int age = older ? 1 + int(rng_.below(6)) : 1 + int(rng_.below(3));
+    Person sib;
+    // The lifecycle lines use "big"/"little", the same words the real log does
+    // ("My little brother, Jimbo, graduated from high school.").
+    sib.relation = std::string(older ? "big " : "little ") + (sister ? "sister" : "brother");
+    sib.name = drawFirst(sister);
+    sib.lastName = h.lastName;
+    sib.female = sister;
+    sib.age = age;
+    life.family.push_back(sib);
+    out.push_back("I have " + std::string(older ? "an older " : "a younger ") +
+                  std::string(sister ? "sister" : "brother") + " named " + sib.name + " (age " +
+                  std::to_string(age) + ").");
+  }
+
+  // 7) A family pet, about two thirds of the time: a domestic row from the pet
+  // table plus a name from the pet-name table for that same animal.
+  if (rng_.chance(0.6)) {
+    const Table& pets = tbl("a16_pets-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < pets.size(); ++r) {
+      if (!trim(pets.at(r, "Wild")).empty() || !trim(pets.at(r, "Exotic")).empty() ||
+          !trim(pets.at(r, "Black Market")).empty()) continue;
+      pool.push_back(r);
+    }
+    const size_t row = weightedPickOf(pets, "Commonness Score", pool, rng_);
+    if (row != size_t(-1)) {
+      const std::string animal = lower(trim(pets.at(row, "Animal")));
+      const Table& pn = tbl("a16_pet-names-enc");
+      std::vector<size_t> names;
+      for (size_t r = 0; r < pn.size(); ++r) {
+        if (lower(trim(pn.at(r, "Animal"))) == animal) names.push_back(r);
+      }
+      const size_t pick = pickFrom(names, rng_);
+      if (pick != size_t(-1)) {
+        out.push_back("We have a family " + animal + " named " + pn.at(pick, "Name") + ".");
+      }
+    }
+  }
+  return out;
+}
+
+
+// The name pool every family member and every unnamed extra in a scenario draws
+// from: a16_casino-casino-celebrity-name-enc, matched to the wanted gender.
+// Extracted from birthLines' original lambda so the lifecycle lines can draw a
+// name for a new sibling too (report section 37).
+std::string Sim::drawFirstName(bool female) {
+  ensureTable("a16_casino-casino-celebrity-name-enc");
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  const std::string want = female ? "female" : "male";
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (lower(trim(names.at(r, "Gender"))) == want) pool.push_back(r);
+  }
+  const size_t p = pickFrom(pool, rng_);
+  return p == size_t(-1) ? std::string() : names.at(p, "First Name");
+}
+
+// A company name built the way the game builds one. a16_company-name-structure-enc
+// holds the per-industry format ('<color> <suffix>', '<color> <suffix>, <city>
+// <suffix>') and, for the industries that ship fixed names, a 'Predefined' name
+// that wins over the format. The trace line "My mother started a new position
+// as Travel Associate for Helsinki Travel." is the '<city> <suffix>' case.
+std::string Sim::companyName(const std::string& companyType, const Life& life) {
+  ensureTable("a16_company-name-structure-enc");
+  const Table& st = tbl("a16_company-name-structure-enc");
+  const std::string want = lower(trim(companyType));
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < st.size(); ++r) {
+    if (lower(trim(st.at(r, "Company Type"))) == want) pool.push_back(r);
+  }
+  const size_t row = pickFrom(pool, rng_);
+  if (row == size_t(-1)) return std::string();
+  const std::string pre = trim(st.at(row, "Predefined"));
+  const auto replaceAll = [](std::string s, const std::string& from, const std::string& to) {
+    if (from.empty()) return s;
+    for (size_t at = s.find(from); at != std::string::npos; at = s.find(from, at + to.size()))
+      s.replace(at, from.size(), to);
+    return s;
+  };
+  // The Format cell and the Suffix / Prefix cells hold comma-separated
+  // alternatives, not one string: 'Aircraft Dealer' is '<color> <suffix>,
+  // <city> <suffix>', i.e. two different formats for one industry.
+  const auto pickList = [this](const std::string& list) {
+    std::vector<std::string> parts;
+    splitOn(list, ',', parts);
+    return parts.empty() ? std::string() : trim(parts[rng_.below(uint32_t(parts.size()))]);
+  };
+  std::string fmt = pre;
+  if (fmt.empty()) fmt = pickList(st.at(row, "Format"));
+  if (fmt.empty()) return std::string();
+  if (fmt.find("<color>") != std::string::npos) {
+    ensureTable("a16_company-name-color-enc");
+    const Table& colors = tbl("a16_company-name-color-enc");
+    if (colors.size()) fmt = replaceAll(fmt, "<color>", trim(colors.at(rng_.below(uint32_t(colors.size())), "Color")));
+  }
+  if (fmt.find("<suffix>") != std::string::npos) fmt = replaceAll(fmt, "<suffix>", pickList(st.at(row, "Suffix")));
+  if (fmt.find("<prefix>") != std::string::npos) fmt = replaceAll(fmt, "<prefix>", pickList(st.at(row, "Prefix")));
+  if (fmt.find("<city>") != std::string::npos) fmt = replaceAll(fmt, "<city>", life.hero.city);
+  if (fmt.find("<random-first-name>") != std::string::npos)
+    fmt = replaceAll(fmt, "<random-first-name>", drawFirstName(rng_.chance(0.5)));
+  if (fmt.find("<random-first-name-possessive>") != std::string::npos)
+    fmt = replaceAll(fmt, "<random-first-name-possessive>", drawFirstName(rng_.chance(0.5)) + "'s");
+  if (fmt.find("<random-surname>") != std::string::npos || fmt.find("<surname2>") != std::string::npos) {
+    ensureTable("a16_casino-casino-celebrity-name-enc");
+    const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+    const std::string sur =
+        names.size() ? names.at(rng_.below(uint32_t(names.size())), "Last Name") : std::string();
+    fmt = replaceAll(fmt, "<random-surname>", sur);
+    fmt = replaceAll(fmt, "<surname2>", sur);
+  }
+  // Anything a format still asks for is a pool the port does not have: drop the
+  // token rather than leak it into the line.
+  while (true) {
+    const size_t at = fmt.find('<');
+    if (at == std::string::npos) break;
+    const size_t close = fmt.find('>', at);
+    if (close == std::string::npos) break;
+    fmt.erase(at, close - at + 1);
+  }
+  while (fmt.find("  ") != std::string::npos) fmt = replaceAll(fmt, "  ", " ");
+  return trim(fmt);
+}
+
+// The per-person lifecycle lines of one year. Every sentence is one of the real
+// templates in global-metadata.dat (#9372-#9429, report section 36): the game
+// renders them in the second person as a scenario body ("Your little brother,
+// Jimbo, has been diagnosed with mad cow disease.") and in the first person in
+// the log ("My little brother, Jimbo, has been diagnosed with mad cow
+// disease."). This emits the log form; the hero's own sentences are separate.
+// Ages the family, so it runs once per year.
+std::vector<std::string> Sim::lifecycleLines(Life& life) {
+  hero_ = &life.hero;
+  std::vector<std::string> out;
+  ensureTable("a16_careers-enc");
+  ensureTable("a16_disease-types-enc");
+  const Table& careers = tbl("a16_careers-enc");
+  const Table& diseases = tbl("a16_disease-types-enc");
+  // The stage the hero's own country starts children in: trace_fresh (US) has
+  // "started elementary school", trace_game3 (Finland) "started primary school".
+  const bool usa = lower(trim(life.hero.country)) == "united states";
+  std::vector<Person> newborns;
+  for (size_t i = 0; i < life.family.size(); ++i) {
+    Person& p = life.family[i];
+    if (!p.alive) continue;
+    ++p.age;
+    // Parents are never named in these lines, so the comma pair only appears
+    // when there is a name to set off ("My little brother, Jimbo, ...").
+    const std::string who =
+        "My " + p.relation + (p.name.empty() ? std::string() : ", " + p.name + ",");
+
+    // A mother can have another child. The real line names both parents, the
+    // baby, the new relation and whether it was planned: "My mother and my
+    // stepfather had a baby girl named Inka Tuominen, my new half sister. She
+    // was an accidental pregnancy." The port's two parents are the biological
+    // ones, so the new sibling is a full one.
+    if ((p.relation == "mother" || p.relation == "stepmother") && life.hero.age >= 1 &&
+        p.age >= 20 && p.age <= 45 && rng_.chance(0.05)) {
+      const bool sister = rng_.chance(0.5);
+      const std::string baby = drawFirstName(sister);
+      const std::string other = p.relation == "mother" ? "father" : "stepfather";
+      const bool planned = rng_.chance(0.5);
+      out.push_back(who + " and my " + other + " had a baby " + (sister ? "girl" : "boy") +
+                    " named " + baby + " " + life.hero.lastName + ", my new " +
+                    (sister ? "sister" : "brother") + ". " + (sister ? "She" : "He") + " was " +
+                    (planned ? "a planned" : "an accidental") + " pregnancy.");
+      Person nb;
+      nb.relation = sister ? "little sister" : "little brother";
+      nb.name = baby;
+      nb.lastName = life.hero.lastName;
+      nb.female = sister;
+      newborns.push_back(nb);
+      continue;
+    }
+
+    // School milestones first: they are pinned to one age, so a chance-based
+    // illness must not steal the year they happen in. The templates are the
+    // '#9405 started <high-school>' and '#9385 graduated from <high-school>'
+    // ones; the stage the hero's own country uses comes first ("elementary
+    // school" in the US, "primary school" elsewhere: trace_fresh vs trace_game3).
+    if (p.age == 6) {
+      out.push_back(who + " started " + (usa ? "elementary school" : "primary school") + ".");
+      continue;
+    }
+    if (p.age == 18) {
+      out.push_back(who + " graduated from high school.");
+      continue;
+    }
+
+    // Illness: the '#9394 is no longer suffering from <disease-old>' recovery
+    // first, then a fresh '#9389 has been diagnosed with <disease-new>'.
+    if (!p.disease.empty()) {
+      if (rng_.chance(0.5)) {
+        out.push_back(who + " is no longer suffering from " + p.disease + ".");
+        p.disease.clear();
+      }
+      continue;
+    }
+    if (p.age >= 1 && rng_.chance(0.07)) {
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < diseases.size(); ++r) {
+        if (diseases.num(r, "Contracts Organically Score") <= 0) continue;
+        const double minA = diseases.num(r, "Minimum Age");
+        const double maxA = diseases.num(r, "Maximum Age");
+        if (minA > 0 && p.age < int(minA)) continue;
+        if (maxA > 0 && p.age > int(maxA)) continue;
+        pool.push_back(r);
+      }
+      const size_t row = weightedPickOf(diseases, "Contracts Organically Score", pool, rng_);
+      if (row != size_t(-1)) {
+        std::string d = lower(trim(diseases.at(row, "Disease")));
+        if (!trim(diseases.at(row, "Uses Indefinite Article")).empty() && !d.empty()) {
+          d = (std::strchr("aeiou", d[0]) ? "an " : "a ") + d;
+        }
+        p.disease = d;
+        out.push_back(who + " has been diagnosed with " + d + ".");
+        continue;
+      }
+    }
+
+    // Work: '#9408 started a new position as <job-title> for <company>' and, on
+    // a later draw, '#9390 has been promoted to <job-title>'. The title ladder is
+    // the career's own Seniority Track ("Apprentice Cameraman, Cameraman, ...").
+    if (p.age < 18) continue;
+    if (p.job.empty()) {
+      const size_t row = weightedPick(careers, "Commonness Score", rng_);
+      if (row == size_t(-1)) continue;
+      std::vector<std::string> track;
+      splitOn(careers.at(row, "Seniority Track"), ',', track);
+      // 'Seniority Track' carries a real ladder for 5 careers and a class word
+      // for the rest ('None' 57 rows, 'Abbreviated' 29, 'Working Class' 24,
+      // 'Corporate' 10). The port has no evidence of the per-class ladders, so
+      // those rows use their own career name.
+      // shortcut: class-word tracks ('None'/'Abbreviated'/'Working Class'/
+      // 'Corporate') do not produce a ladder; upgrade when that ladder table is
+      // located.
+      const std::string first = track.empty() ? std::string() : trim(track.front());
+      const bool ladder = !first.empty() && first != "None" && first != "Abbreviated" &&
+                          first != "Working Class" && first != "Corporate";
+      const std::string title = ladder ? first : trim(careers.at(row, "Career"));
+      const std::string comp = companyName(careers.at(row, "Company Type"), life);
+      p.job = title;
+      p.company = comp;
+      out.push_back(who + " started a new position as " + title +
+                    (comp.empty() ? std::string() : " for " + comp) + ".");
+      continue;
+    }
+    if (!rng_.chance(0.05)) continue;
+    bool promoted = false;
+    for (size_t r = 0; r < careers.size() && !promoted; ++r) {
+      std::vector<std::string> track;
+      splitOn(careers.at(r, "Seniority Track"), ',', track);
+      for (size_t k = 0; k + 1 < track.size(); ++k) {
+        if (trim(track[k]) != p.job) continue;  // class words carry no ladder
+        p.job = trim(track[k + 1]);
+        out.push_back(who + " has been promoted to " + p.job + ".");
+        promoted = true;
+        break;
+      }
+    }
+  }
+  for (Person& nb : newborns) life.family.push_back(nb);
+  return out;
+}
+
+bool Sim::pinCountry(Life& life, const std::string& countryName) {
+  const std::string want = lower(trim(countryName));
+  const Country* found = nullptr;
+  for (const Country& c : countries_) {
+    if (lower(trim(c.name)) == want) { found = &c; break; }
+  }
+  if (!found) return false;
+  Hero& h = life.hero;
+  h.country = found->name;
+  h.continent = found->continent;
+  // The country's own city list; a country with none leaves the city unset
+  // rather than inventing one.
+  h.city = found->cities.empty() ? std::string()
+                                 : found->cities[rng_.below(uint32_t(found->cities.size()))];
+  return true;
+}
+
+bool Sim::scenarioEligible(const Table& t, size_t row, const Life& life) const {
+  const Hero& h = life.hero;
+  if (t.has("Hero Min Age") && h.age < int(t.num(row, "Hero Min Age"))) return false;
+  if (t.has("Hero Max Age") && h.age > int(t.num(row, "Hero Max Age"))) return false;
+
+  const std::string gender = lower(trim(t.has("Hero Gender") ? t.at(row, "Hero Gender") : ""));
+  if (gender == "male" && h.female) return false;
+  if (gender == "female" && !h.female) return false;
+
+  const bool student = h.age < 18;
+  if (t.flag(row, "Student") && !student) return false;
+  // 'Job' is a requirement flag like 'Student' ('x' = row needs the condition),
+  // not an age proxy: an unemployed adult must not take a job-only row.
+  if (t.flag(row, "Job") && !h.employed) return false;
+  // 'Vampire' / 'Both Parents Alive' gate DLC and family state the port does not
+  // model, so any branch requiring them is skipped.
+  if (t.flag(row, "Vampire")) return false;
+  return true;
+}
+
+bool Sim::fillerEligible(const Table& t, size_t row, const Life& life) const {
+  const Hero& h = life.hero;
+  const bool student = h.age < 18;
+  const std::string condition = trim(t.at(row, "Condition"));
+  if (!condition.empty() && condition != "Student" && condition != "Job") return false;
+  if (condition == "Student" && !student) return false;
+  if (condition == "Job" && student) return false;
+  if (t.has("Hero Min Age") && h.age < int(t.num(row, "Hero Min Age"))) return false;
+  if (t.has("Hero Max Age") && t.num(row, "Hero Max Age") > 0 &&
+      h.age > int(t.num(row, "Hero Max Age"))) return false;
+  const std::string gender = lower(trim(t.at(row, "Hero Gender")));
+  if (gender == "male" && h.female) return false;
+  if (gender == "female" && !h.female) return false;
+  return true;
+}
+
+void Sim::setDate(int month, int day) {
+  dateMonth_ = (month >= 1 && month <= 12) ? month : 0;
+  dateDay_ = (dateMonth_ && day >= 1 && day <= 31) ? day : 0;
+}
+
+// The game's yearly "push" dumb scenario comes out of more than one set:
+// DumbScenarioInterface.GetARandomPushDumbScenario (il2cpp_dump.txt:56500,
+// @0x73f2eb3238) builds the per-activity dictionaries, then gates on
+// CurrentlyInPrison / IsARoyal / CurrentlyHasAJob / get_TeacherArray /
+// get_StepchildArray / MinutesSinceLastCalendarDumbScenario before falling back
+// to the universal set. Evidence and the disassembly walk-through: REPORT.en.md
+// section 25.
+//
+// shortcut: prison, royal, school (teacher), family (stepchild), friend and
+// vacation rows are real sets the game consults but the port models none of the
+// hero state they gate on, so they are left out rather than approximated. The
+// calendar and holiday sets are real-world-date gated (one date per real day)
+// and join the pool only when setDate() fixed a date. Every in-pool pick stays
+// uniform: no dumb-scenarios table has a Commonness Score column.
+// The dumb-scenario set tables, by their real gamedata_plain file names.
+const char* const kDumbUniversal = "a16_dumb-scenarios-universal-enc";
+const char* const kDumbCareer = "a16_dumb-scenarios-career-enc";
+const char* const kDumbHoliday = "a16_dumb-scenarios-holiday-enc";
+const char* const kDumbCalendar = "a16_dumb-scenarios-calendar-enc";
+const char* const kDumbFriend = "a16_dumb-scenarios-friend-enc";
+
+std::vector<size_t> Sim::dumbSetRows(const char* name, const Life& life) {
+  std::vector<size_t> rows;
+  // Only the holiday, calendar and career sets carry a gate beyond the table's
+  // own columns. The career set has no gate columns at all: its 'Type' column IS
+  // the career name the game matches against the hero's job
+  // (GetRandomCareerDumbScenarioForCareer, 0x73f2ebec08).
+  const bool dated = (std::string(name) == kDumbHoliday || std::string(name) == kDumbCalendar);
+  const bool career = (std::string(name) == kDumbCareer);
+  if (career && !life.hero.employed) return rows;
+  if (dated && dateMonth_ == 0) return rows;
+  if (!ensureTable(name)) return rows;
+  const Table* t = table(name);
+  if (t == nullptr) return rows;
+  for (size_t r = 0; r < t->size(); ++r) {
+    if (!scenarioEligible(*t, r, life)) continue;
+    if (career && trim(t->at(r, "Type")) != life.hero.job) continue;
+    if (dated && !dumbDateMatches(*t, r, dateMonth_, dateDay_)) continue;
+    rows.push_back(r);
+  }
+  return rows;
+}
+
+bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
+  // DumbScenarioInterface.GetARandomPushDumbScenario (il2cpp_dump.txt:56500,
+  // 0x73f2eb3238) is not one uniform pick over a merged pool: every attempt
+  // draws GetRandomNumber(0,6) and consults that category's set
+  // (0x73f2eb3430). A category whose gate fails, or whose set yields nothing,
+  // falls to 0x73f2eb4ce0 -- 'add w26,w26,#1; cmp w26,#0x64; b.ne 0x73f2eb3414'
+  // -- i.e. it re-rolls the category, up to 100 attempts, and the function then
+  // returns null (0x73f2eb5074). Within one set the row pick is uniform: the
+  // set tables carry no Commonness Score.
+  // shortcut: prison (k=1), orphan (k=0), royal and military are categories the
+  // game gated on hero state the port does not model, so they read as "gate
+  // failed" and re-roll -- which is exactly what the game does for a hero that
+  // is none of them. The k=4..5 tail is the orphan/military/career tail; the
+  // port routes k=4 to the career set when the hero has a job and k=5 to the
+  // universal set, so every set stays reachable until that tail is mapped.
+  // The friend set is likewise treated as non-empty: the game's
+  // GetRandomFriendDumbScenario yields nothing for a hero with no friends and
+  // then re-rolls, and the port keeps no friend list yet.
+  for (int attempt = 0; attempt < 100; ++attempt) {
+    const int k = int(rng_.below(6));
+    const char* set = nullptr;
+    if (k == 0) {
+      continue;  // orphan set (0x73f2eb3574): the port's hero always has a mother
+    } else if (k == 1) {
+      // Not in prison -> the holiday/universal roulette at 0x73f2eb3734:
+      // GetRandomNumber(0,4); > 2, or no holiday season, lands on the universal
+      // set, otherwise the season's holiday rows.
+      const int j = int(rng_.below(4));
+      set = (j > 2 || dateMonth_ == 0) ? kDumbUniversal : kDumbHoliday;
+    } else if (k == 2) {
+      set = kDumbFriend;  // 0x73f2eb369c, gated on !prison && !royal
+    } else if (k == 3) {
+      set = kDumbCalendar;  // 0x73f2eb34a0 -> GetTodaysCalendarDumbScenario
+    } else if (k == 4) {
+      set = kDumbCareer;
+    } else {
+      set = kDumbUniversal;
+    }
+    const std::vector<size_t> rows = dumbSetRows(set, life);
+    const size_t r = pickFrom(rows, rng_);  // empty set -> -1 -> re-roll
+    if (r == size_t(-1)) continue;
+    *table = set;
+    *row = r;
+    return true;
+  }
+  return false;
+}
+
+bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
+  hero_ = &life.hero;
+  rndCache_.clear();  // one scenario per year: the '<rbN>' cache starts empty
+  ++life.year;
+  Hero& h = life.hero;
+  ++h.age;
+  if (h.age == 1) applyNewbornSetup(h);
+  // The family's own lines for the year, written before the scenario's
+  // (trace_game9 age 7: the mother's diagnosis, then the scenario line).
+  out.extra = lifecycleLines(life);
+  if (getenv("BL_DBG")) fprintf(stderr, "[dbg] age %d family %zu extra %zu\n", h.age, life.family.size(), out.extra.size());
+  const bool student = h.age < 18;
+  h.employed = !student;
+  // A hero who leaves school takes a real job, drawn once from a16_careers-enc
+  // ('Career' + 'Commonness Score' + 'Min Age'/'Max Age'). The career name is
+  // what the career dumb-scenario set matches its own 'Type' column against
+  // (DumbScenarioInterface.GetARandomPushDumbScenario -> get_Career()).
+  // shortcut: the table's gates the port cannot evaluate yet (Required
+  // Education, Required Major, licences, criminal record, per-career attribute
+  // minimums) are ignored, and there is no job change, promotion or firing.
+  if (!h.employed) {
+    h.job = "Student";
+  } else if (h.job.empty() || h.job == "Student") {
+    const Table& t = tbl("a16_careers-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Min Age") && h.age < int(t.num(r, "Min Age"))) continue;
+      if (t.has("Max Age") && t.num(r, "Max Age") > 0 && h.age > int(t.num(r, "Max Age"))) continue;
+      const std::string gender = lower(trim(t.has("Gender") ? t.at(r, "Gender") : ""));
+      if (gender == "male" && h.female) continue;
+      if (gender == "female" && !h.female) continue;
+      if (t.has("Unavailable") && t.flag(r, "Unavailable")) continue;
+      pool.push_back(r);
+    }
+    const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
+    h.job = row == size_t(-1) ? "Worker" : trim(t.at(row, "Career"));
+  }
+
+  // (0) A forced scenario class (the Phase 1 bench replaying a scripted event
+  //     the game presented) wins over every draw below and consumes no RNG
+  //     beyond the name draws its own text needs.
+  if (!forcedClass_.empty()) {
+    const std::string cls = forcedClass_;
+    const int c = forcedClassChoice_;
+    forcedClass_.clear();
+    forcedClassChoice_ = -1;
+    if (renderScenarioClass(cls, life, out, c)) return true;
+  }
+
+  // (0b) A forced row (the Phase 1 bench replaying the game's own pick) wins over
+  //     every draw below and consumes no RNG, so the rest of the stream is
+  //     unaffected by the override.
+  if (forcedRow_ > 0) {
+    const std::string name = forcedTable_;
+    const size_t row = size_t(forcedRow_ - 1);
+    forcedTable_.clear();
+    forcedRow_ = 0;
+    if (ensureTable(name)) {
+      const Table* ft = table(name);
+      if (ft && renderRow(*ft, row, life, out, forcedChoice)) {
+        return true;
+      }
+    }
+    // An unusable override falls through to the normal draw instead of losing
+    // the year: the bench wants a diff, not a silent hole.
+  }
+
+  // (1) Job-flavoured line from the only real core-loop table that carries a
+  //     Commonness Score: a16_employee-recognition-scenarios-enc.
+  if (h.employed && rng_.chance(0.25)) {
+    const Table& t = tbl("a16_employee-recognition-scenarios-enc");
+    const size_t row = weightedPick(t, "Commonness Score", rng_);
+    if (row != size_t(-1)) {
+      // The year's family lifecycle lines were written before the scenario was
+      // picked and belong to no row, so they survive this reset.
+      const std::vector<std::string> extra = out.extra;
+      out = AgeUp();
+      out.extra = extra;
+      out.table = t.name();
+      out.row_id = std::to_string(row + 1);
+      out.narrative = resolve(t.at(row, "Scenario"));
+      return true;
+    }
+  }
+
+  // (2) Age- and gender-gated choice scenario: the dumb-scenario category
+  //     roulette the game runs each year (see pickDumbScenario).
+  {
+    std::string table;
+    size_t row = 0;
+    if (pickDumbScenario(life, &table, &row)) {
+      const Table& t = tbl(table.c_str());
+      return renderRow(t, row, life, out, forcedChoice);
+    }
+  }
+
+  // (3) Plain narration for a year that no choice scenario covers:
+  //     a16_hero-filler-enc.
+  {
+    const Table& t = tbl("a16_hero-filler-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) if (fillerEligible(t, r, life)) pool.push_back(r);
+    const size_t row = pickFrom(pool, rng_);
+    if (row != size_t(-1)) {
+      // The year's family lifecycle lines were written before the scenario was
+      // picked and belong to no row, so they survive this reset.
+      const std::vector<std::string> extra = out.extra;
+      out = AgeUp();
+      out.extra = extra;
+      out.table = t.name();
+      out.row_id = std::to_string(row + 1);
+      out.narrative = resolve(t.at(row, "String"));
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice) {
+  hero_ = &life.hero;
+  (void)life;  // the row's text is already gender-gated by scenarioEligible()
+  rndCache_.clear();  // the body is parsed first, its draws feed the log line
+  if (row >= t.size()) return false;
+  // The year's family lifecycle lines were written before the scenario was
+  // picked and belong to no row, so they survive this reset.
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+
+  // Narrative-only shapes: the filler table has 'String', the employee one
+  // 'Scenario'. They carry no choice columns, so there is nothing to branch on.
+  if (!t.has("Title") && !t.has("Body")) {
+    static const char* kNarrativeCols[] = {"Narrative", "Scenario", "String"};
+    for (const char* c : kNarrativeCols) {
+      if (t.has(c)) {
+        out.narrative = resolve(t.at(row, c));
+        return true;
+      }
+    }
+    return false;
+  }
+
+  out.title = resolve(scriptedFamilyTokens(t.at(row, "Title")));
+  out.body = resolve(scriptedFamilyTokens(t.at(row, "Body")));
+  out.cta = resolve(t.at(row, "CTA"));
+
+  std::vector<int> choices;  // 1-based choice numbers that are filled in
+  for (int n = 1; n <= 4; ++n) {
+    const std::string col = "Choice " + std::to_string(n);
+    if (t.has(col) && !trim(t.at(row, col)).empty()) choices.push_back(n);
+  }
+
+  // The scripted-scenario table packs its buttons into one '[Yes/No/Maybe]' cell
+  // instead of the dumb tables' 'Choice N' columns.
+  // shortcut: only the label list is read -- Filter, HeroAge, ActionList,
+  // Impacts and ResultNarratives of that table are not evaluated yet, so the log
+  // line falls back to the body text.
+  if (choices.empty() && t.has("ChoiceList")) {
+    // The family tokens are substituted first: the list's own separators are
+    // '/', and so is the one inside '<him/her>', so splitting the raw cell would
+    // cut every button in half.
+    const std::string list = trim(scriptedFamilyTokens(t.at(row, "ChoiceList")));
+    if (list.size() > 2 && list.front() == '[' && list.back() == ']') {
+      std::vector<std::string> labels;
+      std::string cur;
+      int angle = 0;  // any other <a/b> token stays one label
+      for (size_t i = 1; i + 1 < list.size(); ++i) {
+        if (list[i] == '<') ++angle;
+        if (list[i] == '>') angle = angle > 0 ? angle - 1 : 0;
+        if (list[i] == '/' && angle == 0) { labels.push_back(trim(cur)); cur.clear(); }
+        else cur += list[i];
+      }
+      labels.push_back(trim(cur));
+      std::vector<std::string> filled;
+      for (const std::string& l : labels) if (!l.empty()) filled.push_back(l);
+      if (!filled.empty()) {
+        const size_t k = forcedChoice >= 0 && size_t(forcedChoice) < filled.size()
+                             ? size_t(forcedChoice)
+                             : rng_.below(uint32_t(filled.size()));
+        out.choice = resolve(filled[k]);
+      }
+    }
+  }
+  if (!choices.empty()) {
+    // A scripted run can name the branch it wants; anything else is the seeded
+    // pick, so both paths stay reproducible from the seed.
+    const int n = forcedChoice >= 0 && size_t(forcedChoice) < choices.size()
+                      ? choices[size_t(forcedChoice)]
+                      : choices[rng_.below(uint32_t(choices.size()))];
+    const std::string suffix = " " + std::to_string(n);
+    out.choice = resolve(t.at(row, "Choice" + suffix));
+    out.narrative = resolve(t.at(row, "Narrative" + suffix));
+    // The cells hold impact scores (-6..6), not points: the game maps each one
+    // through AttributeAdjustmentPointsForImpactScore before touching the
+    // attribute. The draw for a score of 0 is the only RNG here, and the game
+    // makes it in this same order (Karma .. Appearance).
+    out.karma = pointsForImpact(int(t.num(row, "Karma Impact" + suffix)));
+    out.discipline = pointsForImpact(int(t.num(row, "Discipline Impact" + suffix)));
+    out.happiness = pointsForImpact(int(t.num(row, "Happiness Impact" + suffix)));
+    out.smarts = pointsForImpact(int(t.num(row, "Intelligence Impact" + suffix)));
+    out.looks = pointsForImpact(int(t.num(row, "Appearance Impact" + suffix)));
+  }
+  return true;
+}
+
+// AttributeAdjustmentPointsForImpactScore (@0x73f32b140c): a 13-entry jump
+// table indexed by the score clamped to -6..6. Read as a static table, not
+// guessed: bytes at file offset 0xfc5e9c are
+// [34, 0, 10, 12, 4, 16, 18, 14, 33, 8, 31, 2, 6] and the case bodies hold the
+// point values below. The score <= -6 case falls through to the epilogue with
+// w0 = -100. Score 0 draws one value: System.Random.Next(0,2) != 0 -> -1, else +1.
+int Sim::pointsForImpact(int score) {
+  if (score > 6) score = 6;
+  if (score < -6) score = -6;
+  switch (score) {
+    case -6: return -100;
+    case -5: return -50;
+    case -4: return -30;
+    case -3: return -16;
+    case -2: return -8;
+    case -1: return -4;
+    case 0: return rng_.below(2) != 0 ? -1 : 1;
+    case 1: return 4;
+    case 2: return 8;
+    case 3: return 16;
+    case 4: return 30;
+    case 5: return 50;
+    default: return 100;  // 6
+  }
+}
+
+bool Sim::ensureTable(const std::string& name) {
+  if (table(name)) return true;
+  try {
+    Table t = Table::load(reDir_ + "/gamedata_plain/" + name);
+    loaded_.push_back(name);
+    tables_.emplace_back(name, std::move(t));
+  } catch (const std::exception&) {
+    return false;  // unreadable or missing: the caller falls back to the draw
+  }
+  return true;
+}
+
+bool Sim::forceScenario(const std::string& table, long long row) {
+  if (row <= 0) {  // clear: the next age-up draws as usual
+    forcedTable_.clear();
+    forcedRow_ = 0;
+    return true;
+  }
+  if (!ensureTable(table)) {
+    std::fprintf(stderr, "forceScenario: table not loaded: %s\n", table.c_str());
+    return false;
+  }
+  forcedTable_ = table;
+  forcedRow_ = row;
+  return true;
+}
+
+bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& out, int choice) {
+  (void)life;
+  const RegScenario* s = findScenario(cls);
+  if (!s) return false;
+  // The year's family lifecycle lines were written before the scenario was
+  // picked and belong to no row, so they survive this reset.
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = cls;  // not a table row: the class is the provenance
+  out.title = s->title;
+  std::string body = s->body;
+  std::string item;
+  substAll(body, "{parent}", "mother");
+  if (body.find("{item}") != std::string::npos) {
+    // The item the hero broke is a runtime value in the game (ScenarioEthics'
+    // _brokenItem); the two variants below are the ones captured so far.
+    // shortcut: two-variant item list, extend as more captures land.
+    static const char* kItems[] = {"mailbox", "bedroom window"};
+    item = kItems[rng_.below(2)];
+    substAll(body, "{item}", item);
+  }
+  std::string name;
+  if (body.find("{name}") != std::string::npos) {
+    name = personName("classmate");
+    substAll(body, "{name}", name);
+  }
+  if (s->n > 0) {
+    // A single-entry list is the no-button form (label ""), so it must not consume
+    // a draw: only a real multi-branch scene randomizes its pick.
+    const int idx = choice >= 0 && choice < s->n
+                        ? choice
+                        : (s->n > 1 ? int(rng_.below(uint32_t(s->n))) : 0);
+    out.choice = s->choices[idx].label;
+    std::string log = s->choices[idx].log;
+    if (log.find("{name}") != std::string::npos) {
+      if (name.empty()) name = personName("classmate");
+      substAll(log, "{name}", name);
+    }
+    substAll(log, "{parent}", "mother");
+    if (!item.empty()) substAll(log, "{item}", item);
+    out.narrative = log;
+  } else {
+    // No buttons: the game writes the sentence straight into its LifeLog.
+    out.narrative = body;
+  }
+  {
+    const std::string teacher = body.find("{teacher}") != std::string::npos ? personName("teacher") : std::string();
+    if (!teacher.empty()) substAll(body, "{teacher}", teacher);
+  }
+  out.body = body;
+  return true;
+}
+
+bool Sim::forceScenarioClass(const std::string& cls, int choice) {
+  if (cls.empty()) {  // clear: the next age-up draws as usual
+    forcedClass_.clear();
+    forcedClassChoice_ = -1;
+    return true;
+  }
+  if (!findScenario(cls)) {
+    std::fprintf(stderr, "forceScenarioClass: unknown scenario class: %s\n", cls.c_str());
+    return false;
+  }
+  forcedClass_ = cls;
+  forcedClassChoice_ = choice;
+  return true;
+}
+
+bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence) {
+  const Hero& h = life.hero;
+  hero_ = &h;
+  // Port-side mortality rule (the real game spreads this over many systems, not
+  // one table): a small annual risk that rises steeply after 55.
+  const double annual = h.age < 55 ? 0.001 : 0.004 * double(h.age - 54);
+  if (!rng_.chance(annual)) return false;
+
+  const Table& t = tbl("a16_death-types-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (h.age >= int(t.num(r, "Min Age"))) pool.push_back(r);
+  }
+  // Weighted pick inside the eligible death causes.
+  double total = 0.0;
+  for (size_t r : pool) total += t.num(r, "Commonness Score");
+  if (pool.empty() || total <= 0.0) return false;
+  double roll = rng_.unit() * total;
+  size_t row = pool.back();
+  for (size_t r : pool) {
+    roll -= t.num(r, "Commonness Score");
+    if (roll <= 0.0) { row = r; break; }
+  }
+  type = t.at(row, "Type");
+  sentence = resolve(t.at(row, "Sentence"));
+  return true;
+}
+
+}  // namespace bl

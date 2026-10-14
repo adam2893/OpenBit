@@ -1,0 +1,6428 @@
+[
+ {
+  "file": "BillingMode",
+  "bytes": 29,
+  "lines": 1,
+  "header": "{\"androidStore\":\"GooglePlay\"}"
+ },
+ {
+  "file": "Birthday Invite Scenarios - Promotion",
+  "bytes": 717,
+  "lines": 3,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "EmbraceSdkInfo",
+  "bytes": 221,
+  "lines": 6,
+  "header": "{"
+ },
+ {
+  "file": "Fight Club Scenarios - Ageups",
+  "bytes": 3948,
+  "lines": 14,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Coach",
+  "bytes": 1987,
+  "lines": 8,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Compliment",
+  "bytes": 2267,
+  "lines": 7,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Doping",
+  "bytes": 4284,
+  "lines": 15,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Drug Screening",
+  "bytes": 2078,
+  "lines": 6,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Fight Betting",
+  "bytes": 1267,
+  "lines": 4,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Fighters - Brawl",
+  "bytes": 3673,
+  "lines": 14,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Fighting League",
+  "bytes": 8487,
+  "lines": 26,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Healed",
+  "bytes": 598,
+  "lines": 2,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Hero Becomes Fighter",
+  "bytes": 1055,
+  "lines": 3,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Hookup Fan",
+  "bytes": 11821,
+  "lines": 26,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Hookup Fighter",
+  "bytes": 12428,
+  "lines": 27,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Injury Acquired",
+  "bytes": 1097,
+  "lines": 3,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Move Unlock",
+  "bytes": 1997,
+  "lines": 7,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - MoveSet Setup",
+  "bytes": 1415,
+  "lines": 5,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Physical Therapy",
+  "bytes": 957,
+  "lines": 5,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Post League Match",
+  "bytes": 3884,
+  "lines": 12,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Post League Match Interaction",
+  "bytes": 2221,
+  "lines": 6,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Profile",
+  "bytes": 1588,
+  "lines": 4,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Profile Fighter",
+  "bytes": 1654,
+  "lines": 4,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Promotion",
+  "bytes": 764,
+  "lines": 2,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Recharge",
+  "bytes": 1193,
+  "lines": 5,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Retirement",
+  "bytes": 949,
+  "lines": 3,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Surgery",
+  "bytes": 920,
+  "lines": 5,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Training",
+  "bytes": 1974,
+  "lines": 8,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Trash Talk",
+  "bytes": 1950,
+  "lines": 7,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Tutorial",
+  "bytes": 2022,
+  "lines": 6,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Vampire Tax",
+  "bytes": 532,
+  "lines": 2,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "Fight Club Scenarios - Wild Encounter",
+  "bytes": 1176,
+  "lines": 4,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "IAPProductCatalog",
+  "bytes": 583,
+  "lines": 1,
+  "header": "{\"appleSKU\":\"\",\"appleTeamID\":\"\",\"enableCodelessAutoInitialization\":false,\"products\":[{\"id\":\"com.wtfapps.apollo.16.timemachine\",\"type\":0,\"storeIDs\":[{\"store\":\"Ap"
+ },
+ {
+  "file": "LineBreaking Following Characters",
+  "bytes": 269,
+  "lines": 1,
+  "header": "﻿)]｝〕〉》」』】〙〗〟’”｠»ヽヾーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ々〻‐゠–〜?!‼⁇⁈⁉・、%,.:;。！？］）：；＝}¢°\"†‡℃〆％，．"
+ },
+ {
+  "file": "LineBreaking Leading Characters",
+  "bytes": 95,
+  "lines": 1,
+  "header": "﻿([｛〔〈《「『【〘〖〝‘“｟«$—…‥〳〴〵\\［（{£¥\"々〇＄￥￦ #"
+ },
+ {
+  "file": "PrivateSchoolList",
+  "bytes": 1084,
+  "lines": 42,
+  "header": "{"
+ },
+ {
+  "file": "PublicSchoolList",
+  "bytes": 1086,
+  "lines": 42,
+  "header": "{"
+ },
+ {
+  "file": "SerializedPushScenarioConfig-enc",
+  "bytes": 69146,
+  "lines": 1778,
+  "header": "{"
+ },
+ {
+  "file": "SocialMediaListActive",
+  "bytes": 3485,
+  "lines": 117,
+  "header": "{"
+ },
+ {
+  "file": "SocialMediaListInactive",
+  "bytes": 439,
+  "lines": 19,
+  "header": "{"
+ },
+ {
+  "file": "UAP_InternalLocalization",
+  "bytes": 6650,
+  "lines": 49,
+  "header": "LANGUAGE\tEnglish\tGerman\tFrench\tSpanish"
+ },
+ {
+  "file": "a16_accessories-headwear-enc",
+  "bytes": 22306,
+  "lines": 246,
+  "header": "Index,Category,Name,Color,Brim,Commonness Score,Gender,Min Age,Max Age,Min Crazinesss,Country"
+ },
+ {
+  "file": "a16_accessories-masks-enc",
+  "bytes": 406,
+  "lines": 23,
+  "header": "Index,Name,Commonness Score"
+ },
+ {
+  "file": "a16_accessories-sunglasses-enc",
+  "bytes": 12725,
+  "lines": 243,
+  "header": "Index,Name,Color,Commonness Score,Gender,Min Age,Max Age,Min Craziness,Category"
+ },
+ {
+  "file": "a16_actor-agent-drops-hero-color-enc",
+  "bytes": 6626,
+  "lines": 65,
+  "header": "Feedback Color,Requires Real Actor,Hero Inactive,Hero Emigrated,Commonness Score,Agent Min Reputation,Agent Max Reputation,Hero Min Reputation,Hero Max Reputati"
+ },
+ {
+  "file": "a16_actor-agent-fire-color-enc",
+  "bytes": 4868,
+  "lines": 52,
+  "header": "Feedback Color,Commonness Score,Agent Min Reputation,Agent Max Reputation,Hero Min Reputation,Hero Max Reputation"
+ },
+ {
+  "file": "a16_actor-agent-hire-color-enc",
+  "bytes": 6188,
+  "lines": 55,
+  "header": "Feedback Color,Requires Real Actor,Commonness Score,Agent Min Reputation,Agent Max Reputation,Hero Min Reputation,Hero Max Reputation"
+ },
+ {
+  "file": "a16_actor-costar-crazy-scenarios-enc",
+  "bytes": 3780,
+  "lines": 31,
+  "header": "Feedback Snippet,Log Version Snippet"
+ },
+ {
+  "file": "a16_actor-costar-criticism-scenarios-enc",
+  "bytes": 4176,
+  "lines": 34,
+  "header": "Feedback Snippet,Log Version Snippet"
+ },
+ {
+  "file": "a16_actor-costar-diss-scenarios-enc",
+  "bytes": 5519,
+  "lines": 34,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_actor-costar-nervous-scenarios-enc",
+  "bytes": 947,
+  "lines": 13,
+  "header": "Feedback Snippet"
+ },
+ {
+  "file": "a16_actor-develop-character-scenarios-enc",
+  "bytes": 4547,
+  "lines": 26,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_actor-dynamic-challenges-enc",
+  "bytes": 13250,
+  "lines": 115,
+  "header": "Body Snippet,Feedback Past Snippet,Feedback Present Snippet,Lover Argue Score,Agree Performance Impact,Disagree Performance Impact,Happiness Impact,Health Impac"
+ },
+ {
+  "file": "a16_actor-extra-roles-enc",
+  "bytes": 3069,
+  "lines": 128,
+  "header": "Role,Gender,Min Age,Max Age"
+ },
+ {
+  "file": "a16_actor-film-critic-color-enc",
+  "bytes": 12968,
+  "lines": 187,
+  "header": "Genre,Min Reception,Max Reception,Snippet"
+ },
+ {
+  "file": "a16_actor-film-genres-enc",
+  "bytes": 289,
+  "lines": 15,
+  "header": "Genre,Can Use Standalone,Budget Score,Commonness Score,Country Code"
+ },
+ {
+  "file": "a16_actor-films-enc",
+  "bytes": 42770,
+  "lines": 343,
+  "header": "Title,Genre,Rating,Difficulty Score,Commonness Score,Lead Name,Lead Gender,Lead Min Age,Lead Max Age,Lead Uses Definite Article,Supporting 1 Name,Supporting 1 G"
+ },
+ {
+  "file": "a16_actor-practice-scenarios-enc",
+  "bytes": 3268,
+  "lines": 21,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_actor-publicity-stunt-scenarios-enc",
+  "bytes": 14308,
+  "lines": 64,
+  "header": "Scenario,Log Version,Hero Gender,Hero Min Age,Hero Max Age,Positive Score,Negative Score"
+ },
+ {
+  "file": "a16_actor-rejection-color-enc",
+  "bytes": 5518,
+  "lines": 60,
+  "header": "Feedback Color,Min Propensity,Max Propensity,Commonness Score,Real Actor Required"
+ },
+ {
+  "file": "a16_actor-show-genres-enc",
+  "bytes": 330,
+  "lines": 10,
+  "header": "Genre,Can Use Standalone,Budget Score,Commonness Score,Shows Per Season,Country Code"
+ },
+ {
+  "file": "a16_actor-shows-enc",
+  "bytes": 28436,
+  "lines": 242,
+  "header": "Title,Genre,Can Be Ensemble,Mainstream Score,Lead Name,Lead Gender,Lead Min Age,Lead Max Age,Regular 1 Name,Regular 1 Gender,Regular 1 Min Age,Regular 1 Max Age"
+ },
+ {
+  "file": "a16_actor-speech-color-enc",
+  "bytes": 4571,
+  "lines": 51,
+  "header": "Feedback Color,Min Impression,Max Impression,Min Smugness,Max Smugness,Min Length,Max Length"
+ },
+ {
+  "file": "a16_actor-studio-fire-color-enc",
+  "bytes": 4607,
+  "lines": 57,
+  "header": "Feedback Color,Actor Type,Performance,Disruption,Pregnancy,Plastic Surgery,Disease,Real Actor Required"
+ },
+ {
+  "file": "a16_actors-real-enc",
+  "bytes": 6254,
+  "lines": 173,
+  "header": "Full Name,Film Genre,Age,Gender,Country,Success Score"
+ },
+ {
+  "file": "a16_adoption-reasons-enc",
+  "bytes": 4500,
+  "lines": 48,
+  "header": "Reason,Abbreviated Reason,Snippet,Max Looks,Max Smarts,Min Craziness,Commonness Score"
+ },
+ {
+  "file": "a16_adoption-scenarios-enc",
+  "bytes": 8039,
+  "lines": 24,
+  "header": "Scenario,Log Version,Adoptee Gender,Adoptee Min Age,Adoptee Max Age"
+ },
+ {
+  "file": "a16_aircraft-danger-scenarios-enc",
+  "bytes": 9753,
+  "lines": 31,
+  "header": "Title,Scenario,Log Version,Danger Score,Fatal,Helicopter,Jet,Propeller,Glider,Blimp,Balloon"
+ },
+ {
+  "file": "a16_aircraft-enc",
+  "bytes": 11598,
+  "lines": 60,
+  "header": "Index,Make,Model,Descriptive Name Override,Descriptive Name Suffix,Type,Subtype,Airplane Propulsion Type,Short Description,For Sale Description,Cost,Passengers,"
+ },
+ {
+  "file": "a16_aircraft-parts-enc",
+  "bytes": 4413,
+  "lines": 32,
+  "header": "Part,Only One Per Aircraft,Part Cost Score,Broken Terms,Helicopter,Jet,Propeller,Glider,Blimp,Balloon,Optional Descriptions"
+ },
+ {
+  "file": "a16_alcohol-enc",
+  "bytes": 2011,
+  "lines": 40,
+  "header": "Name,Emoji,Indefinite,Singular,Plural,Club,Bar"
+ },
+ {
+  "file": "a16_alcohol-scenarios-enc",
+  "bytes": 8110,
+  "lines": 58,
+  "header": "Condition,Scenario,CTA,Yes Choice,No Choice"
+ },
+ {
+  "file": "a16_animals-enc",
+  "bytes": 5728,
+  "lines": 74,
+  "header": "Animal,Danger Score,Aggression Score,Skittishness Score,Attack String,Rabid Score,Continent,Vampire Essence Gain"
+ },
+ {
+  "file": "a16_anniversary-community-goals-titles-enc",
+  "bytes": 1931,
+  "lines": 12,
+  "header": "Scenario Tag,Option 1,Option 2,Option 3,Option 4,Option 5,Situation Description"
+ },
+ {
+  "file": "a16_anniversary-date-enc",
+  "bytes": 17623,
+  "lines": 101,
+  "header": "Activity,Feedback String,Log String,Cost,Min Age,Max Age,Relationship Impact"
+ },
+ {
+  "file": "a16_anniversary-gift-color-enc",
+  "bytes": 11598,
+  "lines": 117,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_anniversary-gift-enc",
+  "bytes": 14299,
+  "lines": 339,
+  "header": "Gift,Cost,Min Age,Max Age,Appreciation Score,Hero Gender,Lover Gender,Commonness Score"
+ },
+ {
+  "file": "a16_arrest-scenarios-enc",
+  "bytes": 5369,
+  "lines": 54,
+  "header": "Scenario,Min Attitude,Max Attitude,Hero Gender,Serious Offense Only"
+ },
+ {
+  "file": "a16_assaults-enc",
+  "bytes": 30941,
+  "lines": 229,
+  "header": "Body Part,Outbound Scenario,Inbound Scenario,Clean"
+ },
+ {
+  "file": "a16_astronaut-agency-director-warning-enc",
+  "bytes": 1957,
+  "lines": 24,
+  "header": "Warning"
+ },
+ {
+  "file": "a16_astronaut-anxiety-scenarios-enc",
+  "bytes": 6217,
+  "lines": 44,
+  "header": "Audience,Snippet,Log Version,Audience Min Age,Audience Max Age"
+ },
+ {
+  "file": "a16_astronaut-artifacts-enc",
+  "bytes": 1579,
+  "lines": 28,
+  "header": "Item Lookup,Item Name,Short Name,Location,Indefinite Article,Plural,Can Be Polished,Min Value,Max Value,Appreciates,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-asteroid-data-enc",
+  "bytes": 288,
+  "lines": 12,
+  "header": "Name,Type,Diameter,Size Score"
+ },
+ {
+  "file": "a16_astronaut-black-hole-data-enc",
+  "bytes": 200,
+  "lines": 6,
+  "header": "Name,Diameter,Mass,Event Horizon"
+ },
+ {
+  "file": "a16_astronaut-career-rank-enc",
+  "bytes": 664,
+  "lines": 5,
+  "header": "Rank,Missions to Promotion,Min Years in Agency,Minimum Intelligence,Minimum Discipline,Minimum Health,Stress Score,Min Salary,Max Salary,Min Age,Max Age,Too Old"
+ },
+ {
+  "file": "a16_astronaut-celestial-body-names-enc",
+  "bytes": 2480,
+  "lines": 99,
+  "header": "Name,Black Hole,Galaxy,Star,Planet,Asteroid,Comet,Nebula,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-comet-data-enc",
+  "bytes": 230,
+  "lines": 6,
+  "header": "Name,Color,Period,Diameter,Tail Length"
+ },
+ {
+  "file": "a16_astronaut-conversations-enc",
+  "bytes": 6725,
+  "lines": 83,
+  "header": "Audience,Conversation,Hero Min Age,Hero Max Age,Audience Min Age,Audience Max Age,Controversy Score,Hero Has Been to Space"
+ },
+ {
+  "file": "a16_astronaut-countries-enc",
+  "bytes": 1606,
+  "lines": 41,
+  "header": "Country,Space Agency Name,Abbreviation"
+ },
+ {
+  "file": "a16_astronaut-dumb-scenarios-enc",
+  "bytes": 26855,
+  "lines": 30,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,Respect Impact 1,Fi"
+ },
+ {
+  "file": "a16_astronaut-experiment-scenarios-enc",
+  "bytes": 8432,
+  "lines": 23,
+  "header": "Snippet,Log Version,Deception Log Version,Feedback Snippet,Risk Score,Deception Score,Performance Impact"
+ },
+ {
+  "file": "a16_astronaut-fitness-training-scenario-enc",
+  "bytes": 10392,
+  "lines": 46,
+  "header": "Scenario,Log Version,Training Program Only,Training Type,Impact Score,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-flight-scenario-enc",
+  "bytes": 12582,
+  "lines": 16,
+  "header": "Type,Body,CTA,Choice 1,Narrative 1,Flight Impact 1,Performance Impact 1,Choice 2,Narrative 2,Flight Impact 2,Performance Impact 2,Choice 3,Narrative 3,Flight Im"
+ },
+ {
+  "file": "a16_astronaut-galaxy-data-enc",
+  "bytes": 455,
+  "lines": 10,
+  "header": "Name,Classification,Diameter,Number of Stars"
+ },
+ {
+  "file": "a16_astronaut-inbound-messages-enc",
+  "bytes": 2704,
+  "lines": 17,
+  "header": "Message,Incorrect Answers"
+ },
+ {
+  "file": "a16_astronaut-lunar-missions-enc",
+  "bytes": 8571,
+  "lines": 18,
+  "header": "Mission Type,Snippet,Log Version,Log Success,Log Failure,Danger Score"
+ },
+ {
+  "file": "a16_astronaut-mars-destinations-enc",
+  "bytes": 953,
+  "lines": 42,
+  "header": "Location,Uses Definite Article,Commonness Score,Danger Score"
+ },
+ {
+  "file": "a16_astronaut-martian-missions-enc",
+  "bytes": 7407,
+  "lines": 19,
+  "header": "Type,Snippet,Log Version,Log Success,Log Failure,Danger Score"
+ },
+ {
+  "file": "a16_astronaut-mission-dumb-scenarios-enc",
+  "bytes": 22840,
+  "lines": 26,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Reputation,Max Reputation,Mission Type,Title,Body,C"
+ },
+ {
+  "file": "a16_astronaut-mission-goof-off-enc",
+  "bytes": 2284,
+  "lines": 33,
+  "header": "Location,Snippet,Log Version,Performance Impact,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-moon-destinations-enc",
+  "bytes": 810,
+  "lines": 35,
+  "header": "Location,Requires Definite Article,Commonness Score,Danger Score"
+ },
+ {
+  "file": "a16_astronaut-nebula-shapes-enc",
+  "bytes": 1787,
+  "lines": 122,
+  "header": "Shape,Uses Definite Article,Uses Indefinite Article"
+ },
+ {
+  "file": "a16_astronaut-outbound-messages-enc",
+  "bytes": 1347,
+  "lines": 56,
+  "header": "Message,Success Score,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-peer-review-color-enc",
+  "bytes": 6858,
+  "lines": 47,
+  "header": "Data Type,Min Reception,Max Reception,String"
+ },
+ {
+  "file": "a16_astronaut-planet-data-enc",
+  "bytes": 675,
+  "lines": 9,
+  "header": "Name,Classification,Color,Diameter,Mass,Age,Has Rings,Number of Moons,Habitability Score"
+ },
+ {
+  "file": "a16_astronaut-pranks-enc",
+  "bytes": 2620,
+  "lines": 8,
+  "header": "Inbound Scenario,Inbound Log Version,Outbound Snippet"
+ },
+ {
+  "file": "a16_astronaut-probe-names-enc",
+  "bytes": 843,
+  "lines": 19,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-publication-titles-enc",
+  "bytes": 3636,
+  "lines": 72,
+  "header": "Name,Data Type,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-satellite-names-enc",
+  "bytes": 986,
+  "lines": 27,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-satellite-parts-enc",
+  "bytes": 253,
+  "lines": 10,
+  "header": "Part,Repair Difficulty,Commonness Score,Damage Score"
+ },
+ {
+  "file": "a16_astronaut-scanner-observations-enc",
+  "bytes": 16682,
+  "lines": 146,
+  "header": "Object,Feedback Snippet,Log Snippet,Research Score,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-shuttle-names-enc",
+  "bytes": 621,
+  "lines": 13,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_astronaut-star-data-enc",
+  "bytes": 450,
+  "lines": 11,
+  "header": "Name,Classification,Color,Mass,Diameter,Planets in Orbit"
+ },
+ {
+  "file": "a16_astronaut-training-questions-enc",
+  "bytes": 8155,
+  "lines": 43,
+  "header": "Commonness Score,Question,Correct Answers,Dummy Answers"
+ },
+ {
+  "file": "a16_back-to-school-titles-enc",
+  "bytes": 6644,
+  "lines": 56,
+  "header": "Scenario Tag,Og Title,Option 1,Option 2,Option 3,Option 4,Option 5"
+ },
+ {
+  "file": "a16_backtoschool-field-trip-color-enc",
+  "bytes": 7897,
+  "lines": 38,
+  "header": "String,Focus,Theme"
+ },
+ {
+  "file": "a16_backtoschool-field-trip-location-enc",
+  "bytes": 1398,
+  "lines": 15,
+  "header": "Location,Theme,Hero Minimum Age,Hero Maximum Age"
+ },
+ {
+  "file": "a16_backtoschool-house-party-color-enc",
+  "bytes": 8955,
+  "lines": 31,
+  "header": "String,Log Version,Rowdiness Level,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-house-party-hookup-enc",
+  "bytes": 5987,
+  "lines": 39,
+  "header": "String,Rowdiness Level"
+ },
+ {
+  "file": "a16_backtoschool-house-party-parental-absence-color-enc",
+  "bytes": 3300,
+  "lines": 29,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-prom-lose-color-enc",
+  "bytes": 3273,
+  "lines": 21,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-prom-win-color-enc",
+  "bytes": 3128,
+  "lines": 24,
+  "header": "String,Gave Speech,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-school-dance-event-feedback-enc",
+  "bytes": 4964,
+  "lines": 35,
+  "header": "String,Companion Type,Dance Theme,Hero Enjoyment Score,NPC Enjoyment Score (if applicable)"
+ },
+ {
+  "file": "a16_backtoschool-school-dance-rejection-color-enc",
+  "bytes": 4842,
+  "lines": 35,
+  "header": "String,Hurtfulness Score,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-school-dance-theme-enc",
+  "bytes": 86,
+  "lines": 7,
+  "header": "Theme"
+ },
+ {
+  "file": "a16_backtoschool-sleepover-acceptance-feedback-string-enc",
+  "bytes": 23362,
+  "lines": 37,
+  "header": "Invited To A Sleepover Version,Push Scenario Version,Sleepover Activity,Hero Min Age,Hero Max Age,Hero Enjoyment,NPC Enjoyment,Commonness Score"
+ },
+ {
+  "file": "a16_backtoschool-sleepover-activitie-enc",
+  "bytes": 721,
+  "lines": 5,
+  "header": "Activity,Sleepover Invite Friend String,Sleepover Age-Up String"
+ },
+ {
+  "file": "a16_backtoschool-sleepover-invitation-dumb-enc",
+  "bytes": 26919,
+  "lines": 27,
+  "header": "Hero Min Age,Hero Max Age,Hero Invites,NPC Invites,Crazy,Randomize Choices,Gender Bracket,Title,Scenario,CTA,Choice 1,Narrative 1,Relationship Impact 1,Looks Im"
+ },
+ {
+  "file": "a16_backtoschool-sleepover-invitation-rejection-color-enc",
+  "bytes": 10719,
+  "lines": 29,
+  "header": "String - Hero,String - NPC,Believability Score,Commonness Score,Hero Minimum Age,Hero Maximum Age"
+ },
+ {
+  "file": "a16_bank-robbery-disguises-enc",
+  "bytes": 2002,
+  "lines": 51,
+  "header": "Disguise,Description,Effectiveness Score"
+ },
+ {
+  "file": "a16_bank-robbery-getaways-enc",
+  "bytes": 679,
+  "lines": 25,
+  "header": "Method,Description,Effectiveness Score"
+ },
+ {
+  "file": "a16_bank-robbery-weapons-enc",
+  "bytes": 606,
+  "lines": 41,
+  "header": "Weapon,Plural,Effectiveness Score"
+ },
+ {
+  "file": "a16_biographies-enc",
+  "bytes": 1230,
+  "lines": 46,
+  "header": "Title,Gender"
+ },
+ {
+  "file": "a16_birth-circumstances-enc",
+  "bytes": 31472,
+  "lines": 188,
+  "header": "Circumstance,Sibling Circumstance,Stepfather Override Version,Father Types,Commonness Score,Min Mother Age,Max Mother Age,Adoption,Surrogacy,Sperm Donor,IVF,Roy"
+ },
+ {
+  "file": "a16_black-market-antiques-enc",
+  "bytes": 5441,
+  "lines": 52,
+  "header": "Item Name,Fake Name,Short Name,Possessive Name,Uses Indefinite Article,Uses Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Unique,Can Be Fake,Ap"
+ },
+ {
+  "file": "a16_black-market-art-enc",
+  "bytes": 3136,
+  "lines": 42,
+  "header": "Title,Artist,Genre,Min Value,Max Value,Can Be Fake,Commonness Score,Appeal Score,Storage Unit Only,Black Market Only,ID"
+ },
+ {
+  "file": "a16_black-market-auction-categories-enc",
+  "bytes": 120,
+  "lines": 8,
+  "header": "Category,Commonness Score"
+ },
+ {
+  "file": "a16_black-market-auction-house-names-enc",
+  "bytes": 411,
+  "lines": 4,
+  "header": "Format,Prefix,Suffix"
+ },
+ {
+  "file": "a16_black-market-auctioneer-color-enc",
+  "bytes": 2678,
+  "lines": 44,
+  "header": "String,Auction Category,Plural,Commonness Score"
+ },
+ {
+  "file": "a16_black-market-automobiles-enc",
+  "bytes": 5366,
+  "lines": 51,
+  "header": "Make,Model,Type,Min Value,Max Value,Appreciates,Cool Score,Ease of Theft Score,Commonness Score,Storage Unit Only,ID,Race Type Whitelist,Racing Class,Durability"
+ },
+ {
+  "file": "a16_black-market-chemist-feedback-color-enc",
+  "bytes": 3479,
+  "lines": 46,
+  "header": "String,Hero Gender,Boosted Stat,Commonness Score"
+ },
+ {
+  "file": "a16_black-market-exhibit-dumb-scenarios-enc",
+  "bytes": 19557,
+  "lines": 25,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Condition,Max Condition,Exhibit Category,Title,Body"
+ },
+ {
+  "file": "a16_black-market-fashion-enc",
+  "bytes": 6364,
+  "lines": 53,
+  "header": "Item Name,Fake Name,Short Name,Possessive Name,Uses Indefinite Article,Uses Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Unique,Can Be Fake,Ap"
+ },
+ {
+  "file": "a16_black-market-gemstones-enc",
+  "bytes": 906,
+  "lines": 19,
+  "header": "Gemstone,Min Carats,Max Carats,Super Max Carats,First Carat Price,Min Cost,Max Cost,Commonness Score,Black Market Only,Storage Unit Only,ID"
+ },
+ {
+  "file": "a16_black-market-historical-artifacts-enc",
+  "bytes": 5089,
+  "lines": 49,
+  "header": "Item Name,Fake Name,Short Name,Possessive Name,Uses Indefinite Article,Uses Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Unique,Can Be Fake,Ap"
+ },
+ {
+  "file": "a16_black-market-museum-dumb-scenarios-enc",
+  "bytes": 13061,
+  "lines": 16,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Traffic,Max Traffic,Museum Has Multiple Wings,Museu"
+ },
+ {
+  "file": "a16_black-market-museum-name-enc",
+  "bytes": 795,
+  "lines": 19,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_black-market-museum-report-color-enc",
+  "bytes": 2297,
+  "lines": 21,
+  "header": "String,Min Appeal,Max Appeal"
+ },
+ {
+  "file": "a16_black-market-police-intoxicated-hero-color-enc",
+  "bytes": 1989,
+  "lines": 22,
+  "header": "Scenario,Boosted Stat,Hero Gender"
+ },
+ {
+  "file": "a16_black-market-police-intoxicated-warning-enc",
+  "bytes": 2050,
+  "lines": 21,
+  "header": "Scenario,Commonness Score"
+ },
+ {
+  "file": "a16_black-market-purchase-requests-enc",
+  "bytes": 4584,
+  "lines": 44,
+  "header": "String,Min Friendliness,Max Friendliness,Auction Category,Arms Dealer Only,Wildlife Smuggler Only"
+ },
+ {
+  "file": "a16_black-market-sports-memorabilia-enc",
+  "bytes": 6661,
+  "lines": 50,
+  "header": "Item Name,Fake Name,Short Name,Possessive Name,Uses Indefinite Article,Uses Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Unique,Can Be Fake,Ap"
+ },
+ {
+  "file": "a16_black-market-street-chemist-cut-ingredients-enc",
+  "bytes": 1030,
+  "lines": 59,
+  "header": "Ingredient,Commonness Score,Can Be Fatal"
+ },
+ {
+  "file": "a16_black-market-street-chemist-products-enc",
+  "bytes": 607,
+  "lines": 18,
+  "header": "Name,Can Be Cut,Min Price,Max Price,Health Impact,Happiness Impact,Smarts Impact,Looks Impact,Risk Score"
+ },
+ {
+  "file": "a16_black-market-taxidermist-business-names-enc",
+  "bytes": 643,
+  "lines": 9,
+  "header": "Format,Prefix,Suffix"
+ },
+ {
+  "file": "a16_black-market-taxidermy-discard-locations-enc",
+  "bytes": 1106,
+  "lines": 30,
+  "header": "Location,String,Commonness Score,Risk Score"
+ },
+ {
+  "file": "a16_black-market-vendor-dumb-scenarios-enc",
+  "bytes": 9690,
+  "lines": 13,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Attitude,Max Attitude,Title,Body,CTA,Choice 1,Narra"
+ },
+ {
+  "file": "a16_black-market-weapons-enc",
+  "bytes": 4544,
+  "lines": 43,
+  "header": "Item Name,Fake Name,Short Name,Possessive Name,Uses Indefinite Article,Uses Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Unique,Can Be Fake,Ap"
+ },
+ {
+  "file": "a16_body-parts-enc",
+  "bytes": 2329,
+  "lines": 79,
+  "header": "Body Part,Plural,Disease Possible,Injury Possible,Assault Possible,Taxidermy Botch,Gender"
+ },
+ {
+  "file": "a16_books-enc",
+  "bytes": 12474,
+  "lines": 214,
+  "header": "Book,Author,Genre,Pages,Intelligence Score,Happiness Score,Minimum Age"
+ },
+ {
+  "file": "a16_boosts-enc",
+  "bytes": 47764,
+  "lines": 127,
+  "header": "Attribute,Scenario,Conclusion,Accept Choice,Reject Choice,Accept Feedback,Log Version,Gender,Min Age,Max Age"
+ },
+ {
+  "file": "a16_breakup-scenarios-enc",
+  "bytes": 19578,
+  "lines": 228,
+  "header": "Condition,Crazy,Scenario,Gender,Straight Only,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_bully-scenarios-enc",
+  "bytes": 4626,
+  "lines": 34,
+  "header": "Scenario,Third Person Scenario,Gender"
+ },
+ {
+  "file": "a16_business-competition-fluctuations-enc",
+  "bytes": 38296,
+  "lines": 270,
+  "header": "Specific Industry,Specific Product,Fluctuation Type,Fluctuation Amount,Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_business-consultant-humor-enc",
+  "bytes": 2769,
+  "lines": 54,
+  "header": "Feedback,Log Snippet,Company Health,Commonness Score"
+ },
+ {
+  "file": "a16_business-demand-fluctuations-enc",
+  "bytes": 45424,
+  "lines": 323,
+  "header": "Specific Industry,Specific Product,Fluctuation Type,Fluctuation Amount,Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_business-industries-enc",
+  "bytes": 2043,
+  "lines": 26,
+  "header": "Industry,Country Whitelist,Country Blacklist,Product Launch Cost,Facility Name,Facility Name Plural,Max Facilities,Facility Setup Cost,Facility Annual Cost,Faci"
+ },
+ {
+  "file": "a16_business-market-research-enc",
+  "bytes": 3321,
+  "lines": 29,
+  "header": "String,Demand,Competition,Industry Blacklist"
+ },
+ {
+  "file": "a16_business-name-structure-enc",
+  "bytes": 5057,
+  "lines": 26,
+  "header": "Industry,Format,Prefix,Suffix,Predefined"
+ },
+ {
+  "file": "a16_business-product-names-enc",
+  "bytes": 41084,
+  "lines": 261,
+  "header": "Specific Industry,Specific Product,Format,Commonness Score,Hero Owns Company"
+ },
+ {
+  "file": "a16_business-products-enc",
+  "bytes": 21986,
+  "lines": 283,
+  "header": "Industry,Product,Product Name Base,Unit,Unit Plural,Avg Unit Price,Max Unit Price,Min Unit Cost,Max Unit Cost,Demand Score,Shelf Life Years"
+ },
+ {
+  "file": "a16_business-supplier-name-structure-enc",
+  "bytes": 3639,
+  "lines": 26,
+  "header": "Industry,Format,Prefix,Suffix,Predefined"
+ },
+ {
+  "file": "a16_business-team-building-activities-enc",
+  "bytes": 2132,
+  "lines": 51,
+  "header": "Index,Activity,Short Version,Cost Per Employee,Commonness Score,Attitude Impact"
+ },
+ {
+  "file": "a16_business-team-requests-enc",
+  "bytes": 6671,
+  "lines": 34,
+  "header": "Scenario,Log Version,Total Cost,Cost Per Employee,Industry Whitelist,Industry Blacklist,Agree Attitude Impact,Disagree Attitude Impact,Log Snippet,Commonness Sc"
+ },
+ {
+  "file": "a16_business-write-off-scenarios-enc",
+  "bytes": 3848,
+  "lines": 55,
+  "header": "Snippet,Reason,Impact Score,Commonness Score"
+ },
+ {
+  "file": "a16_car-models-enc",
+  "bytes": 14197,
+  "lines": 187,
+  "header": "Make,Model,Type,Cost,Depreciation Score,Reliability Score,Longevity Score,Cool Score,Ease of Theft Score,Unavailable,Luxury Only,Race Car Dealership Only,Race T"
+ },
+ {
+  "file": "a16_car-parts-enc",
+  "bytes": 3566,
+  "lines": 43,
+  "header": "Part,Number,Base Cost,Break Commonness Score,Broken Terms,Optional Descriptions"
+ },
+ {
+  "file": "a16_careers-enc",
+  "bytes": 30788,
+  "lines": 169,
+  "header": "Career,Company Type,Required Working Years,Required Education,Required Major,Seniority Track,Can Skip Positions,Seniority Track Years,Starting Salary,Salary Cap"
+ },
+ {
+  "file": "a16_casino-banned-gambler-snippet-enc",
+  "bytes": 2746,
+  "lines": 23,
+  "header": "Snippet,Log Version,Min Gambler Craziness,Max Gambler Craziness"
+ },
+ {
+  "file": "a16_casino-casino-accessory-acquisition-method-enc",
+  "bytes": 757,
+  "lines": 9,
+  "header": "Accessory Type,Index,Accessory Index,Game,Acquisition Method,Scenario Snippet"
+ },
+ {
+  "file": "a16_casino-casino-amenity-enc",
+  "bytes": 7427,
+  "lines": 76,
+  "header": "Amenity Name,Secondary Text Line,Category,Theme,Cost,Monthly Expenses,Gambler Happiness Impact,Base Popularity Impact,Match Popularity Impact"
+ },
+ {
+  "file": "a16_casino-casino-amenity-feedback-scenario-enc",
+  "bytes": 15267,
+  "lines": 77,
+  "header": "String,Category,Theme,Enjoyment Score,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-audition-string-enc",
+  "bytes": 12297,
+  "lines": 44,
+  "header": "Scenario,Log Version,Act Category,Min Impression,Max Impression"
+ },
+ {
+  "file": "a16_casino-casino-celeb-party-death-string-enc",
+  "bytes": 1659,
+  "lines": 13,
+  "header": "String,Log Version,Min Celeb Craziness,Max Celeb Craziness"
+ },
+ {
+  "file": "a16_casino-casino-celebrity-name-enc",
+  "bytes": 2449,
+  "lines": 107,
+  "header": "First Name,Last Name,Gender,Skin,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-celebrity-party-scenario-enc",
+  "bytes": 7221,
+  "lines": 20,
+  "header": "Scenario,Log Version,Is Positive,Min Celeb Craziness,Max Celeb Craziness"
+ },
+ {
+  "file": "a16_casino-casino-collectible-enc",
+  "bytes": 1342,
+  "lines": 22,
+  "header": "Item Lookup,Item Name,Short Name,Definite Article,Indefinite Article,Plural,Can Be Refurbished,Min Value,Max Value,Appreciates,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-drink-enc",
+  "bytes": 1359,
+  "lines": 57,
+  "header": "Beverage Type,Uses Indefinite Article,Drink Has Alcohol,Drink Quality,Happiness Impact"
+ },
+ {
+  "file": "a16_casino-casino-dumb-scenario-enc",
+  "bytes": 23096,
+  "lines": 26,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Casino Popularity,Max Casino Popularity,Requires Ca"
+ },
+ {
+  "file": "a16_casino-casino-gambler-conversation-enc",
+  "bytes": 2677,
+  "lines": 28,
+  "header": "Audience,Conversation,Hero Min Age,Hero Max Age,Audience Min Age,Audience Max Age"
+ },
+ {
+  "file": "a16_casino-casino-game-room-complaint-enc",
+  "bytes": 2474,
+  "lines": 18,
+  "header": "String,Min Gambler Happiness,Max Gambler Happiness"
+ },
+ {
+  "file": "a16_casino-casino-game-room-enc",
+  "bytes": 495,
+  "lines": 10,
+  "header": "Game,Installation Cost,Unit String,Base Unit Capacity,Cost Per Unit,Default House Win Rate,Default Bet,Min Bet,Max Bet"
+ },
+ {
+  "file": "a16_casino-casino-gift-enc",
+  "bytes": 2066,
+  "lines": 37,
+  "header": "Gift,Is Singular,Use Them,Is Flowers,Cost,Male Appreciation Score,Female Appreciation Score,Min Age,Max Age,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-ledger-feedback-enc",
+  "bytes": 2785,
+  "lines": 18,
+  "header": "String,Min Casino Popularity,Max Casino Popularity"
+ },
+ {
+  "file": "a16_casino-casino-offer-artist-refusal-enc",
+  "bytes": 3309,
+  "lines": 21,
+  "header": "String,Reason Type,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-performance-act-enc",
+  "bytes": 74,
+  "lines": 5,
+  "header": "Act Type,Base Popularity"
+ },
+ {
+  "file": "a16_casino-casino-performance-act-name-enc",
+  "bytes": 8834,
+  "lines": 128,
+  "header": "Act Type,Name,Theme,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-performance-act-string-enc",
+  "bytes": 9184,
+  "lines": 41,
+  "header": "Scenario,Theme,Act Type,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-singer-genre-enc",
+  "bytes": 1579,
+  "lines": 63,
+  "header": "Genre,Theme,Base Popularity Impact,Match Popularity Impact"
+ },
+ {
+  "file": "a16_casino-casino-singer-song-enc",
+  "bytes": 3129,
+  "lines": 67,
+  "header": "Song Title,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-street-name-enc",
+  "bytes": 985,
+  "lines": 58,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_casino-casino-structure-enc",
+  "bytes": 250,
+  "lines": 6,
+  "header": "Structure Type,Price,Amenity Capacity,Game Room Capacity,Entertainment Capacity,Base Monthly Cost"
+ },
+ {
+  "file": "a16_casino-casino-theme-enc",
+  "bytes": 105,
+  "lines": 9,
+  "header": "Theme,Popularity Score"
+ },
+ {
+  "file": "a16_casino-celebrity-demand-enc",
+  "bytes": 2296,
+  "lines": 23,
+  "header": "Index,Item,Uses Indefinite Article,Plural,Cost,Celebrity Popularity Impact"
+ },
+ {
+  "file": "a16_casino-drink-refusal-string-enc",
+  "bytes": 3396,
+  "lines": 34,
+  "header": "String,Drink Has Alcohol,Person Type,Commonness Score"
+ },
+ {
+  "file": "a16_casino-gambler-compensation-method-enc",
+  "bytes": 6824,
+  "lines": 31,
+  "header": "Method,Feedback String,Log Version,Appreciation Score,Commonness Score"
+ },
+ {
+  "file": "a16_casino-gambler-encouragement-method-enc",
+  "bytes": 3395,
+  "lines": 20,
+  "header": "Method,String,Effectiveness Score,Commonness Score"
+ },
+ {
+  "file": "a16_casino-gambler-game-room-compliment-enc",
+  "bytes": 2300,
+  "lines": 18,
+  "header": "String,Min Gambler Happiness,Max Gambler Happiness"
+ },
+ {
+  "file": "a16_casino-gambler-joins-casino-color-enc",
+  "bytes": 2529,
+  "lines": 26,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_casino-game-room-complaint-enc",
+  "bytes": 281,
+  "lines": 3,
+  "header": "String,Min Gambler Happiness,Max Gambler Happiness"
+ },
+ {
+  "file": "a16_casino-ledger-feedback-enc",
+  "bytes": 309,
+  "lines": 3,
+  "header": "String,Min Casino Popularity,Max Casino Popularity"
+ },
+ {
+  "file": "a16_casino-mafia-member-activity-string-enc",
+  "bytes": 394,
+  "lines": 11,
+  "header": "Snippet,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_casino-meet-greet-feedback-enc",
+  "bytes": 2729,
+  "lines": 21,
+  "header": "String,Positive Fame-Based,Negative Fame-Based,Positive Theme-Based,Negative Theme-Based,Commonness Score"
+ },
+ {
+  "file": "a16_casino-negative-gambler-interaction-scenario-enc",
+  "bytes": 4454,
+  "lines": 19,
+  "header": "Scenario,Log Version,Min Gambler Addiction,Max Gambler Addiction,Min Gambler Happiness,Max Gambler Happiness"
+ },
+ {
+  "file": "a16_casino-positive-gambler-interaction-scenario-enc",
+  "bytes": 4555,
+  "lines": 20,
+  "header": "Scenario,Log Version,Min Gambler Addiction,Max Gambler Addiction,Min Gambler Happiness,Max Gambler Happiness"
+ },
+ {
+  "file": "a16_casino-random-game-room-name-enc",
+  "bytes": 2258,
+  "lines": 70,
+  "header": "Name,Game Room Type,Commonness Score"
+ },
+ {
+  "file": "a16_casino-random-hero-casino-name-enc",
+  "bytes": 2252,
+  "lines": 43,
+  "header": "Name,Casino Type,Commonness Score"
+ },
+ {
+  "file": "a16_casion-celebrity-demand-enc",
+  "bytes": 178,
+  "lines": 5,
+  "header": "Item,Uses Indefinite Article,Plural,Cost,Celebrity Popularity Impact"
+ },
+ {
+  "file": "a16_celeb-dating-app-actor-enc",
+  "bytes": 656,
+  "lines": 21,
+  "header": "Genre,Minimum Salary,Maximum Salary,Fame Score,Retirement Age,Commonness Score,Country Whitelist"
+ },
+ {
+  "file": "a16_celeb-dating-app-athlete-enc",
+  "bytes": 372,
+  "lines": 8,
+  "header": "Sport,Gender,Minimum Salary,Maximum Salary,Fame Score,Commonness Score,Retirement Age,Country Whitelist"
+ },
+ {
+  "file": "a16_celeb-dating-app-ceo-enc",
+  "bytes": 76,
+  "lines": 2,
+  "header": "Minimum Salary,Maximum Salary,Fame Score,Retirement Age"
+ },
+ {
+  "file": "a16_celeb-dating-app-influencer-enc",
+  "bytes": 305,
+  "lines": 8,
+  "header": "Platform,Minimum Salary,Maximum Salary,Fame Score,Retirement Age,Commonness Score"
+ },
+ {
+  "file": "a16_celeb-dating-app-musician-enc",
+  "bytes": 453,
+  "lines": 12,
+  "header": "Genre,Minimum Salary,Maximum Salary,Fame Score,Retirement Age,Commonness Score,Country Whitelist"
+ },
+ {
+  "file": "a16_celeb-dating-app-names-enc",
+  "bytes": 14564,
+  "lines": 406,
+  "header": "First Name,Last Name,First Name Gender,Celebrity Category,Skin,Country,Commonness Score"
+ },
+ {
+  "file": "a16_celebrities-enc",
+  "bytes": 9054,
+  "lines": 454,
+  "header": "Celebrity,Gender"
+ },
+ {
+  "file": "a16_child-break-items-enc",
+  "bytes": 1652,
+  "lines": 26,
+  "header": "Item,Scenario"
+ },
+ {
+  "file": "a16_child-demands-enc",
+  "bytes": 2823,
+  "lines": 16,
+  "header": "Age,Amount,Boy,Girl"
+ },
+ {
+  "file": "a16_child-discipline-enc",
+  "bytes": 18810,
+  "lines": 108,
+  "header": "Condition,Scenario,Log Version,Min Age,Max Age,Student,Child Gender,Hero Gender,Clean"
+ },
+ {
+  "file": "a16_child-pressure-rejections-enc",
+  "bytes": 3780,
+  "lines": 34,
+  "header": "Feedback Scenario,Log Version,Min Age,Max Age,Commonness Score"
+ },
+ {
+  "file": "a16_city-regions-enc",
+  "bytes": 5691,
+  "lines": 247,
+  "header": "Country Code,City,Region"
+ },
+ {
+  "file": "a16_clubupdateufldumb-enc",
+  "bytes": 47986,
+  "lines": 45,
+  "header": "Index,Min Hero Age,Max Hero Age,Hero Gender,Hero Has Lover,Lover Gender,Both Parents Alive,Hero is UFL Champ,Randomize Choices,Gender Bracket,Title,Body,CTA,Cho"
+ },
+ {
+  "file": "a16_colleges-enc",
+  "bytes": 795,
+  "lines": 10,
+  "header": "School,Prerequisite,Years,Tuition,Difficulty Score,Commonness Score"
+ },
+ {
+  "file": "a16_company-name-color-enc",
+  "bytes": 2795,
+  "lines": 345,
+  "header": "Color"
+ },
+ {
+  "file": "a16_company-name-structure-enc",
+  "bytes": 13607,
+  "lines": 106,
+  "header": "Company Type,Format,Prefix,Suffix,Predefined"
+ },
+ {
+  "file": "a16_company-name-type-enc",
+  "bytes": 294,
+  "lines": 31,
+  "header": "Type"
+ },
+ {
+  "file": "a16_compliments-enc",
+  "bytes": 2075,
+  "lines": 140,
+  "header": "Compliment,Gender"
+ },
+ {
+  "file": "a16_conversations-enc",
+  "bytes": 20185,
+  "lines": 346,
+  "header": "Audience,Conversation,Hero Min Age,Hero Max Age,Audience Min Age,Audience Max Age,Controversy Score,Clean,Holiday"
+ },
+ {
+  "file": "a16_country-political-systems-enc",
+  "bytes": 11073,
+  "lines": 103,
+  "header": "Country,Country Code,National Office Available,Regional Office Available,City Office Available,Local Office Available,Title National,Title National Adjective,Na"
+ },
+ {
+  "file": "a16_country-royal-systems-enc",
+  "bytes": 6744,
+  "lines": 18,
+  "header": "Country,Country Code,Top Seat,Money Score,Region,Rank 1 Male,Rank 1 Female,Rank 1 Male by Marriage,Rank 1 Female by Marriage,Rank 2 Male,Rank 2 Female,Rank 3 Ma"
+ },
+ {
+  "file": "a16_coworker-annoy-scenarios-enc",
+  "bytes": 12374,
+  "lines": 41,
+  "header": "Scenario,Log Version,Hero Gender,Coworker Gender"
+ },
+ {
+  "file": "a16_coworker-behavior-scenarios-enc",
+  "bytes": 5778,
+  "lines": 21,
+  "header": "Scenario,Log Version,Sender Gender,Recipient Gender"
+ },
+ {
+  "file": "a16_coworker-hookup-scenarios-enc",
+  "bytes": 10032,
+  "lines": 25,
+  "header": "Inbound Scenario,Inbound Log Version,Outbound Scenario,Outbound Log Version,Sender Gender,Recipient Gender,Supervisor Appropriate"
+ },
+ {
+  "file": "a16_coworker-pranks-enc",
+  "bytes": 22250,
+  "lines": 66,
+  "header": "Inbound Scenario,Inbound Log Version,Outbound Snippet,Vampire"
+ },
+ {
+  "file": "a16_coworker-rumors-enc",
+  "bytes": 12383,
+  "lines": 47,
+  "header": "Inbound Scenario Snippet,Inbound Log Version Snippet,Outbound Snippet,Victim Gender"
+ },
+ {
+  "file": "a16_crashout-celebrity-friend-string-enc",
+  "bytes": 3598,
+  "lines": 44,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_crashout-public-response-string-enc",
+  "bytes": 3878,
+  "lines": 33,
+  "header": "String,Positive Reception,Commonness Score"
+ },
+ {
+  "file": "a16_crashout-scenario-enc",
+  "bytes": 16812,
+  "lines": 41,
+  "header": "Severity,Location,Scenario,Magazine Snippet,BitLife Snippet,Log String,Hero Gender,Relatable,Fame Impact"
+ },
+ {
+  "file": "a16_cruises-enc",
+  "bytes": 347,
+  "lines": 13,
+  "header": "Type,Continent,Cost Score,Appeal Score"
+ },
+ {
+  "file": "a16_cult-affirmation-film-titles-enc",
+  "bytes": 2577,
+  "lines": 81,
+  "header": "Title,Philosophy,Engagement Score,Commonness Score"
+ },
+ {
+  "file": "a16_cult-affirmation-receptions-enc",
+  "bytes": 4667,
+  "lines": 37,
+  "header": "String,Medium,Min Reception,Max Reception"
+ },
+ {
+  "file": "a16_cult-anti-commune-nag-scenario-enc",
+  "bytes": 3177,
+  "lines": 28,
+  "header": "Audience,Snippet,Log Version,Audience Min Age,Audience Max Age"
+ },
+ {
+  "file": "a16_cult-body-discard-locations-enc",
+  "bytes": 799,
+  "lines": 23,
+  "header": "Location,String,Commonness Score,Risk Score"
+ },
+ {
+  "file": "a16_cult-communard-apply-color-enc",
+  "bytes": 2785,
+  "lines": 30,
+  "header": "String,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-communard-conversation-enc",
+  "bytes": 7427,
+  "lines": 75,
+  "header": "Audience,Conversation,Philosophy,Controversy Score"
+ },
+ {
+  "file": "a16_cult-communard-doubts-enc",
+  "bytes": 2962,
+  "lines": 21,
+  "header": "String,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-communard-educate-enc",
+  "bytes": 3115,
+  "lines": 72,
+  "header": "Topic,Philosophy,Loyalty Impact"
+ },
+ {
+  "file": "a16_cult-communard-leave-scenario-enc",
+  "bytes": 6433,
+  "lines": 59,
+  "header": "Scenario Snippet,Reason,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-communard-punishment-enc",
+  "bytes": 2694,
+  "lines": 12,
+  "header": "Method,Feedback Scenario,Log Version,Loyalty Impact"
+ },
+ {
+  "file": "a16_cult-communard-rewards-enc",
+  "bytes": 1139,
+  "lines": 27,
+  "header": "Scenario,Loyalty Impact"
+ },
+ {
+  "file": "a16_cult-communard-rumor-enc",
+  "bytes": 10484,
+  "lines": 50,
+  "header": "Outbound Scenario,Inbound Scenario,Inbound Scenario Log Version,Philosophy,Sender Min Age,Sender Max Age,Sender Gender,Receiver Min Age,Receiver Max Age,Receive"
+ },
+ {
+  "file": "a16_cult-communard-spend-time-enc",
+  "bytes": 4955,
+  "lines": 79,
+  "header": "Pastime,Philosophy"
+ },
+ {
+  "file": "a16_cult-communard-warning-enc",
+  "bytes": 2650,
+  "lines": 27,
+  "header": "Scenario,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_cult-commune-dumb-scenarios-enc",
+  "bytes": 35795,
+  "lines": 39,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Requires Communard,Commune Philosophy,Min Loyalty,Max L"
+ },
+ {
+  "file": "a16_cult-commune-ledger-color-enc",
+  "bytes": 1219,
+  "lines": 15,
+  "header": "String,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-commune-property-types-enc",
+  "bytes": 509,
+  "lines": 6,
+  "header": "Type,Descriptors,Price Score,Min Age,Max Age,Commonness Score,Street Type"
+ },
+ {
+  "file": "a16_cult-commune-street-names-enc",
+  "bytes": 2164,
+  "lines": 73,
+  "header": "Street Name,Add Random Street Type,Affluence Score,Commonness Score,Street Type"
+ },
+ {
+  "file": "a16_cult-commune-structure-enc",
+  "bytes": 1306,
+  "lines": 17,
+  "header": "Project,Secondary Line Text,Minimum Cost,Maximum Cost,Appeal Impact,Bonus Appeal Impact (Philosophy),Enjoyment Score,Value Percentage"
+ },
+ {
+  "file": "a16_cult-commune-structure-feedback-enc",
+  "bytes": 16489,
+  "lines": 49,
+  "header": "Scenario,Log Version,Structure,Commonness Score"
+ },
+ {
+  "file": "a16_cult-commune-teaching-enc",
+  "bytes": 12504,
+  "lines": 62,
+  "header": "Scenario,Topic,Philosophy,Engagement Score"
+ },
+ {
+  "file": "a16_cult-default-totem-enc",
+  "bytes": 635,
+  "lines": 21,
+  "header": "Item Name,Philosophy,Commonness Score"
+ },
+ {
+  "file": "a16_cult-devotion-demonstration-enc",
+  "bytes": 6377,
+  "lines": 44,
+  "header": "Scenario Snippet,Death Snippet,Success Snippet,Philosophy,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_cult-doctrine-rules-enc",
+  "bytes": 47538,
+  "lines": 76,
+  "header": "List String,Scenario Snippet,Log Version,Lecture Feedback Snippet,Disobedient Death Snippet,Obedience Snippet,Communard Leave String,Appeal Score,Disobedience C"
+ },
+ {
+  "file": "a16_cult-drug-shared-experience-enc",
+  "bytes": 11715,
+  "lines": 86,
+  "header": "String Snippet,Log Version,Drug,Philosophy,Experience Type,Commonness Score"
+ },
+ {
+  "file": "a16_cult-drug-solo-experience-enc",
+  "bytes": 6838,
+  "lines": 65,
+  "header": "String Snippet,Drug,Philosophy,Experience Type,Commonness Score"
+ },
+ {
+  "file": "a16_cult-drum-circle-artists-enc",
+  "bytes": 1760,
+  "lines": 82,
+  "header": "Artist Name,Engagement Score,Philosophy Engagement Bonus"
+ },
+ {
+  "file": "a16_cult-empowerments-enc",
+  "bytes": 740,
+  "lines": 7,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_cult-ex-communard-dissent-scenario-enc",
+  "bytes": 4698,
+  "lines": 17,
+  "header": "Scenario,Log Version,Min Craziness,Max Craziness"
+ },
+ {
+  "file": "a16_cult-expel-beg-scenario-enc",
+  "bytes": 1575,
+  "lines": 18,
+  "header": "String,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-fast-hunger-foods-enc",
+  "bytes": 1236,
+  "lines": 62,
+  "header": "Food,Plural,Uses Indefinite Article,Commonness Score"
+ },
+ {
+  "file": "a16_cult-fast-hunger-reasons-enc",
+  "bytes": 976,
+  "lines": 20,
+  "header": "Reason,Commonness Score"
+ },
+ {
+  "file": "a16_cult-fast-reasons-enc",
+  "bytes": 2754,
+  "lines": 32,
+  "header": "Reason,Scenario Snippet,Philosophy,Engagement Score"
+ },
+ {
+  "file": "a16_cult-gratitude-scenarios-enc",
+  "bytes": 2080,
+  "lines": 16,
+  "header": "String,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-healing-ceremony-enc",
+  "bytes": 1105,
+  "lines": 13,
+  "header": "Ceremony Type,Feedback Snippet,Effectiveness Score,Engagement Score"
+ },
+ {
+  "file": "a16_cult-honorific-name-structure-enc",
+  "bytes": 2170,
+  "lines": 61,
+  "header": "Honorific,Gender,Commonness Score,Hero Is Leader"
+ },
+ {
+  "file": "a16_cult-outreach-mission-heckles-enc",
+  "bytes": 5539,
+  "lines": 14,
+  "header": "String,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_cult-random-commune-names-enc",
+  "bytes": 1994,
+  "lines": 67,
+  "header": "Name,Armageddon,New Age,Antiestablishment,Alien,Hero Founded Cult,Commonness Score"
+ },
+ {
+  "file": "a16_cult-recruitment-location-enc",
+  "bytes": 807,
+  "lines": 37,
+  "header": "Location,Uses Indefinite Article,Success Score,Police Score,Commonness Score"
+ },
+ {
+  "file": "a16_cult-recruitment-message-enc",
+  "bytes": 2494,
+  "lines": 63,
+  "header": "Message,Philosophy,Success Score,Risk Score"
+ },
+ {
+  "file": "a16_cult-spiritual-journey-drugs-enc",
+  "bytes": 516,
+  "lines": 18,
+  "header": "Name,Min Price Per Dose,Max Price Per Dose,Microdose Risk Score,Dose Risk Score,Double Dose Risk Score"
+ },
+ {
+  "file": "a16_cult-totem-disrespect-enc",
+  "bytes": 2057,
+  "lines": 24,
+  "header": "String,Log Version,Min Loyalty,Max Loyalty"
+ },
+ {
+  "file": "a16_cult-totem-inspiration-enc",
+  "bytes": 2968,
+  "lines": 33,
+  "header": "String,Humorous,Commonness Score"
+ },
+ {
+  "file": "a16_cult-totem-lecture-enc",
+  "bytes": 2557,
+  "lines": 31,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_cult-workshop-products-enc",
+  "bytes": 2722,
+  "lines": 25,
+  "header": "Product Name,Product Name Plural,Philosophy,Average Unit Price,Max Unit Price,Min Unit Cost,Max Unit Cost,Optimal Location,Difficulty,Engagement Score,Controver"
+ },
+ {
+  "file": "a16_custody-case-enc",
+  "bytes": 9149,
+  "lines": 140,
+  "header": "Reason,Plural,Min Defendant Craziness,Max Defendant Craziness,Min Defendant Money,Max Defendant Money,Defendant Is Unemployed,Case Impact Score,Commonness Score"
+ },
+ {
+  "file": "a16_custody-child-argument-enc",
+  "bytes": 6508,
+  "lines": 55,
+  "header": "String,Hero Gender,Child Gender,Min Child Age,Max Child Age,Min Relationship,Max Relationship,Commonness Score"
+ },
+ {
+  "file": "a16_custody-ex-argument-enc",
+  "bytes": 3976,
+  "lines": 36,
+  "header": "String,Hero Gender,Ex Gender,Min Ex Craziness,Max Ex Craziness,Commonness Score"
+ },
+ {
+  "file": "a16_custom-attack-actions-enc",
+  "bytes": 602,
+  "lines": 26,
+  "header": "Action,Past Verb,Commonness Score,Damage Score"
+ },
+ {
+  "file": "a16_custom-attack-body-parts-enc",
+  "bytes": 484,
+  "lines": 29,
+  "header": "Body Part,Gender,Commonness Score,Damage Score"
+ },
+ {
+  "file": "a16_date-rejections-enc",
+  "bytes": 13696,
+  "lines": 142,
+  "header": "Condition,Scenario,Hero Gender,Lover Gender,Hero Min Age,Hero Max Age,Hero Min Smarts,Hero Max Smarts,Hero Min Looks,Hero Max Looks,Clean"
+ },
+ {
+  "file": "a16_dealer-batch-tester-feedback-enc",
+  "bytes": 3180,
+  "lines": 28,
+  "header": "String,Min Demand,Max Demand"
+ },
+ {
+  "file": "a16_dealer-breakup-scenarios-enc",
+  "bytes": 16345,
+  "lines": 201,
+  "header": "Condition,Crazy,Scenario,Gender,Straight Only"
+ },
+ {
+  "file": "a16_dealer-cartel-drug-enc",
+  "bytes": 867,
+  "lines": 18,
+  "header": "Drug,Schedule,Street Value,Min Cost (Per Dose),Max Cost (Per Dose),Min Price Per Dose,Max Price Per Dose,Base Demand,Addictiveness Score,Overdose Likeliness Sco"
+ },
+ {
+  "file": "a16_dealer-cartel-give-money-feedback-enc",
+  "bytes": 1986,
+  "lines": 33,
+  "header": "String,Is Refusal,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-cartel-member-leave-scenario-enc",
+  "bytes": 2455,
+  "lines": 28,
+  "header": "String,Min Relationship,Max Relationship"
+ },
+ {
+  "file": "a16_dealer-cartel-member-murder-scenario-enc",
+  "bytes": 3799,
+  "lines": 13,
+  "header": "Method,Effectiveness Score,Retaliation Likelihood Score,Get Caught Likelihood,Success String,Attempt String,Retaliatory String"
+ },
+ {
+  "file": "a16_dealer-cartel-member-nickname-enc",
+  "bytes": 2374,
+  "lines": 68,
+  "header": "Nickname,Gender,Kingpin Only,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-cartel-name-enc",
+  "bytes": 1951,
+  "lines": 65,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-cartel-party-refusal-enc",
+  "bytes": 3188,
+  "lines": 31,
+  "header": "String,Reason"
+ },
+ {
+  "file": "a16_dealer-cartel-street-name-enc",
+  "bytes": 713,
+  "lines": 49,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-cartel-takeover-method-enc",
+  "bytes": 9830,
+  "lines": 12,
+  "header": "Method,Success Scenario,Success Log Version,Failure Scenario,Failure Log Version,Miss Scenario,Miss Log Version,Violence Score,Success Cartel Infamy Impact,Fail"
+ },
+ {
+  "file": "a16_dealer-cartel-threat-enc",
+  "bytes": 2536,
+  "lines": 31,
+  "header": "Snippet,Kingpin Only,Min Standing,Max Standing"
+ },
+ {
+  "file": "a16_dealer-cut-drug-name-enc",
+  "bytes": 2739,
+  "lines": 110,
+  "header": "Name,Base Drug,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-cut-drug-substance-enc",
+  "bytes": 1271,
+  "lines": 33,
+  "header": "Substance,Commonness Score,Min Cost Per Dose,Max Cost Per Dose,Demand Impact,Effects,Is Fatal"
+ },
+ {
+  "file": "a16_dealer-deal-activity-item-enc",
+  "bytes": 7793,
+  "lines": 122,
+  "header": "Item,Uses Indefinite Article,Plural,Min Sale Value,Max Sale Value,Appeal Score,Hero Min Age,Hero Max Age,Target Min Age,Target Max Age,Risk Score,Person Type,Ta"
+ },
+ {
+  "file": "a16_dealer-deal-person-drug-experience-enc",
+  "bytes": 15004,
+  "lines": 82,
+  "header": "Effect,String,Is Good Trip,Person Gender,Person Type,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-drug-barter-item-enc",
+  "bytes": 3174,
+  "lines": 51,
+  "header": "Item,Uses Indefinite Article,Uses Definite Article,Plural,Min Value,Max Value,Min Person Money,Max Person Money"
+ },
+ {
+  "file": "a16_dealer-drug-drop-off-location-enc",
+  "bytes": 10552,
+  "lines": 20,
+  "header": "Location,Success Feedback Snippet,Success Log Version,Failure Feedback Snippet,Failure Log Version,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-drug-effect-enc",
+  "bytes": 624,
+  "lines": 14,
+  "header": "Effect,Drug,Good Trip Likelihood"
+ },
+ {
+  "file": "a16_dealer-drug-package-type-enc",
+  "bytes": 959,
+  "lines": 33,
+  "header": "Packaging Type,Break Chance,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-drug-pastime-enc",
+  "bytes": 4000,
+  "lines": 48,
+  "header": "String,Target Gender,Target Min Infamy,Target Max Infamy"
+ },
+ {
+  "file": "a16_dealer-drug-purchase-reason-enc",
+  "bytes": 2333,
+  "lines": 29,
+  "header": "Snippet,Target Gender,Min Addiction,Max Addiction,Min Willpower,Max Willpower"
+ },
+ {
+  "file": "a16_dealer-drug-run-dumb-scenario-enc",
+  "bytes": 7333,
+  "lines": 11,
+  "header": "Scenario Title,Body,CTA,Choice 1,Narrative 1,Infamy Impact 1,Standing Impact 1,Choice 2,Narrative 2,Infamy Impact 2,Standing Impact 2,Choice 3,Narrative 3,Infam"
+ },
+ {
+  "file": "a16_dealer-drug-sale-refusal-snippet-enc",
+  "bytes": 2759,
+  "lines": 28,
+  "header": "Reason,Min Willpower,Max Willpower"
+ },
+ {
+  "file": "a16_dealer-drug-sale-rejection-reason-enc",
+  "bytes": 2448,
+  "lines": 21,
+  "header": "Snippet,Reason,Target Min Willpower,Target Max Willpower"
+ },
+ {
+  "file": "a16_dealer-drug-trip-experience-enc",
+  "bytes": 11315,
+  "lines": 75,
+  "header": "Effect,String,Is Good Trip"
+ },
+ {
+  "file": "a16_dealer-drug-worker-action-enc",
+  "bytes": 1299,
+  "lines": 22,
+  "header": "Snippet,Threat Score,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-drug-worker-murder-scenario-enc",
+  "bytes": 1491,
+  "lines": 21,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-extortion-color-snippet-enc",
+  "bytes": 2898,
+  "lines": 26,
+  "header": "Snippet,Hero is Kingpin,Target Gender,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-extortion-method-enc",
+  "bytes": 4494,
+  "lines": 15,
+  "header": "Method,Feedback Scenario,Log Version,Effectiveness Score,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-hero-threatens-rival-cartel-member-enc",
+  "bytes": 2711,
+  "lines": 22,
+  "header": "Scenario,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-kingpin-mutiny-success-snippets-enc",
+  "bytes": 5393,
+  "lines": 24,
+  "header": "String,Log Version Snippet,Kingpin Gender,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-mutiny-methods-enc",
+  "bytes": 3294,
+  "lines": 9,
+  "header": "Method,Feedback Scenario,Log Version ,Effectiveness Score,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-overdose-snippet-enc",
+  "bytes": 2051,
+  "lines": 26,
+  "header": "Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-police-warning-enc",
+  "bytes": 2322,
+  "lines": 28,
+  "header": "String,Min Willpower,Max Willpower"
+ },
+ {
+  "file": "a16_dealer-prison-cartel-packages-enc",
+  "bytes": 2545,
+  "lines": 52,
+  "header": "Contents,Uses Indefinite Article,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-prison-drug-trips-enc",
+  "bytes": 9438,
+  "lines": 41,
+  "header": "Drug Effect,Feedback Snippet,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_dealer-run-outcome-flavor-enc",
+  "bytes": 2346,
+  "lines": 23,
+  "header": "String,Run Status,Commonness Score"
+ },
+ {
+  "file": "a16_death-types-enc",
+  "bytes": 6623,
+  "lines": 111,
+  "header": "Type,Commonness Score,Min Age,Sentence"
+ },
+ {
+  "file": "a16_delinquent-activities-enc",
+  "bytes": 10271,
+  "lines": 56,
+  "header": "Activity,Crime,Charge Likeliness Score,Min Age,Max Age,Requires Accomplice,Acts Alone,Involves Alcohol"
+ },
+ {
+  "file": "a16_diets-enc",
+  "bytes": 583,
+  "lines": 16,
+  "header": "Diet,Use Definite Article,Monthly Cost,Health Impact,Happiness Impact,Appearance Impact,Associated Disease"
+ },
+ {
+  "file": "a16_dirty-talk-enc",
+  "bytes": 4316,
+  "lines": 69,
+  "header": "Line,Gender,Hero Gender,Type"
+ },
+ {
+  "file": "a16_disease-symptom-scenarios-enc",
+  "bytes": 71296,
+  "lines": 433,
+  "header": "Symptom,Abbreviated Symptom,Supplementary,Scenario,Log Version,Gender,Concern Score,Min Age"
+ },
+ {
+  "file": "a16_disease-types-enc",
+  "bytes": 14898,
+  "lines": 108,
+  "header": "Disease,Primary Symptoms,Secondary Symptoms,Uses Indefinite Article,Uses Definite Article,Impacts Body Part,Gender,Single Year Disease,Contracts Organically Sco"
+ },
+ {
+  "file": "a16_drug-scenarios-enc",
+  "bytes": 9892,
+  "lines": 68,
+  "header": "Condition,Scenario,CTA,Yes Choice,No Choice,Specific Drug"
+ },
+ {
+  "file": "a16_drugs-enc",
+  "bytes": 1071,
+  "lines": 28,
+  "header": "Drug,Nicknames,Addictiveness Score,Overdose Likeliness Score,Commonness Score,Health Damage Score,Enlightment Likeliness Score,Drug Test,Illegal,Club Drug,VIP C"
+ },
+ {
+  "file": "a16_dumb-scenarios-actor-enc",
+  "bytes": 147269,
+  "lines": 166,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Budget,Max Budget,Actor Type,Actor Dumb Type,Genre,"
+ },
+ {
+  "file": "a16_dumb-scenarios-album-enc",
+  "bytes": 66174,
+  "lines": 78,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Popularity,Max Popularity,Min Success,Max Success,S"
+ },
+ {
+  "file": "a16_dumb-scenarios-business-enc",
+  "bytes": 129395,
+  "lines": 169,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Industry Whitelist,Industry Blacklist,Requires Single F"
+ },
+ {
+  "file": "a16_dumb-scenarios-calendar-enc",
+  "bytes": 337246,
+  "lines": 367,
+  "header": "Index,Author,Holiday Name,Month,Date,Hero Min Age,Hero Max Age,Student,Job,Hero Has Lover,Hero Doesn't Have Lover,Both Parents Alive,Hero Gender,Lover Gender,Ra"
+ },
+ {
+  "file": "a16_dumb-scenarios-career-enc",
+  "bytes": 268017,
+  "lines": 420,
+  "header": "Index,Type,Randomize Choices,Gender Brackets,Title,Body,CTA,Choice 1,Narrative 1,Karma Impact 1,Discipline Impact 1,Happiness Impact 1,Intelligence Impact 1,App"
+ },
+ {
+  "file": "a16_dumb-scenarios-casino-enc",
+  "bytes": 23084,
+  "lines": 25,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Casino Popularity,Max Casino Popularity,Requires Ca"
+ },
+ {
+  "file": "a16_dumb-scenarios-dealer-enc",
+  "bytes": 26800,
+  "lines": 29,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Infamy,Max Infamy,Min Standing,Max Standing,Hero Ra"
+ },
+ {
+  "file": "a16_dumb-scenarios-friend-enc",
+  "bytes": 25378,
+  "lines": 38,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max Age,Friend Gender,Friend Min Craziness,Friend Has Job,Friend Is Student,Friend Has Child,F"
+ },
+ {
+  "file": "a16_dumb-scenarios-holiday-enc",
+  "bytes": 65939,
+  "lines": 96,
+  "header": "Index,Type,Hero Min Age,Hero Max Age,Student,Job,Both Parents Alive,Hero Gender,Randomize Choices,Gender Bracket,Exterior Title,Title,Body,CTA,Choice 1,Narrativ"
+ },
+ {
+  "file": "a16_dumb-scenarios-hustler-enc",
+  "bytes": 97693,
+  "lines": 122,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Hustle Type,Act,Title,Body,CTA,Choice 1,Narrative 1,Ski"
+ },
+ {
+  "file": "a16_dumb-scenarios-landlord-enc",
+  "bytes": 39810,
+  "lines": 44,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Amenity,Hero/Tenant Same City,House Type Whitelist,Hous"
+ },
+ {
+  "file": "a16_dumb-scenarios-mafia-enc",
+  "bytes": 50729,
+  "lines": 51,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Specific Mob Country,Bottom Rank,Middle Rank,Top Rank,T"
+ },
+ {
+  "file": "a16_dumb-scenarios-model-enc",
+  "bytes": 25141,
+  "lines": 28,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Requires Booking Agent,Requires Past Gigs,Min Profile,M"
+ },
+ {
+  "file": "a16_dumb-scenarios-music-enc",
+  "bytes": 75516,
+  "lines": 99,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Popularity,Max Popularity,Min Respect,Max Respect,S"
+ },
+ {
+  "file": "a16_dumb-scenarios-orphan-enc",
+  "bytes": 10239,
+  "lines": 16,
+  "header": "Index,Hero Min Age,Hero Max Age,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,Karma Impact 1,Discipline Impact 1,Happiness Impact 1,Intelligence Impact 1,A"
+ },
+ {
+  "file": "a16_dumb-scenarios-political-campaign-enc",
+  "bytes": 79558,
+  "lines": 65,
+  "header": "Index,Hero Gender,Hero Has Lover,Lover Gender,US Only,UK Only,National,Regional,City,Local,Randomize Choices,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,"
+ },
+ {
+  "file": "a16_dumb-scenarios-political-office-enc",
+  "bytes": 109359,
+  "lines": 91,
+  "header": "Index,Hero Gender,Hero Has Lover,Lover Gender,US Only,UK Only,National,Regional,City,Local,Randomize Choices,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,"
+ },
+ {
+  "file": "a16_dumb-scenarios-prison-enc",
+  "bytes": 39611,
+  "lines": 65,
+  "header": "Index,Hero Min Age,Hero Max Age,Royal,Randomize Choices,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,Behavior Impact 1,Respect Impact 1,Choice 2,Narrative"
+ },
+ {
+  "file": "a16_dumb-scenarios-royal-enc",
+  "bytes": 56861,
+  "lines": 72,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,UK Only,Japan Only,Arab Only,Is Highest Ranking Royal,Is Not Highest Ranking Royal,Min R"
+ },
+ {
+  "file": "a16_dumb-scenarios-secret-agent-enc",
+  "bytes": 8629,
+  "lines": 11,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Requires Rival Agency,Title,Body,CTA,Choice 1,Narrative"
+ },
+ {
+  "file": "a16_dumb-scenarios-sports-enc",
+  "bytes": 66363,
+  "lines": 86,
+  "header": "     ,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Min Fitness,Max Fitness,Min Greatness,Max Greatness,Rookie Only,Randomize Choices,Gender"
+ },
+ {
+  "file": "a16_dumb-scenarios-universal-enc",
+  "bytes": 178896,
+  "lines": 259,
+  "header": "Index,Hero Min Age,Hero Max Age,Student,Job,Vampire,Both Parents Alive,Hero Gender,Randomize Choices,Gender Bracket,Exterior Title,Title,Body,CTA,Choice 1,Narra"
+ },
+ {
+  "file": "a16_dumb-scenarios-vacation-enc",
+  "bytes": 39835,
+  "lines": 60,
+  "header": "Index,Type,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,Karma Impact 1,Discipline Impact 1,Happiness Impact 1,Intelligence Impact 1,Appearance Impact 1,Ch"
+ },
+ {
+  "file": "a16_dumb-scenarios-zoo-enc",
+  "bytes": 15140,
+  "lines": 19,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Involves Animal,Animal Whitelist,Requires Specific Empl"
+ },
+ {
+  "file": "a16_employee-behavior-bad-scenarios-enc",
+  "bytes": 12200,
+  "lines": 66,
+  "header": "Scenario,Log Version,Score"
+ },
+ {
+  "file": "a16_employee-behavior-good-scenarios-enc",
+  "bytes": 10086,
+  "lines": 58,
+  "header": "Scenario,Log Version,Score"
+ },
+ {
+  "file": "a16_employee-disrespect-scenarios-enc",
+  "bytes": 7597,
+  "lines": 38,
+  "header": "Scenario,Log Version,Can Be Reaction,Can Be Push,Score"
+ },
+ {
+  "file": "a16_employee-interview-questions-enc",
+  "bytes": 29238,
+  "lines": 77,
+  "header": "Commonness Score,Question,Choice 1,Choice 1 Score,Choice 2,Choice 2 Score,Choice 3,Choice 3 Score,Choice 4,Choice 4 Score,Choice 5,Choice 5 Score"
+ },
+ {
+  "file": "a16_employee-recognition-scenarios-enc",
+  "bytes": 1191,
+  "lines": 15,
+  "header": "Scenario,Commonness Score"
+ },
+ {
+  "file": "a16_employee-respect-scenarios-enc",
+  "bytes": 5644,
+  "lines": 41,
+  "header": "Scenario,Log Version,Can Be Reaction,Can Be Push,Score"
+ },
+ {
+  "file": "a16_employee-types-enc",
+  "bytes": 10631,
+  "lines": 203,
+  "header": "Industry,Job Title,Influence Score,One Per Facility,Gender,Min Age,Max Age,Required Education,Commonness Score"
+ },
+ {
+  "file": "a16_employee-warn-scenarios-enc",
+  "bytes": 2080,
+  "lines": 26,
+  "header": "Scenario,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_ex-lover-booty-call-scenarios-enc",
+  "bytes": 6716,
+  "lines": 62,
+  "header": "Scenario,Hero Gender,Ex Gender,Min Age,Max Age,Clean,Vampire Hero,Vampire Ex"
+ },
+ {
+  "file": "a16_ex-lover-hate-scenarios-enc",
+  "bytes": 8947,
+  "lines": 71,
+  "header": "Scenario,Hero Gender,Ex Gender,Clean,Vampire Hero,Vampire Ex"
+ },
+ {
+  "file": "a16_ex-lover-rekindle-scenarios-enc",
+  "bytes": 13687,
+  "lines": 132,
+  "header": "Scenario,Hero Gender,Ex Gender,Min Age,Max Age,Clean,Vampire Hero,Vampire Ex"
+ },
+ {
+  "file": "a16_ex-lover-stalking-scenarios-enc",
+  "bytes": 28463,
+  "lines": 72,
+  "header": "Outbound Scenario,Outbound Log Version,Inbound Scenario,Inbound Log Version,Stalkee Has Job,Stalkee In School,Stalkee Has Car,Stalkee On Social Media,Detection "
+ },
+ {
+  "file": "a16_fight-coach-generic-feedback-string-enc",
+  "bytes": 9550,
+  "lines": 43,
+  "header": "String,Log Version,Match Outcome,Street Fight,Min Coach Quality,Max Coach Quality"
+ },
+ {
+  "file": "a16_fight-coach-loss-feedback-string-enc",
+  "bytes": 6476,
+  "lines": 31,
+  "header": "String,Log Version,Match Condition,Is Street Fight,Min Coach Quality,Max Coach Quality"
+ },
+ {
+  "file": "a16_fight-coach-quality-color-string-enc",
+  "bytes": 7496,
+  "lines": 46,
+  "header": "String,Coach Gender,Hero Gender,Min Coach Quality,Max Coach Quality,Min Coach Age,Max Coach Age"
+ },
+ {
+  "file": "a16_fight-doping-challenge-color-string-enc",
+  "bytes": 2894,
+  "lines": 18,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_fight-er-admiration-scenario-enc",
+  "bytes": 4371,
+  "lines": 18,
+  "header": "Audience,String,Log Version,Audience Gender,Audience Min Age,Audience Max Age,Hero Min Age ,Hero Max Age"
+ },
+ {
+  "file": "a16_fight-er-animal-enc",
+  "bytes": 252,
+  "lines": 7,
+  "header": "Animal,Street Creds Gained,Attack Verb,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_fight-er-circumstance-enc",
+  "bytes": 1564,
+  "lines": 43,
+  "header": "String"
+ },
+ {
+  "file": "a16_fight-er-compliment-enc",
+  "bytes": 12076,
+  "lines": 31,
+  "header": "Compliment Outbound,Compliment Inbound,Outbound Log String,Inbound Log String,Commonness Score"
+ },
+ {
+  "file": "a16_fight-er-concern-scenario-enc",
+  "bytes": 4472,
+  "lines": 17,
+  "header": "Audience,String,Log Version,Audience Gender,Audience Min Age,Audience Max Age,Hero Min Age ,Hero Max Age"
+ },
+ {
+  "file": "a16_fight-er-training-string-enc",
+  "bytes": 10192,
+  "lines": 45,
+  "header": "String,Log Version,Training Type,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_fight-er-trash-talk-enc",
+  "bytes": 24299,
+  "lines": 52,
+  "header": "Trash Talk Outbound,Trash Talk Inbound,Outbound Log Version,Inbound Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_fight-hero-training-injury-string-enc",
+  "bytes": 938,
+  "lines": 6,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-arena-name-enc",
+  "bytes": 1924,
+  "lines": 34,
+  "header": "Arena Name,Country Code,Is Championship Match Arena,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-coach-training-string-enc",
+  "bytes": 15775,
+  "lines": 70,
+  "header": "String,Log Version,Training Type,Hero Gender,Coach Gender,Min Coach Quality,Max Coach Quality"
+ },
+ {
+  "file": "a16_fight-ing-dive-scenario-enc",
+  "bytes": 8098,
+  "lines": 30,
+  "header": "Scenario,Log Version,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-fan-interaction-enc",
+  "bytes": 10826,
+  "lines": 35,
+  "header": "Is Positive,Scenario,Feedback Snippet,Log Version Snippet,Fan Gender,Fan Min Age,Fan Max Age,Hero Gender"
+ },
+ {
+  "file": "a16_fight-ing-injurie-enc",
+  "bytes": 8310,
+  "lines": 86,
+  "header": "Type,Uses Indefinite Article,Feedback Snippet,Log Snippet,Gender,Strength Decrease,Toughness Decrease,Agility Decrease,Technique Decrease,Seriousness Score,Pain"
+ },
+ {
+  "file": "a16_fight-ing-interview-fan-reaction-enc",
+  "bytes": 8027,
+  "lines": 33,
+  "header": "Scenario,Log Version,Match Outcome,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-loss-reason-enc",
+  "bytes": 3085,
+  "lines": 84,
+  "header": "Reason,Sympathy Score,Min Hero League Position,Max Hero League Position,Min Opponent League Position,Max Opponent League Position,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-move-enc",
+  "bytes": 39143,
+  "lines": 203,
+  "header": "ID,Move Name,Color String,Move Past Verb,Move Type,Unlock Conditions,Upgrades To,Body Parts Affected,Is Illegal,Street Cred Cost,Move Stage,Number of Uses Until"
+ },
+ {
+  "file": "a16_fight-ing-opponent-type-enc",
+  "bytes": 1498,
+  "lines": 64,
+  "header": "Description,Percent Male,Fighter Level,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-product-enc",
+  "bytes": 7730,
+  "lines": 83,
+  "header": "Product Name,Hero Gender,Min Reputation,Max Reputation,Min Compensation,Max Compensation,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-sponsorship-company-enc",
+  "bytes": 2536,
+  "lines": 39,
+  "header": "Company Name,Min Payout,Max Payout,Min League Position,Max League Position"
+ },
+ {
+  "file": "a16_fight-ing-style-identity-color-enc",
+  "bytes": 1734,
+  "lines": 35,
+  "header": "String,Fighting Style,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-wild-encounter-color-enc",
+  "bytes": 16476,
+  "lines": 57,
+  "header": "String,Log Version,Context,Min Hero League Position,Max Hero League Position,Min Hero Age,Max Hero Age,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ing-win-reason-enc",
+  "bytes": 2781,
+  "lines": 77,
+  "header": "Reason,Coolness Score,Min Hero League Position,Max Hero League Position,Min Opponent League Position,Max Opponent League Position,Commonness Score"
+ },
+ {
+  "file": "a16_fight-outcome-color-enc",
+  "bytes": 4595,
+  "lines": 38,
+  "header": "Hero Win Version,Hero Lose Version,Commonness Score"
+ },
+ {
+  "file": "a16_fight-press-conference-media-outlet-enc",
+  "bytes": 1645,
+  "lines": 26,
+  "header": "Media Outlet String,Commonness Score"
+ },
+ {
+  "file": "a16_fight-press-conference-question-enc",
+  "bytes": 18443,
+  "lines": 30,
+  "header": "Commonness Score,Question,Choice 1,Hero Buff 1,Hero Debuff 1,Opponent Buff 1,Opponent Debuff 1,Choice 2,Hero Buff 2,Hero Debuff 2,Opponent Buff 2,Opponent Debuf"
+ },
+ {
+  "file": "a16_fight-recharge-method-enc",
+  "bytes": 501,
+  "lines": 16,
+  "header": "Method,Cost,Stamina Gain,Happiness Impact,Health Impact,Discipline Impact"
+ },
+ {
+  "file": "a16_fight-recharge-method-scenario-enc",
+  "bytes": 11631,
+  "lines": 47,
+  "header": "Method,String,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_fight-roid-rage-retort-enc",
+  "bytes": 7667,
+  "lines": 60,
+  "header": "Audience,String,Audience Gender,Min Audience Age,Max Audience Age,Min Hero Age,Max Hero Age"
+ },
+ {
+  "file": "a16_fight-roid-rage-scenario-enc",
+  "bytes": 11051,
+  "lines": 67,
+  "header": "Audience,Snippet,Log Version,Audience Gender,Audience Min Age,Audience Max Age,Hero Min Age ,Hero Max Age"
+ },
+ {
+  "file": "a16_fight-sportsmanship-scenario-enc",
+  "bytes": 8030,
+  "lines": 30,
+  "header": "Is Positive,Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_fight-street-ing-location-enc",
+  "bytes": 3885,
+  "lines": 43,
+  "header": "Location,Commonness Score"
+ },
+ {
+  "file": "a16_fight-ufl-dumb-scenario-enc",
+  "bytes": 47945,
+  "lines": 45,
+  "header": "Index,Min Hero Age,Max Hero Age,Hero Gender,Hero Has Lover,Lover Gender,Both Parents Alive,Hero is UFL Champ,Randomize Choices,Gender Bracket,Title,Body,CTA,Cho"
+ },
+ {
+  "file": "a16_fight-wild-encounter-color",
+  "bytes": 542,
+  "lines": 12,
+  "header": "ColorString,CommonnessScore"
+ },
+ {
+  "file": "a16_fighting-products",
+  "bytes": 417,
+  "lines": 12,
+  "header": "ProductName,MinReputation,MaxReputation,MinCompensation,MaxCompensation"
+ },
+ {
+  "file": "a16_financial-advice-rejections-enc",
+  "bytes": 6350,
+  "lines": 90,
+  "header": "String,Intelligence Score,Stock,Crypto"
+ },
+ {
+  "file": "a16_financial-advisor-drops-hero-color-enc",
+  "bytes": 4888,
+  "lines": 54,
+  "header": "Feedback Color,Requires Real Celebrity,Commonness Score,Hero Inactive,Advisor Min Reputation,Advisor Max Reputation,Hero Min Net Worth,Hero Max Net Worth"
+ },
+ {
+  "file": "a16_financial-advisor-fire-color-enc",
+  "bytes": 2261,
+  "lines": 30,
+  "header": "Feedback Color,Commonness Score,Advisor Min Reputation,Advisor Max Reputation,Hero Min Net Worth,Hero Max Net Worth"
+ },
+ {
+  "file": "a16_financial-advisor-hire-color-enc",
+  "bytes": 6287,
+  "lines": 62,
+  "header": "Feedback Color,Requires Real Celebrity,Commonness Score,Advisor Min Reputation,Advisor Max Reputation,Hero Min Net Worth,Hero Max Net Worth"
+ },
+ {
+  "file": "a16_financial-asset-advice-enc",
+  "bytes": 9118,
+  "lines": 140,
+  "header": "Feedback,Prospect Score,Professional Score,Stock,Crypto"
+ },
+ {
+  "file": "a16_financial-asset-tips-enc",
+  "bytes": 2539,
+  "lines": 44,
+  "header": "Tip,Professional Score"
+ },
+ {
+  "file": "a16_financial-crypto-performance-color-enc",
+  "bytes": 3435,
+  "lines": 27,
+  "header": "String,Min Delta,Max Delta"
+ },
+ {
+  "file": "a16_financial-cryptocurrencies-enc",
+  "bytes": 1000,
+  "lines": 22,
+  "header": "Symbol,Name,Unit Singular,Unit Plural,Expense Score,Winner Score"
+ },
+ {
+  "file": "a16_financial-fund-performance-color-enc",
+  "bytes": 1961,
+  "lines": 24,
+  "header": "String,Moved With Sector,Min Delta,Max Delta,Brackets Used"
+ },
+ {
+  "file": "a16_financial-headlines-enc",
+  "bytes": 6294,
+  "lines": 76,
+  "header": "Headline,Current,Future,Market Trend,Sector Trend,Asset Trend"
+ },
+ {
+  "file": "a16_financial-insider-buy-scenarios-enc",
+  "bytes": 4514,
+  "lines": 15,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_financial-insider-sell-scenarios-enc",
+  "bytes": 4566,
+  "lines": 14,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_financial-market-advice-enc",
+  "bytes": 12100,
+  "lines": 137,
+  "header": "Feedback,Professional Score,Current,Future,Market Trend,Sector Trend"
+ },
+ {
+  "file": "a16_financial-portfolio-report-color-enc",
+  "bytes": 1636,
+  "lines": 22,
+  "header": "String,Min Delta,Max Delta"
+ },
+ {
+  "file": "a16_financial-stock-name-structure-enc",
+  "bytes": 2387,
+  "lines": 9,
+  "header": "Sector,Format,Prefix,Suffix,Predefined"
+ },
+ {
+  "file": "a16_financial-stock-performance-color-enc",
+  "bytes": 3322,
+  "lines": 37,
+  "header": "String,Moved With Sector,Min Delta,Max Delta"
+ },
+ {
+  "file": "a16_financial-stock-tip-scenarios-enc",
+  "bytes": 4602,
+  "lines": 26,
+  "header": "\"a16_financial-stock-tip-scenarios.csv"
+ },
+ {
+  "file": "a16_financial-universal-stocks-enc",
+  "bytes": 5377,
+  "lines": 108,
+  "header": "Symbol,Name,Sector,Min Price,Max Price,Winner Score,Hero Ownership Cap"
+ },
+ {
+  "file": "a16_first-kiss-reactions-enc",
+  "bytes": 25415,
+  "lines": 236,
+  "header": "Scenario,Log,Hero Enjoyment,Lover Enjoyment"
+ },
+ {
+  "file": "a16_food-enc",
+  "bytes": 804,
+  "lines": 42,
+  "header": "Food,Commonness Score,Sickness Probability Score"
+ },
+ {
+  "file": "a16_friend-advice-enc",
+  "bytes": 11916,
+  "lines": 49,
+  "header": "Scenario,Log Version,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max Age,Friend Gender,Friend Min Relationship,Friend Has Job,Friend Is Married,"
+ },
+ {
+  "file": "a16_friend-lover-scenarios-enc",
+  "bytes": 13034,
+  "lines": 53,
+  "header": "Scenario,Log Version,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max Age,Vampire Hero,Vampire Friend Lover"
+ },
+ {
+  "file": "a16_friend-party-scenarios-enc",
+  "bytes": 17224,
+  "lines": 60,
+  "header": "Inbound Scenario,Outbound Scenario,Log Version,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max Age,Friend Gender,Friend Has Job,Friend Is Studen"
+ },
+ {
+  "file": "a16_friend-pranks-enc",
+  "bytes": 25510,
+  "lines": 63,
+  "header": "Outbound Scenario,Outbound Log Version,Inbound Scenario,Inbound Log Version,Sender Min Age,Sender Max Age,Sender Gender,Receiver Min Age,Receiver Max Age,Receiv"
+ },
+ {
+  "file": "a16_friend-rumors-enc",
+  "bytes": 8909,
+  "lines": 41,
+  "header": "Outbound Scenario,Inbound Scenario,Inbound Log Version,Sender Min Age,Sender Max Age,Sender Gender,Receiver Min Age,Receiver Max Age,Receiver Gender"
+ },
+ {
+  "file": "a16_funeral-ash-locations-enc",
+  "bytes": 3010,
+  "lines": 96,
+  "header": "Place,Gender,Min Age,Max Age"
+ },
+ {
+  "file": "a16_gender-scenarios-enc",
+  "bytes": 5724,
+  "lines": 29,
+  "header": "Scenario,Log Version,Gender,Min Age,Max Age,Transgender Identity,Other Identity,Student,Both Parents Alive"
+ },
+ {
+  "file": "a16_ghosts-enc",
+  "bytes": 6562,
+  "lines": 189,
+  "header": "Name,Gender,Friendliness Score,Country,Min Age,Max Age,Is Prefix,Is Suffix,Uses Definite Article,Actual Person"
+ },
+ {
+  "file": "a16_gift-rejections-house-enc",
+  "bytes": 4676,
+  "lines": 49,
+  "header": "Excuse,Prideful,Crazy,Min Value,Max Value,Child Recipient Only,Parent Recipient Only,Lover Recipient Only,Min Relationship,Max Relationship,Recipient Min Age,Re"
+ },
+ {
+  "file": "a16_gift-rejections-vehicle-enc",
+  "bytes": 5434,
+  "lines": 48,
+  "header": "Excuse,Prideful,Crazy,Car,Car Min Value,Car Max Value,Boat,Boat Min Value,Boat Max Value,Plane,Plane Min Value,Plane Max Value,Child Recipient Only,Parent Recip"
+ },
+ {
+  "file": "a16_gifts-enc",
+  "bytes": 14990,
+  "lines": 384,
+  "header": "Gift,Is Singular,Use Them,Is Flowers,Cost,Male Appreciation Score,Female Appreciation Score,Min Age,Max Age,Commonness Score,Can Be Shoplifted,Sack Exclusive"
+ },
+ {
+  "file": "a16_heirlooms-enc",
+  "bytes": 14147,
+  "lines": 210,
+  "header": "Item Lookup,Item Name,Short Name,Possessive Name,Indefinite Article,Definite Article,Plural,Can Be Refurbished,Min Value,Max Value,Appreciates,Commonness Score,"
+ },
+ {
+  "file": "a16_hero-filler-enc",
+  "bytes": 170531,
+  "lines": 1133,
+  "header": "Condition,String,Hero Min Age,Hero Max Age,Hero Gender,Hero Sexuality,Hero Min Happiness,Hero Max Happiness,Subject,Subject Min Age,Subject Max Age,Subject Min "
+ },
+ {
+  "file": "a16_hitmen-enc",
+  "bytes": 1536,
+  "lines": 82,
+  "header": "Name,Gender"
+ },
+ {
+  "file": "a16_hookup-feedback-enc",
+  "bytes": 11336,
+  "lines": 154,
+  "header": "Condition,Feedback,Hero Gender,Partner Gender,Min Regret,Max Regret,Clean"
+ },
+ {
+  "file": "a16_hookup-scenarios-enc",
+  "bytes": 19318,
+  "lines": 166,
+  "header": "Condition,Scenario,Gender,Hero Gender,Type,Clean"
+ },
+ {
+  "file": "a16_horses-enc",
+  "bytes": 1544,
+  "lines": 115,
+  "header": "Horse,Success Score"
+ },
+ {
+  "file": "a16_house-types-enc",
+  "bytes": 3735,
+  "lines": 30,
+  "header": "Type,Emoji,Alternate Names,Requires Suffix,Descriptors,Minimum Bedrooms,Maximum Bedrooms,Minimum Bathrooms,Maximum Bathrooms,Minimum Age,Maximum Age,Appreciates"
+ },
+ {
+  "file": "a16_hustler-attire-enc",
+  "bytes": 7315,
+  "lines": 52,
+  "header": "Attire,Hero Gender,Worst Music Types,Best Music Types,Attention Score,Worst Perform Acts,Best Perform Acts"
+ },
+ {
+  "file": "a16_hustler-busk-music-types-enc",
+  "bytes": 2874,
+  "lines": 33,
+  "header": "Music Type,Needs Music Appended,Possible Instruments,Best Instruments,Success Score"
+ },
+ {
+  "file": "a16_hustler-busk-negative-scenarios-enc",
+  "bytes": 8214,
+  "lines": 31,
+  "header": "Scenario,Log Version,Can Be Unskilled,Negative Score"
+ },
+ {
+  "file": "a16_hustler-busk-positive-scenarios-enc",
+  "bytes": 5388,
+  "lines": 24,
+  "header": "Scenario,Log Version,Positive Score"
+ },
+ {
+  "file": "a16_hustler-busk-requests-enc",
+  "bytes": 3649,
+  "lines": 168,
+  "header": "Request,Is Proper Noun"
+ },
+ {
+  "file": "a16_hustler-collection-boxes-enc",
+  "bytes": 1347,
+  "lines": 56,
+  "header": "Item,Panhandler,Performer,Panhandler Effectiveness Score,Performer Effectiveness Score"
+ },
+ {
+  "file": "a16_hustler-insults-enc",
+  "bytes": 846,
+  "lines": 59,
+  "header": "Insult,Gender"
+ },
+ {
+  "file": "a16_hustler-panhandle-confrontation-scenarios-enc",
+  "bytes": 5695,
+  "lines": 31,
+  "header": "Scenario,Log Version,Person Gender,Anger Score"
+ },
+ {
+  "file": "a16_hustler-panhandle-excuses-enc",
+  "bytes": 4936,
+  "lines": 121,
+  "header": "Condition,Excuse,Commonness Score,Sympathy Score"
+ },
+ {
+  "file": "a16_hustler-panhandle-food-enc",
+  "bytes": 4722,
+  "lines": 130,
+  "header": "Index,Item,Plural,Uses Indefinite Article,Health Impact,Happiness Impact,Poison Risk Score"
+ },
+ {
+  "file": "a16_hustler-panhandle-items-enc",
+  "bytes": 2544,
+  "lines": 85,
+  "header": "Index,Item,Plural,Uses Indefinite Article,Fits In Collection Box,Worthless,Min Value,Max Value"
+ },
+ {
+  "file": "a16_hustler-panhandle-props-enc",
+  "bytes": 939,
+  "lines": 42,
+  "header": "Prop,Plural,Male Effectiveness Score,Female Effectiveness Score"
+ },
+ {
+  "file": "a16_hustler-panhandle-signs-enc",
+  "bytes": 6341,
+  "lines": 84,
+  "header": "String,Full String,Hero Gender,Hero Min Age,Hero Max Age,Confrontation Score,Male Effectiveness Score,Female Effectiveness Score"
+ },
+ {
+  "file": "a16_hustler-panhandle-strategies-enc",
+  "bytes": 1673,
+  "lines": 39,
+  "header": "Strategy,Hero Gender,Effectiveness Score,Police Risk Score,Theft Risk Score,Confrontation Risk Score"
+ },
+ {
+  "file": "a16_hustler-perform-acts-enc",
+  "bytes": 768,
+  "lines": 11,
+  "header": "Act,Act Person,Difficulty Score,Money Score,Danger Score,Danger Body Parts,Danger Verbs"
+ },
+ {
+  "file": "a16_hustler-perform-disrespect-scenarios-enc",
+  "bytes": 11503,
+  "lines": 43,
+  "header": "Scenario,Log Version,Can Be Unskilled,Act,Negative Score"
+ },
+ {
+  "file": "a16_hustler-perform-respect-scenarios-enc",
+  "bytes": 8382,
+  "lines": 36,
+  "header": "Scenario,Log Version,Act,Positive Score"
+ },
+ {
+  "file": "a16_hustler-police-scenarios-enc",
+  "bytes": 5036,
+  "lines": 35,
+  "header": "Scenario,Log Version,Ask To Leave,Person Gender,Anger Score,Is Universal"
+ },
+ {
+  "file": "a16_hustler-scam-items-enc",
+  "bytes": 2432,
+  "lines": 49,
+  "header": "Item Singular,Item Plural,Hero Gender,Victim Gender,Can Be Broken,Can Be Stolen,Is Fake Merch,Min Value,Max Value"
+ },
+ {
+  "file": "a16_hustler-scam-types-enc",
+  "bytes": 6704,
+  "lines": 18,
+  "header": "Scam,Description,List Description,List Description Specific,Gender,Victim Gender,Success String,Refuse String,Insist String,Difficulty Score,Money Score,Confron"
+ },
+ {
+  "file": "a16_hustler-scam-victim-scenarios-enc",
+  "bytes": 14231,
+  "lines": 85,
+  "header": "Scenario,Log Version,Is Police,Undercover Cop Score,Min Friendliness Score,Max Friendliness Score"
+ },
+ {
+  "file": "a16_hustler-serenade-songs-enc",
+  "bytes": 3091,
+  "lines": 165,
+  "header": "Song,Reaction Score"
+ },
+ {
+  "file": "a16_insults-enc",
+  "bytes": 6624,
+  "lines": 206,
+  "header": "Insult,Plural,Gender,Clean,Vampire"
+ },
+ {
+  "file": "a16_interview-questions-enc",
+  "bytes": 21824,
+  "lines": 47,
+  "header": "Commonness Score,Question,CTA,Default Choice,Default Choice Score,Choice 1,Choice 1 Score,Choice 2,Choice 2 Score,Choice 3,Choice 3 Score,Choice 4,Choice 4 Scor"
+ },
+ {
+  "file": "a16_jewelry-gemstones-enc",
+  "bytes": 1387,
+  "lines": 24,
+  "header": "Gemstone,Min Carats,Max Carats,Super Max Carats,Show Carats,First Carat Price,Min Cost,Max Cost,Color,Commonness Score,Luxury Only"
+ },
+ {
+  "file": "a16_jewelry-metals-enc",
+  "bytes": 221,
+  "lines": 11,
+  "header": "Metal,Cost Score,Color"
+ },
+ {
+  "file": "a16_jewelry-types-enc",
+  "bytes": 405,
+  "lines": 13,
+  "header": "Category,Is Plural,Cost Score,Show Carats,Max Carats,Super Max Carats,Commonness Score,Luxury Only"
+ },
+ {
+  "file": "a16_landlord-amenity-feedback-scenario-enc",
+  "bytes": 24071,
+  "lines": 113,
+  "header": "Scenario,Log Version,Amenity,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-background-check-color-enc",
+  "bytes": 2008,
+  "lines": 85,
+  "header": "Crime,Commonness Score,Min Craziness,Max Craziness"
+ },
+ {
+  "file": "a16_landlord-ghost-kill-tenant-color-enc",
+  "bytes": 1061,
+  "lines": 15,
+  "header": ","
+ },
+ {
+  "file": "a16_landlord-home-default-features-enc",
+  "bytes": 5378,
+  "lines": 106,
+  "header": "Feature String,House Type Whitelist,House Type Blacklist,Enjoyment Score,Requires Haunted House,Min Property Condition,Max Property Condition,Feature Type"
+ },
+ {
+  "file": "a16_landlord-home-remodel-feature-enc",
+  "bytes": 3957,
+  "lines": 38,
+  "header": "Project,Secondary Line Text,Minimum Cost,Maximum Cost,House Type Whitelist,House Type Blacklist,Enjoyment Score,Value Percentage,Country Blacklist"
+ },
+ {
+  "file": "a16_landlord-maintenance-refusal-scenario-enc",
+  "bytes": 1402,
+  "lines": 11,
+  "header": "Feedback Snippet,Log Version,Min Tenant Craziness,Max Tenant Craziness,Commonness Score,,Brackets Used"
+ },
+ {
+  "file": "a16_landlord-maintenance-request-scenario-enc",
+  "bytes": 11680,
+  "lines": 86,
+  "header": "Body Snippet,Feedback Present Snippet,Feedback Past Snippet,Commonness Score,House Type Whitelist,House Type Blacklist,Requires Single Bedroom,Requires Single B"
+ },
+ {
+  "file": "a16_landlord-natural-disaster-scenario-enc",
+  "bytes": 4709,
+  "lines": 32,
+  "header": "Type,Scenario,Impact Score,Can Demolish,House Type Blacklist"
+ },
+ {
+  "file": "a16_landlord-real-estate-portfolio-enc",
+  "bytes": 5066,
+  "lines": 53,
+  "header": "String,Only Squatters,Single Squatter,Singular Tenant,Min Satisfaction,Max Satisfaction,Min Property Condition,Max Property Condition"
+ },
+ {
+  "file": "a16_landlord-spooked-contractor-quit-color-enc",
+  "bytes": 4016,
+  "lines": 18,
+  "header": "Scenario,Log Version,Hauntedness Score,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-squatter-push-scenario-enc",
+  "bytes": 5419,
+  "lines": 13,
+  "header": "Scenario,Log Version,Hero Gender,Squatter Gender,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-squatter-reason-color-enc",
+  "bytes": 2802,
+  "lines": 14,
+  "header": "Scenario,Log Version,Rent-Related,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-tenant-beg-lower-rent-scenario-enc",
+  "bytes": 12142,
+  "lines": 59,
+  "header": "Scenario,Log Version,Min Craziness,Max Craziness,Min Relationship,Max Relationship"
+ },
+ {
+  "file": "a16_landlord-tenant-beg-to-stay-scenario-enc",
+  "bytes": 2498,
+  "lines": 18,
+  "header": "Scenario,Log Version,Min Craziness,Max Craziness,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-tenant-damaged-property-scenario-enc",
+  "bytes": 43263,
+  "lines": 213,
+  "header": "Scenario,Log Version,Amenity,Tenant Pet Type,House Type Whitelist,House Type Blacklist,Requires Single Bedroom,Requires Single Bathroom,Requires Multiple Bedroo"
+ },
+ {
+  "file": "a16_landlord-tenant-employment-check-enc",
+  "bytes": 2395,
+  "lines": 67,
+  "header": "Career,Gender,Min Craziness,Max Craziness,Min Income,Max Income"
+ },
+ {
+  "file": "a16_landlord-tenant-inspection-color-enc",
+  "bytes": 13312,
+  "lines": 98,
+  "header": "Positive,Scenario,Log Version,Min Craziness,Max Craziness,Commonness Score,Lover Exclusive,Brackets Used"
+ },
+ {
+  "file": "a16_landlord-tenant-late-rent-color-enc",
+  "bytes": 6441,
+  "lines": 37,
+  "header": "Scenario,Log Version,Commonness Score,Min Craziness,Max Craziness"
+ },
+ {
+  "file": "a16_landlord-tenant-late-rent-insist-enc",
+  "bytes": 2086,
+  "lines": 13,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_landlord-tenant-leave-color-enc",
+  "bytes": 13561,
+  "lines": 80,
+  "header": "Scenario,Log Version,Requires Haunted House,Commonness Score,Min Satisfaction,Max Satisfaction"
+ },
+ {
+  "file": "a16_landlord-tenant-lover-nags-hero-enc",
+  "bytes": 3961,
+  "lines": 27,
+  "header": "Scenario,Log Version,Hero Gender,Lover Gender,Min Craziness,Max Craziness,Min Relationship,Max Relationship"
+ },
+ {
+  "file": "a16_landlord-tenant-warn-scenario-enc",
+  "bytes": 2217,
+  "lines": 24,
+  "header": "Scenario,Commonness Score,Risk Score,Brackets Used"
+ },
+ {
+  "file": "a16_license-boat-questions-enc",
+  "bytes": 2132,
+  "lines": 26,
+  "header": "Index,Question,Correct Answer,Incorrect Funny,Incorrect Decoy"
+ },
+ {
+  "file": "a16_license-car-questions-enc",
+  "bytes": 1522,
+  "lines": 31,
+  "header": "Sign,Correct,Incorrect Funny,Incorrect Decoy"
+ },
+ {
+  "file": "a16_license-plane-questions-enc",
+  "bytes": 2407,
+  "lines": 26,
+  "header": "Index,Question,Correct Answer,Incorrect Funny,Incorrect Decoy"
+ },
+ {
+  "file": "a16_local-notification-v1-text-enc",
+  "bytes": 6771,
+  "lines": 29,
+  "header": "Subcategory,Notification ID,Emoji,Title,Notification Body,Is Bit Pass Active,Is Hero Dead,Hero Min Age,Hero Max Age,Student,Job,Hero Has Lover,Hero Does Not Hav"
+ },
+ {
+  "file": "a16_lover-cheat-scenarios-enc",
+  "bytes": 25352,
+  "lines": 108,
+  "header": "Scenario,Log Version,Hero Gender,Lover Gender,Post Deployment,Prison,Hero Min Age,Hero Max Age,Lover Min Age,Lover Max Age,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_lover-make-love-nags-enc",
+  "bytes": 19162,
+  "lines": 106,
+  "header": "Scenario,Log Version,Hero Gender,Lover Gender,Married,Min Relationship,Max Relationship,Hero Min Age,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_lover-marriage-nags-enc",
+  "bytes": 8248,
+  "lines": 81,
+  "header": "Scenario,Hero Gender,Hero Virgin,Lover Gender,Min Craziness,Max Craziness,Min Relationship,Max Relationship,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_lover-suspicious-scenarios-enc",
+  "bytes": 23306,
+  "lines": 173,
+  "header": "Scenario,Hero Gender,Lover Gender,Has Job,Has Kids,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_luxury-celebrity-chef-name-enc",
+  "bytes": 348,
+  "lines": 16,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-charity-organization-enc",
+  "bytes": 1149,
+  "lines": 33,
+  "header": "Name,Abbreviation,Is Bad Charity"
+ },
+ {
+  "file": "a16_luxury-default-island-name-enc",
+  "bytes": 3284,
+  "lines": 97,
+  "header": "Name,Island Type,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-exotic-watch-brand-enc",
+  "bytes": 336,
+  "lines": 7,
+  "header": "Make,Model,Min Cost,Max Cost"
+ },
+ {
+  "file": "a16_luxury-island-color-snippet-enc",
+  "bytes": 2119,
+  "lines": 44,
+  "header": "Snippet,Island Type,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-island-data-enc",
+  "bytes": 817,
+  "lines": 4,
+  "header": "Island Type,Small Minimum Cost,Small Maximum Cost,Medium Minimum Cost,Medium Maximum Cost,Large Minimum Cost,Large Maximum Cost,Eligible Countries"
+ },
+ {
+  "file": "a16_luxury-island-structure-spend-time-enc",
+  "bytes": 7579,
+  "lines": 37,
+  "header": "String,Log Version,Structure Type,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-island-vacation-dumb-scenario-enc",
+  "bytes": 14796,
+  "lines": 19,
+  "header": "Subject,Subject Min Age,Subject Max Age,Gender Bracket,Title,Body,CTA,Choice 1,Narrative 1,Relationship Impact 1,Karma Impact 1,Choice 2,Narrative 2,Relationshi"
+ },
+ {
+  "file": "a16_luxury-luxury-aircraft-special-feature-enc",
+  "bytes": 1194,
+  "lines": 17,
+  "header": "Feature,Profile Color,Cost,Compatible Category,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-luxury-car-special-feature-enc",
+  "bytes": 939,
+  "lines": 15,
+  "header": "Feature,Profile Color,Cost,Compatible Category,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-luxury-watercraft-special-feature-enc",
+  "bytes": 1350,
+  "lines": 17,
+  "header": "Feature,Profile Color,Cost,Sailing Yacht,Sailboat,Research Vessel,Cruise Ship,Submarine,Pirate Ship,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-secret-societie-enc",
+  "bytes": 2751,
+  "lines": 11,
+  "header": "Name,Secondary Text,Membership Requirement Text,Rank 1,Rank 2,Rank 3,Looks Impact,Health Impact,Happiness Impact,Smarts Impact,Willpower Impact,Karma Impact,Joi"
+ },
+ {
+  "file": "a16_luxury-secret-society-discussion-topic-enc",
+  "bytes": 21159,
+  "lines": 81,
+  "header": "Subject,Compatible Society,Feedback Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-secret-society-game-enc",
+  "bytes": 1899,
+  "lines": 51,
+  "header": "Game,Compatible Society,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-secret-society-rule-enc",
+  "bytes": 4222,
+  "lines": 61,
+  "header": "Rule,Compatible Society,\"\"\"Yea\"\" is Correct\",Commonness Score"
+ },
+ {
+  "file": "a16_luxury-spa-treatment-color-enc",
+  "bytes": 3502,
+  "lines": 16,
+  "header": "String,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-spa-treatment-enc",
+  "bytes": 1574,
+  "lines": 31,
+  "header": "Name,Category,Cost,Looks Impact,Health Impact,Happiness Impact"
+ },
+ {
+  "file": "a16_luxury-spa-vip-treatment-enc",
+  "bytes": 2049,
+  "lines": 41,
+  "header": "Treatment,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-vip-event-chef-cuisines-enc",
+  "bytes": 238,
+  "lines": 24,
+  "header": ""
+ },
+ {
+  "file": "a16_luxury-vip-event-feedback-color-string-enc",
+  "bytes": 12469,
+  "lines": 50,
+  "header": "String,Event Type,Enjoyment Score,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-vip-movie-enc",
+  "bytes": 2893,
+  "lines": 69,
+  "header": "Title,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_luxury-vip-nightclub-event-enc",
+  "bytes": 364,
+  "lines": 16,
+  "header": "Event Type,Commonness Score"
+ },
+ {
+  "file": "a16_mafia-calling-cards-enc",
+  "bytes": 3010,
+  "lines": 87,
+  "header": "Item,Uses Partitive Article,Specific Mob Country"
+ },
+ {
+  "file": "a16_mafia-excuses-enc",
+  "bytes": 3154,
+  "lines": 73,
+  "header": "Scenario Snippet,Gender"
+ },
+ {
+  "file": "a16_mafia-executions-enc",
+  "bytes": 17130,
+  "lines": 37,
+  "header": "Method,Hero Outbound Scenario,Hero Outbound Log Version,Hero Inbound Scenario,Hero Inbound Log Version,Third Person Version,Death Snippet,Pain Score"
+ },
+ {
+  "file": "a16_mafia-extortion-targets-enc",
+  "bytes": 949,
+  "lines": 24,
+  "header": "Company Type,Specific Target,Gender,Money Score,Commonness Score"
+ },
+ {
+  "file": "a16_mafia-feedback-earnings-enc",
+  "bytes": 3813,
+  "lines": 36,
+  "header": "Feedback"
+ },
+ {
+  "file": "a16_mafia-feedback-negative-enc",
+  "bytes": 2230,
+  "lines": 15,
+  "header": "Scenario,Log Version,Specific Mob Country"
+ },
+ {
+  "file": "a16_mafia-feedback-positive-enc",
+  "bytes": 3197,
+  "lines": 23,
+  "header": "Scenario,Log Version,Specific Mob Country"
+ },
+ {
+  "file": "a16_mafia-join-methods-enc",
+  "bytes": 1853,
+  "lines": 12,
+  "header": "Method,Feedback Snippet,Log Version Snippet,Success Score,Can Be Punished"
+ },
+ {
+  "file": "a16_mafia-join-rejections-enc",
+  "bytes": 3764,
+  "lines": 44,
+  "header": "Feedback,Insufficient Criminal Record,Repeat"
+ },
+ {
+  "file": "a16_mafia-mobs-enc",
+  "bytes": 649,
+  "lines": 8,
+  "header": "Mob,Associated Country,Host Country,Notoriety Score,Money Score,Rank 1,Rank 2,Rank 3,Rank 4,Rank 5 Male,Rank 5 Female"
+ },
+ {
+  "file": "a16_mafia-nicknames-enc",
+  "bytes": 6323,
+  "lines": 143,
+  "header": "Nickname,Mob Country,Gender"
+ },
+ {
+  "file": "a16_mafia-pastimes-enc",
+  "bytes": 4313,
+  "lines": 105,
+  "header": "Pastime,Specific Mob Country"
+ },
+ {
+  "file": "a16_mafia-push-crimes-enc",
+  "bytes": 21038,
+  "lines": 101,
+  "header": "Present Snippet,Past Snippet,Against Rival Family,Seriousness Score,Get Caught Score,Associated Crime"
+ },
+ {
+  "file": "a16_mafia-push-targets-enc",
+  "bytes": 10631,
+  "lines": 74,
+  "header": "Target,Reason,Gender,Can Have Name,Godfather Cannot Order,Get Caught Score"
+ },
+ {
+  "file": "a16_mafia-scare-methods-enc",
+  "bytes": 2170,
+  "lines": 17,
+  "header": "Method,Scenario,Log Version,Effectiveness Score,Get Caught Score"
+ },
+ {
+  "file": "a16_mafia-shakedown-methods-enc",
+  "bytes": 7947,
+  "lines": 25,
+  "header": "Method,Success Scenario,Success Log Version,Success Third Person Version,Failure Scenario,Failure Log Version,Effectiveness Score"
+ },
+ {
+  "file": "a16_mafia-temptation-scenarios-enc",
+  "bytes": 10091,
+  "lines": 24,
+  "header": "Scenario,Log Version,Min Amount,Max Amount,Get Caught Score,Is Cash,Dishonorable Choice,Dishonorable Choice Narrative,Honorable Choice"
+ },
+ {
+  "file": "a16_magazines-enc",
+  "bytes": 722,
+  "lines": 45,
+  "header": "Title,Gender"
+ },
+ {
+  "file": "a16_make-love-rejections-enc",
+  "bytes": 21673,
+  "lines": 194,
+  "header": "Condition,Scenario,Hero Gender,Lover Gender,Lover Min Age,Lover Max Age,Hero Preg,Lover Preg,Multiple Children,Clean,Vampire Hero,Vampire Lover"
+ },
+ {
+  "file": "a16_martial-arts-enc",
+  "bytes": 953,
+  "lines": 7,
+  "header": "Martial Art,Belt Hierarchy,Move 1,Move 1 Past Verb,Move 1 Score,Move 2,Move 2 Past Verb,Move 2 Score"
+ },
+ {
+  "file": "a16_military-ranks-enc",
+  "bytes": 3415,
+  "lines": 20,
+  "header": "Rank,Status,Air Force Longhand,Air Force Shorthand,Army Longhand,Army Shorthand,Coast Guard Longhand,Coast Guard Shorthand,Marines Longhand,Marines Shorthand,Na"
+ },
+ {
+  "file": "a16_model-agency-model-sabotage-enc",
+  "bytes": 2305,
+  "lines": 9,
+  "header": "Method,Method String,Log Version,Result Snippet,Target Discovers Hero Snippet,Risk Score,Sabotage Score,Commonness Score"
+ },
+ {
+  "file": "a16_model-agency-names-enc",
+  "bytes": 2214,
+  "lines": 15,
+  "header": "Format,Prefix,Suffix,Min Age,Max Age,Typical Gender,Commonness Score"
+ },
+ {
+  "file": "a16_model-audition-feedback-enc",
+  "bytes": 1758,
+  "lines": 21,
+  "header": "Reason,Min Looks,Max Looks,Min Modeling Skill,Max Modeling Skill"
+ },
+ {
+  "file": "a16_model-audition-snippets-enc",
+  "bytes": 5419,
+  "lines": 61,
+  "header": "Snippet,Hero Gender,Min Attitude,Max Attitude,Min Poise,Max Poise,Min Quirkiness,Max Quirkiness,Difficulty Score"
+ },
+ {
+  "file": "a16_model-campaign-summary-color-enc",
+  "bytes": 2155,
+  "lines": 18,
+  "header": "String,Min Reception,Max Reception"
+ },
+ {
+  "file": "a16_model-career-progression-enc",
+  "bytes": 675,
+  "lines": 6,
+  "header": "Model Type,Jobs To Promotion,Minimum Looks,Minimum Health,Minimum Profile,Can Be Famous,Stress Score,Min Salary,Max Salary,Min Age,Max Age,Too Old Age,Diseases"
+ },
+ {
+  "file": "a16_model-categories-enc",
+  "bytes": 2226,
+  "lines": 52,
+  "header": "Category,Industry,Minimum Model Type,Min Typical Model Age,Max Typical Model Age,Commonness Score"
+ },
+ {
+  "file": "a16_model-companies-enc",
+  "bytes": 4302,
+  "lines": 19,
+  "header": "Format,Prefix,Suffix,Industry"
+ },
+ {
+  "file": "a16_model-fashion-show-pivotal-moments-enc",
+  "bytes": 45700,
+  "lines": 17,
+  "header": "Category,Requires Model,Body,CTA,Choice 1,Success Odds 1,Success Feedback 1,Success Narrative 1,Success Performance Impact 1,Failure Feedback 1,Failure Narrativ"
+ },
+ {
+  "file": "a16_model-fashion-show-venues-enc",
+  "bytes": 517,
+  "lines": 25,
+  "header": "Venue,Uses Indefinite Article,Min Profile,Max Profile"
+ },
+ {
+  "file": "a16_model-fashion-week-feedback-enc",
+  "bytes": 2107,
+  "lines": 20,
+  "header": "String,Min Performance,Max Performance"
+ },
+ {
+  "file": "a16_model-fired-color-enc",
+  "bytes": 2112,
+  "lines": 28,
+  "header": "String,Age,Looks,Modeling Skill,Botched Surgery,Disease,Pregnancy"
+ },
+ {
+  "file": "a16_model-gifts-enc",
+  "bytes": 4016,
+  "lines": 52,
+  "header": "Item Name,Gender,Elite,Color Variants,Short Name,Indefinite Article,Plural,Can Be Refurbished,Min Value,Max Value,Appreciates,Commonness Score"
+ },
+ {
+  "file": "a16_model-gig-types-enc",
+  "bytes": 210,
+  "lines": 6,
+  "header": "Job Type,Industries,Commonness Score"
+ },
+ {
+  "file": "a16_model-go-see-action-poses-enc",
+  "bytes": 3855,
+  "lines": 29,
+  "header": "Snippet,Log Refusal Snippet,Log Snippet,Agree Performance Impact,Refuse Performance Impact,Commonness Score"
+ },
+ {
+  "file": "a16_model-go-see-interview-questions-enc",
+  "bytes": 10041,
+  "lines": 24,
+  "header": "Question,CTA,Default Choice,Default Choice Impact,Choice 1,Choice 1 Impact,Choice 2,Choice 2 Impact,Choice 3,Choice 3 Impact,Choice 4,Choice 4 Impact,Choice 5,C"
+ },
+ {
+  "file": "a16_model-go-see-performance-review-enc",
+  "bytes": 2253,
+  "lines": 24,
+  "header": "String,Log Version,Min Impression,Max Impression"
+ },
+ {
+  "file": "a16_model-headshot-background-enc",
+  "bytes": 448,
+  "lines": 24,
+  "header": "Background,Professionalism Score,Commonness Score"
+ },
+ {
+  "file": "a16_model-headshot-expressions-enc",
+  "bytes": 640,
+  "lines": 35,
+  "header": "Expression,Professionalism Score,Commonness Score"
+ },
+ {
+  "file": "a16_model-headshot-outfits-enc",
+  "bytes": 1325,
+  "lines": 56,
+  "header": "Outfit Snippet,Hero Gender,Professionalism Score,Commonness Score"
+ },
+ {
+  "file": "a16_model-industries-enc",
+  "bytes": 273,
+  "lines": 11,
+  "header": "Industry,Commonness Score,Country Blacklist"
+ },
+ {
+  "file": "a16_model-photo-shoot-facial-expression-enc",
+  "bytes": 19329,
+  "lines": 35,
+  "header": "Snippet,Choice 1,Narrative 1,Impact Score 1,Choice 2,Narrative 2,Impact Score 2,Choice 3,Narrative 3,Impact Score 3,Choice 4,Narrative 4,Impact Score 4,Difficul"
+ },
+ {
+  "file": "a16_model-photo-shoot-poses-enc",
+  "bytes": 11195,
+  "lines": 73,
+  "header": "Body Snippet,Lover Argument Snippet,Feedback Log Snippet,Body Part Model Only,Video Shoot Only,Lover Argue Score,Agree Performance Impact,Disagree Performance I"
+ },
+ {
+  "file": "a16_model-products-enc",
+  "bytes": 29304,
+  "lines": 63,
+  "header": "Product Name,Category,Typical Model Gender"
+ },
+ {
+  "file": "a16_model-publication-titles-enc",
+  "bytes": 5614,
+  "lines": 104,
+  "header": "Name,Gender,Type,Local Publication,Industry,Min Profile,Max Profile,Commonness Score"
+ },
+ {
+  "file": "a16_money-request-rejections-enc",
+  "bytes": 6072,
+  "lines": 35,
+  "header": "Scenario,Log Version,Multiple Request,Hero Min Age,Hero Max Age,Person Gender,Person Min Money,Person Max Money,Hero Needs Money,Hero Doesn't Need Money,Parent,"
+ },
+ {
+  "file": "a16_movies-enc",
+  "bytes": 9086,
+  "lines": 245,
+  "header": "Title,Genre"
+ },
+ {
+  "file": "a16_murders-enc",
+  "bytes": 3796,
+  "lines": 16,
+  "header": "Method,Effectiveness Score,Retaliation Likeliness Score,Get Caught Likeliness Score,Requires Driving License,Requires Vehicle,Success String,Attempt String,Reta"
+ },
+ {
+  "file": "a16_music-album-covers-enc",
+  "bytes": 13681,
+  "lines": 222,
+  "header": "Cover,Solo,Band,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-album-rejections-enc",
+  "bytes": 6631,
+  "lines": 59,
+  "header": "Reason,Solo,Band,Album Type"
+ },
+ {
+  "file": "a16_music-album-title-enc",
+  "bytes": 29462,
+  "lines": 480,
+  "header": "Title,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-artist-stage-name-enc",
+  "bytes": 15316,
+  "lines": 247,
+  "header": "Stage Name,Gender,Skin,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-artistic-flair-string-enc",
+  "bytes": 5081,
+  "lines": 31,
+  "header": "String,Log Version,Genre,Reception Impact Score"
+ },
+ {
+  "file": "a16_music-audition-rejections-enc",
+  "bytes": 4086,
+  "lines": 40,
+  "header": "Reason,Solo,Band,Role"
+ },
+ {
+  "file": "a16_music-band-breaks-up-scenarios-enc",
+  "bytes": 3612,
+  "lines": 52,
+  "header": "Reason,Min Popularity,Max Popularity"
+ },
+ {
+  "file": "a16_music-band-kicks-out-scenarios-enc",
+  "bytes": 4685,
+  "lines": 52,
+  "header": "Reason,Role,Performance Based,Hero Min Age,Hero Max Age"
+ },
+ {
+  "file": "a16_music-club-takeover-second-thought-enc",
+  "bytes": 4874,
+  "lines": 35,
+  "header": "String,Artist Gender,Artist Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-club-takeover-string-enc",
+  "bytes": 4821,
+  "lines": 33,
+  "header": "Scenario,Log Version,Positive,Popularity Impact,Commonness Score"
+ },
+ {
+  "file": "a16_music-club-takeover-stunt-enc",
+  "bytes": 6931,
+  "lines": 35,
+  "header": "Scenario,Log Version,Artist Genre,Popularity Impact,Commonness Score"
+ },
+ {
+  "file": "a16_music-club-takeover-stunt-outcome-enc",
+  "bytes": 5037,
+  "lines": 32,
+  "header": "Scenario,Log Version,Positive,Commonness Score"
+ },
+ {
+  "file": "a16_music-concert-venues-enc",
+  "bytes": 920,
+  "lines": 27,
+  "header": "Venue,Min Capacity,Max Capacity,Min Popularity,Max Popularity,Money Score"
+ },
+ {
+  "file": "a16_music-cover-art-string-enc",
+  "bytes": 9500,
+  "lines": 87,
+  "header": "String,Genre"
+ },
+ {
+  "file": "a16_music-dinner-location-enc",
+  "bytes": 2150,
+  "lines": 52,
+  "header": "String,Gratitude"
+ },
+ {
+  "file": "a16_music-fan-interaction-scenarios-enc",
+  "bytes": 14250,
+  "lines": 52,
+  "header": "Positive,Negative,Scenario,Feedback Snippet,Log Version Snippet,Fan Gender,Fan Age,Hero Gender,Min Popularity,Max Popularity,Hero Min Age,Hero Max Age,Min Respe"
+ },
+ {
+  "file": "a16_music-genres-enc",
+  "bytes": 874,
+  "lines": 12,
+  "header": "Genre,Singer Title,Famous Title,Solo Roles,Band Roles,Push Stage Name,Band Min Size,Band Max Size,Predominant Country,Predominant Skin Color,Fame Score,Commonne"
+ },
+ {
+  "file": "a16_music-instruments-enc",
+  "bytes": 2173,
+  "lines": 27,
+  "header": "Instrument,Singular Name,Category,Finishes,Min Cost,Max Cost,Can Buy,Can Busk,Busk Score,Parent Lessons Score,Cost Score,Difficulty Score,Commonness Score"
+ },
+ {
+  "file": "a16_music-names-albums-enc",
+  "bytes": 26336,
+  "lines": 413,
+  "header": "Title,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-names-bands-enc",
+  "bytes": 23712,
+  "lines": 431,
+  "header": "Title,Hero Only,Gender,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-names-compilations-enc",
+  "bytes": 1134,
+  "lines": 26,
+  "header": "Title,Commonness Score,Accommodates Definite Article"
+ },
+ {
+  "file": "a16_music-names-songs-enc",
+  "bytes": 31351,
+  "lines": 513,
+  "header": "Title,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-names-stage-enc",
+  "bytes": 10523,
+  "lines": 185,
+  "header": "Title,Gender,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-practice-scenarios-enc",
+  "bytes": 10012,
+  "lines": 67,
+  "header": "Scenario,Log Version,Role"
+ },
+ {
+  "file": "a16_music-producer-artist-leave-string-enc",
+  "bytes": 3967,
+  "lines": 33,
+  "header": "String,Min Artist Popularity,Max Artist Popularity,Commonness Score"
+ },
+ {
+  "file": "a16_music-producer-aspiring-artist-string-enc",
+  "bytes": 5736,
+  "lines": 34,
+  "header": "String,Artist Genre,Min Vocal Quality,Max Vocal Quality,Commonness Score"
+ },
+ {
+  "file": "a16_music-producer-concert-act-enc",
+  "bytes": 6348,
+  "lines": 161,
+  "header": "Name"
+ },
+ {
+  "file": "a16_music-producer-dumb-scenario-enc",
+  "bytes": 36929,
+  "lines": 51,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Genre,Title,Body,CTA,Choice 1,Narrative 1,Reputation Im"
+ },
+ {
+  "file": "a16_music-producer-genre-enc",
+  "bytes": 570,
+  "lines": 14,
+  "header": "Genre,Compatible Genre 1,Compatible Genre 2,Compatible Genre 3,Predominant Country,Popularity Score"
+ },
+ {
+  "file": "a16_music-producer-stage-name-enc",
+  "bytes": 2280,
+  "lines": 66,
+  "header": "Name,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_music-producer-termination-string-enc",
+  "bytes": 3846,
+  "lines": 32,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_music-producer-titles-enc",
+  "bytes": 8312,
+  "lines": 49,
+  "header": "Scenario Tag,Option 1,Option 2,Option 3,Option 4,Option 5,Situation Description"
+ },
+ {
+  "file": "a16_music-record-label-company-name-enc",
+  "bytes": 2610,
+  "lines": 41,
+  "header": "Name,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-roles-enc",
+  "bytes": 666,
+  "lines": 10,
+  "header": "Role,Solo,Band,Solo Fame Score,Band Fame Score,Primary Instrument,Secondary Instrument,School Activity"
+ },
+ {
+  "file": "a16_music-sample-track-enc",
+  "bytes": 9184,
+  "lines": 370,
+  "header": "Song,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-score-production-acceptance-string-enc",
+  "bytes": 3664,
+  "lines": 32,
+  "header": "String,Project Type,Commonness Score"
+ },
+ {
+  "file": "a16_music-score-production-project-title-enc",
+  "bytes": 3105,
+  "lines": 84,
+  "header": "Name,Project Type,Commonness Score"
+ },
+ {
+  "file": "a16_music-score-production-project-tone-enc",
+  "bytes": 199,
+  "lines": 12,
+  "header": "Tone,Min BPM,Max BPM"
+ },
+ {
+  "file": "a16_music-score-production-rejection-string-enc",
+  "bytes": 4059,
+  "lines": 31,
+  "header": "String,Reason,Project Type,Commonness Score"
+ },
+ {
+  "file": "a16_music-signature-sound-enc",
+  "bytes": 1618,
+  "lines": 63,
+  "header": "Sound,Use Indefinite Article,Reception Impact Score,Commonness Score"
+ },
+ {
+  "file": "a16_music-soundcloud-collab-refusal-string-enc",
+  "bytes": 4577,
+  "lines": 44,
+  "header": "String,Reason,Commonness Score"
+ },
+ {
+  "file": "a16_music-soundcloud-comment-enc",
+  "bytes": 6976,
+  "lines": 50,
+  "header": "String,Log Version,Track Genre,Min Popularity,Max Popularity"
+ },
+ {
+  "file": "a16_music-soundcloud-dumb-scenario-enc",
+  "bytes": 30899,
+  "lines": 40,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Genre,Release Type,Title,Body,CTA,Choice 1,Narrative 1,"
+ },
+ {
+  "file": "a16_music-soundcloud-insult-enc",
+  "bytes": 3103,
+  "lines": 55,
+  "header": "Insult,Track Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-soundcloud-screen-name-enc",
+  "bytes": 2731,
+  "lines": 67,
+  "header": "Name,Hero Only,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_music-soundcloud-track-instrument-enc",
+  "bytes": 3057,
+  "lines": 44,
+  "header": "Instrument,Genre,Project Tones,Commonness Score"
+ },
+ {
+  "file": "a16_music-soundcloud-track-reception-string-enc",
+  "bytes": 4621,
+  "lines": 40,
+  "header": "String,Collab,Genre,Min Reception,Max Reception,Commonness Score"
+ },
+ {
+  "file": "a16_music-subgenres-enc",
+  "bytes": 2465,
+  "lines": 105,
+  "header": "Subgenre,Pop,Rap,Country,Folk,R&B,Worship,Rock,Alternative,Reggae,K-Pop,Heavy Metal"
+ },
+ {
+  "file": "a16_music-talent-scout-artist-rejection-string-enc",
+  "bytes": 3464,
+  "lines": 31,
+  "header": "String,Reason,Commonness Score"
+ },
+ {
+  "file": "a16_music-talent-scout-potential-talent-string-enc",
+  "bytes": 6061,
+  "lines": 43,
+  "header": "String,Artist Genre,Min Vocal Quality,Max Vocal Quality"
+ },
+ {
+  "file": "a16_music-talent-scout-venue-name-enc",
+  "bytes": 1755,
+  "lines": 39,
+  "header": "Venue,Event Type,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-beat-enc",
+  "bytes": 1696,
+  "lines": 34,
+  "header": "Beat,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-lyrical-hook-enc",
+  "bytes": 10750,
+  "lines": 148,
+  "header": "Hook,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-rejection-string-enc",
+  "bytes": 5571,
+  "lines": 27,
+  "header": "String,Log Version,Reason,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-subject-enc",
+  "bytes": 2534,
+  "lines": 91,
+  "header": "Subject,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-title-enc",
+  "bytes": 5111,
+  "lines": 151,
+  "header": "Track Title,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_music-track-vibe-enc",
+  "bytes": 2155,
+  "lines": 78,
+  "header": "Vibe,Genre,Commonness Score"
+ },
+ {
+  "file": "a16_musicians-enc",
+  "bytes": 2661,
+  "lines": 217,
+  "header": "Musician"
+ },
+ {
+  "file": "a16_mystuff-catalog-enc",
+  "bytes": 310,
+  "lines": 2,
+  "header": "ITEM_ID,Name,Description,Emoji,Feedback,Succes,Log,Can Be Added,Unique"
+ },
+ {
+  "file": "a16_news-events-enc",
+  "bytes": 27251,
+  "lines": 158,
+  "header": "Type,Scenario"
+ },
+ {
+  "file": "a16_notification-bait-enc",
+  "bytes": 8546,
+  "lines": 37,
+  "header": "Index,Author,Notification,Log Version,Hero Min Age,Hero Max Age,Student,Job,Hero Has Lover,Hero Doesn't Have Lover,Both Parents Alive,Hero Gender,Lover Gender"
+ },
+ {
+  "file": "a16_notification-heirlooms-enc",
+  "bytes": 4110,
+  "lines": 43,
+  "header": "Index,Author,Title,Notification"
+ },
+ {
+  "file": "a16_notification-voices-enc",
+  "bytes": 6475,
+  "lines": 65,
+  "header": "Voice,Author,Title,Notification,Requires Hero,Hero Min Age,Hero Max Age,Student,Job,Hero Has Lover,Hero Doesn't Have Lover,Both Parents Alive"
+ },
+ {
+  "file": "a16_outdoor-animal-enc",
+  "bytes": 5139,
+  "lines": 30,
+  "header": "Species,Plural,Handbook Color String,Habitat,Hiking Only,Camping Only,Danger Score,Aggression Score,Successful Attack String,Failed Attack String,Commonness Sco"
+ },
+ {
+  "file": "a16_outdoor-animal-treat-enc",
+  "bytes": 1271,
+  "lines": 29,
+  "header": "String,Animal Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-bike-ride-dumb-enc",
+  "bytes": 16743,
+  "lines": 23,
+  "header": "Hero Min Age,Hero Max Age,Gender Bracket,Scenario,CTA,Choice 1,Narrative 1,Bike Condition Impact 1,Health Impact 1,Discipline Impact 1,Smarts Impact 1,Karma Imp"
+ },
+ {
+  "file": "a16_outdoor-bike-ride-location-enc",
+  "bytes": 626,
+  "lines": 14,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-bird-behavior-enc",
+  "bytes": 3298,
+  "lines": 47,
+  "header": "String,Habitat,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-bird-discovery-scenario-enc",
+  "bytes": 2267,
+  "lines": 21,
+  "header": "Scenario,Difficulty Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-bird-enc",
+  "bytes": 3890,
+  "lines": 31,
+  "header": "Species,Plural,Handbook Color String,Habitat,Danger Score,Difficulty Score,Attack String,Commonness Score,Emoji Name"
+ },
+ {
+  "file": "a16_outdoor-bird-treat-enc",
+  "bytes": 1078,
+  "lines": 34,
+  "header": "String,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-camping-dog-treat-enc",
+  "bytes": 731,
+  "lines": 33,
+  "header": "Treat,Enjoyment Score"
+ },
+ {
+  "file": "a16_outdoor-camping-dumb-scenario-enc",
+  "bytes": 35859,
+  "lines": 37,
+  "header": "Hero Min Age,Hero Max Age,Gender Bracket,Requires Companion,Companion Type,Randomize Choices,Title,Scenario,CTA,Choice 1,Narrative 1,Enjoyment Impact 1,Health I"
+ },
+ {
+  "file": "a16_outdoor-catchable-fish-enc",
+  "bytes": 7004,
+  "lines": 51,
+  "header": "Species,Handbook Color String,Habitat,Preferred Bait,Min Weight (lbs),Max Weight (lbs),Min Value,Max Value,Difficulty Score,Commonness Score,Emoji Name"
+ },
+ {
+  "file": "a16_outdoor-cave-discoverie-enc",
+  "bytes": 25040,
+  "lines": 33,
+  "header": "Hero Min Age,Hero Max Age,Gender Bracket,Title,Scenario,CTA,Choice 1,Narrative 1,Enjoyment Impact 1,Happiness Impact 1,Smarts Impact 1,Looks Impact 1,Karma Impa"
+ },
+ {
+  "file": "a16_outdoor-cave-enc",
+  "bytes": 723,
+  "lines": 26,
+  "header": "Name,Location,Difficulty Score"
+ },
+ {
+  "file": "a16_outdoor-destination-enc",
+  "bytes": 3637,
+  "lines": 32,
+  "header": "Location,Country,Uses Definite Article,Habitat,Activity,Landmarks,Cost Score,Danger Score,Appeal Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-dog-behavior-enc",
+  "bytes": 6539,
+  "lines": 39,
+  "header": "Activity,Scenario,Log Version,Min Dog Craziness,Max Dog Craziness,Pet Gender"
+ },
+ {
+  "file": "a16_outdoor-fishing-treasure-enc",
+  "bytes": 2099,
+  "lines": 22,
+  "header": "Name,List Item Name,Uses Indefinite Article,Uses Definite Article,Plural,Min Value,Max Value,Can Be Refurbished,Appreciates,Location,Commonness Score,Emoji Stri"
+ },
+ {
+  "file": "a16_outdoor-ghost-encounter-enc",
+  "bytes": 6179,
+  "lines": 22,
+  "header": "Scenario,Log Version,Gender,Entity,Danger Score"
+ },
+ {
+  "file": "a16_outdoor-hallucination-enc",
+  "bytes": 5948,
+  "lines": 18,
+  "header": "Scenario,Log Version,Enjoyment Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-hallucination-symptom-scenario-enc",
+  "bytes": 3518,
+  "lines": 19,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-hiking-dog-discovery-scenario-enc",
+  "bytes": 4327,
+  "lines": 22,
+  "header": "Scenario,Log Version,Commonness Score,Hero Enjoyment Score,Dog Enjoyment Score"
+ },
+ {
+  "file": "a16_outdoor-hiking-dog-fetch-item-enc",
+  "bytes": 813,
+  "lines": 39,
+  "header": "Object,Uses Indefinite Article,Pride Score"
+ },
+ {
+  "file": "a16_outdoor-hiking-drink-enc",
+  "bytes": 2793,
+  "lines": 18,
+  "header": "Scenario Title,Item String,Short Name,Feedback Color String,Is Alcohol,Health Impact,Happiness Impact,Willpower Impact,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-hiking-dumb-scenario-enc",
+  "bytes": 26387,
+  "lines": 30,
+  "header": "Hero Min Age,Hero Max Age,Gender Bracket,Requires Companion,Companion Type,Randomize Choices,Title,Scenario,CTA,Choice 1,Narrative 1,Enjoyment Impact 1,Health I"
+ },
+ {
+  "file": "a16_outdoor-hiking-item-discoverie-enc",
+  "bytes": 874,
+  "lines": 31,
+  "header": "Item,Min Item Value,Max Item Value,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-hooked-fish-color-string-enc",
+  "bytes": 1852,
+  "lines": 22,
+  "header": "String,Fish Difficulty,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-landmark-memento-scenario-enc",
+  "bytes": 3813,
+  "lines": 17,
+  "header": "Min Hero Age,Max Hero Age,Requires Companion,Companion Gender,Scenario,Log Version,Happiness Impact,Karma Impact"
+ },
+ {
+  "file": "a16_outdoor-landmark-selfie-color-enc",
+  "bytes": 2722,
+  "lines": 22,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-landmark-view-reflection-enc",
+  "bytes": 4671,
+  "lines": 24,
+  "header": "Min Hero Age,Max Hero Age,Requires Companion,Companion Gender,Scenario,Log Version,Happiness Impact,Smarts Impact,Health Impact,Karma Impact"
+ },
+ {
+  "file": "a16_outdoor-lure-fish-color-string-enc",
+  "bytes": 2515,
+  "lines": 21,
+  "header": "String,Fish Difficulty,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-marine-behavior-enc",
+  "bytes": 2224,
+  "lines": 38,
+  "header": "String,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-marine-life-enc",
+  "bytes": 4395,
+  "lines": 32,
+  "header": "Species,Plural,Handbook Color String,Habitat,Danger Score,Difficulty Score,Attack String,Commonness Score,Emoji String"
+ },
+ {
+  "file": "a16_outdoor-marine-life-play-string-enc",
+  "bytes": 1502,
+  "lines": 21,
+  "header": "String,Log,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-mounted-fish-name-enc",
+  "bytes": 1052,
+  "lines": 72,
+  "header": "Fish Name,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-offroading-encounter-enc",
+  "bytes": 2130,
+  "lines": 36,
+  "header": "String,Location,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-offroading-location-color-string-enc",
+  "bytes": 3136,
+  "lines": 47,
+  "header": "String,Location,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-offroading-make-love-string-enc",
+  "bytes": 921,
+  "lines": 26,
+  "header": "Snippet,Hero Gender,Lover Gender,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-offroading-reward-enc",
+  "bytes": 1735,
+  "lines": 49,
+  "header": "Item,Happiness Impact,Min Hero Age,Max Hero Age,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-offroading-trick-enc",
+  "bytes": 3981,
+  "lines": 45,
+  "header": "String,Success Feedback Version,Location,Difficulty Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-plant-enc",
+  "bytes": 3877,
+  "lines": 25,
+  "header": "Species,Plural,Handbook Color String,Habitat,Hiking Only,Camping Only,Enjoyment Score,Toxicity Score,Health Impact,Happiness Impact,Hallucinations,Tastes Like,C"
+ },
+ {
+  "file": "a16_outdoor-snorkeling-discovery-scenario-enc",
+  "bytes": 1614,
+  "lines": 16,
+  "header": "Scenario,Difficulty Score,Commonness Score"
+ },
+ {
+  "file": "a16_outdoor-titles-enc",
+  "bytes": 7799,
+  "lines": 78,
+  "header": "ID,Original Title,Variation 1,Variation 2,Variation 3,Variation 4"
+ },
+ {
+  "file": "a16_outdoor-vehicle-enc",
+  "bytes": 2507,
+  "lines": 57,
+  "header": "Make,Model,Type,Cost,Performance Score,Depreciation Score,Longevity Score,Cool Score,Ease of Theft Score"
+ },
+ {
+  "file": "a16_paparazzi-scenarios-enc",
+  "bytes": 3267,
+  "lines": 15,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_paranormal-encounters-enc",
+  "bytes": 3982,
+  "lines": 21,
+  "header": "Scenario,Log Version,Gender,Entity,Danger Score"
+ },
+ {
+  "file": "a16_paranormal-phenomena-enc",
+  "bytes": 4313,
+  "lines": 20,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_parent-cheat-scenarios-enc",
+  "bytes": 8946,
+  "lines": 37,
+  "header": "Scenario,Log Version,Parent Gender,Parent Might Notice,Hero Min Age,Hero Max Age"
+ },
+ {
+  "file": "a16_parent-lover-disapprovals-enc",
+  "bytes": 12987,
+  "lines": 93,
+  "header": "Scenario,Log Version,Single Parents Only,Both Parents Only,Different Ethnicity,Min Years Younger,Min Years Older,Min Smarts,Max Smarts,Max Looks,Min Craziness,I"
+ },
+ {
+  "file": "a16_part-time-jobs-enc",
+  "bytes": 5510,
+  "lines": 83,
+  "header": "Job,Company Type,Min Hourly Rate,Max Hourly Rate,Commonness Score,Tiring Score,Gender,Min Age,Max Age,Requires Driving License,Requires Vehicle,Requires Clear C"
+ },
+ {
+  "file": "a16_pastimes-enc",
+  "bytes": 8234,
+  "lines": 272,
+  "header": "Pastime,Holiday"
+ },
+ {
+  "file": "a16_pet-death-types-enc",
+  "bytes": 48405,
+  "lines": 488,
+  "header": "Animal,Type,Commonness Score,Other Person Involved,Sentence"
+ },
+ {
+  "file": "a16_pet-discipline-enc",
+  "bytes": 58050,
+  "lines": 345,
+  "header": "Condition,Animal,Scenario,Log Version,Craziness Score,Pet Gender,Pet Talks,Hero Gender,Hero Min Age,Hero Max Age,Clean"
+ },
+ {
+  "file": "a16_pet-disease-types-enc",
+  "bytes": 4221,
+  "lines": 120,
+  "header": "Animal,Disease,Uses Indefinite Article,Uses Definite Article,Commonness Score,Cures Organically Score,Can Be Fatal,Health Impact Score,Treatment Effectiveness S"
+ },
+ {
+  "file": "a16_pet-found-dead-scenarios-enc",
+  "bytes": 947,
+  "lines": 11,
+  "header": "Scenario"
+ },
+ {
+  "file": "a16_pet-names-enc",
+  "bytes": 30842,
+  "lines": 1484,
+  "header": "Animal,Name,Color,Gender"
+ },
+ {
+  "file": "a16_pet-pastimes-enc",
+  "bytes": 21261,
+  "lines": 445,
+  "header": "Animal,Pastime"
+ },
+ {
+  "file": "a16_pet-release-filler-enc",
+  "bytes": 19206,
+  "lines": 104,
+  "header": "Animal,String,Gender,Big Animal,Clean"
+ },
+ {
+  "file": "a16_pet-releases-enc",
+  "bytes": 20445,
+  "lines": 183,
+  "header": "Animal,Scenario"
+ },
+ {
+  "file": "a16_pet-treats-enc",
+  "bytes": 11775,
+  "lines": 490,
+  "header": "Animal,Treat,Enjoyment Score"
+ },
+ {
+  "file": "a16_pets-enc",
+  "bytes": 11196,
+  "lines": 136,
+  "header": "Animal,Emoji,Breed,Pure Bred,Wild,Exotic,Black Market,Colors,Average Lifespan,Obedience Score,Intelligence Score,Danger Score,Cost Score,Commonness Score"
+ },
+ {
+  "file": "a16_plastic-surgeries-enc",
+  "bytes": 736,
+  "lines": 12,
+  "header": "Procedure,Description,Uses Indefinite Article,Append Surgery,Gender,Max Surgeries,Cost,Optimal Age,Success Likeliness Score,Danger Score,Appearance Improvement "
+ },
+ {
+  "file": "a16_podcast-dumb-enc",
+  "bytes": 90694,
+  "lines": 111,
+  "header": "Index,Crazy?,Hero Min Age,Hero Max Age,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Popularity,Max Popularity,Genre,Content Type,Title,Body,"
+ },
+ {
+  "file": "a16_podcast-episode-title-enc",
+  "bytes": 5563,
+  "lines": 122,
+  "header": "Name,Genre"
+ },
+ {
+  "file": "a16_podcast-genre-enc",
+  "bytes": 195,
+  "lines": 13,
+  "header": "Genre,Popularity Score"
+ },
+ {
+  "file": "a16_podcast-subgenre-enc",
+  "bytes": 1113,
+  "lines": 44,
+  "header": "Subgenre,Genre"
+ },
+ {
+  "file": "a16_podcast-title-enc",
+  "bytes": 8564,
+  "lines": 185,
+  "header": "Name,Genre"
+ },
+ {
+  "file": "a16_political-bribes-enc",
+  "bytes": 8745,
+  "lines": 32,
+  "header": "Scenario,Log Version,Min Amount,Max Amount,National,Regional,City,Local"
+ },
+ {
+  "file": "a16_political-headlines-enc",
+  "bytes": 13899,
+  "lines": 197,
+  "header": "Issue,Headline,War"
+ },
+ {
+  "file": "a16_political-laws-enc",
+  "bytes": 5601,
+  "lines": 88,
+  "header": "Index,Law,Approval Impact"
+ },
+ {
+  "file": "a16_political-parties-enc",
+  "bytes": 288,
+  "lines": 8,
+  "header": "Name,US Name,UK Name,AU Name,Appeal Score,Commonness Score,National,Regional,City,Local"
+ },
+ {
+  "file": "a16_political-rumors-enc",
+  "bytes": 11575,
+  "lines": 91,
+  "header": "Outbound,Inbound Scenario,Inbound Log Version"
+ },
+ {
+  "file": "a16_pray-asset-scenarios-enc",
+  "bytes": 1449,
+  "lines": 7,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_pray-feedback-enc",
+  "bytes": 2422,
+  "lines": 22,
+  "header": "Log,Pray,Curse,Commonness Score"
+ },
+ {
+  "file": "a16_pray-wealth-scenarios-enc",
+  "bytes": 3904,
+  "lines": 21,
+  "header": "Scenario,Log Version,Positive,Negative,Commonness Score"
+ },
+ {
+  "file": "a16_prison-bully-inbound-scenarios-enc",
+  "bytes": 11870,
+  "lines": 49,
+  "header": "Scenario,Log Version,Gender,Bully Action,Hero Action"
+ },
+ {
+  "file": "a16_prison-bully-outbound-scenarios-enc",
+  "bytes": 8652,
+  "lines": 43,
+  "header": "Scenario,Log Version,Gender,Will Do,Will Let"
+ },
+ {
+  "file": "a16_prison-gangs-enc",
+  "bytes": 1291,
+  "lines": 11,
+  "header": "Gang Index,Male Name,Female Name,Type,Description,Short Description,Power,Violence,Required Respect"
+ },
+ {
+  "file": "a16_prison-gifts-enc",
+  "bytes": 3807,
+  "lines": 65,
+  "header": "Name,Short Name,Use Some Article,Is Plural,From Lover Only,Crazy Gift,Negative Gift,Gender,Confiscate Score,Min Age"
+ },
+ {
+  "file": "a16_prison-jobs-enc",
+  "bytes": 1531,
+  "lines": 39,
+  "header": "Job,Description,Daily Rate,Commonness Score"
+ },
+ {
+  "file": "a16_prison-letters-enc",
+  "bytes": 3659,
+  "lines": 61,
+  "header": "Audience,Topic,Min Relationship Strength,Max Relationship Strength"
+ },
+ {
+  "file": "a16_prison-nicknames-enc",
+  "bytes": 3953,
+  "lines": 280,
+  "header": "Nickname,Gender,Is Prefix"
+ },
+ {
+  "file": "a16_prison-parole-questions-enc",
+  "bytes": 6221,
+  "lines": 11,
+  "header": "Commonness,Question,CTA,Choice 1,Choice 1 Score,Choice 2,Choice 2 Score,Choice 3,Choice 3 Score,Choice 4,Choice 4 Score,Choice 5,Choice 5 Score,Choice 6,Choice "
+ },
+ {
+  "file": "a16_prisoner-crimes-enc",
+  "bytes": 3340,
+  "lines": 139,
+  "header": "Crime,Seriousness Score,Is Violent,Commonness Score"
+ },
+ {
+  "file": "a16_prisoner-juvenile-crimes-enc",
+  "bytes": 2233,
+  "lines": 87,
+  "header": "Crime,Seriousness Score,Is Violent,Commonness Score"
+ },
+ {
+  "file": "a16_proposal-settings-enc",
+  "bytes": 2966,
+  "lines": 81,
+  "header": "Place,Snippet,Cost Score,Romance Score,Min Age"
+ },
+ {
+  "file": "a16_public-places-enc",
+  "bytes": 3469,
+  "lines": 224,
+  "header": "Place,Min Age"
+ },
+ {
+  "file": "a16_racing-bad-mechanic-color-enc",
+  "bytes": 3515,
+  "lines": 27,
+  "header": "String,Single Car Part,Plural Car Part,Commonness Score"
+ },
+ {
+  "file": "a16_racing-car-class-stat-enc",
+  "bytes": 223,
+  "lines": 5,
+  "header": "Class,Min Base Handling,Max Base Handling,Min Base Speed,Max Base Speed,Min Base Acceleration,Max Base Acceleration,Customization Slots"
+ },
+ {
+  "file": "a16_racing-car-class-stats-enc",
+  "bytes": 227,
+  "lines": 5,
+  "header": "Class,Min Base Handling,Max Base Handling,Min Base Speed,Max Base Speed,Min Base Acceleration,Max Base Acceleration,Customization Slots"
+ },
+ {
+  "file": "a16_racing-cup-name-enc",
+  "bytes": 1793,
+  "lines": 90,
+  "header": "Name,Racing Category,Commonness Score"
+ },
+ {
+  "file": "a16_racing-cup-series-winning-enc",
+  "bytes": 365,
+  "lines": 4,
+  "header": "Cup Type,Min Bronze Winnings,Max Bronze Winnings,Min Silver Winnings,Max Silver Winnings,Min Gold Winnings,Max Gold Winnings,Min Platinum Winnings,Max Platinum "
+ },
+ {
+  "file": "a16_racing-drive-dumb-scenario-enc",
+  "bytes": 29274,
+  "lines": 39,
+  "header": "Hero Min Age,Hero Max Age,Requires Passenger,Passenger Type,Gender Bracket,Destination,Title,Scenario,CTA,Choice 1,Narrative 1,Vehicle Condition Impact 1,Karma "
+ },
+ {
+  "file": "a16_racing-drive-police-pull-over-color-enc",
+  "bytes": 2441,
+  "lines": 21,
+  "header": "Scenario,Hero Too Slow,Hero Too Fast,Min Professionalism,Max Professionalism,Hero Gender"
+ },
+ {
+  "file": "a16_racing-drive-police-warning-enc",
+  "bytes": 2387,
+  "lines": 14,
+  "header": "Feedback String,Log Version,Hero Going Too Slow,Hero Going Too Fast"
+ },
+ {
+  "file": "a16_racing-drive-traffic-incident-enc",
+  "bytes": 23064,
+  "lines": 35,
+  "header": "Hero Min Age,Hero Max Age,Requires Passenger,Passenger Type,Gender Bracket,Scenario,CTA,Choice 1,Narrative 1,Risk Score 1,Fault Score 1,Choice 2,Narrative 2,Ris"
+ },
+ {
+  "file": "a16_racing-driving-parameter-enc",
+  "bytes": 1217,
+  "lines": 103,
+  "header": "Country,Uses MPH,Right-Handed Side Driving"
+ },
+ {
+  "file": "a16_racing-fan-encouragement-string-enc",
+  "bytes": 2809,
+  "lines": 24,
+  "header": "String,Racing Category Referenced,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_racing-lose-race-outcome-feedback-color-enc",
+  "bytes": 504,
+  "lines": 5,
+  "header": "String,Race Type,Race Level,Other Racer Involved,Rival Racer Involved,Min Racer Craziness,Max Racer Craziness,Commonness Score"
+ },
+ {
+  "file": "a16_racing-pink-slip-refusal-string-enc",
+  "bytes": 2493,
+  "lines": 22,
+  "header": "String,Reason,Commonness Score"
+ },
+ {
+  "file": "a16_racing-pit-crew-name-enc",
+  "bytes": 207,
+  "lines": 5,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_racing-practice-run-feedback-enc",
+  "bytes": 1973,
+  "lines": 21,
+  "header": "String,Best Vehicle Stat,Commonness Score"
+ },
+ {
+  "file": "a16_racing-race-car-condition-string-enc",
+  "bytes": 2513,
+  "lines": 27,
+  "header": "String,Min Condition,Max Condition"
+ },
+ {
+  "file": "a16_racing-race-car-garage-street-name-enc",
+  "bytes": 1355,
+  "lines": 77,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_racing-race-car-mod-enc",
+  "bytes": 2454,
+  "lines": 20,
+  "header": "Feature,Plural,Short Name,Descriptive String,Cost,Handling Value Influence,Speed Value Influence,Acceleration Value Influence,Durability Influence,Most Influenc"
+ },
+ {
+  "file": "a16_racing-race-pivotal-moment-enc",
+  "bytes": 39839,
+  "lines": 27,
+  "header": "Race Type,Gender Bracket,Body,CTA,Choice 1,Choice 1 Stat,Success Feedback 1,Success Narrative 1,Failure Feedback 1,Failure Narrative 1,Choice 2,Choice 2 Stat,Su"
+ },
+ {
+  "file": "a16_racing-race-sponsor-enc",
+  "bytes": 2860,
+  "lines": 62,
+  "header": "Name,Use Definite Article,Sponsor Type,Money Score,Commonness Score"
+ },
+ {
+  "file": "a16_racing-race-track-enc",
+  "bytes": 1676,
+  "lines": 19,
+  "header": "Track Type,Index Number,Track Name,Baseline Laps,Difficulty,Unlock Rank,Recommended Stat,Dev Time,Goal 1,Goal 2,Goal 3,Min Winnings,Max Winnings"
+ },
+ {
+  "file": "a16_racing-racer-insult-enc",
+  "bytes": 1366,
+  "lines": 53,
+  "header": "Insult,Gender"
+ },
+ {
+  "file": "a16_racing-racer-love-interest-string-enc",
+  "bytes": 6280,
+  "lines": 55,
+  "header": "String,Love Interest Gender,Love Interest Min Age,Love Interest Max Age,Hero Gender,Hero Min Age,Hero Max Age"
+ },
+ {
+  "file": "a16_racing-racer-name-enc",
+  "bytes": 3385,
+  "lines": 134,
+  "header": "First Name,Last Name,Gender,Racer Type"
+ },
+ {
+  "file": "a16_racing-racer-sabotage-method-enc",
+  "bytes": 5127,
+  "lines": 20,
+  "header": "Method,Success Feedback,Success Log Version,Target Discovers Hero Snippet,News Report String,Risk Score,Danger Score,Commonness Score"
+ },
+ {
+  "file": "a16_racing-racing-fan-interaction-enc",
+  "bytes": 9356,
+  "lines": 29,
+  "header": "Scenario,Feedback Version Snippet,Log Version Snippet,Is Positive,Fan Gender,Fan Min Age,Fan Max Age,Hero Gender"
+ },
+ {
+  "file": "a16_racing-racing-jacket-enc",
+  "bytes": 661,
+  "lines": 11,
+  "header": "Name,List Item Name,Min Value,Max Value,Can Be Refurbished,Appreciates,Commonness Score"
+ },
+ {
+  "file": "a16_racing-rival-sabotage-string-enc",
+  "bytes": 5978,
+  "lines": 34,
+  "header": "String,Feedback Version,Narrative Version,Vehicle Condition Impact,Will Impair Vehicle,Damaged Part,Min Rival Craziness,Max Rival Craziness"
+ },
+ {
+  "file": "a16_racing-street-race-cop-pivotal-moment-enc",
+  "bytes": 20517,
+  "lines": 14,
+  "header": "Gender Bracket,Body,CTA,Choice 1,Choice 1 Stat,Success Feedback 1,Success Narrative 1,Failure Feedback 1,Failure Narrative 1,Choice 2,Choice 2 Stat,Success Feed"
+ },
+ {
+  "file": "a16_racing-street-race-sponsor-enc",
+  "bytes": 995,
+  "lines": 37,
+  "header": "Name,Use Definite Article,Money Score,Commonness Score"
+ },
+ {
+  "file": "a16_racing-win-race-outcome-feedback-color-enc",
+  "bytes": 5270,
+  "lines": 35,
+  "header": "String,Race Type,Race Level,Other Racer Involved,Rival Racer Involved,Min Racer Craziness,Max Racer Craziness,Commonness Score"
+ },
+ {
+  "file": "a16_relationship-counseling-scenarios-enc",
+  "bytes": 12666,
+  "lines": 54,
+  "header": "Feedback,Log Version,Max Relationship,Hero Addiction,Hero Disease,Multiple Children,Min Age,Max Age,Effectiveness Score"
+ },
+ {
+  "file": "a16_royal-celebrity-interaction-scenarios-enc",
+  "bytes": 12105,
+  "lines": 60,
+  "header": "List Item,Scenario,Past Tense Snippet,Present Tense Snippet,Hero Min Age,Hero Max Age,Hero Gender,Enjoyment Score,Respect Impact"
+ },
+ {
+  "file": "a16_royal-commoner-negative-scenarios-enc",
+  "bytes": 10207,
+  "lines": 35,
+  "header": "Scenario,Feedback Snippet,Log Version Snippet,Commoner Gender,Hero Gender,Hero Min Age,Hero Max Age,Hero Has Lover,Max Respect,Is Highest Ranking Royal,Is Not H"
+ },
+ {
+  "file": "a16_royal-commoner-positive-scenarios-enc",
+  "bytes": 8240,
+  "lines": 29,
+  "header": "Scenario,Feedback Snippet,Log Version Snippet,Commoner Gender,Hero Gender,Hero Min Age,Hero Max Age,Min Respect,Is Highest Ranking Royal,Is Not Highest Ranking "
+ },
+ {
+  "file": "a16_royal-executions-enc",
+  "bytes": 6639,
+  "lines": 34,
+  "header": "Method,Scenario,Log Version,Hero Scenario,Death Snippet,Pain Score"
+ },
+ {
+  "file": "a16_royal-house-names-enc",
+  "bytes": 4772,
+  "lines": 160,
+  "header": "Name,Estate,Palace,Castle,Country Code,Commonness Score"
+ },
+ {
+  "file": "a16_royal-public-disservice-scenarios-enc",
+  "bytes": 9146,
+  "lines": 30,
+  "header": "Scenario,Log Version,Public Outrage Snippet,Is Highest Ranking Royal,Respect Impact"
+ },
+ {
+  "file": "a16_royal-public-service-scenarios-enc",
+  "bytes": 5936,
+  "lines": 29,
+  "header": "Scenario,Log Version,Respect Impact"
+ },
+ {
+  "file": "a16_royal-punishments-enc",
+  "bytes": 1706,
+  "lines": 45,
+  "header": "Snippet,UK Only,Japan Only,Arab Only"
+ },
+ {
+  "file": "a16_royal-rewards-enc",
+  "bytes": 1790,
+  "lines": 38,
+  "header": "Snippet,UK Only,Japan Only,Arab Only"
+ },
+ {
+  "file": "a16_royal-school-negative-scenarios-enc",
+  "bytes": 12648,
+  "lines": 55,
+  "header": "Teacher,Classmate,Scenario,Feedback Snippet,Log Version Snippet,Person Gender,Hero Gender,Hero Min Age,Hero Max Age,Hero Has Lover,Is Highest Ranking Royal,Is N"
+ },
+ {
+  "file": "a16_royal-school-positive-scenarios-enc",
+  "bytes": 8617,
+  "lines": 38,
+  "header": "Teacher,Classmate,Scenario,Feedback Snippet,Log Version Snippet,Person Gender,Hero Gender,Hero Min Age,Hero Max Age,Is Highest Ranking Royal,Is Not Highest Rank"
+ },
+ {
+  "file": "a16_royal-tabloid-scenarios-enc",
+  "bytes": 10915,
+  "lines": 39,
+  "header": "Scenario,Log Version,Min Respect,Max Respect,Hero Gender,Is Highest Ranking Royal,Min Age,Max Age,UK Only,Japan Only"
+ },
+ {
+  "file": "a16_school-act-up-scenarios-enc",
+  "bytes": 23063,
+  "lines": 58,
+  "header": "Type,Feedback Scenario,Log Version,Third Person,Seriousness Score,Elementary School,High School,College"
+ },
+ {
+  "file": "a16_school-activities-enc",
+  "bytes": 14515,
+  "lines": 116,
+  "header": "Index,Activity,Type,Uses Definite Article,Proper Noun,Leader Title,Other Officers,Reference Noun,Track Performance,Commonness,Gender,Specific Countries,Weekly H"
+ },
+ {
+  "file": "a16_school-classmate-flirt-scenarios-enc",
+  "bytes": 6305,
+  "lines": 23,
+  "header": "Feedback Scenario,Log Version,Hero Min Age,Hero Max Age,Classmate Gender,Clean"
+ },
+ {
+  "file": "a16_school-classmate-mess-scenarios-enc",
+  "bytes": 6594,
+  "lines": 24,
+  "header": "Feedback Scenario,Log Version,Hero Min Age,Hero Max Age,Classmate Gender,Clean"
+ },
+ {
+  "file": "a16_school-cliques-enc",
+  "bytes": 3024,
+  "lines": 19,
+  "header": "Index,Clique,Popularity,Aggression,Description,Short Description,Requires Nerd Activity,Requires Sports Activity,Requires Band Activity,Requires Acting Activity"
+ },
+ {
+  "file": "a16_school-frat-questions-enc",
+  "bytes": 5259,
+  "lines": 51,
+  "header": "Question,Choice 1,Choice 1 Score,Choice 2,Choice 2 Score,Choice 3,Choice 3 Score,Choice 4,Choice 4 Score"
+ },
+ {
+  "file": "a16_school-frats-enc",
+  "bytes": 4221,
+  "lines": 51,
+  "header": "Index,Organization,Gender,Letters,Min Smarts,Min Looks,Min Popularity,Popularity Score,Nickname,Motto"
+ },
+ {
+  "file": "a16_school-principal-warnings-enc",
+  "bytes": 2433,
+  "lines": 36,
+  "header": "Warning"
+ },
+ {
+  "file": "a16_school-teacher-call-outs-enc",
+  "bytes": 8668,
+  "lines": 42,
+  "header": "Type,Feedback Scenario,Log Version,Elementary School,High School,College,Inappropriateness Score"
+ },
+ {
+  "file": "a16_school-teacher-disrespects-enc",
+  "bytes": 9441,
+  "lines": 49,
+  "header": "Type,Feedback Scenario,Log Version,Elementary School,High School,College"
+ },
+ {
+  "file": "a16_school-teacher-suckups-enc",
+  "bytes": 8137,
+  "lines": 55,
+  "header": "Feedback Scenario,Log Version,Elementary School,High School,College,Flirt Scenario,Administrator Only,Teacher Only"
+ },
+ {
+  "file": "a16_secret-agent-agency-front-color-enc",
+  "bytes": 1317,
+  "lines": 20,
+  "header": "Snippet,Fronts,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-agency-front-names-enc",
+  "bytes": 2927,
+  "lines": 17,
+  "header": "Business Type,Format,Prefix,Suffix"
+ },
+ {
+  "file": "a16_secret-agent-agency-fronts-enc",
+  "bytes": 565,
+  "lines": 17,
+  "header": "Type,Min Agent Capacity,Max Agent Capacity,Min Security Slots,Max Security Slots,Min Location Score,Max Location Score,Commonness Score,Starter Front"
+ },
+ {
+  "file": "a16_secret-agent-agency-gadgets-enc",
+  "bytes": 1896,
+  "lines": 17,
+  "header": "Name,Specialization,Description,Uses,Plural,Min Cost,Max Cost,Gadget Level"
+ },
+ {
+  "file": "a16_secret-agent-agency-street-names-enc",
+  "bytes": 585,
+  "lines": 35,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-assassination-body-disposal-locations-enc",
+  "bytes": 236,
+  "lines": 8,
+  "header": "Location,Feedback Snippet"
+ },
+ {
+  "file": "a16_secret-agent-assassination-body-disposal-methods-enc",
+  "bytes": 393,
+  "lines": 8,
+  "header": "Method,Feedback Snippet"
+ },
+ {
+  "file": "a16_secret-agent-assassination-client-reasons-enc",
+  "bytes": 1586,
+  "lines": 23,
+  "header": "Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-assassination-locations-enc",
+  "bytes": 150,
+  "lines": 11,
+  "header": "Location,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-assassination-methods-enc",
+  "bytes": 2701,
+  "lines": 12,
+  "header": "Method,Effectiveness Score,Retaliation Likeliness Score,Get Caught Likeliness Score,Success String,Failure String,Retaliatory String,Brackets used"
+ },
+ {
+  "file": "a16_secret-agent-assassination-mission-methods-enc",
+  "bytes": 1555,
+  "lines": 13,
+  "header": "Method,Effectiveness Score,Risk Score,Success Snippet,Failure Snippet"
+ },
+ {
+  "file": "a16_secret-agent-assassination-target-activities-enc",
+  "bytes": 3113,
+  "lines": 56,
+  "header": "Snippet,Location,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-assassination-target-opportunity-snippets-enc",
+  "bytes": 610,
+  "lines": 18,
+  "header": "Snippet,Opportunity Score"
+ },
+ {
+  "file": "a16_secret-agent-client-mission-terminated-color-enc",
+  "bytes": 2570,
+  "lines": 21,
+  "header": "Snippet,Mission Type,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-code-names-enc",
+  "bytes": 1108,
+  "lines": 79,
+  "header": "Code Name,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-distraction-people-activities-enc",
+  "bytes": 1239,
+  "lines": 20,
+  "header": "Snippet,Distraction Person Gender,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-distraction-random-people-enc",
+  "bytes": 622,
+  "lines": 18,
+  "header": "Person,Gender,Threat Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-gadget-negative-snippet-enc",
+  "bytes": 5780,
+  "lines": 49,
+  "header": "Gadget,Negative Snippet,Incorrect Mission Type"
+ },
+ {
+  "file": "a16_secret-agent-gadget-positive-snippet-enc",
+  "bytes": 1422,
+  "lines": 17,
+  "header": "Gadget,Snippet,Mission Type"
+ },
+ {
+  "file": "a16_secret-agent-hack-drive-names-enc",
+  "bytes": 670,
+  "lines": 62,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-hack-mission-briefing-color-enc",
+  "bytes": 4118,
+  "lines": 35,
+  "header": "Snippet,File Type,Client Type,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-hack-mission-file-color-enc",
+  "bytes": 7840,
+  "lines": 50,
+  "header": "File Type,Snippet,Client Type,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-hack-mission-file-name-enc",
+  "bytes": 2283,
+  "lines": 101,
+  "header": "Name,File Type,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-agent-approach-style-enc",
+  "bytes": 164,
+  "lines": 9,
+  "header": "Approach,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-agent-disguises-enc",
+  "bytes": 3114,
+  "lines": 106,
+  "header": "Disguise,Gender,Persona Tags"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-approach-color-enc",
+  "bytes": 2186,
+  "lines": 49,
+  "header": "Snippet,Compatible Approach Styles,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-date-locations-enc",
+  "bytes": 2519,
+  "lines": 85,
+  "header": "Date Location,Favorite Hobby,Enjoyment Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-meeting-locations-enc",
+  "bytes": 150,
+  "lines": 10,
+  "header": "Location,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-meeting-scenario-color-enc",
+  "bytes": 3914,
+  "lines": 37,
+  "header": "Snippet,Location,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-misssion-briefing-color-enc",
+  "bytes": 1494,
+  "lines": 22,
+  "header": "Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-sting-actions-enc",
+  "bytes": 1885,
+  "lines": 34,
+  "header": "String,Feedback Version,Associated Fetish,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-sting-locations-enc",
+  "bytes": 941,
+  "lines": 21,
+  "header": "String,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-target-hobbies-enc",
+  "bytes": 182,
+  "lines": 14,
+  "header": "Hobby,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-honeypot-target-preferences-enc",
+  "bytes": 400,
+  "lines": 19,
+  "header": "Preference,Persona,Fetish,Turn-On Commonness,Turn-Off Commonness"
+ },
+ {
+  "file": "a16_secret-agent-infiltration-passwords-enc",
+  "bytes": 5284,
+  "lines": 37,
+  "header": "Password,Hints,Incorrect Choices,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-missing-agent-reveal-snippet-enc",
+  "bytes": 1984,
+  "lines": 19,
+  "header": "Snippet,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-mission-code-names-enc",
+  "bytes": 1015,
+  "lines": 48,
+  "header": "Adjectives,Adjective Commonness Score,Nouns,Noun Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-mission-summary-feedback-enc",
+  "bytes": 2995,
+  "lines": 21,
+  "header": "String,Mission Type,Success Result,Failure Result,Min Agent Proficiency,Max Agent Proficiency"
+ },
+ {
+  "file": "a16_secret-agent-mission-target-people-enc",
+  "bytes": 2717,
+  "lines": 56,
+  "header": "ID,Target,Target Gender,Use Indefinite Article,Use Definite Article,Stealth,Assassination,Honeypot,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-potential-agent-background-check-color-enc",
+  "bytes": 3714,
+  "lines": 31,
+  "header": "Snippet,Specialization,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-potential-agent-careers-enc",
+  "bytes": 1946,
+  "lines": 83,
+  "header": "Occupation,Gender,Min Potential,Max Potential,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-potential-agent-color-enc",
+  "bytes": 6630,
+  "lines": 38,
+  "header": "String,Specialization,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-random-hero-agency-names-enc",
+  "bytes": 1030,
+  "lines": 44,
+  "header": "Name,Commonness Score,,"
+ },
+ {
+  "file": "a16_secret-agent-resignation-reasons-enc",
+  "bytes": 1392,
+  "lines": 15,
+  "header": "Snippet,Gender,Min Proficiency,Max Proficiency,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-rival-agency-names-enc",
+  "bytes": 1424,
+  "lines": 35,
+  "header": "Abbreviation,Name,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-security-features-enc",
+  "bytes": 1511,
+  "lines": 14,
+  "header": "Security Feature,Function,Descriptive Snippet,Plural,Min Cost,Max Cost,Cover Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-snoop-person-activity-enc",
+  "bytes": 1778,
+  "lines": 16,
+  "header": "Snippet,Gender,Min Cover,Max Cover"
+ },
+ {
+  "file": "a16_secret-agent-spy-on-person-intel-enc",
+  "bytes": 2630,
+  "lines": 38,
+  "header": "Snippet,Target Gender,Target Min Craziness,Target Max Craziness"
+ },
+ {
+  "file": "a16_secret-agent-stealth-alarm-color-enc",
+  "bytes": 1282,
+  "lines": 11,
+  "header": "Door Color,Correct Wire Colors,Incorrect Wire Colors"
+ },
+ {
+  "file": "a16_secret-agent-stealth-cover-encounters-enc",
+  "bytes": 689,
+  "lines": 31,
+  "header": "Hostile Entity,Threat Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-cover-hiding-place-enc",
+  "bytes": 584,
+  "lines": 21,
+  "header": "Hiding Place,Effectiveness Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-door-noises-enc",
+  "bytes": 4447,
+  "lines": 18,
+  "header": "Snippet,Positive Outcome Snippet,Negative Outcome Snippet,Threat Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-item-targets-enc",
+  "bytes": 762,
+  "lines": 21,
+  "header": "Target,Plural,Verbs,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-mission-locations-enc",
+  "bytes": 1422,
+  "lines": 31,
+  "header": "ID,Location,Uses Definite Article,Uses Indefinite Article,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-mission-obstacles-enc",
+  "bytes": 861,
+  "lines": 41,
+  "header": "Person,Gender,Threat Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-obstacle-assassinations-enc",
+  "bytes": 313,
+  "lines": 12,
+  "header": "Fail Verb,Success Verb,Effectiveness Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-stealth-obstacle-stories-enc",
+  "bytes": 3332,
+  "lines": 30,
+  "header": "Snippet,Effectiveness Score,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-train-scenarios-enc",
+  "bytes": 8153,
+  "lines": 31,
+  "header": "Specialization,Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_secret-agent-warn-agent-retorts-enc",
+  "bytes": 2628,
+  "lines": 22,
+  "header": "Scenario,Min Proficiency,Max Proficiency"
+ },
+ {
+  "file": "a16_secret-agent-warnings-enc",
+  "bytes": 2491,
+  "lines": 21,
+  "header": "Scenario,Risk Score,Commonness Score"
+ },
+ {
+  "file": "a16_sexuality-scenarios-enc",
+  "bytes": 19913,
+  "lines": 103,
+  "header": "Scenario,Log Version,Gender,Sexuality,Min Age,Max Age,Student,Classmate Gender,Teacher Gender,Friend Gender,Friend Min Age,Friend Max Age,Both Parents Alive"
+ },
+ {
+  "file": "a16_sexy-text-items-enc",
+  "bytes": 1774,
+  "lines": 45,
+  "header": "Item,Gender,Clean"
+ },
+ {
+  "file": "a16_sibling-arguments-enc",
+  "bytes": 14136,
+  "lines": 192,
+  "header": "Condition,Topic,Hero Gender,Hero Min Age,Hero Max Age,Sibling Gender,Sibling Min Age,Sibling Max Age,Controversy Score ,Clean"
+ },
+ {
+  "file": "a16_social-media-channels-enc",
+  "bytes": 831,
+  "lines": 8,
+  "header": "Channel,Likes Coefficient,Followers Coefficient,Promotion Followers Coefficient,Promotion Monetization Coefficient,Post Type,Post Verb,Post Description Present,"
+ },
+ {
+  "file": "a16_social-media-channels-of-collabstrings-enc",
+  "bytes": 3421,
+  "lines": 48,
+  "header": "String,Engagement Score,Virality,Controversy Score,Commonness Score"
+ },
+ {
+  "file": "a16_social-media-channels-onlyfans-tip-responses-enc",
+  "bytes": 5706,
+  "lines": 8,
+  "header": "Option,Snippet,Log Version,Appeal Score"
+ },
+ {
+  "file": "a16_social-media-hacks-enc",
+  "bytes": 8111,
+  "lines": 27,
+  "header": "Scenario,Log Version,Damage Score,Both Parents Alive,Has Lover,Facebook,Instagram,TikTok,Twitter,YouTube,Twitch"
+ },
+ {
+  "file": "a16_social-media-post-types-enc",
+  "bytes": 25287,
+  "lines": 54,
+  "header": "Post Type,Scenario,Log Version,Add Video,Appeal Score,Impacted by Looks,Impacted by Smarts,Viral Score,Facebook,Instagram,TikTok,Twitter,YouTube,Twitch,OnlyFans"
+ },
+ {
+  "file": "a16_social-media-promotion-products-enc",
+  "bytes": 6860,
+  "lines": 149,
+  "header": "Product,Description,Compensation Score,Min Age,Appeal Score,Twitch Exempt"
+ },
+ {
+  "file": "a16_social-media-troll-inbounds-enc",
+  "bytes": 7019,
+  "lines": 29,
+  "header": "Scenario,Log Version,Is Reply,Twitch Exempt,Twitch Only"
+ },
+ {
+  "file": "a16_social-media-troll-outbounds-enc",
+  "bytes": 9172,
+  "lines": 39,
+  "header": "Scenario,Log Version,Is BitLifeApp,Twitch Exempt,Twitch Only"
+ },
+ {
+  "file": "a16_special-talent-filler-enc",
+  "bytes": 11227,
+  "lines": 74,
+  "header": "Special Talent,String,Hero Gender,Hero Min Age,Hero Max Age,Both Parents Alive"
+ },
+ {
+  "file": "a16_sports-awards-enc",
+  "bytes": 6550,
+  "lines": 67,
+  "header": "League,Sport,Award,Add Award,Description Snippet,Position,Requires Championship,Requires Top 5 Finish,Performance Increase Award,Min Seasons,Max Seasons,Min Gre"
+ },
+ {
+  "file": "a16_sports-coach-scenarios-enc",
+  "bytes": 20440,
+  "lines": 94,
+  "header": "Positive,Negative,Scenario,Log Version,Hero Gender,Min Fitness,Max Fitness,Min Greatness,Max Greatness,Soccer,Basketball,Football,Baseball,Hockey,Rugby,Volleyba"
+ },
+ {
+  "file": "a16_sports-enc",
+  "bytes": 1002,
+  "lines": 8,
+  "header": "Sport,Fame Score,Season Games,Tie Odds,Max Win Percent,Min Age,Records Include Ties,Has Draft,Draft Rounds,Male Draft League,Female Draft League,Male Min Salary"
+ },
+ {
+  "file": "a16_sports-fan-interaction-scenarios-enc",
+  "bytes": 19846,
+  "lines": 57,
+  "header": "Positive,Negative,Scenario,Feedback Snippet,Log Version Snippet,Fan Gender,Fan Age,Hero Gender,Min Greatness,Max Greatness,Hero Min Age,Hero Max Age,Min Respect"
+ },
+ {
+  "file": "a16_sports-injuries-enc",
+  "bytes": 9930,
+  "lines": 93,
+  "header": "Index,Type,Uses Indefinite Article,Feedback Snippet,Log Version Snippet,Gender,Seriousness Score,Duration Score,Rehab Score,Pain Score,Is Debilitating,Can Heal "
+ },
+ {
+  "file": "a16_sports-leagues-enc",
+  "bytes": 1243,
+  "lines": 16,
+  "header": "Index,Sport,Gender,Name,Description,Country Code,Money Score,Hall of Fame"
+ },
+ {
+  "file": "a16_sports-pivotal-moment-scenarios-enc",
+  "bytes": 70820,
+  "lines": 39,
+  "header": "Soccer,Basketball,Football,Baseball,Hockey,Rugby,Volleyball,Position,Body,CTA,Choice 1,Success Odds 1,Success Feedback 1,Success Narrative 1,Success Respect Imp"
+ },
+ {
+  "file": "a16_sports-positions-enc",
+  "bytes": 7419,
+  "lines": 48,
+  "header": "Index,Sport,Position,Money Score,Fame Score,Max Age,Num in Team,Num in Squad,Tier 1 Stats,Tier 2 Stats,Tier 3 Stats,Skills"
+ },
+ {
+  "file": "a16_sports-practice-scenarios-enc",
+  "bytes": 41154,
+  "lines": 172,
+  "header": "Scenario,Log Version,Soccer Skills,Basketball Skills,Football Skills,Baseball Skills,Hockey Skills,Rugby Skills,Volleyball Skills,Skill Impact,Injury Score"
+ },
+ {
+  "file": "a16_sports-stats-enc",
+  "bytes": 3614,
+  "lines": 47,
+  "header": "Sport,Stat,Integer Digits,Fraction Digits,Skills,Percentile 1,Percentile 10,Percentile 20,Percentile 30,Percentile 40,Percentile 50,Percentile 60,Percentile 70,"
+ },
+ {
+  "file": "a16_sports-teams-enc",
+  "bytes": 29382,
+  "lines": 314,
+  "header": "Index,Sport,Gender,League Index,Name,Country Code,Nearest City,Uses Definite Article,Color Primary,Color Secondary,Legacy Score,Money Score"
+ },
+ {
+  "file": "a16_sports-training-scenarios-enc",
+  "bytes": 11661,
+  "lines": 66,
+  "header": "Scenario,Log Version,Balance,Endurance,Flexibility,Strength,Fitness Impact,Injury Score"
+ },
+ {
+  "file": "a16_sports-trash-talk-scenarios-enc",
+  "bytes": 18389,
+  "lines": 50,
+  "header": "Scenario Inbound,Scenario Outbound,Recipient Gender,Min Greatness,Max Greatness,Soccer,Basketball,Football,Baseball,Hockey,Rugby,Volleyball"
+ },
+ {
+  "file": "a16_spouse-house-reactions-enc",
+  "bytes": 10420,
+  "lines": 66,
+  "header": "Scenario,Log Version,Min Appreciation,Max Appreciation,Multiple Children,Too Many Houses,Is Cheap,Is Expensive,Is Big,Is Small,Is Poor Condition,Is Haunted,Prep"
+ },
+ {
+  "file": "a16_spouse-vehicle-reactions-enc",
+  "bytes": 8821,
+  "lines": 53,
+  "header": "Scenario,Log Version,Cheap Car,Expensive Car,Old Car,Misc Car,Watercraft,Aircraft,Prepurchase Rejection"
+ },
+ {
+  "file": "a16_stalker-scenarios-enc",
+  "bytes": 7764,
+  "lines": 38,
+  "header": "Scenario,Log Version,Can Assault,Stalker Gender,Hero Gender"
+ },
+ {
+  "file": "a16_stepparent-cruelty-scenarios-enc",
+  "bytes": 11745,
+  "lines": 49,
+  "header": "Scenario,Log Version,Hero Gender,Stepparent Gender,Hetero Parents,Hero Min Age,Hero Max Age"
+ },
+ {
+  "file": "a16_street-names-enc",
+  "bytes": 11255,
+  "lines": 438,
+  "header": "Street Name,Add Random Street Type,Affluence Score,Commonness Score,Type"
+ },
+ {
+  "file": "a16_street-persons-enc",
+  "bytes": 9120,
+  "lines": 202,
+  "header": "Description,Percent Male,Confrontation Score,Money Score,In Need,Clean,Can Be Burgled,Age,Skin Color Override,Friendliness Score,Default Mood,Scam Victim Gullib"
+ },
+ {
+  "file": "a16_supervisor-unprofessional-scenarios-enc",
+  "bytes": 15363,
+  "lines": 56,
+  "header": "Scenario,Log Version,Report For,Hero Gender,Supervisor Gender"
+ },
+ {
+  "file": "a16_supervisor-warnings-enc",
+  "bytes": 2177,
+  "lines": 32,
+  "header": "Warning"
+ },
+ {
+  "file": "a16_surrogate-rejections-enc",
+  "bytes": 1362,
+  "lines": 14,
+  "header": "Scenario,Gender,Gay,Min Age,Max Age,Single"
+ },
+ {
+  "file": "a16_surrogate-run-off-scenarios-enc",
+  "bytes": 3113,
+  "lines": 15,
+  "header": "Scenario,Log Version"
+ },
+ {
+  "file": "a16_termination-scenarios-enc",
+  "bytes": 11252,
+  "lines": 110,
+  "header": "Condition,Scenario,Gender,Clean"
+ },
+ {
+  "file": "a16_time-machine-scenarios-enc",
+  "bytes": 2545,
+  "lines": 23,
+  "header": "Scenario,Min Age,Prison,Was Dead"
+ },
+ {
+  "file": "a16_username-adjectives-enc",
+  "bytes": 2358,
+  "lines": 196,
+  "header": "Adjective,Gender,Min Age,Max Age"
+ },
+ {
+  "file": "a16_username-nouns-enc",
+  "bytes": 2349,
+  "lines": 201,
+  "header": "Noun,Gender,Min Age,Max Age"
+ },
+ {
+  "file": "a16_username-structure-enc",
+  "bytes": 443,
+  "lines": 19,
+  "header": "Format"
+ },
+ {
+  "file": "a16_vacation-destinations-enc",
+  "bytes": 16827,
+  "lines": 326,
+  "header": "Destination,Context,Use Context In Description,Use Definite Article,Country,Continent,Cost Score,Appeal Score,Danger Score,Commonness,Pixie Dust Only"
+ },
+ {
+  "file": "a16_vampire-assault-method-enc",
+  "bytes": 9862,
+  "lines": 23,
+  "header": "Method,Success Feedback Scenario,Success Log Version,Failure Feedback Scenario,Failure Log Version,Effectiveness Score"
+ },
+ {
+  "file": "a16_vampire-blood-bath-scenario-enc",
+  "bytes": 4404,
+  "lines": 14,
+  "header": "Activity,Feedback Scenario,Log Version,Max Essence Impact,Max Happiness Impact,Max Looks Impact,Max Relationship Impact"
+ },
+ {
+  "file": "a16_vampire-blood-offering-string-enc",
+  "bytes": 5051,
+  "lines": 37,
+  "header": "String,Hero Gender,Offering Gender,Min Health,Max Health,Min Looks,Max Looks,Min Smarts,Max Smarts,Min Craziness,Max Craziness"
+ },
+ {
+  "file": "a16_vampire-blood-pact-rejection-string-enc",
+  "bytes": 19413,
+  "lines": 186,
+  "header": "Person Type,String,Min Relationship,Max Relationship"
+ },
+ {
+  "file": "a16_vampire-blood-taste-color-enc",
+  "bytes": 2120,
+  "lines": 89,
+  "header": "Taste,Disease Indicator"
+ },
+ {
+  "file": "a16_vampire-body-dump-color-enc",
+  "bytes": 4263,
+  "lines": 45,
+  "header": "String,Location,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-clubbing-approache-enc",
+  "bytes": 7701,
+  "lines": 22,
+  "header": "String,Log Version,Hero Gender,Vampire Gender"
+ },
+ {
+  "file": "a16_vampire-code-data-enc",
+  "bytes": 11528,
+  "lines": 50,
+  "header": "Code,Results String,Vampire NPC String,Approval Impact"
+ },
+ {
+  "file": "a16_vampire-coffin-string-enc",
+  "bytes": 9761,
+  "lines": 40,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-council-discipline-scenario-enc",
+  "bytes": 8758,
+  "lines": 39,
+  "header": "String,Feedback Snippet,Log Version,Spare,Punish,Kill,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-council-party-string-enc",
+  "bytes": 7663,
+  "lines": 32,
+  "header": "String,Log Version,Max Standing Impact,Max Karma Impact,Max Looks Impact,Max Smarts Impact,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-council-party-type-enc",
+  "bytes": 631,
+  "lines": 33,
+  "header": "Party Type,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-council-punishment-enc",
+  "bytes": 6269,
+  "lines": 32,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-council-reward-enc",
+  "bytes": 7246,
+  "lines": 31,
+  "header": "Scenario,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-disease-enc",
+  "bytes": 157,
+  "lines": 12,
+  "header": "Disease"
+ },
+ {
+  "file": "a16_vampire-dumb-scenario-enc",
+  "bytes": 65197,
+  "lines": 68,
+  "header": "Index,Hero Min Age,Hero Max Age,Hero Gender,Hero Has Lover,Lover Gender,Randomize Choices,Gender Bracket,Min Notoriety,Max Notoriety,Min Essence,Max Essence,Her"
+ },
+ {
+  "file": "a16_vampire-entice-method-enc",
+  "bytes": 13321,
+  "lines": 23,
+  "header": "Method,Success Feedback Scenario,Success Log Version,Failure Feedback Scenario,Failure Log Version,Effectiveness Score"
+ },
+ {
+  "file": "a16_vampire-familiar-color-enc",
+  "bytes": 3932,
+  "lines": 58,
+  "header": "Descriptive String,Familiar Gender,Min Familiar Looks,Max Familiar Looks,Min Familiar Smarts,Max Familiar Smarts,Min Familiar Craziness,Max Familiar Craziness"
+ },
+ {
+  "file": "a16_vampire-familiar-command-enc",
+  "bytes": 8464,
+  "lines": 38,
+  "header": "String,Log Version,Relationship Impact"
+ },
+ {
+  "file": "a16_vampire-familiar-confused-string-enc",
+  "bytes": 7631,
+  "lines": 53,
+  "header": "String,Min Familiar Smarts,Max Familiar Smarts"
+ },
+ {
+  "file": "a16_vampire-familiar-dump-enc",
+  "bytes": 2591,
+  "lines": 46,
+  "header": "String,Min Familiar Smarts,Max Familiar Smarts,Risk Score"
+ },
+ {
+  "file": "a16_vampire-familiar-threat-enc",
+  "bytes": 10347,
+  "lines": 40,
+  "header": "String,Log Version,Familiar Gender,Relationship Impact"
+ },
+ {
+  "file": "a16_vampire-feeding-location-color-enc",
+  "bytes": 6489,
+  "lines": 56,
+  "header": "String,Log Version,Location"
+ },
+ {
+  "file": "a16_vampire-feeding-location-enc",
+  "bytes": 98,
+  "lines": 6,
+  "header": "Location,Risk Score"
+ },
+ {
+  "file": "a16_vampire-hunt-encounter-color-enc",
+  "bytes": 3020,
+  "lines": 27,
+  "header": "String,Min Vampire Notoriety,Max Vampire Notoriety,Min Vampire Craziness,Max Vampire Craziness"
+ },
+ {
+  "file": "a16_vampire-hunt-string-enc",
+  "bytes": 6078,
+  "lines": 30,
+  "header": "String,Log Version,NPC is Maker,Enjoyment Score,Essence Impact,Relationship Impact"
+ },
+ {
+  "file": "a16_vampire-hunter-appreciation-string-enc",
+  "bytes": 3847,
+  "lines": 33,
+  "header": "String,Vampire Hero,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-hunter-encounter-scenario-enc",
+  "bytes": 5433,
+  "lines": 54,
+  "header": "Scenario,Min Willpower,Max Willpower,Hero Gender,Repeat Encounter"
+ },
+ {
+  "file": "a16_vampire-hunter-name-enc",
+  "bytes": 1681,
+  "lines": 96,
+  "header": "Type,Name,Skin"
+ },
+ {
+  "file": "a16_vampire-hypnosis-animal-scenario-enc",
+  "bytes": 6468,
+  "lines": 28,
+  "header": "String,Log Version,Smarts Impact,Looks Impact,Willpower Impact,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-hypnosis-breakup-string-enc",
+  "bytes": 10354,
+  "lines": 42,
+  "header": "String,Log Version,Hero Lover Victim,Hero Gender,Victim Gender,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-hypnosis-love-string-enc",
+  "bytes": 4578,
+  "lines": 24,
+  "header": "String,Log Version,Hero Gender,Victim Gender,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-hypnosis-money-string-enc",
+  "bytes": 5751,
+  "lines": 30,
+  "header": "String,Log Version,Min Money,Max Money,Hero Gender,Victim Gender,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-insult-enc",
+  "bytes": 4103,
+  "lines": 145,
+  "header": "Insult,Plural,Gender,Clean,Vampire"
+ },
+ {
+  "file": "a16_vampire-lover-convert-nag-enc",
+  "bytes": 9515,
+  "lines": 39,
+  "header": "Scenario,Log Version,Hero Gender,Lover Gender,Married,Min Relationship,Max Relationship,Hero Min Age"
+ },
+ {
+  "file": "a16_vampire-name-enc",
+  "bytes": 3094,
+  "lines": 172,
+  "header": "Type,Name,Skin"
+ },
+ {
+  "file": "a16_vampire-solo-hunt-location-enc",
+  "bytes": 1379,
+  "lines": 30,
+  "header": "Location,String Version,Animal Appearance Likelihood,Human Appearance Likelihood,Vampire Appearance Likelihood,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-spend-time-enc",
+  "bytes": 7897,
+  "lines": 73,
+  "header": "String,NPC Vampire,Hero Vampire"
+ },
+ {
+  "file": "a16_vampire-spend-time-hunger-color-enc",
+  "bytes": 7745,
+  "lines": 35,
+  "header": "String,Log String,Person Gender,Hero Gender,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-street-name-enc",
+  "bytes": 1701,
+  "lines": 85,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-titles-enc",
+  "bytes": 14296,
+  "lines": 115,
+  "header": "Scenario Tag,Og Title,Option 1,Option 2,Option 3,Option 4,Option 5,"
+ },
+ {
+  "file": "a16_vampire-vcoli-string-enc",
+  "bytes": 5387,
+  "lines": 41,
+  "header": "String,Log Version,Commonness Score"
+ },
+ {
+  "file": "a16_vampire-victim-status-color-enc",
+  "bytes": 4400,
+  "lines": 61,
+  "header": "String,Min Victim Health,Max Victim Health"
+ },
+ {
+  "file": "a16_vampire-witch-doctor-remedie-enc",
+  "bytes": 1296,
+  "lines": 54,
+  "header": "Item,Effectiveness Score,Risk Score"
+ },
+ {
+  "file": "a16_voltron_componentFilenames",
+  "bytes": 64233,
+  "lines": 1382,
+  "header": "a16_faces-female-stage0-base-00349.png"
+ },
+ {
+  "file": "a16_voltron_disguiseFilenames",
+  "bytes": 14031,
+  "lines": 284,
+  "header": "a16_disguise-feature-female-stage2-lighting1.png"
+ },
+ {
+  "file": "a16_war-scenarios-enc",
+  "bytes": 8224,
+  "lines": 72,
+  "header": "Stage,Scenario"
+ },
+ {
+  "file": "a16_watercraft-danger-scenarios-enc",
+  "bytes": 7342,
+  "lines": 22,
+  "header": "Title,Scenario,Log Version,Danger Score,Watercraft Lost,Rowing,Speedboat,PWC,Motorized Yacht,Sailing Yacht,Sailboat,Jet Boat,Crab Boat,Pontoon,Research Vessel,A"
+ },
+ {
+  "file": "a16_watercraft-enc",
+  "bytes": 8122,
+  "lines": 52,
+  "header": "Index,Type,Category,For Sale Description,Cost,Passengers,Feet,Lifespan Years,Commonness Score,Requires License,Rowing,Speedboat,PWC,Motorized Yacht,Sailing Yach"
+ },
+ {
+  "file": "a16_watercraft-names-enc",
+  "bytes": 15189,
+  "lines": 413,
+  "header": "Name,Rowing,Speedboat,PWC,Motorized Yacht,Sailing Yacht,Sailboat,Jet Boat,Crab Boat,Pontoon,Research Vessel,Airboat,Amphibious,Cruise Ship,Icebreaker,Log Raft,S"
+ },
+ {
+  "file": "a16_watercraft-parts-enc",
+  "bytes": 7919,
+  "lines": 61,
+  "header": "Part,Plural Version,Only One Per Watercraft,Part Cost Score,Broken Terms,Rowing,Speedboat,PWC,Motorized Yacht,Sailing Yacht,Sailboat,Jet Boat,Crab Boat,Pontoon,"
+ },
+ {
+  "file": "a16_wealthy-persons-enc",
+  "bytes": 1144,
+  "lines": 59,
+  "header": "Description,Percent Male"
+ },
+ {
+  "file": "a16_weapons-enc",
+  "bytes": 1999,
+  "lines": 89,
+  "header": "Weapon,Plural,Verb,Danger,Found in Prison,Medieval"
+ },
+ {
+  "file": "a16_wedding-venues-enc",
+  "bytes": 265,
+  "lines": 13,
+  "header": "Venue,Uses Definite Article,Cost Score,Lover Happiness Score"
+ },
+ {
+  "file": "a16_witch-remedies-enc",
+  "bytes": 807,
+  "lines": 31,
+  "header": "Item,Effectiveness Score,Risk Score,Cost Score,Treats Disease"
+ },
+ {
+  "file": "a16_youtube-channels-enc",
+  "bytes": 1435,
+  "lines": 64,
+  "header": "Channel,Commonness Score,Enjoyment Score,Gender"
+ },
+ {
+  "file": "a16_zoo-animal-attack-actions-enc",
+  "bytes": 4033,
+  "lines": 194,
+  "header": "Animal,Past Verb,Commonness Score,Damage Score"
+ },
+ {
+  "file": "a16_zoo-animal-death-scenarios-enc",
+  "bytes": 20946,
+  "lines": 225,
+  "header": "Animal,Type,Commonness Score,Other Person Involved,Other Animal Involved,Hero Present at Euthanization,Sentence"
+ },
+ {
+  "file": "a16_zoo-animal-diseases-enc",
+  "bytes": 7001,
+  "lines": 193,
+  "header": "Animal,Disease,Uses Indefinite Article,Uses Definite Article,Commonness Score,Cures Organically Score,Can Be Fatal,Health Impact Score,Treatment Effectiveness S"
+ },
+ {
+  "file": "a16_zoo-animal-grooming-methods-enc",
+  "bytes": 2595,
+  "lines": 23,
+  "header": "Animal,Method,Feedback Snippet,Cost,Difficulty Score,Appeal Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-names-enc",
+  "bytes": 39094,
+  "lines": 1346,
+  "header": "Animal,Breed,Name,Gender,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-show-enc",
+  "bytes": 331,
+  "lines": 12,
+  "header": "Show Type,Difficulty Score,Appeal Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-show-feedback-enc",
+  "bytes": 6776,
+  "lines": 45,
+  "header": "Animal Blacklist,String,Positive,Show Type,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-sold-color-enc",
+  "bytes": 7977,
+  "lines": 71,
+  "header": "Animal Type,Snippet,Min Happiness,Max Happiness,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-spend-time-color-enc",
+  "bytes": 15640,
+  "lines": 314,
+  "header": "Animal,Pastime"
+ },
+ {
+  "file": "a16_zoo-animal-trafficker-persons-enc",
+  "bytes": 501,
+  "lines": 21,
+  "header": "Person Type,Uses Indefinite Article,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-animal-treat-color-enc",
+  "bytes": 8059,
+  "lines": 287,
+  "header": "Animal,Treat,Enjoyment Score"
+ },
+ {
+  "file": "a16_zoo-animals-enc",
+  "bytes": 9848,
+  "lines": 121,
+  "header": "Animal,Gender Specific Emoji?,Breed,Breed Plural,Compatible Habitats,Maturity Age,Average Lifespan,Cool Score,Food Chain Hierarchy,Aggression Score,Danger Score"
+ },
+ {
+  "file": "a16_zoo-attraction-installation-color-enc",
+  "bytes": 1849,
+  "lines": 26,
+  "header": "Snippet,Positive,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-attraction-removal-color-enc",
+  "bytes": 1744,
+  "lines": 21,
+  "header": "Snippet,Positive,Min Engagement,Max Engagement,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-attractions-enc",
+  "bytes": 968,
+  "lines": 22,
+  "header": "Attraction Name,Ticketed,Min Ticket Cost,Max Ticket Cost,Installation Cost,Annual Upkeep Cost,Engagement Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-buyer-person-types-enc",
+  "bytes": 729,
+  "lines": 30,
+  "header": "Description,Money Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-comment-card-color-enc",
+  "bytes": 8831,
+  "lines": 86,
+  "header": "Snippet,Attraction Type,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-employee-application-color-enc",
+  "bytes": 10403,
+  "lines": 72,
+  "header": "String,Employee Type,Min Competence,Max Competence,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-employee-background-check-color-enc",
+  "bytes": 7594,
+  "lines": 47,
+  "header": "String,Employee Type,Min Competence,Max Competence,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-employee-resignation-color-enc",
+  "bytes": 3041,
+  "lines": 33,
+  "header": "String,Gender,Employee Type,Min Competence,Max Competence,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-fundraiser-color-enc",
+  "bytes": 5763,
+  "lines": 39,
+  "header": "Event Type,Animal,Snippet,Min Reception,Max Reception"
+ },
+ {
+  "file": "a16_zoo-fundraiser-enc",
+  "bytes": 371,
+  "lines": 11,
+  "header": "Event Type,Cost,Money Score,Difficulty Score,Appeal Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-gift-shop-item-enc",
+  "bytes": 451,
+  "lines": 13,
+  "header": "Product,Plural,Price Per Unit,Min Sale Price,Max Sale Price,Popularity Score"
+ },
+ {
+  "file": "a16_zoo-habitat-clean-enc",
+  "bytes": 3059,
+  "lines": 19,
+  "header": "Snippet,Log Version,Habitat Type,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-habitat-features-enc",
+  "bytes": 1299,
+  "lines": 32,
+  "header": "Type,Compatible Habitat,Cost,Happiness Impact Score,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-habitat-feedback-enc",
+  "bytes": 3195,
+  "lines": 21,
+  "header": "String,Feature Blacklist,Feature Whitelist,Is Positive,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-habitat-move-in-feedback-enc",
+  "bytes": 5183,
+  "lines": 46,
+  "header": "Animal Type,Breed,String,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-habitat-names-enc",
+  "bytes": 2411,
+  "lines": 71,
+  "header": "Name,Habitat Type,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-habitat-type-enc",
+  "bytes": 230,
+  "lines": 9,
+  "header": "Type,Add Habitat,Cost,Annual Upkeep Fees"
+ },
+ {
+  "file": "a16_zoo-random-zoo-names-enc",
+  "bytes": 1123,
+  "lines": 24,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-street-names-enc",
+  "bytes": 656,
+  "lines": 35,
+  "header": "Street Name,Add Random Street Type,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-supplier-names-enc",
+  "bytes": 627,
+  "lines": 20,
+  "header": "Name,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-trade-accept-color-enc",
+  "bytes": 1913,
+  "lines": 26,
+  "header": "Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-trade-animal-sold-color-enc",
+  "bytes": 1654,
+  "lines": 24,
+  "header": "Snippet,Commonness Score"
+ },
+ {
+  "file": "a16_zoo-trade-rejection-reasons-enc",
+  "bytes": 3139,
+  "lines": 26,
+  "header": "Snippet,Reason,Commonness Score"
+ },
+ {
+  "file": "alternate-icon-names",
+  "bytes": 162,
+  "lines": 13,
+  "header": "{"
+ },
+ {
+  "file": "candidates",
+  "bytes": 24988,
+  "lines": 1,
+  "header": "WwogIHsKICAgICJDYW5kaWRhdGUiOiB7CiAgICAgICJHZW5kZXIiOiAwLAogICAgICAiTmFtZSI6IHsKICAgICAgICAiRmlyc3ROYW1lIjogIkJhcnJ5IiwKICAgICAgICAiTGFzdE5hbWUiOiAiTWNDb2NrbmVy"
+ },
+ {
+  "file": "data_live",
+  "bytes": 86,
+  "lines": 1,
+  "header": "KﾎJ\u0017BS]CKB$w75\u00150%$7@\u001fq\fￓﾒ\u001fﾖv\u0005\u0018\tￓbﾛ\r\u0018ﾕﾎ3:ﾄﾎ\u000f&sfkBy}\u0014ￓ\u001bP,EﾕN+\u000fTD"
+ },
+ {
+  "file": "error",
+  "bytes": 2113,
+  "lines": 92,
+  "header": "<!DOCTYPE html>"
+ },
+ {
+  "file": "gadsmebridge.js",
+  "bytes": 16417,
+  "lines": 1,
+  "header": "!function(){var r,n,d,i,o,t,s,a,l,c,u,h,m,g,f,w,p,v,E,R,y,C,O,N,b,S,e=!!window.GADSME_MRAID,I=(!!window.GADSME_LOG&&(window.GadsmeNativeBridgeAndroid?(console={"
+ },
+ {
+  "file": "genesis-bingo-win-color-enc",
+  "bytes": 3402,
+  "lines": 23,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-excursion-activity-enc",
+  "bytes": 12723,
+  "lines": 49,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-houseparty-color-enc",
+  "bytes": 9550,
+  "lines": 31,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,CommonnessScore,Title,Scenario,Narrative,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-houseparty-parent-reason-enc",
+  "bytes": 3945,
+  "lines": 29,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,CommonnessScore,Title,Scenario,Narrative,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-loan-apr-enc",
+  "bytes": 460,
+  "lines": 11,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,Feedback String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-loan-basevalue-enc",
+  "bytes": 494,
+  "lines": 11,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,Feedback String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-loan-enc",
+  "bytes": 13884,
+  "lines": 154,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,Feedback String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-loan-year-enc",
+  "bytes": 451,
+  "lines": 11,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,Feedback String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-md-actor-compliments-enc",
+  "bytes": 3809,
+  "lines": 27,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-audience-reception-enc",
+  "bytes": 34789,
+  "lines": 229,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-audition-enc",
+  "bytes": 68726,
+  "lines": 145,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-award-reactions-enc",
+  "bytes": 12211,
+  "lines": 55,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-box-office-bands-enc",
+  "bytes": 532,
+  "lines": 7,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Title/Activity,Scenario/String,Narrative/Log,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-budget-feedback-enc",
+  "bytes": 10281,
+  "lines": 24,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-coaching-enc",
+  "bytes": 18872,
+  "lines": 42,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-creative-vision-enc",
+  "bytes": 139495,
+  "lines": 452,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-creative-vision-followups-enc",
+  "bytes": 468807,
+  "lines": 2256,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-critical-reception-enc",
+  "bytes": 42166,
+  "lines": 340,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-daily-review-enc",
+  "bytes": 170555,
+  "lines": 420,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-festival-scenarios-enc",
+  "bytes": 12109,
+  "lines": 38,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Title/Activity,Scenario/String,Narrative/Log,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-festival-screening-enc",
+  "bytes": 11229,
+  "lines": 38,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-festivals-enc",
+  "bytes": 3702,
+  "lines": 73,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Feedback,Scenario,Log String,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-film-reception-weights-enc",
+  "bytes": 260,
+  "lines": 6,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Title/Activity,Scenario/String,Narrative/Log,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-reception-strings-enc",
+  "bytes": 3465,
+  "lines": 32,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Title/Activity,Scenario/String,Narrative/Log,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-md-reputation-bands-enc",
+  "bytes": 819,
+  "lines": 11,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Title/Activity,Scenario/String,Narrative/Log,MinMaxValues,Filter,Score,Impacts,Match"
+ },
+ {
+  "file": "genesis-senior-beg-color-enc",
+  "bytes": 6598,
+  "lines": 32,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-senior-drama-enc",
+  "bytes": 13149,
+  "lines": 34,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-senior-water-aerobics-enc",
+  "bytes": 2723,
+  "lines": 23,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis-swinging-encounter-color-enc",
+  "bytes": 5143,
+  "lines": 33,
+  "header": "ID,Hero Min Age,Hero Max Age,Hero Gender,Npc,Npc Gender,Commonness Score,Activity,String,Log String,MinMaxValues,Filter,Score,Relationship Impact,Match"
+ },
+ {
+  "file": "genesis_arson",
+  "bytes": 22345,
+  "lines": 23,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "genesis_entity_death",
+  "bytes": 909,
+  "lines": 4,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_entity_defs",
+  "bytes": 7640,
+  "lines": 29,
+  "header": "# Genesis Entity Definitions — data-driven entity type configuration"
+ },
+ {
+  "file": "genesis_entity_demo",
+  "bytes": 3243,
+  "lines": 8,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_entity_list",
+  "bytes": 266,
+  "lines": 13,
+  "header": "{"
+ },
+ {
+  "file": "genesis_entity_showcase",
+  "bytes": 10367,
+  "lines": 13,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "genesis_feature_containers",
+  "bytes": 958,
+  "lines": 6,
+  "header": "# Genesis Feature Container Definitions"
+ },
+ {
+  "file": "genesis_fight_ad_campaign",
+  "bytes": 1703,
+  "lines": 5,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_loan",
+  "bytes": 10414,
+  "lines": 22,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_lookup_emoji_visuals",
+  "bytes": 206395,
+  "lines": 4488,
+  "header": "Index,EmojiString,Preview,Asset Name"
+ },
+ {
+  "file": "genesis_lookup_filter_set",
+  "bytes": 18688,
+  "lines": 33,
+  "header": "filter,type,description,example_1,example_1_explained,example_2,example_2_explained,example_3,example_3_explained,example_4,example_4_explained,example_5,exampl"
+ },
+ {
+  "file": "genesis_lookup_hero_stat_set",
+  "bytes": 1444,
+  "lines": 23,
+  "header": "impact_type,stat_id,optional_description,delta_min,delta_max,underlying_stat_min,underlying_stat_max"
+ },
+ {
+  "file": "genesis_master_tags_format",
+  "bytes": 611,
+  "lines": 8,
+  "header": "tag_id,description,example"
+ },
+ {
+  "file": "genesis_master_tags_function",
+  "bytes": 6337,
+  "lines": 106,
+  "header": "tag_id,description,example,cache_tag_for_value"
+ },
+ {
+  "file": "genesis_master_tags_grammar",
+  "bytes": 749,
+  "lines": 7,
+  "header": "tag_id,description,example"
+ },
+ {
+  "file": "genesis_master_tags_hero",
+  "bytes": 1135,
+  "lines": 11,
+  "header": "tag_id,Genesis Value,description,example"
+ },
+ {
+  "file": "genesis_master_tags_number",
+  "bytes": 3319,
+  "lines": 65,
+  "header": "tag_id,description,example,cache_tag_for_value"
+ },
+ {
+  "file": "genesis_master_tags_pick",
+  "bytes": 322,
+  "lines": 2,
+  "header": "tag_id,description,example"
+ },
+ {
+  "file": "genesis_master_tags_reference_1",
+  "bytes": 12502,
+  "lines": 30,
+  "header": "tag_id,optional_description,optional_examples,cache_tag_for_value,cache_tag_for_follow_up_a,cache_tag_for_follow_up_b,cache_tag_for_follow_up_c,cache_tag_for_fo"
+ },
+ {
+  "file": "genesis_master_tags_reference_2",
+  "bytes": 1303319,
+  "lines": 21772,
+  "header": "tag_id,tag_value,weight,categorization_a,categorization_b,categorization_c,follow_up_a,follow_up_b,follow_up_c,follow_up_d,follow_up_e,json_cost_dropdown,is_sta"
+ },
+ {
+  "file": "genesis_master_tags_special",
+  "bytes": 95,
+  "lines": 3,
+  "header": "tag_id,Genesis Value"
+ },
+ {
+  "file": "genesis_movie_cast_hub",
+  "bytes": 8612,
+  "lines": 247,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_cast_hub_support_1",
+  "bytes": 8772,
+  "lines": 247,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_cast_hub_support_2",
+  "bytes": 8772,
+  "lines": 247,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_cast_hub_support_3",
+  "bytes": 8772,
+  "lines": 247,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director",
+  "bytes": 905057,
+  "lines": 190,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "genesis_movie_director_actor_hub",
+  "bytes": 6330,
+  "lines": 171,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director_cast",
+  "bytes": 12331,
+  "lines": 293,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director_defaults",
+  "bytes": 1278,
+  "lines": 42,
+  "header": "# Default property values for movie_director container"
+ },
+ {
+  "file": "genesis_movie_director_festivals",
+  "bytes": 817,
+  "lines": 27,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director_filmography",
+  "bytes": 698,
+  "lines": 26,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director_hub",
+  "bytes": 115650,
+  "lines": 2626,
+  "header": "{"
+ },
+ {
+  "file": "genesis_movie_director_talent_network",
+  "bytes": 531,
+  "lines": 24,
+  "header": "{"
+ },
+ {
+  "file": "genesis_nav_legacy_blueprint",
+  "bytes": 771,
+  "lines": 11,
+  "header": "BlueprintReferenceType,BlueprintID,DesignDescription,GenesisCustomCodePacket,DesignVisualRepresentation"
+ },
+ {
+  "file": "genesis_nav_master_list",
+  "bytes": 44,
+  "lines": 1,
+  "header": "ListID,ListName,ListNavigationButtonOverride"
+ },
+ {
+  "file": "genesis_nav_master_scenario",
+  "bytes": 956,
+  "lines": 4,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "genesis_nav_master_section",
+  "bytes": 104,
+  "lines": 1,
+  "header": "ListID,SectionID,SectionName,SectionRelativePositionInList,SectionFilter,SectionFilterExperienceIfNotMet"
+ },
+ {
+  "file": "genesis_nav_master_tile",
+  "bytes": 429,
+  "lines": 1,
+  "header": "ListID,SectionID,TileID,Title,Description,Emoji,OverrideTilePositionInSection,OverrideTileButtonStyle,TileFilter,TileFilterExperienceIfNotMet,IsSpecialVisualBac"
+ },
+ {
+  "file": "genesis_npc_subtypes",
+  "bytes": 2535,
+  "lines": 17,
+  "header": "# Genesis NPC Subtypes — variant definitions linked to parent entity types"
+ },
+ {
+  "file": "genesis_object_entity_list",
+  "bytes": 277,
+  "lines": 13,
+  "header": "{"
+ },
+ {
+  "file": "genesis_object_subtypes",
+  "bytes": 721556,
+  "lines": 252,
+  "header": "# Genesis Object Subtypes — weighted content-pool variants linked to parent OBJECT entity types"
+ },
+ {
+  "file": "genesis_senior_center",
+  "bytes": 12478,
+  "lines": 29,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_senior_center_entity_demo",
+  "bytes": 9384,
+  "lines": 18,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "genesis_senior_entity_list",
+  "bytes": 325,
+  "lines": 14,
+  "header": "{"
+ },
+ {
+  "file": "genesis_telemetry_registry",
+  "bytes": 4458,
+  "lines": 30,
+  "header": "event_name,properties,cooldown,ActiveFrom,ActiveUntil,owner,status"
+ },
+ {
+  "file": "genesis_test_feature_ageup",
+  "bytes": 1431,
+  "lines": 5,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "genesis_test_feature_defaults",
+  "bytes": 158,
+  "lines": 7,
+  "header": "# Default property values for test_feature container"
+ },
+ {
+  "file": "genesis_test_feature_events",
+  "bytes": 997,
+  "lines": 3,
+  "header": "ScenarioID,Style,Filter,HeroAge,ExteriorTitle,Title,HasDismissButton,FocusPerson,EmojiString,BigImageString,Body,RewardsGranted,Dropdowns,TableRows,Sliders,BarG"
+ },
+ {
+  "file": "gpResponse",
+  "bytes": 1655,
+  "lines": 1,
+  "header": "{\"Store\":\"GooglePlay\",\"TransactionID\":\"ijldcbjnblbjonolamapjhgc.AO-J1OyoM0qrsPl1vfNUk1tB94oM-NRLdeaE3zS_aSLziY7p-NllmVn8tkrtJLaBNsnhHWVLi4h7UDp1wThp45pXh3TnbzjN"
+ },
+ {
+  "file": "login",
+  "bytes": 2076,
+  "lines": 92,
+  "header": "<!DOCTYPE html>"
+ },
+ {
+  "file": "package",
+  "bytes": 328,
+  "lines": 11,
+  "header": "{"
+ },
+ {
+  "file": "privacyPolicy",
+  "bytes": 17271,
+  "lines": 179,
+  "header": "Candywriter, LLC Privacy Policy"
+ },
+ {
+  "file": "privacyPolicy-ios",
+  "bytes": 17165,
+  "lines": 179,
+  "header": "Candywriter, LLC Privacy Policy"
+ },
+ {
+  "file": "scenario1",
+  "bytes": 5424,
+  "lines": 16,
+  "header": "ScenarioID,IsEntryPoint,HeroAge,Filter,Style,Title,Body,ExteriorTitle,FeedbackStyleScenario,EntryNarrative,EmojiString,ChoiceList,ConfirmationString,ActionList,"
+ },
+ {
+  "file": "senior_center_main",
+  "bytes": 3839,
+  "lines": 157,
+  "header": "{"
+ },
+ {
+  "file": "senior_center_senior",
+  "bytes": 4025,
+  "lines": 188,
+  "header": "{"
+ },
+ {
+  "file": "senior_center_seniors",
+  "bytes": 208,
+  "lines": 12,
+  "header": "{"
+ }
+]

@@ -1,0 +1,19 @@
+# Bring-your-own-copy: nothing below is committed; regenerate it from your own APK
+*.apk
+_re/lib/
+_re/assets/
+_re/assets_mod/
+_re/dex/
+_re/jadx_c10/
+_re/jadx_res/
+_re/gamedata/
+_re/gamedata_json/
+_re/gamedata_bf/
+_re/gamedata_plain/
+_re/il2cpp_dump.txt
+
+# Build output and run logs
+_re/port/build/
+*.log
+__pycache__/
+.DS_Store

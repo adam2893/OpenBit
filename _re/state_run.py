@@ -1,0 +1,12 @@
+import frida, sys, json
+pid = int(sys.argv[1])
+dev = frida.get_device("127.0.0.1:16384", timeout=10)
+s = dev.attach(pid)
+script = s.create_script(open('/tmp/state.js').read())
+script.on('message', lambda m, d: print('MSG', str(m)[:400]))
+script.load()
+print(json.dumps(script.exports_sync.ready()))
+print('PTR', json.dumps(script.exports_sync.pointers()))
+print('HERO', json.dumps(script.exports_sync.person('hero'))[:2500])
+print('LIFE', json.dumps(script.exports_sync.lifeFields())[:2000])
+s.detach()

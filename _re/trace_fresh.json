@@ -1,0 +1,144 @@
+{
+ "source": "game",
+ "ages": [
+  {
+   "age": 0,
+   "logs": [
+    "I was born a male in Minneapolis, United States. I was an accidental pregnancy.\n",
+    "My birthday is June 28. I am a Cancer.\n",
+    "My name is Elvis Butkus.",
+    "My mother is Olivia Butkus, a marriage counselor (age 41).",
+    "My father is Gordon Butkus, a librarian (age 44).",
+    "I have an older brother named Peyton (age 1).",
+    "We have a family cat named Koko."
+   ],
+   "scenarios": [],
+   "stats": {
+    "happiness": 90,
+    "health": 85,
+    "smarts": 71,
+    "looks": 17,
+    "karma": 63,
+    "discipline": 100
+   }
+  },
+  {
+   "age": 1,
+   "logs": [],
+   "scenarios": [],
+   "stats": {
+    "happiness": 83,
+    "health": 86,
+    "smarts": 70,
+    "looks": 16,
+    "karma": 47,
+    "discipline": 81
+   }
+  },
+  {
+   "age": 2,
+   "logs": [
+    "I drank a glass of milk after playing all morning."
+   ],
+   "scenarios": [
+    {
+     "title": "Favorite Drink",
+     "body": "After playing all morning, your mother says you need to drink something and asks what sounds good.\n\nWhat will you choose?",
+     "cls": "DumbScenario"
+    }
+   ],
+   "stats": {
+    "happiness": 83,
+    "health": 85,
+    "smarts": 69,
+    "looks": 15,
+    "karma": 47,
+    "discipline": 81
+   }
+  },
+  {
+   "age": 3,
+   "logs": [
+    "I remained calm when my mother took me to the doctor's office to get vaccinated.",
+    "My big brother, Peyton, started elementary school."
+   ],
+   "scenarios": [
+    {
+     "title": "Vaccination",
+     "body": "Your mother is taking you to the doctor's office to get vaccinated.\n\nHow will you behave?",
+     "cls": "ScenarioChildhoodVaccination"
+    }
+   ],
+   "stats": {
+    "happiness": 87,
+    "health": 86,
+    "smarts": 68,
+    "looks": 16,
+    "karma": 47,
+    "discipline": 81
+   }
+  },
+  {
+   "age": 4,
+   "logs": [
+    "I admitted to my parents that I broke their mailbox.",
+    "I have been enrolled in elementary school at Little Bater Elementary School, a private school."
+   ],
+   "scenarios": [
+    {
+     "title": "Integrity",
+     "body": "You broke your parents's mailbox while you were playing.\n\nWhat will you do?",
+     "cls": "ScenarioEthicsBreakSomething"
+    }
+   ],
+   "stats": {
+    "happiness": 88,
+    "health": 85,
+    "smarts": 69,
+    "looks": 15,
+    "karma": 55,
+    "discipline": 97
+   }
+  },
+  {
+   "age": 5,
+   "logs": [],
+   "scenarios": [
+    {
+     "title": "Elementary School",
+     "body": "You are starting elementary school.",
+     "cls": "ScenarioSchoolEnroll"
+    }
+   ],
+   "stats": {
+    "happiness": 89,
+    "health": 86,
+    "smarts": 70,
+    "looks": 16,
+    "karma": 63,
+    "discipline": 100
+   }
+  },
+  {
+   "age": 6,
+   "logs": [
+    "I'm starting to think that there is nothing in this world better than building a fort."
+   ],
+   "scenarios": [
+    {
+     "title": "Canyon Neuron 5",
+     "body": "Your parents have decided you're old enough to have a bicycle and want to buy you a brand new yellow Canyon Neuron 5.\n\nHow will you react?",
+     "cls": "ScenarioOutdoorAgeUpParentsGiveBike"
+    }
+   ],
+   "stats": {
+    "happiness": 90,
+    "health": 85,
+    "smarts": 71,
+    "looks": 17,
+    "karma": 63,
+    "discipline": 100
+   }
+  }
+ ]
+}

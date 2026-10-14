@@ -1,0 +1,3886 @@
+[
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785221,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 39,
+  "t": 1791899785221,
+  "ret": "0x29"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785221,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   4,
+   "0xb40000789af52f68"
+  ],
+  "age": 39,
+  "t": 1791899785221,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785361,
+  "ret": "0x66"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785363,
+  "ret": "0x23"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785363,
+  "ret": "0x14"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785363,
+  "ret": "0x17"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785375,
+  "ret": "0x13"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785376,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785376,
+  "ret": "0xb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785386,
+  "ret": "0x13f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785386,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785386,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x58"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x2a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x37"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x1cb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785388,
+  "ret": "0x43"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x62"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0xd"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x26"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x45"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x36"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899785389,
+  "ret": "0x43"
+ },
+ {
+  "tag": "dumb",
+  "m": "GetARandomPushDumbScenario",
+  "cls": "DumbScenario",
+  "args": [],
+  "age": 39,
+  "t": 1791899785415,
+  "ret": "0x77a91997e0",
+  "retCls": "DumbScenario",
+  "row": {
+   "_class": "DumbScenario",
+   "BodyUIEvents": null,
+   "_ChoiceToOriginalIndex": null,
+   "ExteriorTitle": null,
+   "Title": null,
+   "Body": null,
+   "FocusCustomName": null,
+   "CustomSoundFileName": null
+  }
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   10,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786093,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   12,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786120,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0xa6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x24"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x3c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x79"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x23"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x16"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786121,
+  "ret": "0x16"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0x11"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0xf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0x32"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0x17a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786122,
+  "ret": "0x14"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786183,
+  "ret": "0x81"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786183,
+  "ret": "0x1e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786183,
+  "ret": "0xb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786183,
+  "ret": "0x15"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786184,
+  "ret": "0x1f3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786184,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786184,
+  "ret": "0x5b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   10,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786338,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   12,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786338,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x8b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x3b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x10"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   13,
+   0
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899786339,
+  "ret": "0x42"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899790191,
+  "ret": "0x33"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899790191,
+  "ret": "0x26"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899790192,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899790192,
+  "ret": "0x24"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790192,
+  "ret": "0x1a9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790192,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899790192,
+  "ret": "0x51"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790193,
+  "ret": "0x1d6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790193,
+  "ret": "0x7"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790196,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   13,
+   0
+  ],
+  "age": 39,
+  "t": 1791899790196,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x4a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x34"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x34"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x35"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x15"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795372,
+  "ret": "0x19"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795373,
+  "ret": "0x17"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795373,
+  "ret": "0x21"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899795373,
+  "ret": "0x17f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899795373,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899795373,
+  "ret": "0x4e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x90"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xdf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x9b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x71"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xaf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xc4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x7e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xb1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xf1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x11b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x107"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0xe1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803474,
+  "ret": "0x10"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x6b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x3d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0xb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x3d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x172"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 39,
+  "t": 1791899803495,
+  "ret": "0x3c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803610,
+  "ret": "0xfd"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803610,
+  "ret": "0x3b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803610,
+  "ret": "0x99"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803610,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803632,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 40,
+  "t": 1791899803632,
+  "ret": "0x46"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803632,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   4,
+   "0xb40000789af52f68"
+  ],
+  "age": 40,
+  "t": 1791899803632,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803705,
+  "ret": "0x36"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803705,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803705,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803705,
+  "ret": "0x4b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803706,
+  "ret": "0x1fa"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803706,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803706,
+  "ret": "0x42"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803758,
+  "ret": "0x8c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803758,
+  "ret": "0x2c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803758,
+  "ret": "0x5b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803758,
+  "ret": "0x26"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0xa"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0x1e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0xc6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803759,
+  "ret": "0x22"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803760,
+  "ret": "0x60"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803760,
+  "ret": "0x3f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x7"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x44"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x27"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x2b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0xb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0x99"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803761,
+  "ret": "0xb6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x3c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x31"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x6c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x39"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x19"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0xf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x1b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x189"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803762,
+  "ret": "0x61"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0xb4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0x32"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0xb3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0x33"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0xe"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0x25"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0xe6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 40,
+  "t": 1791899803789,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 40,
+  "t": 1791899803790,
+  "ret": "0x31"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899813933,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x11"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x57"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   107,
+   "0xb40000789af52f68"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x50"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   4,
+   "0xb40000789af52f68"
+  ],
+  "age": 41,
+  "t": 1791899813934,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814018,
+  "ret": "0xae"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814018,
+  "ret": "0x20"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814018,
+  "ret": "0xbd"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814018,
+  "ret": "0x48"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814018,
+  "ret": "0x5a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x2d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0xf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x2d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x17"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814019,
+  "ret": "0x7"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814020,
+  "ret": "0x3e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814020,
+  "ret": "0x4e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814020,
+  "ret": "0x79"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x2f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0xa"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x30"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x9f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   13,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x1d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x90"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814021,
+  "ret": "0x4f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x52"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x5b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x11"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x38"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x15"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x3b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x19d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814022,
+  "ret": "0x41"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x3d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x15"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x93"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x41"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x6a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x35"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0xe"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x3b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x85"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 41,
+  "t": 1791899814023,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899814024,
+  "ret": "0x1c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x7f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x39"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x9c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x53"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x86"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x118"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x77"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0xe3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x86"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x5b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x33"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819104,
+  "ret": "0x2a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0xdd"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x95"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x104"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x66"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0xef"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0xde"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x11a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0xeb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x61"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x7f"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819105,
+  "ret": "0x1"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0x5a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0x50"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0xf9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0x72"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0xfe"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0xe8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0xd8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0x11a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 41,
+  "t": 1791899819130,
+  "ret": "0xd"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0xf9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x1e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x112"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x45"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x9a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0xa0"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x61"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x4e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x62"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x110"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x24"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x5d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x22"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x112"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x110"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0xe5"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0xaf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x82"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0xc8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x11a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x48"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846287,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846313,
+  "ret": "0x10e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   287,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846313,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   3,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846356,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   4,
+   "0xb40000789af52f68"
+  ],
+  "age": 42,
+  "t": 1791899846356,
+  "ret": null
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846408,
+  "ret": "0x2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846408,
+  "ret": "0x27"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846408,
+  "ret": "0xf"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846408,
+  "ret": "0xe"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x4c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x37"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x1a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x49"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x43"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x73"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846409,
+  "ret": "0x2c"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x16"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x7"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x21"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x18d"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x5"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x27"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x41"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x8b"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0xc"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x8"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846410,
+  "ret": "0x47"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846411,
+  "ret": "0x14e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846411,
+  "ret": "0x3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846411,
+  "ret": "0x24"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846430,
+  "ret": "0xb"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846430,
+  "ret": "0xcc"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846430,
+  "ret": "0xa2"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846430,
+  "ret": "0xae"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x21"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0xc3"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x9"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x3e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x70"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x98"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846431,
+  "ret": "0x8e"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0xa6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0xc6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x53"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0xca"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0xca"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   205,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x8a"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   66,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x12"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   27,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x6"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   78,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x49"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   559,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846432,
+  "ret": "0x163"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   11,
+   0
+  ],
+  "age": 42,
+  "t": 1791899846433,
+  "ret": "0x4"
+ },
+ {
+  "tag": "datahub",
+  "m": "GetRandomNumber",
+  "cls": "System.Int32",
+  "args": [
+   102,
+   "?"
+  ],
+  "age": 42,
+  "t": 1791899846433,
+  "ret": "0x38"
+ }
+]

@@ -1,0 +1,474 @@
+[
+ {
+  "kind": "scenario",
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "src": "table",
+  "table": "a16_stepparent-cruelty-scenarios-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "I won't play those games",
+  "cls": "Scenario",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "src": "table",
+  "table": "a16_stepparent-cruelty-scenarios-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Ouch",
+  "cls": "Scenario",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Primary School",
+  "cls": "ScenarioSchoolEnroll",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "New Friend",
+  "cls": "ScenarioFriendMeet",
+  "src": "metadata",
+  "table": null,
+  "meta": "what will you do nibbled nibbled on the nibbled on the the nickname is no not a "
+ },
+ {
+  "kind": "scenario",
+  "title": "Mischief Maker",
+  "cls": "ScenarioRetentionCrime",
+  "src": "metadata",
+  "table": null,
+  "meta": "what will you do you're thinking it might be time to get a job you're thinking o"
+ },
+ {
+  "kind": "scenario",
+  "title": "Pickpocket",
+  "cls": "ScenarioCrimePickpocket",
+  "src": "metadata",
+  "table": null,
+  "meta": "what will you do you're thinking about earning some quick money on the streets y"
+ },
+ {
+  "kind": "scenario",
+  "title": "Behavior",
+  "cls": "ScenarioPetDiscipline",
+  "src": "table",
+  "table": "a16_pet-discipline-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Isn't she cute?",
+  "cls": "Scenario",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Death",
+  "cls": "ScenarioPetDeath",
+  "src": "metadata",
+  "table": null,
+  "meta": "you gained followers your mind has moved into a really dark place lately your mi"
+ },
+ {
+  "kind": "scenario",
+  "title": "Quality Time",
+  "cls": "ScenarioPushSpendTime",
+  "src": "table",
+  "table": "a16_cult-random-commune-names-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Good times",
+  "cls": "Scenario",
+  "src": "table",
+  "table": "a16_cult-random-commune-names-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Freelance Gig",
+  "cls": "ScenarioRetentionFreelanceGig",
+  "src": "metadata",
+  "table": null,
+  "meta": "what will you do you're hired you're how old again you're in charge here you're "
+ },
+ {
+  "kind": "scenario",
+  "title": "Evaders of the Lost Ark",
+  "cls": "ScenarioBase",
+  "src": "table",
+  "table": "genesis_movie_director",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Podcast",
+  "cls": "ScenarioRetentionPodcast",
+  "src": "metadata",
+  "table": null,
+  "meta": "you gained your followers wondered what the smell was but no one dared to ask yo"
+ },
+ {
+  "kind": "scenario",
+  "title": "Podcast",
+  "cls": "ScenarioPodcastCreation",
+  "src": "metadata",
+  "table": null,
+  "meta": "as many times as you want start cryingstart dating start each child's name with "
+ },
+ {
+  "kind": "scenario",
+  "title": "Record Season",
+  "cls": "ScenarioPodcastRecordFirstSeason",
+  "src": "metadata",
+  "table": null,
+  "meta": "random insertion is semantically invalid since this structure does not guarantee"
+ },
+ {
+  "kind": "scenario",
+  "title": "We're live",
+  "cls": "Scenario",
+  "src": "metadata",
+  "table": null,
+  "meta": "' ' ' '' container '' expected key value ' left raw as '' not in registry ' obj "
+ },
+ {
+  "kind": "scenario",
+  "title": "Podcast Segment",
+  "cls": "ScenarioPodcastDumb",
+  "src": "table",
+  "table": "a16_podcast-dumb-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Retiring with Fat Pockets",
+  "cls": "ScenarioPodcastAudienceReception",
+  "src": "metadata",
+  "table": null,
+  "meta": "you and your guests scattered before anyone could be arrested your picture's on "
+ },
+ {
+  "kind": "scenario",
+  "title": "No Phone Zone",
+  "cls": "DumbScenario",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Streetworker",
+  "cls": "ScenarioEncounterProstitute",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Just grazed",
+  "cls": "Scenario",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Assault",
+  "cls": "ScenarioAttackInbound",
+  "src": "table",
+  "table": "a16_sports-injuries-enc",
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Hook Up",
+  "cls": "ScenarioLoveHookup",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "scenario",
+  "title": "Sprouting Lordling",
+  "cls": "ScenarioIAPConfiguredPush",
+  "src": "table",
+  "table": "SerializedPushScenarioConfig-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My half sister, Nea, started primary school.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I had a nightmare that I went skydiving and the parachute didn't open.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I started a finance podcast called 'Retiring with Fat Pockets'.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I ended this season's podcast episodes with a segment where I confessed somethin",
+  "src": "table",
+  "table": "a16_podcast-dumb-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I made \u20ac306 after publishing a season of Retiring with Fat Pockets.",
+  "src": "metadata",
+  "table": null,
+  "meta": "once your age is confirmed by the store this feature will unlock automatically a"
+ },
+ {
+  "kind": "log",
+  "title": "My half sister, Inka, graduated from secondary school.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My best friend, Krista, invited me to join him at a no-phones-allowed Eminem con",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My half sister, Inka, enlisted in the Navy.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "Lately, I've been working on the subtle art of not giving a frick.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I decided to attack a streetworker who was winking at me!",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I tried to punch the streetworker but missed!",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "She stormed me!\nShe bashed my fist.\nShe lacerated my eyebrow.",
+  "src": "table",
+  "table": "a16_sports-injuries-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My half sister, Inka, has been promoted to Seaman Apprentice.",
+  "src": "metadata",
+  "table": null,
+  "meta": "i was arrested by the police for death began identifying as began studying at un"
+ },
+ {
+  "kind": "log",
+  "title": "I looked into becoming a landlord.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My mother started a new position as Travel Associate for Helsinki Travel. She is",
+  "src": "table",
+  "table": "a16_disease-symptom-scenarios-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My stepfather convinced me that I'm invisible. I told my mother about his behavi",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My mother and my stepfather had a baby girl named Inka Tuominen, my new half sis",
+  "src": "table",
+  "table": "a16_birth-circumstances-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My stepfather pranked me by giving me nasty, salty cupcakes for my birthday.",
+  "src": "table",
+  "table": "a16_stepparent-cruelty-scenarios-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I kicked my stepfather's face!",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I have been enrolled in primary school at Aaltonen Primary School.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I decided my favorite snack was fruit leather and ate only that for 5 days.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My mother has been promoted to Tour Operator.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I pounded a glass of glitter that my classmate, Dragoljub Lazic, dared me to dri",
+  "src": "table",
+  "table": "a16_dumb-scenarios-universal-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My half sister, Inka, started primary school.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I was crowned ruler of the balance beam at recess.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My vizsla, Hazel, ate my fruit snacks. I rewarded her with a Porterhouse steak.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I've been wondering what it would be like to live in the wealthiest part of Hels",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My vizsla, Hazel, perished after losing her last fight, against old age.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My mother has been promoted to General Manager.",
+  "src": "none",
+  "table": null,
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I went to play bingo at the community center with my mother.",
+  "src": "table",
+  "table": "a16_cult-random-commune-names-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "My mother and my stepfather had a baby girl named Sanna Tuominen, my new half si",
+  "src": "table",
+  "table": "a16_birth-circumstances-enc",
+  "meta": null
+ },
+ {
+  "kind": "log",
+  "title": "I got my shot to direct a film and chose to make an action movie.",
+  "src": "table",
+  "table": "genesis_movie_director",
+  "meta": null
+ }
+]

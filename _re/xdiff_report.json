@@ -1,0 +1,791 @@
+[
+ {
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "ext": null,
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "I won't play those games",
+  "cls": "Scenario",
+  "ext": "",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "ext": null,
+  "nchoice": null,
+  "found": 70,
+  "where": [
+   {
+    "table": "a16_luxury-secret-societie-enc",
+    "rows": [
+     11
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_special-talent-filler-enc",
+    "rows": [
+     23,
+     51
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_dumb-scenarios-universal-enc",
+    "rows": [
+     116,
+     201
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_fight-ing-move-enc",
+    "rows": [
+     162
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "ext": null,
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "ext": "Conflict",
+  "nchoice": null,
+  "found": 36,
+  "where": [
+   {
+    "table": "a16_cult-communard-spend-time-enc",
+    "rows": [
+     54
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_dumb-scenarios-universal-enc",
+    "rows": [
+     250
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_casino-casino-amenity-feedback-scenario-enc",
+    "rows": [
+     45
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_black-market-weapons-enc",
+    "rows": [
+     1
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Ouch",
+  "cls": "Scenario",
+  "ext": "",
+  "nchoice": null,
+  "found": 4,
+  "where": [
+   {
+    "table": "a16_vampire-titles-enc",
+    "rows": [
+     4,
+     26,
+     39,
+     66
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_music-producer-titles-enc",
+    "rows": [
+     23
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_back-to-school-titles-enc",
+    "rows": [
+     17,
+     22
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_outdoor-titles-enc",
+    "rows": [
+     60,
+     66
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Primary School",
+  "cls": "ScenarioSchoolEnroll",
+  "ext": "Education",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "New Friend",
+  "cls": "ScenarioFriendMeet",
+  "ext": "Friend",
+  "nchoice": null,
+  "found": 1,
+  "where": [
+   {
+    "table": "scenario1",
+    "rows": [
+     15
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Mischief Maker",
+  "cls": "ScenarioRetentionCrime",
+  "ext": "Crime",
+  "nchoice": 2,
+  "found": 2,
+  "where": [
+   {
+    "table": "a16_music-album-title-enc",
+    "rows": [
+     30
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_music-names-albums-enc",
+    "rows": [
+     31
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Pickpocket",
+  "cls": "ScenarioCrimePickpocket",
+  "ext": "Crime",
+  "nchoice": null,
+  "found": 1,
+  "where": [
+   {
+    "table": "a16_dumb-scenarios-vacation-enc",
+    "rows": [
+     9
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Behavior",
+  "cls": "ScenarioPetDiscipline",
+  "ext": null,
+  "nchoice": null,
+  "found": 8,
+  "where": [
+   {
+    "table": "a16_dumb-scenarios-zoo-enc",
+    "rows": [
+     2,
+     3,
+     5,
+     6,
+     7,
+     9
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_careers-enc",
+    "rows": [
+     125
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_secret-agent-potential-agent-careers-enc",
+    "rows": [
+     71
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_dumb-scenarios-career-enc",
+    "rows": [
+     40,
+     41,
+     375
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Isn't she cute?",
+  "cls": "Scenario",
+  "ext": "",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Death",
+  "cls": "ScenarioPetDeath",
+  "ext": null,
+  "nchoice": null,
+  "found": 44,
+  "where": [
+   {
+    "table": "a16_dumb-scenarios-universal-enc",
+    "rows": [
+     214
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_luxury-secret-society-discussion-topic-enc",
+    "rows": [
+     42,
+     55
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_casino-casino-amenity-feedback-scenario-enc",
+    "rows": [
+     15,
+     59
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_cult-doctrine-rules-enc",
+    "rows": [
+     1
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Quality Time",
+  "cls": "ScenarioPushSpendTime",
+  "ext": null,
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Good times",
+  "cls": "Scenario",
+  "ext": "",
+  "nchoice": null,
+  "found": 2,
+  "where": [
+   {
+    "table": "a16_back-to-school-titles-enc",
+    "rows": [
+     6,
+     27
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_outdoor-titles-enc",
+    "rows": [
+     34
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "ext": null,
+  "nchoice": null,
+  "found": 70,
+  "where": [
+   {
+    "table": "a16_luxury-secret-societie-enc",
+    "rows": [
+     11
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_special-talent-filler-enc",
+    "rows": [
+     23,
+     51
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_dumb-scenarios-universal-enc",
+    "rows": [
+     116,
+     201
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_fight-ing-move-enc",
+    "rows": [
+     162
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Freelance Gig",
+  "cls": "ScenarioRetentionFreelanceGig",
+  "ext": "Money",
+  "nchoice": 2,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Evaders of the Lost Ark",
+  "cls": "ScenarioBase",
+  "ext": "Movie Director",
+  "nchoice": 1,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Podcast",
+  "cls": "ScenarioRetentionPodcast",
+  "ext": "Social",
+  "nchoice": 2,
+  "found": 4,
+  "where": [
+   {
+    "table": "SocialMediaListInactive",
+    "rows": [
+     3,
+     6,
+     9,
+     13
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "SocialMediaListActive",
+    "rows": [
+     3,
+     6,
+     10,
+     14,
+     17,
+     21,
+     23,
+     30,
+     39,
+     41,
+     51,
+     55,
+     68,
+     94,
+     107
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_podcast-title-enc",
+    "rows": [
+     129
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_podcast-dumb-enc",
+    "rows": [
+     5,
+     11,
+     12,
+     21,
+     26,
+     37,
+     42,
+     46,
+     47,
+     53,
+     66,
+     67,
+     69,
+     72,
+     73,
+     77,
+     78,
+     79,
+     80,
+     82,
+     83,
+     84,
+     96,
+     97,
+     98,
+     99,
+     100,
+     101,
+     102,
+     103,
+     104,
+     105,
+     106,
+     107,
+     108,
+     109,
+     110,
+     111
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Podcast",
+  "cls": "ScenarioPodcastCreation",
+  "ext": "Social",
+  "nchoice": 1,
+  "found": 4,
+  "where": [
+   {
+    "table": "SocialMediaListInactive",
+    "rows": [
+     3,
+     6,
+     9,
+     13
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "SocialMediaListActive",
+    "rows": [
+     3,
+     6,
+     10,
+     14,
+     17,
+     21,
+     23,
+     30,
+     39,
+     41,
+     51,
+     55,
+     68,
+     94,
+     107
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_podcast-title-enc",
+    "rows": [
+     129
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_podcast-dumb-enc",
+    "rows": [
+     5,
+     11,
+     12,
+     21,
+     26,
+     37,
+     42,
+     46,
+     47,
+     53,
+     66,
+     67,
+     69,
+     72,
+     73,
+     77,
+     78,
+     79,
+     80,
+     82,
+     83,
+     84,
+     96,
+     97,
+     98,
+     99,
+     100,
+     101,
+     102,
+     103,
+     104,
+     105,
+     106,
+     107,
+     108,
+     109,
+     110,
+     111
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Record Season",
+  "cls": "ScenarioPodcastRecordFirstSeason",
+  "ext": "Social",
+  "nchoice": 1,
+  "found": 1,
+  "where": [
+   {
+    "table": "SocialMediaListActive",
+    "rows": [
+     88
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "We're live",
+  "cls": "Scenario",
+  "ext": "Social",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Podcast Segment",
+  "cls": "ScenarioPodcastDumb",
+  "ext": "Social",
+  "nchoice": 4,
+  "found": 1,
+  "where": [
+   {
+    "table": "a16_podcast-dumb-enc",
+    "rows": [
+     96,
+     97
+    ],
+    "body_ok": true
+   }
+  ],
+  "body_ok": true
+ },
+ {
+  "title": "Retiring with Fat Pockets",
+  "cls": "ScenarioPodcastAudienceReception",
+  "ext": "Social",
+  "nchoice": 1,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "No Phone Zone",
+  "cls": "DumbScenario",
+  "ext": "Current",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Streetworker",
+  "cls": "ScenarioEncounterProstitute",
+  "ext": "Encounter",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "ext": "Conflict",
+  "nchoice": null,
+  "found": 36,
+  "where": [
+   {
+    "table": "a16_cult-communard-spend-time-enc",
+    "rows": [
+     54
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_dumb-scenarios-universal-enc",
+    "rows": [
+     250
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_casino-casino-amenity-feedback-scenario-enc",
+    "rows": [
+     45
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_black-market-weapons-enc",
+    "rows": [
+     1
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Just grazed",
+  "cls": "Scenario",
+  "ext": "",
+  "nchoice": null,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ },
+ {
+  "title": "Assault",
+  "cls": "ScenarioAttackInbound",
+  "ext": "Conflict",
+  "nchoice": null,
+  "found": 6,
+  "where": [
+   {
+    "table": "a16_dealer-extortion-method-enc",
+    "rows": [
+     10
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_delinquent-activities-enc",
+    "rows": [
+     19
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_body-parts-enc",
+    "rows": [
+     1
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "a16_stalker-scenarios-enc",
+    "rows": [
+     1
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Hook Up",
+  "cls": "ScenarioLoveHookup",
+  "ext": "Love",
+  "nchoice": null,
+  "found": 10,
+  "where": [
+   {
+    "table": "genesis_movie_director",
+    "rows": [
+     50,
+     53
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "genesis_movie_cast_hub",
+    "rows": [
+     226
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "genesis_movie_cast_hub_support_1",
+    "rows": [
+     226
+    ],
+    "body_ok": false
+   },
+   {
+    "table": "senior_center_senior",
+    "rows": [
+     127
+    ],
+    "body_ok": false
+   }
+  ],
+  "body_ok": false
+ },
+ {
+  "title": "Sprouting Lordling",
+  "cls": "ScenarioIAPConfiguredPush",
+  "ext": "Landlord",
+  "nchoice": 2,
+  "found": 0,
+  "where": [],
+  "body_ok": false
+ }
+]

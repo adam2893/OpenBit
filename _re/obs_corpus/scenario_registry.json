@@ -1,0 +1,1765 @@
+{
+ "source_files": [
+  "/tmp/prod2_run3.json",
+  "/tmp/prod2_run1.json",
+  "/tmp/prod2_run2.json"
+ ],
+ "rows": 533,
+ "counts": {
+  "offered": 173,
+  "accepted": 159,
+  "rejected": 14,
+  "unknown": 0,
+  "picked": 3
+ },
+ "candidates": [
+  {
+   "name": "ScenarioActorAgentCandidate",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioActorAgentDropsHero",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioActorAgentFilmRole",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioActorAgentShowRole",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioAircraftDanger",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioArrangedMarriage",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioBackToSchoolAgeUpFieldTrip",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioBackToSchoolAgeUpSleepover",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioBlackMarketAuctionHouseAdvice",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioBusinessSellCompanyPush",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioBusinessTeamRequest",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCarAccident",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCarDUI",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCarForSaleSpouseBought",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCarForSaleSpouseSuggests",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCasinos",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildAdoptPush",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildDemands",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildDiscipline",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildWantsPet",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildhoodEmigration",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildhoodFamilyVacation",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildhoodPeriod",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioChildhoodVaccination",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCoworkerAnnoying",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCoworkerHookup",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCoworkerInappropriate",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCoworkerPrankInbound",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCoworkerRumorInbound",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCrimeCapture",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCrimeDelinquencyPush",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCrimeFalseAccusation",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCrimeStolenCarTracked",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioCultDemandTotem",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioEthicsBreakSomething",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioEthicsFindDrugs",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioEthicsSomeoneChokes",
+   "limit": 1,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioEthicsWitnessCrime",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioExLoverInboundBootyCall",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioExLoverInboundRekindle",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioExLoverInboundSext",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioExLoverPaternityTest",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFailingEyesight",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFameFeud",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFamePaparazzi",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFameStalker",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFameTalkShow",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendAddiction",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendAdvice",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendConfession",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendDrug",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendLoverHookup",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendPartyInbound",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendPrankInbound",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendRumorInbound",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendThreesome",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioFriendWeaponEncounter",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioGenderIdentity",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioGhostEncounter",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioHeirloomFriendBorrow",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioHorseRaces",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioHouseForSaleSpouseBought",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioHouseForSaleSpouseSuggests",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioInsultHero",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioJewelGiftInbound",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioJobPressure",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioJobReferral",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioJobRetire",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioJobUpsetsParent",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLightningStrike",
+   "limit": 1,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLocalFreeItemSantasSack",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoveClassmate",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoveDate",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoveFirstKiss",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoveHookup",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoveThreesome",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverCheats",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverCounselingPush",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverDemandsStuff",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverElopePush",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverMakeLoveNag",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverParentsDisapprove",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverPlasticSurgery",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverSteals",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioLoverSuspicious",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMafiaHeroHunted",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMafiaHeroHuntedCallingCard",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMafiaHeroRelativeKilled",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMilitaryDeployment",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMilitaryRetire",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioModelParentsOfferLessons",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMusicBandAudition",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioMusicSoloAuditionPush",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOfferDrug",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOfferFood",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOnboardingCustomPeople",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOpportunityChildhoodMovie",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOpportunityMovie",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOpportunitySmuggle",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOutdoorAgeUpBikeRide",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioOutdoorAgeUpParentsGiveBike",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioParanormalEncounter",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioParanormalPhenomenon",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioParentCheats",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioParentsOfferInstrumentLessons",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioParentsOfferPet",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPetAttacksHero",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPetAttacksRelative",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPetDiscipline",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPetEscapes",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPetKills",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonBullyInbound",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonConjugalVisit",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonGangRecruitment",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonReceiveGift",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonSnitch",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonWardenEncounter",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPrisonerProfile",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPushConcert",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioPushSpendTime",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoadRage",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalCelebrityPush",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalCommonerHonorific",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalCommonerNegative",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalCommonerPositive",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalNewLaw",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalRevolt",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalSchoolNegative",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalSchoolPositive",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioRoyalTabloid",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolBully",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolCheatInbound",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolCheatOutbound",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolClassmateActUp",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolSkipPush",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolTeacherCallOut",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolTeacherFlirtInbound",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSchoolTeacherSeduce",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSexualityChallenge",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSexualityDeclare",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSiblingBully",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSocialMediaCelebrityFollowPush",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSocialMediaHack",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSocialMediaJoinPush",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSocialMediaPromote",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSocialMediaTrollInbound",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSportsHallOfFame",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioStepparentCruelty",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSupervisorSeduce",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSupervisorSocialize",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioSupervisorTeamBuilding",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpCouncilCommunion",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpCouncilDiscipline",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpCouncilProtection",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpDumbScenario",
+   "limit": 14,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpLoverBeg",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVampireAgeUpWithered",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioVictimRansom",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  },
+  {
+   "name": "ScenarioWatercraftDanger",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": true
+  }
+ ],
+ "rejected": [
+  {
+   "name": "ScenarioEncounterAnimal",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioEncounterPerson",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioEncounterProstitute",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioEthicsFindObject",
+   "limit": 3,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioEthicsSaveLife",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioInsultRelative",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioOfferAlcohol",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioOpportunityCasino",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioOpportunityClub",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioOpportunityHorseTrack",
+   "limit": 5,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioPetFind",
+   "limit": 2,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioRetentionHeadhunter",
+   "limit": 70,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioSiblingSquabble",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  },
+  {
+   "name": "ScenarioSupervisorUnprofessional",
+   "limit": 7,
+   "ages": [
+    52,
+    53,
+    49
+   ],
+   "accepted": false
+  }
+ ],
+ "unknown_acceptance": [],
+ "offered_only": [],
+ "picked": [
+  {
+   "age": 52,
+   "cls": "DumbScenario"
+  },
+  {
+   "age": 53,
+   "cls": "ScenarioSocialMediaJoinPush"
+  },
+  {
+   "age": 49,
+   "cls": "ScenarioLoveHookup"
+  }
+ ]
+}

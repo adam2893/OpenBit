@@ -1,0 +1,46 @@
+Class,Title,Body,Ages,Sources
+Scenario,Good times,You went to play bingo at the community center with your mother.,12,trace_game3.json
+Scenario,I won't play those games,You told your mother about your stepfather's behavior.,,trace_game2.json
+Scenario,Isn't she cute?,"You rewarded your vizsla, Hazel, with a Porterhouse steak.",10,trace_game3.json
+Scenario,Ouch,You kicked your stepfather's face!,,trace_game2.json
+ScenarioBase,Evaders of the Lost Ark,"You received a script for a movie called 'Evaders of the Lost Ark,' and must decide who should play the lead.
+
+It's a film about an archeology professor who is hired to find the Ark of the Cavemen before an evil organization retrieves what's inside it: an artifact that can make an army shoot beams from their pinkies.",19,trace_game7.json
+ScenarioCasinoBet,Oak Tree Casino,Place your blackjack bets!,31,trace_game9.json
+ScenarioCrimePickpocket,Pickpocket,You're thinking about earning some quick money on the streets.,,trace_game2.json
+ScenarioCustomAttack,Attack,How will you attack your stepfather?,,trace_game2.json
+ScenarioFriendMeet,New Friend,"Your classmate, Mauri, wants to become your friend.",,trace_game2.json
+ScenarioFriendUnfriendInbound,Unfriended,"Your best friend, Krista, has unfriended you.
+
+What will you do?",30,trace_game9.json
+ScenarioJobAcquisition,When can you start?,You left your job as a Apprentice Carpenter at The Heikkila Company and are now a Busser at United Restaurant.,30,trace_game9.json
+ScenarioOpportunityCasino,Casino,"Some of your friends are going to a local casino called Oak Tree Casino.
+
+Will you join them?",31,trace_game9.json
+ScenarioPetDeath,Death,"The family vizsla, Hazel, died at the age of 15.
+
+She perished after losing her last fight, against old age.",11,trace_game3.json
+ScenarioPetDiscipline,Behavior,"Your vizsla, Hazel, just ate your fruit snacks.
+
+What will you do?",10,trace_game3.json
+ScenarioPushSpendTime,Quality Time,"Your mother wants to take you to play bingo at the community center.
+
+Will you go with her?",12,trace_game3.json
+ScenarioRetentionCrime,Mischief Maker,"You're wondering how much trouble you'll get into if you do something a little bit naughty.
+
+What will you do?",,trace_game2.json
+ScenarioRetentionFreelanceGig,Freelance Gig,"You're looking at your bank account and are thinking of picking up a freelance gig to get some extra cash.
+
+What will you do?",13,trace_game3.json
+ScenarioRetentionHeadhunter,Job Offer,"Someone is contacting you about a job opportunity as a Busser.
+
+You are currently a Apprentice Carpenter and make €50,716 each year.",29,trace_game9.json
+ScenarioSchoolEnroll,Primary School,You are starting primary school.,,trace_game2.json
+ScenarioScriptEventSiblingBorn,Baby,"Your mother and stepfather just had a baby girl named Inka, your new half sister.",,trace_game2.json
+ScenarioScriptEventSiblingBorn,Baby,"Your mother and stepfather just had a baby girl named Sanna, your new half sister.",13,trace_game3.json
+ScenarioStepparentCruelty,Evil Stepfather,"Your stepfather made you cupcakes for your birthday but intentionally used salt instead of sugar in the recipe.
+
+What will you do?",,trace_game2.json
+ScenarioStepparentCruelty,Evil Stepfather,"Your stepfather pranked you by convincing you that you're invisible.
+
+What will you do?",,trace_game2.json

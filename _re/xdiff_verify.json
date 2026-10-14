@@ -1,0 +1,482 @@
+{
+ "scenarios": [
+  {
+   "text": "Your stepfather pranked you by convincing you that you're invisible.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_stepparent-cruelty-scenarios-enc",
+     "stepfather pranked you by convincing you that you're invisible"
+    ]
+   ],
+   "table": "a16_stepparent-cruelty-scenarios-enc"
+  },
+  {
+   "text": "You told your mother about your stepfather's behavior.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your mother and stepfather just had a baby girl named Inka, your new half sister.",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your stepfather made you cupcakes for your birthday but intentionally used salt instead of sugar in the recipe.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_stepparent-cruelty-scenarios-enc",
+     "stepfather made you cupcakes for your birthday but intentionally used salt instead of sugar in the recipe"
+    ]
+   ],
+   "table": "a16_stepparent-cruelty-scenarios-enc"
+  },
+  {
+   "text": "How will you attack your stepfather?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You kicked your stepfather's face!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You are starting primary school.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your classmate, Mauri, wants to become your friend.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You're wondering how much trouble you'll get into if you do something a little bit naughty.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You're thinking about earning some quick money on the streets.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your vizsla, Hazel, just ate your fruit snacks.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_pet-discipline-enc",
+     "just ate your fruit snacks"
+    ]
+   ],
+   "table": "a16_pet-discipline-enc"
+  },
+  {
+   "text": "You rewarded your vizsla, Hazel, with a Porterhouse steak.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "The family vizsla, Hazel, died at the age of 15.\n\nShe perished after losing her last fight, against old age.",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your mother wants to take you to play bingo at the community center.\n\nWill you go with her?",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_cult-random-commune-names-enc",
+     "mother wants to take you to play bingo at the community center"
+    ]
+   ],
+   "table": "a16_cult-random-commune-names-enc"
+  },
+  {
+   "text": "You went to play bingo at the community center with your mother.",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_cult-random-commune-names-enc",
+     "went to play bingo at the community center with your mother"
+    ]
+   ],
+   "table": "a16_cult-random-commune-names-enc"
+  },
+  {
+   "text": "Your mother and stepfather just had a baby girl named Sanna, your new half sister.",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You're looking at your bank account and are thinking of picking up a freelance gig to get some extra cash.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You received a script for a movie called 'Evaders of the Lost Ark,' and must decide who should play the lead.\n\nIt's a film about an archeology profess",
+   "nchunks": 4,
+   "hits": [
+    [
+     "genesis_movie_director",
+     "received a script for a movie called '"
+    ],
+    [
+     "genesis_movie_director",
+     "' and must decide who should play the lead"
+    ],
+    [
+     "a16_school-frats-enc",
+     "before an evil organization retrieves what's inside it an artifact that can make an army shoot beams from their pinkies"
+    ]
+   ],
+   "table": "genesis_movie_director"
+  },
+  {
+   "text": "Your friends are all starting their own podcasts.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Start your own podcast today!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Record the first season of your podcast!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You started a finance podcast called 'Retiring with Fat Pockets' and released your first season.",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You're thinking of breaking up your podcast episodes into segments to make them more engaging for your listeners, and it's essential to you that each ",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_podcast-dumb-enc",
+     "'re thinking of breaking up your podcast episodes into segments to make them more engaging for your listeners and it's essential to you that each episode concludes with a segment that will keep users coming back for more"
+    ]
+   ],
+   "table": "a16_podcast-dumb-enc"
+  },
+  {
+   "text": "Your podcast's first season was a success.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Your best friend, Krista, has an extra ticket to see Eminem and wants you to go with him, but warns you that the show has a no-phones policy and will ",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "While on your walk, you encounter a streetworker winking at you.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "How will you attack the streetworker?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "You tried to punch the streetworker but missed!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "She stormed you!\n\nShe bashed your fist.\nShe lacerated your eyebrow.",
+   "nchunks": 2,
+   "hits": [
+    [
+     "a16_sports-injuries-enc",
+     "lacerated your eyebrow"
+    ]
+   ],
+   "table": "a16_sports-injuries-enc"
+  },
+  {
+   "text": "You have an opportunity to have a one night stand with a young lady named Laura Niemela.\n\nWhat will you do?",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "On your way to the dentist, you overhear a crackhead mention that he can afford to laze around all day since he earns mad cash from renting out condom",
+   "nchunks": 1,
+   "hits": [
+    [
+     "SerializedPushScenarioConfig-enc",
+     "your way to the dentist you overhear a crackhead mention that he can afford to laze around all day since he earns mad cash from renting out condominiums which makes you wonder if you could do the same"
+    ]
+   ],
+   "table": "SerializedPushScenarioConfig-enc"
+  }
+ ],
+ "logs": [
+  {
+   "text": "My half sister, Nea, started primary school.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I had a nightmare that I went skydiving and the parachute didn't open.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I started a finance podcast called 'Retiring with Fat Pockets'.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I ended this season's podcast episodes with a segment where I confessed something about myself. The hardest thing to admit was the fact that I am afra",
+   "nchunks": 2,
+   "hits": [
+    [
+     "a16_podcast-dumb-enc",
+     "i ended this season's podcast episodes with a segment where i confessed something about myself"
+    ]
+   ],
+   "table": "a16_podcast-dumb-enc"
+  },
+  {
+   "text": "I made \u20ac306 after publishing a season of Retiring with Fat Pockets.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My half sister, Inka, graduated from secondary school.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My best friend, Krista, invited me to join him at a no-phones-allowed Eminem concert, and I was like, \"No phones, that's so stupid!\".",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My half sister, Inka, enlisted in the Navy.",
+   "nchunks": 0,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "Lately, I've been working on the subtle art of not giving a frick.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I decided to attack a streetworker who was winking at me!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I tried to punch the streetworker but missed!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "She stormed me!\nShe bashed my fist.\nShe lacerated my eyebrow.",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_sports-injuries-enc",
+     "lacerated my eyebrow"
+    ]
+   ],
+   "table": "a16_sports-injuries-enc"
+  },
+  {
+   "text": "My half sister, Inka, has been promoted to Seaman Apprentice.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I looked into becoming a landlord.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My mother started a new position as Travel Associate for Helsinki Travel. She is no longer suffering from constipation.",
+   "nchunks": 2,
+   "hits": [
+    [
+     "a16_disease-symptom-scenarios-enc",
+     "is no longer suffering from constipation"
+    ]
+   ],
+   "table": "a16_disease-symptom-scenarios-enc"
+  },
+  {
+   "text": "My stepfather convinced me that I'm invisible. I told my mother about his behavior.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My mother and my stepfather had a baby girl named Inka Tuominen, my new half sister. She was an accidental pregnancy.",
+   "nchunks": 3,
+   "hits": [
+    [
+     "a16_birth-circumstances-enc",
+     "was an accidental pregnancy"
+    ]
+   ],
+   "table": "a16_birth-circumstances-enc"
+  },
+  {
+   "text": "My stepfather pranked me by giving me nasty, salty cupcakes for my birthday.",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_stepparent-cruelty-scenarios-enc",
+     "stepfather pranked me by giving me nasty salty cupcakes for my birthday"
+    ]
+   ],
+   "table": "a16_stepparent-cruelty-scenarios-enc"
+  },
+  {
+   "text": "I kicked my stepfather's face!",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I have been enrolled in primary school at Aaltonen Primary School.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I decided my favorite snack was fruit leather and ate only that for 5 days.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My mother has been promoted to Tour Operator.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I pounded a glass of glitter that my classmate, Dragoljub Lazic, dared me to drink, then got sent to the nurse's office.",
+   "nchunks": 2,
+   "hits": [
+    [
+     "a16_dumb-scenarios-universal-enc",
+     "dared me to drink then got sent to the nurse's office"
+    ]
+   ],
+   "table": "a16_dumb-scenarios-universal-enc"
+  },
+  {
+   "text": "My half sister, Inka, started primary school.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I was crowned ruler of the balance beam at recess.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My vizsla, Hazel, ate my fruit snacks. I rewarded her with a Porterhouse steak.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I've been wondering what it would be like to live in the wealthiest part of Helsinki when I'm grown up.",
+   "nchunks": 2,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My vizsla, Hazel, perished after losing her last fight, against old age.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "My mother has been promoted to General Manager.",
+   "nchunks": 1,
+   "hits": [],
+   "table": null
+  },
+  {
+   "text": "I went to play bingo at the community center with my mother.",
+   "nchunks": 1,
+   "hits": [
+    [
+     "a16_cult-random-commune-names-enc",
+     "i went to play bingo at the community center with my mother"
+    ]
+   ],
+   "table": "a16_cult-random-commune-names-enc"
+  },
+  {
+   "text": "My mother and my stepfather had a baby girl named Sanna Tuominen, my new half sister. She was a planned pregnancy.",
+   "nchunks": 3,
+   "hits": [
+    [
+     "a16_birth-circumstances-enc",
+     "was a planned pregnancy"
+    ]
+   ],
+   "table": "a16_birth-circumstances-enc"
+  },
+  {
+   "text": "I got my shot to direct a film and chose to make an action movie.",
+   "nchunks": 1,
+   "hits": [
+    [
+     "genesis_movie_director",
+     "i got my shot to direct a film and chose to make an action movie"
+    ]
+   ],
+   "table": "genesis_movie_director"
+  }
+ ]
+}

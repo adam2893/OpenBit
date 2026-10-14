@@ -1,0 +1,4693 @@
+{
+ "tables": 1084,
+ "classes": 173,
+ "with_candidate": 157,
+ "with_strong_candidate": 76,
+ "map": {
+  "ScenarioActorAgentCandidate": {
+   "tokens": [
+    "actor",
+    "agent",
+    "candidate"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-actor-enc",
+     "score": 1.5,
+     "shared": [
+      "actor"
+     ]
+    },
+    {
+     "table": "a16_actor-agent-hire-color-enc",
+     "score": 1.333,
+     "shared": [
+      "actor",
+      "agent"
+     ]
+    },
+    {
+     "table": "a16_actor-agent-fire-color-enc",
+     "score": 1.333,
+     "shared": [
+      "actor",
+      "agent"
+     ]
+    }
+   ]
+  },
+  "ScenarioActorAgentDropsHero": {
+   "tokens": [
+    "actor",
+    "agent",
+    "drops",
+    "hero"
+   ],
+   "candidates": [
+    {
+     "table": "a16_actor-agent-drops-hero-color-enc",
+     "score": 2.2,
+     "shared": [
+      "actor",
+      "agent",
+      "drops",
+      "hero"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-actor-enc",
+     "score": 1.375,
+     "shared": [
+      "actor"
+     ]
+    },
+    {
+     "table": "a16_actor-agent-hire-color-enc",
+     "score": 1.125,
+     "shared": [
+      "actor",
+      "agent"
+     ]
+    }
+   ]
+  },
+  "ScenarioActorAgentFilmRole": {
+   "tokens": [
+    "actor",
+    "agent",
+    "film",
+    "role"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-actor-enc",
+     "score": 1.375,
+     "shared": [
+      "actor"
+     ]
+    },
+    {
+     "table": "a16_actor-film-genres-enc",
+     "score": 1.333,
+     "shared": [
+      "actor",
+      "film"
+     ]
+    },
+    {
+     "table": "a16_actor-film-critic-color-enc",
+     "score": 1.125,
+     "shared": [
+      "actor",
+      "film"
+     ]
+    }
+   ]
+  },
+  "ScenarioActorAgentShowRole": {
+   "tokens": [
+    "actor",
+    "agent",
+    "role",
+    "show"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-actor-enc",
+     "score": 1.375,
+     "shared": [
+      "actor"
+     ]
+    },
+    {
+     "table": "a16_actor-show-genres-enc",
+     "score": 1.333,
+     "shared": [
+      "actor",
+      "show"
+     ]
+    },
+    {
+     "table": "a16_actor-agent-hire-color-enc",
+     "score": 1.125,
+     "shared": [
+      "actor",
+      "agent"
+     ]
+    }
+   ]
+  },
+  "ScenarioAircraftDanger": {
+   "tokens": [
+    "aircraft",
+    "danger"
+   ],
+   "candidates": [
+    {
+     "table": "a16_aircraft-danger-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "aircraft",
+      "danger"
+     ]
+    },
+    {
+     "table": "a16_aircraft-enc",
+     "score": 1.75,
+     "shared": [
+      "aircraft"
+     ]
+    },
+    {
+     "table": "a16_watercraft-danger-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "danger"
+     ]
+    }
+   ]
+  },
+  "ScenarioArrangedMarriage": {
+   "tokens": [
+    "arranged",
+    "marriage"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-marriage-nags-enc",
+     "score": 0.917,
+     "shared": [
+      "marriage"
+     ]
+    }
+   ]
+  },
+  "ScenarioBackToSchoolAgeUpFieldTrip": {
+   "tokens": [
+    "age",
+    "back",
+    "field",
+    "school",
+    "trip",
+    "up"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-act-up-scenarios-enc",
+     "score": 1.111,
+     "shared": [
+      "school",
+      "up"
+     ]
+    },
+    {
+     "table": "a16_back-to-school-titles-enc",
+     "score": 1.111,
+     "shared": [
+      "back",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_backtoschool-field-trip-location-enc",
+     "score": 0.917,
+     "shared": [
+      "field",
+      "trip"
+     ]
+    }
+   ]
+  },
+  "ScenarioBackToSchoolAgeUpSleepover": {
+   "tokens": [
+    "age",
+    "back",
+    "school",
+    "sleepover",
+    "up"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-act-up-scenarios-enc",
+     "score": 1.2,
+     "shared": [
+      "school",
+      "up"
+     ]
+    },
+    {
+     "table": "a16_back-to-school-titles-enc",
+     "score": 1.2,
+     "shared": [
+      "back",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-frats-enc",
+     "score": 0.75,
+     "shared": [
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioBlackMarketAuctionHouseAdvice": {
+   "tokens": [
+    "advice",
+    "auction",
+    "black",
+    "house",
+    "market"
+   ],
+   "candidates": [
+    {
+     "table": "a16_black-market-auction-house-names-enc",
+     "score": 1.92,
+     "shared": [
+      "auction",
+      "black",
+      "house",
+      "market"
+     ]
+    },
+    {
+     "table": "a16_black-market-auction-categories-enc",
+     "score": 1.575,
+     "shared": [
+      "auction",
+      "black",
+      "market"
+     ]
+    },
+    {
+     "table": "a16_financial-market-advice-enc",
+     "score": 1.2,
+     "shared": [
+      "advice",
+      "market"
+     ]
+    }
+   ]
+  },
+  "ScenarioBusinessSellCompanyPush": {
+   "tokens": [
+    "business",
+    "company",
+    "sell"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-business-enc",
+     "score": 1.5,
+     "shared": [
+      "business"
+     ]
+    },
+    {
+     "table": "a16_business-products-enc",
+     "score": 0.917,
+     "shared": [
+      "business"
+     ]
+    },
+    {
+     "table": "a16_business-industries-enc",
+     "score": 0.917,
+     "shared": [
+      "business"
+     ]
+    }
+   ]
+  },
+  "ScenarioBusinessTeamRequest": {
+   "tokens": [
+    "business",
+    "request",
+    "team"
+   ],
+   "candidates": [
+    {
+     "table": "a16_business-team-requests-enc",
+     "score": 1.556,
+     "shared": [
+      "business",
+      "team"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-business-enc",
+     "score": 1.5,
+     "shared": [
+      "business"
+     ]
+    },
+    {
+     "table": "a16_business-team-building-activities-enc",
+     "score": 1.333,
+     "shared": [
+      "business",
+      "team"
+     ]
+    }
+   ]
+  },
+  "ScenarioCarAccident": {
+   "tokens": [
+    "accident",
+    "car"
+   ],
+   "candidates": [
+    {
+     "table": "a16_car-parts-enc",
+     "score": 1.125,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_car-models-enc",
+     "score": 1.125,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_license-car-questions-enc",
+     "score": 0.917,
+     "shared": [
+      "car"
+     ]
+    }
+   ]
+  },
+  "ScenarioCarDUI": {
+   "tokens": [
+    "car",
+    "dui"
+   ],
+   "candidates": [
+    {
+     "table": "a16_car-parts-enc",
+     "score": 1.125,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_car-models-enc",
+     "score": 1.125,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_license-car-questions-enc",
+     "score": 0.917,
+     "shared": [
+      "car"
+     ]
+    }
+   ]
+  },
+  "ScenarioCarForSaleSpouseBought": {
+   "tokens": [
+    "bought",
+    "car",
+    "sale",
+    "spouse"
+   ],
+   "candidates": [
+    {
+     "table": "a16_car-parts-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_car-models-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_spouse-vehicle-reactions-enc",
+     "score": 0.625,
+     "shared": [
+      "spouse"
+     ]
+    }
+   ]
+  },
+  "ScenarioCarForSaleSpouseSuggests": {
+   "tokens": [
+    "car",
+    "sale",
+    "spouse",
+    "suggests"
+   ],
+   "candidates": [
+    {
+     "table": "a16_car-parts-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_car-models-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_spouse-vehicle-reactions-enc",
+     "score": 0.625,
+     "shared": [
+      "spouse"
+     ]
+    }
+   ]
+  },
+  "ScenarioCasinos": {
+   "tokens": [
+    "casinos"
+   ],
+   "candidates": []
+  },
+  "ScenarioChildAdoptPush": {
+   "tokens": [
+    "adopt",
+    "child"
+   ],
+   "candidates": [
+    {
+     "table": "a16_child-discipline-enc",
+     "score": 1.125,
+     "shared": [
+      "child"
+     ]
+    },
+    {
+     "table": "a16_child-demands-enc",
+     "score": 1.125,
+     "shared": [
+      "child"
+     ]
+    },
+    {
+     "table": "a16_custody-child-argument-enc",
+     "score": 0.917,
+     "shared": [
+      "child"
+     ]
+    }
+   ]
+  },
+  "ScenarioChildDemands": {
+   "tokens": [
+    "child",
+    "demands"
+   ],
+   "candidates": [
+    {
+     "table": "a16_child-demands-enc",
+     "score": 2.5,
+     "shared": [
+      "child",
+      "demands"
+     ]
+    },
+    {
+     "table": "a16_child-discipline-enc",
+     "score": 1.125,
+     "shared": [
+      "child"
+     ]
+    },
+    {
+     "table": "a16_custody-child-argument-enc",
+     "score": 0.917,
+     "shared": [
+      "child"
+     ]
+    }
+   ]
+  },
+  "ScenarioChildDiscipline": {
+   "tokens": [
+    "child",
+    "discipline"
+   ],
+   "candidates": [
+    {
+     "table": "a16_child-discipline-enc",
+     "score": 2.5,
+     "shared": [
+      "child",
+      "discipline"
+     ]
+    },
+    {
+     "table": "a16_pet-discipline-enc",
+     "score": 1.125,
+     "shared": [
+      "discipline"
+     ]
+    },
+    {
+     "table": "a16_child-demands-enc",
+     "score": 1.125,
+     "shared": [
+      "child"
+     ]
+    }
+   ]
+  },
+  "ScenarioChildWantsPet": {
+   "tokens": [
+    "child",
+    "pet",
+    "wants"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioChildhoodEmigration": {
+   "tokens": [
+    "childhood",
+    "emigration"
+   ],
+   "candidates": []
+  },
+  "ScenarioChildhoodFamilyVacation": {
+   "tokens": [
+    "childhood",
+    "family",
+    "vacation"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-vacation-enc",
+     "score": 1.5,
+     "shared": [
+      "vacation"
+     ]
+    },
+    {
+     "table": "a16_vacation-destinations-enc",
+     "score": 0.917,
+     "shared": [
+      "vacation"
+     ]
+    },
+    {
+     "table": "a16_luxury-island-vacation-dumb-scenario-enc",
+     "score": 0.722,
+     "shared": [
+      "vacation"
+     ]
+    }
+   ]
+  },
+  "ScenarioChildhoodPeriod": {
+   "tokens": [
+    "childhood",
+    "period"
+   ],
+   "candidates": []
+  },
+  "ScenarioChildhoodVaccination": {
+   "tokens": [
+    "childhood",
+    "vaccination"
+   ],
+   "candidates": []
+  },
+  "ScenarioCoworkerAnnoying": {
+   "tokens": [
+    "annoying",
+    "coworker"
+   ],
+   "candidates": [
+    {
+     "table": "a16_coworker-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-pranks-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    }
+   ]
+  },
+  "ScenarioCoworkerHookup": {
+   "tokens": [
+    "coworker",
+    "hookup"
+   ],
+   "candidates": [
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "coworker",
+      "hookup"
+     ]
+    },
+    {
+     "table": "a16_hookup-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "hookup"
+     ]
+    },
+    {
+     "table": "a16_hookup-feedback-enc",
+     "score": 1.125,
+     "shared": [
+      "hookup"
+     ]
+    }
+   ]
+  },
+  "ScenarioCoworkerInappropriate": {
+   "tokens": [
+    "coworker",
+    "inappropriate"
+   ],
+   "candidates": [
+    {
+     "table": "a16_coworker-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-pranks-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "coworker"
+     ]
+    }
+   ]
+  },
+  "ScenarioCoworkerPrankInbound": {
+   "tokens": [
+    "coworker",
+    "inbound",
+    "prank"
+   ],
+   "candidates": [
+    {
+     "table": "a16_coworker-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    }
+   ]
+  },
+  "ScenarioCoworkerRumorInbound": {
+   "tokens": [
+    "coworker",
+    "inbound",
+    "rumor"
+   ],
+   "candidates": [
+    {
+     "table": "a16_coworker-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    },
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "coworker"
+     ]
+    }
+   ]
+  },
+  "ScenarioCrimeCapture": {
+   "tokens": [
+    "capture",
+    "crime"
+   ],
+   "candidates": []
+  },
+  "ScenarioCrimeDelinquencyPush": {
+   "tokens": [
+    "crime",
+    "delinquency"
+   ],
+   "candidates": []
+  },
+  "ScenarioCrimeFalseAccusation": {
+   "tokens": [
+    "accusation",
+    "crime",
+    "false"
+   ],
+   "candidates": []
+  },
+  "ScenarioCrimeStolenCarTracked": {
+   "tokens": [
+    "car",
+    "crime",
+    "stolen",
+    "tracked"
+   ],
+   "candidates": [
+    {
+     "table": "a16_car-parts-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_car-models-enc",
+     "score": 0.812,
+     "shared": [
+      "car"
+     ]
+    },
+    {
+     "table": "a16_license-car-questions-enc",
+     "score": 0.625,
+     "shared": [
+      "car"
+     ]
+    }
+   ]
+  },
+  "ScenarioCultDemandTotem": {
+   "tokens": [
+    "cult",
+    "demand",
+    "totem"
+   ],
+   "candidates": [
+    {
+     "table": "a16_cult-totem-lecture-enc",
+     "score": 1.556,
+     "shared": [
+      "cult",
+      "totem"
+     ]
+    },
+    {
+     "table": "a16_cult-totem-inspiration-enc",
+     "score": 1.556,
+     "shared": [
+      "cult",
+      "totem"
+     ]
+    },
+    {
+     "table": "a16_cult-totem-disrespect-enc",
+     "score": 1.556,
+     "shared": [
+      "cult",
+      "totem"
+     ]
+    }
+   ]
+  },
+  "ScenarioEncounterAnimal": {
+   "tokens": [
+    "animal",
+    "encounter"
+   ],
+   "candidates": [
+    {
+     "table": "a16_outdoor-animal-enc",
+     "score": 1.125,
+     "shared": [
+      "animal"
+     ]
+    },
+    {
+     "table": "a16_zoo-animal-show-enc",
+     "score": 0.917,
+     "shared": [
+      "animal"
+     ]
+    },
+    {
+     "table": "a16_zoo-animal-names-enc",
+     "score": 0.917,
+     "shared": [
+      "animal"
+     ]
+    }
+   ]
+  },
+  "ScenarioEncounterPerson": {
+   "tokens": [
+    "encounter",
+    "person"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-hunter-encounter-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    },
+    {
+     "table": "a16_outdoor-offroading-encounter-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    },
+    {
+     "table": "a16_outdoor-ghost-encounter-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    }
+   ]
+  },
+  "ScenarioEncounterProstitute": {
+   "tokens": [
+    "encounter",
+    "prostitute"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-hunter-encounter-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    },
+    {
+     "table": "a16_outdoor-offroading-encounter-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    },
+    {
+     "table": "a16_outdoor-ghost-encounter-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    }
+   ]
+  },
+  "ScenarioEthicsBreakSomething": {
+   "tokens": [
+    "break",
+    "ethics",
+    "something"
+   ],
+   "candidates": [
+    {
+     "table": "a16_child-break-items-enc",
+     "score": 0.722,
+     "shared": [
+      "break"
+     ]
+    }
+   ]
+  },
+  "ScenarioEthicsFindDrugs": {
+   "tokens": [
+    "drugs",
+    "ethics",
+    "find"
+   ],
+   "candidates": [
+    {
+     "table": "a16_drugs-enc",
+     "score": 1.5,
+     "shared": [
+      "drugs"
+     ]
+    },
+    {
+     "table": "a16_cult-spiritual-journey-drugs-enc",
+     "score": 0.625,
+     "shared": [
+      "drugs"
+     ]
+    }
+   ]
+  },
+  "ScenarioEthicsFindObject": {
+   "tokens": [
+    "ethics",
+    "find",
+    "object"
+   ],
+   "candidates": [
+    {
+     "table": "genesis_object_subtypes",
+     "score": 0.722,
+     "shared": [
+      "object"
+     ]
+    },
+    {
+     "table": "genesis_object_entity_list",
+     "score": 0.625,
+     "shared": [
+      "object"
+     ]
+    }
+   ]
+  },
+  "ScenarioEthicsSaveLife": {
+   "tokens": [
+    "ethics",
+    "life",
+    "save"
+   ],
+   "candidates": [
+    {
+     "table": "a16_outdoor-marine-life-enc",
+     "score": 0.722,
+     "shared": [
+      "life"
+     ]
+    },
+    {
+     "table": "a16_outdoor-marine-life-play-string-enc",
+     "score": 0.567,
+     "shared": [
+      "life"
+     ]
+    }
+   ]
+  },
+  "ScenarioEthicsSomeoneChokes": {
+   "tokens": [
+    "chokes",
+    "ethics",
+    "someone"
+   ],
+   "candidates": []
+  },
+  "ScenarioEthicsWitnessCrime": {
+   "tokens": [
+    "crime",
+    "ethics",
+    "witness"
+   ],
+   "candidates": []
+  },
+  "ScenarioExLoverInboundBootyCall": {
+   "tokens": [
+    "booty",
+    "call",
+    "ex",
+    "inbound",
+    "lover"
+   ],
+   "candidates": [
+    {
+     "table": "a16_ex-lover-booty-call-scenarios-enc",
+     "score": 2.2,
+     "shared": [
+      "booty",
+      "call",
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-stalking-scenarios-enc",
+     "score": 1.2,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-rekindle-scenarios-enc",
+     "score": 1.2,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioExLoverInboundRekindle": {
+   "tokens": [
+    "ex",
+    "inbound",
+    "lover",
+    "rekindle"
+   ],
+   "candidates": [
+    {
+     "table": "a16_ex-lover-rekindle-scenarios-enc",
+     "score": 2.125,
+     "shared": [
+      "ex",
+      "lover",
+      "rekindle"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-stalking-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-hate-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioExLoverInboundSext": {
+   "tokens": [
+    "ex",
+    "inbound",
+    "lover",
+    "sext"
+   ],
+   "candidates": [
+    {
+     "table": "a16_ex-lover-stalking-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-rekindle-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-hate-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioExLoverPaternityTest": {
+   "tokens": [
+    "ex",
+    "lover",
+    "paternity",
+    "test"
+   ],
+   "candidates": [
+    {
+     "table": "a16_ex-lover-stalking-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-rekindle-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_ex-lover-hate-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "ex",
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioFailingEyesight": {
+   "tokens": [
+    "eyesight",
+    "failing"
+   ],
+   "candidates": []
+  },
+  "ScenarioFameFeud": {
+   "tokens": [
+    "fame",
+    "feud"
+   ],
+   "candidates": []
+  },
+  "ScenarioFamePaparazzi": {
+   "tokens": [
+    "fame",
+    "paparazzi"
+   ],
+   "candidates": [
+    {
+     "table": "a16_paparazzi-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "paparazzi"
+     ]
+    }
+   ]
+  },
+  "ScenarioFameStalker": {
+   "tokens": [
+    "fame",
+    "stalker"
+   ],
+   "candidates": [
+    {
+     "table": "a16_stalker-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "stalker"
+     ]
+    }
+   ]
+  },
+  "ScenarioFameTalkShow": {
+   "tokens": [
+    "fame",
+    "show",
+    "talk"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dirty-talk-enc",
+     "score": 0.917,
+     "shared": [
+      "talk"
+     ]
+    },
+    {
+     "table": "a16_zoo-animal-show-enc",
+     "score": 0.722,
+     "shared": [
+      "show"
+     ]
+    },
+    {
+     "table": "a16_sports-trash-talk-scenarios-enc",
+     "score": 0.722,
+     "shared": [
+      "talk"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendAddiction": {
+   "tokens": [
+    "addiction",
+    "friend"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.75,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendAdvice": {
+   "tokens": [
+    "advice",
+    "friend"
+   ],
+   "candidates": [
+    {
+     "table": "a16_friend-advice-enc",
+     "score": 2.5,
+     "shared": [
+      "advice",
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.75,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendConfession": {
+   "tokens": [
+    "confession",
+    "friend"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.75,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendDrug": {
+   "tokens": [
+    "drug",
+    "friend"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.75,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_drug-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "drug"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendLoverHookup": {
+   "tokens": [
+    "friend",
+    "hookup",
+    "lover"
+   ],
+   "candidates": [
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "friend",
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_hookup-scenarios-enc",
+     "score": 1.5,
+     "shared": [
+      "hookup"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendPartyInbound": {
+   "tokens": [
+    "friend",
+    "inbound",
+    "party"
+   ],
+   "candidates": [
+    {
+     "table": "a16_friend-party-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "friend",
+      "party"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendPrankInbound": {
+   "tokens": [
+    "friend",
+    "inbound",
+    "prank"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendRumorInbound": {
+   "tokens": [
+    "friend",
+    "inbound",
+    "rumor"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendThreesome": {
+   "tokens": [
+    "friend",
+    "threesome"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.75,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 1.125,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioFriendWeaponEncounter": {
+   "tokens": [
+    "encounter",
+    "friend",
+    "weapon"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioGenderIdentity": {
+   "tokens": [
+    "gender",
+    "identity"
+   ],
+   "candidates": [
+    {
+     "table": "a16_gender-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "gender"
+     ]
+    },
+    {
+     "table": "a16_fight-ing-style-identity-color-enc",
+     "score": 0.75,
+     "shared": [
+      "identity"
+     ]
+    }
+   ]
+  },
+  "ScenarioGhostEncounter": {
+   "tokens": [
+    "encounter",
+    "ghost"
+   ],
+   "candidates": [
+    {
+     "table": "a16_outdoor-ghost-encounter-enc",
+     "score": 2.0,
+     "shared": [
+      "encounter",
+      "ghost"
+     ]
+    },
+    {
+     "table": "a16_vampire-hunter-encounter-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    },
+    {
+     "table": "a16_outdoor-offroading-encounter-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    }
+   ]
+  },
+  "ScenarioHeirloomFriendBorrow": {
+   "tokens": [
+    "borrow",
+    "friend",
+    "heirloom"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-friend-enc",
+     "score": 1.5,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-rumors-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    },
+    {
+     "table": "a16_friend-pranks-enc",
+     "score": 0.917,
+     "shared": [
+      "friend"
+     ]
+    }
+   ]
+  },
+  "ScenarioHorseRaces": {
+   "tokens": [
+    "horse",
+    "races"
+   ],
+   "candidates": []
+  },
+  "ScenarioHouseForSaleSpouseBought": {
+   "tokens": [
+    "bought",
+    "house",
+    "sale",
+    "spouse"
+   ],
+   "candidates": [
+    {
+     "table": "a16_spouse-house-reactions-enc",
+     "score": 1.333,
+     "shared": [
+      "house",
+      "spouse"
+     ]
+    },
+    {
+     "table": "a16_house-types-enc",
+     "score": 0.812,
+     "shared": [
+      "house"
+     ]
+    },
+    {
+     "table": "a16_spouse-vehicle-reactions-enc",
+     "score": 0.625,
+     "shared": [
+      "spouse"
+     ]
+    }
+   ]
+  },
+  "ScenarioHouseForSaleSpouseSuggests": {
+   "tokens": [
+    "house",
+    "sale",
+    "spouse",
+    "suggests"
+   ],
+   "candidates": [
+    {
+     "table": "a16_spouse-house-reactions-enc",
+     "score": 1.333,
+     "shared": [
+      "house",
+      "spouse"
+     ]
+    },
+    {
+     "table": "a16_house-types-enc",
+     "score": 0.812,
+     "shared": [
+      "house"
+     ]
+    },
+    {
+     "table": "a16_spouse-vehicle-reactions-enc",
+     "score": 0.625,
+     "shared": [
+      "spouse"
+     ]
+    }
+   ]
+  },
+  "ScenarioInsultHero": {
+   "tokens": [
+    "hero",
+    "insult"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-insult-enc",
+     "score": 1.125,
+     "shared": [
+      "insult"
+     ]
+    },
+    {
+     "table": "a16_hero-filler-enc",
+     "score": 1.125,
+     "shared": [
+      "hero"
+     ]
+    },
+    {
+     "table": "a16_racing-racer-insult-enc",
+     "score": 0.917,
+     "shared": [
+      "insult"
+     ]
+    }
+   ]
+  },
+  "ScenarioInsultRelative": {
+   "tokens": [
+    "insult",
+    "relative"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-insult-enc",
+     "score": 1.125,
+     "shared": [
+      "insult"
+     ]
+    },
+    {
+     "table": "a16_racing-racer-insult-enc",
+     "score": 0.917,
+     "shared": [
+      "insult"
+     ]
+    },
+    {
+     "table": "a16_music-soundcloud-insult-enc",
+     "score": 0.917,
+     "shared": [
+      "insult"
+     ]
+    }
+   ]
+  },
+  "ScenarioJewelGiftInbound": {
+   "tokens": [
+    "gift",
+    "inbound",
+    "jewel"
+   ],
+   "candidates": [
+    {
+     "table": "a16_casino-casino-gift-enc",
+     "score": 0.917,
+     "shared": [
+      "gift"
+     ]
+    },
+    {
+     "table": "a16_anniversary-gift-enc",
+     "score": 0.917,
+     "shared": [
+      "gift"
+     ]
+    },
+    {
+     "table": "a16_prison-bully-inbound-scenarios-enc",
+     "score": 0.722,
+     "shared": [
+      "inbound"
+     ]
+    }
+   ]
+  },
+  "ScenarioJobPressure": {
+   "tokens": [
+    "job",
+    "pressure"
+   ],
+   "candidates": [
+    {
+     "table": "a16_child-pressure-rejections-enc",
+     "score": 0.917,
+     "shared": [
+      "pressure"
+     ]
+    }
+   ]
+  },
+  "ScenarioJobReferral": {
+   "tokens": [
+    "job",
+    "referral"
+   ],
+   "candidates": []
+  },
+  "ScenarioJobRetire": {
+   "tokens": [
+    "job",
+    "retire"
+   ],
+   "candidates": []
+  },
+  "ScenarioJobUpsetsParent": {
+   "tokens": [
+    "job",
+    "parent",
+    "upsets"
+   ],
+   "candidates": [
+    {
+     "table": "a16_parent-cheat-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "parent"
+     ]
+    },
+    {
+     "table": "a16_parent-lover-disapprovals-enc",
+     "score": 0.722,
+     "shared": [
+      "parent"
+     ]
+    },
+    {
+     "table": "genesis-houseparty-parent-reason-enc",
+     "score": 0.625,
+     "shared": [
+      "parent"
+     ]
+    }
+   ]
+  },
+  "ScenarioLightningStrike": {
+   "tokens": [
+    "lightning",
+    "strike"
+   ],
+   "candidates": []
+  },
+  "ScenarioLocalFreeItemSantasSack": {
+   "tokens": [
+    "free",
+    "item",
+    "local",
+    "sack",
+    "santas"
+   ],
+   "candidates": [
+    {
+     "table": "a16_zoo-gift-shop-item-enc",
+     "score": 0.475,
+     "shared": [
+      "item"
+     ]
+    },
+    {
+     "table": "a16_outdoor-hiking-item-discoverie-enc",
+     "score": 0.475,
+     "shared": [
+      "item"
+     ]
+    },
+    {
+     "table": "a16_local-notification-v1-text-enc",
+     "score": 0.475,
+     "shared": [
+      "local"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoveClassmate": {
+   "tokens": [
+    "classmate",
+    "love"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-classmate-mess-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "classmate"
+     ]
+    },
+    {
+     "table": "a16_school-classmate-flirt-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "classmate"
+     ]
+    },
+    {
+     "table": "a16_make-love-rejections-enc",
+     "score": 0.917,
+     "shared": [
+      "love"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoveDate": {
+   "tokens": [
+    "date",
+    "love"
+   ],
+   "candidates": [
+    {
+     "table": "a16_date-rejections-enc",
+     "score": 1.125,
+     "shared": [
+      "date"
+     ]
+    },
+    {
+     "table": "a16_anniversary-date-enc",
+     "score": 1.125,
+     "shared": [
+      "date"
+     ]
+    },
+    {
+     "table": "a16_make-love-rejections-enc",
+     "score": 0.917,
+     "shared": [
+      "love"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoveFirstKiss": {
+   "tokens": [
+    "first",
+    "kiss",
+    "love"
+   ],
+   "candidates": [
+    {
+     "table": "a16_first-kiss-reactions-enc",
+     "score": 1.556,
+     "shared": [
+      "first",
+      "kiss"
+     ]
+    },
+    {
+     "table": "a16_make-love-rejections-enc",
+     "score": 0.722,
+     "shared": [
+      "love"
+     ]
+    },
+    {
+     "table": "a16_vampire-hypnosis-love-string-enc",
+     "score": 0.625,
+     "shared": [
+      "love"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoveHookup": {
+   "tokens": [
+    "hookup",
+    "love"
+   ],
+   "candidates": [
+    {
+     "table": "a16_hookup-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "hookup"
+     ]
+    },
+    {
+     "table": "a16_hookup-feedback-enc",
+     "score": 1.125,
+     "shared": [
+      "hookup"
+     ]
+    },
+    {
+     "table": "a16_coworker-hookup-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "hookup"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoveThreesome": {
+   "tokens": [
+    "love",
+    "threesome"
+   ],
+   "candidates": [
+    {
+     "table": "a16_make-love-rejections-enc",
+     "score": 0.917,
+     "shared": [
+      "love"
+     ]
+    },
+    {
+     "table": "a16_vampire-hypnosis-love-string-enc",
+     "score": 0.812,
+     "shared": [
+      "love"
+     ]
+    },
+    {
+     "table": "a16_lover-make-love-nags-enc",
+     "score": 0.812,
+     "shared": [
+      "love"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverCheats": {
+   "tokens": [
+    "cheats",
+    "lover"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverCounselingPush": {
+   "tokens": [
+    "counseling",
+    "lover"
+   ],
+   "candidates": [
+    {
+     "table": "a16_relationship-counseling-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "counseling"
+     ]
+    },
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverDemandsStuff": {
+   "tokens": [
+    "demands",
+    "lover",
+    "stuff"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverElopePush": {
+   "tokens": [
+    "elope",
+    "lover"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverMakeLoveNag": {
+   "tokens": [
+    "love",
+    "lover",
+    "make",
+    "nag"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-make-love-nags-enc",
+     "score": 1.781,
+     "shared": [
+      "love",
+      "lover",
+      "make"
+     ]
+    },
+    {
+     "table": "a16_make-love-rejections-enc",
+     "score": 1.333,
+     "shared": [
+      "love",
+      "make"
+     ]
+    },
+    {
+     "table": "a16_vampire-lover-convert-nag-enc",
+     "score": 1.125,
+     "shared": [
+      "lover",
+      "nag"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverParentsDisapprove": {
+   "tokens": [
+    "disapprove",
+    "lover",
+    "parents"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverPlasticSurgery": {
+   "tokens": [
+    "lover",
+    "plastic",
+    "surgery"
+   ],
+   "candidates": [
+    {
+     "table": "a16_plastic-surgeries-enc",
+     "score": 0.917,
+     "shared": [
+      "plastic"
+     ]
+    },
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverSteals": {
+   "tokens": [
+    "lover",
+    "steals"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioLoverSuspicious": {
+   "tokens": [
+    "lover",
+    "suspicious"
+   ],
+   "candidates": [
+    {
+     "table": "a16_lover-suspicious-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "lover",
+      "suspicious"
+     ]
+    },
+    {
+     "table": "a16_lover-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    },
+    {
+     "table": "a16_friend-lover-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "lover"
+     ]
+    }
+   ]
+  },
+  "ScenarioMafiaHeroHunted": {
+   "tokens": [
+    "hero",
+    "hunted",
+    "mafia"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-mafia-enc",
+     "score": 1.5,
+     "shared": [
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-temptation-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-push-targets-enc",
+     "score": 0.917,
+     "shared": [
+      "mafia"
+     ]
+    }
+   ]
+  },
+  "ScenarioMafiaHeroHuntedCallingCard": {
+   "tokens": [
+    "calling",
+    "card",
+    "hero",
+    "hunted",
+    "mafia"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-mafia-enc",
+     "score": 1.3,
+     "shared": [
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-calling-cards-enc",
+     "score": 1.2,
+     "shared": [
+      "calling",
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-temptation-scenarios-enc",
+     "score": 0.75,
+     "shared": [
+      "mafia"
+     ]
+    }
+   ]
+  },
+  "ScenarioMafiaHeroRelativeKilled": {
+   "tokens": [
+    "hero",
+    "killed",
+    "mafia",
+    "relative"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-mafia-enc",
+     "score": 1.375,
+     "shared": [
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-temptation-scenarios-enc",
+     "score": 0.812,
+     "shared": [
+      "mafia"
+     ]
+    },
+    {
+     "table": "a16_mafia-push-targets-enc",
+     "score": 0.812,
+     "shared": [
+      "mafia"
+     ]
+    }
+   ]
+  },
+  "ScenarioMilitaryDeployment": {
+   "tokens": [
+    "deployment",
+    "military"
+   ],
+   "candidates": [
+    {
+     "table": "a16_military-ranks-enc",
+     "score": 1.125,
+     "shared": [
+      "military"
+     ]
+    }
+   ]
+  },
+  "ScenarioMilitaryRetire": {
+   "tokens": [
+    "military",
+    "retire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_military-ranks-enc",
+     "score": 1.125,
+     "shared": [
+      "military"
+     ]
+    }
+   ]
+  },
+  "ScenarioModelParentsOfferLessons": {
+   "tokens": [
+    "lessons",
+    "model",
+    "offer",
+    "parents"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-model-enc",
+     "score": 1.375,
+     "shared": [
+      "model"
+     ]
+    },
+    {
+     "table": "a16_model-products-enc",
+     "score": 0.812,
+     "shared": [
+      "model"
+     ]
+    },
+    {
+     "table": "a16_model-industries-enc",
+     "score": 0.812,
+     "shared": [
+      "model"
+     ]
+    }
+   ]
+  },
+  "ScenarioMusicBandAudition": {
+   "tokens": [
+    "audition",
+    "band",
+    "music"
+   ],
+   "candidates": [
+    {
+     "table": "a16_music-audition-rejections-enc",
+     "score": 1.556,
+     "shared": [
+      "audition",
+      "music"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-music-enc",
+     "score": 1.5,
+     "shared": [
+      "music"
+     ]
+    },
+    {
+     "table": "a16_music-band-kicks-out-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "band",
+      "music"
+     ]
+    }
+   ]
+  },
+  "ScenarioMusicSoloAuditionPush": {
+   "tokens": [
+    "audition",
+    "music",
+    "solo"
+   ],
+   "candidates": [
+    {
+     "table": "a16_music-audition-rejections-enc",
+     "score": 1.556,
+     "shared": [
+      "audition",
+      "music"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-music-enc",
+     "score": 1.5,
+     "shared": [
+      "music"
+     ]
+    },
+    {
+     "table": "a16_music-subgenres-enc",
+     "score": 0.917,
+     "shared": [
+      "music"
+     ]
+    }
+   ]
+  },
+  "ScenarioOfferAlcohol": {
+   "tokens": [
+    "alcohol",
+    "offer"
+   ],
+   "candidates": [
+    {
+     "table": "a16_alcohol-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "alcohol"
+     ]
+    },
+    {
+     "table": "a16_alcohol-enc",
+     "score": 1.75,
+     "shared": [
+      "alcohol"
+     ]
+    },
+    {
+     "table": "a16_casino-casino-offer-artist-refusal-enc",
+     "score": 0.812,
+     "shared": [
+      "offer"
+     ]
+    }
+   ]
+  },
+  "ScenarioOfferDrug": {
+   "tokens": [
+    "drug",
+    "offer"
+   ],
+   "candidates": [
+    {
+     "table": "a16_drug-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "drug"
+     ]
+    },
+    {
+     "table": "a16_dealer-drug-run-dumb-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "drug"
+     ]
+    },
+    {
+     "table": "a16_dealer-drug-pastime-enc",
+     "score": 0.917,
+     "shared": [
+      "drug"
+     ]
+    }
+   ]
+  },
+  "ScenarioOfferFood": {
+   "tokens": [
+    "food",
+    "offer"
+   ],
+   "candidates": [
+    {
+     "table": "a16_food-enc",
+     "score": 1.75,
+     "shared": [
+      "food"
+     ]
+    },
+    {
+     "table": "a16_hustler-panhandle-food-enc",
+     "score": 0.917,
+     "shared": [
+      "food"
+     ]
+    },
+    {
+     "table": "a16_casino-casino-offer-artist-refusal-enc",
+     "score": 0.812,
+     "shared": [
+      "offer"
+     ]
+    }
+   ]
+  },
+  "ScenarioOnboardingCustomPeople": {
+   "tokens": [
+    "custom",
+    "onboarding",
+    "people"
+   ],
+   "candidates": [
+    {
+     "table": "a16_custom-attack-actions-enc",
+     "score": 0.722,
+     "shared": [
+      "custom"
+     ]
+    },
+    {
+     "table": "a16_custom-attack-body-parts-enc",
+     "score": 0.625,
+     "shared": [
+      "custom"
+     ]
+    },
+    {
+     "table": "a16_secret-agent-mission-target-people-enc",
+     "score": 0.567,
+     "shared": [
+      "people"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunityCasino": {
+   "tokens": [
+    "casino",
+    "opportunity"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-casino-enc",
+     "score": 1.75,
+     "shared": [
+      "casino"
+     ]
+    },
+    {
+     "table": "a16_casino-casino-dumb-scenario-enc",
+     "score": 1.75,
+     "shared": [
+      "casino"
+     ]
+    },
+    {
+     "table": "a16_casino-casino-theme-enc",
+     "score": 1.125,
+     "shared": [
+      "casino"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunityChildhoodMovie": {
+   "tokens": [
+    "childhood",
+    "movie",
+    "opportunity"
+   ],
+   "candidates": [
+    {
+     "table": "genesis_movie_director",
+     "score": 0.722,
+     "shared": [
+      "movie"
+     ]
+    },
+    {
+     "table": "a16_luxury-vip-movie-enc",
+     "score": 0.722,
+     "shared": [
+      "movie"
+     ]
+    },
+    {
+     "table": "genesis_movie_director_hub",
+     "score": 0.625,
+     "shared": [
+      "movie"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunityClub": {
+   "tokens": [
+    "club",
+    "opportunity"
+   ],
+   "candidates": [
+    {
+     "table": "a16_music-club-takeover-stunt-enc",
+     "score": 0.812,
+     "shared": [
+      "club"
+     ]
+    },
+    {
+     "table": "a16_music-club-takeover-string-enc",
+     "score": 0.812,
+     "shared": [
+      "club"
+     ]
+    },
+    {
+     "table": "a16_music-club-takeover-stunt-outcome-enc",
+     "score": 0.75,
+     "shared": [
+      "club"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunityHorseTrack": {
+   "tokens": [
+    "horse",
+    "opportunity",
+    "track"
+   ],
+   "candidates": [
+    {
+     "table": "a16_racing-race-track-enc",
+     "score": 0.722,
+     "shared": [
+      "track"
+     ]
+    },
+    {
+     "table": "a16_music-track-vibe-enc",
+     "score": 0.722,
+     "shared": [
+      "track"
+     ]
+    },
+    {
+     "table": "a16_music-track-title-enc",
+     "score": 0.722,
+     "shared": [
+      "track"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunityMovie": {
+   "tokens": [
+    "movie",
+    "opportunity"
+   ],
+   "candidates": [
+    {
+     "table": "genesis_movie_director",
+     "score": 0.917,
+     "shared": [
+      "movie"
+     ]
+    },
+    {
+     "table": "a16_luxury-vip-movie-enc",
+     "score": 0.917,
+     "shared": [
+      "movie"
+     ]
+    },
+    {
+     "table": "genesis_movie_director_hub",
+     "score": 0.812,
+     "shared": [
+      "movie"
+     ]
+    }
+   ]
+  },
+  "ScenarioOpportunitySmuggle": {
+   "tokens": [
+    "opportunity",
+    "smuggle"
+   ],
+   "candidates": [
+    {
+     "table": "a16_secret-agent-assassination-target-opportunity-snippets-enc",
+     "score": 0.708,
+     "shared": [
+      "opportunity"
+     ]
+    }
+   ]
+  },
+  "ScenarioOutdoorAgeUpBikeRide": {
+   "tokens": [
+    "age",
+    "bike",
+    "outdoor",
+    "ride",
+    "up"
+   ],
+   "candidates": [
+    {
+     "table": "a16_outdoor-bike-ride-dumb-enc",
+     "score": 1.9,
+     "shared": [
+      "bike",
+      "outdoor",
+      "ride"
+     ]
+    },
+    {
+     "table": "a16_outdoor-bike-ride-location-enc",
+     "score": 1.575,
+     "shared": [
+      "bike",
+      "outdoor",
+      "ride"
+     ]
+    },
+    {
+     "table": "a16_outdoor-vehicle-enc",
+     "score": 0.75,
+     "shared": [
+      "outdoor"
+     ]
+    }
+   ]
+  },
+  "ScenarioOutdoorAgeUpParentsGiveBike": {
+   "tokens": [
+    "age",
+    "bike",
+    "give",
+    "outdoor",
+    "parents",
+    "up"
+   ],
+   "candidates": [
+    {
+     "table": "a16_outdoor-bike-ride-dumb-enc",
+     "score": 1.111,
+     "shared": [
+      "bike",
+      "outdoor"
+     ]
+    },
+    {
+     "table": "a16_outdoor-bike-ride-location-enc",
+     "score": 0.917,
+     "shared": [
+      "bike",
+      "outdoor"
+     ]
+    },
+    {
+     "table": "a16_outdoor-vehicle-enc",
+     "score": 0.708,
+     "shared": [
+      "outdoor"
+     ]
+    }
+   ]
+  },
+  "ScenarioParanormalEncounter": {
+   "tokens": [
+    "encounter",
+    "paranormal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_paranormal-phenomena-enc",
+     "score": 1.125,
+     "shared": [
+      "paranormal"
+     ]
+    },
+    {
+     "table": "a16_paranormal-encounters-enc",
+     "score": 1.125,
+     "shared": [
+      "paranormal"
+     ]
+    },
+    {
+     "table": "a16_vampire-hunter-encounter-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "encounter"
+     ]
+    }
+   ]
+  },
+  "ScenarioParanormalPhenomenon": {
+   "tokens": [
+    "paranormal",
+    "phenomenon"
+   ],
+   "candidates": [
+    {
+     "table": "a16_paranormal-phenomena-enc",
+     "score": 1.125,
+     "shared": [
+      "paranormal"
+     ]
+    },
+    {
+     "table": "a16_paranormal-encounters-enc",
+     "score": 1.125,
+     "shared": [
+      "paranormal"
+     ]
+    }
+   ]
+  },
+  "ScenarioParentCheats": {
+   "tokens": [
+    "cheats",
+    "parent"
+   ],
+   "candidates": [
+    {
+     "table": "a16_parent-cheat-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "parent"
+     ]
+    },
+    {
+     "table": "a16_parent-lover-disapprovals-enc",
+     "score": 0.917,
+     "shared": [
+      "parent"
+     ]
+    },
+    {
+     "table": "genesis-houseparty-parent-reason-enc",
+     "score": 0.812,
+     "shared": [
+      "parent"
+     ]
+    }
+   ]
+  },
+  "ScenarioParentsOfferInstrumentLessons": {
+   "tokens": [
+    "instrument",
+    "lessons",
+    "offer",
+    "parents"
+   ],
+   "candidates": [
+    {
+     "table": "a16_music-soundcloud-track-instrument-enc",
+     "score": 0.531,
+     "shared": [
+      "instrument"
+     ]
+    },
+    {
+     "table": "a16_casino-casino-offer-artist-refusal-enc",
+     "score": 0.531,
+     "shared": [
+      "offer"
+     ]
+    }
+   ]
+  },
+  "ScenarioParentsOfferPet": {
+   "tokens": [
+    "offer",
+    "parents",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetAttacksHero": {
+   "tokens": [
+    "attacks",
+    "hero",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetAttacksRelative": {
+   "tokens": [
+    "attacks",
+    "pet",
+    "relative"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 0.917,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetDiscipline": {
+   "tokens": [
+    "discipline",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-discipline-enc",
+     "score": 2.5,
+     "shared": [
+      "discipline",
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetEscapes": {
+   "tokens": [
+    "escapes",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetFind": {
+   "tokens": [
+    "find",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPetKills": {
+   "tokens": [
+    "kills",
+    "pet"
+   ],
+   "candidates": [
+    {
+     "table": "a16_pet-treats-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-releases-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    },
+    {
+     "table": "a16_pet-pastimes-enc",
+     "score": 1.125,
+     "shared": [
+      "pet"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonBullyInbound": {
+   "tokens": [
+    "bully",
+    "inbound",
+    "prison"
+   ],
+   "candidates": [
+    {
+     "table": "a16_prison-bully-inbound-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "bully",
+      "inbound",
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-bully-outbound-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "bully",
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.5,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonConjugalVisit": {
+   "tokens": [
+    "conjugal",
+    "prison",
+    "visit"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.5,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-nicknames-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-letters-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonGangRecruitment": {
+   "tokens": [
+    "gang",
+    "prison",
+    "recruitment"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.5,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-nicknames-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-letters-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonReceiveGift": {
+   "tokens": [
+    "gift",
+    "prison",
+    "receive"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.5,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-nicknames-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-letters-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonSnitch": {
+   "tokens": [
+    "prison",
+    "snitch"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.75,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-nicknames-enc",
+     "score": 1.125,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-letters-enc",
+     "score": 1.125,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonWardenEncounter": {
+   "tokens": [
+    "encounter",
+    "prison",
+    "warden"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-prison-enc",
+     "score": 1.5,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-nicknames-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    },
+    {
+     "table": "a16_prison-letters-enc",
+     "score": 0.917,
+     "shared": [
+      "prison"
+     ]
+    }
+   ]
+  },
+  "ScenarioPrisonerProfile": {
+   "tokens": [
+    "prisoner",
+    "profile"
+   ],
+   "candidates": [
+    {
+     "table": "a16_prisoner-crimes-enc",
+     "score": 1.125,
+     "shared": [
+      "prisoner"
+     ]
+    },
+    {
+     "table": "a16_prisoner-juvenile-crimes-enc",
+     "score": 0.917,
+     "shared": [
+      "prisoner"
+     ]
+    }
+   ]
+  },
+  "ScenarioPushConcert": {
+   "tokens": [
+    "concert"
+   ],
+   "candidates": [
+    {
+     "table": "a16_music-concert-venues-enc",
+     "score": 1.5,
+     "shared": [
+      "concert"
+     ]
+    },
+    {
+     "table": "a16_music-producer-concert-act-enc",
+     "score": 1.375,
+     "shared": [
+      "concert"
+     ]
+    }
+   ]
+  },
+  "ScenarioPushSpendTime": {
+   "tokens": [
+    "spend",
+    "time"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-spend-time-enc",
+     "score": 2.0,
+     "shared": [
+      "spend",
+      "time"
+     ]
+    },
+    {
+     "table": "a16_cult-communard-spend-time-enc",
+     "score": 1.75,
+     "shared": [
+      "spend",
+      "time"
+     ]
+    },
+    {
+     "table": "a16_zoo-animal-spend-time-color-enc",
+     "score": 1.6,
+     "shared": [
+      "spend",
+      "time"
+     ]
+    }
+   ]
+  },
+  "ScenarioRetentionHeadhunter": {
+   "tokens": [
+    "headhunter",
+    "retention"
+   ],
+   "candidates": []
+  },
+  "ScenarioRoadRage": {
+   "tokens": [
+    "rage",
+    "road"
+   ],
+   "candidates": [
+    {
+     "table": "a16_fight-roid-rage-scenario-enc",
+     "score": 0.917,
+     "shared": [
+      "rage"
+     ]
+    },
+    {
+     "table": "a16_fight-roid-rage-retort-enc",
+     "score": 0.812,
+     "shared": [
+      "rage"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalCelebrityPush": {
+   "tokens": [
+    "celebrity",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-celebrity-interaction-scenarios-enc",
+     "score": 2.0,
+     "shared": [
+      "celebrity",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 1.75,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-tabloid-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalCommonerHonorific": {
+   "tokens": [
+    "commoner",
+    "honorific",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-commoner-positive-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "commoner",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-commoner-negative-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "commoner",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 1.5,
+     "shared": [
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalCommonerNegative": {
+   "tokens": [
+    "commoner",
+    "negative",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-commoner-negative-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "commoner",
+      "negative",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-school-negative-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "negative",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-commoner-positive-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "commoner",
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalCommonerPositive": {
+   "tokens": [
+    "commoner",
+    "positive",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-commoner-positive-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "commoner",
+      "positive",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-school-positive-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "positive",
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-commoner-negative-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "commoner",
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalNewLaw": {
+   "tokens": [
+    "law",
+    "new",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 1.5,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-tabloid-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-rewards-enc",
+     "score": 0.917,
+     "shared": [
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalRevolt": {
+   "tokens": [
+    "revolt",
+    "royal"
+   ],
+   "candidates": [
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 1.75,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-tabloid-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-rewards-enc",
+     "score": 1.125,
+     "shared": [
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalSchoolNegative": {
+   "tokens": [
+    "negative",
+    "royal",
+    "school"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-school-negative-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "negative",
+      "royal",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_royal-school-positive-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "royal",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_royal-commoner-negative-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "negative",
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalSchoolPositive": {
+   "tokens": [
+    "positive",
+    "royal",
+    "school"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-school-positive-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "positive",
+      "royal",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_royal-school-negative-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "royal",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_royal-commoner-positive-scenarios-enc",
+     "score": 1.556,
+     "shared": [
+      "positive",
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioRoyalTabloid": {
+   "tokens": [
+    "royal",
+    "tabloid"
+   ],
+   "candidates": [
+    {
+     "table": "a16_royal-tabloid-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "royal",
+      "tabloid"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-royal-enc",
+     "score": 1.75,
+     "shared": [
+      "royal"
+     ]
+    },
+    {
+     "table": "a16_royal-rewards-enc",
+     "score": 1.125,
+     "shared": [
+      "royal"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolBully": {
+   "tokens": [
+    "bully",
+    "school"
+   ],
+   "candidates": [
+    {
+     "table": "a16_bully-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "bully"
+     ]
+    },
+    {
+     "table": "a16_school-frats-enc",
+     "score": 1.125,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-cliques-enc",
+     "score": 1.125,
+     "shared": [
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolCheatInbound": {
+   "tokens": [
+    "cheat",
+    "inbound",
+    "school"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-frats-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-cliques-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-activities-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolCheatOutbound": {
+   "tokens": [
+    "cheat",
+    "outbound",
+    "school"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-frats-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-cliques-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-activities-enc",
+     "score": 0.917,
+     "shared": [
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolClassmateActUp": {
+   "tokens": [
+    "act",
+    "classmate",
+    "school",
+    "up"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-act-up-scenarios-enc",
+     "score": 2.125,
+     "shared": [
+      "act",
+      "school",
+      "up"
+     ]
+    },
+    {
+     "table": "a16_school-classmate-mess-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "classmate",
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-classmate-flirt-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "classmate",
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolSkipPush": {
+   "tokens": [
+    "school",
+    "skip"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-frats-enc",
+     "score": 1.125,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-cliques-enc",
+     "score": 1.125,
+     "shared": [
+      "school"
+     ]
+    },
+    {
+     "table": "a16_school-activities-enc",
+     "score": 1.125,
+     "shared": [
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolTeacherCallOut": {
+   "tokens": [
+    "call",
+    "out",
+    "school",
+    "teacher"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-teacher-call-outs-enc",
+     "score": 1.781,
+     "shared": [
+      "call",
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-teacher-suckups-enc",
+     "score": 1.333,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-teacher-disrespects-enc",
+     "score": 1.333,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolTeacherFlirtInbound": {
+   "tokens": [
+    "flirt",
+    "inbound",
+    "school",
+    "teacher"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-teacher-suckups-enc",
+     "score": 1.333,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-teacher-disrespects-enc",
+     "score": 1.333,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-classmate-flirt-scenarios-enc",
+     "score": 1.333,
+     "shared": [
+      "flirt",
+      "school"
+     ]
+    }
+   ]
+  },
+  "ScenarioSchoolTeacherSeduce": {
+   "tokens": [
+    "school",
+    "seduce",
+    "teacher"
+   ],
+   "candidates": [
+    {
+     "table": "a16_school-teacher-suckups-enc",
+     "score": 1.556,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-teacher-disrespects-enc",
+     "score": 1.556,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    },
+    {
+     "table": "a16_school-teacher-call-outs-enc",
+     "score": 1.333,
+     "shared": [
+      "school",
+      "teacher"
+     ]
+    }
+   ]
+  },
+  "ScenarioSexualityChallenge": {
+   "tokens": [
+    "challenge",
+    "sexuality"
+   ],
+   "candidates": [
+    {
+     "table": "a16_sexuality-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "sexuality"
+     ]
+    },
+    {
+     "table": "a16_fight-doping-challenge-color-string-enc",
+     "score": 0.75,
+     "shared": [
+      "challenge"
+     ]
+    }
+   ]
+  },
+  "ScenarioSexualityDeclare": {
+   "tokens": [
+    "declare",
+    "sexuality"
+   ],
+   "candidates": [
+    {
+     "table": "a16_sexuality-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "sexuality"
+     ]
+    }
+   ]
+  },
+  "ScenarioSiblingBully": {
+   "tokens": [
+    "bully",
+    "sibling"
+   ],
+   "candidates": [
+    {
+     "table": "a16_bully-scenarios-enc",
+     "score": 1.75,
+     "shared": [
+      "bully"
+     ]
+    },
+    {
+     "table": "a16_sibling-arguments-enc",
+     "score": 1.125,
+     "shared": [
+      "sibling"
+     ]
+    },
+    {
+     "table": "a16_prison-bully-outbound-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "bully"
+     ]
+    }
+   ]
+  },
+  "ScenarioSiblingSquabble": {
+   "tokens": [
+    "sibling",
+    "squabble"
+   ],
+   "candidates": [
+    {
+     "table": "a16_sibling-arguments-enc",
+     "score": 1.125,
+     "shared": [
+      "sibling"
+     ]
+    }
+   ]
+  },
+  "ScenarioSocialMediaCelebrityFollowPush": {
+   "tokens": [
+    "celebrity",
+    "follow",
+    "media",
+    "social"
+   ],
+   "candidates": [
+    {
+     "table": "a16_social-media-hacks-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-channels-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-troll-outbounds-enc",
+     "score": 1.125,
+     "shared": [
+      "media",
+      "social"
+     ]
+    }
+   ]
+  },
+  "ScenarioSocialMediaHack": {
+   "tokens": [
+    "hack",
+    "media",
+    "social"
+   ],
+   "candidates": [
+    {
+     "table": "a16_social-media-hacks-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-channels-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-troll-outbounds-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    }
+   ]
+  },
+  "ScenarioSocialMediaJoinPush": {
+   "tokens": [
+    "join",
+    "media",
+    "social"
+   ],
+   "candidates": [
+    {
+     "table": "a16_social-media-hacks-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-channels-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-troll-outbounds-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    }
+   ]
+  },
+  "ScenarioSocialMediaPromote": {
+   "tokens": [
+    "media",
+    "promote",
+    "social"
+   ],
+   "candidates": [
+    {
+     "table": "a16_social-media-hacks-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-channels-enc",
+     "score": 1.556,
+     "shared": [
+      "media",
+      "social"
+     ]
+    },
+    {
+     "table": "a16_social-media-troll-outbounds-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    }
+   ]
+  },
+  "ScenarioSocialMediaTrollInbound": {
+   "tokens": [
+    "inbound",
+    "media",
+    "social",
+    "troll"
+   ],
+   "candidates": [
+    {
+     "table": "a16_social-media-troll-outbounds-enc",
+     "score": 1.781,
+     "shared": [
+      "media",
+      "social",
+      "troll"
+     ]
+    },
+    {
+     "table": "a16_social-media-troll-inbounds-enc",
+     "score": 1.781,
+     "shared": [
+      "media",
+      "social",
+      "troll"
+     ]
+    },
+    {
+     "table": "a16_social-media-hacks-enc",
+     "score": 1.333,
+     "shared": [
+      "media",
+      "social"
+     ]
+    }
+   ]
+  },
+  "ScenarioSportsHallOfFame": {
+   "tokens": [
+    "fame",
+    "hall",
+    "sports"
+   ],
+   "candidates": [
+    {
+     "table": "a16_sports-enc",
+     "score": 1.5,
+     "shared": [
+      "sports"
+     ]
+    },
+    {
+     "table": "a16_dumb-scenarios-sports-enc",
+     "score": 1.5,
+     "shared": [
+      "sports"
+     ]
+    },
+    {
+     "table": "a16_sports-training-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "sports"
+     ]
+    }
+   ]
+  },
+  "ScenarioStepparentCruelty": {
+   "tokens": [
+    "cruelty",
+    "stepparent"
+   ],
+   "candidates": [
+    {
+     "table": "a16_stepparent-cruelty-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "cruelty",
+      "stepparent"
+     ]
+    }
+   ]
+  },
+  "ScenarioSupervisorSeduce": {
+   "tokens": [
+    "seduce",
+    "supervisor"
+   ],
+   "candidates": [
+    {
+     "table": "a16_supervisor-warnings-enc",
+     "score": 1.125,
+     "shared": [
+      "supervisor"
+     ]
+    },
+    {
+     "table": "a16_supervisor-unprofessional-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "supervisor"
+     ]
+    }
+   ]
+  },
+  "ScenarioSupervisorSocialize": {
+   "tokens": [
+    "socialize",
+    "supervisor"
+   ],
+   "candidates": [
+    {
+     "table": "a16_supervisor-warnings-enc",
+     "score": 1.125,
+     "shared": [
+      "supervisor"
+     ]
+    },
+    {
+     "table": "a16_supervisor-unprofessional-scenarios-enc",
+     "score": 1.125,
+     "shared": [
+      "supervisor"
+     ]
+    }
+   ]
+  },
+  "ScenarioSupervisorTeamBuilding": {
+   "tokens": [
+    "building",
+    "supervisor",
+    "team"
+   ],
+   "candidates": [
+    {
+     "table": "a16_business-team-building-activities-enc",
+     "score": 1.333,
+     "shared": [
+      "building",
+      "team"
+     ]
+    },
+    {
+     "table": "a16_supervisor-warnings-enc",
+     "score": 0.917,
+     "shared": [
+      "supervisor"
+     ]
+    },
+    {
+     "table": "a16_supervisor-unprofessional-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "supervisor"
+     ]
+    }
+   ]
+  },
+  "ScenarioSupervisorUnprofessional": {
+   "tokens": [
+    "supervisor",
+    "unprofessional"
+   ],
+   "candidates": [
+    {
+     "table": "a16_supervisor-unprofessional-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "supervisor",
+      "unprofessional"
+     ]
+    },
+    {
+     "table": "a16_supervisor-warnings-enc",
+     "score": 1.125,
+     "shared": [
+      "supervisor"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpCouncilCommunion": {
+   "tokens": [
+    "age",
+    "communion",
+    "council",
+    "up",
+    "vampire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.3,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-council-reward-enc",
+     "score": 1.2,
+     "shared": [
+      "council",
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-council-punishment-enc",
+     "score": 1.2,
+     "shared": [
+      "council",
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpCouncilDiscipline": {
+   "tokens": [
+    "age",
+    "council",
+    "discipline",
+    "up",
+    "vampire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-council-discipline-scenario-enc",
+     "score": 1.9,
+     "shared": [
+      "council",
+      "discipline",
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.3,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-council-reward-enc",
+     "score": 1.2,
+     "shared": [
+      "council",
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpCouncilProtection": {
+   "tokens": [
+    "age",
+    "council",
+    "protection",
+    "up",
+    "vampire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.3,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-council-reward-enc",
+     "score": 1.2,
+     "shared": [
+      "council",
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-council-punishment-enc",
+     "score": 1.2,
+     "shared": [
+      "council",
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpDumbScenario": {
+   "tokens": [
+    "age",
+    "up",
+    "vampire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.5,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-titles-enc",
+     "score": 0.917,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-name-enc",
+     "score": 0.917,
+     "shared": [
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpLoverBeg": {
+   "tokens": [
+    "age",
+    "beg",
+    "lover",
+    "up",
+    "vampire"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.3,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-lover-convert-nag-enc",
+     "score": 1.0,
+     "shared": [
+      "lover",
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-titles-enc",
+     "score": 0.75,
+     "shared": [
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVampireAgeUpWithered": {
+   "tokens": [
+    "age",
+    "up",
+    "vampire",
+    "withered"
+   ],
+   "candidates": [
+    {
+     "table": "a16_vampire-dumb-scenario-enc",
+     "score": 1.375,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-titles-enc",
+     "score": 0.812,
+     "shared": [
+      "vampire"
+     ]
+    },
+    {
+     "table": "a16_vampire-name-enc",
+     "score": 0.812,
+     "shared": [
+      "vampire"
+     ]
+    }
+   ]
+  },
+  "ScenarioVictimRansom": {
+   "tokens": [
+    "ransom",
+    "victim"
+   ],
+   "candidates": [
+    {
+     "table": "a16_hustler-scam-victim-scenarios-enc",
+     "score": 0.917,
+     "shared": [
+      "victim"
+     ]
+    },
+    {
+     "table": "a16_vampire-victim-status-color-enc",
+     "score": 0.812,
+     "shared": [
+      "victim"
+     ]
+    }
+   ]
+  },
+  "ScenarioWatercraftDanger": {
+   "tokens": [
+    "danger",
+    "watercraft"
+   ],
+   "candidates": [
+    {
+     "table": "a16_watercraft-danger-scenarios-enc",
+     "score": 2.5,
+     "shared": [
+      "danger",
+      "watercraft"
+     ]
+    },
+    {
+     "table": "a16_watercraft-enc",
+     "score": 1.75,
+     "shared": [
+      "watercraft"
+     ]
+    },
+    {
+     "table": "a16_watercraft-parts-enc",
+     "score": 1.125,
+     "shared": [
+      "watercraft"
+     ]
+    }
+   ]
+  }
+ }
+}

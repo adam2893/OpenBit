@@ -1,0 +1,71 @@
+Kind,Class,Title,Text,Slots,Ages
+scenario,Scenario,Good times,You went to play bingo at the community center with your mother.,{},12
+scenario,Scenario,I won't play those games,You told your mother about your stepfather's behavior.,{},None
+scenario,Scenario,Isn't she cute?,"You rewarded your vizsla, {dog}, with a Porterhouse steak.","{""dog"": ""Hazel""}",10
+scenario,Scenario,Ouch,You kicked your stepfather's face!,{},None
+scenario,ScenarioBase,Evaders of the Lost Ark,"You received a script for a movie called 'Evaders of the Lost Ark,' and must decide who should play the lead.
+
+It's a film about an archeology professor who is hired to find the Ark of the Cavemen before an evil organization retrieves what's inside it: an artifact that can make an army shoot beams from their pinkies.",{},19
+scenario,ScenarioCasinoBet,Oak Tree Casino,Place your blackjack bets!,{},31
+scenario,ScenarioCrimePickpocket,Pickpocket,You're thinking about earning some quick money on the streets.,{},None
+scenario,ScenarioCustomAttack,Attack,How will you attack your stepfather?,{},None
+scenario,ScenarioFriendMeet,New Friend,"Your classmate, {classmate}, wants to become your friend.","{""classmate"": ""Mauri""}",None
+scenario,ScenarioFriendUnfriendInbound,Unfriended,"Your best friend, {friend}, has unfriended you.
+
+What will you do?","{""friend"": ""Krista""}",30
+scenario,ScenarioJobAcquisition,When can you start?,You left your job as a Apprentice Carpenter at The Heikkila Company and are now a Busser at United Restaurant.,{},30
+scenario,ScenarioOpportunityCasino,Casino,"Some of your friends are going to a local casino called Oak Tree Casino.
+
+Will you join them?",{},31
+scenario,ScenarioPetDeath,Death,"The family vizsla, {dog}, died at the age of 15.
+
+She perished after losing her last fight, against old age.","{""dog"": ""Hazel""}",11
+scenario,ScenarioPetDiscipline,Behavior,"Your vizsla, {dog}, just ate your fruit snacks.
+
+What will you do?","{""dog"": ""Hazel""}",10
+scenario,ScenarioPushSpendTime,Quality Time,"Your mother wants to take you to play bingo at the community center.
+
+Will you go with her?",{},12
+scenario,ScenarioRetentionCrime,Mischief Maker,"You're wondering how much trouble you'll get into if you do something a little bit naughty.
+
+What will you do?",{},None
+scenario,ScenarioRetentionFreelanceGig,Freelance Gig,"You're looking at your bank account and are thinking of picking up a freelance gig to get some extra cash.
+
+What will you do?",{},13
+scenario,ScenarioRetentionHeadhunter,Job Offer,"Someone is contacting you about a job opportunity as a Busser.
+
+You are currently a Apprentice Carpenter and make €50,716 each year.",{},29
+scenario,ScenarioSchoolEnroll,Primary School,You are starting primary school.,{},None
+scenario,ScenarioScriptEventSiblingBorn,Baby,"Your mother and stepfather just had a baby girl named {halfsister}, your new half sister.","{""halfsister"": ""Inka""}",None
+scenario,ScenarioScriptEventSiblingBorn,Baby,"Your mother and stepfather just had a baby girl named {halfsister}, your new half sister.","{""halfsister"": ""Sanna""}",13
+scenario,ScenarioStepparentCruelty,Evil Stepfather,"Your stepfather made you cupcakes for your birthday but intentionally used salt instead of sugar in the recipe.
+
+What will you do?",{},None
+scenario,ScenarioStepparentCruelty,Evil Stepfather,"Your stepfather pranked you by convincing you that you're invisible.
+
+What will you do?",{},None
+log,,,"For the past few weeks, I've been waking up every morning with the overwhelming feeling that today will be the best day ever.",{},29
+log,,,I decided my favorite snack was fruit leather and ate only that for 5 days.,{},None
+log,,,I got my shot to direct a film and chose to make an action movie.,{},19
+log,,,I have been enrolled in primary school at Aaltonen Primary School.,{},None
+log,,,I kicked my stepfather's face!,{},None
+log,,,"I pounded a glass of glitter that my classmate, {classmate}, dared me to drink, then got sent to the nurse's office.","{""classmate"": ""Dragoljub Lazic""}",9
+log,,,I was crowned ruler of the balance beam at recess.,{},10
+log,,,I went to play bingo at the community center with my mother.,{},12
+log,,,I went with some friends to Oak Tree Casino.,{},31
+log,,,I've been wondering what it would be like to live in the wealthiest part of Helsinki when I'm grown up.,{},11
+log,,,{friend} Ahonen unfriended me.,"{""friend"": ""Krista""}",30
+log,,,"Lately, I've been wondering whether ""figuratively"" will one day be said as much as ""literally"".",{},31
+log,,,"My half sister, {halfsister}, has been promoted to Petty Officer Second Class.","{""halfsister"": ""Inka""}",30
+log,,,"My half sister, {halfsister}, started primary school.","{""halfsister"": ""Inka""}",10
+log,,,"My half sister, {halfsister}, started secondary school.","{""halfsister"": ""Nea""}",30
+log,,,"My half sister, {halfsister}, started secondary school.","{""halfsister"": ""Sanna""}",29
+log,,,"My mother and my stepfather had a baby girl named {halfsister} Tuominen, my new half sister. She was an accidental pregnancy.","{""halfsister"": ""Inka""}",None
+log,,,"My mother and my stepfather had a baby girl named {halfsister} Tuominen, my new half sister. She was a planned pregnancy.","{""halfsister"": ""Sanna""}",13
+log,,,My mother has been promoted to General Manager.,{},12
+log,,,My mother has been promoted to Tour Operator.,{},None
+log,,,My mother started a new position as Travel Associate for Helsinki Travel. She is no longer suffering from constipation.,{},None
+log,,,My stepfather convinced me that I'm invisible. I told my mother about his behavior.,{},None
+log,,,"My stepfather pranked me by giving me nasty, salty cupcakes for my birthday.",{},None
+log,,,"My vizsla, {dog}, ate my fruit snacks. I rewarded her with a Porterhouse steak.","{""dog"": ""Hazel""}",10
+log,,,"My vizsla, {dog}, perished after losing her last fight, against old age.","{""dog"": ""Hazel""}",11

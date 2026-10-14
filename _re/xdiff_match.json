@@ -1,0 +1,266 @@
+[
+ {
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": {
+   "chunk": "stepfather pranked you by convincing you that you're invisible",
+   "table": "a16_stepparent-cruelty-scenarios-enc",
+   "at": 7518
+  },
+  "chunks": 1
+ },
+ {
+  "title": "I won't play those games",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Evil Stepfather",
+  "cls": "ScenarioStepparentCruelty",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": {
+   "chunk": "stepfather made you cupcakes for your birthday but intentionally used salt instead of sugar in the recipe",
+   "table": "a16_stepparent-cruelty-scenarios-enc",
+   "at": 7116
+  },
+  "chunks": 1
+ },
+ {
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Ouch",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Primary School",
+  "cls": "ScenarioSchoolEnroll",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "New Friend",
+  "cls": "ScenarioFriendMeet",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Mischief Maker",
+  "cls": "ScenarioRetentionCrime",
+  "nchoice": 2,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Pickpocket",
+  "cls": "ScenarioCrimePickpocket",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Behavior",
+  "cls": "ScenarioPetDiscipline",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Isn't she cute?",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 0
+ },
+ {
+  "title": "Death",
+  "cls": "ScenarioPetDeath",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Quality Time",
+  "cls": "ScenarioPushSpendTime",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Good times",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Baby",
+  "cls": "ScenarioScriptEventSiblingBorn",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Freelance Gig",
+  "cls": "ScenarioRetentionFreelanceGig",
+  "nchoice": 2,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Evaders of the Lost Ark",
+  "cls": "ScenarioBase",
+  "nchoice": 1,
+  "ntchoice": null,
+  "match": {
+   "chunk": "received a script for a movie called '",
+   "table": "genesis_movie_director",
+   "at": 2562
+  },
+  "chunks": 4
+ },
+ {
+  "title": "Podcast",
+  "cls": "ScenarioRetentionPodcast",
+  "nchoice": 2,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Podcast",
+  "cls": "ScenarioPodcastCreation",
+  "nchoice": 1,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 0
+ },
+ {
+  "title": "Record Season",
+  "cls": "ScenarioPodcastRecordFirstSeason",
+  "nchoice": 1,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "We're live",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 2
+ },
+ {
+  "title": "Podcast Segment",
+  "cls": "ScenarioPodcastDumb",
+  "nchoice": 4,
+  "ntchoice": null,
+  "match": {
+   "chunk": "'re thinking of breaking up your podcast episodes into segments to make them more engaging for your listeners and it's essential to you that each episode concludes with a segment that will keep users coming back for more",
+   "table": "a16_podcast-dumb-enc",
+   "at": 73835
+  },
+  "chunks": 1
+ },
+ {
+  "title": "Retiring with Fat Pockets",
+  "cls": "ScenarioPodcastAudienceReception",
+  "nchoice": 1,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "No Phone Zone",
+  "cls": "DumbScenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 2
+ },
+ {
+  "title": "Streetworker",
+  "cls": "ScenarioEncounterProstitute",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Attack",
+  "cls": "ScenarioCustomAttack",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Just grazed",
+  "cls": "Scenario",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Assault",
+  "cls": "ScenarioAttackInbound",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 0
+ },
+ {
+  "title": "Hook Up",
+  "cls": "ScenarioLoveHookup",
+  "nchoice": null,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ },
+ {
+  "title": "Sprouting Lordling",
+  "cls": "ScenarioIAPConfiguredPush",
+  "nchoice": 2,
+  "ntchoice": null,
+  "match": null,
+  "chunks": 1
+ }
+]

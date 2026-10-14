@@ -1,0 +1,52 @@
+{
+ "port_tables_implemented": [
+  "a16_casino-casino-celebrity-name-enc",
+  "a16_death-types-enc",
+  "a16_dumb-scenarios-universal-enc",
+  "a16_employee-recognition-scenarios-enc",
+  "a16_hero-filler-enc"
+ ],
+ "game_scenarios_total": 63,
+ "game_scenarios_already_covered_by_port": 1,
+ "game_logs_total": 32,
+ "game_logs_already_covered_by_port": 1,
+ "top_missing_tables": [
+  [
+   "a16_stepparent-cruelty-scenarios-enc",
+   3
+  ],
+  [
+   "a16_cult-random-commune-names-enc",
+   3
+  ],
+  [
+   "genesis_movie_director",
+   2
+  ],
+  [
+   "a16_podcast-dumb-enc",
+   2
+  ],
+  [
+   "a16_sports-injuries-enc",
+   2
+  ],
+  [
+   "a16_birth-circumstances-enc",
+   2
+  ],
+  [
+   "a16_pet-discipline-enc",
+   1
+  ],
+  [
+   "SerializedPushScenarioConfig-enc",
+   1
+  ],
+  [
+   "a16_disease-symptom-scenarios-enc",
+   1
+  ]
+ ],
+ "scenarios_with_no_known_source": 33
+}
