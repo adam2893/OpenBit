@@ -69,6 +69,11 @@ struct Hero {
   // Birth city, drawn from the country's own 'Cities' array in
   // gamedata_json/a16_countries-enc.json. Only Sim::pinCountry fills it in.
   std::string city;
+  // The state, province or parish the city sits in (REPORT.en.md 95). Drawn
+  // from a16_city-regions-enc by country code and city, and the answer to the
+  // '<region>' token a16_country-political-systems-enc asks for 67 times
+  // ('governor of <region>'). Empty when the table does not carry the country.
+  std::string region;
   int age = 0;
   long long money = 0;
   int happiness = 100;

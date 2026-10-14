@@ -597,7 +597,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
-      podRng_(seed ^ 0x165667b19e3779f9ULL) {}
+      podRng_(seed ^ 0x165667b19e3779f9ULL),
+      placeRng_(seed ^ 0x38d01377beb34b6dULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -952,6 +953,7 @@ bool Sim::load(std::string* error) {
   "a16_pet-disease-types-enc",
   "a16_pet-found-dead-scenarios-enc",
       "a16_car-models-enc",                          // Make,Model,Type,Cost,... (ScenarioCarRepair)
+      "a16_city-regions-enc",                        // Country Code,City,Region
       "a16_dumb-scenarios-vacation-enc",             // same layout; a coverage push targets it
       "a16_prisoner-crimes-enc",                     // Crime,Seriousness Score,Is Violent,Commonness Score
       "a16_prisoner-juvenile-crimes-enc",            // same columns, juvenile court
@@ -1744,6 +1746,11 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
   // hero carries it as a bool, and heroToken used to answer nothing for the key.
   if (key == "gender" || key == "hero-gender" || key == "hero:gender") return h.female ? "female" : "male";
   if (key == "city" || key == "hero:current_city") return h.city;
+  // REPORT.en.md 95: the political-systems pool writes 'governor of <region>'.
+  // A country the region table does not carry answers with the country itself,
+  // which is what the row's own 'jurisdiction' column does at that level.
+  if (key == "region" || key == "hero:current_region" || key == "hero-region")
+    return (h.region.empty() ? h.country : h.region) + own;
   if (key == "country" || key == "hero-country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
   // REPORT.en.md 87: the royal pools ask for the seat, the castle and the paper,
   // and heroToken answered none of the three (a16_royal-* uses them 40, 13 and
@@ -2687,6 +2694,16 @@ Life Sim::createLife(bool female) {
   const Country& c = countries_[rng_.below(uint32_t(countries_.size()))];
   h.country = c.name;
   h.continent = c.continent;
+  // The birth city. The game's hero always has one -- the birth line reads 'I
+  // was born a male in <city>, <country>.' -- and the corpus writes '<city>'
+  // into 100-plus rows, so a hero born without a pinned country used to leak the
+  // raw token. The draw comes off placeRng_ and not rng_: this function's rng_
+  // stream is matched value-for-value against the game's own attribute
+  // snapshots (see the ctor note below), and a hero whose country the script
+  // pinned already has a city from pinCountry() (REPORT.en.md 95).
+  if (h.city.empty() && !c.cities.empty())
+    h.city = c.cities[placeRng_.below(uint32_t(c.cities.size()))];
+  h.region = regionForCity(c.code, h.city);
   h.money = 0;
 
   // SimPerson..ctor(bool) draws the person's attributes, then
@@ -3170,6 +3187,33 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
   return out;
 }
 
+// REPORT.en.md 95. The game keeps two lists of places: every country carries its
+// own 'Cities' array (DataCountry.Cities, which the port already draws the birth
+// city from), and a separate _cityRegionSet pairs a city with the region it sits
+// in. The region is what '<region>' wants - a16_country-political-systems-enc
+// writes 'governor of <region>' and 'mayor of <region>' for 67 of its rows, and
+// before this the port had nothing to put there. The hero's own city decides its
+// region where the table knows the pair; a city the table does not carry (its
+// Cities arrays are a superset) falls back to any region of the same country.
+std::string Sim::regionForCity(const std::string& code, const std::string& city) {
+  if (trim(code).empty() || !ensureTable("a16_city-regions-enc")) return std::string();
+  const Table& t = tbl("a16_city-regions-enc");
+  const std::string wantCode = lower(trim(code));
+  const std::string wantCity = lower(trim(city));
+  std::vector<size_t> sameCity, any;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (lower(trim(t.at(r, "Country Code"))) != wantCode) continue;
+    any.push_back(r);
+    if (!wantCity.empty() && lower(trim(t.at(r, "City"))) == wantCity) sameCity.push_back(r);
+  }
+  const std::vector<size_t>& pool = sameCity.empty() ? any : sameCity;
+  if (pool.empty()) return std::string();
+  // placeRng_, not rng_: createLife() draws the birth region while the hero's
+  // attributes are still being rolled, and that stream is matched against the
+  // game's own snapshots (see the ctor note in createLife).
+  return trim(t.at(pool[placeRng_.below(uint32_t(pool.size()))], "Region"));
+}
+
 bool Sim::pinCountry(Life& life, const std::string& countryName) {
   const std::string want = lower(trim(countryName));
   const Country* found = nullptr;
@@ -3184,6 +3228,7 @@ bool Sim::pinCountry(Life& life, const std::string& countryName) {
   // rather than inventing one.
   h.city = found->cities.empty() ? std::string()
                                  : found->cities[rng_.below(uint32_t(found->cities.size()))];
+  h.region = regionForCity(found->code, h.city);
   return true;
 }
 
@@ -4932,9 +4977,15 @@ void Sim::ensureOfficeFields(Life& life) {
   if (h.jurisdictionAdj.empty()) h.jurisdictionAdj = h.officeLevel;
   // The title column itself carries the token: the region's office is written
   // '<jurisdiction adjective> governor' (or 'mayor', 'premier'), so it is
-  // resolved once the level's adjective is known. The guard in politicalToken
-  // is ordered so that this lookup does not need the office to exist yet.
-  h.office = resolve(trim(t.at(row, pick.title)));
+  // resolved once the level's adjective is known. The office is assigned the
+  // raw title BEFORE that resolve: politicalToken fills the office fields when
+  // the office is still empty, which re-enters this function, and a country
+  // whose only open level is the token-bearing one (its 'Title Regional' is
+  // '<jurisdiction adjective> governor' and it offers no national office)
+  // re-entered it on every draw until the stack ran out (REPORT.en.md 95).
+  const std::string officeTitle = trim(t.at(row, pick.title));
+  h.office = officeTitle;
+  h.office = resolve(officeTitle);
 }
 
 void Sim::makePolitician(Life& life) {
@@ -20807,6 +20858,8 @@ std::string Sim::cardRefBind(const std::string& cell, std::map<std::string, std:
     {"random-full-name", "random-full-name"},
     {"City", "city"},
     {"city", "city"},
+    {"Region", "region"},
+    {"region", "region"},
     {"country-other", "country-other"},
     {"celebrity-male", "celebrity-male"},
     {"celebrity-female", "celebrity-female"},
@@ -20828,6 +20881,7 @@ std::string Sim::cardRefBind(const std::string& cell, std::map<std::string, std:
     drawnFemale = false;
     drawnKnown = false;
     if (base == "city") return heroToken("city", false);
+    if (base == "region") return heroToken("region", false);
     if (base == "lover" && hero_ != nullptr && hero_->relationshipOn && !hero_->loverName.empty()) {
       drawnFemale = hero_->loverFemale;
       drawnKnown = true;
@@ -21718,6 +21772,16 @@ bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
   const char* pool = campaign ? "a16_dumb-scenarios-political-campaign-enc"
                               : "a16_dumb-scenarios-political-office-enc";
   if (!h.politician && !politicsRng_.chance(0.25)) return false;
+  // A campaign card is about the office the hero is running for ('...if you
+  // become <political-office>', '...education in your <jurisdiction>'), so the
+  // office fields have to exist before the row renders. The on-demand fill
+  // inside politicalToken returns early for a hero whose country offers no
+  // office at all, and the row then shipped the raw literal. No office in the
+  // hero's country, no campaign card (REPORT.en.md 95).
+  if (campaign && h.office.empty()) {
+    ensureOfficeFields(life);
+    if (h.office.empty()) return false;
+  }
   if (!ensureTable(pool)) return false;
   // The officeholder's own business comes first: a bribe, a law, a rumour or the
   // year's headline, and only then the pool card (REPORT.en.md 86).

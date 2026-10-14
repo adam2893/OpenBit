@@ -83,8 +83,11 @@ class Sim {
   // Pins the hero's birth country to a name from a16_countries-enc.json (exact
   // match, case-insensitive) and draws the birth city from that country's own
   // Cities array -- one RNG draw when it succeeds, none when the name is not a
-  // real country, so createLife()'s stream stays untouched. Used by --script.
+  // real country, so createLife()'s stream stays untouched. The birth region
+  // comes from placeRng_ for the same reason. Used by --script.
   bool pinCountry(Life& life, const std::string& countryName);
+  // The region a city sits in, from a16_city-regions-enc (REPORT.en.md 95).
+  std::string regionForCity(const std::string& code, const std::string& city);
   // false when no real row matched. forcedChoice >= 0 takes that 0-based index
   // out of the choices the drawn scenario row fills in instead of letting the
   // RNG pick one; out of range falls back to the RNG. -1 is the plain age-up.
@@ -457,6 +460,11 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng officeRng_;
   Rng schoolRng_;
   Rng podRng_;
+  // The place pool's own stream (REPORT.en.md 95): the birth region is drawn
+  // while the life is being set up, and createLife's attribute draws are
+  // matched value-for-value against the game's own snapshots, so the region
+  // must not come out of rng_.
+  Rng placeRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

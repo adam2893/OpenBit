@@ -195,6 +195,7 @@ std::string heroJson(const Hero& h) {
   o << "    \"gender\": " << jsonStr(h.female ? "female" : "male") << ",\n";
   o << "    \"country\": " << jsonOrNull(h.country) << ",\n";
   o << "    \"city\": " << jsonOrNull(h.city) << ",\n";
+  o << "    \"region\": " << jsonOrNull(h.region) << ",\n";
   o << "    \"stats\": " << statsJson(h) << "\n";
   o << "  }";
   return o.str();

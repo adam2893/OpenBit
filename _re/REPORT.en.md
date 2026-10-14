@@ -11424,8 +11424,226 @@ royal-him  (a16_royal-celebrity-interaction-scenarios-enc)
   | I watched a cricket match.
 ~~~
 
-The full regression after the section: 37 probes at residue 0 (the new `celres.py`)
+The full regression after the section: 38 probes at residue 0 (the new `ctyres.py`)
 joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured
 scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`,
 the push script at rc 0 with empty stderr, and the benchmark reaching
 age 34.
+
+## 95. The region under the city: a place table with no renderer, a birth city the port never
+drew, and an office pool that ate its own stack
+
+The last three sections each wired a family whose consumer was easy to name: the school year
+read the field-trip tables, the relationship year read the sleepover ones, the celebrity app
+read its seven. This family is read by the game's own place dictionary, and the port had
+nothing in the dictionary to answer with. The gap turned out to be three separate holes: a
+token with no value, a value with no draw, and a fill that re-entered itself until the stack
+ran out.
+
+### 95.1 The family
+
+`a16_city-regions-enc` is 246 rows of `Country Code,City,Region` (247 physical lines, the
+extra one a whitespace padding row). Thirty country codes appear - `us` 57, `gb` 28, `es` 15,
+`it` 13, `br` 12, `de` 12, `au` 11, `ca` 10, `mx` 10, `fr` 9, `in` 8,
+`jp` 8, `ch` 7, then `py`/`se`/`sv` 4, `ad`/`ao`/`ar`/`gt`/`ht`/`ie`/
+`ni`/`tn`/`ug` 3, `bz`/`pg` 2 and `aw`/`gy`/`ws` one each - and the 246 rows
+name 246 distinct (country, city) rows and 196 distinct region names.
+
+The country rows themselves are the other half of the place dictionary: every one of the 102
+countries in `gamedata_json/a16_countries-enc.json` carries its own `Cities` array, 418
+cities in total, and the region table knows 243 of them (in 30 countries). The remaining 72
+countries have no region code at all, so a hero born in one of them answers with the country
+itself - which is exactly what the office pool does at the national level.
+
+The consumer is code-side, and the dump names all three parts of it: `class DataCityRegion`
+(il2cpp_dump.txt:7529) with `<CountryCode>`, `<City>` and `<Region>` backing fields, the
+game-data holder's `field 0x6d0 System.Collections.ArrayList _cityRegionSet`
+(il2cpp_dump.txt:17420) sitting between `_politicalHeadlineSet` and
+`_dumbScenarioPoliticalOfficeSet`, and `method @0x73f2b9ec28 System.Void
+LoadCityRegionSet()` (il2cpp_dump.txt:18439).
+
+What asks for a region is `a16_country-political-systems-enc` - 102 rows, one per country,
+15 columns - and it asks with exactly two tokens: `<jurisdiction adjective>` 67 times and
+`<region>` 67 times. Its `Title Regional` column is `<jurisdiction adjective> governor`
+for 53 countries, its `Title Regional Specific` is the `governor of <region>` form, and the
+port renders the level's own title (the third hole below).
+
+### 95.2 The birth city
+
+`Sim::heroToken` has answered `city` for a long time, and that is what hid the hole: the
+token resolved to the empty string and the resolver keeps an empty value verbatim, so a row
+that writes `<city>` shipped the literal. `createLife` chose a country and
+`h.region = regionForCity(c.code, h.city)` with `h.city` still empty; only
+`pinCountry` - the `--script` path - ever drew a city, and the port has no other birth path.
+Every normal life therefore had no city: the birth line read `I was born a male in , Nigeria.`
+and the probe counted 33 raw `<city>` literals in 334 lives before the fix.
+
+The draw is one line, and the stream is the reason it is not two:
+
+~~~
+  if (h.city.empty() && !c.cities.empty())
+    h.city = c.cities[placeRng_.below(uint32_t(c.cities.size()))];
+  h.region = regionForCity(c.code, h.city);
+~~~
+
+`placeRng_` is the port-private place stream section 95 introduces for exactly this reason:
+`createLife`'s `rng_` stream is matched value-for-value against the game's own attribute
+snapshots (the ctor note at src/sim.cpp:2700), so a new draw on it would move every attribute
+after it. `pinCountry` keeps its own single `rng_` draw and the guard leaves it alone, so a
+pinned life consumes the place stream exactly once, as before.
+
+### 95.3 The office pool, and the four countries that ran out of stack
+
+The probe found a crash before it found the leak: Andorra, Hong Kong, Papua New Guinea and
+Puerto Rico died with rc -11 (SIGSEGV) at seed 4, and the binary built from the previous
+commit died on the same four (rc 139), so it was the office pool and not this section. Under
+AddressSanitizer the report is one line and an infinite cycle:
+
+~~~
+==63520==ERROR: AddressSanitizer: stack-overflow on address 0x00016ab56f00 (pc 0x000104b0bf18 bp
+    resolveInto (src/sim.cpp:2308) -> resolve (src/sim.cpp:2305) ->
+    ensureOfficeFields (src/sim.cpp:4973) -> politicalToken (src/sim.cpp:21720) ->
+    resolveInto (src/sim.cpp:2422) -> ...
+~~~
+
+`ensureOfficeFields` ended with `h.office = resolve(trim(t.at(row, pick.title)))`. The four
+countries open a regional office whose title is the token-bearing `<jurisdiction adjective>
+mayor` (or `governor`, or `chief executive`) and open no national one, so the level draw
+keeps landing on that row; resolving its title reaches `politicalToken`, whose on-demand fill
+runs `if (office.empty() && life_) ensureOfficeFields(life)` - and the office is still empty,
+because the assignment has not returned yet. The fix assigns the raw title first:
+
+~~~
+  const std::string officeTitle = trim(t.at(row, pick.title));
+  h.office = officeTitle;
+  h.office = resolve(officeTitle);
+~~~
+
+The same probe found the second leak: `<jurisdiction>` 34 times and `<political-office>`
+20 times, always in `a16_dumb-scenarios-political-campaign-enc` (whose own token census is
+`<opponent>` 52, `<jurisdiction>` 29, `<political-office>` 25, `<lover>` 16,
+`<insult>` 8, `<opponent-possessive>` 6, `<jurisdiction-possessive>` 5,
+`<lover-possessive>` 3). A campaign card is about the office the hero is running for, and for
+a hero whose country offers no office at all (15 of the 102 rows open no level) the on-demand
+fill returns early and the row rendered the raw literal. The gate is the honest reading of the
+card:
+
+~~~
+  if (campaign && h.office.empty()) {
+    ensureOfficeFields(life);
+    if (h.office.empty()) return false;
+  }
+~~~
+
+It sits after both of `politicalYear`'s own coins, so the gates' RNG order is unchanged.
+
+### 95.4 Shortcuts
+
+1. `<region>` has no rendered consumer yet, and this section does not invent one. The
+   game's own `governor of <region>` form is a separate render path - `field 0x48
+   System.String <TitleRegionalSpecific>k__BackingField` (il2cpp_dump.txt:7836) and
+   `GetTitleForOfficeAndPlaceAndIsSpecificAndIsCapitalized(System.Int32, SimPlace,
+   System.Boolean, System.Boolean)` (il2cpp_dump.txt:7868) - which the port does not call;
+   `heroToken("region")` answers any card that does write the token, and the region reaches
+   the screen through the country's jurisdiction word instead (`in your state` for a United
+   States hero, where `Region Jurisdiction` is `state`).
+2. The birth city comes off `placeRng_` rather than the game's own draw. That is the
+   deliberate exception: the attribute stream is snapshot-matched, and a place draw cannot go
+   there without moving every attribute behind it.
+3. The region for a city is the table's own row - the same-city rows first, the country's
+   other rows when the city is not in the table, nothing when the country has no code. The
+   game's picker is a different draw, and the port has no captured stream for it.
+4. Fifteen of the 102 political-systems rows open no office. Those countries now offer no
+   campaign card at all rather than a card with a hole in it, and the probe asserts it.
+5. The four countries that crashed now render the ordinary campaign card (see the cards
+   below), which is the game's own behaviour for an office holder - the port simply stops
+   losing the year to a segfault.
+
+### 95.5 Verification
+
+The probe is `/tmp/qdir/ctyres.py` (a *res.py, so the harness picks it up). It pins every
+country in the corpus and checks the city and region against the table, expects the fallback
+where the table has no code, counts the campaign cards and refuses one for a country outside
+the 87 that open an office, and sweeps every rendered line for a raw token:
+
+~~~
+runs 334  rc failures 0
+pinned 192  exact city pair 128  city not in the region table 5  country with no region row 99  unpinned 40
+region table: 30 codes 246 cities  countries with a code 30  without 72
+politics lives 102  campaign cards 216  lives without one 15  office countries 87
+campaign sample: Afghanistan / Weeding Me Out / Weeding Me Out While watching television one evening, you discover that Brianna Denty has started a smear campaign again
+campaign sample: Afghanistan / Pants on Fire! / Pants on Fire! While listening to Dustin Emberlake's response during a debate, he makes a comment that you know is an ou
+mismatches 0 []
+RESIDUE 0 []
+~~~
+
+334 lives, no crash, no mismatch and no literal. `pinned 192 / unpinned 40` is the two sweep
+shapes (a named country, and the birth draw the port makes on its own); the 15 politics lives
+without a campaign card are the countries with no office, and the two campaign samples above are
+both Afghanistan, whose own `Region Jurisdiction` cell reads something other than `state`.
+
+The four crashers, the birth place and the jurisdiction word, as the port renders them now:
+
+~~~
+the city and its region  (United States, seed 1)
+  city Atlanta / region Georgia  (rc 0)
+  a16_dumb-scenarios-political-campaign-enc | Manager Madness
+    You've just received notification that your campaign manager no longer believes in your vision for running the country and has quit to join Manila Cendes' team.
+    | My little sister, Rachel, has been diagnosed with alien hand syndrome.
+    | My approval rating is 38%.
+
+a country the region table does not carry  (Nigeria, seed 3)
+  city Lagos / region None  (rc 0)
+  a16_political-laws-enc | A bill on your desk
+    A bill to ban the use of profanity by anyone under the age of eight years old reached your desk, and you signed it into law.
+    | My approval rating is 47%.
+    | I have signed 1 law.
+
+the jurisdiction word the office pool writes  (United States, seed 4)
+  city Boston / region Massachusetts  (rc 0)
+  a16_political-bribes-enc | A bribe
+    A drug cartel from Kazakhstan is offering you $10,670,286 to let them run their operation in your state.
+    | My little sister, Lacey, graduated from high school.
+    | My approval rating is 50%.
+
+the four countries that ran out of stack  (Andorra, seed 4)
+  city Andorra la Vella / region Andorra la Vella  (rc 0)
+  a16_dumb-scenarios-political-campaign-enc | Rowdy Rival
+    Moments before appearing on stage for a live debate, Luka Ryan pulls you aside to covertly expose a whiskey flask in his coat pocket and asks if you'd like to ease the nerves before showtime.
+    | My approval rating is 40%.
+    | Just before appearing on stage for a live debate, Luka Ryan offered me some whiskey from a flask that was hidden in his coat pocket, but it didn't help, I ended up feeling lightheaded and woozy during
+
+the four countries that ran out of stack  (Hong Kong, seed 4)
+  city Hong Kong / region None  (rc 0)
+  a16_dumb-scenarios-political-campaign-enc | Rowdy Rival
+    Moments before appearing on stage for a live debate, Luka Ryan pulls you aside to covertly expose a whiskey flask in his coat pocket and asks if you'd like to ease the nerves before showtime.
+    | My approval rating is 40%.
+    | Just before appearing on stage for a live debate, Luka Ryan offered me some whiskey from a flask that was hidden in his coat pocket, but it didn't help, I ended up feeling lightheaded and woozy during
+
+the four countries that ran out of stack  (Papua New Guinea, seed 4)
+  city Wewak / region East Sepik  (rc 0)
+  a16_dumb-scenarios-political-campaign-enc | Rowdy Rival
+    Moments before appearing on stage for a live debate, Luka Ryan pulls you aside to covertly expose a whiskey flask in his coat pocket and asks if you'd like to ease the nerves before showtime.
+    | My approval rating is 40%.
+    | Just before appearing on stage for a live debate, Luka Ryan offered me some whiskey from a flask that was hidden in his coat pocket, but it didn't help, I ended up feeling lightheaded and woozy during
+
+the four countries that ran out of stack  (Puerto Rico, seed 4)
+  city San Juan / region None  (rc 0)
+  a16_dumb-scenarios-political-campaign-enc | Rowdy Rival
+    Moments before appearing on stage for a live debate, Luka Ryan pulls you aside to covertly expose a whiskey flask in his coat pocket and asks if you'd like to ease the nerves before showtime.
+    | My approval rating is 40%.
+    | Just before appearing on stage for a live debate, Luka Ryan offered me some whiskey from a flask that was hidden in his coat pocket, but it didn't help, I ended up feeling lightheaded and woozy during
+~~~
+
+And the same one-country-per-spec sweep that found the crash, run over all 102 countries at
+four seeds and two shapes, under the fixed binary:
+
+~~~
+runs 816 rc failures 0 []
+leak tokens []
+~~~
+
+The full regression after the section: 38 probes at residue 0 (the new `ctyres.py`
+joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at
+`captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr,
+and the benchmark reaching age 34.
