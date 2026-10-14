@@ -8700,3 +8700,271 @@ its cell with `."` followed by a period in the source data, and the
 `a16_school-principal-warnings-enc` rows are written in the third person
 (`<principal> encourage you to do the right thing`), so folding them to the first person
 leaves the data's own verb form behind.
+
+
+## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket
+
+Sections 52 and 76 gave the hero fame through a body and a screen: sport and the
+studio. Neither of them is his own thing. Section 85 wires the whole
+`a16_podcast-*` family, five tables and 470 rows, and with it a show the hero
+builds from a genre, names himself, records every year and is paid for. Two
+bugs justify the section: the pool's `<friend>` had no reference behind it, so
+the card and its own journal line named two different people; and the pool's
+`Gender Bracket` column names the one person a card is about, so the `<he/she>`
+pair in that card belongs to that person and not to the hero.
+
+### 85.1 The family
+
+Five tables, all `<name>-enc` under
+`/Users/Adam/Documents/bitlife/_re/gamedata_plain`, 470 rows. Before this
+section the string `podcast` appeared nowhere in `src/` or `include/`.
+
+| table | rows | the columns that matter |
+|---|---|---|
+| `a16_podcast-dumb-enc` | 110 | Index, Crazy?, Hero Min Age, Hero Max Age, Hero Has Lover, Lover Gender, Randomize Choices, Gender Bracket, Min / Max Popularity, Genre, Content Type, Title, Body, CTA, Choice 1..4, Narrative 1..4, Success / Popularity / Relationship Impact 1..4 |
+| `a16_podcast-title-enc` | 184 | Name, Genre (the show's own name) |
+| `a16_podcast-episode-title-enc` | 121 | Name, Genre (a single episode's title) |
+| `a16_podcast-genre-enc` | 12 | Genre, Popularity Score |
+| `a16_podcast-subgenre-enc` | 43 | Subgenre, Genre |
+
+The genre column is set on 79 of the 110 rows - blank means any genre - and the
+spread is ordinary: paranormal 10, gaming 9, pop culture 9, true crime 9, food 7,
+spirituality 7, finance 6, health and wellness 6, self-help 6, politics 5,
+storytelling 5. `Content Type` says season on 59 rows and live episode on 32,
+blank on 19. Choices are filled 110 / 110 / 108 / 107; the gates are thin, two
+rows with a Hero Min Age of 21, one with a Hero Max Age of 25, five with Hero
+Has Lover, seven with a Min Popularity (66 / 75 / 50 / 80 / 35 / 33 / 55) and
+four with a Max Popularity (50 / 25 / 75 / 20). Sixteen rows carry a Gender
+Bracket, and ten of those sixteen spell one person: `<lover>` five, `<celebrity>`
+two, `<random-person-indefinite>` two (plus two more of the same token without
+the brackets), `<friend>` two, `<musician>`, `<random-full-name>` and
+`<random-person>` one each.
+
+The token census over all five tables is the usual shape:
+`<podcast>` 397, `<rb>` 167, `<him/her>` 39, `<rb2>` 33, `<lover>` 30,
+`<he/she>` 30, `<random-person-indefinite>` 29, `<city>` 26, `<his/her>` 22,
+`<hero-first-name>` 20, `<celebrity>` 13, `<friend>` 13, `<rb3>` 8,
+`<random-full-name>` 7, `<musician>` 6, `<circumstance-public>` 5,
+`<country-other>` 5, `<random-first-name-female>` 5, `<episode-title>` 5, and
+one-off inline lists such as `<mocked/dragged/laughed at/ridiculed>`.
+
+### 85.2 The show
+
+`Sim::makePodcast(Life&)` runs once, behind the new script flag `podcast`:
+
+1. the genre is drawn from `a16_podcast-genre-enc` weighted on its
+   `Popularity Score`;
+2. the subgenre is drawn from `a16_podcast-subgenre-enc` rows of that genre;
+3. the name is drawn from `a16_podcast-title-enc` rows of that genre, falling
+   back to `The <Genre> Show` through `spyUpperFirst`;
+4. the content type is collected from the distinct non-empty `Content Type`
+   values of the pool (fallback `season`);
+5. episodes start at `1 + rng.below(4)`, listeners at `300 + rng.below(900)`,
+   credibility and popularity at 50.
+
+Every year after that, `Sim::podcastYear(Life&, AgeUp&, int)` keeps the books:
+
+    released = 1 + podRng_.below(4)
+    gain     = (credibility - 40) * 18 + podRng_.below(420)
+    listeners += released * gain
+    perListener = sponsors > 0 ? 0.045 : 0.02
+    earned = listeners * perListener + sponsors * 4000
+
+so the audience follows the show's credibility and a sponsor doubles the yield
+per listener. `earned` is added to the hero's money and accumulated into
+`podcastEarned`.
+
+### 85.3 The year
+
+One draw on `podRng_.unit()`, rarest first, and the pool card as the common
+case:
+
+| roll | branch |
+|---|---|
+| < 0.03 | podcast of the year: credibility +12, popularity +6, listeners x1.25 |
+| < 0.08 | a guest (a musician or a celebrity from the reference tables): popularity +5, listeners x1.15 + 40 |
+| < 0.15 | a viral episode: an `<episode-title>`, popularity +8, listeners x1.5 + 100 |
+| < 0.23 | a flop: popularity -5, listeners x0.8 |
+| < 0.33 | a sponsor: `podcastSponsors += 1`, credibility -2 |
+| else | a card from `a16_podcast-dumb-enc` |
+
+A script that names a choice for this family bypasses the roll and forces the
+card. The card's row passes the same gates the game applies: a non-empty Body, a
+Genre equal to the show's or blank, the Hero Min / Max Age window, the Min / Max
+Popularity window, Hero Has Lover and Lover Gender. One of the row's filled
+choices is taken (`forcedChoice` indexes the filled list, not the column
+number), and the family's three impact columns are applied as the game means
+them - `Success Impact` x3 onto the show's credibility, `Popularity Impact` x2
+onto the show's popularity, `Relationship Impact` x3 onto the hero's partner -
+with listeners x1.1 + 50 on a positive success and x0.9 on a negative one.
+
+Every card gains the same closing lines, all first person: the year's pay, the
+listener count, the credibility and popularity, and the sponsor count when the
+hero has any. The card itself is second person (`You're trying to decide...`)
+and the journal line is first person, which is what `spyUpperFirst` and the
+`out.narrative` split are for.
+
+### 85.4 The tokens
+
+The family owns exactly two tokens, both live only while a card is being built:
+
+- `<podcast>` / `<podcast-possessive>` - the show's name, or `my show` when it
+  has none;
+- `<episode-title>` - a title drawn from `a16_podcast-episode-title-enc` inside
+  the show's genre and resolved before it is cached, because a title cell can
+  itself hold `<random-full-name>`.
+
+Everything else in the pool goes through `Sim::podRefBind`, which draws each
+reference token once and substitutes the same value into every cell of the card.
+The table it walks is the pool's own vocabulary:
+
+    {"random-person-indefinite", "random-person-indefinite"},
+    {"random-person", "random-person"},
+    {"random-full-name", "random-full-name"},
+    {"City", "city"},
+    {"city", "city"},
+    {"country-other", "country-other"},
+    {"celebrity-male", "celebrity-male"},
+    {"celebrity-female", "celebrity-female"},
+    {"celebrity", "celebrity"},
+    {"musician", "musician"},
+    {"friend", "friend"},
+    {"insult", "insult"},
+    {"lover", "lover"},
+
+Each entry binds both spellings, `<friend>` and `<friend-possessive>`, and
+remembers the value under `ref:<base>` in `podCache_`. The draw itself is the
+place the three holes are filled:
+
+- `city` is answered by `heroToken("city")`, which already knows the hero's city;
+- `random-full-name` and `friend` are drawn from
+  `a16_casino-casino-celebrity-name-enc` (First Name, Last Name, Gender, Skin,
+  Commonness Score) weighted on `Commonness Score`, because the reference tables
+  have no `<reference:friend>` entry at all;
+- everything else goes to `referenceToken`, then `personName`, then
+  `heroToken`, in that order.
+
+The name table is the one place in this family where the gender of a drawn
+person is known, so the draw remembers it under `refg:<base>`. `podcastCard`
+uses that before it resolves a single cell: it reads the row's `Gender Bracket`,
+seeds that person through `podRefBind` so the name and the gender exist, and
+sets `pronounOtherSet_` / `pronounOtherFemale_` to that person. The card's
+`<he/she>` and `<his/her>` therefore follow whoever the row is about - the
+friend, the lover, the random stranger - and not the hero. A bracket person with
+no known gender (a celebrity or a musician from the reference tables) leaves the
+hero's pair in place, which is a documented shortcut.
+
+### 85.5 The bugs
+
+1. `<random-full-name>` and `<City>` had no answer anywhere. The first
+probe of the family reported `podcast events 2614 rc failures 0` with a residue
+of 108 - `<random-full-name>` 100 and `<City>` 8. Nothing in the port handled
+either: `referenceToken` returns empty for keys the tags table does not carry
+(only a comment at `src/sim.cpp:1472` even mentions the token) and `City` is the
+pool's own capitalised spelling of a token that the global resolver only knows
+as `<city>`.
+2. The first fix was in the wrong place. Local lambdas inside
+`podcastCard` bound the references for the card's own cells, but the episode
+title goes through `Sim::podcastToken` and `resolve()` alone, so the residue
+stayed at exactly 108. The fix had to be a member (`Sim::podRefBind`) that both
+paths call.
+3. A name drawn fresh on every call. `referenceToken("friend")` returns
+empty - `genesis_master_tags_reference_2` carries `<reference:celebrity>` (which
+chains to `celebrity_female` / `celebrity_male`) and `<reference:musician>`, but
+nothing for a friend - so the global resolver names `<friend>` through
+`personName`, and `personName` draws again on every call. Row 60 showed it
+exactly: the body said the thief was Dustin Steeber and the journal line said
+Keisha Dollar. Fixed by binding the token once per card, which is the whole point
+of `podRefBind`.
+4. The card's pronoun pair was the hero's. The pool addresses the hero
+(`You...`) about one other person and never says which pronoun belongs to the
+hero: for a male hero with a female friend the card would have said `he`. Fixed
+with the Gender Bracket seeding above.
+5. `const char[6]` is not concatenable. The pronoun patch wrote
+`podCache_["refg:" + kRefs[k][1]]`, which is `const char[6] + const char*` and
+does not compile, so the build failed and the probe that printed five clean runs
+was reading the stale binary. Fixed with
+`podCache_[std::string("refg:") + kRefs[k][1]]`. The lesson is old: a probe run
+after a failed build proves nothing.
+
+### 85.6 Shortcuts
+
+- A sponsor is the fixed phrase `a mattress company`; no table in the corpus
+  names advertisers.
+- The pool's popularity window (`Min Popularity` / `Max Popularity`) reads the
+  show's own `podcastPopularity` score, because the hero has no popularity
+  attribute of its own.
+- A `<friend>` can be of any gender; the name table is not filtered on the
+  hero's own gender.
+- A bracket person the reference tables name (a celebrity, a musician) keeps the
+  hero's pronoun pair, since their gender is not in the row.
+- The `<episode-title>` pool is drawn inside the genre and falls back to the
+  whole table when a genre has no titles.
+
+### 85.7 Verification
+
+`/tmp/qdir/podres.py` walks 30 seeds in both genders to age 60 with
+`{"podcast": true}` and prints `podcast events 2574 rc failures 0` and
+`RESIDUE 0`. Every card is a `a16_podcast-dumb-enc` row, which is right: the
+other four tables are the setup pools - the show's name, an episode title, the
+genre and the subgenre - and never a card of their own. The titles the probe
+collected, in order of frequency: Live Episode 165, Podcast Production 95,
+A flop 83, A sponsor 75, Fan Mail 74, Editorial Decisions 73, A viral episode 62,
+Podcast Promotion 46, Podcast Segment 37, Insider Interference 29, Podcast Antics
+25, Podcast of the year 20.
+
+Ten real cards, one per line of the show's year:
+
+    Podcast of the year  Trendsetter won an award for pop culture.
+      My show won an award
+    A guest on Trendsetter  Blake Lively came on the show.
+      I had Blake Lively on my show
+    Podcast Promotion  You're trying to decide if you should sell some
+      Trendsetter-branded merch now that you have a recognizable podcast.  Earbuds
+      The show paid me $42 this year. | I decided to sell Trendsetter-branded
+      earbuds as a way of promoting my podcast.
+    Podcast Production  As you're preparing to record this season of your
+      podcast, you're considering what themes might appeal most to your
+      listeners.  Drugs
+      I oriented this season of Trendsetter around drug culture
+    Insider Interference  Lately, your podcasting equipment has been going
+      missing - most recently, your fancy XLR cable. You check security cam
+      footage and are shocked to realize that Layla Slow has been stealing your
+      podcasting stuff.  Ignore it and keep podcasting
+      Layla Slow stole my fancy podcasting XLR cable, but I didn't want to
+      confront her, so I kept podcasting despite the missing equipment.
+    Insider Interference  ...that Pre Malone has been stealing your podcasting
+      stuff.  Nicely ask for it back
+      Pre Malone apologized for stealing my high-tech podcasting XLR cable and
+      returned it after I asked politely.
+    Insider Interference  ...that Megan Mare has been stealing your podcasting
+      stuff.  Steal something back
+      I decided to steal a SodaStream from Megan Mare after she inexplicably
+      stole my fancy podcasting boom arm.
+    Insider Opinions  You and Mack Barlow are having a few beers when he
+      drunkenly admits that he uses Trendsetter to fall asleep because it's so
+      boring.  Pretend he's joking
+      I pretended that Mack Barlow was joking when he said he uses Trendsetter
+      to fall asleep.
+    Insider Opinions  You have a running joke about Nicki Minaj on Trendsetter,
+      but Jay Slo wants you to stop because he's a big fan.  Cut it
+      I cut a running joke about Nicki Minaj from Trendsetter after Jay Slo
+      asked me to.
+    A viral episode  "The Vanishing of Dustin Steeber" went everywhere.
+      My episode "The Vanishing of Dustin Steeber" went viral
+
+The third and the fifth card are the two fixes in action: the friend is one
+person in both halves of the card, and the pronoun follows her - Layla Slow and
+Megan Mare are female in the name table, where Mack Barlow is male - while the
+hero in those runs is male.
+
+The full regression after the section: all 28 family probes at residue 0
+(podres 2574 events, and actres 667, astres 797, bizres 3578, bmres 1648,
+boatres 1456, casres 1286, cultres 1168, dlres 1532, fightres 1243, finres 760,
+hustres 1412, ltres 1578, luxres 849, mafiares 1310, modres 589, ofcres 1726,
+outres 1029, petres 2472, prisres 428, racres 857, schres 583, spores 611,
+spyres 564, stures 1145, traderes 1326, vampres 3297, zoores 1440),
+`rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109 captured /
+107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`,
+`blsim --script covpush.json` rc 0 with 33078 bytes of stdout and an empty
+stderr, and `bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.

@@ -133,6 +133,13 @@ struct Hero {
   int schoolPopularity = 50, schoolGrades = 70, schoolTrouble = 0;
   int schoolActUps = 0, schoolDetentions = 0, schoolSuckups = 0;
   bool schoolCliqueMember = false, schoolFratMember = false;
+  // The podcast (REPORT.en.md 85): a show of the hero's own, the ladder it
+  // climbs and the money it pays.
+  bool podcaster = false;
+  std::string podcastName, podcastGenre, podcastSubgenre, podcastContentType, podcastSponsor;
+  int podcastListeners = 0, podcastEpisodes = 0, podcastPopularity = 50, podcastCredibility = 50;
+  int podcastSponsors = 0;
+  long long podcastEarned = 0;
   // Set when the hero is left with no surviving parent before 18; the orphan
   // dumb-scenario set is gated on it (REPORT.en.md 46).
   bool orphan = false;

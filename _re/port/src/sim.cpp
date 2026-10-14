@@ -596,7 +596,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
-      schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL) {}
+      schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
+      podRng_(seed ^ 0x165667b19e3779f9ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -969,6 +970,12 @@ bool Sim::load(std::string* error) {
       "a16_school-teacher-call-outs-enc",
       "a16_school-teacher-disrespects-enc",
       "a16_school-teacher-suckups-enc",
+      // The podcast (REPORT.en.md 85): the show, its titles and its shelves.
+      "a16_podcast-dumb-enc",
+      "a16_podcast-episode-title-enc",
+      "a16_podcast-genre-enc",
+      "a16_podcast-subgenre-enc",
+      "a16_podcast-title-enc",
       "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
@@ -2004,6 +2011,18 @@ bool luxIsToken(const std::string& token, bool live) {
 // <principal> are people the resolver already knows how to name, but every
 // call would draw a fresh name, so the family draws each one once per card
 // and answers from its cache while a school card renders.
+// The podcast's own tokens (REPORT.en.md 85). <podcast> names the hero's own
+// show and <episode-title> one release; the guard claims them only while a
+// podcast card renders, so no other family sees them.
+bool podIsToken(const std::string& token, bool live) {
+  if (!live) return false;
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  return key == "podcast" || key == "podcast-name" || key == "episode-title";
+}
+
 bool schoolIsToken(const std::string& token, bool live) {
   if (!live) return false;
   std::string key = token;
@@ -2285,6 +2304,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (podIsToken(token, podLive_)) {
+      const std::string v = podcastToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
     } else if (schoolIsToken(token, schoolLive_)) {
       const std::string v = schoolToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
@@ -3267,6 +3290,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (careerYear(life, out, forcedChoice)) return true;
   if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
   if (life.hero.schooling && schoolYear(life, out, forcedChoice)) return true;
+  if (life.hero.podcaster && podcastYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
   if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
@@ -3372,6 +3396,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   prisonCache_.clear();   // one inmate / nickname / letter / gift per prison card
   officeCache_.clear();   // one employee / company per office card
   schoolCache_.clear();   // one teacher / classmate / principal per school card
+  podCache_.clear();      // one guest / episode title per podcast card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -20558,6 +20583,466 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 // ===== end the school (REPORT.en.md 84) ======================================
+
+// ===== the podcast (REPORT.en.md 85) ==========================================
+// The hero runs a show of his own: a genre, a subgenre, a name and a content
+// type, and then one year of episodes, guests, sponsors and the money the show
+// pays. The 110-row a16_podcast-dumb-enc pool is the year's own card and every
+// row of it is gated on the show's genre, on the hero's age and popularity and,
+// for a few rows, on a lover. Its impacts are named Success / Popularity /
+// Relationship, which the generic renderRow does not read, so the family draws
+// its own cards instead of going through it.
+
+// The reference tokens the show's pools draw from. referenceToken draws fresh
+// on every call, so each one is drawn once per card and remembered in
+// podCache_, which is what keeps a card and its journal line naming the same
+// person. <City> is the pools' own capitalised spelling of <city>.
+std::string Sim::podRefBind(const std::string& cell) {
+  std::string out = cell;
+  static const char* kRefs[][2] = {
+    {"random-person-indefinite", "random-person-indefinite"},
+    {"random-person", "random-person"},
+    {"random-full-name", "random-full-name"},
+    {"City", "city"},
+    {"city", "city"},
+    {"country-other", "country-other"},
+    {"celebrity-male", "celebrity-male"},
+    {"celebrity-female", "celebrity-female"},
+    {"celebrity", "celebrity"},
+    {"musician", "musician"},
+    {"friend", "friend"},
+    {"insult", "insult"},
+    {"lover", "lover"},
+  };
+  // The tags the reference table does not answer: the hero's city, a full name
+  // (the episode titles carry one) and <friend>. The name table is also the one
+  // place a drawn person's gender is known, so the pair's gender is remembered
+  // next to the name and the card's <he/she> follows it.
+  bool drawnFemale = false;
+  bool drawnKnown = false;
+  auto draw = [&](const std::string& base) -> std::string {
+    drawnFemale = false;
+    drawnKnown = false;
+    if (base == "city") return heroToken("city", false);
+    if (base == "lover" && hero_ != nullptr && hero_->relationshipOn && !hero_->loverName.empty()) {
+      drawnFemale = hero_->loverFemale;
+      drawnKnown = true;
+      return hero_->loverName;
+    }
+    if (base == "random-full-name" || base == "friend") {
+      // shortcut: the name table is the one the port already names people from,
+      // so a <friend> is not filtered on the hero's own gender.
+      if (!ensureTable("a16_casino-casino-celebrity-name-enc")) return std::string();
+      const Table& n = tbl("a16_casino-casino-celebrity-name-enc");
+      if (n.size() == 0 || !n.has("First Name")) return std::string();
+      const size_t r = weightedPick(n, "Commonness Score", podRng_);
+      if (r == size_t(-1)) return std::string();
+      if (n.has("Gender")) {
+        drawnFemale = lower(trim(n.at(r, "Gender"))) == "female";
+        drawnKnown = true;
+      }
+      return trim(n.at(r, "First Name")) + " " + trim(n.at(r, "Last Name"));
+    }
+    std::string v = referenceToken(base);
+    if (v.empty()) v = personName(base);
+    if (v.empty()) v = heroToken(base, false);
+    return v;
+  };
+  for (size_t k = 0; k < sizeof(kRefs) / sizeof(kRefs[0]); ++k) {
+    const std::string tag = std::string("<") + kRefs[k][0] + ">";
+    const std::string ptag = std::string("<") + kRefs[k][0] + "-possessive>";
+    if (out.find(tag) == std::string::npos && out.find(ptag) == std::string::npos) continue;
+    const std::string slot = std::string("ref:") + kRefs[k][1];
+    std::string v;
+    std::map<std::string, std::string>::iterator it = podCache_.find(slot);
+    if (it != podCache_.end()) v = it->second;
+    else {
+      v = draw(kRefs[k][1]);
+      podCache_[slot] = v;
+      if (drawnKnown) podCache_[std::string("refg:") + kRefs[k][1]] = drawnFemale ? "f" : "m";
+    }
+    if (v.empty()) continue;
+    const std::string pv = llPossessive(v);
+    size_t p = 0;
+    while ((p = out.find(ptag, p)) != std::string::npos) { out.replace(p, ptag.size(), pv); p += pv.size(); }
+    p = 0;
+    while ((p = out.find(tag, p)) != std::string::npos) { out.replace(p, tag.size(), v); p += v.size(); }
+  }
+  return out;
+}
+
+void Sim::makePodcast(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_podcast-genre-enc") || !ensureTable("a16_podcast-title-enc")) return;
+  h.podcaster = true;
+
+  // The genre is weighted on the pool's own popularity score.
+  {
+    const Table& g = tbl("a16_podcast-genre-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < g.size(); ++r) {
+      if (!g.has("Genre") || trim(g.at(r, "Genre")).empty()) continue;
+      pool.push_back(r);
+    }
+    const size_t row = weightedPickOf(g, "Popularity Score", pool, podRng_);
+    if (row != size_t(-1)) h.podcastGenre = trim(g.at(row, "Genre"));
+  }
+  if (h.podcastGenre.empty()) h.podcastGenre = "true crime";
+
+  // The subgenre is one of the rows that belong to that genre.
+  if (ensureTable("a16_podcast-subgenre-enc")) {
+    const Table& sg = tbl("a16_podcast-subgenre-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < sg.size(); ++r) {
+      if (!sg.has("Subgenre") || !sg.has("Genre")) continue;
+      if (lower(trim(sg.at(r, "Genre"))) != lower(h.podcastGenre)) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty())
+      h.podcastSubgenre = trim(resolve(sg.at(pool[podRng_.below(uint32_t(pool.size()))], "Subgenre")));
+  }
+
+  // The name comes from the show pool for the genre, or from the whole pool.
+  {
+    const Table& t = tbl("a16_podcast-title-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!t.has("Name")) continue;
+      if (t.has("Genre") && lower(trim(t.at(r, "Genre"))) != lower(h.podcastGenre)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) if (t.has("Name")) pool.push_back(r);
+    if (!pool.empty())
+      h.podcastName = trim(resolve(t.at(pool[podRng_.below(uint32_t(pool.size()))], "Name")));
+  }
+  if (h.podcastName.empty())
+    h.podcastName = std::string("The ") + spyUpperFirst(h.podcastGenre) + " Show";
+
+  // The content type is whatever the show's own pool offers.
+  if (ensureTable("a16_podcast-dumb-enc")) {
+    const Table& d = tbl("a16_podcast-dumb-enc");
+    std::vector<std::string> kinds;
+    for (size_t r = 0; r < d.size(); ++r) {
+      if (!d.has("Content Type")) continue;
+      const std::string k = lower(trim(d.at(r, "Content Type")));
+      if (k.empty()) continue;
+      bool seen = false;
+      for (size_t i = 0; i < kinds.size(); ++i) if (kinds[i] == k) { seen = true; break; }
+      if (!seen) kinds.push_back(k);
+    }
+    if (!kinds.empty()) h.podcastContentType = kinds[podRng_.below(uint32_t(kinds.size()))];
+  }
+  if (h.podcastContentType.empty()) h.podcastContentType = "season";
+
+  h.podcastEpisodes = 1 + int(podRng_.below(4));
+  h.podcastListeners = 300 + int(podRng_.below(900));
+  h.podcastPopularity = 50;
+  h.podcastCredibility = 50;
+}
+
+std::string Sim::podcastToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (!h || !h->podcaster) return std::string();
+  std::string key = token;
+  bool possessive = false;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - psuffix.size());
+  }
+  auto remembered = [&](const std::string& slot) -> std::string {
+    std::map<std::string, std::string>::iterator it = podCache_.find(slot);
+    return it == podCache_.end() ? std::string() : it->second;
+  };
+  auto remember = [&](const std::string& slot, const std::string& value) -> std::string {
+    podCache_[slot] = value;
+    return value;
+  };
+  if (key == "podcast" || key == "podcast-name") {
+    const std::string v = h->podcastName.empty() ? std::string("my show") : h->podcastName;
+    return possessive ? llPossessive(v) : v;
+  }
+  if (key == "episode-title") {
+    std::string v = remembered("episode-title");
+    if (v.empty() && ensureTable("a16_podcast-episode-title-enc")) {
+      const Table& t = tbl("a16_podcast-episode-title-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (!t.has("Name")) continue;
+        if (t.has("Genre") && lower(trim(t.at(r, "Genre"))) != lower(h->podcastGenre)) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty())
+        for (size_t r = 0; r < t.size(); ++r) if (t.has("Name")) pool.push_back(r);
+      if (!pool.empty()) {
+        // The title cell can hold <random-full-name>, so it is resolved here
+        // rather than cached raw.
+        podCache_["episode-title"] =
+            trim(resolve(podRefBind(t.at(pool[podRng_.below(uint32_t(pool.size()))], "Name"))));
+        v = podCache_["episode-title"];
+      }
+    }
+    if (v.empty()) v = "Episode " + std::to_string(h->podcastEpisodes + 1);
+    return v;
+  }
+  return std::string();
+}
+
+// One card of the show's own pool. The three impact columns are the family's
+// own: Success moves the show's credibility, Popularity its audience score and
+// Relationship the hero's partner.
+bool Sim::podcastCard(Life& life, AgeUp& out, const Table& t, size_t row, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!t.has("Body") || trim(t.at(row, "Body")).empty()) return false;
+
+  auto cellOf = [&](const std::string& col) -> std::string {
+    if (!t.has(col)) return std::string();
+    return trim(resolve(podRefBind(t.at(row, col))));
+  };
+  auto intOf = [&](const std::string& col) -> int {
+    return t.has(col) ? int(t.num(row, col)) : 0;
+  };
+
+  // The row's Gender Bracket names the one person the card is about, and the
+  // <he/she> pairs in the card and in its journal line have to be that person's.
+  // The person is drawn here, before any cell resolves, so the pair is set
+  // before the card text is written.
+  if (t.has("Gender Bracket")) {
+    std::string b = trim(t.at(row, "Gender Bracket"));
+    if (b.size() >= 2 && b[0] == '<' && b[b.size() - 1] == '>') b = b.substr(1, b.size() - 2);
+    const std::string ps = "-possessive";
+    if (b.size() > ps.size() && b.compare(b.size() - ps.size(), ps.size(), ps) == 0)
+      b.resize(b.size() - ps.size());
+    if (!b.empty()) {
+      podRefBind(std::string("<") + b + ">");
+      std::map<std::string, std::string>::iterator it = podCache_.find("refg:" + b);
+      if (it != podCache_.end() && (it->second == "f" || it->second == "m")) {
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = it->second == "f";
+      }
+    }
+  }
+
+  std::vector<int> idx;
+  std::vector<std::string> labels;
+  for (int i = 1; i <= 4; ++i) {
+    const std::string label = cellOf("Choice " + std::to_string(i));
+    if (label.empty()) continue;
+    idx.push_back(i);
+    labels.push_back(label);
+  }
+  int pick = 0;
+  if (forcedChoice >= 0 && size_t(forcedChoice) < labels.size()) pick = forcedChoice;
+  else if (!labels.empty()) pick = int(podRng_.below(uint32_t(labels.size())));
+  const int n = labels.empty() ? 0 : idx[size_t(pick)];
+
+  out.table = "a16_podcast-dumb-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = cellOf("Title");
+  out.body = cellOf("Body");
+  out.cta = cellOf("CTA");
+  if (out.body.empty()) return false;
+  std::string body = out.body;
+  const char last = body[body.size() - 1];
+  if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  out.body = spyUpperFirst(body);
+
+  if (n > 0) {
+    const std::string num = std::to_string(n);
+    out.choice = labels[size_t(pick)];
+    out.narrative = cellOf("Narrative " + num);
+    const int suc = intOf("Success Impact " + num);
+    const int pop = intOf("Popularity Impact " + num);
+    const int rel = intOf("Relationship Impact " + num);
+    h.podcastCredibility = std::max(0, std::min(100, h.podcastCredibility + suc * 3));
+    h.podcastPopularity = std::max(0, std::min(100, h.podcastPopularity + pop * 2));
+    if (rel != 0 && !h.loverName.empty())
+      h.relationship = std::max(0, std::min(100, h.relationship + rel * 3));
+    if (suc > 0) h.podcastListeners = int(h.podcastListeners * 1.1) + 50;
+    else if (suc < 0) h.podcastListeners = int(h.podcastListeners * 0.9);
+  }
+  return true;
+}
+
+bool Sim::podcastYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.podcaster) return false;
+  if (h.age < 14) return false;
+  if (!ensureTable("a16_podcast-dumb-enc")) return false;
+
+  podLive_ = true;
+  podCache_.clear();
+  const bool savedOther = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+
+  std::string tableRef = "a16_podcast-dumb-enc";
+  int cardRow = -1;
+  std::string title, body, line;
+  int happy = 0;
+  long long earned = 0;
+
+  auto say = [&](const std::string& s) { if (!s.empty() && line.empty()) line = spyUpperFirst(s); };
+  auto add = [&](const std::string& s) { if (!s.empty()) out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  auto numOf = [&](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col)) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto flagOf = [&](const Table& t, size_t r, const std::string& col) -> bool {
+    return t.has(col) ? t.flag(r, col) : false;
+  };
+  auto windowOk = [&](const Table& t, size_t r, const std::string& lo, const std::string& hi,
+                      long long v) -> bool {
+    if (t.has(lo)) { const long long l = numOf(t, r, lo); if (l > 0 && v < l) return false; }
+    if (t.has(hi)) { const long long u = numOf(t, r, hi); if (u > 0 && v > u) return false; }
+    return true;
+  };
+  auto episodeTitle = [&]() -> std::string {
+    const std::string v = podcastToken("episode-title");
+    return v.empty() ? std::string("a new episode") : v;
+  };
+  // The show's own card: a row of the pool whose genre is the show's genre and
+  // whose age, popularity and lover gates the hero passes.
+  auto tryCard = [&]() -> bool {
+    const Table& d = tbl("a16_podcast-dumb-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < d.size(); ++r) {
+      if (!d.has("Body") || trim(d.at(r, "Body")).empty()) continue;
+      if (d.has("Genre")) {
+        const std::string g = lower(trim(d.at(r, "Genre")));
+        if (!g.empty() && g != lower(h.podcastGenre)) continue;
+      }
+      if (!windowOk(d, r, "Hero Min Age", "Hero Max Age", h.age)) continue;
+      // shortcut: the hero has no popularity attribute of its own, so the
+      // pool's popularity window reads the show's own score instead.
+      if (!windowOk(d, r, "Min Popularity", "Max Popularity", h.podcastPopularity)) continue;
+      if (flagOf(d, r, "Hero Has Lover") && h.loverName.empty()) continue;
+      if (d.has("Lover Gender")) {
+        const std::string lg = lower(trim(d.at(r, "Lover Gender")));
+        if (!lg.empty() && lg != "both" && lg != (h.loverFemale ? "female" : "male")) continue;
+      }
+      pool.push_back(r);
+    }
+    if (pool.empty()) return false;
+    const size_t row = pool[podRng_.below(uint32_t(pool.size()))];
+    if (!podcastCard(life, out, d, row, forcedChoice)) return false;
+    mark("a16_podcast-dumb-enc", int(row));
+    return true;
+  };
+
+  // The books first: the show releases episodes every year, the audience
+  // follows the credibility and the sponsors pay per listener.
+  const int released = 1 + int(podRng_.below(4));
+  h.podcastEpisodes += released;
+  const int gain = (h.podcastCredibility - 40) * 18 + int(podRng_.below(420));
+  h.podcastListeners = std::max(0, h.podcastListeners + released * gain);
+  const double perListener = h.podcastSponsors > 0 ? 0.045 : 0.02;
+  earned = static_cast<long long>(double(h.podcastListeners) * perListener) +
+           static_cast<long long>(h.podcastSponsors) * 4000;
+  if (earned < 0) earned = 0;
+  h.money += earned;
+  h.podcastEarned += earned;
+
+  const std::string show = h.podcastName.empty() ? std::string("my show") : h.podcastName;
+  const double roll = podRng_.unit();
+  bool cardDone = false;
+  if (forcedChoice >= 0) {
+    // A script that asked for a choice of this family has to reach a card.
+    cardDone = tryCard();
+  } else if (roll < 0.03) {
+    // An award.
+    title = "Podcast of the year";
+    body = show + " won an award for " + h.podcastGenre + ".";
+    say("My show won an award");
+    h.podcastCredibility = std::min(100, h.podcastCredibility + 12);
+    h.podcastPopularity = std::min(100, h.podcastPopularity + 6);
+    h.podcastListeners = int(h.podcastListeners * 1.25);
+    happy += 3;
+  } else if (roll < 0.08) {
+    // A guest.
+    const std::string guest = referenceToken(podRng_.chance(0.5) ? "musician" : "celebrity");
+    title = "A guest on " + show;
+    body = (guest.empty() ? std::string("A famous stranger") : guest) + " came on the show.";
+    say(std::string("I had ") + (guest.empty() ? std::string("a celebrity") : guest) + " on my show");
+    h.podcastPopularity = std::min(100, h.podcastPopularity + 5);
+    h.podcastListeners = int(h.podcastListeners * 1.15) + 40;
+    happy += 2;
+  } else if (roll < 0.15) {
+    // A viral episode.
+    const std::string ep = episodeTitle();
+    title = "A viral episode";
+    body = "\"" + ep + "\" went everywhere.";
+    say("My episode \"" + ep + "\" went viral");
+    h.podcastPopularity = std::min(100, h.podcastPopularity + 8);
+    h.podcastListeners = int(h.podcastListeners * 1.5) + 100;
+    happy += 3;
+  } else if (roll < 0.23) {
+    // A flop.
+    const std::string ep = episodeTitle();
+    title = "A flop";
+    body = "\"" + ep + "\" landed badly with my listeners.";
+    say("My episode \"" + ep + "\" flopped");
+    h.podcastPopularity = std::max(0, h.podcastPopularity - 5);
+    h.podcastListeners = int(h.podcastListeners * 0.8);
+    happy -= 2;
+  } else if (roll < 0.33) {
+    // A sponsor. shortcut: no table in the corpus names advertisers, so the
+    // first sponsor is a fixed phrase (upgrade when a sponsor pool is found).
+    h.podcastSponsors += 1;
+    if (h.podcastSponsor.empty()) h.podcastSponsor = "a mattress company";
+    title = "A sponsor";
+    body = h.podcastSponsor + " bought an ad read on " + show + ".";
+    say("I read an ad for " + h.podcastSponsor + " on the show");
+    h.podcastCredibility = std::max(0, h.podcastCredibility - 2);
+    happy += 1;
+  } else {
+    cardDone = tryCard();
+  }
+
+  if (!cardDone && title.empty()) {
+    title = "Another year of " + show;
+    body = "I put out " + std::to_string(released) + " episodes of " + show + ".";
+    say("I put out " + std::to_string(released) + " episodes of " + show);
+    happy += 1;
+  }
+
+  if (!cardDone) {
+    out.table = tableRef;
+    out.row_id = cardRow < 0 ? std::string("0") : std::to_string(cardRow);
+    out.title = title;
+    if (!body.empty()) body = spyUpperFirst(body);
+    if (!body.empty()) {
+      const char last = body[body.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+    }
+    out.body = body;
+    out.narrative = line;
+  }
+
+  add("My show " + show + " has " + std::to_string(h.podcastListeners) + " listeners.");
+  add("My credibility is " + std::to_string(h.podcastCredibility) + " and my popularity is " +
+      std::to_string(h.podcastPopularity) + ".");
+  if (h.podcastSponsors > 0)
+    add("The show has " + std::to_string(h.podcastSponsors) + " sponsor" +
+        (h.podcastSponsors == 1 ? "" : "s") + ".");
+  if (earned > 0) add("The show paid me " + money(earned) + " this year.");
+
+  out.happiness += happy;
+  pronounOtherSet_ = savedOther;
+  pronounOtherFemale_ = savedOtherFemale;
+  podLive_ = false;
+  return true;
+}
+
+// ===== end the podcast (REPORT.en.md 85) =====================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
