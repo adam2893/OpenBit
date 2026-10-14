@@ -555,6 +555,17 @@ struct Hero {
   // craziness: every refusal row in the two property pools is flagged one or
   // the other, so the two scores are the traits the pools are read with.
   int loverPride = 0;
+  // The celebrity dating app (REPORT.en.md 94) pairs the hero with a lover the
+  // category tables describe, so the pairing carries the trade, the money and
+  // the fame the game's own SimCelebrityLover keeps beside the relationship.
+  bool loverCelebrity = false;
+  std::string loverFameType;   // actor / musician / athlete / influencer / ceo / model
+  std::string loverGenre;      // the career row's Genre, Platform, Sport or Model Type
+  std::string loverSkin;       // the names row's Skin, 1-6
+  int loverFameScore = 0;      // the career row's Fame Score
+  int loverRetirementAge = 0;  // the career row's Retirement Age
+  long long loverSalary = 0;   // drawn between Minimum Salary and Maximum Salary
+  int celebDates = 0;          // how many times the app has paired the hero
   bool virgin = true;
   std::string exName;            // the most recent ex, kept after a breakup
   bool exFemale = false;

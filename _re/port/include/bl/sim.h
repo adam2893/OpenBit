@@ -340,6 +340,7 @@ class Sim {
                           const std::string& weightColumn, const std::string& filterColumn,
                           const std::string& filterValue, const std::string& flagColumn, Rng& rng);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
+  bool celebAppYear(Life& life, AgeUp& out, int forcedChoice);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);

@@ -917,6 +917,18 @@ bool Sim::load(std::string* error) {
     "a16_military-ranks-enc",
     "a16_war-scenarios-enc",
       "a16_casino-casino-celebrity-name-enc",        // First Name,Last Name,Gender,Skin,Commonness Score
+      // The celebrity dating app (REPORT.en.md 94): the six category tables the
+      // app pairs from, the names it pairs with, and the roster the royal
+      // celebrity invitation draws its guest from. The category tables carry the
+      // salary range, the fame score and the retirement age; the names table
+      // carries the category, the skin and the countries each name is known in.
+      "a16_celeb-dating-app-names-enc",              // First Name,Last Name,First Name Gender,Celebrity Category,Skin,Country,Commonness Score
+      "a16_celeb-dating-app-actor-enc",              // Genre,Minimum Salary,Maximum Salary,Fame Score,Retirement Age,Commonness Score,Country Whitelist
+      "a16_celeb-dating-app-musician-enc",           // Genre,Minimum Salary,...,Commonness Score,Country Whitelist
+      "a16_celeb-dating-app-athlete-enc",            // Sport,Gender,Minimum Salary,...,Retirement Age,Country Whitelist
+      "a16_celeb-dating-app-influencer-enc",         // Platform,Minimum Salary,...,Retirement Age,Commonness Score
+      "a16_celeb-dating-app-ceo-enc",                // Minimum Salary,Maximum Salary,Fame Score,Retirement Age
+      "a16_celebrities-enc",                         // Celebrity,Gender - the real roster, for <celebrity>
       "a16_dumb-scenarios-universal-enc",            // Index,Hero Min Age,Hero Max Age,...,Choice N,Narrative N,*Impact N
       // The rest of the yearly dumb-scenario pool: the career set applies to an
       // employed hero, the holiday and calendar sets are real-date gated
@@ -22011,9 +22023,20 @@ bool Sim::royalYear(Life& life, AgeUp& out, int forcedChoice) {
     // hero, so the invitation draws its own guest and points the alternative
     // pronoun pair at that person's gender. Without this every celebrity was
     // 'him' (REPORT.en.md 87).
-    const bool celFemale = royalRng_.chance(0.5);
-    const std::string cel = drawFirstName(celFemale) + " " + drawSurname();
-    const std::string cel2 = drawFirstName(celFemale) + " " + drawSurname();
+    bool celFemale = royalRng_.chance(0.5);
+    std::string cel = drawFirstName(celFemale) + " " + drawSurname();
+    std::string cel2 = drawFirstName(celFemale) + " " + drawSurname();
+    // The guest is the game's own roster: GetRandomCelebrity() reads
+    // a16_celebrities-enc, whose Gender column settles the pronoun pair the
+    // pool's '<he/she>' and '<him/her>' refer to, so neither the 50/50 coin nor
+    // the invented name survives the swap (REPORT.en.md 94).
+    if (ensureTable("a16_celebrities-enc")) {
+      const Table& roster = tbl("a16_celebrities-enc");
+      const size_t a = royalRng_.below(uint32_t(roster.size()));
+      cel = roster.at(a, "Celebrity");
+      celFemale = lower(roster.at(a, "Gender")) == "female";
+      cel2 = roster.at(royalRng_.below(uint32_t(roster.size())), "Celebrity");
+    }
     pronounOtherSet_ = true;
     pronounOtherFemale_ = celFemale;
     const std::string scen = sub(sub(trim(t->at(r, "Scenario")), "<celebrity2>", cel2), "<celebrity>", cel);
@@ -23212,6 +23235,185 @@ bool Sim::relEligible(const Table& t, size_t row, const Life& life) const {
 
 void Sim::makeRelationships(Life& life) { life.hero.relationshipOn = true; }
 
+// The celebrity dating app (REPORT.en.md 94). The app is a scenario the player
+// opens from the Love menu, so the year offers it on the port's own coin.
+// Everything the card says comes from the tables: the type the picker is
+// answered with, a career row that names the salary, the fame score and the
+// retirement age, and a name row that carries the skin and the countries the
+// celebrity is known in.
+bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year: the app never hijacks one (the same rule the
+  // school year's own code-built cards follow).
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // shortcut: the app's trigger and its _cost are code-side (a Scenario the
+  // Love menu opens, with no random-push eligibility), so both the coin and the
+  // price are the port's.
+  if (h.age < 18 || !relRng_.chance(0.06)) return false;
+
+  struct CelebKind {
+    const char* type;     // 'Celebrity Category' in the names table
+    const char* table;    // the career table of that category
+    const char* trade;    // the column that names the trade ('' for the CEO)
+    const char* noun;     // the profession the occupation line appends
+    const char* display;  // how the picker spells the category
+  };
+  // The five categories with a career table of their own, plus the model: the
+  // names table has a model category but no model career table, and the port
+  // already keeps the model ladder in a16_model-career-progression-enc.
+  static const CelebKind kinds[6] = {
+      {"actor", "a16_celeb-dating-app-actor-enc", "Genre", "actor", "Actor"},
+      {"musician", "a16_celeb-dating-app-musician-enc", "Genre", "musician", "Musician"},
+      {"athlete", "a16_celeb-dating-app-athlete-enc", "Sport", "athlete", "Athlete"},
+      {"influencer", "a16_celeb-dating-app-influencer-enc", "Platform", "influencer", "Influencer"},
+      {"ceo", "a16_celeb-dating-app-ceo-enc", "", "", "CEO"},
+      {"model", "a16_model-career-progression-enc", "Model Type", "", "Model"}};
+  static const char* const kNames = "a16_celeb-dating-app-names-enc";
+  if (!ensureTable(kNames)) return false;
+  for (int i = 0; i < 6; ++i) if (!ensureTable(kinds[i].table)) return false;
+  const Table& names = tbl(kNames);
+
+  // Both whitelist columns name the countries a row is known in, as a comma
+  // separated code list; a blank cell means anywhere.
+  std::string ccode;
+  for (const Country& c : countries_) {
+    if (lower(c.name) == lower(h.country)) { ccode = lower(c.code); break; }
+  }
+  auto knownHere = [&](const Table& t, size_t row, const char* column) {
+    if (ccode.empty() || !t.has(column)) return true;
+    const std::string list = lower(trim(t.at(row, column)));
+    if (list.empty()) return true;
+    size_t pos = 0;
+    while (true) {
+      const size_t comma = list.find(',', pos);
+      const std::string code = trim(list.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos));
+      if (code == ccode) return true;
+      if (comma == std::string::npos) return false;
+      pos = comma + 1;
+    }
+  };
+  const bool wantFemale = !h.female;  // the port's own pairing convention
+  auto genderOk = [&](const Table& t, size_t row) {
+    if (!t.has("Gender")) return true;
+    const std::string g = lower(trim(t.at(row, "Gender")));
+    return g.empty() || g == (wantFemale ? "female" : "male");
+  };
+
+  // The picker offers every category the hero's own country leaves reachable
+  // (Bollywood is known in India, K-pop in Korea, rugby in Australia and the
+  // United Kingdom), and the app pairs from one of them.
+  std::vector<int> offered;
+  for (int i = 0; i < 6; ++i) {
+    const Table& ct = tbl(kinds[i].table);
+    for (size_t r = 0; r < ct.size(); ++r) {
+      if (!genderOk(ct, r)) continue;
+      if (!knownHere(ct, r, "Country Whitelist")) continue;
+      offered.push_back(i);
+      break;
+    }
+  }
+  if (offered.empty()) return false;
+  const int kind = offered[relRng_.below(uint32_t(offered.size()))];
+  const Table& ct = tbl(kinds[kind].table);
+  const bool hasTrade = kinds[kind].trade[0] != 0 && ct.has(kinds[kind].trade);
+
+  std::vector<size_t> careers;
+  for (size_t r = 0; r < ct.size(); ++r) {
+    // The actor table ends in blank padding rows; the first column is the test.
+    if (trim(ct.at(r, ct.columns()[0])).empty()) continue;
+    if (hasTrade && trim(ct.at(r, kinds[kind].trade)).empty()) continue;
+    if (!genderOk(ct, r)) continue;
+    if (!knownHere(ct, r, "Country Whitelist")) continue;
+    careers.push_back(r);
+  }
+  std::vector<size_t> people;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (lower(trim(names.at(r, "Celebrity Category"))) != kinds[kind].type) continue;
+    if (lower(trim(names.at(r, "First Name Gender"))) != (wantFemale ? "female" : "male")) continue;
+    if (!knownHere(names, r, "Country")) continue;
+    people.push_back(r);
+  }
+
+  out = AgeUp();
+  // The app has no table of its own, so the card is code-built: the title, the
+  // tagline and the picker's call to action are the game's own strings (#15327,
+  // #17200, #33860) and the choice is the category the picker was answered with.
+  out.table = "celebrity-dating-app";
+  out.row_id = "0";
+  out.title = "Celebrity Dating App";
+  out.body = "Date the celebrity of your dreams";
+  out.cta = "Pick your desired celebrity type";
+  out.choice = kinds[kind].display;
+  if (careers.empty() || people.empty()) {
+    out.narrative =
+        "The celebrity dating app was unable to pair you with anyone of your desired specifications.";
+    return true;
+  }
+  const size_t cr = weightedPickOf(ct, "Commonness Score", careers, relRng_);
+  const size_t nr = weightedPickOf(names, "Commonness Score", people, relRng_);
+
+  // The career row's own numbers. The model table spells its two salary columns
+  // 'Min Salary'/'Max Salary' and calls its retirement age 'Too Old Age'.
+  auto cell = [&](const char* a, const char* b) {
+    if (ct.has(a)) return ct.num(cr, a);
+    if (ct.has(b)) return ct.num(cr, b);
+    return 0.0;
+  };
+  const long long salLo = (long long)cell("Minimum Salary", "Min Salary");
+  const long long salHi = (long long)cell("Maximum Salary", "Max Salary");
+  long long salary = salLo;
+  if (salHi > salLo) salary = salLo + (long long)(relRng_.unit() * double(salHi - salLo + 1));
+  if (salHi > 0 && salary > salHi) salary = salHi;
+  int famescore = 0;
+  if (ct.has("Fame Score")) famescore = int(ct.num(cr, "Fame Score"));
+  else if (ct.has("Can Be Famous") && ct.flag(cr, "Can Be Famous")) famescore = 4;
+  int retire = 0;
+  if (ct.has("Retirement Age")) retire = int(ct.num(cr, "Retirement Age"));
+  else if (ct.has("Too Old Age")) retire = int(ct.num(cr, "Too Old Age"));
+
+  // 33 of the 405 names rows are templates rather than plain names:
+  // '<random-first-name-male>' (25 rows), '<random-first-name-female>' (8) and
+  // '<random-surname>' (all 33), so the drawn cell is filled from the port's
+  // own name pools.
+  auto pick = [&](const std::string& cell) {
+    if (cell == "<random-first-name-male>") return drawFirstName(false);
+    if (cell == "<random-first-name-female>") return drawFirstName(true);
+    if (cell == "<random-surname>") return drawSurname();
+    return cell;
+  };
+  const std::string first = pick(trim(names.at(nr, "First Name")));
+  const std::string last = pick(trim(names.at(nr, "Last Name")));
+  const std::string trade = hasTrade ? trim(ct.at(cr, kinds[kind].trade)) : std::string();
+  std::string occupation = trade;
+  if (occupation.empty()) occupation = kinds[kind].display;
+  else if (kinds[kind].noun[0] != 0) occupation += std::string(" ") + kinds[kind].noun;
+
+  h.loverName = first + " " + last;
+  h.loverFemale = wantFemale;
+  h.loverAge = h.age + int(relRng_.below(7)) - 3;
+  h.loverStatus = "dating";
+  h.relationship = 60;
+  h.loverCraziness = int(relRng_.below(101));
+  h.loverPride = int(relRng_.below(101));
+  h.loverCelebrity = true;
+  h.loverFameType = kinds[kind].type;
+  h.loverGenre = trade;
+  h.loverSkin = names.has("Skin") ? trim(names.at(nr, "Skin")) : std::string();
+  h.loverFameScore = famescore;
+  h.loverRetirementAge = retire;
+  h.loverSalary = salary;
+  ++h.celebDates;
+  // shortcut: the row's Fame Score stays a record of the lover. The game's
+  // SimCelebrityLover.HasGainFameFromThisLover hands the hero the lover's own
+  // fame, but the port's only fame consumer is the cult's h.fame >= 30 gate
+  // (src/sim.cpp:7349) and a random app card must not be what flips it.
+  out.extra.push_back("The celebrity dating app paired me with " + occupation +
+                      " named " + h.loverName + ".");
+  out.extra.push_back("That was celebrity date number " + std::to_string(h.celebDates) + ".");
+  out.narrative = "I used the celebrity dating app.";
+  return true;
+}
+
 bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
@@ -23254,6 +23456,11 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   };
 
   if (h.loverName.empty()) {
+    // (0) The celebrity dating app (REPORT.en.md 94). In the game the app is a
+    // scenario the player opens from the Love menu - it carries no random-push
+    // eligibility at all - so the year offers it on the port's own coin, ahead
+    // of the plain date.
+    if (celebAppYear(life, out, forcedChoice)) return true;
     // (1) Single: the year may bring a partner, or a rejection.
     if (relRng_.chance(0.35)) {
       if (fire("a16_date-rejections-enc", 0.45)) return true;

@@ -11130,7 +11130,302 @@ refused-by-hero  (a16_backtoschool-sleepover-invitation-rejection-color-enc row 
   deltas {"discipline": 0, "happiness": -2, "karma": 0, "looks": 0, "smarts": 0}
 ~~~
 
-The full regression after the section: thirty-six probes at residue 0 (the new `slpres.py`
+The full regression after the section: thirty-seven probes at residue 0 (the new `celres.py`
 joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109
 recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push
 script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 94. The celebrity dating app: a roster nothing pointed at, six tables of career, and a
+picker the port collapsed
+
+Every family the port has wired so far was found the same way: a table pointed at it. The
+`a16_celeb` family is the first one that nothing points at - a grep for its seven file names
+across `gamedata_plain/` returns the files themselves and no row anywhere - so its consumer
+had to be read out of the code, and the code turns out to be two features: a celebrity dating
+app the Love menu opens (94.3) and the guest the royal interaction summons (94.4). Both draw
+from the same roster, and the app is the only one of the two that needed new tables loaded.
+
+### 94.1 The family
+
+| file | rows | columns that matter |
+|---|---|---|
+| `a16_celebrities-enc` | 453 | Celebrity, Gender |
+| `a16_celeb-dating-app-names-enc` | 405 | First Name, Last Name, First Name Gender, Celebrity Category, Skin, Country, Commonness Score |
+| `a16_celeb-dating-app-actor-enc` | 20 (14 with content) | Genre, Minimum/Maximum Salary, Fame Score, Retirement Age, Commonness Score, Country Whitelist |
+| `a16_celeb-dating-app-musician-enc` | 11 | Genre, the same five numbers, Country Whitelist |
+| `a16_celeb-dating-app-athlete-enc` | 7 | Sport, Gender, the same five numbers, Country Whitelist |
+| `a16_celeb-dating-app-influencer-enc` | 7 | Platform, the same five numbers, no whitelist |
+| `a16_celeb-dating-app-ceo-enc` | 1 | Minimum/Maximum Salary, Fame Score, Retirement Age - no Commonness, no whitelist |
+
+Nine hundred and four physical rows, eight hundred and ninety-eight of them with content. The
+roster itself is flat - a name and a gender, 264 male and 189 female - and it is the one table
+of the family a `renderRow` card could never use, because it carries no sentence at all.
+
+The names table is the picker's pool. Six categories: athlete 92, musician 82, actor 73,
+influencer 54, ceo 52 and model 52. Two hundred and five male rows and two hundred female, six
+skin tones (102, 110, 72, 63, 47, 11) and a commonness of 2 to 5 with two hundred and five rows
+on 3. Its country column is blank on 343 rows and then `kr` (22), `au, gb` (20), `in` (19)
+and `in, us` (1). Thirty-three of the rows are not names at all but templates -
+`<random-first-name-male>` on 25, `<random-first-name-female>` on 8, and all 33 with
+`<random-surname>` (94.5 item 5).
+
+The career tables are one row per job: actor has fourteen genres of its twenty rows (six blank)
+with salaries from 500K to 80M, a fame score of 1..5, a retirement age of 55..80 and a
+commonness of 1..5; musician eleven genres, athlete seven sports - the Gender column blank on
+basketball and soccer, `female` on volleyball, `male` on the other four - influencer seven
+platforms, and a single CEO row (550K..1.5M, fame 3, retirement 65). Three rows are gated by
+country: `Bollywood` to `in`, `K-pop` to `kr` and `rugby` to `au, gb`, whose cell is
+the family's only quoted one and which the loader reads as a single value, comma and all.
+
+### 94.2 The consumer
+
+`il2cpp_dump.txt` names the family on one class - the game-data holder the dumb-scenario and
+zoo sets live on - as six lists in a row (`_celebDatingAppActorSet`, `...MusicianSet`,
+`...CeoSet`, `...InfluencerSet`, `...AthleteSet`, `...CelebrityNamesSet`) plus
+`_celebritySet` for the roster, and it names the tables' readers as
+`DataHub.LoadCelebDatingAppActorSet` and its four siblings, `GetRandomCEOCelebData`,
+`GetRandomActorCelebData` and the rest.
+
+The feature is a `Scenario` with a picker: `ScenarioCelebrityDatingApp` carries a cost,
+three cached selected indices (age, desired gender, celebrity type) and the methods
+`GetAgeRangeArray`, `GetDesiredGenderArray`, `GetDesiredCelebrityTypeArray` and
+`GetLoverCandidateWithMinAgeAndMaxAgeAndGenderAndCelebrityType`; its answer opens
+`ScenarioCelebrityDatingAppResult` with the lover it built. The important absence is
+`ScenarioIsEligibleForRandomPush`: the app is opened from the Love menu, it is never pushed.
+That is why the port had to own the trigger (94.5 item 1).
+
+The lover it builds is `Game.SimCelebrityLover`, which adds to an ordinary `SimLover` a fame
+type, a genre, a fame score, a company, a platform, a sport, a team, a retirement age, a
+minimum and maximum salary and a career model level - exactly the columns the career tables
+carry. The app's own strings are in the metadata: `Celebrity Dating App` (#15327),
+`Date the celebrity of your dreams` (#17200), the three pickers (#33859..#33861),
+`The celebrity dating app has paired you with {0} named {1}.` (#41823), its first-person
+twin (#41824), `The celebrity dating app was unable to pair you with anyone of your desired
+specifications.` (#41825) and `I used the celebrity dating app.` (#25558).
+
+### 94.3 The app
+
+The app is a rule inside `relationshipYear`, not a year of its own: it belongs to the branch
+that runs when the hero has no lover, and it bails on a forced choice so it can never take a
+year a pushed card already owns. Its six kinds are a table in the port, not a table in the
+corpus:
+
+~~~
+static const CelebKind kinds[6] = {
+    {"actor", "a16_celeb-dating-app-actor-enc", "Genre", "actor", "Actor"},
+    {"musician", "a16_celeb-dating-app-musician-enc", "Genre", "musician", "Musician"},
+    {"athlete", "a16_celeb-dating-app-athlete-enc", "Sport", "athlete", "Athlete"},
+    {"influencer", "a16_celeb-dating-app-influencer-enc", "Platform", "influencer", "Influencer"},
+    {"ceo", "a16_celeb-dating-app-ceo-enc", "", "", "CEO"},
+    {"model", "a16_model-career-progression-enc", "Model Type", "", "Model"}};
+~~~
+
+The sixth row is the exception that the corpus forces: the names table has a `model` category
+on 52 rows and there is no `a16_celeb-dating-app-model-enc` to go with it, so the model
+borrows the port's own model ladder - the same table section 78 wired - and reads its trade off
+`Model Type` and its fame off `Can Be Famous`. The CEO is the other way round: a table with
+one row and no commonness column, so its draw is uniform and its occupation string is the
+display alone.
+
+The country whitelist is read by one lambda. The hero's own country code comes out of
+`a16_countries-enc.json` (the file the port already loads for `<country>` and the mafia),
+and a row passes when its whitelist cell is blank or when the hero's code is one of the codes
+in it; a table with no such column - influencer, CEO - admits every row, and a hero whose
+country has no code admits everything too:
+
+~~~
+auto knownHere = [&](const Table& t, size_t row, const char* column) {
+  if (ccode.empty() || !t.has(column)) return true;
+  const std::string list = lower(trim(t.at(row, column)));
+  if (list.empty()) return true;
+  ...          // comma separated, trimmed, lower cased, one code at a time
+};
+~~~
+
+The app fills three pools: the kinds whose career table survives the country and gender tests,
+the career rows of the drawn kind, and the name rows of that category and the wanted gender.
+The card is then built in code - it has no table of its own - with the game's own title,
+tagline and picker line, the drawn category as the choice, and two log lines: the pairing
+sentence with the occupation the career row names, and the ledger line `That was celebrity
+date number N.` behind it. The narrative is the game's first-person line. The lover it hands
+back carries the name, the wanted gender, an age three years either side of the hero's own, a
+status of dating, a relationship of 60, a drawn craziness and pride, and the career record -
+fame type, genre, skin, fame score, retirement age and salary. It moves no attribute at all,
+which is what the probe checks on every card (94.6).
+
+### 94.4 The royal guest, and a correction to 87
+
+The roster's other consumer was already in the port and was inventing its guest. The royal
+interaction (kind 7 of `royalYear`, REPORT.en.md 87) drew a first name and a surname out of
+the port's own pools and a coin for the gender, with a 453-row roster of real names and their
+genders sitting unread:
+
+~~~
+if (ensureTable("a16_celebrities-enc")) {
+  const Table& roster = tbl("a16_celebrities-enc");
+  const size_t a = royalRng_.below(uint32_t(roster.size()));
+  cel = roster.at(a, "Celebrity");
+  celFemale = lower(roster.at(a, "Gender")) == "female";
+  cel2 = roster.at(royalRng_.below(uint32_t(roster.size())), "Celebrity");
+}
+~~~
+
+The invented draw survives as the fallback for a missing table, the way every other table in
+the port degrades. The probe now counts the guest against the roster: 219 celebrity cards, 219
+of them naming one of the 453 names, 94 distinct names, and 75 cards whose own sentence uses a
+female pronoun against 88 that use a male one (94.6).
+
+### 94.5 Shortcuts
+
+1. The trigger and the price are the port's. The game opens the app from the Love menu and
+   charges a code-side cost; the port offers it on a 0.06 coin to a hero of 18 or more with no
+   lover, and charges nothing.
+2. The game's three pickers - age range, desired gender, celebrity type - collapse to one. The
+   port keeps the type picker (the card's choice), pins the gender to its own pairing
+   convention (the opposite of the hero's) and gives the candidate the hero's own age plus or
+   minus three, because the corpus's career rows carry a retirement age and no birth year.
+3. The fame score is a record and not an effect. The port's only consumer of `h.fame` is the
+   cult's threshold (REPORT.en.md 63), and a randomly offered card must not move it.
+4. `The celebrity dating app was unable to pair you with anyone of your desired
+   specifications.` is kept as the game's own guard, not as a reachable branch: 104 cards
+   across four countries never once met it, because every category has both genders in the
+   names table and every gated career row has blank siblings. It stays for the case a table
+   ships without them.
+5. Thirty-three name rows are templates rather than names. They are filled from the port's own
+   first-name and surname pools at draw time, which is what the game itself would do with them.
+6. The model category borrows the port's model ladder (94.3). A seller of `a16_model-career
+   -progression-enc` would not change the app; a `a16_celeb-dating-app-model-enc` would.
+7. The app's own store text (`#45183`) and the IAP that opens it are not modelled - the port
+   has no paywall for a card it draws itself.
+8. The country whitelist is honoured as a positive list. A blank cell means anywhere, and a
+   hero in a country the port cannot code is admitted everywhere.
+
+### 94.6 Verification
+
+The probe is `/tmp/qdir/celres.py`: 640 app lives (four countries x relationships on and off
+x forty seeds x both genders, to age 60) and 60 royal lives, checking each app card's title,
+tagline and fixed deltas, that it never fires before 18, that its choice is one of the six
+displays, that the occupation in its pairing line is a real cell of that category's table (and
+that the CEO and the model are spelled as their own rows are), that the drawn name sits in the
+names table under the right category, gender and country whitelist, that the career row passes
+the same whitelist, the ledger line's monotonicity, a sweep for leftover brackets, and - on
+every royal card - that the body names a member of the 453-row roster:
+
+~~~
+runs 700 rc failures 0 app cards 104
+kinds {'model': 24, 'influencer': 16, 'ceo': 24, 'musician': 8, 'actor': 24, 'athlete': 8}
+choices {'Model': 24, 'Influencer': 16, 'CEO': 24, 'Musician': 8, 'Actor': 24, 'Athlete': 8}
+paired 104 unable 0 cards before 18 0
+trades {'Catalog Model': 8, 'Facebook': 8, 'childrens': 8, 'indie': 8, 'action': 8, 'Twitter': 8, 'Elite Model': 8, 'Stock Photo Model': 8, 'heavy metal': 6, 'volleyball': 4}
+ledger lines 104 bad 0
+mismatches {}
+royal celeb cards 219 naming a roster member 219 distinct 94
+  pronoun agree: she/female-word 75  he/male-word 88
+  sample [('Janet Jackson', 'female', " asks if you're brave enough to slam dance in the mosh pit with her."), ('P!nk', 'female', ". she enthusiastically asks if you'd like to participate in a celebrit"), ('Danica Patrick', 'female', " asks if you'd like to tour the hanging gardens of babylon with her.")]
+RESIDUE 0 []
+  card ('United States', 15, 'male', 0, 'Celebrity Dating App', 'CEO', ['The celebrity dating app paired me with CEO named Katrina Pond.', 'That was celebrity date number 1.', 'I used the celebrity dating app.'], {'karma': 0, 'discipline': 0, 'happiness': 0, 'smarts': 0, 'looks': 0})
+  card ('United States', 22, 'male', 0, 'Celebrity Dating App', 'Actor', ['The celebrity dating app paired me with indie actor named Priyanka Chopper.', 'That was celebrity date number 1.', 'I used the celebrity dating app.'], {'karma': 0, 'discipline': 0, 'happiness': 0, 'smarts': 0, 'looks': 0})
+  card ('United States', 26, 'male', 0, 'Celebrity Dating App', 'Influencer', ['The celebrity dating app paired me with Twitter influencer named Susanna Pansyno.', 'That was celebrity date number 1.', 'I used the celebrity dating app.'], {'karma': 0, 'discipline': 0, 'happiness': 0, 'smarts': 0, 'looks': 0})
+~~~
+
+The six kinds all arrive (24 model, 24 actor, 24 CEO, 16 influencer, 8 musician, 8 athlete) and
+every one of the 104 cards pairs: the failure literal never fires. The occupations are the
+tables' own - a platform for the influencer, a genre for the actor and the musician, a sport
+for the athlete - and the two tables without a commonness column (CEO, model) fall back to a
+uniform draw, which is why `CEO` and the three model tiers are as frequent as they are. The
+gated rows are rare and real: `Bollywood` appeared after 486 lives in India, `K-pop` after
+646 in South Korea and `rugby` after 1210 in Australia, and the United States never drew one.
+The whitelist itself was checked a second way, by hand: a debug build printed the country
+code the app reads (`in`, `kr`, `au`, `us` for the four countries the probe uses),
+the actor table whitelist column and the rugby row quoted `au, gb` cell, all three as the
+loader hands them over - the code is read, and the rare rows are rare by commonness score.
+
+Nine cards: one per kind, one for each gated row, and one royal guest of each gender:
+
+~~~
+actor  (India seed 21 male, childrens actor)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with childrens actor named Violetta Davis.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+musician  (India seed 16 male, heavy metal musician)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with heavy metal musician named Dula Moutha.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+athlete  (India seed 33 male, volleyball athlete)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with volleyball athlete named Anna Zeter.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+influencer  (India seed 6 male, Facebook influencer)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with Facebook influencer named Charlotte Amelia.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+ceo  (India seed 9 male, CEO)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with CEO named Liz Helmes.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+model  (India seed 2 male, Catalog Model)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with Catalog Model named Shanina Wake.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+  deltas {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+bollywood (the gated row)  (India seed 243 male, Bollywood actor)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with Bollywood actor named Lupana Neonyo.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+
+kpop (the gated row)  (South Korea seed 80 male, K-pop musician)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with K-pop musician named Elle See.
+  | That was celebrity date number 1.
+  | I used the celebrity dating app.
+
+rugby (the gated row)  (Australia seed 282 female, rugby athlete)
+  Celebrity Dating App
+  Date the celebrity of your dreams
+  | The celebrity dating app paired me with rugby athlete named Bundee Ala.
+  | That was celebrity date number 2.
+  | I used the celebrity dating app.
+
+royal-her  (a16_royal-celebrity-interaction-scenarios-enc)
+  While attending an international benefit concert, Janet Jackson asks if you're brave enough to slam dance in the mosh pit with her.
+  | My father is no longer suffering from hives.
+  | The country's regard for me is 26%.
+  | I slam danced in the mosh pit.
+
+royal-him  (a16_royal-celebrity-interaction-scenarios-enc)
+  While mingling with the stars at a pool party, Ricky Martin invites you to watch a cricket match with him.
+  | The country's regard for me is 47%.
+  | I watched a cricket match.
+~~~
+
+The full regression after the section: 37 probes at residue 0 (the new `celres.py`)
+joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured
+scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`,
+the push script at rc 0 with empty stderr, and the benchmark reaching
+age 34.
