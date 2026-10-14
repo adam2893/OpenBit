@@ -12457,7 +12457,365 @@ acceptances, the same 34-and-24 split of who took whom, the same people and happ
 histograms. A rule that draws on its own stream and coins on its own budget leaves its
 neighbour's numbers alone, and this is that claim measured rather than asserted.
 
-The full regression after the section: `REGRESSION`
-
 The full regression after the section: 41 probes at residue 0 (the new `skpres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
 
+## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a
+colleague who outranks you, and the one push the family's subsystem sends itself
+
+98's last shortcut pointed here, and it was half right. `ScenarioMobsterSpendTimePush` is
+indeed the last unwired card of the spend-time family, but it is not a consumer of the pool 97
+named: read against the class, it never touches `a16_pastimes-enc` at all. Its pastime comes
+from the mafia's own table, `a16_mafia-pastimes-enc`, through
+`GetRandomMafiaPastimeForCountryCode(System.String)` - the draw the mafia year already
+performs for its own card (src/sim.cpp:9550). What this card shares with 97 and 98 is the
+shape (one pastime tail, one turn, two actions), not the table; the correction is recorded
+here rather than edited into 98.
+
+What it does share with both of them is the thing that made those sections short: every word
+it renders is the family's own. The body, the accepted line and the refused line are three
+literals whose slots are a rank word, a name and a tail, and the two actions are the generic
+pair 97 and 98 both rendered. The port writes no prose for this card either.
+
+### 99.1 The family
+
+`class ScenarioMobsterSpendTimePush : Scenario` (il2cpp_dump.txt:43878) holds three fields:
+`_mobster` (SimMobster, 0x170), `_specialJob` (SimSpecialJobMafia, 0x178) and `_pastime`
+(System.String, 0x180). Its methods are `.ctor(SimSpecialJobMafia)` `0x73f3e1b938`,
+`RefreshScenario()` `0x73f3e1b980` and `ChoiceSelectedAtIndex(System.Int32)` `0x73f3e1bb7c`.
+
+The class has no `ScenarioIsEligibleForRandomPush()`. That is the difference that matters
+against 97 and 98: their cards sit on the game's random push scheduler and the port models the
+coin it finds there, this one is pushed by the mafia subsystem, so there is no schedule to
+read and the port coins the card on its own stream (99.3).
+
+RefreshScenario (127 instructions) is a one-time dictionary fill of seven entries and then the
+card's three slots. `DataMafiaMob get_Mob()` `0x73f3090460` with
+`GetRandomMafiaPastimeForCountryCode(System.String)` `0x73f2cf3534` yields the tail and stores
+it at `[x19+0x180]`; `GetRankString()` `0x73f30dbbe8` and `GetName()` `0x73f30dbb00` yield the
+other two; and `String.Format(string, Object, Object, Object)` `0x73f52a7210` with the three
+of them in that order writes `Scenario.Body` (`[x19+0x48]`). Two `ScenarioChoice` objects are
+then built with `.ctor(System.String, Boolean, Boolean)` `0x73f2eb9c50` - the third argument
+true on both, so both are the actionable kind - and appended to the array list at
+`[x19+0x108]`, which is `Scenario`'s `ChoiceArray`. The labels and the format strings are
+static metadata fields, so the card's vocabulary is once again not in the disassembly.
+
+By id, that vocabulary is: the body `#19883` `Family {0}, {1}, wants to go {2} with
+you.\n\nWhat will you do?` - literal and prompt in one string, which the port splits into its
+body and its own `What will you do?` line - then the accepted line `#25793` `I went {0} with
+Family {1}, {2}.` and the refused line `#25253` `I told Family {0}, {1} that I was too busy to
+go {2} with {3}.`, the only four-slot line in the family. Around them sit the mafia family's
+neighbouring cards: `#19876` `Family {0}, {1},`, the concert push's body `#19878`, the team-
+building card's body `#19879`, `#19880` `Family {0}, {1}, refused to go {2} with me.`, and
+`#25252`, the concert card's refusal - which `#25253` differs from by exactly the `to` and the
+`concert`, and that is how the two refusals of a shared family are told apart.
+
+ChoiceSelectedAtIndex (544 instructions) shows how the game reads its own card back: the
+chosen label is lowercased (`String.ToLower()` `0x73f52aa938`) and matched with
+`String.Contains` against two static string arrays - one holding the accept phrase, one the
+refuse phrase. The action is not classified by index; it is classified by the words the card
+put on its own buttons. Behind each branch sit the impacts (99.2) and a response line drawn
+with `PickRandomFromStringArray(ArrayList)` `0x73f32b0608`, which is why the game can say
+different things on the same outcome and the port says one: the port reads the literals, not
+the arrays the game draws from.
+
+### 99.2 The card
+
+The port builds the year like this (Sim::mobsterSpendYear, src/sim.cpp:23667). The tail comes
+from the mafia table (99.4); the rank word comes from `mafiaRankTitle()` (src/sim.cpp:9161),
+which reads the mafia mob's own `Rank N` column for the rank drawn; the name comes from the
+mafia token resolver's `<mafia-colleague>` slot (src/sim.cpp:9116), the one named colleague
+the port keeps. The body is `Family <rank>, <name>, wants to go <tail> with you.` (the first
+half of `#19883`), the title is `Spend Time` (the game's own family button, `#39665`, the same
+reading 97 took - this class builds no title string of its own), the prompt is the port's
+usual `What will you do?`, and the single choice is one of two, drawn with equal weight:
+
+- `Go with <name>` (`#21961`) - the narrative is `#25793`, `I went <tail> with Family <rank>,
+  <name>.`, and the happiness reading is `pointsForImpact(2)` (eight).
+- `Refuse to go with <name>` (`#35522`) - the narrative is `#25253`, `I told Family <rank>,
+  <name> that I was too busy to go <tail> with <her|him>.`, and the happiness reading is
+  `pointsForImpact(-1)` (minus four).
+
+The pronoun in the refusal is the resolver's own: the colleague slot's `speakAs` is what sets
+the port's `pronounOtherFemale_`, so the line agrees with the name it prints
+(src/sim.cpp:23669).
+
+Both branches move the hero's standing in the family, and the move depends on who asked. The
+game asks `IsGodfather()` `0x73f30dbc68` first. Which object the question is asked of is not
+visible in the disassembly, and the port asks it of the hero (99.5): when it holds, accepting
+is `ImpactStanding(4)` `0x73f30987a0` and refusing is `ImpactStanding(-5)`. When the asker is
+not the godfather the game compares the mobster's rank against the hero's own and moves the
+standing by one either way - `ImpactStanding(1)` up, `ImpactStanding(-1)` down - but only when
+the mobster outranks the hero; a colleague at or below the hero's rank moves nothing at all.
+The port reads that as `h.mafiaStanding += godfather ? 4 : (senior ? 1 : 0)` and
+`h.mafiaStanding -= godfather ? 5 : (senior ? 1 : 0)`, with `senior` the same rank comparison
+the game performs.
+
+Two of the game's moves the port cannot carry. The card lands a second impact on the mobster
+himself (the 0x508 vtable slot, weight 4 on the way in and 3 on the way out), and it builds a
+follow-up object at the end (`.ctor(System.String, Single)` `0x73f2ec31f8`, after two random
+rolls). The port keeps no per-person relationship with a mafia colleague, and it has no card
+scheduler to hand a follow-up to. Both are recorded in 99.5.
+
+There is no ledger line and no karma move: the family's own stat is the standing, and the port
+moves it.
+
+### 99.3 Who can ask: the four gates
+
+1. A forced choice suppresses the year, the rule every code-built card in the port takes.
+2. The hero has to be in the family - `h.mafia` - and old enough. The port requires eighteen:
+   the card's body prints a rank word, and a made man is not a child. The game's own age test is
+   code-side, like the rest of its eligibility.
+3. An 0.08 coin. The card has no `ScenarioIsEligibleForRandomPush()`, so the coin that says the
+   family asks this year comes from the mafia subsystem, and the port coins it on its own stream
+   (include/bl/sim.h:487, `Rng mobRng_`, seeded in the constructor at src/sim.cpp:627, so no
+   earlier subsystem's sequence moves).
+4. The table has to yield a pastime and the colleague has to resolve with a name and a rank word -
+   the same two-part check 97 makes, for the same reason: both slots of the card carry a
+   rendered string.
+
+The placement in the chain is part of the gate. The rule is tried immediately before the mafia
+year itself (src/sim.cpp:3547, one line above `mafiaYear`), not after it: the mafia year
+claims a share of the years for its own card, so a rule parked behind it would be reached far
+too rarely.
+
+### 99.4 The pastime, the country column, and the rank
+
+`a16_mafia-pastimes-enc` is 104 rows of `Pastime` and `Specific Mob Country`. The country cell
+is a lowercase ISO code and the table is overwhelmingly country-neutral: 69 of the 104 rows
+leave it empty, the named rows are `it` 9, `jp` 7, `cn` 6, `ie` 6 and `mx` 6, and exactly one
+row carries two codes at once, `cn, jp`. The draw is the one the mafia year already performs
+(src/sim.cpp:23657): a row whose country cell equals the hero's `h.mafiaCountry`, and when no
+row matches, a row from the whole table. A comma list never matches, because the comparison is
+against the whole cell, so that one row is only reachable through the fallback - the same
+behaviour the shipped year has had since its own section.
+
+The rank word is drawn too (src/sim.cpp:23692, `mobRng_.below(4) + 1`): ranks one to four.
+Five is left out on purpose. The mob table's fifth rank is the one with a gender-split title
+column (`Rank 5 Male` / `Rank 5 Female`, the godfather and his female form), the godfather is
+already the special case the standing branch tests for, and drawing him would need a gender
+the card does not carry. Above the hero is the card's point, so the draw covers the four ranks
+that can be above, below or level with him, and the hero's own rank decides which standing
+move happens.
+
+The table now has two consumers in the port: this card, and the mafia year's own 'An evening
+with the family' (src/sim.cpp:9550, which resolves the same `Pastime` cell). The probe counts
+both, which is why its log carries a second number beside the cards (99.6).
+
+### 99.5 Shortcuts
+
+1. The 0.08 coin is the port's. The class has no `ScenarioIsEligibleForRandomPush()`, so the
+   game's rate and its actor live in the mafia subsystem, which the port does not model.
+2. The eighteen-year age floor is the port's; the game's own test is code-side, and the reason
+   the port keeps a floor is that the body prints a rank word.
+3. The two actions are drawn with equal weight; the game's weighting is code-side.
+4. The happiness numbers (eight and minus four) are the port's reading; the game's own impacts
+   are code-side.
+5. The standing moves (four and minus five for the godfather, one either way for a man above the
+   hero's rank, nothing otherwise) are the port's reading of a chain the game evaluates in its
+   own code, and the comparison is the strict one - a colleague at the hero's own rank moves
+   nothing. The state they move, `mafiaStanding`, is not part of the simulator's event output,
+   so the probe can check that the card renders and cannot check that the standing moved: this
+   move is code-visible only, and it is the only part of the card's outcome that is.
+6. The card's second impact - the one the game lands on the mobster himself - and the follow-up
+   object it builds are not modelled: the port keeps no per-person relationship with a mafia
+   colleague, and it has no scheduler to hand a follow-up to (99.2).
+7. The title is the port's borrow. `RefreshScenario` sets a body and two choices and no title
+   string at all, so the port renders the mafia family's own `Spend Time` button (`#39665`),
+   which is the same borrow 97 recorded.
+8. The game draws its response line from an array of variants; the port renders the single
+   literal it read, so the same outcome reads the same every time.
+9. The rank draw covers one to four, so in the port the asker is never the godfather. The game's
+   `IsGodfather()` question has to be asked of somebody, and the port asks it of the hero: a
+   hero who is the godfather gets the big move (four or minus five) when a subordinate invites
+   him out. The game's own rank range for the asker, and the branch that fires when the asker
+   holds the family's top rank himself, are not reproduced.
+10. The country column's comma list (`cn, jp`) is unreachable through the country filter, exactly
+   as in the shipped mafia year; that row is drawn only through the fallback (99.4).
+
+### 99.6 Verification
+
+A new probe (mobres.py) drives 80 mafia lives across both genders and two year budgets and
+checks every mobster spend-time card in them: the title, the body's rank word against the mob
+table's own `Rank N` columns, the body's name against the choice label, the tail the accepted
+line repeats against the row the card carries, both narratives against their literals - the
+refusal's pronoun included - the happiness delta per outcome and no other delta, an eighteen-year
+floor on the ages the cards land at, and a sweep of every rendered line for a raw `<...>` token.
+The lives are the earlier probes' lives with the family joined, which is what makes a made man
+exist to be asked at all. The mob table is loaded the way the mafia year loads it, and the
+row pattern is built from its `Pastime` column, so a one-of list in a cell is checked as the
+alternation it is.
+
+One number in the log is a census rather than a check. The colleague is drawn per card by the
+mafia token resolver ("one name per token per card"), so a life can name several mobsters and the
+count of distinct names is not a mismatch.
+
+~~~
+runs 80 rc failures 0 cards 53 other pastime cards 20
+kinds {'refuse': 24, 'go': 29}
+choices {'Refuse ': 24, 'Go with': 29}
+ranks {'associate': 14, 'captain': 8, 'caporegime': 7, 'underboss': 18, 'soldier': 6}
+happiness {-4: 24, 8: 29}
+distinct pastimes 26 top [('skiing in a resort town', 6), ('on a gin distillery tour', 4), ('to a museum of modern art', 4)]
+ages {19: 8, 20: 4, 22: 2, 28: 2, 34: 2, 38: 2, 39: 2, 41: 2, 44: 2, 47: 2, 52: 4, 54: 4, 55: 2, 58: 2, 60: 2, 65: 2, 71: 2, 74: 4, 79: 2, 80: 1}
+cards per life {0: 47, 1: 20, 2: 6, 3: 7}
+mobsters per life {0: 47, 1: 22, 2: 6, 3: 5}
+mismatches {}
+samples []
+RESIDUE 0 {}
+~~~
+
+The shapes as the port renders them, straight out of the sample writer:
+
+~~~
+=== associate-go ===
+seed: 1
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 60
+row: 96
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family associate, Papi Dollar, wants to go to a fun park with you.
+choice: Go with Papi Dollar
+logLines: ['I went to a fun park with Family associate, Papi Dollar.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== soldier-go ===
+seed: 18
+country: United States
+gender: female
+years: 90
+mafia: True
+age: 80
+row: 83
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family soldier, Bruno Iglesio, wants to go wild with you.
+choice: Go with Bruno Iglesio
+logLines: ['I went wild with Family soldier, Bruno Iglesio.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== captain-go ===
+seed: 3
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 34
+row: 94
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family captain, Dustin X, wants to go to a Forbes leadership conference with you.
+choice: Go with Dustin X
+logLines: ['I went to a Forbes leadership conference with Family captain, Dustin X.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== underboss-go ===
+seed: 5
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 22
+row: 88
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family underboss, Sabrina Levine, wants to go shopping at the mall with you.
+choice: Go with Sabrina Levine
+logLines: ['I went shopping at the mall with Family underboss, Sabrina Levine.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== caporegime-go ===
+seed: 5
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 20
+row: 92
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family caporegime, Sabrina Levine, wants to go on a gin distillery tour with you.
+choice: Go with Sabrina Levine
+logLines: ['I went on a gin distillery tour with Family caporegime, Sabrina Levine.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== refuse-young ===
+seed: 1
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 19
+row: 95
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family associate, Kay Mendes, wants to go skiing in a resort town with you.
+choice: Refuse to go with Kay Mendes
+logLines: ['I told Family associate, Kay Mendes that I was too busy to go skiing in a resort town with him.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': -4, 'smarts': 0, 'looks': 0}
+
+=== refuse-late ===
+seed: 1
+country: United States
+gender: male
+years: 90
+mafia: True
+age: 79
+row: 86
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family associate, Nikki Walker, wants to go birdwatching with you.
+choice: Refuse to go with Nikki Walker
+logLines: ['I told Family associate, Nikki Walker that I was too busy to go birdwatching with her.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': -4, 'smarts': 0, 'looks': 0}
+
+=== italy-go ===
+seed: 20
+country: Italy
+gender: male
+years: 90
+mafia: True
+age: 19
+row: 15
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family caporegime, Walid Cook, wants to go to learn how to make tiramisu at an Italian cooking class with you.
+choice: Go with Walid Cook
+logLines: ['I went to learn how to make tiramisu at an Italian cooking class with Family caporegime, Walid Cook.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+
+=== china-go ===
+seed: 20
+country: China
+gender: male
+years: 90
+mafia: True
+age: 19
+row: 2
+table: a16_mafia-pastimes-enc
+title: Spend Time
+body: Family captain, April Swords, wants to go to a five-star Chinese buffet with you.
+choice: Go with April Swords
+logLines: ['I went to a five-star Chinese buffet with Family captain, April Swords.']
+deltas: {'karma': 0, 'discipline': 0, 'happiness': 8, 'smarts': 0, 'looks': 0}
+~~~
+
+Its own census: 53 cards over 80 lives, the ages the cards landed at {19: 8, 20: 4, 22: 2, 28: 2,
+34: 2, 38: 2, 39: 2, 41: 2, 44: 2, 47: 2, 52: 4, 54: 4, 55: 2, 58: 2, 60: 2, 65: 2, 71: 2,
+74: 4, 79: 2, 80: 1}, the outcome mix {go 29, refuse 24}, the rank words {associate 14,
+underboss 18, captain 8, caporegime 7, soldier 6}, the happiness histogram {-4: 24, 8: 29}, 26
+distinct pastimes, and {0: 47, 1: 20, 2: 6, 3: 7} cards per life. The same run counted 20 cards
+from the mafia year's own 'An evening with the family' beside them, which is the second consumer
+of the same table seen from the same lives.
+
+The section's own regression is the pair of earlier probes: the 97 probe and the 98 probe were
+re-run after this card was wired, and their censuses are unchanged - `cards 120` for the generic
+card with the same 62 refusals and 58 acceptances, and `cards 60` for the school card with the
+same {with classmate 16, alone 32, refuse 12} split. A rule that draws on its own stream and
+coins on its own budget leaves its neighbours' numbers alone, and this is that claim measured
+rather than asserted.
+
+The full regression after the section: 42 probes at residue 0 (the new `mobres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.

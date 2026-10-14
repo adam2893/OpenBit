@@ -623,7 +623,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
       spendRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0xa0761d6478bd642fULL),
-      skipRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL) {}
+      skipRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL),
+      mobRng_(seed ^ 0xa0761d6478bd642fULL ^ 0xe7037ed1a0b428dbULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3539,6 +3540,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (casinoYear(life, out, forcedChoice)) return true;
   if (cultYear(life, out, forcedChoice)) return true;
   if (dealerYear(life, out, forcedChoice)) return true;
+  // The mobster's spend-time card (REPORT.en.md 99) is the mafia subsystem's
+  // own push, so it is tried before the mafia year's events. It draws on its
+  // own stream (include/bl/sim.h mobRng_), so no earlier subsystem's sequence
+  // moves for a given seed.
+  if (mobsterSpendYear(life, out, forcedChoice)) return true;
   if (mafiaYear(life, out, forcedChoice)) return true;
   if (zooYear(life, out, forcedChoice)) return true;
   if (landlordYear(life, out, forcedChoice)) return true;
@@ -23638,6 +23644,92 @@ bool Sim::skipSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
   out.narrative = opt.kind == 0
       ? "I skipped school and went " + where + " with my classmate, " + h.schoolClassmate + "."  // #25105
       : "I skipped school and went " + where + " instead.";  // #25104
+  return true;
+}
+
+// The mob table's own pastime draw (REPORT.en.md 99). The card's RefreshScenario
+// calls GetRandomMafiaPastimeForCountryCode @0x73f2cf3534, which filters the pool
+// by the hero's mob country; the port's mafia year draws the same table with the
+// same filter (src/sim.cpp:9544) and takes the same whole-table fallback. The
+// country cell is an ISO code ("it", "cn"), not the country name.
+int Sim::mafiaPastimeRow(Rng& rng, std::string& tail) {
+  const std::string country = hero_ ? hero_->mafiaCountry : std::string();
+  size_t r = pickRow("a16_mafia-pastimes-enc", "", "Specific Mob Country", country, "", rng);
+  if (r == size_t(-1)) r = pickRow("a16_mafia-pastimes-enc", "", "", "", "", rng);
+  if (r == size_t(-1)) return -1;
+  tail = resolve(trim(tbl("a16_mafia-pastimes-enc").at(r, "Pastime")));
+  return int(r) + 1;
+}
+
+// ScenarioMobsterSpendTimePush (il2cpp_dump.txt:43878) is a mobster asking the
+// hero out; it is the mafia subsystem's push, and the last consumer of the
+// pastime idea the port had left unwired (REPORT.en.md 99).
+bool Sim::mobsterSpendYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule every other code-built card takes.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // The class carries no ScenarioIsEligibleForRandomPush: the mafia subsystem is
+  // what opens the card, so the rate and the actor are the port's.
+  // shortcut: ScenarioMobsterSpendTimePush has no eligibility method, so the
+  // 0.08 coin and the colleague below stand in for the game's own pick.
+  // The family's own join wants an adult, and a forced mafia flag can land on a
+  // child, so the card keeps the same floor (shortcut: the game's drop for an
+  // underage member is code-side).
+  if (!h.mafia || h.age < 18) return false;
+  if (!mobRng_.chance(0.08)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  std::string tail;
+  const int pastimeRow = mafiaPastimeRow(mobRng_, tail);
+  if (pastimeRow < 0 || tail.empty()) return false;
+
+  // The mobster is one of the family's made men: the port keeps a single named
+  // colleague (the mafia-colleague slot, src/sim.cpp:9116) and draws his rank off
+  // the mobs table's rank columns (mafiaRankTitle, src/sim.cpp:9161). Ranks 1 to 4
+  // share one title column; rank 5 is split by gender and is the godfather's, so
+  // a colleague draws 1 to 4.
+  const int mobsterRank = int(mobRng_.below(4)) + 1;
+  const std::string rankTitle = mafiaRankTitle(h, mobsterRank);
+  // The same slot settles the gender of the person just spoken about, which is
+  // the pronoun the refusal line's last slot wants.
+  const std::string name = resolve("<mafia-colleague>");
+  const std::string them = pronounOtherFemale_ ? "her" : "him";
+  if (rankTitle.empty() || name.empty()) return false;
+
+  // SimMobster.IsGodfather() picks the two big standing moves; otherwise the card
+  // compares the mobster's rank with the hero's own ([mobster+0x308] against
+  // [specialJob+0x28]) and only a senior mobster moves it.
+  const bool godfather = h.mafiaRank >= 5;
+  const bool senior = mobsterRank > h.mafiaRank;
+
+  const bool go = mobRng_.chance(0.5);
+  out = AgeUp();
+  out.table = "a16_mafia-pastimes-enc";
+  out.row_id = std::to_string(pastimeRow);
+  // The title lives in the game's own dictionary rather than in the class (the
+  // same shortcut the family card takes, REPORT.en.md 97).
+  out.title = "Spend Time";
+  out.body = "Family " + rankTitle + ", " + name + ", wants to go " + tail +
+             " with you.";  // #19883
+  out.cta = "What will you do?";
+  out.choice = go ? "Go with " + name : "Refuse to go with " + name;  // #21961 / #35522
+
+  if (go) {
+    // The accept branch: happiness 0x408 +2, then the mobster's own +4 (the port
+    // keeps no per-mobster standing, so only the family's moves below land), then
+    // the standing move.
+    out.happiness = pointsForImpact(2);
+    if (godfather) h.mafiaStanding += 4;
+    else if (senior) h.mafiaStanding += 1;
+    out.narrative = "I went " + tail + " with Family " + rankTitle + ", " + name + ".";  // #25793
+    return true;
+  }
+  out.happiness = pointsForImpact(-1);
+  if (godfather) h.mafiaStanding -= 5;
+  else if (senior) h.mafiaStanding -= 1;
+  out.narrative = "I told Family " + rankTitle + ", " + name +
+                  " that I was too busy to go " + tail + " with " + them + ".";  // #25253
   return true;
 }
 

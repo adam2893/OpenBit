@@ -353,9 +353,14 @@ class Sim {
   bool spendTimeYear(Life& life, AgeUp& out, int forcedChoice);
   // The skip-school card (REPORT.en.md 98): the second consumer of the same pool.
   bool skipSchoolYear(Life& life, AgeUp& out, int forcedChoice);
+  // The mobster's spend-time card (REPORT.en.md 99): the mafia's own push.
+  bool mobsterSpendYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
+  // The mob table's own pastime draw, country keyed (the card's
+  // GetRandomMafiaPastimeForCountryCode @0x73f2cf3534, REPORT.en.md 99).
+  int mafiaPastimeRow(Rng& rng, std::string& tail);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);
@@ -479,6 +484,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng placeRng_;
   Rng spendRng_;
   Rng skipRng_;
+  Rng mobRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
