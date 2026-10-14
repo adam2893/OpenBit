@@ -2802,3 +2802,113 @@ Three classes still resolve to a code-side pool the port cannot read
 bullies' third-person sentences): each is a `DataHub`-style switch over
 literals, the same shape as the circumstance pools of section 38, and each
 needs one live sampling session, not a CSV read.
+
+## 45. Prison: the first state branch the port owns
+
+Sections 31.3 and 45 of the plan kept prison, royalty, vampirism, orphanhood and
+military service as "state the port does not model". Prison is the cheapest of
+the five, because the game ships its whole text side as tables the port can
+already read, and the only missing piece is the gate. This section records what
+the port now does and, just as importantly, which numbers are still guesses.
+
+### 45.1 What the game ships
+
+| table | rows | what the port takes from it |
+| --- | --- | --- |
+| a16_prisoner-crimes-enc | 138 | Crime, Seriousness Score, Commonness Score for an adult sentence |
+| a16_prisoner-juvenile-crimes-enc | 86 | the same three columns for a sentence handed down under 18 |
+| a16_prison-jobs-enc | 38 | Job, Description, Commonness Score; the Description column is the filler of the job line |
+| a16_dumb-scenarios-prison-enc | 64 | the prison year's own scenario pool, title/body/choice like every other dumb set |
+
+The dumb-scenario pool is not a special format: 37 of its rows are gated at
+Hero Min Age 18 and 26 at Hero Max Age 17, which is the same juvenile/adult
+split the two crime tables describe. Its tokens are all ones the port already
+renders (`<rb>` 23, `<insult>` 2, `<num10-59>` 1), so the pool needed no new
+token work at all.
+
+### 45.2 The wording is the game's own
+
+The game writes convictions for the player's relatives through
+`<pronoun> have been convicted of {0} and sentenced to {1} in prison!`
+(literal #9559) and its juvenile form
+`<pronoun> have been convicted of {0} and sentenced to {1} {2} at a juvenile
+detention center!` (#9562). `<pronoun>` resolves to 'I' for the hero, which is
+why the port can use the same sentence for both: a captured life would read
+'I have been convicted of ...'. There is no separate first-person conviction
+string in the 76031-literal table, which is itself the evidence that the game
+does this too.
+
+Two more literals are used verbatim: 'I started a prison job {0}.' (#25148),
+whose `{0}` is the Description column ('making license plates', 'as a laundry
+attendant'), and 'I was released from prison.' (#1959).
+
+### 45.3 What the port implements
+
+* `include/bl/game.h:84-86` adds `Hero::inPrison`, `Hero::prisonYearsLeft`
+  and `Hero::prisonJob`.
+* `Sim::maybeConvicted` (`src/sim.cpp:2367`) runs once a year for a hero of
+  10 or more who is not already inside: a 2%/year draw, then a crime weighted by
+  its Commonness Score, then the sentence.
+* `Sim::prisonYear` (`src/sim.cpp:2402`) is the year itself: an optional
+  prison job (35%), the year's scenario from the prison pool, the countdown, and
+  the release line appended to the same year's log, exactly the way the illness
+  chain appends 'I decided not to get treated.' to its own line.
+* `Sim::pickDumbScenario` gained the gate it was describing in a comment
+  already: `k == 1` is the prison category, and while a sentence is running
+  that is the only category the roulette accepts (`src/sim.cpp:1560`,
+  `1569`). `kDumbPrison` sits beside the other set names
+  (`src/sim.cpp:1512`).
+
+### 45.4 The numbers that are still guesses
+
+Four `shortcut:` comments mark them in the source, and they are the reason this
+section exists rather than a one-line changelog entry:
+
+1. The 2%/year conviction chance. The real game sends the hero to prison
+   through the interactive Crime menu and a court, which the port has none of.
+   A captured life therefore cannot be compared against the port on this axis
+   yet; the rate is chosen so a 90-year life sees roughly one sentence, and it
+   moves to the menu when the Crime menu is ported.
+2. The sentence table: Seriousness Score 1..5 maps to {1, 2, 3, 5, 10} years.
+   `a16_prisoner-crimes-enc` scores the crime but the years are code-side; the
+   mapping is a placeholder until the sentencing function is read.
+3. The other categories' gates during a sentence are unread, so a prison year
+   re-rolls anything but `k == 1`. Whether the game also serves calendar or
+   universal rows to an inmate is an open question, not an assumption.
+4. A juvenile sentence reuses the adult release line: the literal table has no
+   juvenile-release string (#9564 is re-entry, #24122 is escape).
+
+One implementation note that is not a guess: the conviction draw runs on its own
+stream, `Sim::prisonRng_` (`include/bl/sim.h:224`, seeded
+`seed ^ 0x9e3779b97f4a7c15` at `src/sim.cpp:562`). Drawing it from `rng_`
+would have shifted every later draw for a given seed and with it the port's own
+fidelity metrics: with the private stream, `tools/coverage.py` still reports
+109 captured / 107 recoverable, `/tmp/qdir/portgap.py` 109 entries / 107
+rendered / gap 0, and `/tmp/qdir/rescensus.py` zero residue tokens.
+
+### 45.5 Verification
+
+* Ten seeds (12345, 777, 4242, 99, 3, 5, 8, 11, 21, 55) over 95 years each gave
+  14 conviction lines, both juvenile and adult:
+  'I have been convicted of shoplifting and sentenced to 3 years at a juvenile
+  detention center!' (seed 99, age 12), 'I have been convicted of murder and
+  sentenced to 10 years in prison!' (seed 3, age 52).
+* Prison-pool rows render as such: seed 21 age 11 'After earning enough
+  good-behavior points in detention, I chose to enjoy extra desserts for a week
+  as my privilege.', seed 99 age 15 'I told my delinquent friends in juvie that
+  when I get out, I will become a famous Kardashian.'
+* A temporary draw of 0.9 (not committed) exercised multi-year sentences and
+  produced 19 prison-pool events across four seeds, which is how the pool was
+  confirmed reachable rather than empty.
+* `bash tools/bench.sh /tmp/trace_c10.json` still runs 34 years without an
+  abort, with the usual game_only/port_only log differences.
+
+### 45.6 What this says about the other four states
+
+Prison cost one table set, one gate and two literals. Royalty is the next
+cheapest on paper (a16_country-royal-systems-enc, a16_royal-house-names-enc) but
+it needs a birth-roll probability the port has not found, and three new tokens
+(`<highest-royal-name>`, `<other-royal-name>`, the numbered celebrity slots).
+Orphanhood needs only `<rb>` and a gate. Military service has no table the port
+has located yet. The order of work after this section is therefore: orphanhood,
+then royalty once its probability is read, then military.

@@ -193,6 +193,11 @@ class Sim {
   // One surname from the same celebrity-name pool, for the local physicians the
   // illness chain offers ("Dr. Seaman" in the capture).
   std::string drawSurname();
+  // One prison year: a job line or a row of the prison dumb-scenario pool, then
+  // the countdown and the release line. REPORT.en.md 45.
+  bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
+  // The yearly conviction draw that puts the hero in prison.
+  bool maybeConvicted(Life& life, AgeUp& out);
   // The symptom card is the one scenario whose title, body and log line all come
   // from a table row (a16_disease-symptom-scenarios-enc); the registry entry for
   // ScenarioDiseaseContract only carries the four hard-coded option labels.
@@ -213,6 +218,10 @@ class Sim {
   std::string lastDoctor_;
   std::string reDir_;
   Rng rng_;
+  // The prison subsystem's own stream, so the yearly conviction draw does not
+  // shift the draws every other subsystem makes from rng_ for a given seed
+  // (the port's earlier features kept the main stream intact on purpose).
+  Rng prisonRng_;
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;
   // Next age-up's forced row, set by forceScenario() and cleared when it fires.

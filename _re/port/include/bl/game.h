@@ -79,6 +79,11 @@ struct Hero {
   int fame = 0;
   bool employed = false;
   std::string job;  // port-side only: drives which scenario pools apply
+  // Prison state. The real game reaches it through the interactive Crime menu
+  // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).
+  bool inPrison = false;
+  int prisonYearsLeft = 0;
+  std::string prisonJob;  // the 'as a laundry attendant' half of the job line
 };
 
 class GameState {

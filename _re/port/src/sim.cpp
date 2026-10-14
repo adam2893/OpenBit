@@ -558,7 +558,8 @@ void splitOn(const std::string& s, char sep, std::vector<std::string>& out) {
 
 }  // namespace
 
-Sim::Sim(std::string reDir, uint64_t seed) : reDir_(std::move(reDir)), rng_(seed) {}
+Sim::Sim(std::string reDir, uint64_t seed)
+    : reDir_(std::move(reDir)), rng_(seed), prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -592,6 +593,10 @@ bool Sim::load(std::string* error) {
       "a16_pet-names-enc",                           // Animal,Name,Color,Gender
       "a16_car-models-enc",                          // Make,Model,Type,Cost,... (ScenarioCarRepair)
       "a16_dumb-scenarios-vacation-enc",             // same layout; a coverage push targets it
+      "a16_prisoner-crimes-enc",                     // Crime,Seriousness Score,Is Violent,Commonness Score
+      "a16_prisoner-juvenile-crimes-enc",            // same columns, juvenile court
+      "a16_prison-jobs-enc",                         // Job,Description,Daily Rate,Commonness Score
+      "a16_dumb-scenarios-prison-enc",               // the prison year's own pool
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
   };
@@ -1504,6 +1509,7 @@ const char* const kDumbCareer = "a16_dumb-scenarios-career-enc";
 const char* const kDumbHoliday = "a16_dumb-scenarios-holiday-enc";
 const char* const kDumbCalendar = "a16_dumb-scenarios-calendar-enc";
 const char* const kDumbFriend = "a16_dumb-scenarios-friend-enc";
+const char* const kDumbPrison = "a16_dumb-scenarios-prison-enc";
 
 std::vector<size_t> Sim::dumbSetRows(const char* name, const Life& life) {
   std::vector<size_t> rows;
@@ -1536,9 +1542,9 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
   // -- i.e. it re-rolls the category, up to 100 attempts, and the function then
   // returns null (0x73f2eb5074). Within one set the row pick is uniform: the
   // set tables carry no Commonness Score.
-  // shortcut: prison (k=1), orphan (k=0), royal and military are categories the
-  // game gated on hero state the port does not model, so they read as "gate
-  // failed" and re-roll -- which is exactly what the game does for a hero that
+  // shortcut: orphan (k=0), royal and military are categories the game gated on
+  // hero state the port does not model, so they read as "gate failed" and
+  // re-roll; k=1 is the prison set and is now gated on Hero::inPrison -- which is exactly what the game does for a hero that
   // is none of them. The k=4..5 tail is the orphan/military/career tail; the
   // port routes k=4 to the career set when the hero has a job and k=5 to the
   // universal set, so every set stays reachable until that tail is mapped.
@@ -1547,15 +1553,24 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
   // then re-rolls, and the port keeps no friend list yet.
   for (int attempt = 0; attempt < 100; ++attempt) {
     const int k = int(rng_.below(6));
+    // shortcut: the real gates of the remaining categories during a prison
+    // sentence are not read, so a prison year only accepts the prison set and
+    // re-rolls the rest. Until they are read the port cannot tell whether the
+    // game also serves calendar or universal rows to an inmate.
+    if (life.hero.inPrison && k != 1) continue;
     const char* set = nullptr;
     if (k == 0) {
       continue;  // orphan set (0x73f2eb3574): the port's hero always has a mother
     } else if (k == 1) {
-      // Not in prison -> the holiday/universal roulette at 0x73f2eb3734:
+      // In prison the category is the prison set itself. Not in prison -> the
+      // holiday/universal roulette at 0x73f2eb3734:
       // GetRandomNumber(0,4); > 2, or no holiday season, lands on the universal
       // set, otherwise the season's holiday rows.
+      if (life.hero.inPrison) { set = kDumbPrison; }
+      else {
       const int j = int(rng_.below(4));
       set = (j > 2 || dateMonth_ == 0) ? kDumbUniversal : kDumbHoliday;
+      }
     } else if (k == 2) {
       set = kDumbFriend;  // 0x73f2eb369c, gated on !prison && !royal
     } else if (k == 3) {
@@ -1641,6 +1656,13 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     // An unusable override falls through to the normal draw instead of losing
     // the year: the bench wants a diff, not a silent hole.
   }
+
+  // (0b) Prison: the yearly conviction draw, then the prison years themselves.
+  //      The conviction draw runs on its own stream (Sim::prisonRng_), so the
+  //      main stream -- and therefore every earlier subsystem's draws for a
+  //      given seed -- is untouched (REPORT.en.md 45).
+  if (maybeConvicted(life, out)) return true;
+  if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
   // (1) Job-flavoured line from the only real core-loop table that carries a
   //     Commonness Score: a16_employee-recognition-scenarios-enc.
@@ -2330,6 +2352,85 @@ bool Sim::forceScenarioClass(const std::string& cls, int choice) {
   forcedClass_ = cls;
   forcedClassChoice_ = choice;
   return true;
+}
+
+// A conviction. The real game reaches prison through the interactive Crime menu
+// and its court, and the port has neither, so it draws one small yearly chance
+// and takes the sentence from the crime's own seriousness. The wording is the
+// game's own non-hero template -- '<pronoun> have been convicted of {0} and
+// sentenced to {1} in prison!' (literal #9559) and its juvenile variant
+// '... and sentenced to {1} {2} at a juvenile detention center!' (#9562) -- with
+// <pronoun> resolving to 'I' for the hero, exactly as the game renders it.
+// shortcut: the 2%/year conviction chance and the sentence table {1,2,3,5,10}
+// years for Seriousness Score 1..5 are port-side; the real sentencing code has
+// not been read.
+bool Sim::maybeConvicted(Life& life, AgeUp& out) {
+  Hero& h = life.hero;
+  if (h.inPrison || h.age < 10) return false;
+  if (!prisonRng_.chance(0.02)) return false;
+  const bool juvenile = h.age < 18;
+  const char* name = juvenile ? "a16_prisoner-juvenile-crimes-enc" : "a16_prisoner-crimes-enc";
+  if (!ensureTable(name)) return false;
+  const Table& t = tbl(name);
+  const size_t row = weightedPick(t, "Commonness Score", prisonRng_);
+  if (row == size_t(-1)) return false;
+  static const int kSentence[] = {1, 2, 3, 5, 10};
+  const int ser = std::max(1, std::min(5, int(t.num(row, "Seriousness Score"))));
+  const int years = kSentence[ser - 1];
+  h.inPrison = true;
+  h.prisonYearsLeft = years;
+  h.prisonJob.clear();
+  h.employed = false;
+  // The year's family lines were written before this scenario was picked and
+  // belong to no row, so they survive the reset.
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  const std::string crime = resolve(t.at(row, "Crime"));
+  const std::string span = (years == 1) ? "1 year" : (std::to_string(years) + " years");
+  out.narrative = "I have been convicted of " + crime + " and sentenced to " + span +
+                  (juvenile ? " at a juvenile detention center!" : " in prison!");
+  return true;
+}
+
+// One prison year: the year's scenario comes from the prison dumb-scenario pool
+// (dumbSetRows gates it), the hero may pick up a prison job, and the sentence
+// counts down to the game's own release line 'I was released from prison.'
+// (literal #1959).
+bool Sim::prisonYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.inPrison) return false;
+  h.employed = false;  // no career lines while inside
+  std::string jobLine;
+  if (h.prisonJob.empty() && prisonRng_.chance(0.35) && ensureTable("a16_prison-jobs-enc")) {
+    const Table& jt = tbl("a16_prison-jobs-enc");
+    const size_t jr = weightedPick(jt, "Commonness Score", prisonRng_);
+    if (jr != size_t(-1)) {
+      // a16_prison-jobs-enc spells the {0} of 'I started a prison job {0}.'
+      // (literal #25148) in its Description column: 'as a laundry attendant'.
+      h.prisonJob = trim(jt.at(jr, "Description"));
+      jobLine = "I started a prison job " + h.prisonJob + ".";
+    }
+  }
+  std::string table;
+  size_t row = 0;
+  bool rendered = false;
+  if (pickDumbScenario(life, &table, &row)) {
+    rendered = renderRow(tbl(table.c_str()), row, life, out, forcedChoice);
+  }
+  if (!jobLine.empty()) out.extra.push_back(jobLine);
+  if (--h.prisonYearsLeft <= 0) {
+    h.inPrison = false;
+    h.prisonYearsLeft = 0;
+    h.prisonJob.clear();
+    // shortcut: a juvenile sentence reuses the adult release line; the literal
+    // table has no juvenile-release string (#9564 is re-entry, #24122 escape).
+    if (out.narrative.empty()) out.narrative = "I was released from prison.";
+    else out.narrative += "\nI was released from prison.";
+  }
+  return rendered || !jobLine.empty() || !out.narrative.empty();
 }
 
 bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence) {
