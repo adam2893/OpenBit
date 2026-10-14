@@ -74,6 +74,7 @@ struct ScriptSpec {
   bool boating = false;
   bool prison = false;    // force a sentence from 18 (REPORT.en.md 82)
   bool office = false;    // a managerial job from 18 (REPORT.en.md 83)
+  bool school = false;    // a pupil from age 5 (REPORT.en.md 84)
   bool actor = false;
   bool finance = false;    // the market (REPORT.en.md 77)
   bool secret_agent = false;

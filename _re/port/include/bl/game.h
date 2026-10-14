@@ -121,6 +121,18 @@ struct Hero {
   int ofcWarnings = 0;       // written warnings handed out to them
   int ofcYears = 0, ofcHires = 0, ofcFires = 0;
   long long ofcPay = 0, ofcEarned = 0;
+
+  // The school (REPORT.en.md 84). level: 0 none, 1 elementary, 2 middle,
+  // 3 high, 4 college. The hero is a pupil, not a manager, so the year is
+  // about a class, a teacher and the crowd around the locker.
+  bool schooling = false;
+  int schoolLevel = 0, schoolYears = 0;
+  std::string schoolTeacher, schoolClassmate, schoolPrincipal, schoolActivity;
+  std::string schoolActivityRef, schoolClique, schoolFrat, schoolFratLetters, schoolFratNickname;
+  bool schoolTeacherFemale = false, schoolClassmateFemale = false, schoolPrincipalFemale = false;
+  int schoolPopularity = 50, schoolGrades = 70, schoolTrouble = 0;
+  int schoolActUps = 0, schoolDetentions = 0, schoolSuckups = 0;
+  bool schoolCliqueMember = false, schoolFratMember = false;
   // Set when the hero is left with no surviving parent before 18; the orphan
   // dumb-scenario set is gated on it (REPORT.en.md 46).
   bool orphan = false;

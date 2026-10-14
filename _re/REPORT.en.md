@@ -8477,3 +8477,226 @@ Sample cards:
     Another year at Chateau Doozy
     Lissie Gnomez is still a Quality Assurance Specialist, and the office ran itself.
     I managed 4 people for another year
+
+## 84. The school: eleven pools of class, clique and rush, and a gender token that had been answering nothing
+
+Sections 50 to 83 built the adult life outwards: work, money, fame, prison. This one fills
+the years that decide what the adult has to work with. Section 84 wires the whole
+`a16_school-*` family, eleven tables and 513 rows, plus one root fix in
+`Sim::heroToken` that had been silently starving a gendered filter in three earlier
+families.
+
+### 84.1 The family
+
+Eleven tables, all `<name>-enc` under `/Users/Adam/Documents/bitlife/_re/gamedata_plain`,
+513 rows. Every one of them was unwired before this section.
+
+| table | rows | the columns that matter |
+|---|---|---|
+| `a16_school-activities-enc` | 115 | Index, Activity, Type (Arts / Athletics Club / Athletics Team / Career Interest / Community / Hobby), Uses Definite Article, Proper Noun, Leader Title, Other Officers, Reference Noun (club / team / band), Track Performance, Commonness, Gender, Specific Countries, Weekly Hours, Sports / Nerd / Band / Arts / Acting / Gaming / Weeb Activity, Min Health / Smarts / Athleticism / Looks / Popularity / Grades, Popularity Score Male / Female, Requires Tryouts, Exists in Middle School / High School / College |
+| `a16_school-act-up-scenarios-enc` | 57 | Type (the class subject), Feedback Scenario, Log Version, Third Person, Seriousness Score, Elementary School, High School, College |
+| `a16_school-teacher-suckups-enc` | 54 | Feedback Scenario, Log Version, the three level flags, Flirt Scenario, Teacher Only, Administrator Only |
+| `a16_school-frats-enc` | 50 | Index, Organization, Gender (female 22 / male 28), Letters, Min Smarts, Min Looks, Min Popularity, Popularity Score, Nickname, Motto |
+| `a16_school-frat-questions-enc` | 50 | Question, Choice 1..4, Choice N Score (one 5 and three 0 per row) |
+| `a16_school-teacher-disrespects-enc` | 48 | Type (General 25 / Administrator 23), Feedback Scenario, Log Version, the three level flags |
+| `a16_school-teacher-call-outs-enc` | 41 | Type, Feedback Scenario, Log Version, the three level flags, Inappropriateness Score |
+| `a16_school-principal-warnings-enc` | 35 | Warning (one column: `<principal> warned you to behave yourself.`) |
+| `a16_school-classmate-mess-scenarios-enc` | 23 | Feedback Scenario, Log Version, Hero Min / Max Age, Classmate Gender |
+| `a16_school-classmate-flirt-scenarios-enc` | 22 | as the mess pool, plus Clean (set on 19 of 22) |
+| `a16_school-cliques-enc` | 18 | Index, Clique, Popularity, Aggression, Description, Short Description, the eight Requires* Activity flags, Requires Skateboarding Club / Trouble / No Activities, Min / Max Athleticism / Grades / Smarts / Looks / Popularity / Happiness, Gender, Popularity Score |
+
+The clique ladder as the data has it, in file order: Jocks 100/100, Nerds 20/5, Hipsters
+50/15, Popular Kids 100/35, Social Floaters 80/15, Talented Kids 60/5, Drama Kids 30/5,
+Brainy Kids 10/2, Artsy Kids 15/5, Normals 20/10, Band Geeks 5/5, Mean Girls 90/100,
+Weebs 5/5, Gamers 35/15, Skaters 55/50, Troublemakers 20/80, Goths 10/30, Loners 0/20.
+
+### 84.2 A pupil from five
+
+`Sim::makeSchool` runs when the script asks for `"school": true`: it sets
+`Hero::schooling`, the level from the age, grades `62 + below(25)`, popularity
+`42 + below(17)`, a zeroed trouble / act-up / detention / suck-up count, three named
+people (a teacher, a classmate and a principal, each with a gender coin), and one activity
+out of the 115-row catalogue gated on the level column and the row's own Gender, weighted on
+Commonness. That activity is the one the clique requirements and the activity card are read
+against for the whole life.
+
+The ladder is derived from the age, since the data has no level table:
+
+| age | level | the year is filed under |
+|---|---|---|
+| 5 to 10 | 1 elementary | Elementary School |
+| 11 to 13 | 2 middle | Elementary School |
+| 14 to 17 | 3 high | High School |
+| 18 to 22 | 4 college | College |
+
+Above 22 the pupil leaves and `Hero::schooling` is cleared. Before 5 the year does
+nothing at all - and that detail is the bug in 84.5.
+
+### 84.3 The year
+
+`Sim::schoolYear` runs from `ageUp` behind `hero.schooling`, takes a 0.6
+chance, and every year first does the bookkeeping: a level change logs
+`I started <lvlName>.`, grades move +1 (with a 0.3 coin for a second point, or -1 when
+trouble is at 3 or more), popularity drifts one point back toward 50, and trouble decays by
+one. Every card then ends with `My grades are N and my popularity is N.`, and the tail
+appends a full stop unless the body already ends in one of `. ! ? " )`.
+
+| chance | branch | what it draws |
+|---|---|---|
+| 0.08 | rush week | college only, and only while the hero has no fraternity: a `a16_school-frats-enc` row passing the gender coin and the Min Smarts / Min Looks / Min Popularity windows, weighted on Popularity Score; three questions from `a16_school-frat-questions-enc`, each offering its four filled choices, and two right out of three accepts the bid (name, letters, nickname, +4 popularity) |
+| gate trouble >= 2, then 0.5 | the principal's office | a `a16_school-principal-warnings-enc` warning, with the principal's own pronoun, folded to the first person |
+| 0.10 | disrespecting a teacher | `a16_school-teacher-disrespects-enc` on the level flag; the rows whose Type is Administrator are titled `Trouble with the administration` |
+| 0.12 | acting up in class | `a16_school-act-up-scenarios-enc` on the level flag; the Type names the class and titles the card, Seriousness Score scales trouble, popularity and happiness, and a 0.35 coin adds a detention |
+| 0.12 | called out in class | `a16_school-teacher-call-outs-enc` on the level flag, Inappropriateness Score scaling the popularity hit |
+| 0.12 | a prank on a classmate | `a16_school-classmate-mess-scenarios-enc`, Hero Min / Max Age and Classmate Gender windows |
+| 0.12 | something in the air | `a16_school-classmate-flirt-scenarios-enc` with the same windows; the rows that are not marked Clean are only reachable from 13 |
+| 0.14 | lunch with a clique | `a16_school-cliques-enc` while the hero is in none: the Min / Max windows, the Gender, Requires Trouble at 2 or more, Requires No Activities, and the eight Requires* Activity flags read against the hero's own activity row |
+| 0.14 | teacher's pet | `a16_school-teacher-suckups-enc` on the level flag; a Flirt Scenario row is only reachable from 15, and the Teacher Only rows are preferred |
+| 0.16 | the activity | the hero's own `a16_school-activities-enc` row: a season win or loss when the row has Track Performance, else a 0.25 leader election with the row's Leader Title, else a plain hours-a-week line |
+| else | an ordinary year | `A year at <lvlName>`, which marks the hero's activity row so the card is attributed to a real table |
+
+### 84.4 The tokens
+
+`teacher` 278 uses, `teacher-possessive` 156, `classmate` 127,
+`principal` 35, `classmate-possessive` 16, plus the global pronoun pairs
+(`he/she` 107, `his/her` 63, `him/her` 55), `rb` 72 and a few one-off
+inline lists. No reference pool in the game carries a teacher, a classmate or a principal, so
+the three are answered by the family: `schoolIsToken` claims
+`teacher` / `classmate` / `principal` (and their `-possessive` forms)
+while a school card is rendering, and `Sim::schoolToken` memoises each one in
+`schoolCache_` for the length of the card, so the body and the journal line name the
+same person. `personName` gained `principal` so the fallback draw is a real name.
+
+The three level columns are read through `schoolLevelColumn`: college for level 4, High
+School for level 3, and the Elementary School flag for levels 1 and 2 - the data has no
+middle-school column at all.
+
+### 84.5 The bugs
+
+1. **The script flag enabled the office.** The school parse block was written by copying the
+   office block, so it read `"school"` but set `spec.office`. The probe reported
+   zero school events with no error anywhere: the office simply ran instead. Both assignments
+   in the copied block now say `spec.school`.
+2. **The age gate switched the pupil off at birth.** `if (level == 0) { h.schooling = false; return false; }`
+   cleared the flag on the hero's very first birthday, when the level is legitimately 0
+   (school starts at 5), so the family never fired for any seed. It now only leaves when the
+   age is past 22.
+3. **`heroToken("gender")` answered nothing.** `Sim::heroToken` has cases for the
+   city, the country, the demonyms and the hero's names, but no case for the hero's gender -
+   it fell through to `return std::string();`. Every filter written as "skip the row
+   unless its Gender cell is empty or matches the hero" therefore skipped *every* row that
+   carries a gender: the fraternity pool was empty for every hero of every seed
+   (`houses=0` in the instrumented run), which is what made rush week unreachable even
+   at a test chance of 0.9. The fix is one case in `heroToken` -
+   `h.female ? "female" : "male"` - and it is a root fix: sections 75 (racing) and 76
+   (the actor) had the same silent filter against the same empty string, so their gendered
+   pools now draw from their gendered rows too. The whole regression stayed at residue 0
+   afterwards.
+4. **Branch order.** Rush week was numbered second, after the principal's office, and an
+   instrumented run with the principal branch boosted for a test starved it completely. The
+   chain is rarest-first: rush (0.08) now sits first.
+5. **The hero has no athleticism.** `a16_school-cliques-enc` gates on Min / Max
+   Athleticism, and `Hero` carries no such attribute (only smarts, looks, health,
+   happiness, karma and discipline plus each family's own). The clique reads
+   `h.health` instead, with a shortcut comment at the call site.
+6. **A question mark got a full stop.** The card tail appended `.` to any body not
+   already ending in a period, so a rush question rendered as
+   `What Greek mythological hero killed the Minotaur?.` The tail now accepts
+   `. ! ? " )`.
+
+### 84.6 Shortcuts
+
+* The activity catalogue's Min Health / Smarts / Athleticism / Looks / Popularity / Grades
+  and Requires Tryouts columns are never enforced; the level column, the Gender column and
+  Commonness are the whole filter, and the hero has exactly one activity for life.
+* The middle-school years use the Elementary School flag because the data has no
+  middle-school column.
+* A clique's Popularity and Aggression numbers are descriptive only - the port uses the
+  Min / Max windows and the Requires* flags, which is what decides membership anyway.
+* Rush offers three random questions and accepts on two right; the real screen asks a fixed
+  set. The four choices come from the row's own Choice 1..4 and their Choice N Score.
+* Detentions, GPAs, report cards and school fees are not modelled; the year's whole visible
+  bookkeeping is the grades / popularity line.
+* The principal's warning is a single generic column, so the card body and the journal line
+  are the same sentence folded to the first person.
+
+### 84.7 Verification
+
+`python3 /tmp/qdir/schres.py` - thirty seeds, both genders, to age 60 with
+`{"school": true}` - reports
+
+    school events 583 rc failures 0
+    RESIDUE 0
+
+with the last-mark histogram `a16_school-activities-enc` 263,
+`a16_school-act-up-scenarios-enc` 68, `a16_school-classmate-mess-scenarios-enc` 52,
+`a16_school-teacher-disrespects-enc` 51,
+`a16_school-classmate-flirt-scenarios-enc` 38,
+`a16_school-teacher-call-outs-enc` 38, `a16_school-teacher-suckups-enc` 35,
+`a16_school-cliques-enc` 28, `a16_school-principal-warnings-enc` 6,
+`a16_school-frat-questions-enc` 4. The only table that is never a card's own mark is
+`a16_school-frats-enc`: it is drawn inside the rush branch, where the card is the
+interview and the fraternity supplies the house, the letters and the nickname.
+
+The full sweep is green: `allprobes.py` 27 of 27 probes at residue 0 (actres 667,
+astres 797, bizres 3578, bmres 1648, boatres 1456, casres 1286, cultres 1168, dlres 1532,
+fightres 1243, finres 760, hustres 1412, ltres 1578, luxres 849, mafiares 1310, modres 589,
+ofcres 1726, outres 1029, petres 2472, prisres 428, racres 857, schres 583, spores 611,
+spyres 564, stures 1145, traderes 1326, vampres 3297, zoores 1440), `rescensus.py`
+`distinct residue tokens 0 total 0`, `coverage.py` `captured scenarios: 109  recoverable: 107`,
+`portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `covpush.json` rc 0
+with 33,078 bytes of stdout and an empty stderr, and `bench.sh` rc 0 through to age 34.
+
+Sample cards, hand-checked:
+
+    A year at high school            Another year of class, lunch and the walk home.
+      My grades are 87 and my popularity is 51.
+      I kept my head down at high school and passed my classes
+
+    Acting up in class               You ripped out the pages of Emmett Nym's class textbook
+                                     one-at-a-time and yelled, "Good riddance!" as each page
+                                     was ripped out.".
+      My grades are 79 and my popularity is 51.
+      I acted up in Emmett Nym's class.
+
+    Trouble with the administration  You told Kay Dot that you don't trust an educator who
+                                     plays favorites.
+      My grades are 77 and my popularity is 60.
+      I told Kay Dot that I don't trust an educator who plays favorites.
+
+    Something in the air             You gently touched Duke Combs on the hand while talking
+                                     with her, so that she might realize you like her.
+      My grades are 81 and my popularity is 60.
+      I touched Duke Combs on the hand in an attempt to flirt with her.
+
+    Teacher's pet                    You told Kay Dot that you truly hope he has an amazing
+                                     weekend.
+      My grades are 84 and my popularity is 57.
+      I told Kay Dot that I hope he has an amazing weekend.
+
+    Lunch with the Jocks             An athletic clique.
+      My grades are 87 and my popularity is 77.
+      I started hanging around with the Jocks
+
+    Election at the Robotics Club    The Robotics Club needed a President.
+      My grades are 75 and my popularity is 52.
+      I was elected President of the Robotics Club
+
+    Called out in class              During the school pep rally, Catrina Woodworker asks
+                                     that you stop cheering because you sound like a dying cat.
+      My grades are 77 and my popularity is 51.
+      Catrina Woodworker embarassed me in front of the class.
+
+    Rush week                        What Greek mythological hero killed the Minotaur?
+      My grades are 79 and my popularity is 50.
+      I answered 1 of 3 right at rush and did not get a bid
+
+    The principal's office           Haden Smith encourage you to do the right thing.
+      My grades are 84 and my popularity is 52.
+      Haden Smith encourage me to do the right thing.
+
+Two quirks worth naming: the `a16_school-act-up-scenarios-enc` row above really does end
+its cell with `."` followed by a period in the source data, and the
+`a16_school-principal-warnings-enc` rows are written in the third person
+(`<principal> encourage you to do the right thing`), so folding them to the first person
+leaves the data's own verb form behind.

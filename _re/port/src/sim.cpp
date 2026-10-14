@@ -595,7 +595,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       luxuryRng_(seed ^ 0x510e527fade682d1ULL),
       sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
-      officeRng_(seed ^ 0x5be0cd19137e2179ULL) {}
+      officeRng_(seed ^ 0x5be0cd19137e2179ULL),
+      schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -956,6 +957,18 @@ bool Sim::load(std::string* error) {
       "a16_employee-warn-scenarios-enc",             // Scenario,Risk Score,Commonness Score
       "a16_employee-interview-questions-enc",        // Question,Choice N,Choice N Score
       "a16_employee-recognition-scenarios-enc",      // Scenario,Commonness Score
+      // The school (REPORT.en.md 84): eleven tables of class, clique and rush.
+      "a16_school-act-up-scenarios-enc",
+      "a16_school-activities-enc",
+      "a16_school-classmate-flirt-scenarios-enc",
+      "a16_school-classmate-mess-scenarios-enc",
+      "a16_school-cliques-enc",
+      "a16_school-frat-questions-enc",
+      "a16_school-frats-enc",
+      "a16_school-principal-warnings-enc",
+      "a16_school-teacher-call-outs-enc",
+      "a16_school-teacher-disrespects-enc",
+      "a16_school-teacher-suckups-enc",
       "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
@@ -1383,7 +1396,7 @@ std::string Sim::personName(const std::string& token) {
                                   "crewmate", "colleague", "space-director", "commander",
                                   "mechanic", "pit-crew", "racer", "racer-rival",
                                   "costar", "agent", "actor", "lead", "studio-exec", "advisor", "broker", "model",
-                                  "designer", "photographer"};
+                                  "designer", "photographer", "principal"};
   bool person = false;
   for (const char* p : kPeople) if (key == p) person = true;
   if (key == "company") return "the company";
@@ -1662,6 +1675,9 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
   if (key == "hero:age") return std::to_string(h.age);
   if (key == "hero:bank_balance") return money(h.money);
   if (key == "hero:money_currency_symbol") { const std::string m = money(0); return m.substr(0, m.size() - 1); }
+  // REPORT.en.md 84: several families filter a row on the hero gender. The
+  // hero carries it as a bool, and heroToken used to answer nothing for the key.
+  if (key == "gender" || key == "hero-gender" || key == "hero:gender") return h.female ? "female" : "male";
   if (key == "city" || key == "hero:current_city") return h.city;
   if (key == "country" || key == "country possessive" || key == "hero:current_country") return h.country + own;
   if (key == "country-other" || key == "country2" || key == "hero:country_other") {
@@ -1984,6 +2000,19 @@ bool luxIsToken(const std::string& token, bool live) {
 // side of the desk, so <employee> here is the report the year is about, not the
 // generic name the business pool mints. The guard only claims the keys while an
 // office card renders: every other subsystem keeps its own answer.
+// The school's own tokens (REPORT.en.md 84). <teacher>, <classmate> and
+// <principal> are people the resolver already knows how to name, but every
+// call would draw a fresh name, so the family draws each one once per card
+// and answers from its cache while a school card renders.
+bool schoolIsToken(const std::string& token, bool live) {
+  if (!live) return false;
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  return key == "teacher" || key == "classmate" || key == "principal";
+}
+
 bool officeIsToken(const std::string& token, bool live) {
   if (!live) return false;
   std::string t = token;
@@ -2256,6 +2285,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (schoolIsToken(token, schoolLive_)) {
+      const std::string v = schoolToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
     } else if (officeIsToken(token, officeLive_)) {
       const std::string v = officeToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
@@ -3233,6 +3266,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
   if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
+  if (life.hero.schooling && schoolYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
   if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
@@ -3337,6 +3371,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   boatCache_.clear();     // one craft name / part / mishap per boat card
   prisonCache_.clear();   // one inmate / nickname / letter / gift per prison card
   officeCache_.clear();   // one employee / company per office card
+  schoolCache_.clear();   // one teacher / classmate / principal per school card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -19925,6 +19960,604 @@ bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 // ===== end the office (REPORT.en.md 83) =====================================
+
+// ===== the school (REPORT.en.md 84) ==========================================
+
+// The school the hero is in at an age. 1 elementary (5-10), 2 middle (11-13),
+// 3 high (14-17), 4 college (18-22); 0 when no school claims the age.
+static int schoolLevelFor(int age) {
+  if (age >= 5 && age <= 10) return 1;
+  if (age >= 11 && age <= 13) return 2;
+  if (age >= 14 && age <= 17) return 3;
+  if (age >= 18 && age <= 22) return 4;
+  return 0;
+}
+
+static const char* schoolLevelName(int level) {
+  switch (level) {
+    case 1: return "elementary school";
+    case 2: return "middle school";
+    case 3: return "high school";
+    case 4: return "college";
+    default: return "school";
+  }
+}
+
+// The four teacher pools flag their level with a bare 'x' in one of three
+// columns. The data has no middle-school column, so middle school reads the
+// elementary column (shortcut: the real game's middle-school split is not in
+// the tables, upgrade when a middle-school flag appears).
+static const char* schoolLevelColumn(int level) {
+  if (level <= 2) return "Elementary School";
+  if (level == 3) return "High School";
+  return "College";
+}
+
+// A punch of a scenario written about the hero by somebody else ("<principal>
+// warned you to behave yourself.") folded into the journal's first person.
+static std::string schoolFoldFirstPerson(const std::string& text) {
+  std::string out;
+  size_t i = 0;
+  while (i < text.size()) {
+    const char c = text[i];
+    const bool word = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+    if (!word) { out += c; ++i; continue; }
+    size_t j = i;
+    while (j < text.size()) {
+      const char d = text[j];
+      if (!((d >= 'a' && d <= 'z') || (d >= 'A' && d <= 'Z') || (d >= '0' && d <= '9') || d == '\'')) break;
+      ++j;
+    }
+    std::string w = text.substr(i, j - i);
+    const std::string lw = lower(w);
+    const bool capital = w[0] >= 'A' && w[0] <= 'Z';
+    if (lw == "you") w = capital ? "I" : "me";
+    else if (lw == "your") w = capital ? "My" : "my";
+    else if (lw == "yours") w = "mine";
+    else if (lw == "yourself") w = "myself";
+    else if (lw == "yourselves") w = "ourselves";
+    out += w;
+    i = j;
+  }
+  return out;
+}
+
+void Sim::makeSchool(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  schoolLive_ = false;
+  schoolCache_.clear();
+
+  h.schooling = true;
+  const int lvl = schoolLevelFor(h.age);
+  h.schoolLevel = lvl > 0 ? lvl : 1;
+  h.schoolYears = 0;
+  h.schoolTrouble = 0;
+  h.schoolActUps = 0;
+  h.schoolDetentions = 0;
+  h.schoolSuckups = 0;
+  h.schoolCliqueMember = false;
+  h.schoolFratMember = false;
+  h.schoolClique.clear();
+  h.schoolFrat.clear();
+  h.schoolFratLetters.clear();
+  h.schoolFratNickname.clear();
+  h.schoolPopularity = 42 + int(schoolRng_.below(17));
+  h.schoolGrades = 62 + int(schoolRng_.below(25));
+  h.schoolTeacher = personName("teacher");
+  h.schoolTeacherFemale = schoolRng_.chance(0.5);
+  h.schoolClassmate = personName("classmate");
+  h.schoolClassmateFemale = schoolRng_.chance(0.5);
+  h.schoolPrincipal = personName("principal");
+  h.schoolPrincipalFemale = schoolRng_.chance(0.5);
+
+  // One activity out of the 115-row catalogue, gated on the level's own column
+  // and the row's Gender.
+  if (ensureTable("a16_school-activities-enc")) {
+    const Table& act = tbl("a16_school-activities-enc");
+    const std::string hg = heroToken("gender", false);
+    const std::string lvlCol = schoolLevelColumn(h.schoolLevel);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < act.size(); ++r) {
+      if (act.has(lvlCol) && !act.flag(r, lvlCol)) continue;
+      const std::string g = lower(trim(act.at(r, "Gender")));
+      if (!g.empty() && g != "both" && g != hg) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t row = act.has("Commonness") ? weightedPickOf(act, "Commonness", pool, schoolRng_)
+                                               : pool[schoolRng_.below(uint32_t(pool.size()))];
+      if (row != size_t(-1)) {
+        h.schoolActivity = act.at(row, "Activity");
+        h.schoolActivityRef = lower(trim(act.at(row, "Reference Noun")));
+      }
+    }
+  }
+  if (h.schoolActivityRef.empty()) h.schoolActivityRef = "club";
+}
+
+std::string Sim::schoolToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (!h) return std::string();
+  std::string key = token;
+  bool possessive = false;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - psuffix.size());
+  }
+  auto remembered = [&](const std::string& slot) -> std::string {
+    std::map<std::string, std::string>::iterator it = schoolCache_.find(slot);
+    return it == schoolCache_.end() ? std::string() : it->second;
+  };
+  auto remember = [&](const std::string& slot, const std::string& value) -> std::string {
+    schoolCache_[slot] = value;
+    return value;
+  };
+  if (key == "teacher") {
+    std::string v = remembered("teacher");
+    if (v.empty()) v = remember("teacher", h->schoolTeacher.empty() ? personName("teacher") : h->schoolTeacher);
+    if (v.empty()) v = "the teacher";
+    return possessive ? v + "'s" : v;
+  }
+  if (key == "classmate") {
+    std::string v = remembered("classmate");
+    if (v.empty()) v = remember("classmate", h->schoolClassmate.empty() ? personName("classmate") : h->schoolClassmate);
+    if (v.empty()) v = "a classmate";
+    return possessive ? v + "'s" : v;
+  }
+  if (key == "principal") {
+    std::string v = remembered("principal");
+    if (v.empty()) v = remember("principal", h->schoolPrincipal.empty() ? personName("principal") : h->schoolPrincipal);
+    if (v.empty()) v = "the principal";
+    return possessive ? v + "'s" : v;
+  }
+  return std::string();
+}
+
+bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.schooling) return false;
+  const int level = schoolLevelFor(h.age);
+  // Before school age nothing happens; after college the pupil leaves.
+  if (level == 0) { if (h.age > 22) h.schooling = false; return false; }
+  if (!ensureTable("a16_school-activities-enc") || !ensureTable("a16_school-cliques-enc")) return false;
+  if (!schoolRng_.chance(0.6)) return false;
+
+  schoolLive_ = true;
+  schoolCache_.clear();
+  const bool savedOther = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  const std::string hg = heroToken("gender", false);
+  const std::string lvlCol = schoolLevelColumn(level);
+  const std::string lvlName = schoolLevelName(level);
+  const bool college = level >= 4;
+
+  std::string tableRef = "a16_school-activities-enc";
+  int cardRow = -1;
+  std::string title, body, line;
+  int happy = 0;
+
+  auto say = [&](const std::string& s) { if (!s.empty() && line.empty()) line = spyUpperFirst(s); };
+  auto add = [&](const std::string& s) { if (!s.empty()) out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  auto cell = [&](const Table& t, size_t r, const std::string& col) -> std::string {
+    if (!t.has(col)) return std::string();
+    return trim(resolve(t.at(r, col)));
+  };
+  auto numOf = [&](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col)) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto flagOf = [&](const Table& t, size_t r, const std::string& col) -> bool {
+    return t.has(col) ? t.flag(r, col) : false;
+  };
+  auto windowOk = [&](const Table& t, size_t r, const std::string& loCol,
+                      const std::string& hiCol, long long v) -> bool {
+    if (t.has(loCol)) { const long long lo = numOf(t, r, loCol); if (lo > 0 && v < lo) return false; }
+    if (t.has(hiCol)) { const long long hi = numOf(t, r, hiCol); if (hi > 0 && v > hi) return false; }
+    return true;
+  };
+  auto drawOf = [&](const Table& t, const std::string& weightCol, const std::vector<size_t>& pool) -> size_t {
+    if (pool.empty()) return size_t(-1);
+    if (t.has(weightCol)) return weightedPickOf(t, weightCol, pool, schoolRng_);
+    return pool[schoolRng_.below(uint32_t(pool.size()))];
+  };
+  auto levelPool = [&](const Table& t) {
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) if (!t.has(lvlCol) || t.flag(r, lvlCol)) pool.push_back(r);
+    return pool;
+  };
+  auto withBrackets = [&](const Table& t, size_t r, const std::string& wantCol) -> std::string {
+    for (size_t c = 0; c < t.columns().size(); ++c) {
+      const std::string& col = t.columns()[c];
+      if (col == wantCol) continue;
+      const std::string& v = t.at(r, col);
+      if (v.find('<') != std::string::npos) resolve(v);
+    }
+    return cell(t, r, wantCol);
+  };
+  auto scenePair = [&](const Table& t, size_t r, bool otherFemale, const std::string& bodyCol,
+                       const std::string& logCol, std::string& b, std::string& l) {
+    const bool so = pronounOtherSet_;
+    const bool sof = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = otherFemale;
+    b = cell(t, r, bodyCol);
+    l = withBrackets(t, r, logCol);
+    pronounOtherSet_ = so;
+    pronounOtherFemale_ = sof;
+  };
+
+  // The hero's own activity row, for the clique requirements and the activity
+  // card.
+  size_t actRow = size_t(-1);
+  {
+    const Table& at = tbl("a16_school-activities-enc");
+    for (size_t r = 0; r < at.size(); ++r) {
+      if (!h.schoolActivity.empty() && at.at(r, "Activity") == h.schoolActivity) { actRow = r; break; }
+    }
+  }
+  auto activityFlag = [&](const std::string& col) -> bool {
+    if (actRow == size_t(-1)) return false;
+    const Table& at = tbl("a16_school-activities-enc");
+    return at.has(col) && at.flag(actRow, col);
+  };
+
+  // The year's bookkeeping: the level the hero moved into, the grades, and the
+  // crowd's opinion drifting back to the middle.
+  if (h.schoolLevel != level) {
+    h.schoolLevel = level;
+    add("I started " + std::string(lvlName) + ".");
+  }
+  h.schoolYears += 1;
+  if (h.schoolTrouble >= 3) h.schoolGrades = std::max(0, h.schoolGrades - 1);
+  else h.schoolGrades = std::min(100, h.schoolGrades + 1 + (schoolRng_.chance(0.3) ? 1 : 0));
+  if (h.schoolPopularity > 50) h.schoolPopularity -= 1;
+  else if (h.schoolPopularity < 50) h.schoolPopularity += 1;
+  if (h.schoolTrouble > 0) h.schoolTrouble -= 1;
+
+  // (2) Rush week: three questions, two right and the letters are the hero's.
+  if (title.empty() && college && !h.schoolFratMember && schoolRng_.chance(0.08) &&
+      ensureTable("a16_school-frats-enc") && ensureTable("a16_school-frat-questions-enc")) {
+    const Table& fr = tbl("a16_school-frats-enc");
+    const Table& q = tbl("a16_school-frat-questions-enc");
+    std::vector<size_t> houses;
+    for (size_t r = 0; r < fr.size(); ++r) {
+      const std::string g = lower(trim(fr.at(r, "Gender")));
+      if (!g.empty() && g != hg) continue;
+      if (!windowOk(fr, r, "Min Smarts", "", h.smarts)) continue;
+      if (!windowOk(fr, r, "Min Looks", "", h.looks)) continue;
+      if (!windowOk(fr, r, "Min Popularity", "", h.schoolPopularity)) continue;
+      houses.push_back(r);
+    }
+    if (!houses.empty() && q.size() >= 3) {
+      const size_t house = drawOf(fr, "Popularity Score", houses);
+      std::vector<std::string> quiz;
+      int right = 0;
+      std::string firstAnswer;
+      for (int n = 0; n < 3 && q.size() > 0; ++n) {
+        const size_t r = schoolRng_.below(uint32_t(q.size()));
+        std::vector<std::string> answers;
+        std::vector<long long> scores;
+        for (int c = 1; c <= 4; ++c) {
+          const std::string col = "Choice " + std::to_string(c);
+          if (q.has(col) && !q.at(r, col).empty()) {
+            answers.push_back(trim(resolve(q.at(r, col))));
+            scores.push_back(static_cast<long long>(q.num(r, col + " Score")));
+          }
+        }
+        if (answers.empty()) continue;
+        size_t pick = 0;
+        if (forcedChoice >= 0 && size_t(forcedChoice) < answers.size()) pick = size_t(forcedChoice);
+        else pick = schoolRng_.below(uint32_t(answers.size()));
+        if (scores[pick] > 0) right += 1;
+        if (firstAnswer.empty()) firstAnswer = answers[pick];
+        quiz.push_back(trim(resolve(q.at(r, "Question"))));
+        add("Question: " + quiz.back() + " I answered: " + answers[pick] + ".");
+      }
+      if (!quiz.empty()) {
+        mark("a16_school-frat-questions-enc", int(house));
+        title = "Rush week";
+        body = quiz.front();
+        out.cta = "Answer:";
+        out.choice = firstAnswer;
+        if (right >= 2) {
+          h.schoolFratMember = true;
+          h.schoolFrat = trim(resolve(fr.at(house, "Organization")));
+          h.schoolFratLetters = trim(fr.at(house, "Letters"));
+          h.schoolFratNickname = trim(resolve(fr.at(house, "Nickname")));
+          say("I was accepted into " + h.schoolFrat + " (" + h.schoolFratLetters + ")");
+          add("They call me " + h.schoolFratNickname + ".");
+          h.schoolPopularity = std::min(100, h.schoolPopularity + 4);
+          happy += 2;
+        } else {
+          say("I answered " + std::to_string(right) + " of " + std::to_string(quiz.size()) +
+              " right at rush and did not get a bid");
+          happy -= 1;
+        }
+      }
+    }
+  }
+
+  // (1) The principal, once the year has drawn enough attention.
+  if (title.empty() && h.schoolTrouble >= 2 && schoolRng_.chance(0.5) &&
+      ensureTable("a16_school-principal-warnings-enc")) {
+    const Table& w = tbl("a16_school-principal-warnings-enc");
+    if (w.size() > 0) {
+      const size_t r = schoolRng_.below(uint32_t(w.size()));
+      const bool so = pronounOtherSet_;
+      const bool sof = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = h.schoolPrincipalFemale;
+      const std::string raw = cell(w, r, "Warning");
+      pronounOtherSet_ = so;
+      pronounOtherFemale_ = sof;
+      mark("a16_school-principal-warnings-enc", int(r));
+      title = "The principal's office";
+      body = raw;
+      say(schoolFoldFirstPerson(raw));
+      h.schoolTrouble = std::max(0, h.schoolTrouble - 2);
+      h.schoolPopularity = std::max(0, h.schoolPopularity - 2);
+      h.schoolDetentions += 1;
+      happy -= 1;
+    }
+  }
+
+  // (3) Disrespecting a teacher: the one thing the crowd rewards.
+  if (title.empty() && schoolRng_.chance(0.10) && ensureTable("a16_school-teacher-disrespects-enc")) {
+    const Table& t = tbl("a16_school-teacher-disrespects-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has(lvlCol) && !t.flag(r, lvlCol)) continue;
+      pool.push_back(r);
+    }
+    const size_t r = drawOf(t, "", pool);
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolTeacherFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-teacher-disrespects-enc", int(r));
+      const std::string kind = trim(t.at(r, "Type"));
+      title = kind == "Administrator" ? "Trouble with the administration" : "Trouble in class";
+      body = b;
+      say(l);
+      h.schoolTrouble += 2;
+      h.schoolPopularity = std::min(100, h.schoolPopularity + 3);
+      h.schoolDetentions += 1;
+      happy += 1;
+    }
+  }
+
+  // (4) Acting up in class.
+  if (title.empty() && schoolRng_.chance(0.12) && ensureTable("a16_school-act-up-scenarios-enc")) {
+    const Table& t = tbl("a16_school-act-up-scenarios-enc");
+    const size_t r = drawOf(t, "", levelPool(t));
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolTeacherFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-act-up-scenarios-enc", int(r));
+      const std::string subject = trim(t.at(r, "Type"));
+      title = (subject.empty() || subject == "General") ? std::string("Acting up in class")
+                                                        : subject + " class";
+      body = b;
+      say(l);
+      const long long serious = numOf(t, r, "Seriousness Score");
+      h.schoolTrouble += serious >= 4 ? 2 : 1;
+      h.schoolActUps += 1;
+      h.schoolPopularity = std::min(100, h.schoolPopularity + (serious >= 4 ? 2 : 1));
+      happy += serious >= 4 ? 2 : 1;
+      if (schoolRng_.chance(0.35)) {
+        h.schoolDetentions += 1;
+        add("That earned me a detention.");
+      }
+    }
+  }
+
+  // (5) Called out by the teacher.
+  if (title.empty() && schoolRng_.chance(0.12) && ensureTable("a16_school-teacher-call-outs-enc")) {
+    const Table& t = tbl("a16_school-teacher-call-outs-enc");
+    const size_t r = drawOf(t, "", levelPool(t));
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolTeacherFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-teacher-call-outs-enc", int(r));
+      title = "Called out in class";
+      body = b;
+      say(l);
+      const long long bad = numOf(t, r, "Inappropriateness Score");
+      h.schoolPopularity = std::max(0, h.schoolPopularity - (bad >= 4 ? 2 : 1));
+      happy -= 1;
+    }
+  }
+
+  // (6) A prank on a classmate.
+  if (title.empty() && schoolRng_.chance(0.12) && ensureTable("a16_school-classmate-mess-scenarios-enc")) {
+    const Table& t = tbl("a16_school-classmate-mess-scenarios-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(trim(t.at(r, "Classmate Gender")));
+      if (!g.empty() && g != "both" && g != hg) continue;
+      if (!windowOk(t, r, "Hero Min Age", "Hero Max Age", h.age)) continue;
+      pool.push_back(r);
+    }
+    const size_t r = drawOf(t, "", pool);
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolClassmateFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-classmate-mess-scenarios-enc", int(r));
+      title = "A prank on a classmate";
+      body = b;
+      say(l);
+      h.schoolTrouble += 1;
+      h.schoolPopularity = std::min(100, h.schoolPopularity + 2);
+      happy += 1;
+    }
+  }
+
+  // (7) A classmate the hero has noticed.
+  if (title.empty() && schoolRng_.chance(0.12) && ensureTable("a16_school-classmate-flirt-scenarios-enc")) {
+    const Table& t = tbl("a16_school-classmate-flirt-scenarios-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(trim(t.at(r, "Classmate Gender")));
+      if (!g.empty() && g != "both" && g != hg) continue;
+      if (!windowOk(t, r, "Hero Min Age", "Hero Max Age", h.age)) continue;
+      if (!t.flag(r, "Clean") && h.age < 13) continue;
+      pool.push_back(r);
+    }
+    const size_t r = drawOf(t, "", pool);
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolClassmateFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-classmate-flirt-scenarios-enc", int(r));
+      title = "Something in the air";
+      body = b;
+      say(l);
+      h.schoolPopularity = std::min(100, h.schoolPopularity + 1);
+      happy += 2;
+    }
+  }
+
+  // (8) The crowd the hero belongs to.
+  if (title.empty() && !h.schoolCliqueMember && schoolRng_.chance(0.14) &&
+      ensureTable("a16_school-cliques-enc")) {
+    const Table& c = tbl("a16_school-cliques-enc");
+    auto activityFits = [&](size_t r) -> bool {
+      if (flagOf(c, r, "Requires Nerd Activity") && !activityFlag("Nerd Activity")) return false;
+      if (flagOf(c, r, "Requires Sports Activity") && !activityFlag("Sports Activity")) return false;
+      if (flagOf(c, r, "Requires Band Activity") && !activityFlag("Band Activity")) return false;
+      if (flagOf(c, r, "Requires Acting Activity") && !activityFlag("Acting Activity")) return false;
+      if (flagOf(c, r, "Requires Arts Activity") && !(activityFlag("Arts Activity") || activityFlag("Arts"))) return false;
+      if (flagOf(c, r, "Requires Gaming Activity") && !activityFlag("Gaming Activity")) return false;
+      if (flagOf(c, r, "Requires Weeb Activity") && !activityFlag("Weeb Activity")) return false;
+      if (flagOf(c, r, "Requires Skateboarding Club") && lower(h.schoolActivity) != "skateboarding club") return false;
+      return true;
+    };
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < c.size(); ++r) {
+      if (!windowOk(c, r, "Min Popularity", "Max Popularity", h.schoolPopularity)) continue;
+      if (!windowOk(c, r, "Min Grades", "Max Grades", h.schoolGrades)) continue;
+      if (!windowOk(c, r, "Min Smarts", "Max Smarts", h.smarts)) continue;
+      if (!windowOk(c, r, "Min Looks", "Max Looks", h.looks)) continue;
+      // shortcut: the hero has no athleticism attribute of its own, so the
+      // clique's minimum reads health (upgrade when an Athleticism score exists).
+      if (!windowOk(c, r, "Min Athleticism", "", h.health)) continue;
+      if (c.has("Gender")) {
+        const std::string g = lower(trim(c.at(r, "Gender")));
+        if (!g.empty() && g != "both" && g != hg) continue;
+      }
+      if (flagOf(c, r, "Requires Trouble") && h.schoolTrouble < 2) continue;
+      if (flagOf(c, r, "Requires No Activities") && !h.schoolActivity.empty()) continue;
+      if (!activityFits(r)) continue;
+      pool.push_back(r);
+    }
+    const size_t r = drawOf(c, "Popularity Score", pool);
+    if (r != size_t(-1)) {
+      mark("a16_school-cliques-enc", int(r));
+      h.schoolClique = trim(resolve(c.at(r, "Clique")));
+      h.schoolCliqueMember = true;
+      const long long pop = numOf(c, r, "Popularity");
+      h.schoolPopularity = int((h.schoolPopularity + pop) / 2);
+      title = "Lunch with the " + h.schoolClique;
+      body = trim(resolve(c.at(r, "Short Description")));
+      say("I started hanging around with the " + h.schoolClique);
+      add("They are " + lower(trim(resolve(c.at(r, "Description")))) + ".");
+      happy += 2;
+    }
+  }
+
+  // (9) Sucking up to the teacher.
+  if (title.empty() && schoolRng_.chance(0.14) && ensureTable("a16_school-teacher-suckups-enc")) {
+    const Table& t = tbl("a16_school-teacher-suckups-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has(lvlCol) && !t.flag(r, lvlCol)) continue;
+      if (flagOf(t, r, "Flirt Scenario") && h.age < 15) continue;
+      pool.push_back(r);
+    }
+    const size_t r = drawOf(t, "", pool);
+    if (r != size_t(-1)) {
+      std::string b, l;
+      scenePair(t, r, h.schoolTeacherFemale, "Feedback Scenario", "Log Version", b, l);
+      mark("a16_school-teacher-suckups-enc", int(r));
+      title = "Teacher's pet";
+      body = b;
+      say(l);
+      h.schoolSuckups += 1;
+      h.schoolGrades = std::min(100, h.schoolGrades + 2);
+      h.schoolPopularity = std::max(0, h.schoolPopularity - 2);
+      happy += schoolRng_.chance(0.5) ? 1 : 0;
+    }
+  }
+
+  // (10) The activity the hero signed up for.
+  if (title.empty() && schoolRng_.chance(0.16) && actRow != size_t(-1)) {
+    const Table& at = tbl("a16_school-activities-enc");
+    mark("a16_school-activities-enc", int(actRow));
+    const std::string name = trim(at.at(actRow, "Activity"));
+    const std::string ref = h.schoolActivityRef.empty() ? "club" : h.schoolActivityRef;
+    const long long hours = numOf(at, actRow, "Weekly Hours");
+    title = name;
+    if (numOf(at, actRow, "Track Performance") != 0 || flagOf(at, actRow, "Track Performance")) {
+      const double odds = 0.5 + (double(h.smarts) - 50.0) / 200.0 + (double(h.health) - 50.0) / 400.0;
+      if (schoolRng_.unit() < odds) {
+        body = "The " + name + " had a winning season.";
+        say("My " + ref + ", the " + name + ", won more than it lost");
+        h.schoolPopularity = std::min(100, h.schoolPopularity + 2);
+        happy += 2;
+      } else {
+        body = "The " + name + " had a long season.";
+        say("My " + ref + ", the " + name + ", lost more than it won");
+        happy -= 1;
+      }
+    } else if (schoolRng_.chance(0.25) && at.has("Leader Title")) {
+      const std::string leader = trim(at.at(actRow, "Leader Title"));
+      title = "Election at the " + name;
+      body = "The " + name + " needed a " + leader + ".";
+      say("I was elected " + leader + " of the " + name);
+      h.schoolPopularity = std::min(100, h.schoolPopularity + 2);
+      happy += 1;
+    } else {
+      body = "The " + name + " met for " + std::to_string(hours) + " hours a week.";
+      say("I put in " + std::to_string(hours) + " hours a week with the " + name);
+      happy += 1;
+    }
+  }
+
+  // (11) An ordinary year.
+  if (title.empty()) {
+    if (actRow != size_t(-1)) mark("a16_school-activities-enc", int(actRow));
+    title = std::string("A year at ") + lvlName;
+    body = "Another year of class, lunch and the walk home.";
+    say(std::string("I kept my head down at ") + lvlName + " and passed my classes");
+    happy += 1;
+  }
+
+  add("My grades are " + std::to_string(h.schoolGrades) + " and my popularity is " +
+      std::to_string(h.schoolPopularity) + ".");
+
+  out.table = tableRef;
+  out.row_id = cardRow < 0 ? std::string("0") : std::to_string(cardRow);
+  out.title = title;
+  if (!body.empty()) body = spyUpperFirst(body);
+  if (!body.empty()) {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.body = body;
+  out.narrative = line;
+  out.happiness += happy;
+  pronounOtherSet_ = savedOther;
+  pronounOtherFemale_ = savedOtherFemale;
+  schoolLive_ = false;
+  return true;
+}
+
+// ===== end the school (REPORT.en.md 84) ======================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
