@@ -588,7 +588,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       outdoorRng_(seed ^ 0xa0761d6478bd642fULL),
       hustlerRng_(seed ^ 0x9e3779b97f4a7c15ULL),
       astroRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
-      racingRng_(seed ^ 0x94d049bb133111ebULL) {}
+      racingRng_(seed ^ 0x94d049bb133111ebULL),
+      actorRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1270,7 +1271,8 @@ std::string Sim::personName(const std::string& token) {
                                   "parent", "lover", "employee", "boss", "spouse", "sibling",
                                   "neighbour", "neighbor", "stranger", "child", "bully",
                                   "crewmate", "colleague", "space-director", "commander",
-                                  "mechanic", "pit-crew", "racer", "racer-rival"};
+                                  "mechanic", "pit-crew", "racer", "racer-rival",
+                                  "costar", "agent", "actor", "lead", "studio-exec"};
   bool person = false;
   for (const char* p : kPeople) if (key == p) person = true;
   if (key == "company") return "the company";
@@ -1843,6 +1845,19 @@ bool hustlerIsToken(const std::string& token, bool live) {
 // '<victim>' is the rival a sabotage pool is written about - which the dealer
 // and vampire families also claim, so that one only answers while a car card is
 // rendering.
+// The screen (REPORT.en.md 76). <production>, <role> and <real-actor> belong
+// to no other family; <costar> is answered for the dumb-scenario pool too.
+bool actorIsToken(const std::string& token, bool live) {
+  std::string key = trim(token);
+  static const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  if (key == "production" || key == "role" || key == "real-actor") return true;
+  if (key == "costar") return true;
+  if (live && (key == "extra" || key == "agent" || key == "agency")) return true;
+  return false;
+}
+
 bool racIsToken(const std::string& token, bool live) {
   std::string key = token;
   while (!key.empty() && (key[0] == ' ' || key[0] == '	')) key.erase(0, 1);
@@ -2098,6 +2113,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else { out += v; rbLast_ = v; }
     } else if (racIsToken(token, racingLive_)) {
       const std::string v = racingToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (actorIsToken(token, actorLive_)) {
+      const std::string v = actorToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else { out += v; rbLast_ = v; }
     } else if (vampIsToken(token)) {
@@ -3047,6 +3066,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.hustle && hustlerYear(life, out, forcedChoice)) return true;
   if (life.hero.astronaut && astroYear(life, out, forcedChoice)) return true;
   if (life.hero.racing && racingYear(life, out, forcedChoice)) return true;
+  if (life.hero.actor && actorYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -3115,6 +3135,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   astroCache_.clear();    // one crewmate / body / discovery per space card
   bizCache_.clear();      // one product / rival / supplier per company card
   racingCache_.clear();   // one rival / mechanic / passenger per car card
+  actorCache_.clear();    // one costar / production / role per screen card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -15202,6 +15223,590 @@ bool Sim::racingYear(Life& life, AgeUp& out, int forcedChoice) {
   racingLive_ = live0;
   return true;
 }
+
+// ===== The screen (REPORT.en.md 76) ==========================================
+void Sim::makeActor(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.actor = true;
+  h.actorReputation = 20;
+  h.actorAgentReputation = 40;
+  h.actorPerformance = 40;
+  h.actorImpression = 40;
+  h.actorSmugness = 40;
+  h.actorPropensity = 30 + static_cast<int>(actorRng_.below(21));
+  h.actorFilms = 0;
+  h.actorEpisodes = 0;
+  h.actorAwards = 0;
+  h.actorDrama = 0;
+  h.actorEarned = 0;
+  h.actorWorking = false;
+  if (!ensureTable("a16_actor-films-enc")) return;
+  const Table& films = tbl("a16_actor-films-enc");
+  const size_t r = weightedPick(films, "Commonness Score", actorRng_);
+  if (r != size_t(-1)) {
+    h.actorProduction = resolve(trim(films.at(r, "Title")));
+    h.actorGenre = trim(films.at(r, "Genre"));
+    h.actorType = "film";
+    h.actorRole = "an extra";
+  }
+  h.actorLead = personName("lead");
+  if (h.actorLead.empty()) h.actorLead = personName("costar");
+  h.actorCostar = personName("costar");
+  h.actorCostarFemale = actorRng_.chance(0.5);
+}
+
+std::string Sim::actorToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (h == nullptr) return std::string();
+  std::string key = trim(token);
+  bool possessive = false;
+  static const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - psuffix.size());
+  }
+  auto remember = [&](const std::string& slot, const std::string& value) -> std::string {
+    std::map<std::string, std::string>::iterator it = actorCache_.find(slot);
+    if (it != actorCache_.end()) return it->second;
+    actorCache_[slot] = value;
+    return value;
+  };
+  if (key == "production") {
+    std::string p = h->actorProduction;
+    if (p.empty()) {
+      if (!ensureTable("a16_actor-films-enc")) return std::string();
+      const size_t r = weightedPick(tbl("a16_actor-films-enc"), "Commonness Score", actorRng_);
+      if (r != size_t(-1)) p = resolve(trim(tbl("a16_actor-films-enc").at(r, "Title")));
+    }
+    return remember("production", p);
+  }
+  if (key == "role") return remember("role", h->actorRole.empty() ? std::string("an extra") : h->actorRole);
+  if (key == "real-actor") {
+    const std::string who = referenceToken("celebrity");
+    return remember("real-actor", who.empty() ? (h->actorLead.empty() ? std::string("a famous actor") : h->actorLead) : who);
+  }
+  if (key == "costar") {
+    std::string who = h->actorCostar;
+    if (who.empty()) who = personName("costar");
+    if (who.empty()) who = h->actorLead;
+    if (who.empty()) who = "my co-star";
+    who = remember("costar", who);
+    return possessive ? llPossessive(who) : who;
+  }
+  if (key == "extra") return remember("extra", h->actorExtra.empty() ? std::string("an extra") : h->actorExtra);
+  if (key == "agent") return remember("agent", h->actorAgent.empty() ? std::string("my agent") : h->actorAgent);
+  if (key == "agency") return remember("agency", h->actorAgency.empty() ? std::string("the agency") : h->actorAgency);
+  return std::string();
+}
+
+bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = *const_cast<Hero*>(hero_);
+  if (!h.actor || h.age < 14) return false;
+  if (!ensureTable("a16_actor-films-enc") || !ensureTable("a16_actor-film-genres-enc")) return false;
+  if (!actorRng_.chance(0.55)) return false;
+  life_ = &life;
+  hero_ = &h;
+  actorLive_ = true;
+  std::string line, title, body, cardTable;
+  int cardRow = -1;
+  long long take = 0;
+  int happy = 0;
+  bool costarFemale = h.actorCostarFemale;
+  auto say = [&](const std::string& v) {
+    if (!v.empty() && line.empty()) {
+      line = spyUpperFirst(v);
+      const char last = line[line.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') line += '.';
+    }
+  };
+  auto text = [&](const std::string& v) { return trim(resolve(v)); };
+  // The body cell and the log cell of one row often roll the same number; draw it
+  // once so the card and the log agree.
+  auto bindNums = [&](std::string a, std::string c) {
+    std::vector<std::string> tags;
+    for (size_t p = 0; (p = a.find("<num", p)) != std::string::npos; ) {
+      const size_t e = a.find('>', p);
+      if (e == std::string::npos) break;
+      const std::string tag = a.substr(p, e - p + 1);
+      if (std::find(tags.begin(), tags.end(), tag) == tags.end()) tags.push_back(tag);
+      p = e + 1;
+    }
+    for (size_t i = 0; i < tags.size(); ++i) {
+      const std::string val = trim(resolve(tags[i]));
+      if (val.empty()) continue;
+      for (size_t p = a.find(tags[i]); p != std::string::npos; p = a.find(tags[i], p + val.size()))
+        a.replace(p, tags[i].size(), val);
+      for (size_t p = c.find(tags[i]); p != std::string::npos; p = c.find(tags[i], p + val.size()))
+        c.replace(p, tags[i].size(), val);
+    }
+    return std::make_pair(a, c);
+  };
+  auto add = [&](const std::string& v) {
+    if (!v.empty()) out.extra.push_back(spyUpperFirst(v));
+  };
+  auto cell = [&](const Table& t, size_t r, const std::string& col) {
+    return trim(resolve(t.at(r, col)));
+  };
+  auto numOf = [](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col) || trim(t.at(r, col)).empty()) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto hasCell = [](const Table& t, size_t r, const std::string& col) -> bool {
+    return t.has(col) && !trim(t.at(r, col)).empty();
+  };
+  auto mark = [&](const std::string& tab, int r) {
+    if (r >= 0) { cardTable = tab; cardRow = r; }
+  };
+  auto scene = [&](const Table& t, size_t r, bool otherFemale, const std::string& col) {
+    const bool keepSet = pronounOtherSet_;
+    const bool keepFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = otherFemale;
+    const std::string v = cell(t, r, col);
+    pronounOtherSet_ = keepSet;
+    pronounOtherFemale_ = keepFemale;
+    return v;
+  };
+  // The family's rows are written about the costar, so the pronoun pair points
+  // at them while the row renders; the wanted column is resolved LAST.
+  auto withBrackets = [&](const Table& t, size_t r, const std::string& wantCol) {
+    const bool keepSet = pronounOtherSet_;
+    const bool keepFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = costarFemale;
+    for (const std::string& col : t.columns()) {
+      if (col == wantCol) continue;
+      resolve(t.at(r, col));
+    }
+    const std::string v = resolve(t.at(r, wantCol));
+    pronounOtherSet_ = keepSet;
+    pronounOtherFemale_ = keepFemale;
+    return v;
+  };
+  auto windowed = [&](const std::string& tab, const std::string& weight,
+                      const std::string& lo1, const std::string& hi1, int v1,
+                      const std::string& lo2, const std::string& hi2, int v2,
+                      const std::string& flagCol, const std::string& filterCol,
+                      const std::string& filterVal) -> size_t {
+    if (!ensureTable(tab)) return size_t(-1);
+    const Table& t = tbl(tab.c_str());
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!flagCol.empty() && !t.flag(r, flagCol)) continue;
+      if (!filterCol.empty() && !filterVal.empty() &&
+          lower(t.at(r, filterCol)) != lower(filterVal)) continue;
+      if (!lo1.empty()) {
+        if (hasCell(t, r, lo1) && static_cast<long long>(v1) < numOf(t, r, lo1)) continue;
+        if (hasCell(t, r, hi1) && static_cast<long long>(v1) > numOf(t, r, hi1)) continue;
+      }
+      if (!lo2.empty()) {
+        if (hasCell(t, r, lo2) && static_cast<long long>(v2) < numOf(t, r, lo2)) continue;
+        if (hasCell(t, r, hi2) && static_cast<long long>(v2) > numOf(t, r, hi2)) continue;
+      }
+      pool.push_back(r);
+    }
+    if (pool.empty()) return size_t(-1);
+    return weightedPickOf(t, weight, pool, actorRng_);
+  };
+  auto pronOther = [&](bool female) {
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = female;
+  };
+  auto pronRestore = [&]() {
+    pronounOtherSet_ = false;
+    pronounOtherFemale_ = false;
+  };
+
+  const std::string heroGender = heroToken("gender", false);
+  const int age = h.age;
+
+  if (!h.actorAgent.empty() && actorRng_.chance(0.04)) {
+    // The agent walks out.
+    if (ensureTable("a16_actor-agent-fire-color-enc")) {
+      const Table& t = tbl("a16_actor-agent-fire-color-enc");
+      const size_t r = windowed("a16_actor-agent-fire-color-enc", "Commonness Score",
+                                "Agent Min Reputation", "Agent Max Reputation", h.actorAgentReputation,
+                                "Hero Min Reputation", "Hero Max Reputation", h.actorReputation,
+                                "", "", "");
+      if (r != size_t(-1)) {
+        title = "A parting of ways";
+        body = "My agent, " + h.actorAgent + ", has had enough.";
+        say(withBrackets(t, r, "Feedback Color"));
+        mark("a16_actor-agent-fire-color-enc", static_cast<int>(r));
+        add(h.actorAgent + " is no longer my agent.");
+        h.actorAgent.clear();
+        h.actorAgentReputation = 40;
+        h.actorReputation = std::max(0, h.actorReputation - 2);
+      }
+    }
+  } else if (!h.actorAgent.empty() && actorRng_.chance(0.05)) {
+    // The agent drops the hero.
+    if (ensureTable("a16_actor-agent-drops-hero-color-enc")) {
+      const Table& t = tbl("a16_actor-agent-drops-hero-color-enc");
+      const size_t r = windowed("a16_actor-agent-drops-hero-color-enc", "Commonness Score",
+                                "Agent Min Reputation", "Agent Max Reputation", h.actorAgentReputation,
+                                "Hero Min Reputation", "Hero Max Reputation", h.actorReputation,
+                                "", "", "");
+      if (r != size_t(-1)) {
+        title = "Dropped";
+        body = "My agent, " + h.actorAgent + ", sat me down.";
+        say(withBrackets(t, r, "Feedback Color"));
+        mark("a16_actor-agent-drops-hero-color-enc", static_cast<int>(r));
+        add(h.actorAgent + " dropped me as a client.");
+        h.actorAgent.clear();
+        h.actorAgentReputation = 40;
+        h.actorReputation = std::max(0, h.actorReputation - 3);
+        happy -= 2;
+      }
+    }
+  } else if (h.actorAgent.empty() && actorRng_.chance(0.06)) {
+    // A new agent.
+    if (ensureTable("a16_actor-agent-hire-color-enc")) {
+      const Table& t = tbl("a16_actor-agent-hire-color-enc");
+      const size_t r = windowed("a16_actor-agent-hire-color-enc", "Commonness Score",
+                                "Agent Min Reputation", "Agent Max Reputation",
+                                40 + static_cast<int>(actorRng_.below(31)),
+                                "Hero Min Reputation", "Hero Max Reputation", h.actorReputation,
+                                "", "", "");
+      if (r != size_t(-1)) {
+        const std::string who = personName("agent");
+        h.actorAgent = who.empty() ? "Mx. Barnes" : who;
+        h.actorAgentReputation = 30 + static_cast<int>(actorRng_.below(51));
+        pronOther(actorRng_.chance(0.5));
+        title = "A new agent";
+        body = h.actorAgent + " wants to represent me.";
+        say(withBrackets(t, r, "Feedback Color"));
+        pronRestore();
+        mark("a16_actor-agent-hire-color-enc", static_cast<int>(r));
+        add(h.actorAgent + " is representing me now.");
+        h.actorReputation += 1;
+      }
+    }
+  } else if (h.actorWorking && actorRng_.chance(0.06) && ensureTable("a16_actor-studio-fire-color-enc")) {
+    // Fired off the picture.
+    const Table& t = tbl("a16_actor-studio-fire-color-enc");
+    const size_t r = windowed("a16_actor-studio-fire-color-enc", "", "", "", 0, "", "", 0,
+                              h.actorType == "show" ? "" : "", "Actor Type", h.actorType);
+    const size_t any = r != size_t(-1) ? r : weightedPick(t, "", actorRng_);
+    if (any != size_t(-1)) {
+      title = "Off the picture";
+      body = "The studio called about my part in " + h.actorProduction + ".";
+      say(cell(t, any, "Feedback Color"));
+      mark("a16_actor-studio-fire-color-enc", static_cast<int>(any));
+      add("I was replaced in " + h.actorProduction + ".");
+      h.actorWorking = false;
+      h.actorPerformance = std::max(0, h.actorPerformance - 4);
+      happy -= 3;
+    }
+  } else if (h.actorWorking && actorRng_.chance(0.08) && ensureTable("a16_actor-speech-color-enc")) {
+    // An acceptance speech.
+    const Table& t = tbl("a16_actor-speech-color-enc");
+    const size_t r = windowed("a16_actor-speech-color-enc", "", "", "", 0, "", "", 0, "", "", "");
+    const size_t row = r != size_t(-1) ? r : weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      const long long lo = std::max<long long>(1, numOf(t, row, "Min Length"));
+      const long long hi = std::max<long long>(lo + 1, numOf(t, row, "Max Length"));
+      const long long len = lo + static_cast<long long>(actorRng_.below(static_cast<unsigned>(std::max<long long>(1, hi - lo + 1))));
+      title = "The speech";
+      body = "I was asked to say a few words after winning.";
+      say(resolve(trim(t.at(row, "Feedback Color"))));
+      mark("a16_actor-speech-color-enc", static_cast<int>(row));
+      add("I gave " + std::string(articleFor(std::to_string(len))) + std::to_string(len) + "-second speech.");
+      h.actorAwards += 1;
+      h.actorReputation += 2;
+      h.actorImpression += 2;
+      happy += 2;
+    }
+  } else if (h.actorType == "film" && !h.actorProduction.empty() &&
+             actorRng_.chance(0.10) && ensureTable("a16_actor-film-critic-color-enc")) {
+    // A critic reviews the picture.
+    const Table& t = tbl("a16_actor-film-critic-color-enc");
+    const size_t r = windowed("a16_actor-film-critic-color-enc", "", "Min Reception", "Max Reception",
+                              h.actorImpression, "", "", 0, "", "Genre", h.actorGenre);
+    const size_t row = r != size_t(-1) ? r : weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      title = "The reviews";
+      body = "A critic reviewed " + h.actorProduction + ".";
+      say(cell(t, row, "Snippet"));
+      mark("a16_actor-film-critic-color-enc", static_cast<int>(row));
+      const int reception = static_cast<int>(numOf(t, row, "Min Reception"));
+      if (reception >= 70) { h.actorReputation += 2; happy += 2; add("The reviews helped."); }
+      else if (reception < 40) { h.actorReputation = std::max(0, h.actorReputation - 2); happy -= 2; add("The reviews stung."); }
+    }
+  } else if (actorRng_.chance(0.12) && ensureTable("a16_actor-publicity-stunt-scenarios-enc")) {
+    // A publicity stunt.
+    const Table& t = tbl("a16_actor-publicity-stunt-scenarios-enc");
+    const size_t r = windowed("a16_actor-publicity-stunt-scenarios-enc", "", "Hero Min Age", "Hero Max Age",
+                              age, "", "", 0, "", "Hero Gender", heroGender);
+    const size_t row = r != size_t(-1) ? r : weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      title = "A publicity stunt";
+      const std::pair<std::string, std::string> bound = bindNums(t.at(row, "Scenario"), t.at(row, "Log Version"));
+      body = text(bound.first);
+      say(text(bound.second));
+      mark("a16_actor-publicity-stunt-scenarios-enc", static_cast<int>(row));
+      const bool good = numOf(t, row, "Positive Score") >= numOf(t, row, "Negative Score");
+      if (good) { h.actorReputation += 1; happy += 1; }
+      else { h.actorReputation = std::max(0, h.actorReputation - 3); happy -= 2; }
+    }
+  } else if (actorRng_.chance(0.12) && ensureTable("a16_actor-dynamic-challenges-enc")) {
+    // A challenge in the scene.
+    const Table& t = tbl("a16_actor-dynamic-challenges-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.flag(r, "Adult Only") && age < 18) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    const size_t row = weightedPickOf(t, "", pool, actorRng_);
+    if (row != size_t(-1)) {
+      const bool agree = forcedChoice == 0 ? true : (forcedChoice == 1 ? false : actorRng_.chance(0.5));
+      title = "A challenge in the scene";
+      body = "The script asks me to " + cell(t, row, "Body Snippet") + ".";
+      say(agree ? ("I " + cell(t, row, "Feedback Present Snippet")) : ("I refused to " + cell(t, row, "Body Snippet")));
+      mark("a16_actor-dynamic-challenges-enc", static_cast<int>(row));
+      const int perf = agree ? static_cast<int>(numOf(t, row, "Agree Performance Impact"))
+                             : static_cast<int>(numOf(t, row, "Disagree Performance Impact"));
+      h.actorPerformance = std::max(0, std::min(100, h.actorPerformance + perf));
+      if (agree) {
+        h.actorImpression += 1;
+        happy += static_cast<int>(numOf(t, row, "Happiness Impact"));
+        const int disease = static_cast<int>(numOf(t, row, "Health Impact"));
+        if (disease < 0) h.health = std::max(0, std::min(100, h.health + disease));
+      } else {
+        h.actorReputation = std::max(0, h.actorReputation - 1);
+      }
+    }
+  } else if (actorRng_.chance(0.12) && ensureTable("a16_actor-costar-crazy-scenarios-enc")) {
+    // The costar's behaviour.
+    static const char* const kCostarPools[] = {"a16_actor-costar-crazy-scenarios-enc",
+                                               "a16_actor-costar-criticism-scenarios-enc",
+                                               "a16_actor-costar-diss-scenarios-enc",
+                                               "a16_actor-costar-nervous-scenarios-enc"};
+    const std::string pool = kCostarPools[actorRng_.below(4)];
+    if (!ensureTable(pool)) { actorLive_ = false; return false; }
+    const Table& t = tbl(pool.c_str());
+    const size_t row = weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      std::string who = h.actorCostar.empty() ? personName("costar") : h.actorCostar;
+      if (who.empty()) who = "my co-star";
+      h.actorCostar = who;
+      costarFemale = actorRng_.chance(0.5);
+      h.actorCostarFemale = costarFemale;
+      if (t.has("Scenario")) {
+        title = "The costar";
+        body = "On the set of " + h.actorProduction + ", " + scene(t, row, costarFemale, "Scenario");
+        say(scene(t, row, costarFemale, "Log Version"));
+      } else {
+        title = "The costar";
+        body = who + " was a handful on the set of " + h.actorProduction + ".";
+        if (t.has("Log Version Snippet"))
+          say(withBrackets(t, row, "Log Version Snippet"));
+        else
+          say(scene(t, row, costarFemale, "Feedback Snippet"));
+      }
+      mark(pool, static_cast<int>(row));
+      h.actorDrama += 1;
+      if (pool == std::string("a16_actor-costar-criticism-scenarios-enc")) {
+        h.actorPerformance = std::max(0, h.actorPerformance - 2);
+        happy -= 1;
+      } else if (pool == std::string("a16_actor-costar-nervous-scenarios-enc")) {
+        h.actorImpression = std::max(0, h.actorImpression - 1);
+      } else {
+        h.actorReputation += 1;
+      }
+    }
+  } else if (actorRng_.chance(0.10) && ensureTable("a16_actor-develop-character-scenarios-enc")) {
+    // Developing the character.
+    const Table& t = tbl("a16_actor-develop-character-scenarios-enc");
+    const size_t row = weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      title = "Developing the character";
+      body = cell(t, row, "Scenario");
+      say(cell(t, row, "Log Version"));
+      mark("a16_actor-develop-character-scenarios-enc", static_cast<int>(row));
+      h.actorPerformance = std::min(100, h.actorPerformance + 3);
+      h.actorImpression += 1;
+    }
+  } else if (actorRng_.chance(0.08) && ensureTable("a16_actor-practice-scenarios-enc")) {
+    // Practice.
+    const Table& t = tbl("a16_actor-practice-scenarios-enc");
+    const size_t row = weightedPick(t, "", actorRng_);
+    if (row != size_t(-1)) {
+      title = "Practice";
+      body = cell(t, row, "Scenario");
+      say(cell(t, row, "Log Version"));
+      mark("a16_actor-practice-scenarios-enc", static_cast<int>(row));
+      h.actorPerformance = std::min(100, h.actorPerformance + 2);
+    }
+  } else if (actorRng_.chance(0.10) && ensureTable("a16_actor-extra-roles-enc")) {
+    // A bit part.
+    const Table& t = tbl("a16_actor-extra-roles-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(t.at(r, "Gender"));
+      if (!g.empty() && g != lower(heroGender)) continue;
+      if (hasCell(t, r, "Min Age") && age < numOf(t, r, "Min Age")) continue;
+      if (hasCell(t, r, "Max Age") && age > numOf(t, r, "Max Age")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    const size_t row = weightedPickOf(t, "", pool, actorRng_);
+    if (row != size_t(-1)) {
+      h.actorExtra = resolve(trim(t.at(row, "Role")));
+      const long long fee = 500 + static_cast<long long>(actorRng_.below(2500));
+      take += fee;
+      title = "A bit part";
+      body = "Casting called: they need a " + h.actorExtra + ".";
+      say("I played a " + h.actorExtra + " for " + money(fee) + ".");
+      mark("a16_actor-extra-roles-enc", static_cast<int>(row));
+      h.actorEpisodes += 1;
+      h.actorPropensity += 1;
+    }
+  } else if (actorRng_.chance(0.14) && ensureTable("a16_actor-rejection-color-enc")) {
+    // A rejection.
+    const Table& t = tbl("a16_actor-rejection-color-enc");
+    const size_t r = windowed("a16_actor-rejection-color-enc", "Commonness Score",
+                              "Min Propensity", "Max Propensity", h.actorPropensity,
+                              "", "", 0, "", "", "");
+    const size_t row = r != size_t(-1) ? r : weightedPick(t, "Commonness Score", actorRng_);
+    if (row != size_t(-1)) {
+      title = "A rejection";
+      body = "I read for a part and waited.";
+      pronOther(actorRng_.chance(0.5));
+      say(resolve(trim(t.at(row, "Feedback Color"))));
+      pronRestore();
+      mark("a16_actor-rejection-color-enc", static_cast<int>(row));
+      h.actorPropensity = std::max(0, h.actorPropensity - 1);
+      happy -= 1;
+    }
+  } else {
+    // A part, in a film or a show.
+    const bool asShow = actorRng_.chance(0.35);
+    const std::string gtab = asShow ? "a16_actor-show-genres-enc" : "a16_actor-film-genres-enc";
+    const std::string ptab = asShow ? "a16_actor-shows-enc" : "a16_actor-films-enc";
+    if (ensureTable(gtab) && ensureTable(ptab)) {
+      const Table& gt = tbl(gtab.c_str());
+      std::vector<size_t> gpool;
+      for (size_t r = 0; r < gt.size(); ++r) gpool.push_back(r);
+      const size_t grow = weightedPickOf(gt, "Commonness Score", gpool, actorRng_);
+      const std::string genre = grow == size_t(-1) ? std::string() : trim(gt.at(grow, "Genre"));
+      const Table& pt = tbl(ptab.c_str());
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < pt.size(); ++r) {
+        if (!genre.empty() && lower(pt.at(r, "Genre")) != lower(genre)) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty()) for (size_t r = 0; r < pt.size(); ++r) pool.push_back(r);
+      const size_t row = weightedPickOf(pt, "Commonness Score", pool, actorRng_);
+      if (row != size_t(-1)) {
+        mark(ptab, static_cast<int>(row));
+        const std::string production = resolve(trim(pt.at(row, "Title")));
+        // Slot: Lead when the reputation carries it, otherwise the first
+        // supporting or regular slot the hero's gender and age fit.
+        static const char* const kFilmSlots[] = {"Lead Name", "Supporting 1 Name", "Supporting 2 Name",
+                                                 "Supporting 3 Name", "Bit Name"};
+        static const char* const kShowSlots[] = {"Lead Name", "Regular 1 Name", "Regular 2 Name",
+                                                 "Regular 3 Name", "Recurring Name"};
+        static const char* const kFilmGenders[] = {"Lead Gender", "Supporting 1 Gender", "Supporting 2 Gender",
+                                                   "Supporting 3 Gender", "Bit Gender"};
+        static const char* const kShowGenders[] = {"Lead Gender", "Regular 1 Gender", "Regular 2 Gender",
+                                                   "Regular 3 Gender", "Recurring Gender"};
+        static const char* const kFilmAges[][2] = {{"Lead Min Age", "Lead Max Age"},
+                                                   {"Supporting 1 Min Age", "Supporting 1 Max Age"},
+                                                   {"Supporting 2 Min Age", "Supporting 2 Max Age"},
+                                                   {"Supporting 3 Min Age", "Supporting 3 Max Age"},
+                                                   {"Bit Min Age", "Bit Max Age"}};
+        static const char* const kShowAges[][2] = {{"Lead Min Age", "Lead Max Age"},
+                                                   {"Regular 1 Min Age", "Regular 1 Max Age"},
+                                                   {"Regular 2 Min Age", "Regular 2 Max Age"},
+                                                   {"Regular 3 Min Age", "Regular 3 Max Age"},
+                                                   {"Recurring Min Age", "Recurring Max Age"}};
+        const int first = (!asShow && h.actorReputation >= 60) ? 0 : 1;
+        int slot = -1;
+        for (int s = first; s < 5; ++s) {
+          const std::string col = asShow ? kShowSlots[s] : kFilmSlots[s];
+          if (!pt.has(col) || trim(pt.at(row, col)).empty()) continue;
+          const std::string gcol = asShow ? kShowGenders[s] : kFilmGenders[s];
+          const std::string g = pt.has(gcol) ? lower(pt.at(row, gcol)) : std::string();
+          if (!g.empty() && g != lower(heroGender)) continue;
+          const std::string lcol = asShow ? kShowAges[s][0] : kFilmAges[s][0];
+          const std::string hcol = asShow ? kShowAges[s][1] : kFilmAges[s][1];
+          if (hasCell(pt, row, lcol) && age < numOf(pt, row, lcol)) continue;
+          if (hasCell(pt, row, hcol) && age > numOf(pt, row, hcol)) continue;
+          slot = s;
+          break;
+        }
+        if (slot < 0) slot = 4;
+        const std::string col = asShow ? kShowSlots[slot] : kFilmSlots[slot];
+        const std::string who = pt.has(col) ? resolve(trim(pt.at(row, col))) : std::string();
+        h.actorProduction = production;
+        h.actorGenre = trim(pt.at(row, "Genre"));
+        h.actorType = asShow ? "show" : "film";
+        h.actorRole = who.empty() ? (asShow ? std::string("a recurring part") : std::string("a supporting part")) : who;
+        const long long base = static_cast<long long>(h.actorReputation) * 900 +
+                               3000 + static_cast<long long>(actorRng_.below(9000));
+        const long long fee = asShow ? base * (1 + static_cast<long long>(actorRng_.below(6))) : base;
+        const double odds = 0.45 + (h.actorPropensity - 40) / 220.0 +
+                            (h.actorImpression - 40) / 220.0 +
+                            (h.actorReputation - 40) / 300.0 +
+                            (h.actorAgent.empty() ? -0.05 : h.actorAgentReputation / 600.0);
+        const bool landed = forcedChoice == 1 ? false : (forcedChoice == 0 ? true : actorRng_.unit() < odds);
+        if (landed) {
+          h.actorWorking = true;
+          h.actorFee = fee;
+          take += fee;
+          h.actorPerformance = std::min(100, h.actorPerformance + 2);
+          h.actorImpression += 1;
+          h.actorPropensity = std::min(100, h.actorPropensity + 2);
+          if (h.actorReputation >= 70) h.actorReputation += 3;
+          else h.actorReputation += 2;
+          const std::string leadCol = "Lead Name";
+          const std::string lead = pt.has(leadCol) ? resolve(trim(pt.at(row, leadCol))) : std::string();
+          if (!lead.empty()) h.actorLead = lead;
+          h.actorCostar = personName("costar");
+          h.actorCostarFemale = actorRng_.chance(0.5);
+          if (asShow) h.actorEpisodes += 1; else h.actorFilms += 1;
+          title = asShow ? "A part in a show" : "A part in a film";
+          body = (asShow ? std::string("The show is ") : std::string("The picture is ")) + production +
+                 ". I read for " + h.actorRole + ".";
+          say("I landed the role of " + h.actorRole + " in " + production);
+          if (asShow && actorRng_.chance(0.5)) {
+            add("The show runs " + std::to_string(4 + actorRng_.below(8)) + " episodes.");
+          }
+          add("They are paying me " + money(fee) + ".");
+        } else {
+          h.actorPropensity = std::max(0, h.actorPropensity - 2);
+          title = "An audition";
+          body = "The picture is " + production + ". I read for " + h.actorRole + ".";
+          say("I did not get the part in " + production);
+          happy -= 1;
+        }
+      }
+    }
+  }
+
+  if (title.empty()) {
+    actorLive_ = false;
+    return false;
+  }
+  if (!body.empty() && body[body.size() - 1] != '.') body += ".";
+  out.table = cardTable.empty() ? "a16_actor-films-enc" : cardTable;
+  out.row_id = cardRow >= 0 ? std::to_string(cardRow) : "0";
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  if (take != 0) {
+    h.money += take;
+    h.actorEarned += take;
+  }
+  if (happy != 0) out.happiness += happy;
+  actorLive_ = false;
+  return true;
+}
+// ===== end the screen =======================================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 

@@ -628,6 +628,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.sports) sim.makeAthlete(life);
   if (spec.business) sim.makeBusiness(life);
   if (spec.racing) sim.makeRacing(life);
+  if (spec.actor) sim.makeActor(life);
   if (spec.music) sim.makeMusician(life);
   if (spec.politics) sim.makePolitician(life);
   unsigned miscMask = 0;

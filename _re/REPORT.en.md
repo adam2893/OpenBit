@@ -7008,3 +7008,230 @@ Eight cards, hand-sampled:
       them threw up on my seat.
 
 Two data quirks worth recording: one `racing-fan-interaction` row's log column is a fragment with no subject (`said that me in my <car> should be on the cover of <rb> magazine`), which the port now gives a subject to; and the `race-car-condition-string` rows inside the practice pool are written from the other car's point of view.
+
+## 76. The screen: an agent, the parts a year brings, and twenty tables
+
+Section 53 gave the hero a business; section 74 made it a company; this one
+gives him a career in front of a camera. The family is 
+a16_actor-*, twenty tables and 1583 rows, and it is the largest pool the
+port had left unwired.
+
+### 76.1 The family
+
+| table | rows | columns |
+| --- | ---: | --- |
+| `a16_actor-agent-drops-hero-color-enc` | 64 | Feedback Color, Requires Real Actor, Hero Inactive, Hero Emigrated, Commonness Score, Agent Min Reputation, Agent Max Reputation, Hero Min Reputation, Hero Max Reputation |
+| `a16_actor-agent-fire-color-enc` | 51 | Feedback Color, Commonness Score, Agent Min Reputation, Agent Max Reputation, Hero Min Reputation, Hero Max Reputation |
+| `a16_actor-agent-hire-color-enc` | 54 | Feedback Color, Requires Real Actor, Commonness Score, Agent Min Reputation, Agent Max Reputation, Hero Min Reputation, Hero Max Reputation |
+| `a16_actor-costar-crazy-scenarios-enc` | 30 | Feedback Snippet, Log Version Snippet |
+| `a16_actor-costar-criticism-scenarios-enc` | 33 | Feedback Snippet, Log Version Snippet |
+| `a16_actor-costar-diss-scenarios-enc` | 33 | Scenario, Log Version |
+| `a16_actor-costar-nervous-scenarios-enc` | 12 | Feedback Snippet |
+| `a16_actor-develop-character-scenarios-enc` | 25 | Scenario, Log Version |
+| `a16_actor-dynamic-challenges-enc` | 114 | Body Snippet, Feedback Past Snippet, Feedback Present Snippet, Lover Argue Score, Agree Performance Impact, Disagree Performance Impact, Happiness Impact, Health Impact, Disease, Adult Only |
+| `a16_actor-extra-roles-enc` | 127 | Role, Gender, Min Age, Max Age |
+| `a16_actor-film-critic-color-enc` | 186 | Genre, Min Reception, Max Reception, Snippet |
+| `a16_actor-film-genres-enc` | 14 | Genre, Can Use Standalone, Budget Score, Commonness Score, Country Code |
+| `a16_actor-films-enc` | 342 | Title, Genre, Rating, Difficulty Score, Commonness Score, Lead Name, Lead Gender, Lead Min Age, Lead Max Age, Lead Uses Definite Article, Supporting 1 Name, Supporting 1 Gender, Supporting 1 Min Age, Supporting 1 Max Age, Supporting 1 Uses Definite Article, Supporting 2 Name, Supporting 2 Gender, Supporting 2 Min Age, Supporting 2 Max Age, Supporting 2 Uses Definite Article, Supporting 3 Name, Supporting 3 Gender, Supporting 3 Min Age, Supporting 3 Max Age, Supporting 3 Uses Definite Article, Bit Name, Bit Gender, Bit Min Age, Bit Max Age, Bit Uses Definite Article, Bit Uses Indefinite Article |
+| `a16_actor-practice-scenarios-enc` | 20 | Scenario, Log Version |
+| `a16_actor-publicity-stunt-scenarios-enc` | 63 | Scenario, Log Version, Hero Gender, Hero Min Age, Hero Max Age, Positive Score, Negative Score |
+| `a16_actor-rejection-color-enc` | 59 | Feedback Color, Min Propensity, Max Propensity, Commonness Score, Real Actor Required |
+| `a16_actor-show-genres-enc` | 9 | Genre, Can Use Standalone, Budget Score, Commonness Score, Shows Per Season, Country Code |
+| `a16_actor-shows-enc` | 241 | Title, Genre, Can Be Ensemble, Mainstream Score, Lead Name, Lead Gender, Lead Min Age, Lead Max Age, Regular 1 Name, Regular 1 Gender, Regular 1 Min Age, Regular 1 Max Age, Regular 2 Name, Regular 2 Gender, Regular 2 Min Age, Regular 2 Max Age, Regular 3 Name, Regular 3 Gender, Regular 3 Min Age, Regular 3 Max Age, Recurring Name, Recurring Gender, Recurring Min Age, Recurring Max Age |
+| `a16_actor-speech-color-enc` | 50 | Feedback Color, Min Impression, Max Impression, Min Smugness, Max Smugness, Min Length, Max Length |
+| `a16_actor-studio-fire-color-enc` | 56 | Feedback Color, Actor Type, Performance, Disruption, Pregnancy, Plastic Surgery, Disease, Real Actor Required |
+
+Two of the twenty are support tables rather than cards: `film-genres` (14) and
+`show-genres` (9) name the market a production belongs to, and the part is drawn from
+the genre. `films` (342 rows) and `shows` (241) are the productions themselves: a title, a
+genre, a rating or a mainstream score, a difficulty, a commonness weight, and then
+up to seven cast slots, each with its own name, gender and age window:
+Lead, Supporting 1-3 and `Bit` for a film, Lead, Regular 1-3 and Recurring for a show.
+A slot with an empty name is not in the picture; a slot whose gender or age window
+does not fit the hero is not offered to him.
+
+### 76.2 The agent
+
+An agent is a name, a reputation and a phone. The hero starts with one at
+agent reputation 40; the three agent pools are windowed on BOTH reputations, the
+agent's and the hero's, so a nobody with a famous agent is as unlikely as a star
+with a nobody:
+
+- `a16_actor-agent-hire-color-enc` - hired when the hero has no agent, weighted on
+  Commonness Score, the agent drawn as a person and given reputation 30 + below(51).
+- `a16_actor-agent-fire-color-enc` - the agent walks out; the hero loses the agent and 3
+  reputation.
+- `a16_actor-agent-drops-hero-color-enc` - the agent drops the hero, who loses 3 reputation
+  and 2 happiness.
+
+A missing agent costs the hero 0.05 on every audition odds roll and buys him the
+0.06 chance of finding a new one.
+
+### 76.3 The year
+
+The family fires on a 0.55 chance from age 14, and its branches are ordered rarest
+first so the cheap ones cannot starve the expensive ones:
+
+| chance | branch | what it does |
+| ---: | --- | --- |
+| 0.04 | The agent quits | agent-fire-color, windowed on both reputations |
+| 0.05 | Dropped | agent-drops-hero-color, same windows |
+| 0.06 | A new agent | only when the hero has none |
+| 0.06 | Off the picture | studio-fire-color filtered on the hero's kind of work |
+| 0.08 | The speech | speech-color, a length rolled in Min/Max Length, awards +1, reputation +2 |
+| 0.10 | The reviews | film-critic-color windowed on Min/Max Reception against the hero's impression |
+| 0.12 | A publicity stunt | publicity-stunt-scenarios, filtered on Hero Gender and the age window |
+| 0.12 | A challenge in the scene | dynamic-challenges; Adult Only is skipped under 18 |
+| 0.12 | The costar | one of the four costar pools |
+| 0.10 | Developing the character | develop-character-scenarios, performance +3 |
+| 0.08 | Practice | practice-scenarios |
+| 0.10 | A bit part | extra-roles filtered on Gender and the age window, a fee of 500 + below(2500) |
+| 0.14 | A rejection | rejection-color windowed on Min/Max Propensity |
+| else | The audition | a film (65%) or a show (35%) and a slot in its cast |
+
+The costar pools are four different kinds of trouble on the same set:
+`costar-crazy-scenarios` (30), `costar-criticism-scenarios` (33), `costar-diss-scenarios` (33) and
+`costar-nervous-scenarios` (12). The scenario pools carry a `Scenario` and a `Log Version`;
+the criticism and crazy pools carry a `Feedback Snippet` and a `Log Version Snippet` pair
+where the log line points back at the feedback with `<rb>`, which is why every
+one of them is resolved with `withBrackets` - every other bracketed column of the
+row first, in the row's own column order, and the wanted column last. Criticism
+costs 2 performance, nerves cost 1 impression, and the other two give back 1
+reputation: a difficult set is not always bad for a career.
+
+### 76.4 The part
+
+The audition is the fallback branch, and it is where the family's real economy
+lives. A genre is drawn from the film or show genre pool weighted on commonness;
+then a production of that genre; then a slot. The slot order is the caste system:
+with reputation 60 or more the hero is offered a Lead first, and otherwise the
+supporting or regular slots and then the smallest parts. Each slot is skipped when
+its name is empty or its gender or age window does not fit.
+
+The odds of landing it are:
+
+~~~
+0.45 + (propensity - 40)/220 + (impression - 40)/220
+     + (reputation - 40)/300 + (agent ? agentReputation/600 : -0.05)
+~~~
+
+A win pays `reputation * 900 + 3000 + below(9000)`, multiplied by 1 to 6 for a show,
+and raises performance, impression, propensity and reputation. A loss costs 2
+propensity: the rejections are the price of the trade.
+
+### 76.5 The tokens
+
+The family uses four tokens that exist nowhere else in the corpus: `<production>`,
+`<role>`, `<costar>` and `<real-actor>`. None of them needed a new pool:
+
+- `<production>` is the current film or show title, and a whole row of the films table
+  when the hero has none yet.
+- `<role>` is the slot he read for.
+- `<costar>` is the costar, drawn as a person when the row does not name one, and
+  `<costar-possessive>` goes through the same possessive helper as every other person
+  token.
+- `<real-actor>` is a real celebrity name and is answered by the celebrity reference
+  pool; the port falls back to the hero's lead and then to `a famous actor`.
+
+The family also leans on the shared `<he/she>`, `<him/her>` and `<his/her>` pairs (449 uses)
+and on `<rb>` / `<rb2>` (142 uses), all of which the renderer already answers.
+
+### 76.6 The bugs
+
+Six, in the order they cost a build:
+
+1. `void Sim::makeActor` dereferenced `hero_` before assigning it - every run that
+   asked for the family segfaulted 60 times out of 60. Every other `makeX` in the port
+   starts with `hero_ = &h; life_ = &life;` and this one did not.
+2. The costar branch ensured the FIRST costar pool and then drew from any of the
+   four, so a hero who chose a different one died with 
+   `std::out_of_range: table not loaded: a16_actor-costar-diss-scenarios-enc`. The
+   chosen pool is now ensured itself, and the branch returns cleanly when the
+   loader cannot open it.
+3. `life.age` does not exist - the age lives on the hero - and 
+   `Table::num` takes two arguments, not three, so every `num(row, col, default)` call
+   was a compile error. Two local lambdas, `numOf` and `hasCell`, now carry the
+   missing-column and blank-cell cases, and one of them also replaced the two
+   nested reputation windows.
+4. `tbl` takes a `const char*`, so the four places that passed a 
+   `std::string` table name needed `.c_str()`.
+5. A publicity stunt drew its number twice: the scenario cell and the log cell
+   both hold `<num511-650>`, and each drew its own, so the card said 511 and the
+   journal said 553. A `bindNums` helper now finds every number tag in the body cell,
+   draws each one once, and substitutes the same value into both cells.
+6. Two smaller voice bugs: a log line built from a fragment was left without its
+   full stop (`I hack through a bathroom door with an axe`), and the speech length
+   was written as `a 80-second speech`. `say` now adds the full stop, and the
+   article comes from the same helper the rest of the port uses.
+
+### 76.7 Shortcuts
+
+- One production at a time: the hero works a single part a year, and a second
+  picture in the same year is not modelled.
+- The slot windows are checked, but a part never carries a schedule, a shoot or
+  a conflict with another job.
+- The show economy is a multiplier on the film fee (1 to 6) rather than a
+  per-episode rate.
+- Awards are counted, never named.
+- The reviews come from one critic pool, so a bad review and a good one differ
+  only in the reception window the row fits.
+- The hero never ages out of the trade: there is no Too Old column in this family.
+
+### 76.8 Verification
+
+- `/tmp/qdir/actres.py` - 30 seeds x both genders to age 60 with 
+  `{"actor": true}`: 668 family cards, 0 failed runs, residue 0.
+- The last-mark histogram covers 18 of the 20 tables; `film-genres` and 
+  `show-genres` are drawn inside the audition branch and are never the card's mark.
+- All 19 family probes report residue 0 (actres, astres, bizres, bmres, casres,
+  cultres, dlres, fightres, hustres, ltres, mafiares, outres, petres, racres,
+  spyres, stures, traderes, vampres, zoores).
+- `rescensus.py` reports 0 distinct residue tokens, coverage reports 109
+  captured and 107 recoverable, and the port gap is 0.
+- `covpush.json` exits 0 and the bench reaches age 34 with no abort.
+
+Sample cards, taken from the probe:
+
+~~~
+A part in a film / The picture is The Tenth Element. I read for flight attendant.
+  They are paying me $27,690.
+  I landed the role of flight attendant in The Tenth Element.
+
+A bit part / Casting called: they need a sorority sister.
+  I played a sorority sister for $2,246.
+
+An audition / The picture is Nevervale. I read for a supporting part.
+  I did not get the part in Nevervale.
+
+The reviews / A critic reviewed Bamboozled in Bangalore.
+  The reviews stung. / Out for aiming high and falling flat.
+
+A publicity stunt / You flew a drone over a music festival and safely released
+  578 The Tenth Element branded glowsticks onto the crowd.
+  I flew a drone over a music festival and safely released 578 The Tenth Element
+  branded glowsticks onto the crowd.
+
+The costar / On the set of Grandmother's Attic, Nikki Janim asked who you slept
+  with to be in the production.
+  Nikki Janim insinuated I slept with someone to be in the production.
+
+A challenge in the scene / The script asks me to hack through a bathroom door
+  with an axe in a scene.
+  I hack through a bathroom door with an axe.
+
+A new agent / Duchess Dada wants to represent me.
+  Duchess Dada is representing me now.
+
+Off the picture / The studio called about my part in The People Under The Stars.
+  I was replaced in The People Under The Stars.
+
+Dropped / My agent, Aubrey Dram, sat me down.
+  Aubrey Dram dropped me as a client.
+~~~
+
+Two of the family's own lines are worth knowing before reading a card. The
+critic pool's snippet is a bare fragment - `Out for aiming high and falling flat` -
+and is printed as the second log line, after the family's verdict. And the first
+log line of any card may belong to another subsystem: the port prints the
+lifecycle lines that were already in the year before the family's own, which is why a
+review card can open with a relative's diagnosis.

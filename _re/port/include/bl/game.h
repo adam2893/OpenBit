@@ -502,6 +502,32 @@ struct Hero {
   long long carValue = 0;
   long long racerWinnings = 0;
   long long racerSpend = 0;
+
+  // The screen (REPORT.en.md 76).
+  bool actor = false;
+  std::string actorAgent;      // the agent repping the hero
+  std::string actorAgency;
+  std::string actorProduction;  // the film or show the hero is in
+  std::string actorGenre;
+  std::string actorRole;       // the character
+  std::string actorType;       // "film" or "show"
+  std::string actorCostar;
+  std::string actorLead;
+  std::string actorExtra;      // the bit part from a16_actor-extra-roles-enc
+  bool actorCostarFemale = false;
+  bool actorWorking = false;
+  int actorReputation = 20;
+  int actorAgentReputation = 40;
+  int actorPerformance = 40;
+  int actorImpression = 40;
+  int actorSmugness = 40;
+  int actorPropensity = 30;
+  int actorFilms = 0;
+  int actorEpisodes = 0;
+  int actorAwards = 0;
+  int actorDrama = 0;
+  long long actorFee = 0;
+  long long actorEarned = 0;
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'
