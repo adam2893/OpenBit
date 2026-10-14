@@ -11647,3 +11647,318 @@ The full regression after the section: 38 probes at residue 0 (the new `ctyres.p
 joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at
 `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr,
 and the benchmark reaching age 34.
+
+## 96. The movie theater: a place table the game keeps in four slots, a card whose body has
+no string to read, and an expansion pack that is not a card family
+
+The last four families each arrived with a table and a consumer: the school year read the
+field trips, the relationship year the sleepovers, the dating app its seven, the census the
+region table. This one has both and neither of them is the card. `a16_movies-enc` is a film
+list, the game holds four of its rows at a time in its own place object, and the card that
+asks whether to go is a scenario class whose sentence is built at runtime - so the section had
+to read the card out of the metadata literals and write two of its lines. The twelve
+`genesis_movie_*` files sitting in the same directory look like the rest of the family and
+are an expansion pack (96.5).
+
+### 96.1 The family
+
+`a16_movies-enc` is 244 rows of `Title,Genre` (245 physical lines, the extra one a
+whitespace padding row). Seventeen genres appear - Children 44, Comedy 33, Documentary 23,
+Romantic Comedy 20, Drama 16, Sports 16, Adventure 15, Horror 14, Thriller 13, Fantasy 13,
+Sci-Fi 8, Western 5, War 5, Musical 5, Mystery 5, Indie 5, Action 4 - and 56 of the 244
+titles are templates over exactly four tokens: `<random-first-name>` 30, `<random-surname>`
+30, `<random-first-name-male>` 8 and `<random-first-name-female>` 8.
+
+The consumer is code-side and the dump names all of it: `class DataMovie`
+(il2cpp_dump.txt:11778), whose `Genre` is a `System.Int32` rather than the table s genre
+word - the loader maps the word to the enum - the game-data holder s
+`field 0x10 System.Collections.ArrayList _movieSet` (il2cpp_dump.txt:17282),
+`method @0x73f2b73ce0 System.Void LoadMovieSet()`, the three pickers
+`GetRandomNonChildrenMovie()`, `GetRandomMovieForChildren()` and
+`GetRandomMovieOfGenre(System.Int32)` (il2cpp_dump.txt:19443-19445), and
+`EmojiForMovieGenre(System.Int32)` @0x73f3025558.
+
+The four slots are the game s own place cache. `SimPlace` carries `0x158 DataMovie
+AvailableMovie` with the `0x160 <AvailableMovieTitle>` string beside it, `0x168
+AvailableChildrensMovie` / `0x170`, `0x178 AvailableComedyMovie` / `0x180` and `0x188
+AvailableDocumentaryMovie` / `0x190` (il2cpp_dump.txt:57100-57550), and
+`RefreshAvailableMovies()` @0x73f2ed1ebc fills them: one general film, one children s film,
+one comedy and one documentary, drawn when the hero stands somewhere that shows films.
+`Sim::placeMovie(int slot)` (src/sim.cpp:23328) is that cache, keyed the way the game keys
+it - slot 0 the general film, 1 the children s, 2 the comedy, 3 the documentary - and it
+returns the title it cached.
+
+### 96.2 Two card bodies with no string to read
+
+The card is `ScenarioMovieTheaterPull` (@0x73f3bc1cd0 `RefreshScenario`,
+@0x73f3bc2104 `ChoiceSelectedAtIndex`, @0x73f3bc246c `EmojiString`, fields
+`_genre`/`_movie`/`_movieTitle`/`_requireRewardedVideo`), with
+`ScenarioMovieTheaterPullWatched` (@0x73f3bc2240 ctor(String,int), @0x73f3bc24cc
+`DismissSelected`), `ScenarioMovieTheaterPushWatched` (@0x73f3bc2710
+ctor(String,String,String,ArrayList)), `ScenarioOpportunityChildhoodMovie`
+(@0x73f3bc29b0 `RefreshScenario`, @0x73f3bc3820 `ScenarioIsEligibleForRandomPush`,
+@0x73f3bc3954 `MovieAvailable`), `ScenarioOpportunityMovie` (@0x73f3bc3a80, with
+@0x73f3bc44e4 `NormalMovieAvailable`, @0x73f3bc3fe4 `ChildrensMovieAvailable` and
+@0x73f3bc40bc `GetChildToGo`) and `ScenarioRelationshipMovieTheater` (@0x73f3bc6f14,
+@0x73f3bc7ac8 `NormalMovieAvailable`, @0x73f3bc79cc `ChildrensMovieAvailable`,
+@0x73f3bc7cb8 `ChoiceSelectedAtIndex`, five ctors for the five companions) plus its
+watched variant @0x73f3bc7de8. The sibling `ScenarioPushConcert` and
+`ScenarioRelationshipConcert` classes have exactly the same shape, so this is a template
+the game reuses per activity rather than a per-table renderer the port can register.
+
+No table in `gamedata_plain/` carries any of that text, and `obs_corpus` has no captured
+movie card - `scenarios.csv` has no row for it, and the only movie line in `logs.csv` is
+the actor card `I got my shot to direct a film and chose to make an action movie.` at age 19
+(trace_game7.json). The vocabulary therefore came out of the metadata literals, and the
+literals are choices and narratives only:
+
+~~~
+choices      #21912 Go to a movie             #21947 Go to the movies
+             #21948 Go to the movies with {0}  #21894 Go see a children s film
+             #21895 Go see a comedy            #21896 Go see a documentary
+             #21897 Go see it                  #21898 Go see {0}
+             #46052 Watch the movie instead
+narratives   #23948 I decided to watch the movie instead.
+             #25792 I went with {0} to go see {1}.
+             #25782 I went to the theater to see {0}.
+             #49733 You went to the theater to see {0}.
+             #47780 You are unable to find an interesting movie to take {0} to go see.
+             #47782 You are unable to find an interesting new {0} to go see.
+stats        #30523 MoviesWatched             #30522 Moviegoer
+             #30508 Movie Buff                #30512 Movie Junkie
+             #21907 Go to 5 movies in one life
+names        #30516 Movie Theater             #30517 Movie Theater Cashier
+~~~
+
+The two bodies are the one part with no string behind them. A literal sweep for
+`movie theater is showing`, `taking you to the movie theater` and every other fragment of
+an invitation returns nothing in `il2cpp_dump.txt`: `RefreshScenario` builds the sentence
+at runtime out of the place, the film and the companion, so there is nothing to port. The port
+keeps the game s vocabulary as far as it exists - every choice cell is a game literal, the two
+narratives are #25782 and #23948, the ledger line counts the `MoviesWatched` stat of #30523,
+and the film named in every line is the row the table gave - and writes the two invitations
+itself:
+
+~~~
+  young   Your {parent} is taking you to the movie theater to see <movie-children>.
+  adult   The movie theater is showing <movie>.
+~~~
+
+### 96.3 The four slots
+
+The cache lives on the hero, because the game s lives on the place the hero is standing in and
+the port has no place visit (`struct PlaceMovie { std::string title; int row = 0; }`,
+`PlaceMovie movies[4]`, `std::string movieCity` and `int moviesWatched` at
+include/bl/game.h:580-583). Four rows are drawn once per city and cleared when the city
+changes, which is the port s stand-in for `RefreshAvailableMovies`:
+
+~~~
+  if (h.movieCity != h.city) {          // a different theater: the cache is the place s
+    h.movieCity = h.city;
+    for (PlaceMovie& m : h.movies) { m.title.clear(); m.row = 0; }
+  }
+~~~
+
+The genre filter is the pickers: slot 0 keeps every non-Children row, and the other three keep
+exactly their own genre word (src/sim.cpp:23337-23360):
+
+~~~
+  static const char* const kGenre[4] = {"", "Children", "Comedy", "Documentary"};
+  if (slot == 0 ? genre == "Children" : genre != kGenre[slot]) continue;
+~~~
+
+The draw is `pool[placeRng_.below(uint32_t(pool.size()))]` - the port-private place stream
+section 95 introduced, for the same reason: `createLife` s `rng_` stream is matched
+value-for-value against the game s attribute snapshots, so a place draw cannot go there without
+moving every attribute behind it - and the 56 template titles are filled the way section 94
+filled the names table, with `drawFirstName` and `drawSurname`:
+
+~~~
+  while ((p = title.find("<")) != std::string::npos) {
+    const std::string tok = title.substr(p, title.find(">", p) - p + 1);
+    if (tok == "<random-first-name>")              title.replace(p, tok.size(), drawFirstName(placeRng_.chance(0.5)));
+    else if (tok == "<random-first-name-male>")    title.replace(p, tok.size(), drawFirstName(false));
+    else if (tok == "<random-first-name-female>")  title.replace(p, tok.size(), drawFirstName(true));
+    else                                           title.replace(p, tok.size(), drawSurname());
+  }
+~~~
+
+### 96.4 The card and its three outcomes
+
+`Sim::movieYear` (src/sim.cpp:23377) is hooked into the year chain at src/sim.cpp:3501,
+right after the Dumb-scenario pool and before the celebrity app:
+
+~~~
+  if (movieYear(life, out, forcedChoice)) return true;
+~~~
+
+It bails on a forced choice, on age under 4, and on a 12% coin off `placeRng_` - the game s
+own card is one the player opens from a place screen, so the odds are the port s (96.6, item 2).
+A hero of 12 or under gets the childhood shape, a hero with a lover gets the companion option,
+and the film for the visit is drawn before the options so the invitation can name it:
+
+~~~
+  young   Go see it                    (the children s film)
+          Watch the movie instead
+  adult   Go see it                    (the general film)
+          Go to the movies with <lover> (when the hero has a lover, slot 0)
+          Go see a comedy              (slot 2, when there is no companion)
+          Go see a documentary         (slot 3, when there is no companion)
+          Watch the movie instead
+~~~
+
+Going is worth `pointsForImpact(1)` happiness - 4 points - and going with a lover
+`pointsForImpact(2)`, 8; staying home draws the coin `pointsForImpact(0)` measures, so it is
+worth plus or minus one. Everything else is untouched: `karma`, `smarts`, `looks` and
+`discipline` all render 0, and the probe asserts it. Going writes the game s own ledger line
+and one of its two narratives:
+
+~~~
+  went        That was movie number <n>.
+              I went to the theater to see <film>.          (#25782)
+  companion   That was movie number <n>.
+              I went with <lover> to go see <film>.         (#25792)
+  home        I decided to watch the movie instead.          (#23948)
+~~~
+
+The counter is the port s `h.moviesWatched`, which is #30523 s `MoviesWatched` recorded on
+the hero - the port has no stat screen to show it on.
+
+### 96.5 The Movie Director bundle
+
+The twelve `genesis_movie_*` files next to `a16_movies-enc` are the Movie Director
+expansion pack and not a card family. They are tile and action lists in JSON whose entity
+references point at a filmography the port has no model for - `<film.cast.lead.actor_id>` -
+whose conditions read `scenario.movieDirector.profile_fromCastmember`, and whose DataSources
+are `gfc:movie_director:filmography` and `gfc:movie_director:talent_network`; beside them
+sit `genesis_movie_director` (188 rows), `genesis-md-creative-vision-followups-enc` (2255),
+`genesis-md-daily-review-enc` (418), `genesis-md-audience-reception-enc` (227),
+`genesis-md-festival-screening-enc` and `genesis-md-festival-scenarios-enc` (36 each),
+`genesis-md-film-reception-weights-enc` (4) and `genesis_movie_director_defaults` (40).
+
+The literals around it say what it is: `Movie Director Bundle` #30511, `The Movie Director
+Expansion Pack--Step behind the camera and call all the shots.` #41607, `You have been
+granted honorary access to Movie Director!` #48681, `Direct your own films, make A-List
+connections, and more!` #17754, plus its own progression counters `NumMovieDirectorViews`
+#32353, `CurrentLifeIsMovieDirector` #16853, `FilmingProgressPct` #20158,
+`Filmography` #20159 and `FilmsReleased` #20160. That is a paid container with its own
+screens - a place the player walks into - and the port has no place screen and no purchase
+path, so the twelve files stay unwired. They are recorded here so the next reader does not
+mistake them for a hole in the same family.
+
+### 96.6 Shortcuts
+
+1. The two card bodies are the port s prose (96.2). Every choice cell, both narratives and the
+   ledger line are the game s own literals.
+2. The trigger is port-owned. The game decides when the opportunity arrives with its own
+   `ScenarioIsEligibleForRandomPush` (@0x73f3bc520c on the opportunity class, and the same
+   method on `ScenarioOpportunityChildhoodMovie` @0x73f3bc3820), and a scripted life has no
+   push channel, so the port spends a 12% coin off `placeRng_` at age 4 and up.
+3. The invitation names the general film and the log names the genre film. The game caches
+   `AvailableMovie` for the visit and calls its genre picker when the choice is made, so a
+   comedy card can read as one film and log another - `placeMovie(opt.slot)` is where the port
+   draws that second one, at the same point in the flow.
+4. There is no children model in the port (src/sim.cpp:14191 records the shortcut), so the
+   childhood card s inviter is the literal `mother` rather than
+   `ScenarioOpportunityChildhoodMovie` s drawn inviter with its own pronoun.
+5. `h.moviesWatched` is a record only: the port has no achievement machinery (a grep for
+   `achievement` across src/ and include/ is empty), so #21907 `Go to 5 movies in one life`
+   has nothing to fire.
+6. The four slots are keyed by city, not by visit. The game refreshes them when the hero arrives
+   somewhere; the port draws four rows the first time a city is asked and keeps them until the
+   city changes, so a hero who stays put sees a stable marquee.
+
+### 96.7 Verification
+
+The probe is `/tmp/qdir/movres.py` (a `*res.py`, so the harness picks it up). It runs 160
+lives - twenty seeds, both genders, a 60-year sweep and a 20-year one, with and without a
+lover - and checks the card against the table row it names: the title, the body shape, the
+genre the body s film belongs to, the exact choice set for the hero s age and company, the last
+log line s form and the genre of the film it names, the companion s name against the label the
+option carried, the happiness the section promises and the zeroes everywhere else, the monotone
+ledger counter, and a sweep of every rendered line for a raw `<...>` token:
+
+~~~
+runs 160 rc failures 0 cards 493 young 72
+choices {'Go see a comedy': 116, 'Watch the movie instead': 130, 'Go to the movies with Zen': 2, 
+    'Go to the movies with Kayne': 2, 'Go see it': 147, 'Go see a documentary': 72, 
+    'Go to the movies with Carol': 3, 'Go to the movies with Dustin': 3, 'Go to the movies with Pink': 1, 
+    'Go to the movies with Haden': 1, 'Go to the movies with Charlotte Amelia': 1, 
+    'Go to the movies with Khaby Cool': 1, 'Go to the movies with Felony': 3, 'Go to the movies with Bruno': 2, 
+    'Go to the movies with Cindy Kale': 1, 'Go to the movies with Brian Creynolds': 1, 
+    'Go to the movies with Ned': 1, 'Go to the movies with Cynthia Daily': 1, 
+    'Go to the movies with Ron Radkins': 1, 'Go to the movies with Dula Moutha': 1, 
+    'Go to the movies with Aindrias Crozier': 1, 'Go to the movies with Jihanna': 1, 
+    'Go to the movies with John': 1}
+kinds {watch 363, home 130, companion 28}
+genres {'Thriller': 13, 'Sci-Fi': 8, 'Romantic Comedy': 20, 'Horror': 14, 'Fantasy': 13, 'Drama': 16, 
+    'Documentary': 23, 'Comedy': 33, 'Children': 44, 'Adventure': 15, 'Action': 4, 'Western': 5, 'War': 5, 
+    'Musical': 5, 'Mystery': 5, 'Indie': 5, 'Sports': 16}
+happiness {-1: 60, 1: 70, 4: 335, 8: 28}
+ledger lines 363 bad 0
+cards per life {0: 40, 1: 20, 2: 24, 3: 4, 4: 24, 5: 11, 6: 37}
+mismatches {}
+samples []
+RESIDUE 0 {}
+~~~
+
+The shapes as the port renders them, straight out of the sample writer:
+
+~~~
+young card  (seed 5, male, 20 years, relationship True)
+  age 11  row 114  table a16_movies-enc
+  title Movie Theater
+  body Your mother is taking you to the movie theater to see The Muscular Merman.
+  choice Go see it
+  | That was movie number 1.
+  | I went to the theater to see The Muscular Merman.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+adult card  (seed 12, male, 20 years, relationship True)
+  age 18  row 50  table a16_movies-enc
+  title Movie Theater
+  body The movie theater is showing Mermaid of the Light.
+  choice Go see it
+  | That was movie number 1.
+  | I went to the theater to see Mermaid of the Light.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+comedy card  (seed 2, male, 20 years, relationship True)
+  age 16  row 109  table a16_movies-enc
+  title Movie Theater
+  body The movie theater is showing Alejandro's Axe.
+  choice Go see a comedy
+  | That was movie number 1.
+  | I went to the theater to see Ram Malone Relocates to Rural Florida.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+documentary card  (seed 3, male, 20 years, relationship True)
+  age 19  row 92  table a16_movies-enc
+  title Movie Theater
+  body The movie theater is showing Fisted Foul: The Risks of Being a Baseball Fan.
+  choice Go see a documentary
+  | That was movie number 1.
+  | I went to the theater to see Walid Shift's Addiction to BitLife.
+  deltas {"discipline": 0, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
+
+companion card  (seed 1, male, 60 years, relationship True)
+  age 52  row 198  table a16_movies-enc
+  title Movie Theater
+  body The movie theater is showing Apprehension.
+  choice Go to the movies with Zen
+  | That was movie number 3.
+  | I went with Zen to go see Apprehension.
+  deltas {"discipline": 0, "happiness": 8, "karma": 0, "looks": 0, "smarts": 0}
+
+home card  (seed 6, male, 20 years, relationship True)
+  age 18  row 1  table a16_movies-enc
+  title Movie Theater
+  body The movie theater is showing What Sits Upon the Top Floor.
+  choice Watch the movie instead
+  | I decided to watch the movie instead.
+  deltas {"discipline": 0, "happiness": 1, "karma": 0, "looks": 0, "smarts": 0}
+~~~
+
+Its own census: 493 cards over 160 lives, 28 companion options over 19 distinct lover names, the base options Go see it 147, Watch the movie instead 130, Go see a comedy 116, Go see a documentary 72, the option mix {watch 363, home 130, companion 28}, the happiness histogram {-1: 60, 1: 70, 4: 335, 8: 28}, the 363 ledger lines all monotone, and {0: 40, 1: 20, 2: 24, 3: 4, 4: 24, 5: 11, 6: 37} cards per life.
+
+The full regression after the section: 39 probes at residue 0 (the new `movres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.

@@ -304,6 +304,10 @@ class Sim {
   void ensureMafiaFields(Life& life);
   bool zooYear(Life& life, AgeUp& out, int forcedChoice);
   std::string zooToken(const std::string& key);
+  std::string movieToken(const std::string& key);
+  // The four place slots of a16_movies-enc, 0 non-children 1 children 2 comedy
+  // 3 documentary (REPORT.en.md 96).
+  std::string placeMovie(int slot);
   void ensureZooFields(Life& life);
   void zooDrawAnimal(Life& life);
   bool landlordYear(Life& life, AgeUp& out, int forcedChoice);
@@ -344,6 +348,7 @@ class Sim {
                           const std::string& filterValue, const std::string& flagColumn, Rng& rng);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
   bool celebAppYear(Life& life, AgeUp& out, int forcedChoice);
+  bool movieYear(Life& life, AgeUp& out, int forcedChoice);
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);

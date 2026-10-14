@@ -705,6 +705,9 @@ bool Sim::load(std::string* error) {
     "a16_model-agency-names-enc",
     "a16_actor-films-enc",
     "a16_actor-shows-enc",
+    // The movie theater (REPORT.en.md 96): Title,Genre. The genre decides which
+    // of the place's four movie slots a row can fill.
+    "a16_movies-enc",
     // The market (REPORT.en.md 77): 18 tables.
     "a16_financial-advice-rejections-enc",
     "a16_financial-advisor-drops-hero-color-enc",
@@ -2240,6 +2243,13 @@ bool cultIsToken(const std::string& token) {
          t == "commune-other" || t == "cult" || t == "cult-name";
 }
 
+bool movieIsToken(const std::string& token) {
+  static const char* kKeys[] = {"movie", "movie-children", "childrens-movie",
+                                "movie-comedy", "movie-documentary"};
+  for (const char* k : kKeys) if (token == k) return true;
+  return false;
+}
+
 bool casinoIsToken(const std::string& token) {
   std::string key = token;
   const std::string psuffix = "-possessive";
@@ -2489,6 +2499,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (casinoIsToken(token)) {
       const std::string v = casinoToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (movieIsToken(token)) {
+      const std::string v = movieToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (miscIsToken(token)) {
       const std::string v = miscToken(token);
@@ -3484,6 +3498,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (tradeYear(life, out, forcedChoice)) return true;
   if (politicalYear(life, out, forcedChoice)) return true;
   if (miscPoolYear(life, out, forcedChoice)) return true;
+  if (movieYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -23305,6 +23320,131 @@ void Sim::makeRelationships(Life& life) { life.hero.relationshipOn = true; }
 // answered with, a career row that names the salary, the fame score and the
 // retirement age, and a name row that carries the skin and the countries the
 // celebrity is known in.
+// The four movies the hero's own place is showing (REPORT.en.md 96). Slot 0 is
+// the game's GetRandomNonChildrenMovie(), slots 1..3 are its AvailableChildrensMovie,
+// AvailableComedyMovie and AvailableDocumentaryMovie: drawn once for the city the
+// hero stands in and kept until the hero moves, which is what makes the card's
+// body and the year's log line name the same film.
+std::string Sim::placeMovie(int slot) {
+  if (slot < 0 || slot > 3) return std::string();
+  Hero& h = *const_cast<Hero*>(hero_);
+  if (h.movieCity != h.city) {
+    h.movieCity = h.city;
+    for (int i = 0; i < 4; ++i) { h.movies[i].title.clear(); h.movies[i].row = 0; }
+  }
+  if (!h.movies[slot].title.empty()) return h.movies[slot].title;
+  if (!ensureTable("a16_movies-enc")) return std::string();
+  const Table& t = tbl("a16_movies-enc");
+  static const char* const kGenre[4] = {"", "Children", "Comedy", "Documentary"};
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string genre = trim(t.at(r, "Genre"));
+    if (slot == 0 ? genre == "Children" : genre != kGenre[slot]) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return std::string();
+  const size_t row = pool[placeRng_.below(uint32_t(pool.size()))];
+  // 56 of the 244 titles are templates ("The Talented Mr. <random-surname>",
+  // "<random-first-name-female>'s Stalker"), so the drawn cell is filled from the
+  // port's own name pools -- the same fill the app's name rows get.
+  std::string title = trim(t.at(row, "Title"));
+  for (size_t at = title.find('<'); at != std::string::npos; at = title.find('<', at + 1)) {
+    const size_t close = title.find('>', at);
+    if (close == std::string::npos) break;
+    const std::string tok = title.substr(at + 1, close - at - 1);
+    std::string fill;
+    if (tok == "random-first-name") fill = drawFirstName(placeRng_.chance(0.5));
+    else if (tok == "random-first-name-male") fill = drawFirstName(false);
+    else if (tok == "random-first-name-female") fill = drawFirstName(true);
+    else if (tok == "random-surname") fill = drawSurname();
+    if (fill.empty()) continue;
+    title = title.substr(0, at) + fill + title.substr(close + 1);
+    at += fill.size() - 1;
+  }
+  h.movies[slot].title = title;
+  h.movies[slot].row = int(row) + 1;
+  return title;
+}
+
+std::string Sim::movieToken(const std::string& key) {
+  if (key == "movie") return placeMovie(0);
+  if (key == "movie-children" || key == "childrens-movie") return placeMovie(1);
+  if (key == "movie-comedy") return placeMovie(2);
+  if (key == "movie-documentary") return placeMovie(3);
+  return std::string();
+}
+
+bool Sim::movieYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 4) return false;
+  // shortcut: the game reaches these cards as rewarded-video opportunities
+  // (ScenarioOpportunityMovie._requireRewardedVideo) and takes a child to the
+  // children's film from a parent's invite; the port has neither ads nor
+  // children, so the coin is the year's own and the young hero goes with a
+  // parent's line, the same kind of shortcut the celebrity app's trigger takes.
+  if (!placeRng_.chance(0.12)) return false;
+  if (!ensureTable("a16_movies-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  const bool young = h.age <= 12;
+  const bool withPal = !young && h.relationshipOn && !h.loverName.empty();
+  // The film is drawn before the card is built, so the body and the log line
+  // read the same title out of the place's slots without drawing twice.
+  if (placeMovie(young ? 1 : 0).empty()) return false;
+
+  struct Opt { std::string label; int slot; bool went; bool pal; };
+  std::vector<Opt> opts;
+  if (young) {
+    opts.push_back({"Go see it", 1, true, false});
+    opts.push_back({"Watch the movie instead", 1, false, false});
+  } else {
+    // The card keeps the game's four-choice shape: a hero with a partner is
+    // offered the companion line in place of the documentary listing.
+    opts.push_back({"Go see it", 0, true, false});
+    if (withPal) opts.push_back({"Go to the movies with " + h.loverName, 0, true, true});
+    opts.push_back({"Go see a comedy", 2, true, false});
+    if (!withPal) opts.push_back({"Go see a documentary", 3, true, false});
+    opts.push_back({"Watch the movie instead", 0, false, false});
+  }
+  const Opt& opt = opts[placeRng_.below(uint32_t(opts.size()))];
+
+  std::string body = young
+      ? "Your {parent} is taking you to the movie theater to see <movie-children>."
+      : "The movie theater is showing <movie>.";
+  substAll(body, "{parent}", "mother");  // the port's own parent word (REPORT.en.md 41)
+
+  out = AgeUp();
+  // The film is a real row of the movies table, so the card's provenance is that
+  // row rather than a table of its own.
+  out.table = "a16_movies-enc";
+  out.title = "Movie Theater";
+  out.body = resolve(body);
+  out.cta = "What will you do?";
+  out.choice = opt.label;
+  if (!opt.went) {
+    out.row_id = std::to_string(h.movies[opt.slot].row);
+    // shortcut: the scenario's own Impacts are code-side and unrecovered, so the
+    // three outcomes take the port's reading of a score: one step up for a
+    // ticket, two for going with the partner, and the attribute table's own coin
+    // for staying in.
+    out.happiness = pointsForImpact(0);
+    out.narrative = "I decided to watch the movie instead.";
+    return true;
+  }
+  const std::string film = placeMovie(opt.slot);
+  out.row_id = std::to_string(h.movies[opt.slot].row);
+  ++h.moviesWatched;
+  out.happiness = opt.pal ? pointsForImpact(2) : pointsForImpact(1);
+  // The counter is the game's own 'MoviesWatched' stat (#30523); its 'Go to 5
+  // movies in one life' milestone is code-side and the port keeps no achievements.
+  out.extra.push_back("That was movie number " + std::to_string(h.moviesWatched) + ".");
+  out.narrative = opt.pal ? "I went with " + h.loverName + " to go see " + film + "."
+                          : "I went to the theater to see " + film + ".";
+  return true;
+}
+
 bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {
   // A pushed card owns the year: the app never hijacks one (the same rule the
   // school year's own code-built cards follow).

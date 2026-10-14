@@ -571,6 +571,16 @@ struct Hero {
   int loverRetirementAge = 0;  // the career row's Retirement Age
   long long loverSalary = 0;   // drawn between Minimum Salary and Maximum Salary
   int celebDates = 0;          // how many times the app has paired the hero
+  // The movie theater (REPORT.en.md 96). The game caches four movies on the
+  // hero's own SimPlace -- AvailableMovie, AvailableChildrensMovie,
+  // AvailableComedyMovie, AvailableDocumentaryMovie -- and RefreshAvailableMovies()
+  // refills them for the place the hero stands in. The port keeps the same four
+  // slots with the row each was drawn from, so a card can name the film and the
+  // log line that follows it names the same one.
+  struct PlaceMovie { std::string title; int row = 0; };
+  PlaceMovie movies[4];       // 0 non-children 1 children 2 comedy 3 documentary
+  std::string movieCity;      // the city the four slots were drawn for
+  int moviesWatched = 0;      // the game's own 'MoviesWatched' stat (#30523)
   bool virgin = true;
   std::string exName;            // the most recent ex, kept after a breakup
   bool exFemale = false;
