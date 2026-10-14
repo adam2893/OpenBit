@@ -581,7 +581,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
-      landlordRng_(seed ^ 0x6a09e667f3bcc909ULL) {}
+      landlordRng_(seed ^ 0x6a09e667f3bcc909ULL),
+      petRng_(seed ^ 0xbb67ae8584caa73bULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -728,6 +729,13 @@ bool Sim::load(std::string* error) {
       "a16_careers-enc",                             // Career,Commonness Score,...
       "a16_pets-enc",                                // Animal,Breed,Wild,Exotic,Black Market,Commonness Score
       "a16_pet-names-enc",                           // Animal,Name,Color,Gender
+  "a16_pet-death-types-enc",
+  "a16_pet-pastimes-enc",
+  "a16_pet-treats-enc",
+  "a16_pet-releases-enc",
+  "a16_pet-release-filler-enc",
+  "a16_pet-disease-types-enc",
+  "a16_pet-found-dead-scenarios-enc",
       "a16_car-models-enc",                          // Make,Model,Type,Cost,... (ScenarioCarRepair)
       "a16_dumb-scenarios-vacation-enc",             // same layout; a coverage push targets it
       "a16_prisoner-crimes-enc",                     // Crime,Seriousness Score,Is Violent,Commonness Score
@@ -1460,6 +1468,18 @@ std::string spyUpperFirst(std::string text) {
 // answers them when the hero has one.
 // The mafia family's own tokens (report 64). The mob tables key their rows on
 // ISO country codes, so the names come from the table for the hero's country.
+bool petIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  static const char* kTokens[] = {"pet", "pet-name", "breed", "animal", "animal-type",
+                                  "animal-type-indefinite"};
+  for (const char* t : kTokens) if (key == t) return true;
+  return false;
+}
+
 bool landlordIsToken(const std::string& token) {
   std::string key = token;
   const std::string psuffix = "-possessive";
@@ -1681,6 +1701,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (petIsToken(token)) {
+      const std::string v = petToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (landlordIsToken(token)) {
@@ -2612,6 +2636,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (mafiaYear(life, out, forcedChoice)) return true;
   if (zooYear(life, out, forcedChoice)) return true;
   if (landlordYear(life, out, forcedChoice)) return true;
+  if (petYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -9448,6 +9473,272 @@ bool Sim::landlordYear(Life& life, AgeUp& out, int forcedChoice) {
   out.table = tableRef.empty() ? "a16_landlord-real-estate-portfolio-enc" : tableRef;
   out.row_id = rowRef.empty() ? std::string("0") : rowRef;
   out.title = title.empty() ? ("The " + h.propType) : title;
+  out.body = body;
+  out.narrative = line;
+  out.extra = extra;
+  out.happiness += happy;
+  return true;
+}
+
+// ---- the household pet (REPORT.en.md 67) --------------------------------
+
+// Draws the animal, breed and name of a new pet. The viral, exotic and
+// black-market rows of a16_pets-enc are not household pets (REPORT.en.md 67.2).
+void Sim::petDraw(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_pets-enc")) return;
+  const Table& pets = tbl("a16_pets-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < pets.size(); ++r) {
+    if (!trim(pets.at(r, "Wild")).empty() || !trim(pets.at(r, "Exotic")).empty() ||
+        !trim(pets.at(r, "Black Market")).empty()) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) for (size_t r = 0; r < pets.size(); ++r) pool.push_back(r);
+  const size_t row = weightedPickOf(pets, "Commonness Score", pool, petRng_);
+  if (row == size_t(-1)) return;
+  h.petAnimal = trim(pets.at(row, "Animal"));
+  h.petBreed = lower(trim(pets.at(row, "Breed")));
+  h.petFemale = petRng_.chance(0.5);
+  h.petAge = 0;
+  h.petHealth = 95;
+  h.petHappiness = 75;
+  h.petName.clear();
+  h.petCause.clear();
+  h.petDead = false;
+  h.petVetSpend = 0;
+  if (!ensureTable("a16_pet-names-enc")) return;
+  const Table& names = tbl("a16_pet-names-enc");
+  std::vector<size_t> fits;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (lower(trim(names.at(r, "Animal"))) != lower(h.petAnimal)) continue;
+    if (names.has("Gender") && !trim(names.at(r, "Gender")).empty() &&
+        (lower(trim(names.at(r, "Gender"))) == "female") != h.petFemale) continue;
+    fits.push_back(r);
+  }
+  if (fits.empty()) return;
+  h.petName = resolve(trim(names.at(fits[petRng_.below(uint32_t(fits.size()))], "Name")));
+}
+
+void Sim::makePet(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.hasPet = true;
+  petDraw(life);
+}
+
+std::string Sim::petToken(const std::string& key) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  std::string k = key;
+  const std::string psuffix = "-possessive";
+  bool own = false;
+  if (k.size() > psuffix.size() &&
+      k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    k.resize(k.size() - psuffix.size());
+    own = true;
+  }
+  std::string v;
+  if (k == "pet" || k == "pet-name") v = h.petName.empty() ? ("my " + lower(h.petAnimal)) : h.petName;
+  else if (k == "breed") v = h.petBreed;
+  else if (k == "animal" || k == "animal-type") v = lower(h.petAnimal);
+  else if (k == "animal-type-indefinite") v = withArticle(lower(h.petAnimal), true);
+  if (own && !v.empty()) v = llPossessive(v);
+  return v;
+}
+
+bool Sim::petYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 6) return false;
+  if (!petRng_.chance(0.55)) return false;
+  // A house without a pet only has the adoption card in it (REPORT.en.md 67.3).
+  const bool adopting = !h.hasPet;
+
+  std::string line;
+  std::string body;
+  std::string title;
+  std::vector<std::string> extra;
+  std::string tableRef;
+  std::string rowRef;
+  int happy = 0;
+
+  auto say = [&](const std::string& text) {
+    if (text.empty()) return;
+    line += (line.empty() ? std::string() : " ") + text;
+  };
+  auto tell = [&](const std::string& text) {
+    if (text.empty()) return;
+    extra.push_back(spyUpperFirst(text));
+  };
+  auto cell = [&](const Table& t, size_t r, const char* col) -> std::string {
+    if (r == size_t(-1) || !t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  auto mark = [&](const std::string& table, const Table& t, size_t r) {
+    (void)t;
+    tableRef = table;
+    rowRef = std::to_string(r + 1);
+  };
+  // Every pet table keys on the Animal column, and a row whose Animal is blank
+  // fits any pet (REPORT.en.md 67.3).
+  auto petPool = [&](const char* table) {
+    std::vector<size_t> pool;
+    if (!ensureTable(table)) return pool;
+    const Table& t = tbl(table);
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Animal") && !trim(t.at(r, "Animal")).empty() &&
+          lower(trim(t.at(r, "Animal"))) != lower(h.petAnimal)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) {
+      const Table& all = tbl(table);
+      for (size_t r = 0; r < all.size(); ++r) pool.push_back(r);
+    }
+    return pool;
+  };
+  auto petPick = [&](const char* table, const char* weight) -> size_t {
+    const std::vector<size_t> pool = petPool(table);
+    if (pool.empty()) return size_t(-1);
+    if (weight && *weight) {
+      const size_t r = weightedPickOf(tbl(table), weight, pool, petRng_);
+      if (r != size_t(-1)) return r;
+    }
+    return pool[petRng_.below(uint32_t(pool.size()))];
+  };
+  // The rows that describe the pet itself use its own pronouns, so the pair
+  // points at the animal while one of them renders (REPORT.en.md 67.3).
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  auto petOn = [&]() { pronounOtherSet_ = true; pronounOtherFemale_ = h.petFemale; };
+  auto petOff = [&]() { pronounOtherSet_ = savedSet; pronounOtherFemale_ = savedFemale; };
+
+  if (!adopting) {
+    h.petAge += 1;
+    h.petHealth = std::max(0, h.petHealth - (h.petAge > 8 ? 8 : 3));
+    if (h.petHappiness < 70) h.petHappiness = std::min(100, h.petHappiness + 1);
+    else h.petHappiness = std::max(0, h.petHappiness - 3);
+  }
+
+  if (adopting && petRng_.chance(0.08)) {
+    // The pet shop: the same domestic draw the script flag uses at start-up.
+    h.hasPet = true;
+    petDraw(life);
+    title = "A new friend";
+    say("I adopted " + petToken("pet") + ", " + withArticle(lower(h.petBreed), true) + lower(h.petBreed) + ".");
+    tell("Welcome to the family.");
+    happy += 2;
+  } else if (adopting) {
+    return false;
+  } else if (petRng_.chance(h.petHealth <= 15 ? 0.45 : 0.04) && ensureTable("a16_pet-death-types-enc")) {
+    const size_t row = petPick("a16_pet-death-types-enc", "Commonness Score");
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_pet-death-types-enc");
+      const bool someoneElse = t.has("Other Person Involved") && t.flag(row, "Other Person Involved");
+      petOn();
+      std::string sentence = spySwap(trim(t.at(row, "Sentence")), "<pronoun>", h.petFemale ? "she" : "he");
+      if (!someoneElse) sentence = spySwap(sentence, " <person>", "");
+      say(resolve(sentence));
+      petOff();
+      title = "The end of " + petToken("pet");
+      body = "Cause: " + trim(t.at(row, "Type")) + ".";
+      mark("a16_pet-death-types-enc", t, row);
+      h.petCause = trim(t.at(row, "Type"));
+      h.hasPet = false;
+      h.petDead = true;
+      happy -= 6;
+    }
+  } else if (petRng_.chance(0.28) && ensureTable("a16_pet-treats-enc")) {
+    const size_t row = petPick("a16_pet-treats-enc", "");
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_pet-treats-enc");
+      title = "A treat";
+      say("I gave " + petToken("pet") + " " + resolve(trim(t.at(row, "Treat"))) + ".");
+      body = "Enjoyment: " + std::to_string(int(t.num(row, "Enjoyment Score"))) + ".";
+      mark("a16_pet-treats-enc", t, row);
+      h.petHappiness = std::min(100, h.petHappiness + int(t.num(row, "Enjoyment Score")) * 2);
+      happy += 1;
+    }
+  } else if (petRng_.chance(0.25) && ensureTable("a16_pet-pastimes-enc")) {
+    const size_t row = petPick("a16_pet-pastimes-enc", "");
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_pet-pastimes-enc");
+      title = "Time with " + petToken("pet");
+      say("I " + spyLowerFirst(resolve(trim(t.at(row, "Pastime")))) + " " + petToken("pet") + ".");
+      mark("a16_pet-pastimes-enc", t, row);
+      h.petHappiness = std::min(100, h.petHappiness + 3);
+      happy += 1;
+    }
+  } else if (petRng_.chance(0.12) && ensureTable("a16_pet-disease-types-enc")) {
+    const size_t row = petPick("a16_pet-disease-types-enc", "Commonness Score");
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_pet-disease-types-enc");
+      const std::string disease = lower(trim(t.at(row, "Disease")));
+      const std::string named = t.flag(row, "Uses Indefinite Article")
+                                    ? withArticle(disease, true) + disease
+                                    : disease;
+      title = "A trip to the vet";
+      mark("a16_pet-disease-types-enc", t, row);
+      h.petHealth = std::max(0, h.petHealth - int(t.num(row, "Health Impact Score")) * 4);
+      const bool fatal = t.flag(row, "Can Be Fatal") && h.petHealth <= 20 && petRng_.chance(0.3);
+      if (fatal) {
+        say(petToken("pet") + " had " + named + " and did not pull through.");
+        h.petCause = disease;
+        h.hasPet = false;
+        h.petDead = true;
+        happy -= 5;
+      } else {
+        const long long cost = static_cast<long long>(t.num(row, "Treatment Cost Score")) * 400;
+        h.money -= cost;
+        h.petVetSpend += cost;
+        say("The vet treated " + petToken("pet") + " for " + named + ".");
+        tell("The bill came to $" + std::to_string(cost) + ".");
+        h.petHealth = std::min(100, h.petHealth + int(t.num(row, "Treatment Effectiveness Score")) * 3);
+        happy -= 1;
+      }
+    }
+  } else if (petRng_.chance(h.petHappiness < 40 ? 0.10 : 0.03) && ensureTable("a16_pet-releases-enc")) {
+    const size_t row = petPick("a16_pet-releases-enc", "");
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_pet-releases-enc");
+      title = "Letting go";
+      say(spySentence(resolve(trim(t.at(row, "Scenario")))));
+      mark("a16_pet-releases-enc", t, row);
+      if (petRng_.chance(0.5) && ensureTable("a16_pet-release-filler-enc")) {
+        const size_t f = petPick("a16_pet-release-filler-enc", "");
+        if (f != size_t(-1)) tell(resolve(trim(tbl("a16_pet-release-filler-enc").at(f, "String"))));
+      }
+      h.hasPet = false;
+      happy -= 2;
+    }
+  } else if (h.petHealth <= 30 && petRng_.chance(0.10) && ensureTable("a16_pet-found-dead-scenarios-enc")) {
+    const Table& t = tbl("a16_pet-found-dead-scenarios-enc");
+    const size_t row = t.size() ? petRng_.below(uint32_t(t.size())) : size_t(-1);
+    if (row != size_t(-1)) {
+      title = "Found";
+      body = resolve(trim(t.at(row, "Scenario")));
+      mark("a16_pet-found-dead-scenarios-enc", t, row);
+      h.hasPet = false;
+      h.petDead = true;
+      h.petCause = "Went missing";
+      happy -= 6;
+    }
+  } else {
+    title = "A quiet year";
+    say(petToken("pet") + " is " + std::to_string(h.petAge) + " now.");
+    tell("Health " + std::to_string(h.petHealth) + ", happiness " + std::to_string(h.petHappiness) + ".");
+  }
+
+  petOff();
+  if (title.empty() && line.empty() && body.empty()) return false;
+  out.table = tableRef.empty() ? "a16_pet-pastimes-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title.empty() ? ("My " + lower(h.petAnimal)) : title;
   out.body = body;
   out.narrative = line;
   out.extra = extra;

@@ -259,6 +259,20 @@ struct Hero {
   bool tenantSquatting = false;
   int tenantYears = 0;
   long long rentCollected = 0;
+
+  // The household pet (REPORT.en.md 67): one animal, its health, and the year
+  // it either dies or is let go.
+  bool hasPet = false;
+  std::string petAnimal;         // a16_pets-enc 'Animal'
+  std::string petBreed;          // a16_pets-enc 'Breed'
+  std::string petName;           // a16_pet-names-enc 'Name' for that animal
+  bool petFemale = false;
+  int petAge = 0;
+  int petHealth = 95;            // 0-100
+  int petHappiness = 75;         // 0-100
+  bool petDead = false;
+  std::string petCause;          // the death type, once it is gone
+  long long petVetSpend = 0;
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

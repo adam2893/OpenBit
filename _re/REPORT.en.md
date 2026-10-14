@@ -5345,3 +5345,92 @@ recoverable: 107`, `portgap.py` reports `ENTRIES 109 rendered-by-port 107
 gap 0`, the `covpush` script returns 0, and `bench.sh` reaches age 34
 with no abort. The mafia probe was rerun after the shared helper changed and
 still reports `mafia events 1288 / residue 0`.
+
+## 67. The pet at home: one animal at a time, and the ten tables that describe its year
+
+The pet is the smallest of the careers and the only one the hero never chooses: a
+creature that ages, gets sick, gets fat on treats, and eventually dies of something
+the data has a row for. Ten tables, 3,806 rows. Three of them were already loaded
+before this section (the animal list, the name list, and the discipline pool the
+registry card uses); the other seven were not referenced anywhere.
+
+### 67.1 The ten tables
+
+`a16_pets-enc` — 136 rows. `Animal,Emoji,Breed,Pure Bred,Wild,Exotic,Black Market,Colors,Average Lifespan,Obedience Score,Intelligence Score,Danger Score,Cost Score,Commonness Score`. When a Wild, Exotic or Black Market cell is set the breed is not a household animal, so the draw skips it: those three flags are the only filter between the pet here and the menagerie in the zoo section. Cost Score is unread (the money the hero spends on the pet is derived from the vet and treat tables instead).
+
+`a16_pet-names-enc` — 1,484 rows, `Animal,Name,Color,Gender`. One name row per animal and often per breed. Name cells are templates (`<random-surname>` for a fish or a hamster, ordinary first names for a cat), so the picked cell is resolved before it is used. Color is unread; Gender decides whether the name belongs to a male or female pet, blank fitting either.
+
+`a16_pet-death-types-enc` — 488 rows, `Animal,Type,Commonness Score,Other Person Involved,Sentence`. The Sentence is written about the pet, with `<pronoun>` `<his/her>` `<him/her>`, so the card has to point the pronoun pair at the animal rather than the hero. `Other Person Involved` is a flag: when it is clear the `<person>` phrase is cut out of the sentence before it is shown, otherwise a passer-by keeps the fault ("<pronoun> died from heat exhaustion after <person> inadvertently left <him/her> outside on a hot summer day.").
+
+`a16_pet-pastimes-enc` — 445 rows, `Animal,Pastime`. The Pastime cell is a bare verb phrase ("<petted/rubbed/massaged/wrestled with>", "<shared/talked about> all of <life's/the world's> <problems/sorrows/issues/drama> with"), so the line is assembled as "I <pastime> <pet>.".
+
+`a16_pet-treats-enc` — 490 rows, `Animal,Treat,Enjoyment Score`. Treat is already written with its article ("a rib eye steak", "a piece of cheddar"). The score is 1-5 and is worth twice itself in happiness.
+
+`a16_pet-releases-enc` — 183 rows, `Animal,Scenario`. The `<pronoun>` in this table is the OWNER ("<pronoun> went to the <jungle/savanna/forest> before releasing <pet> to roam wild."), which is why the release branch leaves the hero's own pronoun in place and only points the pair at the pet for the animal clause.
+
+`a16_pet-release-filler-enc` — 104 rows, `Animal,String,Gender,Big Animal,Clean`. What became of the animal afterwards. The String uses `<animal-type>` and `<animal-type-indefinite>`, so a released fish, a released horse and a released cat each get their own paragraph.
+
+`a16_pet-disease-types-enc` — 120 rows, `Animal,Disease,Uses Indefinite Article,Uses Definite Article,Commonness Score,Cures Organically Score,Can Be Fatal,Health Impact Score,Treatment Effectiveness Score,Treatment Cost Score,Euthanize`. Same shape as the zoo's disease table: the vet bill is `Treatment Cost Score * 400`, the health lost is `Health Impact Score * 4`, and `Can Be Fatal` together with a pet already at 20 health or below is the only way a treatable disease turns terminal.
+
+`a16_pet-found-dead-scenarios-enc` — 11 rows, one column. `Scenario` is a second-person report ("You found <pet> on the side of the road after being killed by a car!"), which the card prints as it ships because the hero is the one who found the animal.
+
+`a16_pet-discipline-enc` — 345 rows, already wired as the registry card `ScenarioPetDiscipline`. Its `Condition,Animal,Scenario,Log Version,Craziness Score,Pet Gender,Pet Talks,Hero Gender,Hero Min Age,Hero Max Age,Clean` columns belong to the discipline card, not to this yearly chain, and the two do not share state.
+
+### 67.2 Adopting the pet
+
+`makePet` is a pure draw: `petDraw` takes a household row of `a16_pets-enc` weighted by `Commonness Score`, keeps its Animal and Breed, flips a coin for the sex, and sets age 0, health 95 and happiness 75. The name comes from `a16_pet-names-enc` filtered on that Animal and on the gender (blank fits both), and the cell is resolved because several of them are templates. Cost, lifespan, obedience and intelligence are read but not spent: the pet arrives free and its only expense is the vet.
+
+The script flag `"pet": true` is new — unlike the landlord, casino, zoo, dealer and mafia subsystems, the pet had no flag at all before this section, so `include/bl/script.h` gained a `bool pet` and `src/script.cpp` gained both the parse block and the `if (spec.pet) sim.makePet(life);` call. There is no misc-pool bit riding along with it.
+
+### 67.3 A year with a pet
+
+`petYear` runs from age 6 at 55% a year and fires one branch, first hit wins.
+
+| chance | branch | what it does |
+| --- | --- | --- |
+| — | the house has no pet | an 8% adoption card, otherwise the year is skipped entirely, so a hero who never had a pet is not spammed |
+| 0.45 when health <= 15, else 0.04 | the death | the death Sentence with the pronoun pair pointed at the pet and the `<person>` clause cut unless the row flags one, title "The end of <pet>", body "Cause: <Type>." |
+| 0.28 | the treat | "I gave <pet> a rib eye steak." and `Enjoyment Score * 2` happiness |
+| 0.25 | the pastime | "I <pastime> <pet>." and a little happiness |
+| 0.12 | the vet | health lost, the bill printed, and with `Can Be Fatal` plus a pet at 20 or below a 30% chance the animal does not pull through |
+| 0.10 when happiness is under 40, else 0.03 | the release | the hero drives out and lets the animal go, with a 50% `release-filler` paragraph about what the animal did next |
+| 0.10 when health is 30 or below | found dead | the `found-dead` Scenario, cause "Went missing" |
+| else | the quiet year | "<pet> is N now." and "Health H, happiness P." |
+
+The bookkeeping that runs before the chain is what makes the branches reachable at all. Health falls 3 a year, and 8 a year once the animal is past 8; happiness drifts up by one below 70 and down by three at or above it. A pet that is never treated therefore slides toward the release and found-dead branches on its own, and a pet that is pampered every year stays happily middle-aged until the health clock wins.
+
+### 67.4 The six tokens
+
+`<pet>` and its `-possessive` spelling come from the name, and fall back to "my <animal>" when the data left the name blank. `<pet-name>` is the name alone. `<breed>` is the lowercased breed, `<animal>` and `<animal-type>` are the lowercased animal, and `<animal-type-indefinite>` is the same with its article ("a goldfish", "an iguana"). `<pronoun>`, `<his/her>` and `<him/her>` are deliberately NOT claimed by the pet token handler: the pronoun pair is global, and the two pet tables that mean the owner (releases) and the two that mean the animal (death, found dead) are separated by saving and restoring `pronounOtherSet_` around each branch instead.
+
+### 67.5 Shortcuts
+
+- The pet is free and arrives fully healthy; lifespan, obedience, intelligence and cost scores are read but never spent.
+- `a16_pet-release-filler-enc` is used as a paragraph after the release rather than as the release itself.
+- The found-dead branch needs a pet at 30 health or less, which most pets do not reach before the death branch takes them; it is wired and reachable but rare in a sample.
+- The discipline pool stays with its own registry card and is not merged into the yearly chain.
+- Heredity, breeding and the `Pure Bred` flag are not modelled: one pet, one card.
+
+### 67.6 Verification
+
+`/tmp/qdir/petres.py` walks 40 seeds in both sexes to age 60 with `{"pet": true}`, keeps every event whose table contains `pet` and greps the brackets out of the title, the body and the log lines:
+
+    pet events 2472 rc failures 0
+    RESIDUE 0
+
+Split by title (the quiet year falls back to the pastimes table, so the table histogram overstates it): quiet 519, treat 298, pastime about 245, death 80, disease 72, adoption 53, release 18. The full regression stayed green: `rescensus` distinct residue tokens 0, `coverage.py` 109 captured / 107 recoverable, `portgap.py` 109 / 107 / gap 0, `covpush.json` rc=0, `bench.sh` to age 34 with no abort.
+
+Two cards from the sample:
+
+    The end of Nymeria          Cause: Natural.
+                                she found a quiet place in the yard and died peacefully.
+
+    A trip to the vet           The vet treated Nymeria for gastric torsion.
+                                The bill came to $1200.
+
+and one from the release branch:
+
+    Letting go                  A random dog running the streets of Chicago crashed a party
+                                and ingested crack cocaine before the cops broke up the party
+                                and detained the dog.
+                                he went to the mountains before releasing Cooper to roam wild.

@@ -135,6 +135,7 @@ class Sim {
   void makeMafia(Life& life);
   void makeZoo(Life& life);
   void makeLandlord(Life& life);
+  void makePet(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -281,6 +282,9 @@ class Sim {
   std::string landlordToken(const std::string& key);
   void ensureLandlordFields(Life& life);
   void landlordDrawTenant(Life& life);
+  bool petYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string petToken(const std::string& key);
+  void petDraw(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -363,6 +367,7 @@ class Sim {
   Rng mafiaRng_;
   Rng zooRng_;
   Rng landlordRng_;
+  Rng petRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
