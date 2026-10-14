@@ -271,6 +271,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("gender must be \"male\" or \"female\", got \"" + g + "\"");
   }
 
+  p = findValue(json, "royal");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.royal = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.royal = false;
+    else return fail("royal is not a boolean");
+  }
+
   p = findValue(json, "date");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -372,6 +380,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     if (error) *error = "no country named \"" + spec.country + "\" in a16_countries-enc.json";
     return false;
   }
+  if (spec.royal) sim.makeRoyal(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.

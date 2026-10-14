@@ -48,6 +48,9 @@ struct ScriptSpec {
   uint64_t seed = 0;
   std::string country;
   bool female = false;
+  // Born into royalty (REPORT.en.md 47): the game rolls this at life setup and
+  // the port exposes it as a switch instead of guessing the probability.
+  bool royal = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

@@ -2995,3 +2995,137 @@ can read; what it is missing is the probability of being born into a royal
 family (field NumTimesRandomlyBornIntoRoyalty, setter at file offset 0x31d747c)
 and three new tokens (`<highest-royal-name>`, `<other-royal-name>`, the
 numbered celebrity slots). Reading that one number is the next step.
+
+## 47. The royal branch: a state the binary decides behind an indirect call
+
+The last of the three state branches that the dumb-scenario pools are gated on.
+Prison (45) and orphanhood (46) both had a hero field the port could set from a
+table; royalty is different -- the state itself is created at life setup, and the
+roll that decides it is not reachable with the tools used so far.
+
+### 47.1 What the binary proves
+
+- The birth-circumstance chooser loads `SimHero.Royal` at offset 0x178 and calls
+  `GetRandomBirthCircumstanceForHeroRoyalWithLooksAndSmarts` (@0x73f2cb1b14) only
+  when that object is non-NULL; the commoner entry point is
+  `GetRandomBirthCircumstanceForHeroWithLooksAndSmarts` (@0x73f2cb0b88). Both are
+  called from one life-setup function at vaddr 0x328d1xx.
+- Royalty is therefore a pre-existing `SimRoyal` object, constructed at three sites
+  (`.ctor(int,String,DataCountry,bool)` @0x73f2f2c6bc -> callers 0x2593f14, 0x2a78738,
+  0x32915f8; `.ctor(DataCountry)` @0x73f2f2c884 -> 0x2a77af8, 0x2a78a4c). The class
+  (il2cpp_dump.txt:58111) carries _CountryCode 0x10, Rank 0x18, Seat 0x20, RoyalByBirth
+  0x28, RoyalDowager 0x29, YearsRoyal 0x2c, RoyalHouse 0x38, Honorific 0x40.
+- Dead end, recorded so nobody repeats it: `set_Royal` (0x73f3722d88) and
+  `set_NumTimesRandomlyBornIntoRoyalty` (0x73f367147c) have zero direct BL callers in
+  the whole executable segment, and scanning for adrp+add pairs that materialise either
+  address finds none, so the property write and the roll behind it happen through
+  metadata-driven indirect calls. The probability of being born royal is therefore unread.
+  Everything below is built from table and literal evidence, and the random roll is left
+  out rather than guessed.
+- Address arithmetic used here (corrects earlier notes): the dump base is 0x73f049a000,
+  i.e. vaddr = dump_addr - 0x73f049a000, and for code vaddr is the r2 address. File
+  offsets differ: ELF PT_LOAD #2 maps file 0x201e3c0 to vaddr 0x20223c0, so
+  file_offset = vaddr - 0x4000 for the executable segment.
+
+### 47.2 The tables and the literals
+
+- `a16_dumb-scenarios-royal-enc` (71 rows) is the royal family's own yearly pool, with
+  the standard scenario columns plus its own gates: Hero Min/Max Age, Hero Gender, Hero Has
+  Lover, Lover Gender, UK Only, Japan Only, Arab Only, Is Highest Ranking Royal, Is Not
+  Highest Ranking Royal, Min/Max Respect. Rows carry real branch narratives ("I started a
+  new charity as a way of stepping up my royal game.").
+- Its token set: `<highest-royal-name>` 28, `<him/her>` 24, `<rb>` 22,
+  `<he/she>` 18, `<lover>` 14, `<classmate>` 14, `<his/her>` 11,
+  `<celebrity-male>` 10, `<musician>` 10, `<other-royal-name>` 10,
+  `<celebrity-female1|2>` / `<celebrity-male1|2>` 5 each, `<celebrity1>` 2,
+  `<circumstance-royal>` 2. Only the royal names, the numbered celebrity slots, the
+  generic `<celebrity1>` and `<circumstance-royal>` were missing from the port.
+- `a16_country-royal-systems-enc` (17 rows) gives each country's seats: Country, Country
+  Code, Top Seat, Money Score, Region, Rank 1 Male/Female, Rank 1 Male/Female by Marriage,
+  Rank 2..7 Male/Female, Seats. Belgium -> King/Queen, Japan -> Emperor/Empress, and the
+  Seats column is the country's house and place names.
+- `a16_royal-house-names-enc` (159 rows): Name, Estate, Palace, Castle, Country Code,
+  Commonness Score. Generic rows are `<random-surname> House` with Country Code `all`.
+- Literals: `#70877` '{0}{1} was born into {2} royalty. ' is the birth line ({0} is a
+  prefix that stays empty for the hero's own life), `#38696` 'Set your new life to be
+  born into royalty!' is the player-facing switch the port's `"royal"` script field
+  mirrors, `#17018` 'DUMB_SCENARIO_TYPE_ROYAL' names the pool category, and
+  `#24381` / `#30986` / `#47606` / `#48789` are the abdication lines.
+
+### 47.3 The Royal column of the birth-circumstances table
+
+`a16_birth-circumstances-enc` has a Royal column; 37 of its 187 rows carry it, and their
+weighted share of Commonness Score is 124/384 = 32%. Those rows are the royal conception
+lines ('I was conceived when my mother <mounted/sat on/climbed on> my father's throne.',
+'I was conceived when my parents whispered sweet nothings in a <secret/royal/palace/rose>
+garden.'). 32% is far too high to be the birth probability, so the column reads as a filter
+the game applies once royalty is already decided -- which matches the separate royal entry
+point in 47.1. The port uses it as exactly that filter.
+
+Note that the ordinary rows also include court-flavoured but unflagged ideas ("tea time got
+a little too hot and steamy", Royal = x is set on that one, so the filter is what removes it
+from a commoner's life).
+
+### 47.4 What the port implements
+
+- `Hero` (include/bl/game.h:94-97): `royal`, `royalRank`, `royalSeat`,
+  `royalHouse`.
+- `Sim::makeRoyal` (src/sim.cpp:2518): finds the country's row in
+  a16_country-royal-systems-enc (17 countries have one; a country without one stays a
+  commoner instead of getting an invented seat), sets seat from Rank 1 Male/Female, and
+  draws one house from a16_royal-house-names-enc weighted by Commonness Score over the rows
+  whose Country Code is `all` or contains the country's own code, resolving
+  `<random-surname>` with the normal resolver.
+- `runScript` calls it when the script says `"royal": true` (src/script.cpp:274 parse,
+  before `birthLines` so the birth lines and the hero snapshot both carry the state).
+- `birthLines` filters the circumstance pool on the Royal column (src/sim.cpp:1134) and
+  appends 'I was born into <country> royalty.' (src/sim.cpp:1144, literal #70877).
+- `royalToken` (src/sim.cpp:2545) resolves `<highest-royal-name>` (rank 1 seat + a
+  first name of the hero's gender, the game's own 'King Ram' shape) and
+  `<other-royal-name>` (the first filled seat below rank 1), and both stay verbatim for a
+  commoner.
+- `royalCircumstance` (src/sim.cpp:2571) composes `<circumstance-royal>`.
+- The numbered celebrity slots are normalised in the reference lookup: the trailing digits are
+  a slot id (`<celebrity-female1>`), and a bare `<celebrity1>` falls back to the pool
+  matching the hero's gender.
+- `pickDumbScenario`: `kDumbRoyal` (src/sim.cpp:1583) is the k == 5 set for a royal hero
+  (src/sim.cpp:1661).
+- `royalRng_` (src/sim.cpp:566) is a private stream, so the branch never shifts the main
+  stream a seed's other subsystems draw from.
+
+### 47.5 The shortcuts, and why they are not guesses
+
+1. The birth probability is unread (47.1), so the port exposes `"royal": true` instead of
+   inventing a rate. The game's own player-facing control is the same kind of switch (#38696).
+2. The k -> set mapping inside `GetARandomPushDumbScenario` was not read for this bucket, so
+   the royal set is taken whenever the hero is royal rather than at the game's own frequency.
+3. `<circumstance-royal>` is built in code by
+   `DataHub.GetRandomCircumstanceRoyalWithCastleName(String)` (@0x73f2ce4050), which takes
+   the castle name, and its pool was not sampled; the port composes 'While leaving <place>' from
+   the country's own Seats column.
+
+Each of the three carries a `shortcut:` comment at its site.
+
+### 47.6 Verification
+
+- `"royal": true` with Belgium / Japan / Denmark renders 'I was born into Belgium royalty.'
+  and draws its conception line from the Royal rows; United States (no royal system) stays a
+  commoner with an ordinary conception line.
+- Forced rows from the royal pool render with the royal tokens resolved: roleplay row 45
+  'All You Can Be' -> 'King Ram tells you that exciting new opportunities will soon be available
+  to those who have earned it', and an unfetched row from the same life gave 'I remained true
+  to the crown's customs and suffered through the cold weather wearing shorts.'
+- Residue census over 48 runs: 0 tokens. tools/coverage.py: 109 captured / 107 recoverable.
+  tools/portgap.py: 109 entries / 107 rendered / gap 0. bash tools/bench.sh /tmp/trace_c10.json:
+  34 years, no abort.
+- The random stream is untouched: both the residue census and portgap reproduce their pre-branch
+  numbers exactly.
+
+### 47.7 Where the state branches now stand
+
+Prison (45) and orphanhood (46) are driven by an event, royalty (47) by a life-setup switch.
+Vampire has 4 trace lines and 44 tables but its gate was not located; military and the
+occupation branches were not located at all. The interactive menus behind all three (the
+orphanage profile, the royal family screen, the vampire crypt) remain unported: the corpus
+contains no captures of them, so they have no ground truth to build against.
+

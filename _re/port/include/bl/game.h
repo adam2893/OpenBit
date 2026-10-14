@@ -87,6 +87,14 @@ struct Hero {
   // Set when the hero is left with no surviving parent before 18; the orphan
   // dumb-scenario set is gated on it (REPORT.en.md 46).
   bool orphan = false;
+  // Born into royalty (REPORT.en.md 47). The game decides this at life setup
+  // (SimHero.Royal, offset 0x178, then a SimRoyal object); the port drives it
+  // from the script's "royal" switch because the roll's probability was not
+  // read out of the binary, and the royal dumb-scenario set is gated on it.
+  bool royal = false;
+  int royalRank = 0;       // 1 = the country's top seat
+  std::string royalSeat;   // 'King' / 'Emperor' / 'Prince', from the seat table
+  std::string royalHouse;  // a16_royal-house-names-enc 'Name'
 };
 
 class GameState {

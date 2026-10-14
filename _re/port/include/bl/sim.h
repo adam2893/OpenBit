@@ -110,6 +110,12 @@ class Sim {
   // Draws from the same RNG stream as the rest of the life, so it must be called
   // once, before the first ageUp().
   std::vector<std::string> birthLines(Life& life);
+
+  // Turns a life into one born into royalty: reads the country's seats out of
+  // a16_country-royal-systems-enc and one house out of
+  // a16_royal-house-names-enc. runScript calls it before birthLines, so the
+  // birth line and the hero snapshot both carry the state (REPORT.en.md 47).
+  void makeRoyal(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -193,6 +199,11 @@ class Sim {
   // One surname from the same celebrity-name pool, for the local physicians the
   // illness chain offers ("Dr. Seaman" in the capture).
   std::string drawSurname();
+  // '<highest-royal-name>' / '<other-royal-name>' (a seat plus a first name) and
+  // '<circumstance-royal>' (the royal twin of the circumstance pools, built in
+  // code by DataHub.GetRandomCircumstanceRoyalWithCastleName, 0x73f2ce4050).
+  std::string royalToken(const std::string& token);
+  std::string royalCircumstance();
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
@@ -224,6 +235,9 @@ class Sim {
   Rng prisonRng_;
   // Family mortality and any other event that must not shift the main stream.
   Rng familyRng_;
+  // The royal birth roll's own stream (the probability itself is unread; see
+  // REPORT.en.md 47), so the switch never shifts the main stream.
+  Rng royalRng_;
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;
   // Next age-up's forced row, set by forceScenario() and cleared when it fires.

@@ -562,7 +562,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
     : reDir_(std::move(reDir)),
       rng_(seed),
       prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL),
-      familyRng_(seed ^ 0x51ed270b2f5a1c31ULL) {}
+      familyRng_(seed ^ 0x51ed270b2f5a1c31ULL),
+      royalRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -601,6 +602,9 @@ bool Sim::load(std::string* error) {
       "a16_prison-jobs-enc",                         // Job,Description,Daily Rate,Commonness Score
       "a16_dumb-scenarios-prison-enc",               // the prison year's own pool
       "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
+      "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
+      "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
+      "a16_royal-house-names-enc",                   // Name,Estate,Palace,Castle,Country Code,Commonness Score
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
   };
@@ -943,6 +947,11 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string line = vacationCruise();
       if (line.empty()) out += text.substr(i, close - i + 1);
       else out += line;
+    } else if (token == "highest-royal-name" || token == "other-royal-name" ||
+               token == "circumstance-royal") {
+      const std::string value = royalToken(token);
+      if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += value;
     } else if (token == "circumstance-public") {
       out += circumstancePublic();
     } else if (token == "musician-indefinite") {
@@ -965,9 +974,20 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
       else out += value;
     } else if (!numberToken(token, out)) {
+      // The royal pool addresses the reference pools by slot number
+      // ('<celebrity-female1>', '<celebrity-male2>', '<celebrity1>'): the
+      // trailing digits are the slot, not part of the pool name.
+      std::string slot = token;
+      if (slot.compare(0, 9, "celebrity") == 0) {
+        size_t cut = slot.size();
+        while (cut > 0 && std::isdigit(static_cast<unsigned char>(slot[cut - 1]))) --cut;
+        if (cut < slot.size()) slot.resize(cut);
+        if (slot == "celebrity" || slot == "celebrity-")
+          slot = (hero_ != nullptr && hero_->female) ? "celebrity-female" : "celebrity-male";
+      }
       auto it = memo.find(token);
       if (it == memo.end()) {
-        const std::string pool = referenceToken(token);
+        const std::string pool = referenceToken(slot);
         it = memo.emplace(token, pool.empty() ? personName(token) : pool).first;
       }
       if (it->second.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
@@ -1106,6 +1126,12 @@ std::vector<std::string> Sim::birthLines(Life& life) {
       if (trim(t.at(r, "Circumstance")).empty()) continue;
       if (!trim(t.at(r, "Min Mother Age")).empty() && motherAge < int(t.num(r, "Min Mother Age"))) continue;
       if (!trim(t.at(r, "Max Mother Age")).empty() && motherAge > int(t.num(r, "Max Mother Age"))) continue;
+      // The table's Royal column marks the 37 conception lines the game draws
+      // from once royalty is already decided (the separate entry point is
+      // GetRandomBirthCircumstanceForHeroRoyalWithLooksAndSmarts @0x73f2cb1b14,
+      // reached only when SimHero.Royal is set). REPORT.en.md 47.
+      const bool royalRow = t.has("Royal") && t.flag(r, "Royal");
+      if (royalRow != h.royal) continue;
       pool.push_back(r);
     }
     const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
@@ -1113,6 +1139,9 @@ std::vector<std::string> Sim::birthLines(Life& life) {
   }
   out.push_back("I was born a " + gender + " in " + h.city + ", " + h.country + "." +
                 (circumstance.empty() ? "" : " " + circumstance));
+  // Literal #70877 '{0}{1} was born into {2} royalty. ' -- {0} is the prefix that
+  // stays empty for the hero's own life, so this is the first-person line.
+  if (h.royal) out.push_back("I was born into " + h.country + " royalty.");
 
   // 2) Birthday and sign; the sign is derived from the date, not drawn.
   static const char* kMonths[12] = {"January", "February", "March",     "April",
@@ -1551,6 +1580,7 @@ const char* const kDumbCalendar = "a16_dumb-scenarios-calendar-enc";
 const char* const kDumbFriend = "a16_dumb-scenarios-friend-enc";
 const char* const kDumbPrison = "a16_dumb-scenarios-prison-enc";
 const char* const kDumbOrphan = "a16_dumb-scenarios-orphan-enc";
+const char* const kDumbRoyal = "a16_dumb-scenarios-royal-enc";
 
 std::vector<size_t> Sim::dumbSetRows(const char* name, const Life& life) {
   std::vector<size_t> rows;
@@ -1620,6 +1650,15 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
       set = kDumbCalendar;  // 0x73f2eb34a0 -> GetTodaysCalendarDumbScenario
     } else if (k == 4) {
       set = kDumbCareer;
+    } else if (life.hero.royal) {
+      // The royal set, one of the game's own dumb-scenario categories
+      // (DUMB_SCENARIO_TYPE_ROYAL, literal #17018). shortcut: the k -> set
+      // mapping for this bucket was not read out of
+      // GetARandomPushDumbScenario, and the birth roll behind the state sits
+      // behind an indirect IL2CPP call (report 47), so the port accepts the
+      // royal set whenever the script asked for a royal life and otherwise
+      // leaves the universal tail as it was.
+      set = kDumbRoyal;
     } else {
       set = kDumbUniversal;
     }
@@ -2474,6 +2513,83 @@ bool Sim::prisonYear(Life& life, AgeUp& out, int forcedChoice) {
     else out.narrative += "\nI was released from prison.";
   }
   return rendered || !jobLine.empty() || !out.narrative.empty();
+}
+
+void Sim::makeRoyal(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;  // resolve() reads the live hero for '<random-surname> House'
+  if (!ensureTable("a16_country-royal-systems-enc") || !ensureTable("a16_royal-house-names-enc")) return;
+  const Table& rs = tbl("a16_country-royal-systems-enc");
+  size_t row = size_t(-1);
+  for (size_t r = 0; r < rs.size(); ++r) {
+    if (lower(trim(rs.at(r, "Country"))) == lower(trim(h.country))) { row = r; break; }
+  }
+  // Countries without a royal system stay commoners rather than getting an
+  // invented seat (17 of them have one: Belgium, Denmark, Japan, ...).
+  if (row == size_t(-1)) return;
+  h.royal = true;
+  h.royalRank = 1;
+  h.royalSeat = trim(rs.at(row, h.female ? "Rank 1 Female" : "Rank 1 Male"));
+  const std::string code = lower(trim(rs.at(row, "Country Code")));
+  const Table& hn = tbl("a16_royal-house-names-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < hn.size(); ++r) {
+    const std::string codes = lower(hn.at(r, "Country Code"));
+    if (codes != "all" && (code.empty() || codes.find(code) == std::string::npos)) continue;
+    pool.push_back(r);
+  }
+  const size_t house = weightedPickOf(hn, "Commonness Score", pool, rng_);
+  if (house != size_t(-1)) h.royalHouse = resolve(hn.at(house, "Name"));
+}
+
+std::string Sim::royalToken(const std::string& token) {
+  if (hero_ == nullptr || !hero_->royal) return std::string();
+  if (token == "circumstance-royal") return royalCircumstance();
+  if (!ensureTable("a16_country-royal-systems-enc")) return std::string();
+  const Table& rs = tbl("a16_country-royal-systems-enc");
+  size_t row = size_t(-1);
+  for (size_t r = 0; r < rs.size(); ++r) {
+    if (lower(trim(rs.at(r, "Country"))) == lower(trim(hero_->country))) { row = r; break; }
+  }
+  if (row == size_t(-1)) return std::string();
+  const bool female = hero_->female;
+  std::string seat;
+  if (token == "highest-royal-name") {
+    seat = trim(rs.at(row, female ? "Rank 1 Female" : "Rank 1 Male"));
+  } else {
+    // '<other-royal-name>' = any seat below the top one; every country fills
+    // ranks 2..7 from Prince/Duke/Marquess/Count down to Baron.
+    for (int rank = 2; rank <= 7 && seat.empty(); ++rank) {
+      const std::string col = "Rank " + std::to_string(rank) + (female ? " Female" : " Male");
+      if (rs.has(col)) seat = trim(rs.at(row, col));
+    }
+  }
+  if (seat.empty()) return std::string();
+  return seat + " " + drawFirstName(female);
+}
+
+std::string Sim::royalCircumstance() {
+  // shortcut: the royal circumstance pool is built in code
+  // (DataHub.GetRandomCircumstanceRoyalWithCastleName @0x73f2ce4050 takes the
+  // castle name, so every phrase in it names the seat) and was not sampled, so
+  // the port composes one from the country's own Seats column instead of
+  // leaving a bare '<circumstance-royal>' in the card (report 47).
+  if (hero_ == nullptr) return std::string();
+  if (!ensureTable("a16_country-royal-systems-enc")) return std::string();
+  const Table& rs = tbl("a16_country-royal-systems-enc");
+  size_t row = size_t(-1);
+  for (size_t r = 0; r < rs.size(); ++r) {
+    if (lower(trim(rs.at(r, "Country"))) == lower(trim(hero_->country))) { row = r; break; }
+  }
+  if (row == size_t(-1)) return std::string();
+  std::vector<std::string> seats;
+  splitOn(rs.at(row, "Seats"), ',', seats);
+  std::vector<std::string> keep;
+  for (const std::string& s : seats) if (!trim(s).empty()) keep.push_back(trim(s));
+  if (keep.empty()) return std::string();
+  static const char* const kOpeners[] = {"While leaving ", "On your way out of ", "While walking the grounds of "};
+  const std::string place = keep[rng_.below(uint32_t(keep.size()))];
+  return std::string(kOpeners[rng_.below(3)]) + place;
 }
 
 bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence) {
