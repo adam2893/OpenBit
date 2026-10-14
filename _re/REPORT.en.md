@@ -3992,3 +3992,150 @@ The check is the `spy` script key over seeds 1-30 in both genders, ages 60, coll
 
 and its log: "Darknight strangled a corrupt judge with some packing tape! My banana taser let me send 50,000 volts through a corrupt judge's leg. I used acid to dissolve a corrupt judge's body in a landfill."
 
+
+## 59. The fight family: a combat career drawn from thirty-eight tables
+
+The family is the game's boxing/MMA line: a hero who trains at a gym, fights on
+cards, and moves up a league table. It is 38 tables and 2632 rows, and it is the
+largest remaining career-shaped gap in the port.
+
+### 59.1 The tables
+
+| table | rows | what the port takes from it |
+| --- | --- | --- |
+| a16_fight-ing-style-identity-color-enc | 34 | **Fighting Style** (striker / submission artist / wrestler) — the hero's label |
+| a16_fight-ing-arena-name-enc | 33 | **Arena Name**, plus **Is Championship Match Arena** as a gate |
+| a16_fight-ing-opponent-type-enc | 63 | **Description**, **Percent Male**, **Fighter Level** (1-5), **Commonness Score** |
+| a16_fight-ing-win-reason-enc | 76 | **Reason**, **Coolness Score**, **Min/Max Hero League Position** |
+| a16_fight-ing-loss-reason-enc | 83 | **Reason**, **Sympathy Score**, **Min/Max Hero League Position** |
+| a16_fight-outcome-color-enc | 37 | **Hero Win Version** / **Hero Lose Version**, with **<fighter>** = the opponent |
+| a16_fight-coach-generic-feedback-string-enc | 42 | **String**, **Match Outcome**, **Min/Max Coach Quality** |
+| a16_fight-coach-loss-feedback-string-enc | 30 | **String**, **Match Condition**, **Is Street Fight** |
+| a16_fight-ing-coach-training-string-enc | 69 | **String**, **Training Type**, **Hero Gender**, **Coach Gender**, **Min/Max Coach Quality** |
+| a16_fight-coach-quality-color-string-enc | 45 | **String** — the coach's own visible character, **Coach Gender** / **Min/Max Coach Quality** |
+| a16_fight-ing-move-enc | 202 | **Move Name** (the gym line), plus the whole move system (unused) |
+| a16_fight-hero-training-injury-string-enc | 5 | **String** — the ache after a session |
+| a16_fight-ing-injurie-enc | 85 | **Type**, **Feedback Snippet**, four **... Decrease** columns, **Commonness Score** |
+| a16_fight-ing-fan-interaction-enc | 34 | **Scenario**, **Log Version Snippet**, **Fan Gender** |
+| a16_fight-ing-interview-fan-reaction-enc | 32 | **Scenario**, **Log Version**, **Match Outcome** |
+| a16_fight-press-conference-question-enc | 29 | **Question** plus twenty **Choice i** cells and four flag blocks per choice |
+| a16_fight-press-conference-media-outlet-enc | 25 | **Media Outlet String** |
+| a16_fight-ing-sponsorship-company-enc | 38 | **Company Name**, **Min/Max Payout**, **Min/Max League Position** |
+| a16_fight-ing-product-enc | 82 | **Product Name**, **Hero Gender**, **Min/Max Reputation** |
+| a16_fighting-products | 11 | **Product Name**, **Min/Max Reputation** (no gender column) |
+| a16_fight-ing-dive-scenario-enc | 29 | **Scenario** / **Log Version** — throwing the fight |
+| a16_fight-wild-encounter-color | 11 | **ColorString** — the street encounter's own opening line |
+| a16_fight-ing-wild-encounter-color-enc | 56 | **String**, **Log Version**, **Min/Max Hero League Position** |
+| a16_fight-street-ing-location-enc | 42 | **Location** |
+| a16_fight-er-animal-enc | 6 | **Animal**, **Attack Verb**, **Street Creds Gained** |
+| a16_fight-sportsmanship-scenario-enc | 29 | **Is Positive**, **Scenario**, **Log Version** |
+| a16_fight-roid-rage-scenario-enc | 66 | **Snippet**, **Audience**, **Audience Gender**, **Hero Min/Max Age** |
+| a16_fight-roid-rage-retort-enc | 59 | **String**, **Audience Gender**, **Min/Max Audience Age**, **Min/Max Hero Age** |
+| a16_fight-doping-challenge-color-string-enc | 17 | **String** — the accusation that the hero is dirty |
+| a16_fight-recharge-method-enc | 15 | **Method**, **Cost**, **Stamina Gain**, the three impact columns |
+| a16_fight-recharge-method-scenario-enc | 46 | **Method**, **String**, **Log Version** (the Method cell links the two tables) |
+| a16_fight-ufl-dumb-scenario-enc | 44 | a full push card: Title, Body, CTA, Narrative 1, **Street Cred Base Value 1** |
+| a16_fight-er-trash-talk-enc | 51 | the hero's own voice |
+| a16_fight-er-compliment-enc | 30 | |
+| a16_fight-er-admiration-scenario-enc | 17 | |
+| a16_fight-er-concern-scenario-enc | 16 | |
+| a16_fight-er-training-string-enc | 44 | |
+| a16_fight-er-circumstance-enc | 42 | **String** — a lead-in phrase ("While out grabbing a new pair of punching gloves") |
+
+### 59.2 The career line
+
+makeFighter runs at hire time and draws the hero a style, an arena, and a coach.
+The coach is not a roster in this data — only feedback strings and one portrait
+table ship — so the port draws a name and gives them a quality score in 40..90.
+The stats it tracks are strength, toughness, agility, technique (40..60 at hire,
+toughness pinned to strength) and stamina (100), plus reputation, street cred,
+wins, losses, and a league position that starts at 20.
+
+fightYear fires from age 18 at 55% a year, and is one of three kinds:
+
+* **recharge** when stamina is under 35 — the method-scenario table picks the
+  scene, the method table is matched on its Method cell, and the cost, stamina
+  gain and the happiness/health/discipline impacts are applied.
+* **training** — a coach string gated on the hero's gender and the coach's
+  quality, the gym line ("I drilled the anchor bomb."), and an 8% training ache.
+* **a card** — the opponent band comes from the league position (top three fight
+  level-5 opponents, and so on down to level 1 past eighteenth place), the
+  opponent type is weighted and its Percent Male column becomes the coin for the
+  opponent's gender, and only the top four may draw a championship arena.
+
+Odds are a form score minus rank and opponent level: 0.5 + (form - 50)/150 +
+(12 - leaguePos)/60 - (band - 1) * 0.05, clamped to 0.15..0.9. A win moves the
+hero up a place and pays reputation; a loss slides down. Five percent of wins
+are a dive instead, which the scenario table narrates.
+
+### 59.3 Tokens
+
+The family writes **<fighter>** for the opponent in the fight-ing tables and for
+the hero in the fight-er persona tables, which is why the port carries a
+fightSelf_ flag: the same token means opposite people in the two halves of the
+family. **<fighter-possessive>**, **<coach-fighting>**, **<fight-opponent-type>**,
+**<opponent-name>**, **<fighting-arena>**, **<fighting-style>** and
+**<circumstance-fighter>** are all served by fightToken.
+
+This family also forced three additions to the shared resolver:
+
+* **<a>** (60 uses) and **<a/an>** (58) are indefinite articles, so the resolver
+  looks at the next word and calls articleFor on it.
+* **<person>** (15) is a stranger, so it falls back to the reference table
+  random_person_indefinite (and then random_person), possessive included.
+* **<lover>** leaked in the outcome rows when the hero had no partner. A pool
+  that names a partner the hero never met now draws a stranger rather than
+  printing an unresolved bracket.
+
+### 59.4 What a card prints
+
+One card can carry up to a dozen lines, and they come from a dozen tables in
+order: the outcome line, the reason, the coach's reaction, a fan, an interview,
+a press conference with a real question and a real answer from the twenty Choice
+cells, an injury with four stat drops, a sponsorship, a product, a UFL card, a
+wild encounter with its own colour-pool opener, a sportsmanship beat, a roid-rage
+scene with a retort, and a line in the hero's own voice. Each one is gated on its
+own table's window, and the windows pickRow cannot express (Min/Max Coach
+Quality, Min/Max Hero League Position, Min/Max Reputation, payout bands) are
+retried three times by a local helper before the line is accepted.
+
+### 59.5 Shortcuts
+
+* The move system is not modelled. The 202-row move table is read only for the
+  name of the move the hero drilled; move types, unlock conditions, upgrades,
+  body parts, Street Cred Cost, power, accuracy and stamina cost are ignored.
+* Press-conference effects are four flag columns per choice, not stats, so a
+  choice only moves reputation +/-4 and stamina +/-5.
+* Injuries do not require or cost surgery, and healing is a flat yearly drift.
+* The UFL card is rendered as a year-up event with its first choice taken; a
+  year-up card has no prompt to route a player choice through.
+* Percent Male is read as a probability, not a population share.
+* The coach is a drawn name with a quality score, not a roster member, and the
+  coach-quality table supplies the portrait rather than the game.
+* Fighting Style is a label: nothing in the fight maths reads it.
+* <coach-fighting> and <circumstance-fighter> are drawn from the name pool and
+  cached per card, so a card mentions one coach and one circumstance phrase.
+
+### 59.6 Verification
+
+Probe (30 seeds x both genders, ages 60, fight enabled) produced 1207 fight
+events and **residue 0** — no unresolved token in any title, body or log line.
+By table: outcome 691, coach training 324, recharge 178, dive 14.
+
+A card from seed 1:
+
+    A card at Primetime Punch-Dome
+    My opponent: Tai Weekday, a rookie. The press asked: What if Tai Weekday
+    beats you? I said: I'd shake his hand respectfully.
+    After my post-match interview, UFL commentators said that every fighter
+    should take note of my Prime.
+    The conference ran on the Grapple Gurus.
+
+A training year from the same seed:
+
+    While doing pull-ups at the fighting gym, May Lim started yelling, "Harder!".
+    I drilled the anchor bomb.
+
+Regression: distinct residue tokens 0, coverage 109 captured / 107 recoverable,
+port gap 0, the coverage push pass returns 0, and the ten-year bench reaches age
+34 with no abort.

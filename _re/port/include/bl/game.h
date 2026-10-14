@@ -145,6 +145,25 @@ struct Hero {
   int spyMissions = 0;
   std::string spyCover;        // the day job that hides the service
   std::string spyAddress;      // the front's street address
+  // The fight career (REPORT.en.md 59): a level, a league position (1 is the top
+  // of the card), a form score, reputation, street cred and a stamina pool.
+  bool fighter = false;
+  std::string fightStyle;      // striker / submission artist / wrestler
+  std::string fightCoach;
+  bool fightCoachFemale = false;
+  int fightCoachQuality = 0;   // 0-100, the gate on the coach feedback tables
+  std::string fightArena;
+  int fightLevel = 0;          // the opponent-type Fighter Level band, 1-5
+  int fightLeaguePos = 20;     // 1 is the top of the card
+  int fightReputation = 0;
+  int fightStreetCred = 0;
+  int fightWins = 0;
+  int fightLosses = 0;
+  int fightStrength = 0;
+  int fightToughness = 0;
+  int fightAgility = 0;
+  int fightTechnique = 0;
+  int fightStamina = 0;
   // Bit i = the misc dumb-scenario pool i is switched on (REPORT.en.md 56).
   unsigned miscMask = 0;
   // Relationship state (REPORT.en.md 57). The pools in the lover family gate

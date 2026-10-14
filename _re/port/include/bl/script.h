@@ -70,6 +70,7 @@ struct ScriptSpec {
   bool casino = false;
   bool relationship = false;
   bool spy = false;
+  bool fight = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

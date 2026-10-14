@@ -127,6 +127,7 @@ class Sim {
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
   void makeSecretAgent(Life& life);
+  void makeFighter(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -239,14 +240,26 @@ class Sim {
   // briefing built from the type's own tables and its outcome from
   // a16_secret-agent-mission-summary-feedback-enc.
   bool spyYear(Life& life, AgeUp& out, int forcedChoice);
+  // The fight career (report 59): one card per year, its opponent banded by the
+  // hero's league position and its outcome fed back through the coach tables.
+  bool fightYear(Life& life, AgeUp& out, int forcedChoice);
   std::string spyToken(const std::string& key);
   std::string spyFrontName(const std::string& businessType);
+  std::string fightToken(const std::string& key);
   size_t spyRow(const std::string& table, const std::string& weightColumn,
                 const std::string& filterColumn, const std::string& filterValue,
                 const std::string& flagColumn);
   std::string spySnippet(const std::string& table, const std::string& column,
                          const std::string& weightColumn, const std::string& filterColumn,
                          const std::string& filterValue, const std::string& flagColumn);
+  // The same two draws, but over a caller-supplied stream: every career keeps
+  // its own Rng so one family's draws never shift another's sequence.
+  size_t pickRow(const std::string& table, const std::string& weightColumn,
+                 const std::string& filterColumn, const std::string& filterValue,
+                 const std::string& flagColumn, Rng& rng);
+  std::string pickSnippet(const std::string& table, const std::string& column,
+                          const std::string& weightColumn, const std::string& filterColumn,
+                          const std::string& filterValue, const std::string& flagColumn, Rng& rng);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
   bool relEligible(const Table& t, size_t row, const Life& life) const;
   void ensureOfficeFields(Life& life);
@@ -302,10 +315,16 @@ class Sim {
   Rng miscRng_;
   Rng relRng_;
   Rng spyRng_;
+  Rng fightRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
   std::map<std::string, std::string> spyCache_;  // one name per token per card
+  std::string fightOpponent_;       // '<fighter>' in the fight-ing tables
+  std::string fightOpponentType_;   // '<fight-opponent-type>'
+  std::string fightArena_;          // '<fighting-arena>' of this card
+  bool fightSelf_ = false;          // the fight-er persona tables mean the hero
+  std::map<std::string, std::string> fightCache_;  // one circumstance per card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

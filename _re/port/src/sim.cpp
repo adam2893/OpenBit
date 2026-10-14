@@ -573,7 +573,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       politicsRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
       miscRng_(seed ^ 0xd6e8feb86659fd93ULL),
       relRng_(seed ^ 0x1b873593e6546b64ULL),
-      spyRng_(seed ^ 0x7f4a7c15d1b54a3dULL) {}
+      spyRng_(seed ^ 0x7f4a7c15d1b54a3dULL),
+      fightRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -717,6 +718,51 @@ bool Sim::load(std::string* error) {
       "a16_secret-agent-stealth-obstacle-assassinations-enc",  // Fail Verb,Success Verb,..: a guard who wakes up
       "a16_secret-agent-warnings-enc",               // Scenario,Risk Score,Commonness Score: telling a colleague
       "a16_secret-agent-warn-agent-retorts-enc",     // Scenario,Min/Max Proficiency: the answer
+      // The fight career (report 59): arenas, opponents banded by fighter level,
+      // coaches, injuries, fan interaction, interviews, sponsorships, press
+      // conferences, street fights and PEDs. The colour pools
+      // (fight-coach-quality-color-string, fight-doping-challenge-color-string,
+      // fight-ing-style-identity-color, fight-ing-wildounter-color,
+      // fight-outcome-color, fight-wildounter-color) are stored for the level and
+      // style values, not for a colour channel the port does not have.
+      "a16_fight-ing-style-identity-color-enc",
+      "a16_fight-ing-arena-name-enc",
+      "a16_fight-ing-opponent-type-enc",
+      "a16_fight-ing-win-reason-enc",
+      "a16_fight-ing-loss-reason-enc",
+      "a16_fight-outcome-color-enc",
+      "a16_fight-ing-coach-training-string-enc",
+      "a16_fight-coach-generic-feedback-string-enc",
+      "a16_fight-coach-loss-feedback-string-enc",
+      "a16_fight-ing-move-enc",
+      "a16_fight-hero-training-injury-string-enc",
+      "a16_fight-recharge-method-enc",
+      "a16_fight-recharge-method-scenario-enc",
+      "a16_fight-ing-dive-scenario-enc",
+      "a16_fight-ing-fan-interaction-enc",
+      "a16_fight-ing-interview-fan-reaction-enc",
+      "a16_fight-press-conference-question-enc",
+      "a16_fight-press-conference-media-outlet-enc",
+      "a16_fight-ing-injurie-enc",
+      "a16_fight-ing-sponsorship-company-enc",
+      "a16_fight-ing-product-enc",
+      "a16_fight-ing-wild-encounter-color-enc",
+      "a16_fight-street-ing-location-enc",
+      "a16_fight-er-animal-enc",
+      "a16_fight-sportsmanship-scenario-enc",
+      "a16_fight-roid-rage-scenario-enc",
+      "a16_fight-roid-rage-retort-enc",
+      "a16_fight-er-trash-talk-enc",
+      "a16_fight-er-compliment-enc",
+      "a16_fight-er-admiration-scenario-enc",
+      "a16_fight-er-concern-scenario-enc",
+      "a16_fight-er-training-string-enc",
+      "a16_fight-er-circumstance-enc",
+      "a16_fighting-products",
+      "a16_fight-ufl-dumb-scenario-enc",
+      "a16_fight-coach-quality-color-string-enc",
+      "a16_fight-doping-challenge-color-string-enc",
+      "a16_fight-wild-encounter-color",
   };
   try {
     for (const char* name : kTables) {
@@ -1097,6 +1143,19 @@ std::string spyLowerFirst(std::string text) {
   return text;
 }
 
+bool fightIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  static const char* kKeys[] = {"fighter", "coach-fighting", "fight-opponent-type", "opponent-name",
+                                "fighting-arena", "fighting-style", "fight-style",
+                                "circumstance-fighter", "fighter-circumstance"};
+  for (const char* k : kKeys)
+    if (key == k) return true;
+  return false;
+}
+
 bool spyIsToken(const std::string& token) {
   const std::string psuffix = "-possessive";
   std::string base = token;
@@ -1299,6 +1358,25 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string v = spyToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else out += v;
+    } else if (fightIsToken(token)) {
+      const std::string v = fightToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += v;
+    } else if (token == "a" || token == "a/an") {
+      // '<a>' and '<a/an>' are indefinite articles, so the choice between a and
+      // an comes from the word that follows in the same sentence.
+      size_t w = close + 1;
+      while (w < text.size() && text[w] == ' ') ++w;
+      size_t we = w;
+      while (we < text.size() && std::isalpha(static_cast<unsigned char>(text[we]))) ++we;
+      std::string art = we > w ? articleFor(text.substr(w, we - w)) : std::string("a ");
+      while (!art.empty() && art[art.size() - 1] == ' ') art.resize(art.size() - 1);
+      out += art;
+    } else if (token == "person" || token == "person-possessive") {
+      std::string v = referenceToken("random_person_indefinite");
+      if (v.empty()) v = referenceToken("random_person");
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += (token == "person-possessive" ? v + "'s" : v);
     } else if (!numberToken(token, out)) {
       // The royal pool addresses the reference pools by slot number
       // ('<celebrity-female1>', '<celebrity-male2>', '<celebrity1>'): the
@@ -2090,6 +2168,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (spyYear(life, out, forcedChoice)) return true;
+  if (fightYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2151,6 +2230,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   rndCache_.clear();  // the body is parsed first, its draws feed the log line
   relNameCache_.clear();  // one <name> per card
   spyCache_.clear();      // one target / client / colleague name per spy card
+  fightCache_.clear();    // one circumstance phrase per fight card
   spyAgentIsOther_ = false;
   if (row >= t.size()) return false;
   // The year's family lifecycle lines were written before the scenario was
@@ -3173,9 +3253,9 @@ std::string Sim::miscToken(const std::string& key) {
 // One draw over a secret-agent table. The weight column may be empty (then the
 // pick is uniform), a blank cell in the filter column matches anything, which is
 // how this family authors its gender columns, and the flag column is optional.
-size_t Sim::spyRow(const std::string& table, const std::string& weightColumn,
-                   const std::string& filterColumn, const std::string& filterValue,
-                   const std::string& flagColumn) {
+size_t Sim::pickRow(const std::string& table, const std::string& weightColumn,
+                    const std::string& filterColumn, const std::string& filterValue,
+                    const std::string& flagColumn, Rng& rng) {
   if (!ensureTable(table)) return size_t(-1);
   const Table& t = tbl(table.c_str());
   std::vector<size_t> pool;
@@ -3189,19 +3269,33 @@ size_t Sim::spyRow(const std::string& table, const std::string& weightColumn,
   }
   if (pool.empty()) return size_t(-1);
   if (weightColumn.empty() || !t.has(weightColumn))
-    return pool[spyRng_.below(uint32_t(pool.size()))];
-  const size_t row = weightedPickOf(t, weightColumn, pool, spyRng_);
-  return row == size_t(-1) ? pool[spyRng_.below(uint32_t(pool.size()))] : row;
+    return pool[rng.below(uint32_t(pool.size()))];
+  const size_t row = weightedPickOf(t, weightColumn, pool, rng);
+  return row == size_t(-1) ? pool[rng.below(uint32_t(pool.size()))] : row;
+}
+
+std::string Sim::pickSnippet(const std::string& table, const std::string& column,
+                             const std::string& weightColumn, const std::string& filterColumn,
+                             const std::string& filterValue, const std::string& flagColumn, Rng& rng) {
+  const size_t row = pickRow(table, weightColumn, filterColumn, filterValue, flagColumn, rng);
+  if (row == size_t(-1)) return std::string();
+  const Table& t = tbl(table.c_str());
+  if (!t.has(column)) return std::string();
+  return resolve(trim(t.at(row, column)));
+}
+
+// The secret-agent call sites keep their own names, so they all draw on the
+// spy stream exactly as before the two draws were generalised.
+size_t Sim::spyRow(const std::string& table, const std::string& weightColumn,
+                   const std::string& filterColumn, const std::string& filterValue,
+                   const std::string& flagColumn) {
+  return pickRow(table, weightColumn, filterColumn, filterValue, flagColumn, spyRng_);
 }
 
 std::string Sim::spySnippet(const std::string& table, const std::string& column,
                             const std::string& weightColumn, const std::string& filterColumn,
                             const std::string& filterValue, const std::string& flagColumn) {
-  const size_t row = spyRow(table, weightColumn, filterColumn, filterValue, flagColumn);
-  if (row == size_t(-1)) return std::string();
-  const Table& t = tbl(table.c_str());
-  if (!t.has(column)) return std::string();
-  return resolve(trim(t.at(row, column)));
+  return pickSnippet(table, column, weightColumn, filterColumn, filterValue, flagColumn, spyRng_);
 }
 
 void Sim::makeSecretAgent(Life& life) {
@@ -3942,6 +4036,517 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// The fight career (REPORT.en.md 59). The a16_fight-* family is a combat line:
+// arenas, opponents banded by fighter level, coaches, injuries, fan
+// interaction, interviews, sponsorships, press conferences, street fights and
+// PEDs. The port models it with a level (the opponent-type band), a league
+// position (1 is the top of the card), a form score, reputation, street cred
+// and a stamina pool; every gate column the family ships is checked against
+// those numbers, so a top-of-the-card fighter never draws a gym brute's reason.
+void Sim::makeFighter(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.fighter = true;
+  // The fighting style is a label: the move system is not modelled, so nothing
+  // is filtered on it and the style gates no row.
+  const size_t styleRow = pickRow("a16_fight-ing-style-identity-color-enc", "Commonness Score", "", "", "", fightRng_);
+  if (styleRow != size_t(-1))
+    h.fightStyle = trim(tbl("a16_fight-ing-style-identity-color-enc").at(styleRow, "Fighting Style"));
+  if (h.fightStyle.empty()) h.fightStyle = "striker";
+  const std::string arena = pickSnippet("a16_fight-ing-arena-name-enc", "Arena Name", "Commonness Score", "", "", "", fightRng_);
+  h.fightArena = arena.empty() ? "a local gym" : arena;
+  // No coach roster ships with the family, only coach feedback, so the coach is
+  // drawn from the name pools and a quality score stands in for a real ranking.
+  h.fightCoach = drawFirstName(fightRng_.chance(0.5)) + " " + drawSurname();
+  h.fightCoachFemale = fightRng_.chance(0.5);
+  h.fightCoachQuality = 40 + int(fightRng_.below(51));
+  h.fightLevel = 1;
+  h.fightLeaguePos = 20;
+  h.fightReputation = 10;
+  h.fightStreetCred = 0;
+  h.fightStrength = 40 + int(fightRng_.below(21));
+  h.fightToughness = h.fightStrength;
+  h.fightAgility = 40 + int(fightRng_.below(21));
+  h.fightTechnique = 40 + int(fightRng_.below(21));
+  h.fightStamina = 100;
+}
+
+std::string Sim::fightToken(const std::string& token) {
+  if (!hero_) return std::string();
+  Hero& h = *const_cast<Hero*>(hero_);
+  std::string key = token;
+  bool possessive = false;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - psuffix.size());
+  }
+  if (key == "fighter") {
+    // The fight-ing rows mean the opponent; the fight-er persona rows mean the
+    // hero, which is what fightSelf_ marks.
+    const std::string base = fightSelf_ || fightOpponent_.empty() ? h.firstName : fightOpponent_;
+    return possessive ? base + "'s" : base;
+  }
+  if (key == "coach-fighting") return possessive ? h.fightCoach + "'s" : h.fightCoach;
+  if (key == "fight-opponent-type") return fightOpponentType_;
+  if (key == "opponent-name") return fightOpponent_;
+  if (key == "fighting-arena") return fightArena_.empty() ? h.fightArena : fightArena_;
+  if (key == "fighting-style") return h.fightStyle;
+  if (key == "circumstance-fighter" || key == "fighter-circumstance") {
+    const std::map<std::string, std::string>::const_iterator it = fightCache_.find("circumstance");
+    if (it != fightCache_.end()) return it->second;
+    const size_t r = pickRow("a16_fight-er-circumstance-enc", "", "", "", "", fightRng_);
+    const std::string v = (r == size_t(-1)) ? std::string() : resolve(trim(tbl("a16_fight-er-circumstance-enc").at(r, "String")));
+    if (!v.empty()) fightCache_["circumstance"] = v;
+    return v;
+  }
+  return std::string();
+}
+
+bool Sim::fightYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.fighter || h.age < 18) return false;
+  if (!fightRng_.chance(0.55)) return false;
+  fightSelf_ = false;
+  fightOpponent_.clear();
+  fightOpponentType_.clear();
+  fightArena_ = h.fightArena;
+  std::string title, body, line, tableRef, rowRef;
+  std::vector<std::string> extra;
+  int happiness = 0;
+  auto say = [&body](const std::string& s) {
+    if (s.empty()) return;
+    body += body.empty() ? s : " " + s;
+  };
+  auto tell = [&line](const std::string& s) {
+    if (s.empty()) return;
+    line += line.empty() ? s : " " + s;
+  };
+  // pickRow matches exact values (a blank cell fits anyone); the Min/Max windows
+  // the fight tables ship are checked here, with a couple of retries so an
+  // unlucky draw never empties the pool.
+  auto pickWin = [&](const char* t, const char* weight, const char* fcol, const std::string& fval,
+                     const char* loCol, const char* hiCol, double value) -> size_t {
+    for (int attempt = 0; attempt < 3; ++attempt) {
+      const size_t r = pickRow(t, weight, fcol, fval, "", fightRng_);
+      if (r == size_t(-1)) return size_t(-1);
+      const Table& tt = tbl(t);
+      if (loCol && tt.has(loCol)) { const double lo = tt.num(r, loCol); if (lo > 0 && value < lo) continue; }
+      if (hiCol && tt.has(hiCol)) { const double hi = tt.num(r, hiCol); if (hi > 0 && value > hi) continue; }
+      return r;
+    }
+    return pickRow(t, weight, fcol, fval, "", fightRng_);
+  };
+
+  if (h.fightStamina < 35 && fightRng_.chance(0.6)) {
+    // A worn-down fighter takes the year off; the recharge-scenario Method cell
+    // is the link into the recharge-method table that carries the numbers.
+    const size_t r = pickRow("a16_fight-recharge-method-scenario-enc", "Commonness Score", "", "", "", fightRng_);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_fight-recharge-method-scenario-enc");
+      title = "Time off";
+      body = resolve(trim(t.at(r, "String")));
+      line = resolve(trim(t.at(r, "Log Version")));
+      tableRef = t.name();
+      rowRef = std::to_string(r + 1);
+      const std::string method = lower(trim(t.at(r, "Method")));
+      if (ensureTable("a16_fight-recharge-method-enc")) {
+        const Table& m = tbl("a16_fight-recharge-method-enc");
+        for (size_t i = 0; i < m.size(); ++i) {
+          if (lower(trim(m.at(i, "Method"))) != method) continue;
+          h.fightStamina = std::min(100, h.fightStamina + int(m.num(i, "Stamina Gain")));
+          happiness += int(m.num(i, "Happiness Impact"));
+          say("It sets me back $" + std::to_string(int(m.num(i, "Cost"))) + ".");
+          break;
+        }
+      }
+      if (h.fightStamina < 20) h.fightStamina = 20;
+    }
+  } else if (fightRng_.chance(0.30)) {
+    const size_t r = pickWin("a16_fight-ing-coach-training-string-enc", "", "Hero Gender",
+                             h.female ? "female" : "male", "Min Coach Quality", "Max Coach Quality", h.fightCoachQuality);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_fight-ing-coach-training-string-enc");
+      title = "A session at the gym";
+      const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = h.fightCoachFemale;
+      body = resolve(trim(t.at(r, "String")));
+      line = resolve(trim(t.at(r, "Log Version")));
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      tableRef = t.name();
+      rowRef = std::to_string(r + 1);
+      h.fightStamina = std::min(100, h.fightStamina + 10);
+      const size_t mv = pickRow("a16_fight-ing-move-enc", "", "", "", "", fightRng_);
+      if (mv != size_t(-1)) {
+        const std::string name = resolve(trim(tbl("a16_fight-ing-move-enc").at(mv, "Move Name")));
+        if (!name.empty()) say("I drilled the " + spyLowerFirst(name) + ".");
+      }
+      if (fightRng_.chance(0.08)) {
+        const size_t inj = pickRow("a16_fight-hero-training-injury-string-enc", "Commonness Score", "", "", "", fightRng_);
+        if (inj != size_t(-1))
+          extra.push_back(resolve(trim(tbl("a16_fight-hero-training-injury-string-enc").at(inj, "String"))));
+      }
+    }
+  } else {
+    const int band = h.fightLeaguePos <= 3 ? 5 : (h.fightLeaguePos <= 7 ? 4 : (h.fightLeaguePos <= 12 ? 3 : (h.fightLeaguePos <= 18 ? 2 : 1)));
+    h.fightLevel = band;
+    bool oppFemale = false;
+    const size_t orow = pickRow("a16_fight-ing-opponent-type-enc", "Commonness Score", "Fighter Level", std::to_string(band), "", fightRng_);
+    if (orow != size_t(-1)) {
+      const Table& ot = tbl("a16_fight-ing-opponent-type-enc");
+      fightOpponentType_ = resolve(trim(ot.at(orow, "Description")));
+      double pctMale = ot.has("Percent Male") ? ot.num(orow, "Percent Male") : 100;
+      if (pctMale > 1) pctMale /= 100.0;  // the column ships whole percents
+      if (pctMale < 0) pctMale = 0;
+      if (pctMale > 1) pctMale = 1;
+      oppFemale = !fightRng_.chance(pctMale);
+    }
+    if (fightOpponentType_.empty()) fightOpponentType_ = "opponent";
+    fightOpponent_ = drawFirstName(oppFemale) + " " + drawSurname();
+    // Championship venues only headline for a fighter near the top of the card.
+    if (ensureTable("a16_fight-ing-arena-name-enc")) {
+      const Table& an = tbl("a16_fight-ing-arena-name-enc");
+      std::vector<size_t> pool;
+      for (size_t i = 0; i < an.size(); ++i) {
+        const bool champ = an.flag(i, "Is Championship Match Arena");
+        if (h.fightLeaguePos <= 4 ? champ : !champ) pool.push_back(i);
+      }
+      const size_t ar = weightedPickOf(an, "Commonness Score", pool, fightRng_);
+      if (ar != size_t(-1)) {
+        const std::string name = resolve(trim(an.at(ar, "Arena Name")));
+        if (!name.empty()) fightArena_ = name;
+      }
+    }
+    title = "A card at " + fightArena_;
+    say("My opponent: " + fightOpponent_ + ", " + articleFor(fightOpponentType_) + fightOpponentType_ + ".");
+    if (fightRng_.chance(0.35)) {
+      // The coach-quality table is the coach's own visible character, so its
+      // pronouns follow the coach and its quality window gates the row.
+      const size_t cq = pickWin("a16_fight-coach-quality-color-string-enc", "", "Coach Gender",
+                                h.fightCoachFemale ? "female" : "male", "Min Coach Quality", "Max Coach Quality", h.fightCoachQuality);
+      if (cq != size_t(-1)) {
+        const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = h.fightCoachFemale;
+        const std::string cl = resolve(trim(tbl("a16_fight-coach-quality-color-string-enc").at(cq, "String")));
+        pronounOtherSet_ = savedSet;
+        pronounOtherFemale_ = savedFemale;
+        if (!cl.empty()) say(spySentence(cl));
+      }
+    }
+    if (fightRng_.chance(0.10)) {
+      // A doping challenge reads as whoever accuses the hero, which is the
+      // opponent drawn above.
+      const size_t dc = pickRow("a16_fight-doping-challenge-color-string-enc", "Commonness Score", "", "", "", fightRng_);
+      if (dc != size_t(-1)) {
+        const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = oppFemale;
+        const std::string ch = resolve(trim(tbl("a16_fight-doping-challenge-color-string-enc").at(dc, "String")));
+        pronounOtherSet_ = savedSet;
+        pronounOtherFemale_ = savedFemale;
+        if (!ch.empty()) say(spySentence(ch));
+      }
+    }
+    const double form = (h.fightStrength + h.fightToughness + h.fightAgility + h.fightTechnique) / 4.0;
+    double odds = 0.5 + (form - 50.0) / 150.0 + (12 - h.fightLeaguePos) / 60.0 - (band - 1) * 0.05;
+    if (odds < 0.15) odds = 0.15;
+    if (odds > 0.9) odds = 0.9;
+    bool win = fightRng_.chance(odds);
+    // A thrown fight is rare, and it only ever comes out of a win.
+    if (win && fightRng_.chance(0.05)) {
+      const size_t dr = pickRow("a16_fight-ing-dive-scenario-enc", "Commonness Score", "Hero Gender", h.female ? "female" : "male", "", fightRng_);
+      if (dr != size_t(-1)) {
+        const Table& d = tbl("a16_fight-ing-dive-scenario-enc");
+        title = "I went down on purpose";
+        body = resolve(trim(d.at(dr, "Scenario")));
+        line = resolve(trim(d.at(dr, "Log Version")));
+        tableRef = d.name();
+        rowRef = std::to_string(dr + 1);
+        win = false;
+      }
+    }
+    if (win) {
+      ++h.fightWins;
+      if (h.fightLeaguePos > 1) --h.fightLeaguePos;
+      h.fightReputation += 5;
+      happiness += 3;
+    } else {
+      ++h.fightLosses;
+      if (h.fightLeaguePos < 24) ++h.fightLeaguePos;
+      h.fightReputation -= 2;
+      happiness -= 3;
+    }
+    h.fightStamina -= 20;
+    if (h.fightStamina < 0) h.fightStamina = 0;
+    if (tableRef.empty()) {
+      const size_t oc = pickRow("a16_fight-outcome-color-enc", "Commonness Score", "", "", "", fightRng_);
+      if (oc != size_t(-1)) {
+        const Table& o = tbl("a16_fight-outcome-color-enc");
+        line = resolve(trim(o.at(oc, win ? "Hero Win Version" : "Hero Lose Version")));
+        tableRef = o.name();
+        rowRef = std::to_string(oc + 1);
+      }
+    }
+    // Why it went that way: the reason tables gate on where both fighters sit
+    // on the card, so a prelim never draws a title-fight reason.
+    const char* rtable = win ? "a16_fight-ing-win-reason-enc" : "a16_fight-ing-loss-reason-enc";
+    const char* rweight = win ? "Coolness Score" : "Sympathy Score";
+    for (int attempt = 0; attempt < 3; ++attempt) {
+      const size_t rr = pickRow(rtable, rweight, "", "", "", fightRng_);
+      if (rr == size_t(-1)) break;
+      const Table& t = tbl(rtable);
+      const double loH = t.has("Min Hero League Position") ? t.num(rr, "Min Hero League Position") : 0;
+      const double hiH = t.has("Max Hero League Position") ? t.num(rr, "Max Hero League Position") : 0;
+      if ((loH > 0 && h.fightLeaguePos < loH) || (hiH > 0 && h.fightLeaguePos > hiH)) continue;
+      const std::string reason = resolve(trim(t.at(rr, "Reason")));
+      if (!reason.empty())
+        tell(std::string(win ? "I put it down to " : "The reason: ") + spySentence(spyLowerFirst(reason)));
+      break;
+    }
+    // The corner talks: the coach feedback tables are filtered by outcome and by
+    // the coach's quality window.
+    if (h.fightCoachQuality > 0) {
+      const size_t cf = pickWin("a16_fight-coach-generic-feedback-string-enc", "", "Match Outcome",
+                                win ? "win" : "loss", "Min Coach Quality", "Max Coach Quality", h.fightCoachQuality);
+      if (cf != size_t(-1)) {
+        const Table& t = tbl("a16_fight-coach-generic-feedback-string-enc");
+        const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = h.fightCoachFemale;
+        const std::string fb = resolve(trim(t.at(cf, "Log Version")));
+        pronounOtherSet_ = savedSet;
+        pronounOtherFemale_ = savedFemale;
+        if (!fb.empty()) tell(spySentence(fb));
+      }
+      if (!win && fightRng_.chance(0.4)) {
+        const size_t lf = pickWin("a16_fight-coach-loss-feedback-string-enc", "", "", "", "Min Coach Quality", "Max Coach Quality", h.fightCoachQuality);
+        if (lf != size_t(-1)) {
+          const Table& t = tbl("a16_fight-coach-loss-feedback-string-enc");
+          const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+          pronounOtherSet_ = true;
+          pronounOtherFemale_ = h.fightCoachFemale;
+          const std::string fb = resolve(trim(t.at(lf, "Log Version")));
+          pronounOtherSet_ = savedSet;
+          pronounOtherFemale_ = savedFemale;
+          if (!fb.empty()) tell(spySentence(fb));
+        }
+      }
+    }
+    if (fightRng_.chance(0.40)) {
+      const bool fanFemale = fightRng_.chance(0.5);
+      const size_t fr = pickRow("a16_fight-ing-fan-interaction-enc", "", "Fan Gender", fanFemale ? "female" : "male", "", fightRng_);
+      if (fr != size_t(-1)) {
+        const Table& t = tbl("a16_fight-ing-fan-interaction-enc");
+        const std::string scen = resolve(trim(t.at(fr, "Scenario")));
+        if (!scen.empty()) say(spySentence(scen));
+        const std::string flog = resolve(trim(t.at(fr, "Log Version Snippet")));
+        if (!flog.empty()) extra.push_back("A fan " + spySentence(spyLowerFirst(flog)));
+      }
+    }
+    if (fightRng_.chance(0.30)) {
+      const size_t ir = pickRow("a16_fight-ing-interview-fan-reaction-enc", "Commonness Score", "Match Outcome", win ? "win" : "loss", "", fightRng_);
+      if (ir != size_t(-1)) {
+        const std::string reaction = resolve(trim(tbl("a16_fight-ing-interview-fan-reaction-enc").at(ir, "Log Version")));
+        if (!reaction.empty()) extra.push_back(spySentence(reaction));
+      }
+    }
+    if (fightRng_.chance(0.25)) {
+      const size_t qr = pickRow("a16_fight-press-conference-question-enc", "Commonness Score", "", "", "", fightRng_);
+      if (qr != size_t(-1)) {
+        const Table& q = tbl("a16_fight-press-conference-question-enc");
+        // The card cannot offer twenty answers, so one is picked; every effect
+        // cell in this table is an x-flag rather than a stat name, so the port
+        // moves reputation and stamina instead of inventing a stat map.
+        std::vector<int> pool;
+        for (int c = 1; c <= 20; ++c) {
+          const std::string col = "Choice " + std::to_string(c);
+          if (q.has(col) && !trim(q.at(qr, col)).empty()) pool.push_back(c);
+        }
+        if (!pool.empty()) {
+          const int c = pool[fightRng_.below(uint32_t(pool.size()))];
+          const std::string n = std::to_string(c);
+          say("The press asked: " + spySentence(resolve(trim(q.at(qr, "Question")))) +
+              " I said: " + spySentence(resolve(trim(q.at(qr, "Choice " + n)))));
+          const std::string bcol = "Hero Buff " + n, dcol = "Hero Debuff " + n;
+          if (q.has(bcol) && !trim(q.at(qr, bcol)).empty()) { h.fightReputation += 4; h.fightStamina = std::min(100, h.fightStamina + 5); }
+          if (q.has(dcol) && !trim(q.at(qr, dcol)).empty()) { h.fightReputation -= 4; h.fightStamina = std::max(0, h.fightStamina - 5); }
+          const std::string outlet = pickSnippet("a16_fight-press-conference-media-outlet-enc", "Media Outlet String", "Commonness Score", "", "", "", fightRng_);
+          if (!outlet.empty()) extra.push_back("The conference ran on " + outlet + ".");
+        }
+      }
+    }
+    if (fightRng_.chance(0.20)) {
+      const size_t inr = pickRow("a16_fight-ing-injurie-enc", "Commonness Score", "Gender", h.female ? "female" : "male", "", fightRng_);
+      if (inr != size_t(-1)) {
+        const Table& t = tbl("a16_fight-ing-injurie-enc");
+        const std::string ilog = resolve(trim(t.at(inr, "Log Snippet")));
+        if (!ilog.empty()) extra.push_back(spySentence(ilog));
+        // Surgery and the cost columns are not modelled: the injury is the stat
+        // dent and the log line.
+        if (t.has("Strength Decrease")) h.fightStrength = std::max(5, h.fightStrength - int(t.num(inr, "Strength Decrease")));
+        if (t.has("Toughness Decrease")) h.fightToughness = std::max(5, h.fightToughness - int(t.num(inr, "Toughness Decrease")));
+        if (t.has("Agility Decrease")) h.fightAgility = std::max(5, h.fightAgility - int(t.num(inr, "Agility Decrease")));
+        if (t.has("Technique Decrease")) h.fightTechnique = std::max(5, h.fightTechnique - int(t.num(inr, "Technique Decrease")));
+        happiness -= 2;
+      }
+    }
+    if (h.fightLeaguePos <= 9 && fightRng_.chance(0.30)) {
+      const size_t sr = pickWin("a16_fight-ing-sponsorship-company-enc", "", "", "", "Min League Position", "Max League Position", h.fightLeaguePos);
+      if (sr != size_t(-1)) {
+        const std::string co = resolve(trim(tbl("a16_fight-ing-sponsorship-company-enc").at(sr, "Company Name")));
+        if (!co.empty()) extra.push_back("I signed with " + co + ".");
+      }
+    }
+    if (h.fightLeaguePos <= 12 && fightRng_.chance(0.25)) {
+      const size_t pr = pickWin("a16_fight-ing-product-enc", "Commonness Score", "Hero Gender", h.female ? "female" : "male", "Min Reputation", "Max Reputation", h.fightReputation);
+      if (pr != size_t(-1)) {
+        const std::string pn = resolve(trim(tbl("a16_fight-ing-product-enc").at(pr, "Product Name")));
+        if (!pn.empty()) extra.push_back("I started pushing " + pn + ".");
+      }
+      // The second product table carries no Hero Gender column at all, so it is
+      // filtered on the reputation window alone.
+      const size_t pr2 = pickWin("a16_fighting-products", "", "", "", "MinReputation", "MaxReputation", h.fightReputation);
+      if (pr2 != size_t(-1)) {
+        const std::string pn = resolve(trim(tbl("a16_fighting-products").at(pr2, "ProductName")));
+        if (!pn.empty()) extra.push_back("I started pushing " + pn + ".");
+      }
+    }
+    if (h.fightLeaguePos <= 2 && fightRng_.chance(0.20)) {
+      // The UFL card set is gated on the hero being champion (league position 1
+      // is the top of the card) and it offers choices; the port renders it as a
+      // card whose first choice is the one taken, because a year-up card here
+      // has no prompt of its own to route a choice through.
+      const size_t ur = pickRow("a16_fight-ufl-dumb-scenario-enc", "", "", "", "Hero is UFL Champ", fightRng_);
+      if (ur != size_t(-1)) {
+        const Table& t = tbl("a16_fight-ufl-dumb-scenario-enc");
+        const std::string ut = resolve(trim(t.at(ur, "Title")));
+        const std::string ub = resolve(trim(t.at(ur, "Body")));
+        if (!ut.empty() || !ub.empty()) {
+          title = ut.empty() ? std::string("The UFL") : ut;
+          body = ub;
+          if (t.has("CTA")) say(resolve(trim(t.at(ur, "CTA"))));
+          if (t.has("Narrative 1")) tell(spySentence(resolve(trim(t.at(ur, "Narrative 1")))));
+          else if (t.has("Feedback String 1")) tell(spySentence(resolve(trim(t.at(ur, "Feedback String 1")))));
+          tableRef = t.name();
+          rowRef = std::to_string(ur + 1);
+          if (t.has("Street Cred Base Value 1")) h.fightStreetCred += int(t.num(ur, "Street Cred Base Value 1"));
+          if (t.has("Happiness Impact 1")) happiness += int(t.num(ur, "Happiness Impact 1"));
+        }
+      }
+    }
+    if (fightRng_.chance(0.15)) {
+      const size_t wr = pickWin("a16_fight-ing-wild-encounter-color-enc", "Commonness Score", "", "", "Min Hero League Position", "Max Hero League Position", h.fightLeaguePos);
+      if (wr != size_t(-1)) {
+        const Table& t = tbl("a16_fight-ing-wild-encounter-color-enc");
+        const std::string scen = resolve(trim(t.at(wr, "String")));
+        if (!scen.empty()) say(spySentence(scen));
+        const std::string wlog = resolve(trim(t.at(wr, "Log Version")));
+        if (!wlog.empty()) extra.push_back(spySentence(wlog));
+        h.fightStreetCred += 3;
+      }
+      if (fightRng_.chance(0.35)) {
+        const std::string opener = pickSnippet("a16_fight-wild-encounter-color", "ColorString", "CommonnessScore", "", "", "", fightRng_);
+        if (!opener.empty()) say(spySentence(opener));
+        const std::string loc = pickSnippet("a16_fight-street-ing-location-enc", "Location", "Commonness Score", "", "", "", fightRng_);
+        if (!loc.empty()) { extra.push_back("Street fight outside " + loc + "."); h.fightStreetCred += 2; }
+      }
+      if (fightRng_.chance(0.08)) {
+        const size_t anr = pickRow("a16_fight-er-animal-enc", "Commonness Score", "", "", "", fightRng_);
+        if (anr != size_t(-1)) {
+          const Table& t = tbl("a16_fight-er-animal-enc");
+          const std::string animal = lower(trim(t.at(anr, "Animal")));
+          std::string verb = "fought";
+          const std::string verbs = t.at(anr, "Attack Verb");
+          for (size_t s = 0; s < verbs.size();) {
+            const size_t comma = verbs.find(',', s);
+            const std::string part = lower(trim(comma == std::string::npos ? verbs.substr(s) : verbs.substr(s, comma - s)));
+            if (!part.empty()) { verb = part; break; }
+            if (comma == std::string::npos) break;
+            s = comma + 1;
+          }
+          if (!animal.empty()) {
+            extra.push_back("I " + verb + " " + articleFor(animal) + animal + ".");
+            h.fightStreetCred += int(t.num(anr, "Street Creds Gained"));
+            happiness += 2;
+          }
+        }
+      }
+    }
+    if (fightRng_.chance(0.15)) {
+      const size_t spr = pickRow("a16_fight-sportsmanship-scenario-enc", "Commonness Score", "", "", "", fightRng_);
+      if (spr != size_t(-1)) {
+        const Table& t = tbl("a16_fight-sportsmanship-scenario-enc");
+        const std::string slog = resolve(trim(t.at(spr, "Log Version")));
+        if (!slog.empty()) extra.push_back(spySentence(slog));
+        h.fightReputation += t.flag(spr, "Is Positive") ? 3 : -3;
+      }
+    }
+    if (fightRng_.chance(0.10)) {
+      const size_t rrr = pickWin("a16_fight-roid-rage-scenario-enc", "", "Audience Gender", fightRng_.chance(0.5) ? "female" : "male", "Hero Min Age", "Hero Max Age", h.age);
+      if (rrr != size_t(-1)) {
+        const Table& t = tbl("a16_fight-roid-rage-scenario-enc");
+        const std::string scen = resolve(trim(t.at(rrr, "Log Version")));
+        if (!scen.empty()) extra.push_back(spySentence(scen));
+        const size_t rt = pickRow("a16_fight-roid-rage-retort-enc", "", "", "", "", fightRng_);
+        if (rt != size_t(-1)) {
+          // The retort is aimed at the hero, so the shipped second person has to
+          // move to the first before it resolves.
+          std::string raw = trim(tbl("a16_fight-roid-rage-retort-enc").at(rt, "String"));
+          raw = spySwap(raw, " you ", " me ");
+          raw = spySwap(raw, " your ", " my ");
+          if (raw.rfind("you ", 0) == 0) raw = "me " + raw.substr(4);
+          const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+          pronounOtherSet_ = true;
+          pronounOtherFemale_ = fightRng_.chance(0.5);
+          const std::string said = resolve(raw);
+          pronounOtherSet_ = savedSet;
+          pronounOtherFemale_ = savedFemale;
+          if (!said.empty()) extra.push_back(spySentence(spyLowerFirst(said)));
+        }
+      }
+    }
+    if (fightRng_.chance(0.25)) {
+      // The fight-er persona tables talk about the hero as the fighter, which is
+      // what fightSelf_ switches <fighter> to.
+      fightSelf_ = true;
+      static const char* kPersona[] = {"a16_fight-er-trash-talk-enc", "a16_fight-er-compliment-enc",
+                                       "a16_fight-er-admiration-scenario-enc", "a16_fight-er-concern-scenario-enc",
+                                       "a16_fight-er-training-string-enc"};
+      const char* pt = kPersona[fightRng_.below(5)];
+      const size_t pr = pickRow(pt, "", "", "", "", fightRng_);
+      if (pr != size_t(-1)) {
+        const Table& t = tbl(pt);
+        std::string text;
+        if (t.has("Inbound Log Version")) text = trim(t.at(pr, "Inbound Log Version"));
+        else if (t.has("Log Version")) text = trim(t.at(pr, "Log Version"));
+        else if (t.has("Inbound Scenario")) text = trim(t.at(pr, "Inbound Scenario"));
+        const std::string said = resolve(text);
+        if (!said.empty()) extra.push_back(spySentence(said));
+      }
+      fightSelf_ = false;
+    }
+  }
+
+  if (title.empty() && body.empty() && line.empty()) return false;
+  out = AgeUp();
+  out.table = tableRef.empty() ? "a16_fight-outcome-color-enc" : tableRef;
+  out.row_id = rowRef;
+  out.title = title.empty() ? "Fight night" : title;
+  out.body = body;
+  out.narrative = line;
+  out.extra = extra;
+  out.happiness = happiness;
+  return true;
+}
+
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
 bool Sim::miscPoolYear(Life& life, AgeUp& out, int forcedChoice) {
@@ -4621,7 +5226,12 @@ std::string Sim::relationshipToken(const std::string& key) {
   }
   const Hero& h = *hero_;
   auto shape = [&](const std::string& name) { return possessive ? name + "'s" : name; };
-  if (base == "lover")       return h.loverName.empty() ? std::string() : shape(h.loverName);
+  // A pool can name a partner the hero has not met yet (the fight outcome rows
+  // do), and a leaked token is worse than a stranger, so draw one.
+  if (base == "lover") {
+    if (h.loverName.empty()) return shape(drawFirstName(!h.female));
+    return shape(h.loverName);
+  }
   if (base == "ex" || base == "ex-lover")
                              return h.exName.empty() ? std::string() : shape(h.exName);
   if (base == "gender")      return h.loverFemale ? "woman" : "man";
