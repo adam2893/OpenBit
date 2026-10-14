@@ -234,7 +234,7 @@ class Sim {
   std::string royalCircumstance();
   // '<vampire>' / '<vampire-possessive>' (the year's vampire NPC) and
   // '<familiar>' / '<familiar-possessive>' (the hero's own companion).
-  std::string vampireToken(const std::string& token);
+  std::string vampToken(const std::string& key);
   // One vampire NPC name from a16_vampire-name-enc (Type = female / male /
   // surname, 170 rows).
   std::string vampireNpcName();
@@ -412,6 +412,8 @@ class Sim {
   std::vector<std::string> zooBuilt_;   // the attractions already installed
   std::string llSquatter_;      // the tenant who stopped paying
   bool llSquatterFemale_ = false;
+  bool vampVictimFemale_ = false;                     // one victim per vampire card
+  std::map<std::string, std::string> vampCache_;      // one council member per card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

@@ -5765,3 +5765,198 @@ Full regression after the section, all green: `rescensus.py` distinct residue to
 107 gap 0; `covpush.json` rc=0; `bench.sh` to age 34 with no abort. The four neighbouring
 probes were re-run because `toFirstPerson` is shared: mafia, landlord, studio and pet and
 zoo all report residue 0.
+
+## 70. The vampire: a council, a familiar, and forty-four tables behind one night a year
+
+Report 48 built the vampire as a *state* the hero can be in: the cape, the coffin, the
+familiar, and one dumb-scenario pool that fired now and then. It never built the nights.
+This section wires the 44 tables of the `a16_vampire` family into a year of them.
+
+### 70.1 The family
+
+44 files, 2243 rows, all under `gamedata_plain` with the `a16_vampire-` prefix and the
+`-enc` suffix. Two of them (`dumb-scenario`, `name`) were already wired by report 48.
+
+| rows | table | what it holds |
+|------|-------|---------------|
+| 185 | blood-pact-rejection-string | a mortal turning the offer down, keyed on person type |
+| 171 | name | first names, surnames, a `Skin` column |
+| 144 | insult | the word another vampire throws (`Clean`, `Vampire` flags) |
+| 114 | titles | a `Scenario Tag` and five candidate titles for the council's decree |
+| 95 | hunter-name | the vampire hunter's name, by type |
+| 88 | blood-taste-color | how the blood tasted, plus a disease indicator |
+| 84 | street-name | `<AB/A/B/O>-<Negative/Positive> Blvd` templates |
+| 72 | spend-time | an evening out: `to a vampire gala, where you gave him ...` |
+| 67 | dumb-scenario | the report 48 card, now gated on notoriety and the familiar |
+| 60 | victim-status-color | what state the victim was in, windowed on their health |
+| 57 | familiar-color | the familiar's description, looks, smarts, craziness |
+| 55 | feeding-location-color | the alley, and the second-person log line |
+| 53 | witch-doctor-remedie | a folk cure with an effectiveness and a risk score |
+| 53 | hunter-encounter-scenario | the hunter arrives |
+| 52 | familiar-confused-string | the familiar does not understand |
+| 49 | code-data | the council's code, and the approval it earns |
+| 45 | familiar-dump | abandoning the familiar, with a risk score |
+| 44 | body-dump-color | where the body went |
+| 41 | hypnosis-breakup-string | compelling a lover to leave |
+| 40 | vcoli-string | V. Coli, the vampire disease |
+| 39 | familiar-threat | threatening the familiar, with a relationship impact |
+| 39 | coffin-string | a day lying low |
+| 38 | lover-convert-nag | the lover wants to be turned |
+| 38 | council-discipline-scenario | the council sits, with `Spare` / `Punish` / `Kill` flags |
+| 37 | familiar-command | an order the familiar obeys |
+| 36 | blood-offering-string | a mortal offering a shot glass |
+| 34 | spend-time-hunger-color | the small accident that follows |
+| 32 | hunter-appreciation-string | the hunter's speech |
+| 32 | council-party-type | the name of the gathering |
+| 31 | council-punishment | the sentence |
+| 31 | council-party-string | the gathering itself |
+| 30 | council-reward | the reward |
+| 29 | solo-hunt-location | where to hunt, with per-species likelihoods |
+| 29 | hypnosis-money-string | compelling money out of a victim |
+| 29 | hunt-string | the hunt, with essence and relationship impacts |
+| 27 | hypnosis-animal-scenario | compelling a victim to believe they are an animal |
+| 26 | hunt-encounter-color | who else is out there, windowed on notoriety |
+| 23 | hypnosis-love-string | compelling love |
+| 22 | entice-method | luring a victim, with effectiveness and both outcomes |
+| 22 | assault-method | taking one by force |
+| 21 | clubbing-approache | an approach in the club |
+| 13 | blood-bath-scenario | the bath |
+| 11 | disease | the five vampire diseases |
+| 5 | feeding-location | the risky places, with a risk score |
+
+### 70.2 The vampire the hero already was
+
+`makeVampire` now fills in the rest of the state on top of report 48: notoriety 20,
+essence 60, standing 50, hunger 40, a home address drawn from `street-name` (the cell is a
+token template, so it is resolved before the house number is prepended), a maker drawn from
+the name tables, and a familiar whose description, looks and smarts come from
+`familiar-color` filtered on `Familiar Gender` and rolled inside that row's windows.
+
+### 70.3 A year as a vampire
+
+`vampireYear` runs from age 18. It draws one other vampire for the whole card (name plus
+gender), clears any remembered victim, and then walks a single branch — first hit wins,
+ordered rarest-first so nothing starves.
+
+| chance | event |
+|--------|-------|
+| 0.06 | a decree of the council: `code-data`, approval moves standing, the title is kept |
+| 0.08 | V. Coli: the `vcoli-string` row, and the disease sticks |
+| 0.10 | the council renames the hero: `titles`, one of five options, body carries the tag |
+| 0.08 | an insult from another vampire, filtered on gender, pooling the `Vampire` rows first |
+| 0.10 | the lover nags to be turned: gender, `Married`, and relationship windows |
+| 0.12 | an evening out, and at 45% the hunger colour line that follows it |
+| 0.10 | an approach in the club |
+| 0.08 | the witch doctor: effectiveness against a d100, else the risk score in essence |
+| 0.08 | the body is dumped: a new victim is drawn and notoriety rises |
+| 0.10 | a day in the coffin |
+| 0.10 | a mortal offers their blood, or refuses in their own words |
+| 0.06 | a blood bath |
+| 0.06 | the council sits: `Spare` / `Punish` / `Kill`, then half the time the sentence |
+| 0.05 | a council reward |
+| 0.08 | a gathering: the party type names the evening |
+| 0.08 each | entice, then assault: effectiveness times eighteen against a d100 |
+| 0.12 | a hunter: their name, their speech, and the appreciation rows that mean the hero |
+| 0.12 | hypnosis: an animal, money, love or a breakup, one table each |
+| 0.15 | the familiar obeys, is confused, is threatened, or is dumped |
+| 0.20 | a feed: the location and its risk, the taste, the disease indicator, the victim's state |
+| 0.25 | the hunt: a solo location, the hunt line and its impacts, and who else is around |
+| else | the report 48 dumb-scenario pool |
+
+### 70.4 The eight tokens
+
+`vampToken` replaced the older `vampireToken`. It answers `victim` (the dealer's victim, then
+the spy's target, then a name drawn once for the card, with the gender kept),
+`familiar`, `vampire` / `vampire-name`, `maker`, `vampire-council-member` (cached per card),
+`amount` (the mafia amount when one is live, else one of eight round figures) and `insult`
+(the gender-filtered pool, preferring rows flagged `Vampire`). The `-possessive` spelling is
+stripped and re-appended, and the shipped typo `victim-possesive` is mapped to `victim`.
+
+The old narrow branch in `resolveInto` only knew `vampire` and `familiar`; the new guard sits
+ahead of the dealer handler, so `<victim>`, `<amount>` and `<insult>` no longer fall through
+into another family's tokens.
+
+### 70.5 The three residue bugs
+
+The probe found 80 leaked brackets and they had three separate causes.
+
+1. **66 × `<him/her>` in the Method cell.** `assault-method` and `entice-method` print their
+   `Method` column ("Slam <him/her> against a wall") in the card body, and the pronoun there
+   means the *victim*. Both blocks now point the pronoun pair at the victim and reset it
+   after the line is built.
+2. **4 × `<rb>` in `feeding-location-color`.** The log line is "into an alley behind
+   `<rb>`" while the alternatives are a slash pair in the *String* column of the same row
+   ("`<himself/herself>`"). The cache was empty because a pair like that is answered by the
+   pronoun handler, which never filled it. Fixed in `resolveInto`: a pronoun token that
+   contains a slash also lands in the `<rb>` cache and in the last-value fallback.
+3. **The taste of the blood.** The `Taste` cell carries its own alternatives
+   ("like a fine `<Burgundian/Italian/French/box/Napa Valley>` wine"), and the cell was read
+   with `trim` alone. Now resolved.
+
+### 70.6 Shortcuts
+
+* The vampire state is still a flag the script turns on; there is no infection roll, no
+  daylight death and no blood pool. Essence, hunger and standing are bookkeeping numbers
+  that events move.
+* Location likenesses (`Animal`/`Human`/`Vampire Appearance Likelihood`) are read for
+  nothing: the solo hunt picks its location by commonness.
+* Skin, cleanliness and the colour pools carry no meaning — the port has no colour channel.
+* `familiar-color` is drawn once at the start of the night and reused for every familiar
+  line on that card, so a familiar keeps one description until the next card.
+* The victim's health is rolled in range rather than tracked across the years.
+
+### 70.7 Verification
+
+`vampres.py` walks 30 seeds × both genders to age 60 with `vampire` on, collects every event
+whose table belongs to the family, and greps the card for anything still shaped like a
+token: **residue 0**. The 25 wired event tables, by number of cards:
+
+```
+vcoli 216  insult 206  witch-doctor 189  code-data 181  coffin 175
+body-dump 152  blood-pact-rejection 141  feeding-location-color 132
+hunt-string 120  council-party 91  blood-offering 91  hunter-encounter 87
+blood-bath 86  council-discipline 68  council-reward 41  assault 36
+familiar-dump 35  entice 34  familiar-confused 32  familiar-threat 30
+familiar-command 22  hypnosis-money 14  hypnosis-animal 12  hypnosis-love 10
+hypnosis-breakup 8
+```
+
+Every other family probe was re-run because the pronoun cache and the token order are
+shared: dealer, mafia, zoo, landlord, pet, studio, trades, secret agent, fight, casino,
+black market, cult and the relationship pools all still report zero. The regression suite
+is green: `rescensus` reports no residue at all, coverage holds at 109 captured / 107
+recoverable, the port renders 107 of the 109 entries, the coverage push exits 0, and the
+bench walks to age 34 without an abort.
+
+Cards from the run:
+
+```
+It went badly | Method: Slam him against a wall.
+              | I tried to slam Luka Gnolls against a nearby wall, but missed.
+
+A decree of the council | The code: Consume not just the blood, but the flesh as well
+                        | They have decreed instead that vampires should only consume blood
+                          and refuse the urge to become cannibals.
+
+A night out | While rethinking your life's choices in the club's bathroom, a vampire named
+              Gideon Strok'Im crawls under your stall and says, "I vant to suck you off"!
+            | A vampire named Gideon Strok'Im offered to convert me at the club.
+
+An evening out | I went to a vampire gala, where I gave him an amulet of protection and a
+                 glass of merlot instead of blood.
+
+An offering | From: Jam Roderick.
+            | He hands me a shot glass full of his blood and says, "It's straight from the tap".
+
+The witch doctor | The remedy: garlic bread.
+                 | I treated myself with garlic bread and it worked.
+
+A feed | The victim: Helix Flooren (risk 1).
+       | The blood tasted sophisticated.
+       | Into an alley that smelled like someone had a really bad case of the runs
+```
+
+Two shipped quirks are visible in that output and left as they are: the council row that
+reads "endure being pelted with **he**" is the data's own pronoun bug, and the familiar
+description cell is a predicate ("smells of sewage water"), so the body reads "My familiar
+smells of sewage water."

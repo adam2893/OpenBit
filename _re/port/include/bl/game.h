@@ -102,6 +102,26 @@ struct Hero {
   bool vampire = false;
   std::string vampireName;  // the NPC '<vampire>' names, drawn once per year
   std::string familiar;     // '<familiar>', the hero's companion
+
+  // The vampire's own life (REPORT.en.md 70). The family is forty-four tables
+  // that describe a hunt, a feed, a familiar, a council, a pack of hunters and
+  // the diseases the blood carries, so the hero carries the numbers those rows
+  // window on.
+  int vampireNotoriety = 20;   // how much the world has noticed
+  int vampireEssence = 60;     // the strength the blood buys
+  int vampireStanding = 50;    // the hero's place in the council
+  int vampireHunger = 40;      // how long since the last feed
+  std::string vampireVictim;   // the person this year's card names
+  std::string vampireMaker;    // the vampire who turned the hero
+  std::string vampireDisease;  // what the blood carried, if anything
+  std::string vampireTitle;    // the last decree or title the council gave
+  std::string vampireHome;     // a16_vampire-street-name-enc and a house number
+  std::string vampireFamiliarDesc;  // 'a hobo' / 'a former colleague'
+  bool vampireFamiliarFemale = false;
+  bool vampireNpcFemale = false;
+  int vampireFamiliarRel = 60;      // how the familiar feels about the hero
+  int vampireFamiliarLooks = 50;
+  int vampireFamiliarSmarts = 50;
   // Military service (REPORT.en.md 50). The game keeps the branch, status and
   // rank on the SimCareer side (SimPerson field 0x10 <MilitaryBranch>) and
   // builds its lines in code, so the port takes the state from the script's
