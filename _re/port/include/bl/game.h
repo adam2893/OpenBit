@@ -134,6 +134,8 @@ struct Hero {
   std::string office;         // that country's title for the level
   std::string jurisdiction;   // what '<jurisdiction>' prints
   std::string jurisdictionAdj;  // its adjective: national / provincial / city / local
+  // Bit i = the misc dumb-scenario pool i is switched on (REPORT.en.md 56).
+  unsigned miscMask = 0;
   bool musician = false;
   std::string musicGenre;  // a16_music-genres-enc 'Genre'
   std::string bandName;    // a16_music-names-bands-enc 'Title'

@@ -59,6 +59,15 @@ struct ScriptSpec {
   bool business = false;
   bool music = false;
   bool politics = false;
+  bool mafia = false;
+  bool dealer = false;
+  bool hustler = false;
+  bool landlord = false;
+  bool zoo = false;
+  bool model = false;
+  bool actor = false;
+  bool secret_agent = false;
+  bool casino = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

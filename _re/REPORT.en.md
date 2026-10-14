@@ -3735,3 +3735,97 @@ which is why it reaches a rendered line even though neither pool names it.
   politics pools was leaking its raw token, and the same offset was used to cut the key
   (`token.substr(0, token.size() - 10)`). Both now go through `psuffix.size()`.
 
+## 56. The nine remaining dumb-scenario pools: one runner, one token table
+
+### 56.1 What the tables hold
+
+After the political pair, nine of the twenty-four `a16_dumb-scenarios-*` sets were still unread:
+actor (165 rows), casino (24), dealer (28), hustler (121), landlord (43), mafia (50), model (27),
+secret-agent (10) and zoo (18). They are shaped like the pools already wired - a row is a title, a
+question and three to four consequences - and they are the last pools in the set that no port
+subsystem reaches.
+
+The difference from the earlier pools is where their nouns come from. Each one names its own cast:
+`<mafia-godfather>` and `<mafia-colleague>`, `<drug-cartel>` and `<cartel-kingpin>`,
+`<tenant>` and `<amenity>` and `<house-type>`, `<animal-zoo>` and `<habitat-zoo>`,
+`<booking-agent>`, `<production>` and `<talk-show>`, `<agent>` and `<front>`,
+`<casino-gambler>` and `<casino-room>`, `<hustle-box>` and `<hustle-instrument>`. Almost
+all of them have a source table of their own: `a16_mafia-nicknames-enc` (142 nicknames, and they
+carry a token themselves: `<first-name> Meatballs`), `a16_mafia-mobs-enc` (7 families)
+`a16_dealer-cartel-name-enc` (64), `a16_hustler-collection-boxes-enc`,
+`a16_hustler-panhandle-strategies-enc`, `a16_hustler-busk-music-types-enc` (whose Possible
+Instruments column is a comma list), `a16_landlord-home-default-features-enc` (105 features),
+`a16_house-types-enc`, `a16_zoo-animals-enc` (120) and `a16_zoo-habitat-names-enc`,
+`a16_actor-films-enc` (342 titles) and `a16_actor-shows-enc` (241) and `a16_actors-real-enc`,
+`a16_secret-agent-agency-fronts-enc`, `a16_casino-casino-game-room-enc` and
+`a16_casino-random-hero-casino-name-enc`, plus `a16_street-names-enc` for both the tenant's
+address and the hustler's corner. A few ask for a person (`<tenant>`, `<costar>`,
+`<director>`, `<booking-agent>`, `<agency-rival>`, `<cartel-member>`) and three are
+fixed job words with no table behind them (`<animal-handler>`, `<zoo-veterinarian>`,
+`<zoo-operations-manager>`).
+
+Everything else in these pools - `<rb>` to `<rb3>`, `<he/she>` and `<him/her>`,
+`<city>`, `<random-person>`, `<random-person-indefinite>`, `<celebrity>`,
+`<circumstance-public>`, `<insult>`, `<lover>`, `<friend>`, `<num20-50>` and the inline
+alternative lists such as `<shopping/run some errands>` - is already covered by the port's generic
+token handling from sections 33 to 46.
+
+### 56.2 What the port does
+
+- `Hero::miscMask` (include/bl/game.h:137) is one bit per pool; `Sim::makeMisc`
+  (src/sim.cpp:3028) sets the bits the script asked for. Unlike the career, sports, business, music
+  and politics subsystems there is no role to draw, so this is the whole of the setup: the pools have
+  no progression model behind them.
+- `Sim::miscPoolYear` (src/sim.cpp:3030) walks a nine-entry table of `{table, min age, chance}` -
+  mafia 18 and 30%, dealer 18 and 30%, hustler 16 and 35%, landlord 18 and 35%, zoo 18 and 30%, model
+  16 and 30%, actor 16 and 30%, secret agent 21 and 25%, casino 21 and 30% - and renders one row from
+  the first switched-on pool that fires, on its own `miscRng_` stream (`seed ^ 0xd6e8feb86659fd93`).
+  `ageUp` calls it at src/sim.cpp:1972, after the political year.
+- `Sim::miscToken` (src/sim.cpp:2951) carries the token-to-table map: `kMiscSrc` pairs each pool
+  token with a table and column, `kMiscPeople` lists the tokens that want a person from the name
+  pools, and the remaining cases are the three zoo job words, `<hustle-instrument>` (one item out of
+  the music type's Possible Instruments list) and `<tenant-address>` (a house number plus a
+  `<random-surname>` street). A table cell that still holds tokens is filled before it is resolved:
+  the nickname table's `<first-name>` and `<last-name>`, and the street list's
+  `<random-surname>`.
+- `resolveInto` (src/sim.cpp:1111) routes every one of those names, possessive spellings included.
+- `include/bl/script.h` / `src/script.cpp`: `"mafia"`, `"dealer"`, `"hustler"`,
+  `"landlord"`, `"zoo"`, `"model"`, `"actor"`, `"secret-agent"` and `"casino"`, parsed
+  like `"politics"` and folded into the mask with `sim.makeMisc(life, miscMask)`.
+- Three shared fixes came out of these pools, all of them in code the earlier pools also use:
+  1. An inline alternative list with an empty middle option (`<MILF/volleyball
+     coach/biker chick/cyclist//lifeguard/...>`) was treated as a closing tag and left verbatim,
+     because the guard that recognises `</b>` tested every option instead of the first one. Only a
+     token that starts with the separator is a closing tag now, and empty alternatives are skipped
+     when one is drawn.
+  2. `<rb3>` and its siblings are cached alternatives, so a row that asks for more alternatives than
+     it drew leaked the token. It now falls back to the last alternative drawn, matching how the game
+     reads its own replacement list.
+  3. Every table-sourced value goes through `ensureTable` first; a pool that names a table the port
+     does not load (as `<habitat-zoo>` did before `a16_zoo-habitat-names-enc` was added) now
+     returns an empty token instead of throwing out of `tbl`.
+
+### 56.3 Shortcuts
+
+1. The gate is the script switch; the game reaches these pools through the Mafia, Cartel, Hustler,
+   Landlord, Zoo, Modeling, Acting, Secret Agent and Casino menus and their own progression.
+2. The pools are reachable at their minimum ages only, with no join step: a hero can be handed a
+   mafia or secret-agent row without ever having joined anything.
+3. Row gates are not evaluated. `a16_dumb-scenarios-hustler-enc` alone carries police-risk,
+   theft-risk and confrontation-risk columns, and the casino and dealer pools gate on how deep the
+   hero already is; none of that is read.
+4. `<costar>`, `<director>`, `<booking-agent>` and the rest of the people series are names from
+   the port's own pools, not from any casting table.
+5. The three zoo job words are literals, since no zoo staff table exists in the gamedata.
+6. Only the nine dumb-scenario pools are wired: the `a16_mafia-*`, `a16_dealer-cartel-*`,
+   `a16_hustler-*`, `a16_landlord-*`, `a16_zoo-*`, `a16_model-*`, `a16_actor-*`,
+   `a16_secret-agent-*` and `a16_casino-*` families themselves are not.
+
+### 56.4 Verification
+
+- Four seeds, all nine pools switched on together and one per pool: 25 to 34 rows render per pool,
+  0 angle-bracket tokens survive across every title, body and log line of all nine;
+  `tools/coverage.py` 109 / 107; `portgap.py` 109 / 107 / gap 0; `tools/bench.sh` to age 34 with
+  no abort; all-109 push replay exits 0; residue census 0 distinct tokens.
+- The whole `a16_dumb-scenarios-*` family is now read: the remaining unwired pools are none.
+

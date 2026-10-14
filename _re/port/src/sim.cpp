@@ -570,7 +570,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sportsRng_(seed ^ 0x94d049bb133111ebULL),
       bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
       musicRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xa0761d6478bd642fULL),
-      politicsRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
+      politicsRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
+      miscRng_(seed ^ 0xd6e8feb86659fd93ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -586,6 +587,33 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_dumb-scenarios-mafia-enc",
+    "a16_dumb-scenarios-dealer-enc",
+    "a16_dumb-scenarios-hustler-enc",
+    "a16_dumb-scenarios-landlord-enc",
+    "a16_dumb-scenarios-zoo-enc",
+    "a16_dumb-scenarios-model-enc",
+    "a16_dumb-scenarios-actor-enc",
+    "a16_dumb-scenarios-secret-agent-enc",
+    "a16_dumb-scenarios-casino-enc",
+    "a16_mafia-mobs-enc",
+    "a16_mafia-nicknames-enc",
+    "a16_dealer-cartel-name-enc",
+    "a16_hustler-collection-boxes-enc",
+    "a16_hustler-busk-music-types-enc",
+    "a16_hustler-panhandle-strategies-enc",
+    "a16_landlord-home-default-features-enc",
+    "a16_house-types-enc",
+    "a16_street-names-enc",
+    "a16_zoo-animals-enc",
+    "a16_zoo-habitat-names-enc",
+    "a16_model-agency-names-enc",
+    "a16_actor-films-enc",
+    "a16_actor-shows-enc",
+    "a16_actors-real-enc",
+    "a16_secret-agent-agency-fronts-enc",
+    "a16_casino-casino-game-room-enc",
+    "a16_casino-random-hero-casino-name-enc",
     "a16_dumb-scenarios-political-campaign-enc",
     "a16_dumb-scenarios-political-office-enc",
     "a16_country-political-systems-enc",
@@ -919,6 +947,61 @@ namespace {
 // never chosen over one it can (REPORT.en.md 49).
 const char* const kUnresolvedTokens[] = {"<action>"};
 
+// Pool-specific nouns for the misc dumb-scenario pools (REPORT.en.md 56). Each
+// entry names the table and column the game fills the token from; the value is
+// resolved again after the draw because some columns carry tokens of their own
+// (a16_mafia-nicknames-enc stores '<first-name> Meatballs').
+struct MiscSrc { const char* key; const char* table; const char* col; };
+
+const MiscSrc kMiscSrc[] = {
+  {"mafia-godfather", "a16_mafia-nicknames-enc", "Nickname"},
+  {"mafia-boss", "a16_mafia-nicknames-enc", "Nickname"},
+  {"mafia-colleague", "a16_mafia-nicknames-enc", "Nickname"},
+  {"mafia-rival-family-member", "a16_mafia-nicknames-enc", "Nickname"},
+  {"mafia-family", "a16_mafia-mobs-enc", "Mob"},
+  {"mafia-rival-family", "a16_mafia-mobs-enc", "Mob"},
+  {"cartel", "a16_dealer-cartel-name-enc", "Name"},
+  {"drug-cartel", "a16_dealer-cartel-name-enc", "Name"},
+  {"rival-cartel", "a16_dealer-cartel-name-enc", "Name"},
+  {"hustle-box", "a16_hustler-collection-boxes-enc", "Item"},
+  {"hustle-act", "a16_hustler-panhandle-strategies-enc", "Strategy"},
+  {"hustle-street", "a16_street-names-enc", "Street Name"},
+  {"amenity", "a16_landlord-home-default-features-enc", "Feature String"},
+  {"house-type", "a16_house-types-enc", "Type"},
+  {"animal-zoo", "a16_zoo-animals-enc", "Animal"},
+  {"habitat-zoo", "a16_zoo-habitat-names-enc", "Name"},
+  {"front", "a16_secret-agent-agency-fronts-enc", "Type"},
+  {"production", "a16_actor-films-enc", "Title"},
+  {"talk-show", "a16_actor-shows-enc", "Title"},
+  {"real-actor", "a16_actors-real-enc", "Full Name"},
+  {"hero-casino", "a16_casino-random-hero-casino-name-enc", "Name"},
+  {"casino-room", "a16_casino-casino-game-room-enc", "Game"},
+};
+
+// The same family spelled as a person: the pools ask for a name, the tables
+// above do not hold one.
+const char* const kMiscPeople[] = {
+  "cartel-member", "cartel-kingpin", "tenant", "booking-agent", "director", "costar",
+  "agent", "agency-rival", "casino-gambler", "model", "product-model",
+};
+
+const char* const kMiscLiterals[] = {
+  "animal-handler", "zoo-veterinarian", "zoo-operations-manager", "hustle-instrument",
+  "tenant-address",
+};
+
+bool miscIsToken(const std::string& key) {
+  const std::string psuffix = "-possessive";
+  std::string base = key;
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    base = key.substr(0, key.size() - psuffix.size());
+  for (const MiscSrc& m : kMiscSrc) if (base == m.key) return true;
+  for (const char* k : kMiscPeople) if (base == k) return true;
+  for (const char* k : kMiscLiterals) if (base == k) return true;
+  return false;
+}
+
 bool hasUnresolvedToken(const std::string& s) {
   for (const char* t : kUnresolvedTokens)
     if (s.find(t) != std::string::npos) return true;
@@ -972,12 +1055,17 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token, '/', options);
       std::string drawn;
-      for (const std::string& o : options) if (o.empty()) drawn = "<>";  // "</b>": not an alternative list
-      if (drawn == "<>") out += text.substr(i, close - i + 1);
+      // "</b>" is a closing tag rather than an alternative list, and it is the
+      // only shape where the token itself starts with the separator. An empty
+      // alternative in the middle ('cyclist//lifeguard') is a real one.
+      if (!options.empty() && options[0].empty()) out += text.substr(i, close - i + 1);
       else {
         std::vector<size_t> usable;
         for (size_t k = 0; k < options.size(); ++k)
-          if (!hasUnresolvedToken(options[k])) usable.push_back(k);
+          if (!options[k].empty() && !hasUnresolvedToken(options[k])) usable.push_back(k);
+        if (usable.empty())
+          for (size_t k = 0; k < options.size(); ++k)
+            if (!options[k].empty()) usable.push_back(k);
         if (usable.empty()) for (size_t k = 0; k < options.size(); ++k) usable.push_back(k);
         drawn = options[usable[rng_.below(uint32_t(usable.size()))]];
         // An alternative can hold tokens of its own, so the drawn text goes back
@@ -993,7 +1081,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       // the second, up to "<rb4>". Out of range means the game never drew that
       // many, so the token stays verbatim.
       const int n = token.size() == 2 ? 1 : std::atoi(token.substr(2).c_str());
+      // Out of range means the row asked for more alternatives than it drew; the
+      // port reuses the last one instead of leaking the token (REPORT.en.md 56).
       if (n >= 1 && size_t(n) <= rndCache_.size()) out += rndCache_[size_t(n) - 1];
+      else if (!rndCache_.empty()) out += rndCache_.back();
       else out += text.substr(i, close - i + 1);
     } else if (token == "br") {
       out += '\n';
@@ -1015,6 +1106,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
+    } else if (miscIsToken(token)) {
+      const std::string v = miscToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else out += v;
     } else if (token == "album-title" || token.compare(0, 10, "song-title") == 0 ||
@@ -1874,6 +1969,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (businessYear(life, out, forcedChoice)) return true;
   if (musicYear(life, out, forcedChoice)) return true;
   if (politicalYear(life, out, forcedChoice)) return true;
+  if (miscPoolYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2850,6 +2946,111 @@ void Sim::makePolitician(Life& life) {
   ensureOfficeFields(life);
   if (life.hero.office.empty()) return;
   life.hero.politician = true;
+}
+
+std::string Sim::miscToken(const std::string& key) {
+  const std::string psuffix = "-possessive";
+  const bool possessive =
+      key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0;
+  const std::string base = possessive ? key.substr(0, key.size() - psuffix.size()) : key;
+  std::string value;
+  // Table cells carry tokens of their own: the nickname list stores
+  // '<first-name> Meatballs' and the street list '<random-surname> Garden'.
+  const auto sub = [](std::string text, const std::string& from, const std::string& to) {
+    for (size_t at = text.find(from); at != std::string::npos; at = text.find(from, at + to.size()))
+      text = text.substr(0, at) + to + text.substr(at + from.size());
+    return text;
+  };
+  for (const MiscSrc& m : kMiscSrc) {
+    if (base != m.key) continue;
+    if (!ensureTable(m.table)) return std::string();
+    const Table& t = tbl(m.table);
+    if (t.size() == 0 || !t.has(m.col)) return std::string();
+    value = trim(t.at(miscRng_.below(uint32_t(t.size())), m.col));
+    break;
+  }
+  if (value.empty()) {
+    bool person = false;
+    for (const char* k : kMiscPeople) if (base == k) person = true;
+    if (person) {
+      value = drawFirstName(miscRng_.chance(0.5)) + " " + drawSurname();
+    } else if (base == "animal-handler") {
+      value = "animal handler";
+    } else if (base == "zoo-veterinarian") {
+      value = "zoo veterinarian";
+    } else if (base == "zoo-operations-manager") {
+      value = "zoo operations manager";
+    } else if (base == "hustle-instrument") {
+      // 'Possible Instruments' is a comma list ('harp, cello, triangle'); the
+      // game picks one of them.
+      if (!ensureTable("a16_hustler-busk-music-types-enc")) return std::string();
+      const Table& t = tbl("a16_hustler-busk-music-types-enc");
+      if (t.size() == 0 || !t.has("Possible Instruments")) return std::string();
+      const std::string list = t.at(miscRng_.below(uint32_t(t.size())), "Possible Instruments");
+      std::vector<std::string> items;
+      splitOn(list, ',', items);
+      if (items.empty()) return std::string();
+      value = trim(items[miscRng_.below(uint32_t(items.size()))]);
+    } else if (base == "tenant-address") {
+      if (!ensureTable("a16_street-names-enc")) return std::string();
+      const Table& t = tbl("a16_street-names-enc");
+      if (t.size() == 0 || !t.has("Street Name")) return std::string();
+      std::string street = trim(t.at(miscRng_.below(uint32_t(t.size())), "Street Name"));
+      if (street.find("<random-surname>") != std::string::npos)
+        street = sub(street, "<random-surname>", drawSurname());
+      street = resolve(street);
+      value = std::to_string(100 + int(miscRng_.below(9800))) + " " + street;
+    } else {
+      return std::string();
+    }
+  } else {
+    // Columns such as the nickname list carry tokens of their own: the nickname
+    // table stores '<first-name> Meatballs', and street names carry
+    // '<random-surname> Garden'. They are filled after the row is picked and
+    // before the value goes back through the resolver.
+    if (value.find("<first-name>") != std::string::npos)
+      value = sub(value, "<first-name>", drawFirstName(miscRng_.chance(0.5)));
+    if (value.find("<last-name>") != std::string::npos)
+      value = sub(value, "<last-name>", drawSurname());
+    if (value.find("<random-surname>") != std::string::npos)
+      value = sub(value, "<random-surname>", drawSurname());
+    value = resolve(value);
+  }
+  if (value.empty()) return std::string();
+  return possessive ? value + "'s" : value;
+}
+
+// The nine remaining dumb-scenario pools share one runner: each names its table,
+// the age it can start and how often it fires, and the script's switch selects
+// which of them are live. The pools have no career model behind them, so there is
+// no make* step beyond recording the mask (REPORT.en.md 56).
+void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
+
+bool Sim::miscPoolYear(Life& life, AgeUp& out, int forcedChoice) {
+  static const struct MiscPool { const char* table; int minAge; double chance; } kPools[] = {
+    {"a16_dumb-scenarios-mafia-enc", 18, 0.30},
+    {"a16_dumb-scenarios-dealer-enc", 18, 0.30},
+    {"a16_dumb-scenarios-hustler-enc", 16, 0.35},
+    {"a16_dumb-scenarios-landlord-enc", 18, 0.35},
+    {"a16_dumb-scenarios-zoo-enc", 18, 0.30},
+    {"a16_dumb-scenarios-model-enc", 16, 0.30},
+    {"a16_dumb-scenarios-actor-enc", 16, 0.30},
+    {"a16_dumb-scenarios-secret-agent-enc", 21, 0.25},
+    {"a16_dumb-scenarios-casino-enc", 21, 0.30},
+  };
+  hero_ = &life.hero;
+  life_ = &life;
+  for (size_t i = 0; i < sizeof(kPools) / sizeof(kPools[0]); ++i) {
+    if ((life.hero.miscMask & (1u << i)) == 0) continue;
+    if (life.hero.age < kPools[i].minAge) continue;
+    if (!miscRng_.chance(kPools[i].chance)) continue;
+    if (!ensureTable(kPools[i].table)) continue;
+    const Table& t = tbl(kPools[i].table);
+    if (t.size() == 0) continue;
+    return renderRow(t, miscRng_.below(uint32_t(t.size())), life, out, forcedChoice);
+  }
+  return false;
 }
 
 std::string Sim::politicalToken(const std::string& token) {
