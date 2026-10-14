@@ -346,6 +346,12 @@ class Sim {
   // The conversations family (REPORT.en.md 90): one topic, one listener, and
   // the row's own Controversy Score for how it lands.
   bool conversationYear(Life& life, AgeUp& out, int forcedChoice);
+  // The social media year, and the handle generator a stranger's name needs.
+  bool socialYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string makeUsername(int age, bool female, Rng& rng);
+  // A troll card names the same stranger in its body and in its log, so the
+  // handle is pinned while that one card renders.
+  std::string usernameOverride_;
   // The badge table of the anniversary family: the row's five captions and the
   // situation description the feed shows (REPORT.en.md 88).
   std::string annBadgeOption(const std::string& tag, std::string& situation, int* rowOut = nullptr);

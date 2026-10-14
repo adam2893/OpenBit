@@ -10271,8 +10271,296 @@ row 342 clean=False | whether or not it is okay to dye <our/your> gray pubes
 ```
 
 The whole regression is green with the section in place: `allprobes.py` runs
-thirty-three probes at residue 0 (the new `convres.py` joins the list),
+thirty-four probes at residue 0 (section 91 adds `socres.py` to the list),
 `rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109
 captured / 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107
 gap 0`, `blsim --script covpush.json` rc 0 with an empty stderr, and
 `bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.
+
+
+## 91. The social media year: one account, six tables, and a handle nobody could name
+
+Section 90 gave the hero a listener. This one gives him an audience. Seven tables of
+`a16_social` had never been read by the port - the only member of the family it had
+ever touched was the seven-row channel list, wired long ago as a source of social media
+names - and together they are a complete year of its own: a channel the hero picks in
+his teens, an account that grows, five ways a year can go, and a second family
+(`a16_username`, 413 rows over three files) that exists only to give a stranger a
+name.
+
+### 91.1 The family
+
+| table | rows | columns |
+| --- | --- | --- |
+| `a16_social-media-channels-enc` | 7 | Channel, Likes Coefficient, Followers Coefficient, Promotion Followers Coefficient, Promotion Monetization Coefficient, Post Type, Post Verb, Post Description Present, Post Description Past, Followers Term, Friends Min Age, Friends Max Age |
+| `a16_social-media-post-types-enc` | 53 | Post Type, Scenario, Log Version, Add Video, Appeal Score, Impacted by Looks, Impacted by Smarts, Viral Score, then one column per channel |
+| `a16_social-media-troll-inbounds-enc` | 28 | Scenario, Log Version, Is Reply, Twitch Exempt, Twitch Only |
+| `a16_social-media-hacks-enc` | 26 | Scenario, Log Version, Damage Score, Both Parents Alive, Has Lover, then one column per channel |
+| `a16_social-media-promotion-products-enc` | 148 | Product, Description, Compensation Score, Min Age, Appeal Score, Twitch Exempt |
+| `a16_social-media-channels-of-collabstrings-enc` | 47 | String, Engagement Score, Virality, Controversy Score, Commonness Score |
+| `a16_username-structure-enc` | 18 | Structure |
+| `a16_username-adjectives-enc` | 195 | Adjective, Gender, Min Age, Max Age |
+| `a16_username-nouns-enc` | 200 | Noun, Gender, Min Age, Max Age |
+
+The channel table is the spine. A channel is not a name here, it is a **window**: the
+`Friends Min Age` and `Friends Max Age` columns bound who uses it, and the port read
+them the way the corpus wrote them - Facebook 50 and up, Instagram 18-40, TikTok 13-18,
+Twitter 25-45, YouTube 13-30, Twitch 13-70, OnlyFans 18 and up. A fourteen-year-old can
+only land on TikTok, YouTube or Twitch; a fifty-five-year-old cannot land on TikTok at
+all. The same table carries the arithmetic (`Likes Coefficient`,
+`Followers Coefficient`, `Followers Term` - followers everywhere except YouTube and
+OnlyFans, which call them subscribers) and the noun a post is described with
+(`Post Type`: post, video, tweet or livestream).
+
+Each of the three event tables then carries one column per channel, an `x` meaning
+this can happen here: post-types has Facebook 21, Instagram 20, Twitter 19, Twitch 13,
+YouTube 12, OnlyFans 10, TikTok 9; hacks has Facebook 26, Twitter 25, Instagram 24,
+TikTok 14, YouTube 13, Twitch 4. A hack card is therefore several times more likely to
+be about a Facebook account than a Twitch one, and the port did not have to invent
+that - it reads the columns.
+
+Two tables are gates rather than vocabulary. `a16_social-media-hacks-enc` has
+`Both Parents Alive` and `Has Lover`, so a hacking card can require that the hero
+still has something to lose. `a16_social-media-troll-inbounds-enc` has `Twitch Only`
+(10 rows) and `Twitch Exempt` (15), and `a16_social-media-promotion-products-enc`
+has `Twitch Exempt` on 18 of its 148 rows plus a `Min Age` (16, 18 or 21 on the 34
+rows that carry one), so a beer brand will not offer a sponsorship to a fifteen-year-
+old.
+
+What the family does not have is prose for the two oldest branches. A post, a troll and
+a hack all ship a `Scenario` and a `Log Version`. A sponsorship ships a product, a
+description and two scores; a collaboration ships an activity string and two scores.
+Those two cards are the port's own sentences, and 91.6 says so.
+
+### 91.2 The account
+
+The channel is drawn once, in the first year the hero is old enough, from the rows
+whose `Friends Min Age` / `Friends Max Age` window contains his age - so the draw is
+already biased by the corpus's own idea of who uses what - and stored in
+`h.socialChannel`. Every later card in that life comes from the same channel: a hero
+who drew Facebook at fifteen is still on Facebook at forty.
+
+The hero's own handle is generated once, at the same moment, by `makeUsername`, and
+kept in `h.socialUsername`. It is eighteen formats from
+`a16_username-structure-enc` - `<first-name><surname>`,
+`<first-name>_<surname>`, `<surname><first-name>`, `<first-name><num1-999>`,
+`<adjective><first-name>`, `<adjective><num1950-2005>` and twelve more - filled
+from the two word pools, each word gated by its own `Gender`, `Min Age` and
+`Max Age` (the adjective horny is 18 and up, the noun aunt is female only). A word
+that does not fit the hero is not drawn, and a token that cannot be filled is dropped
+rather than printed: the port would rather lose a letter of a handle than show a
+bracket.
+
+### 91.3 The five ways
+
+The year is one weighted draw over the branches that have something to say, exactly as
+section 87 taught - never a bare `roll < X` ladder, because a branch whose pool is
+empty would fall through into a later window and hand the year to the wrong table.
+
+| kind | weight | pool | empty when |
+| --- | --- | --- | --- |
+| post | 12 | post-types, rows flagged for this channel | never |
+| trolled | 8 | troll-inbounds, minus the `Twitch Only` rows on other channels | rarely |
+| promotion | 6 | promotion-products, skipping `Twitch Exempt` on Twitch and a `Min Age` above the hero | young hero on Twitch |
+| collaboration | 5 | collaboration strings | never |
+| hacked | 4 | hacks, rows flagged for this channel and passing both gates | hero with no partner and no parents |
+
+A post is worth a number: `likes = (Appeal + Viral) * Likes Coefficient * 100` and
+`followers += likes * Followers Coefficient * (1 + Viral * 0.5) * 10`. The corpus
+ships the two coefficients and no formula at all, so the shape of that line, and the
+100 and the 10, are the port's; what is not the port's is that the viral score
+multiplies the gain, and that OnlyFans pays no more per view than Facebook does. A
+viral score of 4 or more also writes a sentence into the log - The post went viral. -
+and hands the hero one more point of happiness.
+
+| branch | what it moves |
+| --- | --- |
+| post | `money` no, `happiness` by the `Appeal Score` (plus one when viral), the account by the likes line |
+| trolled | `happiness` -3 |
+| promotion | `money += Compensation Score * 2500 * Promotion Monetization Coefficient`, `happiness` by the `Appeal Score` |
+| collaboration | the account by `Virality * Followers Coefficient * 50`, `happiness` by the `Engagement Score`, `karma` -1 when `Controversy Score` is 3 or more |
+| hacked | `happiness` by the `Damage Score`, the account by `followers * Damage Score / 20` |
+
+The collaboration's karma is the only karma the whole family can move. The hack is the
+only branch that can take the account down, and it takes it down by a fraction: a
+damage-5 hack on a twenty-thousand-subscriber account is a five-thousand-subscriber
+year.
+
+Every card also writes the family's ledger:
+
+| line | written when |
+| --- | --- |
+| `I have N followers on <channel>.` | every card, in the channel's own term |
+| `I have made N post(s) and been trolled N time(s)[, taken N sponsorship(s)][, filmed N collab(s)][, and been hacked N time(s)].` | every card |
+
+### 91.4 The tokens
+
+Three tokens had no resolver at all, and one of them is the reason the username family
+had to be wired here.
+
+| token | where the corpus uses it | what the port does |
+| --- | --- | --- |
+| `<username>` | 56 times, in exactly one file: troll-inbounds | generates a handle, pinned for the card |
+| `<channel>` | 265 times over four files | reads `h.socialChannel` back |
+| `<post>` | 15 times over two files, troll-inbounds and troll-outbounds | the channel's own `Post Type` word, lowercased, with post as the fallback |
+| `<musician>` | the hacks table and one post type | already resolved by the music family |
+
+`<channel>` and `<post>` are the two halves of one sentence shape: "Someone on
+Instagram called rudecow960 replied to my post, saying I looked ugly." The channel is
+part of the hero's life rather than of the event, so it is read back instead of drawn;
+the noun is a property of the channel, because a tweet belongs to Twitter and a
+livestream to Twitch.
+
+The handle is the interesting one. A troll card names the same stranger twice - once in
+the second-person `Scenario` and once in the first-person `Log Version` - and the
+corpus has no column that could tie the two cells together. Drawing twice gives a card
+whose body blames `the_denier9` while its own log blames `MathewsArianna`, which is
+exactly what the first probe run printed. The year now draws the handle once, pins it
+in `usernameOverride_` for the two resolves and clears it, and the sample cards below
+show the two cells agreeing.
+
+### 91.5 What it caught
+
+1. **The cross-family residue detector earned its keep.** `spyres.py` reads every
+   string of every event of a thirty-life run, not only its own family's rows, so this
+   section's half-installed work surfaced inside a section 90 regression as
+   `residue 74` - all of it `<post>` and the unresolved collaboration strings. It
+   went back to zero once the two resolvers and the skip guard landed. It is the
+   fastest way to see a half-installed family.
+2. **The ledger line is not a good enough probe on its own.** The first check demanded
+   that the post counter move on every card and reported 471 mismatches. A sponsorship,
+   a collaboration and a hack leave the post and troll counters where they were; the
+   probe now parses all five counters and asks only that none decrease and at least one
+   move.
+3. **A four-digit follower count looks like a mistake.** Read with the coefficients
+   alone, a hero could post for twenty years and still show 150 followers, because the
+   corpus's numbers are per-post ratios and no base. The x10 is the port's.
+4. **The same stranger twice**: a real card-level bug, and one a residue check cannot
+   see.
+5. **"1 posts and been trolled 1 times."** The ledger counted with a fixed plural, and
+   a life's first card is almost always a one.
+6. **Two rows cannot be printed at all.** The hacks table and one post type name a
+   `<musician>`, which the port can only resolve inside a music card; rather than
+   print a bracket the year skips the row, the same shortcut section 90 took with its
+   own two rows. It costs about one card in seventy.
+7. **The probe had two bugs of its own**: the channel table was unpacked in the wrong
+   order, so its rows came back as lists and the dictionary comprehension raised, and
+   the ledger check above.
+
+### 91.6 Shortcuts
+
+- The year fires on 25% of the ages at 13 and up; the corpus has no rate.
+- The five weights, 12/8/6/5/4, are the port's.
+- The x100 likes base, the x10 follower scale and the x50 of a collaboration are the
+  port's. The coefficients are the corpus's.
+- The sponsorship's and the collaboration's sentences are the port's prose, because
+  those two tables carry no `Scenario`.
+- A row whose own text still needs a token the port has no source for is skipped rather
+  than printed with a bracket in it.
+- `a16_social-media-troll-outbounds-enc`, 38 rows, is not wired: it needs a victim
+  the hero does not have. `a16_social-media-channels-onlyfans-tip-responses-enc`, 7
+  rows, is not wired either: it needs a tip the port has no event for.
+- One card a year, and the account is a follower count and nothing else. The
+  `Post Verb`, `Post Description Present`, `Post Description Past`,
+  `Impacted by Looks` and `Impacted by Smarts` columns are read for their channel
+  flags and otherwise unused.
+
+### 91.7 Verification
+
+The probe drives 160 lives - two passes of forty seeds, both genders, to age 80 -
+selects the five social tables, and checks the row index, the followers line
+against the real channel row (its name, its `Followers Term`, and that its
+Friends window still contains the hero), the five ledger counters, the happiness
+and karma bounds of each kind, and that the body and the log each match the head
+and tail of the row they came from.
+
+~~~
+mismatches 0 []
+tables {'a16_social-media-post-types-enc': 383, 'a16_social-media-troll-inbounds-enc': 253,
+        'a16_social-media-promotion-products-enc': 219,
+        'a16_social-media-channels-of-collabstrings-enc': 185, 'a16_social-media-hacks-enc': 133}
+kinds {'post': 383, 'troll': 253, 'promo': 219, 'collab': 185, 'hack': 133}
+channels used [('OnlyFans', 339), ('Twitch', 336), ('Facebook', 138), ('Twitter', 125),
+               ('Instagram', 101), ('YouTube', 88), ('TikTok', 46)]
+follow terms {'followers': 746, 'subscribers': 427}
+distinct troll usernames 22
+karma deltas {0: 1093, -1: 80}
+RESIDUE 0 []
+~~~
+
+A run of cards, one per branch, in the order the probe found them:
+
+~~~
+### post  seed 1 male  age 21
+  title: Story
+  body : You posted a story about your weird day on Instagram.
+  logs :
+     I have 1500 followers on Instagram.
+     I have made 1 post and been trolled 0 times.
+     I posted a story about my weird day on Instagram.
+~~~
+
+~~~
+### promo  seed 1 male  age 38
+  title: A sponsorship
+  body : A brand offered to pay you to promote a novel penis pump.
+  logs :
+     I have 3862 followers on Twitch.
+     I have made 2 posts and been trolled 0 times, taken 1 sponsorship.
+     I promoted a novel penis pump on Twitch for $1,250.
+~~~
+
+~~~
+### viral  seed 1 male  age 47
+  title: Tutorial
+  body : You recorded a detailed video on how to use a cocktail shaker and posted it on OnlyFans.
+  logs :
+     I have 20399 subscribers on OnlyFans.
+     I have made 3 posts and been trolled 0 times, taken 2 sponsorships.
+     I posted a tutorial video about how to use a cocktail shaker on OnlyFans. The post went viral.
+~~~
+
+~~~
+### hack  seed 1 male  age 50
+  title: Hacked
+  body : Someone hacked into your Twitch account and changed your username to "69reasons".
+  logs :
+     I have 18360 followers on Twitch.
+     I have made 3 posts and been trolled 0 times, taken 2 sponsorships, and been hacked 1 time.
+     Someone hacked into my Twitch account and changed my username to "69reasons".
+~~~
+
+~~~
+### troll  seed 1 female  age 29
+  title: Trolled
+  body : Someone named the_denier9 just replied to your post with a degrading comment about your butt.
+  logs :
+     I have 3862 subscribers on OnlyFans.
+     I have made 2 posts and been trolled 1 time.
+     Someone named the_denier9 replied to my post with a degrading comment about my butt.
+~~~
+
+~~~
+### collab  seed 2 male  age 38
+  title: A collaboration
+  body : Another creator invited you to film a collaboration.
+  logs :
+     I have 0 subscribers on OnlyFans.
+     I have made 0 posts and been trolled 0 times, taken 1 sponsorship, filmed 1 collab.
+     We filmed a video baking chocolate chip cookies and posted it on OnlyFans.
+~~~
+
+~~~
+### troll usernames
+  the_weeb2 | A person with the username the_weeb2 called you sewer blood on TikTok.
+  Cady506 | A person with the username Cady506 called you a menstrual psycho on Twitch.
+  Micky644 | A person with the username Micky644 called you a tampon taker on Twitch.
+  horny_louse33 | A person with the username horny_louse33 called you a wannabe fangster on Instagram.
+  horny_louse16 | A person with the username horny_louse16 called you a wannabe fangster on Instagram.
+  LargeSee | A person with the username LargeSee called you a tampon taker on Twitter.
+~~~
+
+The full regression after the section: thirty-four probes at residue 0, the residue
+census at "distinct residue tokens 0 total 0", coverage at "captured scenarios: 109
+recoverable: 107", the port gap at "ENTRIES 109 rendered-by-port 107 gap 0", the push
+script at rc 0 with empty stderr, and the benchmark reaching age 34.

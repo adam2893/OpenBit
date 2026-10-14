@@ -1161,6 +1161,14 @@ bool Sim::load(std::string* error) {
       "a16_gift-rejections-vehicle-enc",             // Excuse,Prideful,Crazy,Car/Boat/Plane Min/Max Value
       "a16_aircraft-enc",                            // Make,Model,..,Cost,..,Luxury Only
       "a16_conversations-enc",                       // Audience,Conversation,..,Controversy Score,Clean
+      "a16_social-media-post-types-enc",             // Post Type,Scenario,Log Version,Appeal Score,Viral Score,<channel>
+      "a16_social-media-troll-inbounds-enc",         // Scenario,Log Version,Is Reply,Twitch Exempt,Twitch Only
+      "a16_social-media-hacks-enc",                  // Scenario,Log Version,Damage Score,<channel>,Both Parents Alive,Has Lover
+      "a16_social-media-promotion-products-enc",     // Product,Description,Compensation Score,Min Age,Appeal Score,Twitch Exempt
+      "a16_social-media-channels-of-collabstrings-enc", // String,Engagement Score,Virality,Controversy Score,Commonness Score
+      "a16_username-structure-enc",                  // Format
+      "a16_username-adjectives-enc",                 // Adjective,Gender,Min Age,Max Age
+      "a16_username-nouns-enc",                      // Noun,Gender,Min Age,Max Age
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -2513,6 +2521,40 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string who = referenceToken("musician");
       if (who.empty()) out += text.substr(i, close - i + 1);
       else out += articleFor(who) + who;
+    } else if (token == "post") {
+      // <post> is the noun the channel's own Post Type column carries ('post',
+      // 'video', 'tweet', 'livestream'). The two troll tables are its only
+      // users: 'left a comment on your <post>'.
+      std::string v;
+      if (hero_ != nullptr && !hero_->socialChannel.empty()) {
+        ensureTable("a16_social-media-channels-enc");
+        const Table& c = tbl("a16_social-media-channels-enc");
+        for (size_t r = 0; r < c.size(); ++r) {
+          if (c.has("Channel") && trim(c.at(r, "Channel")) == hero_->socialChannel) {
+            v = lower(trim(c.at(r, "Post Type")));
+            break;
+          }
+        }
+      }
+      if (v.empty()) v = "post";
+      out += v;
+    } else if (token == "channel") {
+      // <channel> is the account the hero is posting from. Until section 91 the
+      // token had no resolver at all: the join card drew a channel to sign up
+      // with, and no card that names one afterwards could be rendered.
+      const std::string v = hero_ == nullptr ? std::string() : hero_->socialChannel;
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += v;
+    } else if (token == "username") {
+      // <username> is somebody else's handle - the stranger who names the hero
+      // on his own channel - so it is generated, not read back. The corpus uses
+      // it only in a16_social-media-troll-inbounds-enc (56 times).
+      const bool who = pronounOtherSet_ ? pronounOtherFemale_ : relRng_.chance(0.5);
+      const std::string v = usernameOverride_.empty()
+                                ? makeUsername(hero_ == nullptr ? 18 : hero_->age, who, relRng_)
+                                : usernameOverride_;
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
     } else if (token.compare(0, 5, "hero-") == 0 || token.compare(0, 5, "hero:") == 0 ||
                token == "city" || token == "country" || token == "country2" ||
                token == "country-other" || token == "country-other-adjectival" ||
@@ -3359,6 +3401,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
+  if (socialYear(life, out, forcedChoice)) return true;
   if (spyYear(life, out, forcedChoice)) return true;
   if (fightYear(life, out, forcedChoice)) return true;
   if (bmYear(life, out, forcedChoice)) return true;
@@ -23855,4 +23898,321 @@ bool Sim::conversationYear(Life& life, AgeUp& out, int forcedChoice) {
   pronounOtherFemale_ = savedFemale;
   return true;
 }
+// ---------------------------------------------------------------------------
+// Section 91: the social media year, and the username generator a stranger's
+// name needs. a16_social-media-channels-enc (7 rows) was already wired: one row
+// per channel, holding the coefficients, the follow word ('followers' or
+// 'subscribers'), the post verb, and the Friends Min/Max Age window of the
+// audience the channel brings. Section 91 wires the five tables under it - what
+// the hero posts (post-types, 53 rows), the sponsorships (promotion-products,
+// 148), the people who answer the post (troll-inbounds, 28), the collaborations
+// (channels-of-collabstrings, 47) and the break-ins (hacks, 26) - plus
+// a16_username-* (413 rows), which is what names a stranger.
+// ---------------------------------------------------------------------------
+std::string Sim::makeUsername(int age, bool female, Rng& rng) {
+  ensureTable("a16_username-structure-enc");
+  ensureTable("a16_username-adjectives-enc");
+  ensureTable("a16_username-nouns-enc");
+  const Table& st = tbl("a16_username-structure-enc");
+  if (st.size() == 0) return std::string();
+  std::string handle = trim(st.at(rng.below(uint32_t(st.size())), "Format"));
+  if (handle.empty()) return std::string();
+  // A word fits when its own Gender column is open or matches, and its own age
+  // window contains the age. The corpus flags the adult words this way
+  // ('horny' 18+, 'aunt' female 18+, 'baller' male).
+  const auto word = [&](const char* tableName, const char* col) -> std::string {
+    const Table& t = tbl(tableName);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(trim(t.has("Gender") ? t.at(r, "Gender") : std::string()));
+      if (!g.empty() && g != (female ? "female" : "male")) continue;
+      const double mn = t.has("Min Age") ? t.num(r, "Min Age") : 0.0;
+      const double mx = t.has("Max Age") ? t.num(r, "Max Age") : 0.0;
+      if (mn > 0 && age < int(mn)) continue;
+      if (mx > 0 && age > int(mx)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) return std::string();
+    return lower(trim(t.at(pool[rng.below(uint32_t(pool.size()))], col)));
+  };
+  const auto sub = [&](const std::string& tok, const std::string& val) {
+    const size_t at = handle.find(tok);
+    if (at == std::string::npos || val.empty()) return;
+    handle = handle.substr(0, at) + val + handle.substr(at + tok.size());
+  };
+  sub("<first-name>", drawFirstName(female));
+  sub("<surname>", drawSurname());
+  sub("<adjective>", word("a16_username-adjectives-enc", "Adjective"));
+  sub("<noun>", word("a16_username-nouns-enc", "Noun"));
+  // '<num1950-2005>' and '<num1-999>' are the legacy number tag the rest of the
+  // corpus uses, so the shared parser reads them.
+  for (int pass = 0; pass < 3; ++pass) {
+    const size_t at = handle.find("<num");
+    if (at == std::string::npos) break;
+    const size_t close = handle.find('>', at);
+    if (close == std::string::npos) break;
+    std::string v;
+    if (!numberToken(handle.substr(at + 1, close - at - 1), v) || v.empty()) break;
+    handle = handle.substr(0, at) + v + handle.substr(close + 1);
+  }
+  // A word the age or the gender rules out leaves a gap behind. A handle never
+  // prints a bracket, so what could not be filled is dropped.
+  std::string cleaned;
+  for (size_t i = 0; i < handle.size(); ++i) {
+    if (handle[i] == '<') {
+      const size_t close = handle.find('>', i);
+      if (close != std::string::npos) { i = close; continue; }
+    }
+    cleaned += handle[i];
+  }
+  return cleaned;
+}
+
+bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  // The youngest window in the channel table is 13 (TikTok and YouTube), and
+  // nothing in the family predates an account.
+  if (forcedChoice >= 0 || h.age < 13) return false;
+  if (!ensureTable("a16_social-media-channels-enc")) return false;
+  const Table& ct = tbl("a16_social-media-channels-enc");
+  if (ct.size() == 0 || !ct.has("Channel")) return false;
+  // The port's own rate: most years the hero posts nothing worth a card.
+  if (!relRng_.chance(0.25)) return false;
+
+  // The channel. The table's own Friends Min/Max Age window decides what a hero
+  // of this age is on, so a 14-year-old lands on TikTok and a 55-year-old on
+  // Facebook. The account is remembered, because five tables name <channel>.
+  std::vector<size_t> chans;
+  for (size_t r = 0; r < ct.size(); ++r) {
+    const double lo = ct.num(r, "Friends Min Age");
+    const double hi = ct.num(r, "Friends Max Age");
+    if (lo > 0 && h.age < lo) continue;
+    if (hi > 0 && h.age > hi) continue;
+    chans.push_back(r);
+  }
+  if (chans.empty()) return false;
+  const size_t crow = chans[relRng_.below(uint32_t(chans.size()))];
+  const std::string channel = trim(ct.at(crow, "Channel"));
+  if (channel.empty()) return false;
+  h.socialChannel = channel;
+  if (h.socialUsername.empty()) h.socialUsername = makeUsername(h.age, h.female, relRng_);
+  const double likesCoeff = ct.num(crow, "Likes Coefficient");
+  const double followCoeff = ct.num(crow, "Followers Coefficient");
+  const double promoCoeff = ct.num(crow, "Promotion Monetization Coefficient");
+  const std::string followTerm = trim(ct.at(crow, "Followers Term"));
+  const bool twitch = channel == "Twitch";
+  // The stranger the card is about (a troll, a collaborator) is the 'other'
+  // gender of the pronoun pairs, so '<his/her>' follows him and not the hero.
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = relRng_.chance(0.5);
+
+  const auto flagOf = [](const Table& t, size_t r, const std::string& col) {
+    return t.has(col) && t.flag(r, col);
+  };
+  // Every branch is offered only when its table can answer it. A branch with an
+  // empty pool is not offered at all, so a roll can never fall through into a
+  // branch the corpus has no row for (the lesson of section 87).
+  std::vector<size_t> postPool, promoPool, trollPool, hackPool, collabPool;
+  if (ensureTable("a16_social-media-post-types-enc")) {
+    const Table& t = tbl("a16_social-media-post-types-enc");
+    for (size_t r = 0; r < t.size(); ++r)
+      if (flagOf(t, r, channel)) postPool.push_back(r);
+  }
+  if (ensureTable("a16_social-media-promotion-products-enc")) {
+    const Table& t = tbl("a16_social-media-promotion-products-enc");
+    for (size_t r = 0; r < t.size(); ++r) {
+      const double mn = t.num(r, "Min Age");
+      if (mn > 0 && h.age < mn) continue;
+      // 'Twitch Exempt' is the product list Twitch will take; the rest of the
+      // corpus is not offered there.
+      if (twitch && !flagOf(t, r, "Twitch Exempt")) continue;
+      promoPool.push_back(r);
+    }
+  }
+  if (ensureTable("a16_social-media-troll-inbounds-enc")) {
+    const Table& t = tbl("a16_social-media-troll-inbounds-enc");
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (flagOf(t, r, "Twitch Only") && !twitch) continue;
+      if (flagOf(t, r, "Twitch Exempt") && twitch) continue;
+      trollPool.push_back(r);
+    }
+  }
+  if (ensureTable("a16_social-media-hacks-enc")) {
+    const Table& t = tbl("a16_social-media-hacks-enc");
+    int parents = 0;
+    for (const Person& p : life.family)
+      if (p.alive && (p.relation == "mother" || p.relation == "father")) ++parents;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!flagOf(t, r, channel)) continue;
+      if (flagOf(t, r, "Both Parents Alive") && parents < 2) continue;
+      if (flagOf(t, r, "Has Lover") && !(h.relationshipOn && !h.loverName.empty())) continue;
+      hackPool.push_back(r);
+    }
+  }
+  if (ensureTable("a16_social-media-channels-of-collabstrings-enc")) {
+    const Table& t = tbl("a16_social-media-channels-of-collabstrings-enc");
+    for (size_t r = 0; r < t.size(); ++r) collabPool.push_back(r);
+  }
+
+  struct Cand { double w; int kind; };
+  std::vector<Cand> cands;
+  const auto offer = [&](double w, int kind, const std::vector<size_t>& pool) {
+    if (!pool.empty()) { Cand c; c.w = w; c.kind = kind; cands.push_back(c); }
+  };
+  offer(12, 0, postPool);      // a post
+  offer(8, 1, trollPool);      // somebody answers it
+  offer(6, 2, promoPool);      // a sponsorship offer
+  offer(5, 3, collabPool);     // a collaboration
+  offer(4, 4, hackPool);       // a break-in
+  if (cands.empty()) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  double total = 0;
+  for (const Cand& c : cands) total += c.w;
+  double roll = relRng_.unit() * total;
+  int kind = cands.back().kind;
+  for (const Cand& c : cands) {
+    if (roll < c.w) { kind = c.kind; break; }
+    roll -= c.w;
+  }
+
+  std::string tableName, title, body, line;
+  int happy = 0;
+  long long earned = 0;
+  size_t cardRow = size_t(-1);
+  if (kind == 0) {
+    const Table& t = tbl("a16_social-media-post-types-enc");
+    const size_t r = postPool[relRng_.below(uint32_t(postPool.size()))];
+    tableName = "a16_social-media-post-types-enc";
+    cardRow = r;
+    // The scenario owns the inline list the log's <rb> points back at, so it is
+    // resolved first (the rule section 88 learned the hard way).
+    body = trim(resolve(t.at(r, "Scenario")));
+    line = trim(resolve(t.at(r, "Log Version")));
+    title = spyUpperFirst(trim(t.at(r, "Post Type")));
+    const double appeal = t.num(r, "Appeal Score");
+    const double viral = t.num(r, "Viral Score");
+    const long long likes = (long long)(((appeal + viral) * likesCoeff) * 100.0);
+    // The table ships coefficients and no formula, so the scale is the port own:
+    // a post is worth a few hundred likes, and a viral one is worth more.
+    const long long gain = (long long)(likes * followCoeff * (1.0 + viral * 0.5) * 10.0);
+    h.socialFollowers = std::max(0LL, h.socialFollowers + gain);
+    happy = int(appeal);
+    if (viral >= 4) { line += " The post went viral."; happy += 1; }
+    ++h.socialPosts;
+  } else if (kind == 1) {
+    const Table& t = tbl("a16_social-media-troll-inbounds-enc");
+    const size_t r = trollPool[relRng_.below(uint32_t(trollPool.size()))];
+    tableName = "a16_social-media-troll-inbounds-enc";
+    cardRow = r;
+    // Both cells name the same stranger, so the handle is drawn once and pinned
+    // for the two resolves (the corpus has no column that could tie them).
+    usernameOverride_ = makeUsername(h.age, pronounOtherFemale_, relRng_);
+    body = trim(resolve(t.at(r, "Scenario")));
+    line = trim(resolve(t.at(r, "Log Version")));
+    usernameOverride_.clear();
+    title = "Trolled";
+    happy = -3;
+    ++h.socialTrolls;
+  } else if (kind == 2) {
+    const Table& t = tbl("a16_social-media-promotion-products-enc");
+    const size_t r = promoPool[relRng_.below(uint32_t(promoPool.size()))];
+    tableName = "a16_social-media-promotion-products-enc";
+    cardRow = r;
+    const std::string product = lower(trim(t.at(r, "Product")));
+    const std::string what = trim(resolve(t.at(r, "Description")));
+    const std::string offer = what.empty() ? product : what;
+    earned = (long long)(t.num(r, "Compensation Score") * 2500.0 * promoCoeff);
+    h.money += earned;
+    // No card text exists for the sponsorship: the corpus ships the product, a
+    // description and two scores, so the sentence is the port's own.
+    body = "A brand offered to pay you to promote " + offer + ".";
+    line = "I promoted " + offer + " on " + channel + " for " + money(earned) + ".";
+    title = "A sponsorship";
+    happy = int(t.num(r, "Appeal Score"));
+    ++h.socialPromotions;
+  } else if (kind == 3) {
+    const Table& t = tbl("a16_social-media-channels-of-collabstrings-enc");
+    const size_t picked = weightedPickOf(t, "Commonness Score", collabPool, relRng_);
+    const size_t r = picked == size_t(-1) ? collabPool[relRng_.below(uint32_t(collabPool.size()))] : picked;
+    tableName = "a16_social-media-channels-of-collabstrings-enc";
+    cardRow = r;
+    // The collab string is corpus text with the same inline lists as the rest
+    // of the family ('roleplaying as a <student and a teacher/...>').
+    const std::string act = lower(trim(resolve(t.at(r, "String"))));
+    const double vir = t.num(r, "Virality");
+    const double contro = t.num(r, "Controversy Score");
+    h.socialFollowers = std::max(0LL, h.socialFollowers + (long long)(vir * followCoeff * 50.0));
+    // This table holds a bare activity and three scores, nothing in the hero's
+    // voice, so both sentences are the port's.
+    body = "Another creator invited you to film a collaboration.";
+    line = "We filmed a video " + act + " and posted it on " + channel + ".";
+    title = "A collaboration";
+    happy = int(t.num(r, "Engagement Score"));
+    if (contro >= 3) out.karma -= 1;
+    ++h.socialCollabs;
+  } else {
+    const Table& t = tbl("a16_social-media-hacks-enc");
+    const size_t r = hackPool[relRng_.below(uint32_t(hackPool.size()))];
+    tableName = "a16_social-media-hacks-enc";
+    cardRow = r;
+    const int damage = std::max(1, int(t.num(r, "Damage Score")));
+    body = trim(resolve(t.at(r, "Scenario")));
+    line = trim(resolve(t.at(r, "Log Version")));
+    title = "Hacked";
+    happy = -damage;
+    // The table scores the damage 1..5 and nothing else, so the followers lost
+    // are the port's own reading of the score.
+    h.socialFollowers = std::max(0LL, h.socialFollowers - h.socialFollowers * damage / 20);
+    ++h.socialHacks;
+  }
+  if (cardRow == size_t(-1)) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  // A row whose own text still needs a token the port has no source for - the
+  // '<musician>' of the hacks table and of one post type - is skipped rather
+  // than printed with a bracket in it, the same shortcut section 90 took.
+  if (body.find('<') != std::string::npos || line.find('<') != std::string::npos) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+  const char lastChar = body.empty() ? '.' : body[body.size() - 1];
+  if (lastChar != '.' && lastChar != '!' && lastChar != '?' && lastChar != '"') body += ".";
+  out.table = tableName;
+  out.row_id = std::to_string(int(cardRow) + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = spyUpperFirst(line);
+  if (happy != 0) out.happiness += happy;
+  out.extra.push_back(spyUpperFirst("I have " + std::to_string(h.socialFollowers) + " " +
+                                    (followTerm.empty() ? std::string("followers") : followTerm) +
+                                    " on " + channel + "."));
+  std::string ledger = "I have made " + std::to_string(h.socialPosts) +
+                       (h.socialPosts == 1 ? " post" : " posts") + " and been trolled " +
+                       std::to_string(h.socialTrolls) + (h.socialTrolls == 1 ? " time" : " times");
+  if (h.socialPromotions > 0)
+    ledger += ", taken " + std::to_string(h.socialPromotions) +
+              (h.socialPromotions == 1 ? " sponsorship" : " sponsorships");
+  if (h.socialCollabs > 0)
+    ledger += ", filmed " + std::to_string(h.socialCollabs) +
+              (h.socialCollabs == 1 ? " collab" : " collabs");
+  if (h.socialHacks > 0)
+    ledger += ", and been hacked " + std::to_string(h.socialHacks) +
+              (h.socialHacks == 1 ? " time" : " times");
+  ledger += ".";
+  out.extra.push_back(spyUpperFirst(ledger));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
+
 }  // namespace bl

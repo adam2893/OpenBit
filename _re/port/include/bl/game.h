@@ -175,6 +175,17 @@ struct Hero {
   // and the ones the listener did not want to hear.
   int talks = 0;
   int talksAwkward = 0;
+  // The social media year (REPORT.en.md 91): the account the hero posts from,
+  // the handle the username family gives him, and the counters the year
+  // reports back. The follower count is the only number the account keeps.
+  std::string socialChannel;
+  std::string socialUsername;
+  long long socialFollowers = 0;
+  int socialPosts = 0;
+  int socialTrolls = 0;
+  int socialPromotions = 0;
+  int socialCollabs = 0;
+  int socialHacks = 0;
     // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
