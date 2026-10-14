@@ -2481,7 +2481,7 @@ first person with the venue appended:
     I lost $7,200 on the hand of blackjack at Rosebud Casino Resort.
 
 So the outcome class is the one that matters for replay, and every number it needs is in
-\`a16_casino-casino-game-room-enc\` (columns Game, Installation Cost, Unit String, Base Unit
+`a16_casino-casino-game-room-enc` (columns Game, Installation Cost, Unit String, Base Unit
 Capacity, Cost Per Unit, Default House Win Rate, Default Bet, Min Bet, Max Bet):
 
 | game | Default Bet | Max Bet | Default House Win Rate |
@@ -2506,10 +2506,10 @@ and the tail of the sentence is a per-game literal from the executable:
 | Texas Hold'em | on this hand (63171) |
 | Roulette / Slots | on this spin (63173) |
 
-The sentence prefixes are the literals \`I lost \` (24616) and \`I won \` (25815), the bet card
-is \`Place your {0} bets!\` (34034 shows the Texas hold'em form), and the play card's rules
-line for blackjack is \`Get as close as possible to 21 without going over!\` (21370) followed
-by \`You have {0} riding on this bet.\` (23556).
+The sentence prefixes are the literals `I lost ` (24616) and `I won ` (25815), the bet card
+is `Place your {0} bets!` (34034 shows the Texas hold'em form), and the play card's rules
+line for blackjack is `Get as close as possible to 21 without going over!` (21370) followed
+by `You have {0} riding on this bet.` (23556).
 
 ### 42.2 The eye exam is two literals and one coin flip
 
@@ -2527,11 +2527,11 @@ and the log, so the two can never disagree.
 The port logs a card as a line when a scene's branch has no captured sentence, which is
 the right default for a scene that was shown to a player — but wrong for these modal
 cards: in the game they write nothing to the LifeLog at all. RegScenario therefore gained
-a \`silent\` member, and a silent class renders its card and returns before any line is
+a `silent` member, and a silent class renders its card and returns before any line is
 built: ScenarioCasinoBet, ScenarioGameBlackjack, ScenarioFailingEyesight,
 ScenarioGameEyeExam and ScenarioProfileHero (an empty profile screen) are marked.
 
-Without the flag the port emitted a synthetic \`title: body\` line for every modal card,
+Without the flag the port emitted a synthetic `title: body` line for every modal card,
 which is exactly the kind of phantom line the differential bench counts as a port-only
 divergence.
 
@@ -2564,8 +2564,8 @@ store modal with no narrative line at all).
       age 2  ScenarioFailingEyesight lines 0
       age 3  ScenarioGameEyeExam     lines 0
 
-Residue census: \`distinct residue tokens 0\` (48 runs x 95 years). Bench: 35 years of
+Residue census: `distinct residue tokens 0` (48 runs x 95 years). Bench: 35 years of
 /tmp/trace_c10.json without an abort; its age-34 line is now the same sentence shape on
-both sides with a different draw (\`i lost # # on the hand of blackjack ...\` versus
-\`i won # # on this bet at {name}\`).
+both sides with a different draw (`i lost # # on the hand of blackjack ...` versus
+`i won # # on this bet at {name}`).
 
