@@ -62,6 +62,7 @@ struct ScriptSpec {
   bool mafia = false;
   bool dealer = false;
   bool hustler = false;
+  bool astronaut = false;
   bool landlord = false;
   bool zoo = false;
   bool model = false;

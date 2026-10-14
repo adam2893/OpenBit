@@ -6399,3 +6399,260 @@ Cards sampled by hand:
 
 The `$0` take is not a bug: a hero with no skill who picks a strategy the data rates at 1 and
 rolls badly really does come home with nothing.
+
+## 73. The space program: a rank ladder, a mission a year, and thirty-five tables
+
+The hero who signs up joins a national agency, wears a rank, flies when the agency says so,
+and comes home with rocks in a duffel bag. Thirty-five files, 1,211 rows, one card a year
+from the age of eight, and a mission the year the prep block decides to hand one out.
+
+### 73.1 The family
+
+Every file is `<name>-enc` under `gamedata_plain`. Thirty-five files, all read. Five shape the
+hero's setup and never carry a card of their own: `countries` (40), `career-rank` (4),
+`shuttle-names` (12), `celestial-body-names` (98) and the six body-data pools. The rest are
+cards, colour pools or item pools:
+
+| table | rows | what it is |
+|-------|------|-----------|
+| `countries` | 40 | `Country`, `Space Agency Name`, `Abbreviation` - the hero's own country picks the agency ("National Aeronautics and Space Administration") |
+| `career-rank` | 4 | `Rank`, `Missions to Promotion`, `Min Years in Agency`, `Minimum Intelligence`, `Minimum Discipline`, `Minimum Health`, `Stress Score`, `Min Salary`, `Max Salary`, `Min Age`, `Max Age`, `Too Old Age`, `Diseases` |
+| `shuttle-names` | 12 | `Name` - "Starship Nebula" |
+| `celestial-body-names` | 98 | `Name` plus a flag per kind (Black Hole, Galaxy, Star, Planet, Asteroid, Comet, Nebula), `Commonness Score` |
+| `star-data` / `planet-data` / `galaxy-data` / `black-hole-data` / `asteroid-data` / `comet-data` | 10 / 8 / 9 / 5 / 11 / 5 | the classification line for a new object: Type or Classification, Colour, Diameter, Mass, Event Horizon, Number of Moons, Habitability Score, Period, Tail Length |
+| `nebula-shapes` | 121 | `Shape` ("a Booger"), `Uses Definite`/`Indefinite Article` |
+| `probe-names` | 18 | `Name` with `<country-demonym>` in it |
+| `agency-director-warning` | 23 | `Warning` - the director's dressing-down |
+| `artifacts` | 27 | `Item Lookup`, `Item Name`, `Short Name`, `Location`, `Indefinite Article`, `Plural`, `Can Be Polished`, `Min`/`Max Value`, `Appreciates`, `Commonness Score` |
+| `satellite-parts` | 9 | `Part`, `Repair Difficulty`, `Commonness Score`, `Damage Score` |
+| `scanner-observations` | 145 | `Object`, `Feedback Snippet`, `Log Snippet`, `Research Score`, `Commonness Score` |
+| `anxiety-scenarios` | 43 | `Audience`, `Snippet`, `Log Version`, `Audience Min`/`Max Age` |
+| `conversations` | 82 | `Audience`, `Conversation`, `Hero Min`/`Max Age`, `Audience Min`/`Max Age`, `Controversy Score`, `Hero Has Been to Space` |
+| `pranks` | 7 | `Inbound Scenario`, `Inbound Log Version`, `Outbound Snippet` |
+| `publication-titles` | 71 | `Name` ("Artifacts from the Moon"), `Data Type`, `Commonness Score` |
+| `peer-review-color` | 46 | `Data Type`, `Min`/`Max Reception`, `String` |
+| `inbound-messages` | 16 | `Message`, `Incorrect Answers` |
+| `outbound-messages` | 55 | `Message`, `Success Score`, `Commonness Score` |
+| `moon-destinations` | 34 | `Location`, `Requires Definite Article`, `Commonness Score`, `Danger Score` |
+| `mars-destinations` | 41 | `Location`, `Uses Definite Article`, `Commonness Score`, `Danger Score` |
+| `lunar-missions` | 17 | `Mission Type`, `Snippet`, `Log Version`, `Log Success`, `Log Failure`, `Danger Score` |
+| `martian-missions` | 18 | `Type`, `Snippet`, `Log Version`, `Log Success`, `Log Failure`, `Danger Score` |
+| `mission-goof-off` | 32 | `Location`, `Snippet`, `Log Version`, `Performance Impact`, `Commonness Score` |
+| `mission-dumb-scenarios` | 25 | `dumb-scenarios` plus `Min`/`Max Reputation` and `Mission Type` |
+| `flight-scenario` | 15 | `Type`, `Body`, `CTA`, `Choice 1`..`Choice 4`, `Narrative N`, `Flight Impact N`, `Performance Impact N` |
+| `experiment-scenarios` | 22 | `Snippet`, `Log Version`, `Deception Log Version`, `Feedback Snippet`, `Risk Score`, `Deception Score`, `Performance Impact` |
+| `fitness-training-scenario` | 45 | `Scenario`, `Log Version`, `Training Program Only`, `Training Type`, `Impact Score`, `Commonness Score` |
+| `training-questions` | 42 | `Question`, `Correct Answers`, `Dummy Answers`, `Commonness Score` |
+| `dumb-scenarios` | 29 | the family's own silly card (`Hero Min`/`Max Age`, `Gender`, `Title`, `Body`, `CTA`, choices, and four `... Impact N` columns) |
+
+### 73.2 The ladder
+
+The four ranks come straight from `career-rank`:
+
+| rank | missions to promotion | min years | min intelligence | min discipline | min health | stress | salary |
+|------|----------------------|-----------|------------------|----------------|-----------|--------|--------|
+| Cadet | 3 | 0 | 60 | 0 | 50 | 2 | $65,000 - $75,000 |
+| Captain | 3 | 3 | 70 | 40 | 60 | 3 | $76,000 - $100,000 |
+| Major | 4 | 5 | 80 | 50 | 70 | 4 | $101,000 - $175,000 |
+| General | 5 | 10 | 90 | 60 | 80 | 5 | $180,000 - $375,000 |
+
+The year pays the current rank's salary, rolled inside its own Min..Max window, and then checks
+the promotion gates against that same row: missions flown since the last promotion, years in the
+agency (one per year of service), Smarts, Discipline and Health. Clearing all five moves the hero
+up a rank, resets the mission and year counters, reads the new title and salary out of the next
+row, and prints "I was promoted to Captain of National Aeronautics and Space Administration.".
+The salary is deliberately *not* held to the rank's Min Age / Max Age / Too Old Age columns or
+its `Diseases` list - the port never retires the hero or invents a medical life event out of
+this table (shortcut, below).
+
+### 73.3 The year
+
+One card a year, 50% of the time, from the age of eight. The branch chain is first hit wins and
+every chance is rolled rarest first, so a 0.04 director's warning cannot be starved by the two
+0.30 blocks at the end:
+
+| # | branch | chance | tables |
+|---|--------|--------|--------|
+| 1 | a warning from the director | 0.04 | `agency-director-warning` |
+| 2 | an artifact brought home | 0.06 | `artifacts` |
+| 3 | a new object in the sky | 0.06 | `celestial-body-names` + one body-data pool, `nebula-shapes` (0.25), `probe-names` (0.20) |
+| 4 | a repair in orbit | 0.08 | `satellite-parts` |
+| 5 | a night on the scanner | 0.08 | `scanner-observations` |
+| 6 | everyone worries | 0.08 | `anxiety-scenarios` |
+| 7 | talking shop | 0.08 | `conversations` |
+| 8 | a prank, in or out | 0.08 | `pranks` |
+| 9 | a paper, and its reception | 0.10 | `publication-titles`, `peer-review-color` |
+| 10 | traffic with the ground | 0.10 | `inbound-messages`, `outbound-messages` |
+| 11 | goofing off during a mission | 0.12 | `mission-goof-off` |
+| 12 | something dumb on the assignment | 0.30 | `mission-dumb-scenarios` |
+| 13 | the mission itself | (the assignment, see below) | `lunar-missions`, `martian-missions` |
+| 14 | trouble on the way up or down | 0.12 | `flight-scenario` |
+| 15 | an experiment in orbit | 0.12 | `experiment-scenarios` |
+| 16 | life on Earth | 0.12 | `dumb-scenarios` |
+| 17 | the training programme | 0.14 | `fitness-training-scenario` |
+| 18 | the written exam | 0.18 | `training-questions` |
+
+The chances are rolled in the order above and the first hit wins, so the two 0.30 blocks and the
+0.18 exam between them eat whatever the rare blocks at the top leave. The measured histogram over
+792 cards: `lunar-missions` 68, `scanner-observations` 66, `anxiety-scenarios` 62,
+`satellite-parts` 58, `artifacts` 56, `conversations` 48, `peer-review-color` 40,
+`agency-director-warning` 38, `outbound-messages` 34, `pranks` 34,
+`fitness-training-scenario` 30, `mission-dumb-scenarios` 28, `experiment-scenarios` 28,
+`training-questions` 28, `inbound-messages` 24, `flight-scenario` 22,
+`dumb-scenarios` 22, `publication-titles` 20, `mission-goof-off` 18, `comet-data` 16,
+`asteroid-data` 14, `martian-missions` 12, `planet-data` 10, `black-hole-data` 10,
+`galaxy-data` 4, `star-data` 2.
+
+Blocks 14, 15 and 16 delegate to the shared renderer, so those cards keep their own buttons and
+choose-the-log-line behaviour; the year only applies its own stat effects afterwards (block 14
+flies the hero plus or minus two Flight points and one Technical point because the four options
+carry per-option impacts the shared renderer does not know about - shortcut).
+
+### 73.4 The mission
+
+The assignment is drawn in the prep block, before the chain, and not inside it. That was a fix,
+not the original design: with the draw inside the mission branch, every assigned year reached the
+mission first, so `mission-goof-off` and `mission-dumb-scenarios` - which need a live
+destination and a live mission - could never fire. Now:
+
+* 30% of years get an assignment at the top of the function; the destination, the mission type
+  and the pool (lunar, or martian once the hero has flown) are stored in locals and in the hero.
+* Goofing off (0.12) and something dumb on the assignment (0.30) sit between the messages and the
+  mission, so they see the assignment the same year it was handed out.
+* The mission card itself needs only the assignment, so an assigned year always flies unless an
+  earlier rare block got there first.
+
+The flight odds are `clamp(0.55 + (Flight + Technical - 80) / 200 - Danger * 0.05, 0.15, 0.92)`.
+Success prints the pool's `Log Success` after "I ", pays a flat $5,000 bonus, sets
+`astroBeenToSpace` (which unlocks the martian pool and the space-flagged conversation rows)
+and counts one mission. Failure prints "My mission failed " + `Log Failure`, costs health and
+Respect and adds four stress points.
+
+### 73.5 The tokens
+
+Eight keys needed the family: `<crewmate>` (114 uses), `<colleague>` (84),
+`<space-director>` (39), `<destination-moon>` (34), `<destination-mars>` (32),
+`<shuttle>` (25), `<space-agency>` (12), `<discovery-name>` (6), plus the possessive
+spellings `<crewmate-possessive>` (9) and `<colleague-possessive>` (10). Everything else in
+the family's 492 distinct tokens was already answered by the port: `<rb>` (225), `<rb2>` (38),
+`<he/she>` (169), `<him/her>` (100), `<his/her>` (63), `<musician>`, `<lover>`,
+`<celebrity>`, `<insult>`, `<city>`, `<random-person>`, `<circumstance-public>`,
+`<drug-illegal>`, and hundreds of one-off inline lists (`<I/II/III/IV/...>`,
+`<escorted/delivered/transported>`, `<South Polar Region/South Temperate Zone/...>`) that
+`resolve()` handles itself. The two destination keys carry "the " when the drawn destination's
+row is flagged `Uses Definite Article` / `Requires Definite Article`.
+
+Four people keys are new roles in `Sim::personName`'s whitelist (crewmate, colleague,
+space-director and commander), so a crewmate is a drawn name like "Duke Combs" and the card's own
+back-reference agrees with the name it printed. `<country-demonym>` occurs exactly once in the
+whole corpus - inside `probe-names` - so it is answered locally by scanning the country roster
+for the hero's country, with "Earth" as the fallback, rather than as a shared hero token.
+
+### 73.6 The bugs
+
+1. **The assignment had to move out of the branch chain.** With the draw inside the mission
+   branch, nothing downstream of it could ever fire. Found by putting temporary `fprintf` calls in
+   both branches and watching every assigned year take the mission; the fix is the prep draw above.
+2. **A pronoun pair was filling the back-reference cache.** "I delivered he to the site of a future
+   biosphere" - `<he/she>` in the mission log was pushing its value into `rndCache_`, so the
+   later `<rb>` (which points at an alternative in the *same* cell, not at the pronoun) picked the
+   pronoun. `Sim::genderToken` had pushed into `rndCache_` since section 70; the pair branch
+   in `resolveInto` now only records `rbLast_`. All sixteen family probes stayed clean.
+3. **The anxiety card drew the audience's gender twice.** The body drew fresh for its own sentence
+   and the log line drew fresh again, so the two could disagree about the same audience. Now one
+   coin decides it, the log line is prefixed "My `<audience>` " because the pool's `Log Version` is
+   a bare verb phrase ("was afraid I would no longer walk normally"), the Audience cell is split on
+   the comma and only its first entry is used, the five rows with a blank Audience fall back to
+   "loved one", and a Snippet that does not start with a bracket (12 of 43) also takes the prefix.
+4. **The scanner card resolved its columns in the wrong order.** `scanner-observations` puts the
+   alternatives in `Feedback Snippet` and the back-reference in `Log Snippet` ("a black hole
+   <devouring/slurping up> a <star/nebula>" then "a black hole <rb> a <rb2>"). Resolving the log
+   line first leaked fourteen `<rb>`/`<rb2>` tokens; resolving Object, then Feedback Snippet, then
+   Log Snippet - the row's own column order - leaves none.
+5. **`long long(x)` is not C++.** Three casts in the asteroid branch; `static_cast<long long>(x)`.
+6. **The mission brief was appended lower case.** "he is asking...", now capitalised while the
+   assigner's pronoun pair is pointed at them and restored afterwards.
+
+A seventh, cosmetic: the pool with no Title column (`flight-scenario`) produced a card with no
+heading, and the pranks pool's `Outbound Snippet` is a bare verb phrase, so both take a title
+and an "I " prefix with a closing period.
+
+### 73.7 Shortcuts
+
+* **Flight-scenario impacts are flat.** The pool carries per-option `Flight Impact N` and
+  `Performance Impact N` columns that the shared renderer does not read, so the year applies
+  plus or minus 2 Flight and +1 Technical instead (`shortcut: flat impacts, upgrade if the renderer
+  learns per-option effects`).
+* **The mission bonus is a flat $5,000.** `lunar-missions` and `martian-missions` carry no reward
+  column; the artifact branch is the family's real payday.
+* **One coin decides a crewmate's and a colleague's gender**, at agency entry and again per year -
+  the data has no gender column for either role.
+* **The rank ladder ignores Min/Max/Too Old Age and Diseases.** The port has no retirement or
+  illness machinery to hang them on.
+* **The martian pool is weighted on `Danger Score` only after the first flight**, and both mission
+  pools ignore their own `Mission Type` distribution (a uniform draw over the pool instead).
+* The scanner's `Feedback Snippet` and `Log Snippet` can describe the same observation twice
+  (the "A meteor slicing through the gaseous atmosphere of Uranus." observation line plus the log
+  line) - the pool's own two columns, kept rather than deduplicated.
+
+### 73.8 Verification
+
+`astres.py` (30 seeds x both genders to age 60 with `{"astronaut": true}`) reports
+`astro events 792 rc failures 0 RESIDUE 0`. `allprobes.py` runs sixteen family probes and every
+one reports residue 0. `rescensus.py` reports `distinct residue tokens 0 total 0`; `coverage.py`
+`captured scenarios: 109 recoverable: 107`; `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`;
+the `covpush.json` script run returns 0; `bench.sh` runs to age 34 without aborting.
+
+Cards sampled by hand:
+
+    A mission to Mars
+      Mission: Delivery.
+      Destination: Aurorae Chaos.
+      The crew: Duke Combs and Cady Peary.
+      She needs one brave crew member to volunteer for a top-secret delivery mission that has a
+      15 percent chance of something going horribly wrong.
+      I made a top-secret delivery.
+
+    Goofing off at Mare Nectaris
+      I did Moon yoga.
+      I did Moon yoga while the crew was working.
+
+    A night on the scanner
+      I watched Uranus from the observatory.
+      A meteor slicing through the gaseous atmosphere of Uranus.
+      I studied a meteor slicing through the gaseous atmosphere of Uranus.
+
+    A new object in the sky
+      I catalogued The Swallower.
+      The Swallower Classification: Irregular, Diameter: 5,000, Number of Stars: 100,000,000.
+      Its shape is a Booger.
+      The agency's Space-Waifu 42000 made the pass.
+      I discovered The Swallower through the observatory telescope.
+
+    An artifact from Moon
+      I brought back a moon rock from Moon.
+      I smuggled a moon rock back from Moon and sold it for $819.
+
+    A training exam
+      Stars are fueled by the nuclear fusion of what gas?
+      Correct answer: Hydrogen.
+      I passed the agency's training exam.
+
+    Peer review
+      Your colleagues remarked the publication wasn't interesting, but said it wasn't boring,
+      either.
+      My peers reviewed my work: your colleagues remarked the publication wasn't interesting,
+      but said it wasn't boring, either.
+
+    Trouble on the way
+      As your shuttle makes its final descent into Earth's atmosphere, you realize the landing
+      gear has failed, leaving you with no safe way to land.
+      In response to a landing gear failure, I deployed the emergency parachute to land Starship
+      Nebula on top of a skyscraper with grace and precision.
+
+Two data quirks worth recording, both the data's own: a `mission-dumb-scenarios` row reads
+"...you hear Lakira Hips radio for help. he took the Moon Buggy out..." (lower case "he" at a
+sentence start), and a mission-dumb `Log Version` refers to a Scenario alternative as though it
+were a song - "The crew and I sang 'reading documents relevant to the mission' together during our
+mission." The port's single pronoun flag cannot split a cell that writes `<he/she>` and
+`<his/her>` about two different people, which one such cell does.

@@ -138,6 +138,7 @@ class Sim {
   void makePet(Life& life);
   void makeOutdoor(Life& life);
   void makeHustler(Life& life);
+  void makeAstronaut(Life& life);
   void ensureStudioFields(Life& life);
   std::string musicAlbumDescription();
   // The five studio trades (REPORT.en.md 69). kind: 1 producer, 2 SoundCloud,
@@ -295,8 +296,10 @@ class Sim {
   void petDraw(Life& life);
   bool outdoorYear(Life& life, AgeUp& out, int forcedChoice);
   bool hustlerYear(Life& life, AgeUp& out, int forcedChoice);
+  bool astroYear(Life& life, AgeUp& out, int forcedChoice);
   std::string outdoorToken(const std::string& key);
   std::string hustlerToken(const std::string& key);
+  std::string astroToken(const std::string& key);
   bool studioYear(Life& life, AgeUp& out, int forcedChoice);
   bool tradeYear(Life& life, AgeUp& out, int forcedChoice);
   std::string tradeToken(const std::string& key);
@@ -387,11 +390,15 @@ class Sim {
   Rng petRng_;
   Rng outdoorRng_;
   Rng hustlerRng_;
+  Rng astroRng_;
   std::map<std::string, std::string> outdoorCache_;  // one draw per token per card
   std::map<std::string, std::string> hustlerCache_;  // one draw per token per card
+  std::map<std::string, std::string> astroCache_;    // one crewmate / body / discovery per card
   // While a hustle card renders, '<victim>', '<amount>' and '<insult>' belong to
   // the family rather than to the vampire one, which claims them first otherwise.
   bool hustlerLive_ = false;
+  // The space family owns a few words the vampire one also claims.
+  bool astroLive_ = false;
   Rng studioRng_;
   Rng tradeRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card

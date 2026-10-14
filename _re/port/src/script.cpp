@@ -423,6 +423,13 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.hustler = false;
     else return fail("hustler is not a boolean");
   }
+  p = findValue(json, "astronaut");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.astronaut = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.astronaut = false;
+    else return fail("astronaut is not a boolean");
+  }
   p = findValue(json, "cult");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -635,6 +642,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.pet) sim.makePet(life);
   if (spec.outdoor) sim.makeOutdoor(life);
   if (spec.hustler) sim.makeHustler(life);
+  if (spec.astronaut) sim.makeAstronaut(life);
   if (spec.producer) sim.makeTrade(life, 1);
   if (spec.soundcloud) sim.makeTrade(life, 2);
   if (spec.scout) sim.makeTrade(life, 3);

@@ -339,6 +339,18 @@ struct Hero {
   long long hustlerAmount = 0;    // the take of the year's card, for '<amount>'
   long long hustlerEarned = 0;
 
+  // The space program (REPORT.en.md 73): a national agency, a rank ladder and
+  // a mission record. Ranks and their pay come from a16_astronaut-career-rank.
+  bool astronaut = false;
+  std::string astroAgency, astroRankTitle, astroShuttle, astroCrewmate, astroColleague;
+  std::string astroDirector, astroMission, astroDestination, astroDiscovery;
+  std::string astroBody, astroPublication, astroArtifact;
+  bool astroCrewmateFemale = false, astroColleagueFemale = false, astroBeenToSpace = false;
+  int astroRank = 1;              // 1 Cadet, 2 Captain, 3 Major, 4 General
+  int astroRespect = 40, astroFitness = 40, astroTechnical = 40, astroFlight = 40;
+  int astroMissions = 0, astroYearsInAgency = 0, astroStress = 0, astroAnxiety = 0;
+  long long astroSalary = 0, astroEarned = 0;
+
   // Recording artist, part two (REPORT.en.md 68): the studio. The genre is
   // a16_music-genres-enc's, the label a16_music-record-label-company-name-enc's,
   // the album a16_music-album-title-enc's, the cover a16_music-album-covers-enc's

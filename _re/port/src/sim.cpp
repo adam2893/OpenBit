@@ -586,7 +586,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       studioRng_(seed ^ 0x3c6ef372fe94f82bULL),
       tradeRng_(seed ^ 0xd6e8feb86659fd93ULL),
       outdoorRng_(seed ^ 0xa0761d6478bd642fULL),
-      hustlerRng_(seed ^ 0x9e3779b97f4a7c15ULL) {}
+      hustlerRng_(seed ^ 0x9e3779b97f4a7c15ULL),
+      astroRng_(seed ^ 0xbf58476d1ce4e5b9ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -913,6 +914,42 @@ bool Sim::load(std::string* error) {
       "a16_hustler-scam-types-enc",
       "a16_hustler-scam-victim-scenarios-enc",
       "a16_hustler-serenade-songs-enc",
+      // The space program (REPORT.en.md 73): 35 tables.
+      "a16_astronaut-agency-director-warning-enc",
+      "a16_astronaut-anxiety-scenarios-enc",
+      "a16_astronaut-artifacts-enc",
+      "a16_astronaut-asteroid-data-enc",
+      "a16_astronaut-black-hole-data-enc",
+      "a16_astronaut-career-rank-enc",
+      "a16_astronaut-celestial-body-names-enc",
+      "a16_astronaut-comet-data-enc",
+      "a16_astronaut-conversations-enc",
+      "a16_astronaut-countries-enc",
+      "a16_astronaut-dumb-scenarios-enc",
+      "a16_astronaut-experiment-scenarios-enc",
+      "a16_astronaut-fitness-training-scenario-enc",
+      "a16_astronaut-flight-scenario-enc",
+      "a16_astronaut-galaxy-data-enc",
+      "a16_astronaut-inbound-messages-enc",
+      "a16_astronaut-lunar-missions-enc",
+      "a16_astronaut-mars-destinations-enc",
+      "a16_astronaut-martian-missions-enc",
+      "a16_astronaut-mission-dumb-scenarios-enc",
+      "a16_astronaut-mission-goof-off-enc",
+      "a16_astronaut-moon-destinations-enc",
+      "a16_astronaut-nebula-shapes-enc",
+      "a16_astronaut-outbound-messages-enc",
+      "a16_astronaut-peer-review-color-enc",
+      "a16_astronaut-planet-data-enc",
+      "a16_astronaut-pranks-enc",
+      "a16_astronaut-probe-names-enc",
+      "a16_astronaut-publication-titles-enc",
+      "a16_astronaut-satellite-names-enc",
+      "a16_astronaut-satellite-parts-enc",
+      "a16_astronaut-scanner-observations-enc",
+      "a16_astronaut-shuttle-names-enc",
+      "a16_astronaut-star-data-enc",
+      "a16_astronaut-training-questions-enc",
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
       // The lover family (REPORT.en.md 57): one pool per stage of a relationship.
@@ -1187,7 +1224,8 @@ std::string Sim::personName(const std::string& token) {
   }
   static const char* kPeople[] = {"friend", "teacher", "classmate", "coworker", "co-worker",
                                   "parent", "lover", "employee", "boss", "spouse", "sibling",
-                                  "neighbour", "neighbor", "stranger", "child", "bully"};
+                                  "neighbour", "neighbor", "stranger", "child", "bully",
+                                  "crewmate", "colleague", "space-director", "commander"};
   bool person = false;
   for (const char* p : kPeople) if (key == p) person = true;
   if (key == "company") return "the company";
@@ -1707,6 +1745,22 @@ bool outdoorIsToken(const std::string& token) {
 
 // The hustle (REPORT.en.md 72). '<victim>', '<amount>' and '<insult>' are the
 // vampire pools' own tokens, so a hustle card only takes them while it renders.
+// The space program (REPORT.en.md 73). '<crewmate>', '<colleague>' and
+// '<space-director>' name a person; the rest are draws from the family's own
+// tables. Only a space card asks for them, so no live flag is needed.
+bool astroIsToken(const std::string& token) {
+  std::string key = token;
+  while (!key.empty() && (key[0] == ' ' || key[0] == '	')) key.erase(0, 1);
+  while (!key.empty() && (key[key.size() - 1] == ' ' || key[key.size() - 1] == '	')) key.resize(key.size() - 1);
+  static const std::string suffix = "-possessive";
+  if (key.size() > suffix.size() && key.compare(key.size() - suffix.size(), suffix.size(), suffix) == 0)
+    key.resize(key.size() - suffix.size());
+  static const char* kKeys[] = {"crewmate", "colleague", "space-director", "shuttle", "space-agency",
+                                "destination-moon", "destination-mars", "discovery-name"};
+  for (const char* k : kKeys) if (key == k) return true;
+  return false;
+}
+
 bool hustlerIsToken(const std::string& token, bool live) {
   std::string key = trim(token);
   const std::string psuffix = "-possessive";
@@ -1888,10 +1942,12 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       // as a slash list ('<himself/herself>') is also an alternative, so a
       // later '<rb>' can point back at it (REPORT.en.md 70).
       out += genderValue;
-      if (token.find('/') != std::string::npos && !genderValue.empty()) {
-        if (rndCache_.size() < 8) rndCache_.push_back(genderValue);
-        rbLast_ = genderValue;
-      }
+      // A pronoun pair is not the alternative a '<rb>' points back at. The
+      // astronaut pools write '<he/she> ... to be <captured/probed/studied> by
+      // aliens' and then '...afraid I'd be <rb> by aliens', where '<rb>' is the
+      // list and not the pronoun, so a pair only stands in as the last drawn
+      // bracket value (REPORT.en.md 73).
+      if (token.find('/') != std::string::npos && !genderValue.empty()) rbLast_ = genderValue;
     } else if (token.find('/') != std::string::npos) {
       // "<I got a flat tire/I ran out of gas/my battery died>" -> pick one, and
       // cache the draw for "<rb>" / "<rb1>" / "<rb2>" (report 33).
@@ -1955,6 +2011,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else { out += v; rbLast_ = v; }
     } else if (hustlerIsToken(token, hustlerLive_)) {
       const std::string v = hustlerToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (astroIsToken(token)) {
+      const std::string v = astroToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else { out += v; rbLast_ = v; }
     } else if (vampIsToken(token)) {
@@ -2901,6 +2961,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (petYear(life, out, forcedChoice)) return true;
   if (life.hero.outdoors && outdoorYear(life, out, forcedChoice)) return true;
   if (life.hero.hustle && hustlerYear(life, out, forcedChoice)) return true;
+  if (life.hero.astronaut && astroYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2966,6 +3027,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   vampCache_.clear();     // one victim / council member per vampire card
   outdoorCache_.clear();  // one cave / plant / bird per outdoor card
   hustlerCache_.clear();  // one person / victim / insult per hustle card
+  astroCache_.clear();    // one crewmate / body / discovery per space card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -13342,6 +13404,708 @@ bool Sim::hustlerYear(Life& life, AgeUp& out, int forcedChoice) {
   // The police keep an eye on a hero who is known on the street.
   if (h.hustlerHeat >= 3) h.hustlerHeat -= 1;
   hustlerLive_ = live0;
+  return true;
+}
+
+// ===== The space program (REPORT.en.md 73) =====
+
+// '$65,000' -> 65000, for the a16_astronaut-career-rank Min/Max Salary cells.
+static long long astroMoney(const std::string& s) {
+  std::string d;
+  for (char c : s) if (c >= '0' && c <= '9') d.push_back(c);
+  return d.empty() ? 0 : std::atoll(d.c_str());
+}
+
+void Sim::makeAstronaut(Life& life) {
+  Hero& h = life.hero;
+  h.astronaut = true;
+  h.astroRank = 1;
+  h.astroRankTitle = "Cadet";
+  h.astroSalary = 65000;
+  h.astroRespect = 40;
+  h.astroFitness = 40;
+  h.astroTechnical = 40;
+  h.astroFlight = 40;
+  h.astroMissions = 0;
+  h.astroYearsInAgency = 0;
+  h.astroStress = 0;
+  h.astroAnxiety = 0;
+  h.astroEarned = 0;
+  h.astroBeenToSpace = false;
+  h.astroAgency = "the space agency";
+  h.astroShuttle = "the shuttle";
+  // The hero joins the agency of their own country (a16_astronaut-countries).
+  if (ensureTable("a16_astronaut-countries-enc")) {
+    const Table& t = tbl("a16_astronaut-countries-enc");
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (trim(t.at(r, "Country")) != h.country) continue;
+      const std::string name = resolve(trim(t.at(r, "Space Agency Name")));
+      if (!name.empty()) h.astroAgency = name;
+      break;
+    }
+    if (h.astroAgency == "the space agency" && t.size() > 0)
+      h.astroAgency = resolve(trim(t.at(0, "Space Agency Name")));
+  }
+  // The rank ladder starts at its first row (Cadet), pay inside its window.
+  if (ensureTable("a16_astronaut-career-rank-enc")) {
+    const Table& t = tbl("a16_astronaut-career-rank-enc");
+    if (t.size() > 0) {
+      h.astroRankTitle = trim(t.at(0, "Rank"));
+      const long long lo = astroMoney(t.at(0, "Min Salary"));
+      const long long hi = astroMoney(t.at(0, "Max Salary"));
+      h.astroSalary = hi > lo ? lo + static_cast<long long>(astroRng_.below(unsigned(hi - lo + 1))) : lo;
+    }
+  }
+  if (ensureTable("a16_astronaut-shuttle-names-enc")) {
+    const Table& t = tbl("a16_astronaut-shuttle-names-enc");
+    const size_t r = weightedPick(t, t.has("Commonness Score") ? "Commonness Score" : std::string(), astroRng_);
+    if (r != size_t(-1)) {
+      const std::string name = resolve(trim(t.at(r, "Name")));
+      if (!name.empty()) h.astroShuttle = name;
+    }
+  }
+  h.astroCrewmate = personName("crewmate");
+  h.astroColleague = personName("colleague");
+  h.astroDirector = personName("space-director");
+  h.astroCrewmateFemale = astroRng_.chance(0.5);
+  h.astroColleagueFemale = astroRng_.chance(0.5);
+}
+
+std::string Sim::astroToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (h == nullptr) return std::string();
+  std::string key = trim(token);
+  bool possessive = false;
+  static const std::string suffix = "-possessive";
+  if (key.size() > suffix.size() && key.compare(key.size() - suffix.size(), suffix.size(), suffix) == 0) {
+    possessive = true;
+    key.resize(key.size() - suffix.size());
+  }
+  // One draw per slot per card, so a name or a body repeated in the same card
+  // agrees with itself.
+  if (key == "crewmate" || key == "colleague" || key == "space-director") {
+    std::string name = key == "crewmate" ? h->astroCrewmate
+                     : key == "colleague" ? h->astroColleague : h->astroDirector;
+    if (name.empty()) name = personName(key);
+    if (name.empty()) name = key == "space-director" ? "the director" : "a colleague";
+    return possessive ? name + "'s" : name;
+  }
+  if (key == "shuttle") return h->astroShuttle.empty() ? std::string("the shuttle") : h->astroShuttle;
+  if (key == "space-agency") return h->astroAgency.empty() ? std::string("the space agency") : h->astroAgency;
+  if (key == "destination-moon" || key == "destination-mars") {
+    if (!h->astroDestination.empty()) return h->astroDestination;
+    const char* tab = key == "destination-moon" ? "a16_astronaut-moon-destinations-enc"
+                                                : "a16_astronaut-mars-destinations-enc";
+    std::string v;
+    if (ensureTable(tab)) {
+      const Table& t = tbl(tab);
+      const size_t r = weightedPick(t, t.has("Commonness Score") ? "Commonness Score" : std::string(), astroRng_);
+      if (r != size_t(-1)) {
+        v = trim(t.at(r, "Location"));
+        const bool wants = t.has("Uses Definite Article") ? t.flag(r, "Uses Definite Article")
+                                                          : t.flag(r, "Requires Definite Article");
+        if (wants) v = std::string("the ") + v;
+      }
+    }
+    h->astroDestination = v;
+    return v;
+  }
+  if (key == "discovery-name") {
+    auto it = astroCache_.find("discovery");
+    if (it != astroCache_.end()) return it->second;
+    std::string v;
+    if (ensureTable("a16_astronaut-celestial-body-names-enc")) {
+      const Table& t = tbl("a16_astronaut-celestial-body-names-enc");
+      const size_t r = weightedPick(t, t.has("Commonness Score") ? "Commonness Score" : std::string(), astroRng_);
+      if (r != size_t(-1)) v = resolve(trim(t.at(r, "Name")));
+    }
+    astroCache_["discovery"] = v;
+    return v.empty() ? std::string("an unnamed object") : v;
+  }
+  return std::string();
+}
+
+bool Sim::astroYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.astronaut) return false;
+  if (h.age < 8) return false;
+  if (!ensureTable("a16_astronaut-dumb-scenarios-enc")) return false;
+  if (!astroRng_.chance(0.5)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  std::string title, body, line;
+  std::vector<std::string> extra;
+  std::string tableRef, rowRef;
+  int happy = 0;
+  long long take = 0;
+
+  const auto say = [&](const std::string& s) {
+    if (line.empty() && !s.empty()) line = spyUpperFirst(s);
+  };
+  const auto add = [&](const std::string& s) { if (!s.empty()) extra.push_back(spyUpperFirst(s)); };
+  const auto cell = [&](const Table& t, size_t r, const char* col) -> std::string {
+    if (r == size_t(-1) || !t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  const auto mark = [&](const char* tab, size_t r) { tableRef = tab; rowRef = std::to_string(r + 1); };
+  // Rows whose log line points back at an alternative drawn earlier in the row
+  // ('<rb>', '<rb2>'): every other bracketed column is resolved first, in column
+  // order, which is the order the game draws them in (REPORT.en.md 57).
+  const auto withBrackets = [&](const Table& t, size_t r, const char* wantCol) -> std::string {
+    if (r == size_t(-1)) return std::string();
+    for (const std::string& cc : t.columns()) {
+      if (cc == wantCol) continue;
+      if (t.at(r, cc).find('<') == std::string::npos) continue;
+      cell(t, r, cc.c_str());
+    }
+    return cell(t, r, wantCol);
+  };
+  // A pool that writes about somebody else: the pronoun pair follows that person
+  // rather than the hero while the row renders.
+  const auto scene = [&](const Table& t, size_t r, bool otherFemale, bool other, const char* wantCol) -> std::string {
+    if (r == size_t(-1)) return std::string();
+    const bool oSave = pronounOtherSet_, fSave = pronounOtherFemale_;
+    pronounOtherSet_ = other;
+    pronounOtherFemale_ = otherFemale;
+    std::string s = withBrackets(t, r, wantCol);
+    pronounOtherSet_ = oSave;
+    pronounOtherFemale_ = fSave;
+    return s;
+  };
+  const auto draw = [&](const char* tab, const char* weightCol) -> size_t {
+    return pickRow(tab, weightCol, "", "", "", astroRng_);
+  };
+  const auto flush = [&]() {
+    for (size_t i = 0; i < extra.size(); ++i) out.extra.push_back(extra[i]);
+    extra.clear();
+  };
+  const auto delegate = [&](const char* tab, size_t r) -> bool {
+    flush();
+    const bool p = astroLive_;
+    astroLive_ = true;
+    const bool ok = renderRow(tbl(tab), r, life, out, forcedChoice);
+    astroLive_ = p;
+    return ok;
+  };
+  const auto hurt = [&](int n) {
+    h.health = std::max(0, std::min(100, h.health + n));
+  };
+  const auto bump = [&](int& stat, int n) {
+    stat = std::max(0, std::min(100, stat + n));
+  };
+  // '<country-demonym>' occurs once in the whole corpus, in the probe names of
+  // this family, so it is answered here rather than in the shared hero tokens.
+  const auto demonym = [&]() -> std::string {
+    for (size_t ci = 0; ci < countries_.size(); ++ci)
+      if (countries_[ci].name == h.country && !countries_[ci].demonym.empty())
+        return countries_[ci].demonym;
+    return "Earth";
+  };
+
+  const bool live0 = astroLive_;
+  astroLive_ = true;
+
+  h.astroYearsInAgency += 1;
+  if (h.astroCrewmate.empty()) h.astroCrewmate = personName("crewmate");
+  if (h.astroColleague.empty()) h.astroColleague = personName("colleague");
+  if (h.astroDirector.empty()) h.astroDirector = personName("space-director");
+  h.astroCrewmateFemale = astroRng_.chance(0.5);
+  h.astroColleagueFemale = astroRng_.chance(0.5);
+  h.astroDestination.clear();
+  h.astroMission.clear();
+  // The year's assignment is drawn here rather than inside the mission card:
+  // the goofing-off pool and the mission's own dumb scenario need a mission and
+  // a destination to attach to, and a card that set them as it rendered them
+  // would leave both pools unreachable (REPORT.en.md 73).
+  bool missionToMoon = false;
+  const char* missionTab = nullptr;
+  size_t missionRow = size_t(-1);
+  if (astroRng_.chance(0.30)) {
+    missionToMoon = !h.astroBeenToSpace || astroRng_.chance(0.5);
+    missionTab = missionToMoon ? "a16_astronaut-lunar-missions-enc"
+                               : "a16_astronaut-martian-missions-enc";
+    missionRow = draw(missionTab, h.astroBeenToSpace ? "Danger Score" : "");
+    if (missionRow != size_t(-1)) {
+      const Table& mt = tbl(missionTab);
+      h.astroMission = cell(mt, missionRow, mt.has("Mission Type") ? "Mission Type" : "Type");
+      if (missionToMoon) astroToken("destination-moon");
+      else astroToken("destination-mars");
+    } else {
+      missionTab = nullptr;
+    }
+  }
+
+  // (1) A warning from the director (rarest first, so the common cards cannot
+  //     starve it).
+  if (title.empty() && astroRng_.chance(0.04)) {
+    const size_t r = draw("a16_astronaut-agency-director-warning-enc", "");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-agency-director-warning-enc");
+      title = "A warning from the director";
+      body = cell(t, r, "Warning");
+      mark("a16_astronaut-agency-director-warning-enc", r);
+      say("My director pulled me aside to warn me about my conduct in the agency.");
+      bump(h.astroRespect, -3);
+      h.astroStress += 2;
+    }
+  }
+
+  // (2) An artifact brought home from the last mission.
+  if (title.empty() && astroRng_.chance(0.06)) {
+    const size_t r = draw("a16_astronaut-artifacts-enc", "Commonness Score");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-artifacts-enc");
+      const std::string item = resolve(trim(t.at(r, "Item Name")));
+      const std::string where = trim(t.at(r, "Location"));
+      const long long lo = std::atoll(trim(t.at(r, "Min Value")).c_str());
+      const long long hi = std::atoll(trim(t.at(r, "Max Value")).c_str());
+      const long long worth = hi > lo ? lo + static_cast<long long>(astroRng_.below(unsigned(hi - lo + 1))) : lo;
+      h.astroArtifact = item;
+      title = "An artifact from " + where;
+      body = "I brought back " + withArticle(item, t.flag(r, "Indefinite Article")) + item + " from " + where + ".";
+      mark("a16_astronaut-artifacts-enc", r);
+      say("I smuggled a " + item + " back from " + where + " and sold it for " + money(worth) + ".");
+      take += worth;
+      happy += 2;
+    }
+  }
+
+  // (3) A new object in the sky, named and filed.
+  if (title.empty() && astroRng_.chance(0.06)) {
+    const std::string name = astroToken("discovery-name");
+    const char* kData[] = {"a16_astronaut-star-data-enc", "a16_astronaut-planet-data-enc",
+                           "a16_astronaut-galaxy-data-enc", "a16_astronaut-black-hole-data-enc",
+                           "a16_astronaut-asteroid-data-enc", "a16_astronaut-comet-data-enc"};
+    const char* tab = kData[astroRng_.below(6)];
+    h.astroDiscovery = name;
+    title = "A new object in the sky";
+    body = "I catalogued " + name + ".";
+    if (ensureTable(tab)) {
+      const Table& t = tbl(tab);
+      const size_t r = draw(tab, "");
+      if (r != size_t(-1)) {
+        std::string detail;
+        for (const std::string& cc : t.columns()) {
+          if (cc == "Name") continue;
+          const std::string v = cell(t, r, cc.c_str());
+          if (v.empty()) continue;
+          detail += (detail.empty() ? " " : ", ") + cc + ": " + v;
+        }
+        if (!detail.empty()) body += "\n" + name + detail + ".";
+        mark(tab, r);
+      }
+    }
+    if (astroRng_.chance(0.25)) {
+      const size_t ns = draw("a16_astronaut-nebula-shapes-enc", "");
+      if (ns != size_t(-1)) {
+        const Table& nt = tbl("a16_astronaut-nebula-shapes-enc");
+        const std::string shape = resolve(trim(nt.at(ns, "Shape")));
+        add("Its shape is " + withArticle(shape, nt.flag(ns, "Uses Indefinite Article")) + shape + ".");
+      }
+    }
+    if (astroRng_.chance(0.20)) {
+      const size_t pr = draw("a16_astronaut-probe-names-enc", "Commonness Score");
+      if (pr != size_t(-1)) {
+        const Table& pt = tbl("a16_astronaut-probe-names-enc");
+        std::string probe = resolve(trim(pt.at(pr, "Name")));
+        const size_t dpos = probe.find("<country-demonym>");
+        if (dpos != std::string::npos)
+          probe = probe.substr(0, dpos) + demonym() + probe.substr(dpos + 17);
+        add("The agency's " + probe + " made the pass.");
+      }
+    }
+    say("I discovered " + name + " through the observatory telescope.");
+    bump(h.astroTechnical, 3);
+    happy += 3;
+  }
+
+  // (4) Repairing the station hardware.
+  if (title.empty() && astroRng_.chance(0.08)) {
+    const size_t r = draw("a16_astronaut-satellite-parts-enc", "Commonness Score");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-satellite-parts-enc");
+      const std::string part = resolve(trim(t.at(r, "Part")));
+      const double difficulty = t.num(r, "Repair Difficulty");
+      const bool ok = astroRng_.unit() < 0.85 - difficulty * 0.12 + double(h.astroTechnical) / 400.0;
+      title = "A repair in orbit";
+      body = "The " + part + " needed a repair.";
+      mark("a16_astronaut-satellite-parts-enc", r);
+      if (ok) {
+        say("I repaired the " + part + " on the station.");
+        bump(h.astroTechnical, 2);
+      } else {
+        const double damage = t.num(r, "Damage Score");
+        say("I broke the " + part + " while trying to repair it.");
+        hurt(-int(damage) - 1);
+        bump(h.astroRespect, -2);
+      }
+    }
+  }
+
+  // (5) A night on the scanner.
+  if (title.empty() && astroRng_.chance(0.08)) {
+    const size_t r = draw("a16_astronaut-scanner-observations-enc", "Commonness Score");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-scanner-observations-enc");
+      // The Feedback Snippet owns the alternatives and the Log Snippet points
+      // back at them ('a black hole <devouring/slurping up> a <star/nebula>'
+      // then 'a black hole <rb> a <rb2>'), so the feedback column is resolved
+      // first, in the row's own column order (REPORT.en.md 73).
+      const std::string seen = cell(t, r, "Object");
+      const std::string feedback = cell(t, r, "Feedback Snippet");
+      const std::string logged = cell(t, r, "Log Snippet");
+      title = "A night on the scanner";
+      body = "I watched " + seen + " from the observatory.";
+      say("I studied " + logged + ".");
+      mark("a16_astronaut-scanner-observations-enc", r);
+      add(feedback + ".");
+      bump(h.astroTechnical, t.num(r, "Research Score") >= 3 ? 2 : 1);
+      happy += 1;
+    }
+  }
+
+  // (6) The people at home are worried.
+  if (title.empty() && astroRng_.chance(0.08)) {
+    const size_t r = draw("a16_astronaut-anxiety-scenarios-enc", "");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-anxiety-scenarios-enc");
+      const std::string audience = resolve(trim(t.at(r, "Audience")));
+      // The Audience cell is a list ('Child, Lover'); the line is written about
+      // the first of them, and the whole card keys on one gender so that the
+      // body and the log cannot disagree (REPORT.en.md 73).
+      std::vector<std::string> who;
+      splitOn(audience, ',', who);
+      std::string one = lower(trim(who.empty() ? audience : who[0]));
+      // Five rows leave Audience blank, and the log line always needs a subject
+      // ('was afraid I'd ...'), so it falls back to a family member.
+      if (one.empty()) one = "loved one";
+      const bool whose = astroRng_.chance(0.5);
+      // Thirty-one of the forty-three Snippets carry their own subject
+      // ('<he/she>'s afraid you'll ...'); the other twelve are a bare verb
+      // phrase ('believes that ...') and need the audience named in front.
+      const std::string raw = trim(t.at(r, "Snippet"));
+      const std::string snip = scene(t, r, whose, true, "Snippet");
+      title = "Everyone worries";
+      body = "Audience: " + (audience.empty() ? std::string("Family") : audience) + ".\n" +
+             (raw.empty() || raw[0] == '<' ? spyUpperFirst(snip) : ("My " + one + " " + snip));
+      say("My " + one + " " + scene(t, r, whose, true, "Log Version") + ".");
+      mark("a16_astronaut-anxiety-scenarios-enc", r);
+      h.astroAnxiety += 1;
+      happy -= 2;
+    }
+  }
+
+  // (7) Talking shop with a colleague.
+  if (title.empty() && astroRng_.chance(0.08)) {
+    size_t r = draw("a16_astronaut-conversations-enc", "");
+    const Table* ct = ensureTable("a16_astronaut-conversations-enc") ? &tbl("a16_astronaut-conversations-enc") : nullptr;
+    if (ct != nullptr && r != size_t(-1) && !h.astroBeenToSpace && ct->flag(r, "Hero Has Been to Space")) {
+      r = size_t(-1);
+      for (int i = 0; i < 3 && r == size_t(-1); ++i) {
+        const size_t cand = draw("a16_astronaut-conversations-enc", "");
+        if (cand != size_t(-1) && !ct->flag(cand, "Hero Has Been to Space")) r = cand;
+      }
+    }
+    if (ct != nullptr && r != size_t(-1)) {
+      const std::string audience = resolve(trim(ct->at(r, "Audience")));
+      title = "Talking shop";
+      body = "Audience: " + audience + ".\nWe got onto the subject of " +
+             resolve(trim(ct->at(r, "Conversation"))) + ".";
+      say("I chatted with my " + lower(audience) + " about " +
+          resolve(trim(ct->at(r, "Conversation"))) + ".");
+      mark("a16_astronaut-conversations-enc", r);
+      happy += 1;
+    }
+  }
+
+  // (8) A prank, inbound or outbound.
+  if (title.empty() && astroRng_.chance(0.08)) {
+    const size_t r = draw("a16_astronaut-pranks-enc", "");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-pranks-enc");
+      const bool outbound = astroRng_.chance(0.4);
+      title = outbound ? "A prank played" : "A prank discovered";
+      body = outbound ? ("I " + scene(t, r, h.astroColleagueFemale, true, "Outbound Snippet"))
+                      : scene(t, r, h.astroColleagueFemale, true, "Inbound Scenario");
+      if (!body.empty() && body[body.size() - 1] != '.') body += ".";
+      say(outbound ? ("I " + scene(t, r, h.astroColleagueFemale, true, "Outbound Snippet") + ".")
+                   : (scene(t, r, h.astroColleagueFemale, true, "Inbound Log Version") + "."));
+      mark("a16_astronaut-pranks-enc", r);
+      happy += 1;
+    }
+  }
+
+  // (9) A paper in the agency's journal, and its reception.
+  if (title.empty() && astroRng_.chance(0.10)) {
+    const bool review = !h.astroPublication.empty() || astroRng_.chance(0.5);
+    if (review) {
+      const size_t r = draw("a16_astronaut-peer-review-color-enc", "");
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_astronaut-peer-review-color-enc");
+        const std::string s = cell(t, r, "String");
+        const double reception = t.num(r, "Max Reception");
+        title = "Peer review";
+        body = s;
+        mark("a16_astronaut-peer-review-color-enc", r);
+        say("My peers reviewed my work: " + lower(s));
+        if (reception >= 50) { bump(h.astroRespect, 3); happy += 2; }
+        else { bump(h.astroRespect, -2); h.astroStress += 2; }
+      }
+    } else {
+      const size_t r = draw("a16_astronaut-publication-titles-enc", "Commonness Score");
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_astronaut-publication-titles-enc");
+        h.astroPublication = resolve(trim(t.at(r, "Name")));
+        title = "A paper published";
+        body = "Title: " + h.astroPublication + ".";
+        mark("a16_astronaut-publication-titles-enc", r);
+        say("I published my research in the agency journal.");
+        bump(h.astroTechnical, 2);
+        bump(h.astroRespect, 2);
+      }
+    }
+  }
+
+  // (10) Traffic with the ground.
+  if (title.empty() && astroRng_.chance(0.10)) {
+    if (astroRng_.chance(0.5)) {
+      const size_t r = draw("a16_astronaut-inbound-messages-enc", "");
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_astronaut-inbound-messages-enc");
+        title = "A message from the void";
+        body = "The signal repeated: " + resolve(trim(t.at(r, "Message"))) + ".";
+        mark("a16_astronaut-inbound-messages-enc", r);
+        say("I recorded a strange transmission out past the belt.");
+        happy += 1;
+      }
+    } else {
+      const size_t r = draw("a16_astronaut-outbound-messages-enc", "Commonness Score");
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_astronaut-outbound-messages-enc");
+        title = "A message home";
+        body = "I broadcast: " + resolve(trim(t.at(r, "Message"))) + ".";
+        mark("a16_astronaut-outbound-messages-enc", r);
+        say("I sent a transmission back to " + h.astroAgency + ".");
+        bump(h.astroRespect, t.num(r, "Success Score") >= 4 ? 2 : -1);
+      }
+    }
+  }
+
+  // (11) Goofing off during a mission. It sits before the mission card, so a
+  //      year with an assignment can be spent shirking it.
+  if (title.empty() && !h.astroDestination.empty() && astroRng_.chance(0.12)) {
+    const size_t r = draw("a16_astronaut-mission-goof-off-enc", "Commonness Score");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-mission-goof-off-enc");
+      title = "Goofing off at " + h.astroDestination;
+      body = "I " + cell(t, r, "Snippet") + ".";
+      say("I " + cell(t, r, "Log Version") + " while the crew was working.");
+      mark("a16_astronaut-mission-goof-off-enc", r);
+      const double impact = t.num(r, "Performance Impact");
+      bump(h.astroFitness, int(impact));
+      bump(h.astroRespect, impact < 0 ? -2 : 1);
+      happy += 1;
+    }
+  }
+
+  // (12) Something dumb happens on the assignment instead of the mission. The
+  //      mission pool is drawn here rather than in the dumb-scenario branch
+  //      below, which can never see an assignment: the mission card has no
+  //      chance roll of its own, so every assigned year reaches it first
+  //      (REPORT.en.md 73).
+  if (title.empty() && missionRow != size_t(-1) && astroRng_.chance(0.30)) {
+    const size_t r = draw("a16_astronaut-mission-dumb-scenarios-enc", "");
+    if (r != size_t(-1) && delegate("a16_astronaut-mission-dumb-scenarios-enc", r)) {
+      bump(h.astroRespect, 1);
+      astroLive_ = live0;
+      return true;
+    }
+  }
+
+  // (13) The mission itself, from the assignment drawn above.
+  if (title.empty() && missionTab != nullptr && missionRow != size_t(-1)) {
+    const Table& t = tbl(missionTab);
+    const size_t r = missionRow;
+    const std::string dest = h.astroDestination;
+    const double danger = t.has("Danger Score") ? t.num(r, "Danger Score") : 2;
+    const double odds = std::max(0.15, std::min(0.92,
+               0.55 + double(h.astroFlight + h.astroTechnical - 80) / 200.0 - danger * 0.05));
+    const bool ok = astroRng_.unit() < odds;
+    title = missionToMoon ? "A mission to the Moon" : "A mission to Mars";
+    body = "Mission: " + h.astroMission + ".\nDestination: " + dest + ".";
+    if (!missionToMoon) body += "\nThe crew: " + h.astroCrewmate + " and " + h.astroColleague + ".";
+    mark(missionTab, r);
+    const bool oSave = pronounOtherSet_, fSave = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = astroRng_.chance(0.5);
+    const std::string brief = spyUpperFirst(cell(t, r, "Snippet"));
+    pronounOtherSet_ = oSave;
+    pronounOtherFemale_ = fSave;
+    if (!brief.empty()) body += "\n" + brief;
+    if (ok) {
+      say("I " + cell(t, r, "Log Success") + ".");
+      h.astroMissions += 1;
+      h.astroBeenToSpace = true;
+      take += 5000;
+      bump(h.astroFlight, 3);
+      bump(h.astroTechnical, 2);
+      bump(h.astroRespect, 2);
+      happy += 3;
+    } else {
+      say("My mission failed " + cell(t, r, "Log Failure") + ".");
+      h.astroStress += 4;
+      hurt(-int(danger));
+      bump(h.astroRespect, -2);
+    }
+  }
+
+  // (14) Something goes wrong on the way up or down.
+  if (title.empty() && astroRng_.chance(0.12)) {
+    const size_t r = draw("a16_astronaut-flight-scenario-enc", "");
+    if (r != size_t(-1)) {
+      // The card's four options each carry their own Flight / Performance
+      // Impact, which the shared renderer does not know about, so the year
+      // applies its own training effects (shortcut: flat impacts).
+      if (delegate("a16_astronaut-flight-scenario-enc", r)) {
+        if (out.title.empty()) out.title = "Trouble on the way";  // the pool has no Title column
+        bump(h.astroFlight, astroRng_.chance(0.5) ? 2 : -2);
+        bump(h.astroTechnical, 1);
+        astroLive_ = live0;
+        return true;
+      }
+    }
+  }
+
+  // (15) An experiment in weightlessness.
+  if (title.empty() && astroRng_.chance(0.12)) {
+    const size_t r = draw("a16_astronaut-experiment-scenarios-enc", "");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-experiment-scenarios-enc");
+      const bool secret = t.num(r, "Deception Score") >= 3 && astroRng_.chance(0.5);
+      const std::string what = cell(t, r, "Snippet");
+      const double risk = t.num(r, "Risk Score");
+      title = "An experiment in orbit";
+      body = "The experiment: " + what + ".";
+      if (secret) body += "\n" + cell(t, r, "Deception Log Version") + ".";
+      say(secret ? ("I " + cell(t, r, "Deception Log Version") + " and kept it off the record.")
+                 : ("I decided to " + what + "."));
+      mark("a16_astronaut-experiment-scenarios-enc", r);
+      bump(h.astroTechnical, int(t.num(r, "Performance Impact")));
+      if (risk >= 3 && astroRng_.chance(0.10 * risk)) {
+        add("The experiment went badly: " + cell(t, r, "Feedback Snippet") + ".");
+        hurt(-int(risk));
+      } else if (!cell(t, r, "Feedback Snippet").empty()) {
+        say(cell(t, r, "Feedback Snippet") + ".");
+      }
+      if (secret) bump(h.astroRespect, -2);
+    }
+  }
+
+  // (16) A dumb scenario from the family's own pool. The mission pool is drawn
+  //      in its own branch above, which every assigned year reaches first.
+  if (title.empty() && astroRng_.chance(0.12)) {
+    const char* tab = "a16_astronaut-dumb-scenarios-enc";
+    const size_t r = draw(tab, "");
+    if (r != size_t(-1) && delegate(tab, r)) {
+      bump(h.astroRespect, 1);
+      astroLive_ = live0;
+      return true;
+    }
+  }
+
+  // (17) The training programme at the academy.
+  if (title.empty() && astroRng_.chance(0.14)) {
+    const bool onlyProgram = h.astroRank == 1;
+    size_t r = size_t(-1);
+    for (int i = 0; i < 3 && r == size_t(-1); ++i) {
+      const size_t cand = draw("a16_astronaut-fitness-training-scenario-enc", "Commonness Score");
+      if (cand == size_t(-1)) break;
+      const Table& t = tbl("a16_astronaut-fitness-training-scenario-enc");
+      if (t.flag(cand, "Training Program Only") && !onlyProgram) continue;
+      r = cand;
+    }
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-fitness-training-scenario-enc");
+      const std::string type = lower(trim(t.at(r, "Training Type")));
+      title = type == "cardio" ? "Training day" : "Training session";
+      body = scene(t, r, false, true, "Scenario");
+      say(scene(t, r, false, true, "Log Version"));
+      mark("a16_astronaut-fitness-training-scenario-enc", r);
+      const int impact = int(t.num(r, "Impact Score"));
+      if (type == "cardio") bump(h.astroFitness, impact);
+      else bump(h.astroTechnical, impact);
+      happy += 1;
+    }
+  }
+
+  // (18) The written exam.
+  if (title.empty() && astroRng_.chance(0.18)) {
+    const size_t r = draw("a16_astronaut-training-questions-enc", "Commonness Score");
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_astronaut-training-questions-enc");
+      const bool pass = astroRng_.unit() < 0.40 + double(h.astroTechnical) / 250.0;
+      title = "A training exam";
+      body = resolve(trim(t.at(r, "Question"))) + "\nCorrect answer: " +
+             resolve(trim(t.at(r, "Correct Answers"))) + ".";
+      if (!pass) {
+        const std::string dummies = resolve(trim(t.at(r, "Dummy Answers")));
+        const size_t comma = dummies.find(',');
+        body += "\nI wrote down: " + (comma == std::string::npos ? dummies : dummies.substr(0, comma)) + ".";
+      }
+      mark("a16_astronaut-training-questions-enc", r);
+      if (pass) {
+        say("I passed the agency's training exam.");
+        bump(h.astroTechnical, 3);
+        bump(h.astroRespect, 2);
+      } else {
+        say("I failed the agency's training exam.");
+        bump(h.astroRespect, -2);
+        h.astroStress += 2;
+      }
+    }
+  }
+
+  if (title.empty()) { astroLive_ = live0; return false; }
+
+  // Promotion needs the rank's own gates, from a16_astronaut-career-rank.
+  if (ensureTable("a16_astronaut-career-rank-enc")) {
+    const Table& t = tbl("a16_astronaut-career-rank-enc");
+    const size_t row = std::min<size_t>(size_t(h.astroRank) - 1, t.size() - 1);
+    const long long lo = astroMoney(t.at(row, "Min Salary"));
+    const long long hi = astroMoney(t.at(row, "Max Salary"));
+    take += hi > lo ? lo + static_cast<long long>(astroRng_.below(unsigned(hi - lo + 1))) : lo;
+    if (h.astroRank < int(t.size()) && h.astroMissions >= int(t.num(row, "Missions to Promotion")) &&
+        h.astroYearsInAgency >= int(t.num(row, "Min Years in Agency")) &&
+        h.smarts >= int(t.num(row, "Minimum Intelligence")) &&
+        h.discipline >= int(t.num(row, "Minimum Discipline")) &&
+        h.health >= int(t.num(row, "Minimum Health"))) {
+      h.astroRank += 1;
+      h.astroMissions = 0;
+      h.astroYearsInAgency = 0;
+      const size_t next = size_t(h.astroRank) - 1;
+      h.astroRankTitle = trim(t.at(next, "Rank"));
+      h.astroSalary = astroMoney(t.at(next, "Min Salary"));
+      add("I was promoted to " + h.astroRankTitle + " of " + h.astroAgency + ".");
+      bump(h.astroRespect, 5);
+      happy += 3;
+    }
+  }
+
+  out.table = tableRef.empty() ? "a16_astronaut-dumb-scenarios-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  const std::vector<std::string> keep = out.extra;
+  out.extra.clear();
+  for (size_t i = 0; i < keep.size(); ++i) out.extra.push_back(keep[i]);
+  for (size_t i = 0; i < extra.size(); ++i) out.extra.push_back(extra[i]);
+  h.money += take;
+  h.astroEarned += take;
+  out.happiness += happy;
+  if (h.astroStress > 0) h.astroStress -= 1;
+  astroLive_ = live0;
   return true;
 }
 
