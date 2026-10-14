@@ -343,6 +343,9 @@ class Sim {
   bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
   // The gift (REPORT.en.md 89): the shop and the two property pools.
   bool giftYear(Life& life, AgeUp& out, int forcedChoice);
+  // The conversations family (REPORT.en.md 90): one topic, one listener, and
+  // the row's own Controversy Score for how it lands.
+  bool conversationYear(Life& life, AgeUp& out, int forcedChoice);
   // The badge table of the anniversary family: the row's five captions and the
   // situation description the feed shows (REPORT.en.md 88).
   std::string annBadgeOption(const std::string& tag, std::string& situation, int* rowOut = nullptr);

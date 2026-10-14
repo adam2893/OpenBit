@@ -1160,6 +1160,7 @@ bool Sim::load(std::string* error) {
       "a16_gift-rejections-house-enc",               // Excuse,Prideful,Crazy,Min/Max Value,..
       "a16_gift-rejections-vehicle-enc",             // Excuse,Prideful,Crazy,Car/Boat/Plane Min/Max Value
       "a16_aircraft-enc",                            // Make,Model,..,Cost,..,Luxury Only
+      "a16_conversations-enc",                       // Audience,Conversation,..,Controversy Score,Clean
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -1774,6 +1775,13 @@ bool Sim::genderToken(const std::string& token, std::string& out) {
     // so the pair is fixed rather than a coin toss (REPORT.en.md 72).
     {"you/I", "I", "I"},                {"your/my", "my", "my"},
     {"you/me", "me", "me"},             {"son/daughter", "son", "daughter"},
+    // The conversations, murders and sibling-argument pools write the hero's
+    // own side of a line two ways ('<I/you>', '<me/you>', '<we/you>'); the port
+    // tells every card in the first person, so both spellings are fixed rather
+    // than tossed (REPORT.en.md 90).
+    {"I/you", "I", "I"},                {"my/your", "my", "my"},
+    {"me/you", "me", "me"},             {"we/you", "we", "we"},
+    {"our/your", "our", "our"},
     {"Himself/Herself", "Himself", "Herself"},
   };
   // The lover pools write about the partner ('<he/she> says it's not you, it's
@@ -3350,6 +3358,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (politicalYear(life, out, forcedChoice)) return true;
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
+  if (conversationYear(life, out, forcedChoice)) return true;
   if (spyYear(life, out, forcedChoice)) return true;
   if (fightYear(life, out, forcedChoice)) return true;
   if (bmYear(life, out, forcedChoice)) return true;
@@ -23696,6 +23705,152 @@ bool Sim::giftYear(Life& life, AgeUp& out, int forcedChoice) {
       (h.giftsGiven == 1 ? " gift" : " gifts") + " and lifted " +
       std::to_string(h.giftsLifted) + ", and our relationship stands at " +
       std::to_string(h.relationship) + "%.");
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
+// ---------------------------------------------------------------------------
+// The conversations family (REPORT.en.md 90). One row is a topic the hero
+// brings up with one listener: the row's own Audience column names who that can
+// be, Hero Min/Max Age windows the hero, Audience Min/Max Age windows the
+// listener, and the Controversy Score is how badly the topic can land. The
+// corpus ships no reaction text and no outcome column, so the feed line and the
+// ledger are the port's own.
+// ---------------------------------------------------------------------------
+bool Sim::conversationYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  // A talk needs somebody to have it with, so the family starts at the table's
+  // own earliest hero window (2).
+  if (forcedChoice >= 0 || h.age < 2) return false;
+  if (!ensureTable("a16_conversations-enc")) return false;
+  const Table& t = tbl("a16_conversations-enc");
+  if (!t.has("Conversation")) return false;
+  // The port's own rate: most years the hero keeps his opinions to himself.
+  if (!relRng_.chance(0.22)) return false;
+
+  // Who is in the house. 'p' is one parent, 'P' both of them, 'c' the younger
+  // sibling the corpus's child audiences stand in for, 'l' the partner.
+  struct Ear {
+    std::string name;
+    int age = 0;
+    bool female = false;
+    char kind = 'x';
+  };
+  std::vector<Ear> ears;
+  int parents = 0;
+  for (const Person& p : life.family) {
+    if (!p.alive) continue;
+    const bool isParent = p.relation == "mother" || p.relation == "father" ||
+                          p.relation == "stepmother" || p.relation == "stepfather";
+    if (isParent) {
+      ++parents;
+      ears.push_back(Ear{"my " + p.relation, p.age, p.female, 'p'});
+    } else if (!p.name.empty() && p.age < h.age) {
+      // The corpus's Child, Son and Daughter audiences are the hero's own
+      // children and the port has none, so a younger sibling the hero has
+      // outgrown stands in for them (REPORT.en.md 90).
+      ears.push_back(Ear{p.name, p.age, p.female, 'c'});
+    }
+  }
+  // 'Parents' rows carry no audience age window, so the pair needs no age.
+  if (parents >= 2) ears.push_back(Ear{"my parents", 0, false, 'P'});
+  if (h.relationshipOn && !h.loverName.empty()) {
+    ears.push_back(Ear{h.loverName, h.loverAge, h.loverFemale, 'l'});
+  }
+  if (ears.empty()) return false;
+
+  auto heroOk = [&](size_t r) {
+    const double lo = t.num(r, "Hero Min Age");
+    const double hi = t.num(r, "Hero Max Age");
+    return !(lo > 0 && h.age < lo) && !(hi > 0 && h.age > hi);
+  };
+  auto earOk = [&](size_t r, const Ear& e) {
+    const double lo = t.num(r, "Audience Min Age");
+    const double hi = t.num(r, "Audience Max Age");
+    return !(lo > 0 && e.age < lo) && !(hi > 0 && e.age > hi);
+  };
+  auto kindOk = [&](size_t r, const Ear& e) {
+    const std::string a = trim(t.at(r, "Audience"));
+    if (a.empty()) return true;  // the row fits anybody
+    if (a == "Lover") return e.kind == 'l';
+    if (a == "Parent") return e.kind == 'p';
+    if (a == "Parents") return e.kind == 'P';
+    if (a == "Child") return e.kind == 'c';
+    if (a == "Son") return e.kind == 'c' && !e.female;
+    if (a == "Daughter") return e.kind == 'c' && e.female;
+    return false;  // an audience kind the port has no listener for
+  };
+
+  struct Pair {
+    size_t row;
+    size_t ear;
+  };
+  std::vector<Pair> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (!heroOk(r)) continue;
+    for (size_t e = 0; e < ears.size(); ++e) {
+      if (!kindOk(r, ears[e]) || !earOk(r, ears[e])) continue;
+      // The corpus's Clean flag marks the 56 topics it keeps away from a child
+      // ('the importance of using a condom'); the port reads it as exactly that
+      // and drops them from the child listener's pool (REPORT.en.md 90).
+      if (!t.flag(r, "Clean") && ears[e].kind == 'c') continue;
+      pool.push_back(Pair{r, e});
+    }
+  }
+  if (pool.empty()) return false;
+  const Pair pick = pool[relRng_.below(uint32_t(pool.size()))];
+  const Ear& ear = ears[pick.ear];
+
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = ear.female;
+  rndCache_.clear();
+  rbLast_.clear();
+  const std::string topic = resolve(trim(t.at(pick.row, "Conversation")));
+  // A row can name a slot the port cannot fill ('why <musician> is better than
+  // <musician2>'); a leftover bracket means the card is skipped rather than
+  // printed with a token still in it.
+  if (topic.find('<') != std::string::npos) {
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return false;
+  }
+
+  // The listener's tolerance is the rest of a six-sided roll: a topic scored 1
+  // lands badly one year in six, one scored 5 five years in six.
+  const int score = std::max(1, int(t.num(pick.row, "Controversy Score")));
+  const bool awkward = int(relRng_.below(6)) < score;
+  std::string body = "I told " + ear.name + " about " + topic;
+  std::string line;
+  int happy = 0;
+  if (awkward) {
+    body += ", and it did not go well.";
+    line = "I brought " + topic + " up with " + ear.name + " and regretted it.";
+    happy = -1;
+    ++h.talksAwkward;
+    if (ear.kind == 'l') h.relationship -= 2;
+  } else {
+    body += ".";
+    line = ear.name + " listened to my thoughts on " + topic + ".";
+    happy = 1;
+    if (ear.kind == 'l') h.relationship += 1;
+  }
+  ++h.talks;
+
+  out.table = "a16_conversations-enc";
+  out.row_id = std::to_string(int(pick.row) + 1);
+  out.title = spyUpperFirst(topic);
+  out.body = body;
+  out.narrative = spyUpperFirst(line);
+  if (happy != 0) out.happiness += happy;
+  h.relationship = std::max(0, std::min(100, h.relationship));
+  out.extra.push_back(spyUpperFirst("I have had " + std::to_string(h.talks) +
+                                    (h.talks == 1 ? " conversation" : " conversations") +
+                                    ", " + std::to_string(h.talksAwkward) +
+                                    " of them awkward."));
   pronounOtherSet_ = savedSet;
   pronounOtherFemale_ = savedFemale;
   return true;

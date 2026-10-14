@@ -171,6 +171,10 @@ struct Hero {
   // and what he carried out of the shop without paying for.
   int giftsGiven = 0;
   int giftsLifted = 0;
+  // The conversations family's own ledger (REPORT.en.md 90): the talks held
+  // and the ones the listener did not want to hear.
+  int talks = 0;
+  int talksAwkward = 0;
     // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire

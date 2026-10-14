@@ -9721,7 +9721,7 @@ date           Power couple
 ```
 
 The whole regression is green with the section in place: `allprobes.py` runs
-thirty-two probes at residue 0 (section 89 adds `giftres.py` to the list),
+thirty-three probes at residue 0 (section 90 adds `convres.py` to the list),
 `rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109 captured /
 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim
 --script covpush.json` rc 0 with an empty stderr, and `bench.sh
@@ -10052,3 +10052,227 @@ thirty-two probes at residue 0 (the new `giftres.py` joins the list),
 captured / 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap
 0`, `blsim --script covpush.json` rc 0 with an empty stderr, and `bench.sh
 /tmp/trace_c10.json` reaching age 34 without an abort.
+
+## 90. The conversations: one audience column, a listener the port had to invent, and a six-sided coin for tolerance
+
+Sections 88 and 89 belonged to the couple. This one belongs to the family around
+it. `a16_conversations-enc` is a single file of 345 rows and it is the first
+family in this port whose card has three moving parts at once: who is listening,
+what the hero says, and whether the listener can take it.
+
+### 90.1 The family
+
+`a16_conversations-enc` is nine columns and 345 rows:
+
+| column | what it holds |
+|--------|---------------|
+| `Audience` | blank on 247 rows; `Lover` 28, `Child` 26, `Daughter` 13, `Son` 12, `Parent` 10, `Parents` 7, plus two rows whose value carries a trailing space |
+| `Conversation` | the topic. Non-blank on all 345 rows and 342 distinct; `the birds and the bees` appears three times and `how tampons work` twice |
+| `Hero Min Age` / `Hero Max Age` | the hero's own window. Min blank on 53 rows and otherwise 3 to 65, clustered at 12 (46 rows), 18 (45), 15 (40), 10 (34) and 14 (24). Max blank on 315 |
+| `Audience Min Age` / `Audience Max Age` | the listener's window. Min blank on 20 rows and clustered at 12 (61), 15 (46), 18 (45), 10 (37) and 5 (25). Max blank on 295 |
+| `Controversy Score` | 1 to 5: 101 / 95 / 83 / 51 / 14 rows, and one blank row |
+| `Clean` | `x` on 289 rows, blank on 56 |
+| `Holiday` | `x` on 27 rows |
+
+Four rows, quoted, because between them they are the whole table:
+
+```
+Child      | the importance of using a condom      | | | 15 | 21 | 1 |   |
+Child      | why it is important to do chores      | | |  6 | 18 | 4 | x |
+           | how Pink Floyd is better than Led Zeppelin | 12 | | 12 | | 3 | x |
+Parents    | the handcuffs <I/you> found in <mommy's/daddy's> drawer,
+           | and why <I/you> never get to play with them | 2 | 9 | | | 2 | |
+```
+
+The two windows are the design. `Hero Min Age` says when the hero is old
+enough to raise the subject at all (the birds and the bees at 12, the will at
+65), `Audience Min Age` says when the person hearing it is old enough for it,
+and `Clean` separates the 56 rows that should never reach a child. The score
+is what the listener does with the subject once it is out.
+
+### 90.2 The listener
+
+The corpus's `Audience` column names six relatives. The port has three of
+them. `life.family` holds the parents and the siblings (a sibling is
+`big`/`little brother`/`sister` with a first name, and its age is 2 to 6
+when the hero is older or 2 to 3 at birth), and `loverName` holds the partner.
+There is no child list anywhere in the port, because the hero of this
+construction never has children of their own - so the 51 `Child` /
+`Daughter` / `Son` rows have no literal listener and are read as the
+younger sibling instead:
+
+| `Audience` | who the port picks | the ear's kind |
+|--------------|--------------------|----------------|
+| blank (247 rows) | anybody in the room | `a` |
+| `Lover` | the partner, when `relationshipOn` and the name is set | `l` |
+| `Parent` | `my mother` or `my father` (the port keeps no parent names, so the relation is the name) | `p` |
+| `Parents` | both at once, one ear called `my parents` | `P` |
+| `Child` / `Son` / `Daughter` | the younger sibling, gender-matched for Son and Daughter | `c` |
+
+Every listener is one `struct Ear` with a name, an age, a gender and a kind.
+Three gates then filter the 345 rows: `heroOk` reads `Hero Min Age` /
+`Hero Max Age` against the hero, `earOk` reads `Audience Min Age` /
+`Audience Max Age` against that ear (a blank or zero column is open), and
+`kindOk` matches the audience word - blank fits anybody, `Lover` needs the
+`l` ear, `Parent` and `Parents` the `p` and `P` ears, and
+`Son` / `Daughter` also check the sibling's gender. The surviving pairs
+(row, ear) are picked uniformly.
+
+The `Clean` column is read in exactly one place, as `not in front of the
+children`: `if (!t.flag(r, "Clean") && ears[e].kind == 'c') continue;`. The
+partner and the parents get the whole table; a sibling is never told about
+anal bleaching or the drawer with the handcuffs in it.
+
+### 90.3 The coin
+
+The topic is resolved with the listener's pronouns (the card is written from the
+hero's side, so `<we/you>` has to become `we` for a parent and stay the
+hero's word for a sibling), and then one roll decides how it landed:
+
+```
+const int score = std::max(1, int(t.num(row, "Controversy Score")));
+const bool awkward = int(relRng_.below(6)) < score;
+```
+
+A six-sided die and the score as the number of faces that go badly. A score-1
+topic (the best movie we saw this year) passes five times in six; a score-5
+topic (a sexting conversation found on someone's phone) passes once in six.
+
+Measured over 1,517 cards in 200 lives:
+
+| `Controversy Score` | cards | awkward | measured | expected | delta |
+|--------|-------|---------|----------|----------|-------|
+| 1 | 527 | 99 | 0.188 | 0.167 | +0.021 |
+| 2 | 419 | 124 | 0.296 | 0.333 | -0.037 |
+| 3 | 356 | 186 | 0.522 | 0.500 | +0.022 |
+| 4 | 198 | 135 | 0.682 | 0.667 | +0.015 |
+| 5 | 17 | 14 | 0.824 | 0.833 | -0.010 |
+
+The card itself: title is the topic with its first letter raised, body is
+`I told my mother about the best movie we saw so far this year.` - plus
+`, and it did not go well.` on the bad roll - and the narrative flips with
+it, `My father listened to my thoughts on ...` or `I brought ... up with my
+mother and regretted it.` Happiness swings a point, the partner loses two
+relationship points and gains one on a good night, and the ledger line is
+`I have had N conversations, M of them awkward.`
+
+### 90.4 The tokens
+
+The topic column uses sixteen distinct brackets. Six are inline slash lists the
+port already handles (`<pea/Lego/marble/...>`, `<McDonald's/Burger King/Taco
+Bell>`, `<willy/ding dong/wiener/pee-pee/wee-wee>`, `<nose/ear>`,
+`<mommy's/daddy's>`, the eight-way reality-show list), `<musician>` already
+resolves through `referenceToken` (src/sim.cpp:1659), and eight are
+perspective pairs. Five of those eight were missing from `kPairs`, because
+the corpus writes both sides of the same pronoun and the port only ever tells a
+card in the first person:
+
+| token | rows | was | now |
+|-------|------|-----|-----|
+| `<we/you>` | 38 | not a pair | `we` |
+| `<our/your>` | 38 | not a pair | `our` |
+| `<I/you>` | 13 | not a pair | `I` |
+| `<my/your>` | 7 | not a pair | `my` |
+| `<me/you>` | 1 | not a pair | `me` |
+| `<he/she>` | 3 | resolved against the listener | unchanged |
+| `<his/her>` | 6 | resolved against the listener | unchanged |
+| `<musician2>` | 2 | no handler at all | the row is skipped |
+
+The last row is the one that stayed a shortcut: `<musician2>` has no resolver
+in the port (a search for the literal name finds nothing), so instead of
+printing a raw bracket the card checks `topic.find('<') != std::string::npos`
+after resolving and walks away. Two rows of 345 are unreachable that way, and
+the probe asserts no bracket ever reaches the output.
+
+### 90.5 What it caught
+
+The port's own gaps, in the order they showed up:
+
+- the five missing perspective pairs, and that four of the six inline lists on
+  the topic column are the ones the family already needed elsewhere -
+  `a16_sibling-arguments-enc` and `a16_murders-enc` both use `<I/you>`,
+  so the 13 rooms this adds are shared with two families still unwired;
+- `<musician2>` has no handler, so the two rows using it are skipped rather
+  than printed with a bracket;
+- the probe's first title check compared the resolved title against the raw row
+  text and reported drift on every token row; the honest check compares the
+  head before the first bracket and the tail after the last one;
+- a listener classifier of `'lover' if who in joined or True` is meaningless;
+  the second pass (no partner at all) is the only honest way to isolate the
+  sibling ear, and it shows 318 sibling conversations, none of them on a
+  non-`Clean` row;
+- `Clean` is not a curiosity column - it is the child gate, and it is the
+  only column in the family whose meaning is a rule rather than a value;
+- the `Audience` column carries two trailing-space variants, so the audience
+  match trims.
+
+### 90.6 Shortcuts
+
+- `conversationYear` fires at 0.22 of a year, the port's own rate; the corpus
+  has no frequency column anywhere in the family;
+- the listener for `Child` / `Son` / `Daughter` is the younger sibling,
+  because the port's hero has no children. All 51 of those rows are reachable,
+  which the probe confirms (15 of them land in the no-partner pass);
+- tolerance is the rest of a six-sided die; nothing in the corpus says the
+  score is a probability, only that it is 1 to 5;
+- one person hears one topic a year, and the topic is drawn uniformly rather
+  than by any weight - the family has no `Commonness Score` column;
+- the two `<musician2>` rows are never spoken;
+- a `Holiday` row is treated like any other topic. The flag is carried in the
+  table but the port has no holiday calendar to gate it against, so it is not
+  read at all.
+
+### 90.7 Verification
+
+`/tmp/qdir/convres.py` runs 200 lives - seeds 1 to 50 in both genders, to age
+80, across the 17 countries of `a16_country-royal-systems-enc` - in two passes,
+one with a partner and one without. It selects every event whose table is
+`a16_conversations-enc` and checks the row index, the listener named in the
+body, the title against the row's own topic (bracket-free at the head and the
+tail), the awkward sentence against the narrative, `deltas.karma == 0`, the
+ledger line's monotonicity inside a life, and that no bracket reaches any
+string:
+
+```
+runs 200 rc failures 0 cards 1517
+score 1: 527 cards awkward 99  0.188 expected 0.167
+score 2: 419 cards awkward 124 0.296 expected 0.333
+score 3: 356 cards awkward 186 0.522 expected 0.500
+score 4: 198 cards awkward 135 0.682 expected 0.667
+score 5:  17 cards awkward  14 0.824 expected 0.833
+sibling listeners (no-partner pass) 318 of which on a non-Clean row 0
+rows used 250 of 345
+mismatches 0
+RESIDUE 0 []
+```
+
+Two cards, one bad roll and one good one:
+
+```
+row 249 | the best movie <we/you> saw so far this year
+  The best movie we saw so far this year
+  I told my mother about the best movie we saw so far this year, and it did not go well.
+  I brought the best movie we saw so far this year up with my mother and regretted it.
+
+row 285 | the average intelligence of people who enjoy watching <The Bachelor/...>
+  The average intelligence of people who enjoy watching The Bachelorette
+  I told my mother about the average intelligence of people who enjoy watching The Bachelorette.
+  My mother listened to my thoughts on the average intelligence of people who enjoy watching The Bachelorette.
+```
+
+And two that are only reachable through the port's own substitute listener:
+
+```
+row 15 audience=Child | why you don't ask a woman with a big belly if she is pregnant
+  I told Pink about why you don't ask a woman with a big belly if she is pregnant, and it did not go well.
+
+row 342 clean=False | whether or not it is okay to dye <our/your> gray pubes
+  I told Ladye about whether or not it is okay to dye our gray pubes, and it did not go well.
+```
+
+The whole regression is green with the section in place: `allprobes.py` runs
+thirty-three probes at residue 0 (the new `convres.py` joins the list),
+`rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109
+captured / 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107
+gap 0`, `blsim --script covpush.json` rc 0 with an empty stderr, and
+`bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.
