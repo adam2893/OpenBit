@@ -172,6 +172,7 @@ struct RegScenario {
   const char* body;      // Scenario.Body
   int n;
   RegChoice choices[4];  // empty for the scenes the game auto-advances
+  bool silent = false;   // modal card the game keeps out of its LifeLog
 };
 const RegScenario kScenarios[] = {
     {"ScenarioChildhoodVaccination", "", "Vaccination",
@@ -259,6 +260,24 @@ const RegScenario kScenarios[] = {
       {"No thanks", ""}}},
     {"ScenarioCustomAttack", "", "Attack", "How will you attack your {victim}?", 1,
      {{"", "I {attackverb} my {victim}'s {attackpart}!"}}},
+    // The casino minigames: three modal cards per visit (bets, play, outcome).
+    // Only the outcome writes a LifeLog line, and its wording comes from the room
+    // table's Game column (REPORT.en.md 42).
+    {"ScenarioCasinoBet", "Casino", "", "Place your {casinogame} bets!", 1, {{"", ""}}, true},
+    {"ScenarioGameBlackjack", "", "", "Get as close as possible to 21 without going over!\n\nYou have {casinoamount} riding on this bet.",
+     1, {{"", ""}}, true},
+    {"ScenarioFailingEyesight", "", "Eyesight",
+     "Your {parent} is concerned with your eyesight and is taking you for an eye exam at the optometrist.",
+     1, {{"", ""}}, true},
+    {"ScenarioGameEyeExam", "", "Eye Exam",
+     "Start the test and then tap the letter or number that's different than the others before time runs out!",
+     1, {{"", ""}}, true},
+    {"ScenarioProfileHero", "", "Profile", "", 0, {}, true},
+    {"ScenarioEyeExamOutcome", "", "Eye Exam",
+     "You {eyeexamverb} your eye exam and {eyeexamclause}", 1,
+     {{"", "I {eyeexamverb} my eye exam!"}}},
+    {"ScenarioCasinoOutcome", "", "Casino", "You {casinoverb} {casinoamount} {casinotail}.", 1,
+     {{"", "I {casinoverb} {casinoamount} {casinotail} at {casino}."}}},
     {"ScenarioEthicsFindObject", "Ethics", "Found Item",
      "While on your walk, you find a {find}.\n\nWhat will you do?", 2,
      {{"Turn it in", "I turned in {findarticle} that I found."},
@@ -1602,6 +1621,12 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
   out = AgeUp();
   out.extra = extra;
   out.table = cls;  // not a table row: the class is the provenance
+  if (s->silent) {
+    // Modal cards the game never logs (casino bets, the eye-exam test, the
+    // profile screen): the card is rendered, the year writes no line.
+    out.title.clear();
+    return true;
+  }
   out.title = s->title;
   std::string body = s->body;
   std::string item;
@@ -1695,6 +1720,52 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     findPhrase = "a duffle bag";
     substAll(body, "{find}", findWord);
   }
+  std::string eyeexamverb, eyeexamclause;
+  if (need("{eyeexamverb}")) {
+    // Only two outcomes exist for the optometrist test, and the game's own cards
+    // and log lines spell both (metadata 48452 / 49098 / 24139 / 24779).
+    const bool passed = rng_.chance(0.5);
+    eyeexamverb = passed ? "passed" : "failed";
+    eyeexamclause = passed ? "do not need eyeglasses!"
+                           : "have been issued a prescription for eyeglasses!";
+    substAll(body, "{eyeexamverb}", eyeexamverb);
+    substAll(body, "{eyeexamclause}", eyeexamclause);
+  }
+  std::string casinogame, casinoamount, casinoverb, casinotail;
+  if (need("{casinogame}") || need("{casinoamount}") || need("{casinoverb}")) {
+    // The casino minigames read their numbers from the room table. Its bet
+    // columns are chip units, and the capture ($7,200 inside a 10..100 unit
+    // range) prices one unit at $100.
+    // shortcut: stake drawn from Default..Max Bet * 100; the game reads the
+    // player's own slider, and only the blackjack card lines are captured.
+    ensureTable("a16_casino-casino-game-room-enc");
+    const Table& gt = tbl("a16_casino-casino-game-room-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < gt.size(); ++r)
+      if (!trim(gt.at(r, "Game")).empty()) pool.push_back(r);
+    const size_t row = pool.empty() ? size_t(-1) : pool[rng_.below(uint32_t(pool.size()))];
+    const std::string game = row == size_t(-1) ? std::string("Blackjack") : trim(gt.at(row, "Game"));
+    const long long lo = row == size_t(-1) ? 10 : static_cast<long long>(gt.num(row, "Default Bet"));
+    const long long hi = row == size_t(-1) ? 100 : static_cast<long long>(gt.num(row, "Max Bet"));
+    const long long units = hi > lo ? lo + static_cast<long long>(rng_.below(uint32_t(hi - lo + 1))) : lo;
+    casinoamount = money(units * 100);
+    casinoverb = !rng_.chance(row == size_t(-1) ? 0.6 : gt.num(row, "Default House Win Rate") / 100.0)
+                     ? "won"
+                     : "lost";
+    casinogame = lower(game);
+    casinotail = "on this bet";
+    if (casinogame == "blackjack") casinotail = "on the hand of blackjack";
+    else if (casinogame == "craps") casinotail = "on this craps roll";
+    else if (casinogame == "keno") casinotail = "on this game of keno";
+    else if (casinogame == "three-card shuffle") casinotail = "on this game of three-card shuffle";
+    else if (casinogame == "high-low") casinotail = "on this high-low draw";
+    else if (casinogame == "texas hold'em") casinotail = "on this hand";
+    else if (casinogame == "roulette" || casinogame == "slots") casinotail = "on this spin";
+    substAll(body, "{casinogame}", casinogame);
+    substAll(body, "{casinoamount}", casinoamount);
+    substAll(body, "{casinoverb}", casinoverb);
+    substAll(body, "{casinotail}", casinotail);
+  }
   std::string victim, attackVerb, attackPart;
   if (need("{victim}")) {
     // The game attaches the scene to whoever it fired on (the capture hit the
@@ -1735,6 +1806,13 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     if (!findWord.empty()) {
       substAll(log, "{find}", findWord);
       substAll(log, "{findarticle}", findPhrase);
+    }
+    if (!eyeexamverb.empty()) substAll(log, "{eyeexamverb}", eyeexamverb);
+    if (!casinoamount.empty()) {
+      substAll(log, "{casinogame}", casinogame);
+      substAll(log, "{casinoamount}", casinoamount);
+      substAll(log, "{casinoverb}", casinoverb);
+      substAll(log, "{casinotail}", casinotail);
     }
     if (!victim.empty()) {
       substAll(log, "{victim}", victim);

@@ -2457,3 +2457,115 @@ scene instead of replaying them:
 Their cards are recoverable (the literals exist) but the labels are not guessable from the
 card sequences — a capture that presses the buttons is what unblocks them.
 
+## 42. The minigame bucket: casino tables, the eye exam, and cards the game never logs
+
+§39 put 21 captured instances in the minigame bucket, of which 2 replayed. The three
+casino minigames (15 instances) dominated it, and 42.1 is what they turned out to be:
+three modal cards per visit, of which only the last writes anything. 42.2 is the eye
+exam, 42.3 the "silent card" distinction the port needed, and the bucket now stands at
+19 of 21.
+
+### 42.1 The casino minigames are three cards, one of them logged
+
+A single visit to a casino game room emits three records, in this order:
+
+    ScenarioCasinoBet        title "Rosebud Casino Resort"        body "Place your blackjack bets!"
+    ScenarioGameBlackjack    title "Emily (Dealer)"               body "Get as close as possible to 21 without going over!
+
+    																You have $7,200 riding on this bet."
+    ScenarioCasinoOutcome    title "You lost" / "High roller"     body "You lost $7,200 on the hand of blackjack."
+
+Only the outcome record writes a LifeLog line, and the line is the card restated in
+first person with the venue appended:
+
+    I lost $7,200 on the hand of blackjack at Rosebud Casino Resort.
+
+So the outcome class is the one that matters for replay, and every number it needs is in
+\`a16_casino-casino-game-room-enc\` (columns Game, Installation Cost, Unit String, Base Unit
+Capacity, Cost Per Unit, Default House Win Rate, Default Bet, Min Bet, Max Bet):
+
+| game | Default Bet | Max Bet | Default House Win Rate |
+|---|---|---|---|
+| Blackjack | 10 | 100 | 65 |
+| Texas Hold'em | 25 | 200 | 55 |
+| Craps | 15 | 150 | 85 |
+| (nine games in all: also Sports Betting, Slots, Three-Card Shuffle, High-Low, Keno, Roulette) |
+
+The captured $7,200 sits inside Blackjack's 10..100 unit range at exactly 72 units, which
+prices a unit at $100; the port therefore draws units from the room's Default..Max range
+and reads the stake as units x 100. The win/lose flag is the room's own house win rate,
+and the tail of the sentence is a per-game literal from the executable:
+
+| game | tail literal (metadata index) |
+|---|---|
+| Blackjack | on the hand of blackjack (63166) |
+| Craps | on this craps roll (63168) |
+| Keno | on this game of keno (63169) |
+| Three-Card Shuffle | on this game of three-card shuffle (63170) |
+| High-Low | on this high-low draw (63172) |
+| Texas Hold'em | on this hand (63171) |
+| Roulette / Slots | on this spin (63173) |
+
+The sentence prefixes are the literals \`I lost \` (24616) and \`I won \` (25815), the bet card
+is \`Place your {0} bets!\` (34034 shows the Texas hold'em form), and the play card's rules
+line for blackjack is \`Get as close as possible to 21 without going over!\` (21370) followed
+by \`You have {0} riding on this bet.\` (23556).
+
+### 42.2 The eye exam is two literals and one coin flip
+
+    ScenarioFailingEyesight   card  Your mother is concerned with your eyesight and is taking you for an eye exam at the optometrist.
+    ScenarioGameEyeExam       card  Start the test and then tap the letter or number that's different than the others before time runs out!
+    ScenarioEyeExamOutcome    body  You failed your eye exam and have been issued a prescription for eyeglasses!   (48452)
+                                    You passed your eye exam and do not need eyeglasses!                            (49098)
+                              log   I failed my eye exam! (24139)   /   I passed my eye exam! (24779)
+
+Both cards are silent; the outcome draws pass/fail once and the same draw spells the card
+and the log, so the two can never disagree.
+
+### 42.3 Silent cards, and why the port needed a flag
+
+The port logs a card as a line when a scene's branch has no captured sentence, which is
+the right default for a scene that was shown to a player — but wrong for these modal
+cards: in the game they write nothing to the LifeLog at all. RegScenario therefore gained
+a \`silent\` member, and a silent class renders its card and returns before any line is
+built: ScenarioCasinoBet, ScenarioGameBlackjack, ScenarioFailingEyesight,
+ScenarioGameEyeExam and ScenarioProfileHero (an empty profile screen) are marked.
+
+Without the flag the port emitted a synthetic \`title: body\` line for every modal card,
+which is exactly the kind of phantom line the differential bench counts as a port-only
+divergence.
+
+### 42.4 Coverage
+
+    captured scenarios: 90  recoverable: 42 -> 59
+
+| bucket | before | after |
+|---|---|---|
+| narrative | 26 / 41 (63%) | 27 / 41 (66%) |
+| menu | 16 / 28 (57%) | 16 / 28 (57%) |
+| minigame | 2 / 21 (10%) | 19 / 21 (90%) |
+
+The narrative bucket gained one instance because ScenarioFailingEyesight's card was being
+counted there. The two minigame instances still unrecovered are ScenarioCarRepair (a
+repair-price menu whose option sentences were never captured) and ScenarioMiniPaywall (a
+store modal with no narrative line at all).
+
+### 42.5 Verification
+
+    ./build/blsim --script /tmp/qdir/casinotest.json          seed 777
+      age 1  ScenarioCasinoOutcome  body You lost $11,200 on this hand.        log I lost $11,200 on this hand at Rhythm Hotel & Casino.
+      age 2  ScenarioCasinoOutcome  body You won $17,000 on this bet.          log I won $17,000 on this bet at Maple Hotel & Casino.
+      age 3  ScenarioCasinoBet      body (silent)                              lines 0
+      age 4  ScenarioGameBlackjack  body (silent)                              lines 0
+
+    ./build/blsim --script /tmp/qdir/eyetest_11.json          seed 11
+      age 1  ScenarioEyeExamOutcome  body You failed your eye exam and have been issued a prescription for eyeglasses!
+                                     log  I failed my eye exam!
+      age 2  ScenarioFailingEyesight lines 0
+      age 3  ScenarioGameEyeExam     lines 0
+
+Residue census: \`distinct residue tokens 0\` (48 runs x 95 years). Bench: 35 years of
+/tmp/trace_c10.json without an abort; its age-34 line is now the same sentence shape on
+both sides with a different draw (\`i lost # # on the hand of blackjack ...\` versus
+\`i won # # on this bet at {name}\`).
+

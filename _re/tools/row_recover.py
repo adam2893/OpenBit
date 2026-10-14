@@ -78,6 +78,15 @@ REGISTRY = {
     "ScenarioOpportunityCasino": ["I went with some friends to {casino}.", ""],
     "ScenarioCustomAttack": ["I {attackverb} my {victim}'s {attackpart}!"],
     "ScenarioEthicsFindObject": ["I turned in {findarticle} that I found.", ""],
+    # Casino minigames: only the outcome card writes a line, the bet and play
+    # cards are silent (their branch index therefore never matters).
+    "ScenarioCasinoOutcome": ["I {casinoverb} {casinoamount} {casinotail} at {casino}."],
+    "ScenarioCasinoBet": [""],
+    "ScenarioGameBlackjack": [""],
+    "ScenarioFailingEyesight": [""],
+    "ScenarioGameEyeExam": [""],
+    "ScenarioProfileHero": [""],
+    "ScenarioEyeExamOutcome": ["I {eyeexamverb} my eye exam!"],
 }
 
 
