@@ -568,7 +568,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL),
       careerRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x9e3779b97f4a7c15ULL),
       sportsRng_(seed ^ 0x94d049bb133111ebULL),
-      bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL) {}
+      bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
+      musicRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xa0761d6478bd642fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -584,6 +585,12 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_dumb-scenarios-album-enc",
+    "a16_dumb-scenarios-music-enc",
+    "a16_music-names-bands-enc",
+    "a16_music-names-songs-enc",
+    "a16_music-names-albums-enc",
+    "a16_music-genres-enc",
     "a16_dumb-scenarios-business-enc",
     "a16_business-name-structure-enc",
     "a16_business-products-enc",
@@ -996,6 +1003,11 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "facility-singular" || token == "facility-multiple" ||
                token == "product") {
       const std::string v = businessToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
+    } else if (token == "album-title" || token.compare(0, 10, "song-title") == 0 ||
+               token == "band-member" || token == "music-genre") {
+      const std::string v = musicToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else out += v;
     } else if (token == "sport" || token == "league" || token == "team" ||
@@ -1848,6 +1860,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (careerYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
   if (businessYear(life, out, forcedChoice)) return true;
+  if (musicYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2752,6 +2765,82 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
 // (168 rows) and it gates itself with Industry Whitelist / Industry Blacklist,
 // Requires Single Facility / Requires Multiple Facilities and Business Size, so
 // the hero needs exactly one new state: which industry the business is in.
+// ---------------------------------------------------------------------------
+// Recording artist (REPORT.en.md 54). a16_music-genres-enc has 11 genres and the
+// titles tables carry one flag column per genre, so the genre picks the album,
+// the song and the band. Album titles and stage names carry <a/b/c> alternates
+// and <hero-name> slots, both handled by re-resolving the drawn title.
+void Sim::makeMusician(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_music-genres-enc")) return;
+  const Table& g = tbl("a16_music-genres-enc");
+  if (!g.size()) return;
+  h.musicGenre = trim(g.at(musicRng_.below(uint32_t(g.size())), "Genre"));
+  if (h.musicGenre.empty()) return;
+  h.musician = true;
+  const std::string band = musicTitle("a16_music-names-bands-enc", h.musicGenre);
+  if (!band.empty()) h.bandName = band;
+}
+
+// A title from a music names table, restricted to the genre's own flag column
+// when that table has one ('Pop', 'Rap', 'Country', 'Folk', 'R&B', 'Worship',
+// 'Rock'), otherwise drawn from every row.
+std::string Sim::musicTitle(const char* table, const std::string& genre) {
+  if (!ensureTable(table)) return std::string();
+  const Table& t = tbl(table);
+  if (!t.size()) return std::string();
+  std::vector<size_t> pool;
+  const bool flagged = !genre.empty() && t.has(genre.c_str());
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (flagged && !t.flag(r, genre.c_str())) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) {
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  }
+  if (pool.empty()) return std::string();
+  const std::string title = trim(t.at(pool[musicRng_.below(uint32_t(pool.size()))], "Title"));
+  if (title.empty()) return std::string();
+  return resolve(title);  // <a/b/c> alternates and <hero-name> slots
+}
+
+std::string Sim::musicToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  if (token == "music-genre") return h.musicGenre;
+  if (token == "band-member") {
+    const bool female = musicRng_.chance(0.5);
+    return drawFirstName(female) + " " + drawSurname();
+  }
+  if (!h.musician) return std::string();
+  if (token == "album-title") return musicTitle("a16_music-names-albums-enc", h.musicGenre);
+  if (token.compare(0, 10, "song-title") == 0) return musicTitle("a16_music-names-songs-enc", h.musicGenre);
+  return std::string();
+}
+
+bool Sim::musicYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.musician) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 16) return false;
+  // The album pool is the one that needs a record; both pools run off one coin.
+  const char* pool = musicRng_.chance(0.5) ? "a16_dumb-scenarios-album-enc"
+                                           : "a16_dumb-scenarios-music-enc";
+  if (!ensureTable(pool)) return false;
+  if (!musicRng_.chance(0.4)) return false;
+  const Table& t = tbl(pool);
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.has("Hero Min Age") && h.age < int(t.num(r, "Hero Min Age"))) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  return renderRow(t, rows[musicRng_.below(uint32_t(rows.size()))], life, out, forcedChoice);
+}
+
 void Sim::makeBusiness(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;

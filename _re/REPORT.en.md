@@ -3584,3 +3584,65 @@ Its tokens are {B}<employee>{B} 277, {B}<rb>{B} 109, {B}<facility-singular>{B} 8
 - No angle-bracket token survives in the business run (0 of 0 checked lines); residue census 0;
   {B}tools/coverage.py{B} 109 / 107; {B}portgap.py{B} 109 / 107 / gap 0; {B}tools/bench.sh{B} to age 34 with no
   abort; all-109 push replay exits 0.
+
+## 54. The music and album pools: genre-flagged titles
+
+### 54.1 The tables
+
+- {B}a16_music-genres-enc{B} - 11 rows, {B}Genre, Singer Title, Famous Title, Solo Roles, Band Roles,
+  Push Stage Name{B} ('pop' / 'pop singer' / 'pop star').
+- {B}a16_music-names-albums-enc{B} - 412 rows, {B}Title{B} plus one flag column per genre
+  ({B}Pop, Rap, Country, Folk, R&B{B}, and further columns for the other genres), so a title belongs
+  to the genres whose column is 'x'.
+- {B}a16_music-names-songs-enc{B} - 512 rows, same shape ({B}Title, Pop, Rap, Country, Folk, R&B,
+  Worship, Rock{B}).
+- {B}a16_music-names-bands-enc{B} - 430 rows, {B}Title, Hero Only, Gender, Pop, Rap, Country, ...{B}.
+- {B}a16_music-names-stage-enc{B} (184 rows) and {B}a16_music-artist-stage-name-enc{B} (246 rows) are the
+  stage names; the port does not draw them yet.
+
+Titles are not plain strings: they carry the same inline forms as the narrative tables -
+{B}Around the <Bush/Mountain/Corner>{B} - and bands can be {B}The <hero-name> Band{B}, so every drawn
+title goes back through the resolver.
+
+The two pools are {B}a16_dumb-scenarios-music-enc{B} (98 rows, tokens {B}<song-title>{B} 38,
+{B}<band-member>{B} 18, {B}<city>{B} 19, {B}<celebrity-male1>{B} 5, {B}<hero-last-name>{B} 4) and
+{B}a16_dumb-scenarios-album-enc{B} (77 rows, tokens {B}<album-title>{B} 325, {B}<song-title>{B} 20 and
+{B}<song-title1>{B}..{B}<song-title4>{B} 16 each, {B}<celebrity>{B} 15, {B}<friend>{B} 12,
+{B}<celebrity-male>{B} 10). The numbered song slots are four different songs on one card, which is why
+they appear as a family rather than one repeated token.
+
+### 54.2 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::musician, Hero::musicGenre, Hero::bandName{B}.
+- {B}src/sim.cpp{B}: stream {B}musicRng_{B} (line 572); {B}Sim::makeMusician{B} (line 2773) draws the genre
+  and then a band name in that genre; {B}Sim::musicTitle{B} (line 2790) restricts a titles table to the
+  genre's flag column and re-resolves the drawn title (alternates, {B}<hero-name>{B});
+  {B}Sim::musicToken{B} (line 2809) resolves {B}album-title{B}, the {B}song-title{B} family,
+  {B}band-member{B} and {B}music-genre{B}; {B}Sim::musicYear{B} (line 2823) picks one of the two pools on a
+  coin flip and renders a row on 40% of the years from 16; {B}ageUp{B} calls it at line 1863.
+- {B}include/bl/script.h{B} / {B}src/script.cpp{B}: the {B}"music"{B} boolean.
+
+### 54.3 Shortcuts
+
+1. The gate is the script switch; the game reaches these pools through the Music career (bands,
+   solo deals, labels, tours).
+2. {B}<song-title1>..<song-title4>{B} draw independently, so two slots on one card can coincidentally
+   land on the same title; the game's numbered slots are distinct songs.
+3. {B}Hero Only{B} on the band table and the {B}Gender{B} column are ignored, so a female hero can be
+   handed a male-only band name.
+4. {B}Min Popularity / Max Popularity{B} and the lover and gender gates on the pool rows are not
+   evaluated; {B}Hero Min Age{B} is.
+5. Stage names, album covers, producers, concerts, labels and the whole
+   {B}a16_music-practice-scenarios-enc{B} / {B}a16_music-producer-*{B} family are not wired.
+
+### 54.4 Verification
+
+- Seed 12345: 12 pool rows. 17 (album) {B}All Real, Baby{B} - {B}You decide it's time you released a live
+  version of Hit the Voodoo...{B}; 22 {B}While recording Grateful for Daisies, one of your bandmates
+  accidentally threw a tantrum during the recording.{B}; 27 {B}The anniversary of Aaliyah's death has come
+  around...{B}; 28 {B}The local Oklahoma City music magazine 'Below the Radar' is doing a feature on your
+  new album, If You're Seeing This It's Celebration Time...{B} - album title, song title, city and the
+  numbered celebrity slot all resolved.
+- No angle-bracket token survives in a music run (0 residual of ~170 checked strings per seed, three
+  seeds); residue census 0; {B}tools/coverage.py{B} 109 / 107; {B}portgap.py{B} 109 / 107 / gap 0;
+  {B}tools/bench.sh{B} to age 34 with no abort; all-109 push replay exits 0.

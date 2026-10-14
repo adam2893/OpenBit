@@ -57,6 +57,7 @@ struct ScriptSpec {
   bool military = false;
   bool sports = false;
   bool business = false;
+  bool music = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

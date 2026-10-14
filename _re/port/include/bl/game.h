@@ -123,6 +123,12 @@ struct Hero {
   // Business owner (REPORT.en.md 53). a16_business-industries-enc gives the
   // industry and its facility words, a16_business-products-enc the products,
   // a16_business-name-structure-enc the rival companies' names.
+  // Recording artist (REPORT.en.md 54). a16_music-genres-enc names the genre,
+  // a16_music-names-albums-enc and a16_music-names-songs-enc the works (both
+  // carry per-genre flag columns), a16_music-names-bands-enc the band.
+  bool musician = false;
+  std::string musicGenre;  // a16_music-genres-enc 'Genre'
+  std::string bandName;    // a16_music-names-bands-enc 'Title'
   bool ownsBusiness = false;
   std::string industry;  // a16_business-industries-enc 'Industry'
   bool athlete = false;
