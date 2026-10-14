@@ -375,6 +375,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("secret-agent is not a boolean");
   }
 
+  p = findValue(json, "relationship");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.relationship = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.relationship = false;
+    else return fail("relationship is not a boolean");
+  }
+
   p = findValue(json, "casino");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -518,6 +526,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.secret_agent) miscMask |= 1u << 7;
   if (spec.casino) miscMask |= 1u << 8;
   if (miscMask) sim.makeMisc(life, miscMask);
+  if (spec.relationship) sim.makeRelationships(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.

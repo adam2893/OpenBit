@@ -136,6 +136,19 @@ struct Hero {
   std::string jurisdictionAdj;  // its adjective: national / provincial / city / local
   // Bit i = the misc dumb-scenario pool i is switched on (REPORT.en.md 56).
   unsigned miscMask = 0;
+  // Relationship state (REPORT.en.md 57). The pools in the lover family gate
+  // their rows on the score and on the partner's gender, so both are kept.
+  bool relationshipOn = false;   // the script asked for the lover subsystem
+  std::string loverName;         // given name of the current partner
+  bool loverFemale = false;
+  int loverAge = 0;
+  std::string loverStatus;       // "", "dating", "married"
+  int relationship = 60;         // the game's own relationship score, 0-100
+  int loverCraziness = 0;
+  bool virgin = true;
+  std::string exName;            // the most recent ex, kept after a breakup
+  bool exFemale = false;
+  int exes = 0;
   bool musician = false;
   std::string musicGenre;  // a16_music-genres-enc 'Genre'
   std::string bandName;    // a16_music-names-bands-enc 'Title'

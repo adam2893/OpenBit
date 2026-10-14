@@ -3829,3 +3829,103 @@ token handling from sections 33 to 46.
   no abort; all-109 push replay exits 0; residue census 0 distinct tokens.
 - The whole `a16_dumb-scenarios-*` family is now read: the remaining unwired pools are none.
 
+
+## 57. The relationship subsystem: a partner, an ex, and the pools that move between them
+
+The port had no relationship model at all: `grep -rn lover include/bl/` found nothing, and every
+`<lover>` in the content fell through to `personName()`, which drew a fresh celebrity full name
+on every call. A row that named the partner twice named two different people, and the 22
+relationship pools were never read. This section wires them.
+
+### 57.1 The tables
+
+21 tables, 2138 rows, all added to `kTables`.
+
+| table | rows | recorded text | gates read |
+| --- | --- | --- | --- |
+| `a16_date-rejections-enc` | 141 | Scenario | Hero/Lover Gender, Min/Max Age, Hero Min/Max Smarts, Hero Min/Max Looks |
+| `a16_hookup-scenarios-enc` | 165 | Scenario | Gender, Hero Gender |
+| `a16_hookup-feedback-enc` | 153 | Feedback | Hero/Partner Gender |
+| `a16_make-love-rejections-enc` | 193 | Scenario + Log Version | Hero/Lover Gender, Lover Min/Max Age |
+| `a16_lover-suspicious-scenarios-enc` | 172 | Scenario | Hero/Lover Gender, Has Job |
+| `a16_lover-cheat-scenarios-enc` | 107 | Scenario + Log Version | Hero/Lover Min/Max Age |
+| `a16_lover-make-love-nags-enc` | 105 | Scenario + Log Version | Married, Min/Max Relationship, Hero Min Age |
+| `a16_lover-marriage-nags-enc` | 80 | Scenario | Hero Virgin, Min/Max Craziness, Min/Max Relationship |
+| `a16_anniversary-date-enc` | 100 | Activity + Log String | Min/Max Age |
+| `a16_breakup-scenarios-enc` | 227 | Scenario | Gender, Straight Only |
+| `a16_ex-lover-rekindle-scenarios-enc` | 131 | Scenario | Hero/Ex Gender, Min/Max Age |
+| `a16_ex-lover-hate-scenarios-enc` | 70 | Scenario | Hero/Ex Gender |
+| `a16_ex-lover-booty-call-scenarios-enc` | 61 | Scenario | Hero/Ex Gender |
+| `a16_ex-lover-stalking-scenarios-enc` | 71 | Outbound/Inbound Scenario | none |
+| `a16_relationship-counseling-scenarios-enc` | 53 | Feedback + Log Version | Max Relationship, Min/Max Age |
+| `a16_parent-lover-disapprovals-enc` | 92 | Scenario + Log Version | Min/Max Smarts, Max Looks, Min Craziness |
+| `a16_wedding-venues-enc` | 12 | Venue | none |
+| `a16_school-classmate-flirt-scenarios-enc` | 22 | Feedback Scenario + Log Version | none |
+| `a16_friend-lover-scenarios-enc` | 52 | Scenario | Friend Min/Max Age |
+| `a16_coworker-hookup-scenarios-enc` | 24 | Scenario | none |
+| `a16_disease-types-enc` | 107 | Type (drawn, never recorded) | none |
+
+### 57.2 Implementation
+
+Hero gained a partner: `loverName / loverFemale / loverAge / loverStatus` (empty, `dating` or
+`married`), a `relationship` score from 0 to 100 that starts at 60, `loverCraziness`, `virgin`,
+and the ex side `exName / exFemale / exes`. `Sim::makeRelationships(Life&)` is the scripted entry
+point; `Sim::relationshipYear` is the yearly runner, called from `ageUp` after `miscPoolYear`. It
+draws from its own `relRng_` stream (seed ^ 0x1b873593e6546b64) so the main sequence does not shift.
+
+The score drifts by up to four points a year and clamps. Each pool that fires moves it the way
+the game marks its meter: `lover-cheat` -14, `lover-suspicious` -12, a rejected `make-love` -6,
+`lover-make-love-nags` -4, `parent-lover-disapprovals` -3, `hookup` +4, `anniversary` +8, `counseling` +12.
+A score under 30 opens the breakup pool, which moves the partner into the ex slot and resets the
+score; the four ex pools then run off that slot.
+
+Rendering: `relEligible` filters rows on the gender, age, relationship, craziness, smarts and looks
+columns before a pick, and `relationshipToken` answers the tokens. `<lover>` and `<lover-possessive>`
+are now the stable partner, `<ex>` the ex, `<friend-lover>` a drawn first name, `<gender>` the word
+woman or man, `<house>` a type from `a16_house-types-enc`, `<disease>` a type from
+`a16_disease-types-enc`, and `<addiction>` one of alcohol, drugs, gambling or sex. `<name>` is the
+stranger a row introduces, cached per card, so a row that names the person twice keeps the same one.
+
+Two pronoun slots exist because these pools write the partner as the subject: `<he/she> says it is not
+you, it is <him/her>`. `genderToken` now reads `pronounOtherSet_` and `pronounOtherFemale_` when the
+runner has set them, and the runner sets them from the partner, or from the ex, for the duration of
+one row.
+
+One shared renderer bug fell out of this. A narrative-only row keeps one text column, but its log
+line can refer to an alternative that was drawn in another column: `The relationship counselor
+suggested that we start having sex <rb>` reads the alternative out of the `Feedback` column, and `I winked
+at <name> while our teacher was giving a lesson on <rb>` out of `Feedback Scenario`. The narrative path
+now resolves every other column that holds a bracket, in column order, before it resolves the
+recorded line, which is also the order the alternatives were drawn in.
+
+A second one came from the politics pool: `a16_dumb-scenarios-political-campaign-enc` gates rows on
+`Hero Has Lover` and `Lover Gender`, and the port had been drawing those rows for single heroes, which
+is how `<lover>` leaked into a campaign log. The campaign row filter now reads both columns, plus
+the `Hero Gender` value column.
+
+### 57.3 Shortcuts
+
+- The gates in 57.1 are read. `Clean`, the pregnancy columns, `Multiple Children`, `Vampire Hero`,
+  `Vampire Lover`, `Prison`, `Post Deployment`, `Detection Score`, `Effectiveness Score`,
+  `Relationship Impact`, `Cost` and the house-appreciation columns are not.
+  `shortcut: unread gating columns, model them when the meter and the money side exist`
+- The partner is invented by the port: a drawn first name, an age within two years, a random
+  craziness. BitLife builds one from its dating flow, which the port does not have.
+- Pool probabilities are hand-set, between 0.25 and 0.06 per pool per year, and every pool shares
+  one order of precedence rather than the game's own.
+- `wedding-venues`, the stalking detection score, counseling effectiveness, and the anniversary cost
+  and impact columns are drawn but never applied to money or happiness.
+- The ex pools mutate the name slot only; the game gives an ex their own age, looks and history.
+
+### 57.4 Verification
+
+30 seeds x both genders x three script flags (relationship only, politics only, both), ages 60 so
+the late-life pools are reachable: zero residual tokens in every title, body and log line,
+including the pools that only open after a breakup. Fired counts over 25 seeds x two genders:
+make-love-rejections 137, lover-cheat 123, hookup 103, lover-suspicious 100,
+parent-lover-disapprovals 81, make-love-nags 75, date-rejections 59, breakup 54, counseling 23,
+marriage-nags 22, ex-rekindle 13, booty-call 11, ex-hate 5, classmate-flirt 4.
+
+Regression with the subsystem on: `rescensus` 0 distinct residue tokens, `tools/coverage.py` 109
+captured / 107 recoverable, `portgap.py` ENTRIES 109 rendered-by-port 107 gap 0, `tools/bench.sh` to
+age 34 with no abort, and the all-109 push replay exits 0.

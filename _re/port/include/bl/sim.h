@@ -126,6 +126,7 @@ class Sim {
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
+  void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -232,6 +233,9 @@ class Sim {
   std::string politicalToken(const std::string& token);
   std::string miscToken(const std::string& key);
   bool miscPoolYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string relationshipToken(const std::string& key);
+  bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
+  bool relEligible(const Table& t, size_t row, const Life& life) const;
   void ensureOfficeFields(Life& life);
   std::string musicToken(const std::string& token);
   std::string musicTitle(const char* table, const std::string& genre);
@@ -283,6 +287,12 @@ class Sim {
   Rng musicRng_;
   Rng politicsRng_;
   Rng miscRng_;
+  Rng relRng_;
+  // The lover pools write about the partner, not the hero, so the pronoun
+  // brackets have to follow the partner while one of those rows renders.
+  std::string relNameCache_;  // one <name> per card
+  bool pronounOtherSet_ = false;
+  bool pronounOtherFemale_ = false;
   std::vector<std::string> warCountries_;  // the three countries one war row names
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;

@@ -571,7 +571,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       bizRng_(seed ^ 0xbf58476d1ce4e5b9ULL),
       musicRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xa0761d6478bd642fULL),
       politicsRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
-      miscRng_(seed ^ 0xd6e8feb86659fd93ULL) {}
+      miscRng_(seed ^ 0xd6e8feb86659fd93ULL),
+      relRng_(seed ^ 0x1b873593e6546b64ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -664,6 +665,28 @@ bool Sim::load(std::string* error) {
       "a16_vampire-name-enc",                        // Type,Name,Skin: female / male / surname
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
+      // The lover family (REPORT.en.md 57): one pool per stage of a relationship.
+      "a16_date-rejections-enc",                     // Condition,Scenario,..,Hero Min Smarts/Looks
+      "a16_hookup-scenarios-enc",                    // Condition,Scenario,Gender,Hero Gender,Type
+      "a16_hookup-feedback-enc",                     // Condition,Feedback,Partner Gender,Min/Max Regret
+      "a16_make-love-rejections-enc",                // Condition,Scenario,..,Lover Min/Max Age
+      "a16_lover-suspicious-scenarios-enc",          // Scenario,..,Has Job,Has Kids
+      "a16_lover-cheat-scenarios-enc",               // Scenario,Log Version,Hero/Lover Min/Max Age
+      "a16_lover-make-love-nags-enc",                // Scenario,..,Married,Min/Max Relationship
+      "a16_lover-marriage-nags-enc",                 // Scenario,..,Min/Max Relationship
+      "a16_anniversary-date-enc",                    // Activity,Feedback String,Log String,Cost
+      "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
+      "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
+      "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
+      "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
+      "a16_ex-lover-stalking-scenarios-enc",         // Outbound/Inbound Scenario,Log Versions
+      "a16_relationship-counseling-scenarios-enc",   // Feedback,Log Version,Max Relationship
+      "a16_parent-lover-disapprovals-enc",           // Scenario,Log Version,Min/Max Smarts,..
+      "a16_wedding-venues-enc",                      // Venue,Uses Definite Article,Cost Score
+      "a16_school-classmate-flirt-scenarios-enc",     // Feedback Scenario,Log Version
+      "a16_friend-lover-scenarios-enc",              // Scenario,Log Version,Hero/Friend Min/Max Age
+      "a16_coworker-hookup-scenarios-enc",           // Inbound/Outbound Scenario,Sender Gender
+      "a16_disease-types-enc",                       // Disease,..: '<disease>' in the lover pools
   };
   try {
     for (const char* name : kTables) {
@@ -925,9 +948,12 @@ bool Sim::genderToken(const std::string& token, std::string& out) {
     {"himself/herself", "himself", "herself"},
     {"Himself/Herself", "Himself", "Herself"},
   };
+  // The lover pools write about the partner ('<he/she> says it's not you, it's
+  // <him/her>'), so the runner flips the subject while one of those rows renders.
+  const bool subjectFemale = pronounOtherSet_ ? pronounOtherFemale_ : (hero_ && hero_->female);
   for (const auto& p : kPairs) {
     if (token == p.token) {
-      out += (hero_ && hero_->female) ? p.female : p.male;
+      out += subjectFemale ? p.female : p.male;
       return true;
     }
   }
@@ -989,6 +1015,20 @@ const char* const kMiscLiterals[] = {
   "animal-handler", "zoo-veterinarian", "zoo-operations-manager", "hustle-instrument",
   "tenant-address",
 };
+
+// The tokens the lover family owns, possessive spellings included. This is
+// checked before the generic person/pool fallback so that '<lover>' is the
+// partner the hero is actually with, not a fresh draw.
+bool relIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string suffix = "-possessive";
+  if (key.size() > suffix.size() && key.compare(key.size() - suffix.size(), suffix.size(), suffix) == 0)
+    key.resize(key.size() - suffix.size());
+  static const char* kTokens[] = {"lover", "ex", "friend-lover", "house", "addiction",
+                                  "disease", "gender", "ex-lover", "name"};
+  for (const char* t : kTokens) if (key == t) return true;
+  return false;
+}
 
 bool miscIsToken(const std::string& key) {
   const std::string psuffix = "-possessive";
@@ -1181,6 +1221,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string value = heroToken(key, possessive);
       if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
       else out += value;
+    } else if (relIsToken(token)) {
+      const std::string v = relationshipToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
     } else if (!numberToken(token, out)) {
       // The royal pool addresses the reference pools by slot number
       // ('<celebrity-female1>', '<celebrity-male2>', '<celebrity1>'): the
@@ -1970,6 +2014,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (musicYear(life, out, forcedChoice)) return true;
   if (politicalYear(life, out, forcedChoice)) return true;
   if (miscPoolYear(life, out, forcedChoice)) return true;
+  if (relationshipYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2029,6 +2074,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   life_ = &life;
   (void)life;  // the row's text is already gender-gated by scenarioEligible()
   rndCache_.clear();  // the body is parsed first, its draws feed the log line
+  relNameCache_.clear();  // one <name> per card
   if (row >= t.size()) return false;
   // The year's family lifecycle lines were written before the scenario was
   // picked and belong to no row, so they survive this reset.
@@ -2050,6 +2096,23 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
     static const char* kNarrativeCols[] = {"Log Version", "Log", "Narrative", "Scenario", "String"};
     for (const char* c : kNarrativeCols) {
       if (t.has(c)) {
+        // The log line refers back to the alternative the card drew ('I was not
+        // raised to mate with <rb>'), and the alternative lives in the Scenario
+        // column, so that column is resolved first even though only the log is
+        // recorded (REPORT.en.md 57).
+        // Every other column that holds a bracket is the card, whatever its
+        // header is called ("Feedback" for a16_relationship-counseling-scenarios-enc,
+        // "Feedback Scenario" for a16_school-classmate-flirt-scenarios-enc,
+        // "Scenario" for the rest). They are resolved in column order, which is
+        // the order the row's alternatives were drawn in, so '<rb>' picks the
+        // right one (REPORT.en.md 57).
+        for (const std::string& cc : t.columns()) {
+          if (cc == c) continue;
+          const std::string& cell = t.at(row, cc);
+          if (cell.find('<') == std::string::npos) continue;
+          const std::string card = resolve(cell);
+          if (!card.empty()) out.body = card;
+        }
         out.narrative = resolve(t.at(row, c));
         return true;
       }
@@ -3111,6 +3174,21 @@ bool Sim::politicalYear(Life& life, AgeUp& out, int forcedChoice) {
   for (size_t r = 0; r < t.size(); ++r) {
     if (t.flag(r, "US Only") && ccode != "us") continue;
     if (t.flag(r, "UK Only") && ccode != "gb" && ccode != "uk") continue;
+    if (t.has("Hero Gender")) {
+      const std::string g = lower(trim(t.at(r, "Hero Gender")));
+      if (!g.empty() && g != "both" && g != "all" && g != (h.female ? "female" : "male")) continue;
+    }
+    // Rows about a partner need one: 'Hero Has Lover' plus the partner's own
+    // gender column, which is what the campaign pool gates on.
+    const bool hasLover = !h.loverName.empty();
+    if (t.has("Hero Has Lover") && t.flag(r, "Hero Has Lover") && !hasLover) continue;
+    if (t.has("Lover Gender")) {
+      const std::string g = lower(trim(t.at(r, "Lover Gender")));
+      if (!g.empty() && g != "both" && g != "all") {
+        if (!hasLover) continue;
+        if (g != (h.loverFemale ? "female" : "male")) continue;
+      }
+    }
     if (h.politician) {
       if (t.flag(r, "National") && h.officeLevel != "national") continue;
       if (t.flag(r, "Regional") && h.officeLevel != "regional") continue;
@@ -3673,6 +3751,247 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
   type = t.at(row, "Type");
   sentence = resolve(t.at(row, "Sentence"));
   return true;
+}
+
+// ------------------------------------------------------------------ lovers
+// REPORT.en.md 57. The lover family is a pool per stage of a relationship, and
+// every row gates on the score, the partner's gender or the partner's age.
+std::string Sim::relationshipToken(const std::string& key) {
+  if (hero_ == nullptr) return std::string();
+  std::string base = key;
+  const std::string suffix = "-possessive";
+  bool possessive = false;
+  if (base.size() > suffix.size() && base.compare(base.size() - suffix.size(), suffix.size(), suffix) == 0) {
+    possessive = true;
+    base.resize(base.size() - suffix.size());
+  }
+  const Hero& h = *hero_;
+  auto shape = [&](const std::string& name) { return possessive ? name + "'s" : name; };
+  if (base == "lover")       return h.loverName.empty() ? std::string() : shape(h.loverName);
+  if (base == "ex" || base == "ex-lover")
+                             return h.exName.empty() ? std::string() : shape(h.exName);
+  if (base == "gender")      return h.loverFemale ? "woman" : "man";
+  if (base == "house") {
+    // shortcut: the port keeps no property list yet, so '<house>' is one house
+    // type out of a16_house-types-enc rather than the hero's own home.
+    if (!ensureTable("a16_house-types-enc")) return std::string();
+    const Table& t = tbl("a16_house-types-enc");
+    if (t.size() == 0) return std::string();
+    return trim(t.at(relRng_.below(uint32_t(t.size())), "Type"));
+  }
+  // The two health nouns the counseling and marriage rows address. The port
+  // models neither, so they draw a real disease name and one of the game's own
+  // addiction words (a16_dumb-scenarios-dealer-enc writes '<addiction>' beside
+  // alcohol and drugs).
+  if (base == "disease") {
+    if (!ensureTable("a16_disease-types-enc")) return std::string();
+    const Table& t = tbl("a16_disease-types-enc");
+    if (t.size() == 0) return std::string();
+    return trim(t.at(relRng_.below(uint32_t(t.size())), t.has("Disease") ? "Disease" : "Type"));
+  }
+  if (base == "addiction") {
+    static const char* kAddictions[] = {"alcohol", "drugs", "gambling", "sex"};
+    return kAddictions[relRng_.below(4)];
+  }
+  if (base == "name") {
+    // '<name>' is the given name of the stranger a row introduces ('a teacher
+    // named <name>'). One per card, so a row that names the person twice keeps
+    // the same person.
+    if (relNameCache_.empty()) relNameCache_ = drawFirstName(relRng_.chance(0.5));
+    return relNameCache_;
+  }
+  if (base == "friend-lover") {
+    // shortcut: no friend list, so the friend who becomes a lover is a fresh
+    // name rather than an existing friend.
+    const std::string name = drawFirstName(h.loverFemale);
+    return name.empty() ? std::string() : shape(name);
+  }
+  return std::string();
+}
+
+bool Sim::relEligible(const Table& t, size_t row, const Life& life) const {
+  const Hero& h = life.hero;
+  auto genderOk = [&](const char* col, bool subjectFemale) {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(row, col)));
+    if (v.empty() || v == "both" || v == "all") return true;
+    if (v == "male") return !subjectFemale;
+    if (v == "female") return subjectFemale;
+    return true;
+  };
+  if (!genderOk("Hero Gender", h.female)) return false;
+  if (!genderOk("Lover Gender", h.loverFemale)) return false;
+  if (!genderOk("Ex Gender", h.exFemale)) return false;
+  if (!genderOk("Gender", h.loverFemale)) return false;         // the partner column
+  if (!genderOk("Partner Gender", h.loverFemale)) return false;
+  if (!genderOk("Friend Gender", !h.loverFemale)) return false;
+  if (!genderOk("Classmate Gender", !h.loverFemale)) return false;
+  if (!genderOk("Sender Gender", !h.female)) return false;
+  auto ageOk = [&](const char* minCol, const char* maxCol, int age) {
+    if (t.has(minCol)) {
+      const double lo = t.num(row, minCol);
+      if (lo > 0 && age < int(lo)) return false;
+    }
+    if (t.has(maxCol)) {
+      const double hi = t.num(row, maxCol);
+      if (hi > 0 && age > int(hi)) return false;
+    }
+    return true;
+  };
+  if (!ageOk("Hero Min Age", "Hero Max Age", h.age)) return false;
+  if (!ageOk("Min Age", "Max Age", h.age)) return false;
+  if (!ageOk("Lover Min Age", "Lover Max Age", h.loverAge)) return false;
+  if (!ageOk("Friend Min Age", "Friend Max Age", h.loverAge)) return false;
+  auto rangeOk = [&](const char* minCol, const char* maxCol, int value) {
+    if (t.has(minCol)) {
+      const double lo = t.num(row, minCol);
+      if (lo > 0 && value < int(lo)) return false;
+    }
+    if (t.has(maxCol)) {
+      const double hi = t.num(row, maxCol);
+      if (hi > 0 && value > int(hi)) return false;
+    }
+    return true;
+  };
+  if (!rangeOk("Min Relationship", "Max Relationship", h.relationship)) return false;
+  if (!rangeOk("Min Craziness", "Max Craziness", h.loverCraziness)) return false;
+  if (t.has("Hero Min Smarts") && h.smarts < int(t.num(row, "Hero Min Smarts"))) return false;
+  if (t.has("Hero Max Smarts")) {
+    const double hi = t.num(row, "Hero Max Smarts");
+    if (hi > 0 && h.smarts > int(hi)) return false;
+  }
+  if (t.has("Hero Min Looks") && h.looks < int(t.num(row, "Hero Min Looks"))) return false;
+  if (t.has("Hero Max Looks")) {
+    const double hi = t.num(row, "Hero Max Looks");
+    if (hi > 0 && h.looks > int(hi)) return false;
+  }
+  if (t.has("Min Smarts") && h.smarts < int(t.num(row, "Min Smarts"))) return false;
+  if (t.has("Max Smarts")) {
+    const double hi = t.num(row, "Max Smarts");
+    if (hi > 0 && h.smarts > int(hi)) return false;
+  }
+  if (t.has("Max Looks")) {
+    const double hi = t.num(row, "Max Looks");
+    if (hi > 0 && h.looks > int(hi)) return false;
+  }
+  const bool married = h.loverStatus == "married";
+  if (t.has("Married") && t.flag(row, "Married") != married) return false;
+  if (t.has("Hero Virgin") && t.flag(row, "Hero Virgin") != h.virgin) return false;
+  if (t.has("Has Job") && t.flag(row, "Has Job") && !h.employed) return false;
+  // 'Straight Only' marks the rows that only a hero in an opposite-sex pairing
+  // takes; the flag is the game's own column, not an age or state proxy.
+  if (t.has("Straight Only") && t.flag(row, "Straight Only") && h.loverFemale == h.female) return false;
+  // shortcut: Clean, the pregnancy columns, Multiple Children and the vampire
+  // and prison flags are not read here; the port has no pregnancy, child-count
+  // or prison-relationship model, and every row would otherwise be excluded.
+  return true;
+}
+
+void Sim::makeRelationships(Life& life) { life.hero.relationshipOn = true; }
+
+bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
+  hero_ = &life.hero;
+  life_ = &life;
+  Hero& h = life.hero;
+  if (!h.relationshipOn || h.age < 15) return false;
+  if (h.loverStatus.empty() && !h.loverName.empty()) h.loverStatus = "dating";
+  // The score and the partner's craziness move every year; the pools gate on
+  // them, so they have to be settled before a row is picked.
+  h.relationship += int(relRng_.below(9)) - 4;
+  if (h.relationship < 0) h.relationship = 0;
+  if (h.relationship > 100) h.relationship = 100;
+  if (h.loverCraziness == 0) h.loverCraziness = int(relRng_.below(101));
+
+  // One row per year: the first pool that fires wins, in the game's own order
+  // (ask out -> hook up -> make love -> suspicion -> cheating -> nags ->
+  // marriage -> anniversary -> counseling -> breakup, then the ex pools).
+  auto fire = [&](const char* table, double chance) -> bool {
+    if (!ensureTable(table)) return false;
+    if (!relRng_.chance(chance)) return false;
+    const Table& t = tbl(table);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) if (relEligible(t, r, life)) pool.push_back(r);
+    const size_t row = pickFrom(pool, relRng_);
+    if (row == size_t(-1)) return false;
+    // The row writes about the partner, so the pronoun brackets follow the ex
+    // when the relationship is over and the current partner otherwise.
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.loverName.empty() ? h.exFemale : h.loverFemale;
+    const bool ok = renderRow(t, row, life, out, forcedChoice);
+    pronounOtherSet_ = false;
+    return ok;
+  };
+  auto narrate = [&](const std::string& text, const char* table) {
+    out = AgeUp();
+    out.table = table;
+    out.row_id = "0";
+    out.narrative = text;
+    return true;
+  };
+
+  if (h.loverName.empty()) {
+    // (1) Single: the year may bring a partner, or a rejection.
+    if (relRng_.chance(0.35)) {
+      if (fire("a16_date-rejections-enc", 0.45)) return true;
+      h.loverFemale = !h.female;
+      h.loverAge = h.age + int(relRng_.below(5)) - 2;
+      h.loverName = drawFirstName(h.loverFemale);
+      h.loverStatus = "dating";
+      h.relationship = 60;
+      h.loverCraziness = int(relRng_.below(101));
+      // shortcut: the game announces the pairing from the Love menu's own
+      // code-built string, which is not in the tables, so the port writes it.
+      return narrate("I am now dating " + h.loverName + ".", "relationship");
+    }
+    // (2) The ex pools, once there is an ex to remember.
+    if (h.exName.empty()) return false;
+    if (fire("a16_ex-lover-booty-call-scenarios-enc", 0.10)) return true;
+    if (fire("a16_ex-lover-rekindle-scenarios-enc", 0.10)) {
+      h.loverName = h.exName;
+      h.loverFemale = h.exFemale;
+      h.loverStatus = "dating";
+      h.relationship = 45;
+      return true;
+    }
+    if (fire("a16_ex-lover-stalking-scenarios-enc", 0.08)) return true;
+    if (fire("a16_ex-lover-hate-scenarios-enc", 0.08)) return true;
+    return false;
+  }
+
+  // (3) A couple's year.
+  auto bump = [&](int delta) {
+    h.relationship += delta;
+    if (h.relationship < 0) h.relationship = 0;
+    if (h.relationship > 100) h.relationship = 100;
+  };
+  // Each row moves the score the way the game's own relationship meter does:
+  // betrayal and suspicion erode it, affection restores it, and a score that
+  // falls under the breakup gate is what ends the relationship.
+  if (!h.loverStatus.empty() && fire("a16_hookup-scenarios-enc", 0.06)) { bump(4); return true; }
+  if (fire("a16_lover-cheat-scenarios-enc", 0.08)) { bump(-14); return true; }
+  if (fire("a16_lover-suspicious-scenarios-enc", 0.08)) { bump(-12); return true; }
+  if (fire("a16_make-love-rejections-enc", 0.10)) { bump(-6); return true; }
+  if (fire("a16_lover-make-love-nags-enc", 0.07)) { bump(-4); return true; }
+  if (fire("a16_parent-lover-disapprovals-enc", 0.06)) { bump(-3); return true; }
+  if (!h.orphan && h.age <= 25 && fire("a16_school-classmate-flirt-scenarios-enc", 0.05)) return true;
+  if (h.employed && fire("a16_coworker-hookup-scenarios-enc", 0.05)) return true;
+  if (h.loverStatus == "dating" && h.relationship >= 55 && fire("a16_lover-marriage-nags-enc", 0.10)) {
+    h.loverStatus = "married";
+    h.relationship = 75;
+    return true;
+  }
+  if (h.loverStatus == "married" && fire("a16_anniversary-date-enc", 0.12)) { bump(8); return true; }
+  if (h.relationship < 35 && fire("a16_relationship-counseling-scenarios-enc", 0.10)) { bump(12); return true; }
+  if (h.relationship < 30 && fire("a16_breakup-scenarios-enc", 0.30)) {
+    h.exName = h.loverName;
+    h.exFemale = h.loverFemale;
+    ++h.exes;
+    h.loverName.clear();
+    h.loverStatus.clear();
+    h.relationship = 0;
+    return true;
+  }
+  return false;
 }
 
 }  // namespace bl
