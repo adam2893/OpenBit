@@ -3129,3 +3129,161 @@ occupation branches were not located at all. The interactive menus behind all th
 orphanage profile, the royal family screen, the vampire crypt) remain unported: the corpus
 contains no captures of them, so they have no ground truth to build against.
 
+## 48. The vampire branch, and the gate that hid 218 rows
+
+### 48.1 The pool
+
+{B}a16_vampire-dumb-scenario-enc{B} is 67 rows and 36 columns, and it is not one of the
+{B}DUMB_SCENARIO_TYPE{B} buckets ({B}#17005-#17019{B} has no VAMPIRE entry), so it is served by
+its own path. Columns: {B}Index, Hero Min Age, Hero Max Age, Hero Gender, Hero Has Lover,
+Lover Gender, Randomize Choices, Gender Bracket, Min Notoriety, Max Notoriety, Min Essence,
+Max Essence, Hero Has Familiar, Title, Body, CTA{B}, then {B}Choice 1{B}..{B}4{B} each with its own
+{B}Narrative / Notoriety Impact / Essence Impact / Relationship Impact{B}.
+
+- {B}Hero Min Age{B}: 18 on 32 rows, 100 on 30 rows, then 120/125/130 and one 50.
+- {B}Hero Max Age{B} is empty on all 67 rows.
+- {B}Hero Has Familiar{B} is {B}x{B} on 23 rows, {B}Hero Has Lover{B} on 3.
+- Token census: {B}<him/her>{B} 127, {B}<familiar>{B} 94, {B}<rb>{B} 66, {B}<he/she>{B} 55,
+  {B}<his/her>{B} 54, {B}<vampire>{B} 48, {B}<random-person-indefinite>{B} 44, {B}<city>{B} 20,
+  {B}<lover>{B} 15, {B}<rb2>{B} 12, {B}<vampire-possessive>{B} 12, {B}<insult>{B} 6,
+  {B}<drug-illegal>{B} 5, {B}<circumstance-public>{B} 4, {B}<familiar-possessive>{B} 4,
+  {B}<rb3>{B} 4, {B}<friend-possessive>{B} 3, {B}<musician>{B} 2 - all of them already existed in
+  the port, so the pool needed a gate, not token work.
+- Rows: {B}Bloodlust{B} ({B}<circumstance-public>{B}, you see a {B}<sheep/deer/badger/...>{B} that looks
+  like it was hit by a car), {B}Familiar Problems{B} (You're about to get a victory royale when
+  {B}<familiar>{B} trips over the controller cord), {B}Days of the Undead{B}, {B}Seeing Red{B}.
+
+### 48.2 Sources
+
+- {B}<vampire>{B} draws from {B}a16_vampire-name-enc{B} (170 rows: {B}Type, Name, Skin{B}, Type is
+  female / male / surname).
+- There is no familiar-name table: {B}a16_vampire-familiar-color/command/confused-string/dump/
+  threat-enc{B} hold strings and gates, not names.
+- {B}SimPerson{B} carries {B}SimVampire{B} at field 0x1e0, {B}VampireDiseaseCarrier{B} 0x1e8,
+  {B}IsDestinedToBecomeVampire{B} 0x1e9 ({B}il2cpp_dump.txt{B} class SimPerson, line 71060);
+  {B}IsPersonVampire(SimPerson){B} @0x73f2dc1520.
+
+### 48.3 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::vampire{B}, {B}Hero::vampireName{B}, {B}Hero::familiar{B}.
+- {B}include/bl/sim.h{B}: {B}void makeVampire(Life&){B} (line 122), {B}vampireYear(Life&, AgeUp&, int){B}
+  (line 219), private {B}vampireToken{B} / {B}vampireNpcName{B}, and the private stream
+  {B}vampireRng_{B} (line 256).
+- {B}src/sim.cpp{B}: ctor seed {B}seed ^ 0x27d4eb2f165667c5ULL{B} (line 567); the two tables joined
+  {B}kTables{B}; {B}Sim::makeVampire{B} at line 2581 draws the familiar from the ordinary name pool;
+  {B}Sim::vampireYear{B} at line 2618 renames the NPC once a year and renders one pool row through
+  {B}renderRow{B}; {B}ageUp{B} calls it at line 1806, before {B}maybeConvicted{B}.
+- {B}resolveInto{B} gained {B}<vampire>{B} / {B}<vampire-possessive>{B} / {B}<familiar>{B} /
+  {B}<familiar-possessive>{B}; {B}src/script.cpp{B} parses {B}"vampire": true{B} and calls {B}makeVampire{B}
+  before the birth lines, mirroring the {B}"royal"{B} switch from 47.
+
+### 48.4 The eligibility bug: 218 rows that no life could ever reach
+
+{B}scenarioEligible{B} read {B}Hero Max Age{B} with {B}t.num(){B}, which returns 0.0 for an empty cell
+({B}src/table.cpp{B}:122-130), and then compared {B}h.age > 0{B}. Every row that leaves the column
+blank was therefore rejected at every age: 151 of {B}a16_dumb-scenarios-universal-enc{B}'s 258 rows
+and all 67 vampire rows, 218 in total. The fix (line 1577) only applies an upper bound when it is
+positive:
+
+    if (t.has("Hero Max Age")) {
+      const double maxAge = t.num(row, "Hero Max Age");
+      if (maxAge > 0 && h.age > int(maxAge)) return false;
+    }
+
+Two gates that had been unconditional were tightened at the same time, because the state they
+test now exists in the port: {B}if (t.flag(row, "Vampire") && !h.vampire) return false;{B} (it used to
+skip every such row for everyone) and a new {B}Hero Has Familiar{B} gate against
+{B}Hero::familiar{B}.
+
+### 48.5 Verification
+
+- Forced: {B}{"vampire": true}{B} plus a push of the pool rendered {B}Familiar Problems{B} with
+  {B}<familiar>{B} = May, {B}Days of the Undead{B} with {B}<vampire>{B} = Lilith Ballsathar.
+- Natural: a 30-year vampire life serves the pool from age 18 onwards - {B}Familiar Problems{B}
+  (Minji), {B}Bloodlust{B}, {B}Seeing Red{B} ({B}<vampire>{B} = Rafael Batfrey).
+- {B}tools/coverage.py{B} 109 captured / 107 recoverable; {B}portgap.py{B} 109 / 107 / gap 0;
+  {B}tools/bench.sh{B} to age 34 with no abort.
+
+### 48.6 Shortcuts
+
+1. The gate is a script flag, not a game rule: how a life becomes a vampire (an offer card, a
+   disease-carrier flag, {B}IsDestinedToBecomeVampire{B}) was not read.
+2. {B}vampireYear{B} serves the pool directly instead of the game's notoriety/essence checks
+   ({B}Min/Max Notoriety{B}, {B}Min/Max Essence{B} are columns the port does not model).
+3. The familiar's name comes from the ordinary first-name pool - no table exists for it.
+4. In the pool's own text the pronoun brackets are keyed to the hero, so a row that talks about
+   the familiar can disagree with itself ('{B}he cuts herself{B}'). The game resolves those per
+   subject; the port has one gender per hero.
+
+## 49. Two tokens the eligibility fix exposed, and the bracket nesting they revealed
+
+### 49.1 The residue went from 0 to 73
+
+The moment the 218 previously unreachable rows became reachable, the residue census of
+{B}/tmp/qdir/rescensus.py{B} (12 seeds x 4 country/gender pairs x 95 years) went from
+{B}0 tokens{B} to 73 uses of two tokens, both in {B}a16_dumb-scenarios-universal-enc{B}:
+{B}<restaurant>{B} 57 and {B}<action>{B} 16. They had never appeared because no natural life had ever
+rendered the three rows that carry them.
+
+### 49.2 {B}<restaurant>{B} is the Restaurant company-name format
+
+There is no restaurant table among the 1071 ({B}ls gamedata_plain | grep -i restaur{B} is empty),
+and no metadata literal holds a brand list. What does exist is a company type named {B}Restaurant{B}
+in {B}a16_company-name-structure-enc{B}:
+
+    Company Type: Restaurant
+    Format:       <color> <suffix>, <prefix> <color>, <random-first-name-possessive> <suffix>
+    Prefix:       Le, Cafe, Casa, Chez
+    Suffix:       Cafe, Diner, Restaurant
+
+That is the port's existing {B}companyName("Restaurant", life){B}, so {B}resolveInto{B} now calls it
+(line 979; the resolver gained a {B}const Life* life_{B} member, line 239, because a company name
+needs the hero's city and can draw a first name). Forced rows render
+{B}Arcadia Diner{B}, {B}Amplitude Cafe{B}, {B}Le Polar{B}.
+
+### 49.3 {B}<action>{B} is still unfilled, and is skipped rather than guessed
+
+{B}<action>{B} sits in one row only:
+
+    row 12 'Terrible Service'
+    You went out to eat at <restaurant> with <friend> and <your server is <action>/they messed up
+    both of your orders/you heard the server call you <insult> behind your back>.
+
+It is in no column of any table (a value sweep for its register - flirting / ignoring you /
+hitting on you / rude / lazy - matches only {B}a16_username-adjectives-enc{B} and
+{B}a16_interview-questions-enc{B}, neither of which is a server-action pool) and no metadata literal
+carries the phrase. So the port records the token in {B}kUnresolvedTokens{B} (line 894) and the
+inline option selector (line 954) draws only among alternatives that do not contain one, falling
+back to the full list when every alternative is unfillable. No text is invented, and the branch
+the port cannot fill is never printed.
+
+### 49.4 The bug that exposed: brackets nest
+
+While fixing 49.3 the row showed why the token had survived a resolution pass at all: the
+resolver took the {B}>{B} of the *inner* token as the end of the group, so it read the group as
+{B}your server is <action{B} - a two-way choice whose first alternative happened to be the
+unresolved text. The closing bracket is now matched with a depth count (line 917):
+
+    size_t close = std::string::npos;
+    int depth = 0;
+    for (size_t k = i; k < text.size(); ++k) {
+      if (text[k] == '<') ++depth;
+      else if (text[k] == '>') { if (--depth == 0) { close = k; break; } }
+    }
+
+and a drawn alternative is resolved recursively before it is appended and cached for {B}<rb>{B}
+(line 960), so a group may contain tokens of its own and {B}<pick:...>{B} is treated the same way.
+This is a general correctness fix: any table row that nests a token inside an alternative was
+being cut at the wrong bracket.
+
+### 49.5 Verification
+
+- Forced rows 12, 16 and 20 render {B}Terrible Service{B} (with the order-mix-up branch, never
+  {B}<action>{B}), {B}Restaurant Wait{B} ({B}Amplitude Cafe{B}) and {B}Bad Steak{B} ({B}Le Polar{B}).
+- Residue census back to {B}distinct residue tokens 0 total 0{B}.
+- {B}tools/coverage.py{B} 109 / 107; {B}portgap.py{B} 109 entries / 107 rendered / gap 0;
+  {B}./build/blsim --script /tmp/qdir/covpush.json{B} (all 109 pushes) exits 0;
+  {B}tools/bench.sh /tmp/trace_c10.json{B} runs to age 34 with no abort.
+- Note: making 218 rows reachable changes the port's year-by-year draws, so the bench's
+  port-only/game-only lines move. The port stays reproducible per seed; the game comparison is
+  per-age, not index-aligned.

@@ -51,6 +51,9 @@ struct ScriptSpec {
   // Born into royalty (REPORT.en.md 47): the game rolls this at life setup and
   // the port exposes it as a switch instead of guessing the probability.
   bool royal = false;
+  // An undead life (REPORT.en.md 48). The game reaches it through the vampire
+  // encounter and conversion screens; the port takes it from the switch.
+  bool vampire = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

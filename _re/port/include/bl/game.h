@@ -95,6 +95,13 @@ struct Hero {
   int royalRank = 0;       // 1 = the country's top seat
   std::string royalSeat;   // 'King' / 'Emperor' / 'Prince', from the seat table
   std::string royalHouse;  // a16_royal-house-names-enc 'Name'
+  // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
+  // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
+  // 0x1e9); the port models only "is one" and the two people a vampire card
+  // names, and takes the state from the script's "vampire" switch.
+  bool vampire = false;
+  std::string vampireName;  // the NPC '<vampire>' names, drawn once per year
+  std::string familiar;     // '<familiar>', the hero's companion
 };
 
 class GameState {

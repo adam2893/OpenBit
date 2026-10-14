@@ -116,6 +116,10 @@ class Sim {
   // a16_royal-house-names-enc. runScript calls it before birthLines, so the
   // birth line and the hero snapshot both carry the state (REPORT.en.md 47).
   void makeRoyal(Life& life);
+
+  // Turns a life into a vampire and gives it a familiar. runScript calls it when
+  // the script says "vampire": true (REPORT.en.md 48).
+  void makeVampire(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -204,6 +208,15 @@ class Sim {
   // code by DataHub.GetRandomCircumstanceRoyalWithCastleName, 0x73f2ce4050).
   std::string royalToken(const std::string& token);
   std::string royalCircumstance();
+  // '<vampire>' / '<vampire-possessive>' (the year's vampire NPC) and
+  // '<familiar>' / '<familiar-possessive>' (the hero's own companion).
+  std::string vampireToken(const std::string& token);
+  // One vampire NPC name from a16_vampire-name-enc (Type = female / male /
+  // surname, 170 rows).
+  std::string vampireNpcName();
+  // The vampire's own yearly pool, served instead of the ordinary dumb-scenario
+  // draw while the hero is a vampire.
+  bool vampireYear(Life& life, AgeUp& out, int forcedChoice);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
@@ -223,6 +236,7 @@ class Sim {
   // callers (birthLines / ageUp / renderRow / checkDeath): resolve() itself
   // takes no Life, and the '<hero:...>' / '<city>' tokens need one.
   const Hero* hero_ = nullptr;
+  const Life* life_ = nullptr;
 
   // The physician the last ScenarioDoctors card picked, read back by the
   // treatment card that follows it in the same illness chain.
@@ -238,6 +252,8 @@ class Sim {
   // The royal birth roll's own stream (the probability itself is unread; see
   // REPORT.en.md 47), so the switch never shifts the main stream.
   Rng royalRng_;
+  // The vampire branch's own stream.
+  Rng vampireRng_;
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;
   // Next age-up's forced row, set by forceScenario() and cleared when it fires.

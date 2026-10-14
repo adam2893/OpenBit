@@ -563,7 +563,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       rng_(seed),
       prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL),
       familyRng_(seed ^ 0x51ed270b2f5a1c31ULL),
-      royalRng_(seed ^ 0x2545f4914f6cdd1dULL) {}
+      royalRng_(seed ^ 0x2545f4914f6cdd1dULL),
+      vampireRng_(seed ^ 0x27d4eb2f165667c5ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -605,6 +606,8 @@ bool Sim::load(std::string* error) {
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
       "a16_royal-house-names-enc",                   // Name,Estate,Palace,Castle,Country Code,Commonness Score
+      "a16_vampire-dumb-scenario-enc",               // the vampire's own pool (REPORT.en.md 48)
+      "a16_vampire-name-enc",                        // Type,Name,Skin: female / male / surname
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
   };
@@ -883,6 +886,21 @@ bool Sim::genderToken(const std::string& token, std::string& out) {
   return true;
 }
 
+namespace {
+
+// Tokens the port has no source for yet. The inline option-list selector below
+// skips an alternative that contains one, so a branch the port cannot fill is
+// never chosen over one it can (REPORT.en.md 49).
+const char* const kUnresolvedTokens[] = {"<action>"};
+
+bool hasUnresolvedToken(const std::string& s) {
+  for (const char* t : kUnresolvedTokens)
+    if (s.find(t) != std::string::npos) return true;
+  return false;
+}
+
+}  // namespace
+
 std::string Sim::resolve(const std::string& text) {
   std::map<std::string, std::string> memo;  // one name per token inside one line
   return resolveInto(text, memo);
@@ -892,7 +910,18 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
   std::string out;
   for (size_t i = 0; i < text.size();) {
     if (text[i] != '<') { out += text[i++]; continue; }
-    const size_t close = text.find('>', i + 1);
+    // Brackets nest: '<your server is <action>/they messed up both of your
+    // orders>' is one group whose first alternative contains a token of its own,
+    // so the closing bracket has to be matched with a depth count rather than
+    // the next '>' (REPORT.en.md 49).
+    size_t close = std::string::npos;
+    {
+      int depth = 0;
+      for (size_t k = i; k < text.size(); ++k) {
+        if (text[k] == '<') ++depth;
+        else if (text[k] == '>') { if (--depth == 0) { close = k; break; } }
+      }
+    }
     if (close == std::string::npos) { out += text[i++]; continue; }
     const std::string token = text.substr(i + 1, close - i - 1);
     if (token.empty()) { out += "<>"; i = close + 1; continue; }
@@ -920,9 +949,17 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       for (const std::string& o : options) if (o.empty()) drawn = "<>";  // "</b>": not an alternative list
       if (drawn == "<>") out += text.substr(i, close - i + 1);
       else {
-        drawn = options[rng_.below(uint32_t(options.size()))];
-        if (rndCache_.size() < 8) rndCache_.push_back(drawn);
-        out += drawn;
+        std::vector<size_t> usable;
+        for (size_t k = 0; k < options.size(); ++k)
+          if (!hasUnresolvedToken(options[k])) usable.push_back(k);
+        if (usable.empty()) for (size_t k = 0; k < options.size(); ++k) usable.push_back(k);
+        drawn = options[usable[rng_.below(uint32_t(usable.size()))]];
+        // An alternative can hold tokens of its own, so the drawn text goes back
+        // through the resolver before it is cached for '<rb>' (report 33) and
+        // appended.
+        const std::string picked = resolveInto(drawn, memo);
+        if (rndCache_.size() < 8) rndCache_.push_back(picked);
+        out += picked;
       }
     } else if (token.size() >= 2 && token[0] == 'r' && token[1] == 'b' &&
                token.find_first_not_of("0123456789", 2) == std::string::npos) {
@@ -938,7 +975,14 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       // "<pick:Option 1|Option 2|Option 3>" -> one alternative.
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
-      out += options[rng_.below(uint32_t(options.size()))];
+      out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (token == "restaurant") {
+      // <restaurant> is the Restaurant row of a16_company-name-structure-enc
+      // ('<color> <suffix>, <prefix> <color>, <random-first-name-possessive>
+      // <suffix>'), the same generator the port already uses for company names.
+      const std::string name = life_ ? companyName("Restaurant", *life_) : std::string();
+      if (name.empty()) out += text.substr(i, close - i + 1);
+      else out += name;
     } else if (token == "vacation-destination") {
       const std::string place = vacationDestination();
       if (place.empty()) out += text.substr(i, close - i + 1);
@@ -947,6 +991,11 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string line = vacationCruise();
       if (line.empty()) out += text.substr(i, close - i + 1);
       else out += line;
+    } else if (token == "vampire" || token == "vampire-possessive" ||
+               token == "familiar" || token == "familiar-possessive") {
+      const std::string value = vampireToken(token);
+      if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else out += value;
     } else if (token == "highest-royal-name" || token == "other-royal-name" ||
                token == "circumstance-royal") {
       const std::string value = royalToken(token);
@@ -1101,6 +1150,7 @@ void Sim::applyNewbornSetup(Hero& h) {
 std::vector<std::string> Sim::birthLines(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;  // '<hero-name>' / '<city>' read the live hero
+  life_ = &life;
   std::vector<std::string> out;
   const std::string gender = h.female ? "female" : "male";
 
@@ -1332,6 +1382,7 @@ std::string Sim::companyName(const std::string& companyType, const Life& life) {
 // Ages the family, so it runs once per year.
 std::vector<std::string> Sim::lifecycleLines(Life& life) {
   hero_ = &life.hero;
+  life_ = &life;
   std::vector<std::string> out;
   ensureTable("a16_careers-enc");
   ensureTable("a16_disease-types-enc");
@@ -1520,7 +1571,13 @@ bool Sim::pinCountry(Life& life, const std::string& countryName) {
 bool Sim::scenarioEligible(const Table& t, size_t row, const Life& life) const {
   const Hero& h = life.hero;
   if (t.has("Hero Min Age") && h.age < int(t.num(row, "Hero Min Age"))) return false;
-  if (t.has("Hero Max Age") && h.age > int(t.num(row, "Hero Max Age"))) return false;
+  // An empty Hero Max Age means 'no upper bound', not 'zero': 151 of the
+  // universal table's 258 rows and every row of the vampire pool leave it empty,
+  // and reading those as 0 excluded them from every natural life.
+  if (t.has("Hero Max Age")) {
+    const double maxAge = t.num(row, "Hero Max Age");
+    if (maxAge > 0 && h.age > int(maxAge)) return false;
+  }
 
   const std::string gender = lower(trim(t.has("Hero Gender") ? t.at(row, "Hero Gender") : ""));
   if (gender == "male" && h.female) return false;
@@ -1531,9 +1588,11 @@ bool Sim::scenarioEligible(const Table& t, size_t row, const Life& life) const {
   // 'Job' is a requirement flag like 'Student' ('x' = row needs the condition),
   // not an age proxy: an unemployed adult must not take a job-only row.
   if (t.flag(row, "Job") && !h.employed) return false;
-  // 'Vampire' / 'Both Parents Alive' gate DLC and family state the port does not
-  // model, so any branch requiring them is skipped.
-  if (t.flag(row, "Vampire")) return false;
+  // 'Vampire' gates the DLC state: with the vampire branch (REPORT.en.md 48) the
+  // port can now honour it instead of skipping every row that asks for it.
+  if (t.flag(row, "Vampire") && !h.vampire) return false;
+  // 'Hero Has Familiar' is the vampire pool's own companion gate.
+  if (t.has("Hero Has Familiar") && t.flag(row, "Hero Has Familiar") && h.familiar.empty()) return false;
   return true;
 }
 
@@ -1674,6 +1733,7 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
 
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
+  life_ = &life;
   rndCache_.clear();  // one scenario per year: the '<rbN>' cache starts empty
   ++life.year;
   Hero& h = life.hero;
@@ -1743,6 +1803,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   //      The conviction draw runs on its own stream (Sim::prisonRng_), so the
   //      main stream -- and therefore every earlier subsystem's draws for a
   //      given seed -- is untouched (REPORT.en.md 45).
+  if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -1799,6 +1860,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
 
 bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
+  life_ = &life;
   (void)life;  // the row's text is already gender-gated by scenarioEligible()
   rndCache_.clear();  // the body is parsed first, its draws feed the log line
   if (row >= t.size()) return false;
@@ -2002,6 +2064,7 @@ bool Sim::renderSymptomCard(const Life& life, AgeUp& out, int choice) {
 }
 
 bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& out, int choice) {
+  life_ = &life;
   const RegScenario* s = findScenario(cls);
   if (!s) return false;
   // The symptom card draws its own title, body and log line from the symptom
@@ -2515,9 +2578,65 @@ bool Sim::prisonYear(Life& life, AgeUp& out, int forcedChoice) {
   return rendered || !jobLine.empty() || !out.narrative.empty();
 }
 
+void Sim::makeVampire(Life& life) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_vampire-name-enc")) return;
+  h.vampire = true;
+  // shortcut: the familiar is a character the player meets in the vampire
+  // screens, and there is no familiar-name table, so one name is drawn from the
+  // same person pool the rest of the port draws people from.
+  h.familiar = drawFirstName(vampireRng_.chance(0.5));
+}
+
+std::string Sim::vampireNpcName() {
+  if (!ensureTable("a16_vampire-name-enc")) return std::string();
+  const Table& t = tbl("a16_vampire-name-enc");
+  const std::string want = hero_ != nullptr && hero_->female ? "female" : "male";
+  std::vector<size_t> firsts, surnames;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string type = lower(trim(t.at(r, "Type")));
+    if (type == "surname") surnames.push_back(r);
+    else if (type == want) firsts.push_back(r);
+  }
+  if (firsts.empty() || surnames.empty()) return std::string();
+  const size_t f = firsts[vampireRng_.below(uint32_t(firsts.size()))];
+  const size_t s = surnames[vampireRng_.below(uint32_t(surnames.size()))];
+  return trim(t.at(f, "Name")) + " " + trim(t.at(s, "Name"));
+}
+
+std::string Sim::vampireToken(const std::string& token) {
+  if (hero_ == nullptr || !hero_->vampire) return std::string();
+  const std::string suffix = "-possessive";
+  const bool possessive =
+      token.size() > suffix.size() && token.compare(token.size() - suffix.size(), suffix.size(), suffix) == 0;
+  const bool familiar = token.compare(0, 8, "familiar") == 0;
+  const std::string name = familiar ? hero_->familiar : hero_->vampireName;
+  if (name.empty()) return std::string();
+  return possessive ? name + "'s" : name;
+}
+
+bool Sim::vampireYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.vampire) return false;
+  if (!ensureTable("a16_vampire-dumb-scenario-enc")) return false;
+  // One vampire NPC for the whole year, so the card and its log line agree on
+  // the name '<vampire>' renders.
+  h.vampireName = vampireNpcName();
+  const Table& t = tbl("a16_vampire-dumb-scenario-enc");
+  // scenarioEligible covers the table's own age / gender / lover gates; its
+  // Notoriety, Essence and Hero Has Familiar gates belong to the vampire
+  // attribute system the port does not model, so they are ignored here
+  // (shortcut, REPORT.en.md 48).
+  std::vector<size_t> rows = dumbSetRows("a16_vampire-dumb-scenario-enc", life);
+  const size_t r = pickFrom(rows, rng_);
+  if (r == size_t(-1)) return false;
+  return renderRow(t, r, life, out, forcedChoice);
+}
+
 void Sim::makeRoyal(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;  // resolve() reads the live hero for '<random-surname> House'
+  life_ = &life;
   if (!ensureTable("a16_country-royal-systems-enc") || !ensureTable("a16_royal-house-names-enc")) return;
   const Table& rs = tbl("a16_country-royal-systems-enc");
   size_t row = size_t(-1);
@@ -2595,6 +2714,7 @@ std::string Sim::royalCircumstance() {
 bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence) {
   const Hero& h = life.hero;
   hero_ = &h;
+  life_ = &life;
   // Port-side mortality rule (the real game spreads this over many systems, not
   // one table): a small annual risk that rises steeply after 55.
   const double annual = h.age < 55 ? 0.001 : 0.004 * double(h.age - 54);
