@@ -213,6 +213,29 @@ struct Hero {
   int mafiaHeat = 0;
   int mafiaHits = 0;
   long long mafiaEarned = 0;
+  // A zoo the hero owns (REPORT.en.md 65): the park, the animal on the card,
+  // the habitat it lives in and the keeper looking after it.
+  bool ownsZoo = false;
+  std::string zooName;
+  std::string zooStreet;
+  std::string zooSupplier;
+  std::string zooHabitat;        // the habitat the card is about
+  std::string zooAnimalSpecies;  // the species ("Big Cat")
+  std::string zooAnimalBreed;    // the breed inside the species
+  std::string zooAnimalName;     // the individual the tables name
+  bool zooAnimalFemale = false;
+  int zooAnimalHappiness = 60;
+  int zooAnimalHealth = 90;
+  std::string zooEmployee;       // the keeper / vet on the card
+  bool zooEmployeeFemale = false;
+  std::string zooEmployeeRole;
+  int zooEmployeeCompetence = 50;   // 0-100, gates the staff tables
+  int zooStaff = 0;
+  int zooAnimals = 0;
+  int zooAttractions = 0;
+  int zooEngagement = 50;        // 0-100, what the patrons make of it
+  int zooTicket = 20;            // gate price
+  long long zooMoney = 0;        // the takings this year
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

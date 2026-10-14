@@ -133,6 +133,7 @@ class Sim {
   void makeCult(Life& life);
   void makeDealer(Life& life);
   void makeMafia(Life& life);
+  void makeZoo(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -271,6 +272,10 @@ class Sim {
   std::string mafiaToken(const std::string& key);
   std::string mafiaRankTitle(const Hero& h, int rank);
   void ensureMafiaFields(Life& life);
+  bool zooYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string zooToken(const std::string& key);
+  void ensureZooFields(Life& life);
+  void zooDrawAnimal(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -351,6 +356,7 @@ class Sim {
   Rng cultRng_;
   Rng dealerRng_;
   Rng mafiaRng_;
+  Rng zooRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -376,6 +382,10 @@ class Sim {
   std::map<std::string, std::string> dealerCache_;
   std::string mafiaAmount_;        // one <amount> per family card
   std::map<std::string, std::string> mafiaCache_;  // one name per token per card
+  std::map<std::string, std::string> zooCache_;    // one animal / keeper / park name per card
+  std::string zooOther_;           // another animal in the park
+  bool zooOtherFemale_ = false;
+  std::vector<std::string> zooBuilt_;   // the attractions already installed
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

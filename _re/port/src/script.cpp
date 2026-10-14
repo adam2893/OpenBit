@@ -567,6 +567,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.cult) sim.makeCult(life);
   if (spec.dealer) sim.makeDealer(life);
   if (spec.mafia) sim.makeMafia(life);
+  if (spec.zoo) sim.makeZoo(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.

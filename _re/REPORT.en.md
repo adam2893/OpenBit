@@ -5000,3 +5000,194 @@ Full regression after the family: `rescensus` reports `distinct residue tokens 0
 total 0`, `coverage.py` reports `captured scenarios: 109  recoverable: 107`,
 `portgap.py` reports `ENTRIES 109 rendered-by-port 107 gap 0`, the `covpush`
 script returns 0, and `bench.sh` reaches age 34 with no abort.
+
+## 65. The zoo: a park the hero owns, thirty-five tables behind one animal at a time
+
+The zoo is the largest family the port had left: thirty-five tables, 3,570 rows,
+and the only one of them report 56 had touched was a single dumb-scenario pool.
+Section 65 builds the park, stocks it, hires the people who look after it, and
+then runs a year of it against the family's own tables. Most of those tables are
+keyed on one of three things — the species, the breed, or the individual animal
+— so a card keeps all three on the hero while it is being written.
+
+### 65.1 the tables
+
+| rows | table | what it carries |
+|---|---|---|
+| 1345 | a16_zoo-animal-names-enc | Animal, Breed, Name, Gender, Commonness Score |
+| 313 | a16_zoo-animal-spend-time-color-enc | Animal, Pastime |
+| 286 | a16_zoo-animal-treat-color-enc | Animal, Treat, Enjoyment Score |
+| 224 | a16_zoo-animal-death-scenarios-enc | Animal, Type, Other Person/Animal Involved, Sentence |
+| 193 | a16_zoo-animal-attack-actions-enc | Animal, Past Verb, Commonness Score, Damage Score |
+| 192 | a16_zoo-animal-diseases-enc | Animal, Disease, article flags, Cures Organically, Can Be Fatal, Health Impact, Treatment Cost, Euthanize |
+| 120 | a16_zoo-animals-enc | Animal, Breed, Breed Plural, Compatible Habitats, Maturity Age, Lifespan, Cool/Food Chain/Aggression/Danger Scores, Rare, Maximum Animal Value, Min/Max Annual Cost |
+| 85 | a16_zoo-comment-card-color-enc | Snippet, Attraction Type, Commonness Score |
+| 71 | a16_zoo-employee-application-color-enc | String, Employee Type, Min/Max Competence |
+| 70 | a16_zoo-animal-sold-color-enc | Animal Type, Snippet, Min/Max Happiness |
+| 70 | a16_zoo-habitat-names-enc | Name, Habitat Type, Commonness Score |
+| 46 | a16_zoo-employee-background-check-color-enc | String, Employee Type (a list), Min/Max Competence |
+| 45 | a16_zoo-habitat-move-in-feedback-enc | Animal Type (a list), Breed (a list), String |
+| 44 | a16_zoo-animal-show-feedback-enc | Animal Blacklist, String, Positive, Show Type |
+| 38 | a16_zoo-fundraiser-color-enc | Event Type, Animal, Snippet, Min/Max Reception |
+| 34 | a16_zoo-street-names-enc | Street Name, Add Random Street Type |
+| 32 | a16_zoo-employee-resignation-color-enc | String, Gender, Employee Type, Min/Max Competence |
+| 31 | a16_zoo-habitat-features-enc | Type, Compatible Habitat, Cost, Happiness Impact Score |
+| 29 | a16_zoo-buyer-person-types-enc | Description, Money Score, Commonness Score |
+| 25 | a16_zoo-attraction-installation-color-enc | Snippet, Positive |
+| 25 | a16_zoo-trade-accept-color-enc | Snippet |
+| 25 | a16_zoo-trade-rejection-reasons-enc | Snippet, Reason, Commonness Score |
+| 23 | a16_zoo-random-zoo-names-enc | Name, Commonness Score |
+| 23 | a16_zoo-trade-animal-sold-color-enc | Snippet |
+| 22 | a16_zoo-animal-grooming-methods-enc | Animal, Method, Feedback Snippet, Cost, Difficulty/Appeal Scores |
+| 21 | a16_zoo-attractions-enc | Attraction Name, Ticketed, Min/Max Ticket Cost, Installation Cost, Annual Upkeep, Engagement Score |
+| 20 | a16_zoo-animal-trafficker-persons-enc | Person Type, Uses Indefinite Article |
+| 20 | a16_zoo-attraction-removal-color-enc | Snippet, Positive, Min/Max Engagement |
+| 20 | a16_zoo-habitat-feedback-enc | String, Feature Blacklist, Feature Whitelist, Is Positive |
+| 19 | a16_zoo-supplier-names-enc | Name |
+| 18 | a16_zoo-habitat-clean-enc | Snippet, Log Version, Habitat Type |
+| 12 | a16_zoo-gift-shop-item-enc | Product, Plural, Price Per Unit, Min/Max Sale Price, Popularity Score |
+| 11 | a16_zoo-animal-show-enc | Show Type, Difficulty Score, Appeal Score |
+| 10 | a16_zoo-fundraiser-enc | Event Type, Cost, Money Score, Difficulty/Appeal Scores |
+| 8 | a16_zoo-habitat-type-enc | Type, Add Habitat, Cost, Annual Upkeep Fees |
+
+### 65.2 founding the park
+
+The flag is `"zoo": true` (the boolean already existed for the report 56 misc
+bit), and `Sim::makeZoo` is called after `makeMafia`. It sets `ownsZoo`,
+charges the hero $25,000 for the land, and calls `ensureZooFields`:
+
+* a name off `a16_zoo-random-zoo-names-enc` (the cells are templates —
+  "Mommy Dearest <Memorial Zoo/Zoo/Zoological Park/Wildlife Reserve>" — so they
+  are resolved);
+* an address from the street table, with " Street" appended when the row asks
+  for it, and a house number in front of it;
+* a supplier (`a16_zoo-supplier-names-enc`, whose cells carry `<random-surname>`);
+* the first habitat, off the habitat-type table ("savanna", "aviary",
+  "reptile room" …);
+* a gate price of $15-40, three to six animals, two staff and an engagement
+  score of 50-70;
+* one named keeper, with a competence score that gates the staff tables.
+
+`Sim::zooDrawAnimal` draws the individual the card is about: species, breed,
+name (resolved, because the cell is a template like "Ms. <random-surname>") and
+gender. A blank name means the park never named that animal, so the breed stands
+in for it.
+
+### 65.3 a year at the park
+
+`Sim::zooYear` runs from age 18 at 50% a year. Upkeep comes off the books
+first — $2,500 per animal and $5,000 per attraction — and engagement drifts down
+by one a year. Then one event fires, rarest first so that no block starves:
+
+| chance | event |
+|---|---|
+| 0.05 | an animal dies: the death table's sentence, the disease behind it, or the vet stepping in |
+| 0.06 | an animal attacks a visitor, graded by the attack table's Damage Score |
+| 0.07 | a disease from the disease table: treatment price, health lost, sometimes euthanasia |
+| 0.07 | an offer in the car park — a trafficker and a rare breed off the bloodline table |
+| 0.08 | a sale: the buyer's own money score, one buyer in four walks away on a rejection reason |
+| 0.08 | a fundraiser, with the reception windowed against engagement |
+| 0.09 | a show, unless the animal is on that show's blacklist |
+| 0.09 | an attraction installed, or an existing one torn down |
+| 0.09 | the gift shop till |
+| 0.10 | a keeper hired (with a background check), or one handing in their notice |
+| 0.10 | a feature for the habitat the animal lives in |
+| 0.10 | a new animal moves in, judged by the move-in table's own lists |
+| 0.12 | housekeeping, said the way the clean table says it |
+| 0.12 | a treat, scored for how much the animal enjoyed it |
+| 0.12 | an hour with the animal, said the way the pastime table says it |
+| 0.08 | a grooming day |
+| 0.14 | something a patron put in the suggestion box |
+| else | the gate: tickets times animals and attractions, against the year's upkeep |
+
+### 65.4 the animal on the card
+
+Every animal-facing table asks for one of three names, so `zooToken` keeps them
+straight: `<animal-zoo>` is the individual the card is about, `<habitat-animal>` is
+the habitat that individual belongs in — read off its own bloodline row's
+"Compatible Habitats" list — and every row that speaks about the animal gets the
+pronoun pair pointed at it, so "`<he/she>` put up a fight as the animal handlers
+crated `<him/her>` for removal" comes out with the right gender. The keeper, the
+vet and the other animals of the park are drawn per card and cached, so one card
+never names two different keepers.
+
+### 65.5 the tokens
+
+| token | source |
+|---|---|
+| `<animal-zoo>`, `<animal-zoo-possessive>` | the animal on the card (report 56 used to answer this off the species table) |
+| `<zoo-animal-other>` | another animal in the park |
+| `<habitat-zoo>`, `<habitat-animal>` (+ possessives) | the park's habitat and the animal's own |
+| `<animal-handler>`, `<zoo-veterinarian>` | one name per card, cached per role |
+| `<zoo-operations-manager>` | the role, as before |
+| `<zoo-other>`, `<zoo-name-possessive>` | another park's name, and this park's |
+| `<rival-zoo-animal-breed>` | a breed other than the card's |
+
+The two zoo entries of the report 56 misc map (`animal-zoo`, `habitat-zoo`) and
+the three zoo literals were removed from it, so the family's own handler owns
+them. The `a16_dumb-scenarios-zoo-enc` pool stays where report 56 put it: the
+dumb card is a prompt with four choices, and the misc runner already renders it
+with a real animal, habitat and keeper behind its tokens.
+
+### 65.6 shortcuts
+
+* the zoo is bought, not earned: no planning permission, no loan, no sale of the
+  park; $25,000 comes off the hero's purse at founding;
+* `Requires Specific Employee`, `Involves Animal`, `Can Be Fatal` on the attack
+  table, `Appeal Score`, `Annual Upkeep Fees` and the ticketed-attraction price
+  ranges are read as flags or scores only where the code uses them;
+* the fundraiser's reception is judged by the park's engagement score, not by the
+  table's own event difficulty;
+* habitat capacity is not modelled: the habitat table's `Cost` is not paid and no
+  habitat ever fills up;
+* animal breeding, maturity and lifespan are read off the bloodline table but
+  never advanced — an animal dies when the death table says so.
+
+### 65.7 verification
+
+`/tmp/qdir/zoores.py` runs 30 seeds × both genders to age 60 with `"zoo": true`
+and regexes every `<…>` out of the title, body and log lines of the family's
+events:
+
+    zoo events 1441   residue 0
+    659 a16_dumb-scenarios-zoo-enc       165 a16_zoo-random-zoo-names-enc
+     58 a16_zoo-animal-diseases-enc       55 a16_zoo-animal-attack-actions-enc
+     50 a16_zoo-fundraiser-color-enc      44 a16_zoo-animals-enc
+     44 a16_zoo-attractions-enc           42 a16_zoo-gift-shop-item-enc
+     42 a16_zoo-animal-show-feedback-enc  40 a16_zoo-trade-animal-sold-color-enc
+     34 a16_zoo-animal-spend-time-color   32 a16_zoo-animal-death-scenarios
+     30 a16_zoo-comment-card-color-enc    28 a16_zoo-animal-treat-color-enc
+     26 a16_zoo-habitat-features-enc      24 a16_zoo-habitat-move-in-feedback
+     17 a16_zoo-employee-resignation      16 a16_zoo-habitat-clean-enc
+     16 a16_zoo-employee-application      10 a16_zoo-trade-rejection-reasons
+      8 a16_zoo-animal-grooming-methods    2 a16_zoo-employee-background-check
+
+Sample years (seed 4, female, United States):
+
+    A new attraction      I had a carousel installed for $100,000.
+                          For the first few weeks after its installation, patrons
+                          lined up for hours just to experience it.
+    The vet's rounds      Latrice came down with west nile virus.
+                          The treatment came to $4,500.
+                          It would have cleared up on its own, but the vet was
+                          not taking the chance.
+    Time with Latrice     I got up early and went worm-hunting with Latrice.
+    The gift shop         The gift shop moved 191 butt scratchers this year at
+                          $2 each. That is $382 over the counter.
+    A year at the gate    The zoo took $111,600 with 4 animals on the books,
+                          against $10,000 of upkeep.
+
+One bug was found by this probe and fixed: 38 of the family's cells were read
+straight out of the table without `resolve`, so the cells that carry brackets of
+their own leaked them — the spend-time table stores "watched the
+`<sunset/sunrise>` with `<animal-zoo>`", and the sold-color table's promises are
+written in the animal's pronouns. Every `trim` in the section is now a
+`resolve(trim(…))`, except the two inside the file-static `zooInList` helper,
+which compare list items and must not re-enter the resolver. Two phrasings were
+fixed with it: "The zoo held a an exclusive livestream" and "A a poacher offered
+me" became the article helper's business instead of a hard-coded "a".
+
+Full regression after the zoo: `rescensus` reports `distinct residue tokens 0
+total 0`, `coverage.py` reports `captured scenarios: 109  recoverable: 107`,
+`portgap.py` reports `ENTRIES 109 rendered-by-port 107 gap 0`, the `covpush`
+script returns 0, and `bench.sh` reaches age 34 with no abort.

@@ -579,7 +579,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       casinoRng_(seed ^ 0xd1b54a32d192ed03ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
-      mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL) {}
+      mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
+      zooRng_(seed ^ 0x3c79ac492ba7b653ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -630,6 +631,39 @@ bool Sim::load(std::string* error) {
     "a16_street-names-enc",
     "a16_zoo-animals-enc",
     "a16_zoo-habitat-names-enc",
+    "a16_zoo-animal-attack-actions-enc",
+    "a16_zoo-animal-death-scenarios-enc",
+    "a16_zoo-animal-diseases-enc",
+    "a16_zoo-animal-grooming-methods-enc",
+    "a16_zoo-animal-names-enc",
+    "a16_zoo-animal-show-enc",
+    "a16_zoo-animal-show-feedback-enc",
+    "a16_zoo-animal-sold-color-enc",
+    "a16_zoo-animal-spend-time-color-enc",
+    "a16_zoo-animal-trafficker-persons-enc",
+    "a16_zoo-animal-treat-color-enc",
+    "a16_zoo-attraction-installation-color-enc",
+    "a16_zoo-attraction-removal-color-enc",
+    "a16_zoo-attractions-enc",
+    "a16_zoo-buyer-person-types-enc",
+    "a16_zoo-comment-card-color-enc",
+    "a16_zoo-employee-application-color-enc",
+    "a16_zoo-employee-background-check-color-enc",
+    "a16_zoo-employee-resignation-color-enc",
+    "a16_zoo-fundraiser-color-enc",
+    "a16_zoo-fundraiser-enc",
+    "a16_zoo-gift-shop-item-enc",
+    "a16_zoo-habitat-clean-enc",
+    "a16_zoo-habitat-features-enc",
+    "a16_zoo-habitat-feedback-enc",
+    "a16_zoo-habitat-move-in-feedback-enc",
+    "a16_zoo-habitat-type-enc",
+    "a16_zoo-random-zoo-names-enc",
+    "a16_zoo-street-names-enc",
+    "a16_zoo-supplier-names-enc",
+    "a16_zoo-trade-accept-color-enc",
+    "a16_zoo-trade-animal-sold-color-enc",
+    "a16_zoo-trade-rejection-reasons-enc",
     "a16_model-agency-names-enc",
     "a16_actor-films-enc",
     "a16_actor-shows-enc",
@@ -1318,8 +1352,7 @@ const MiscSrc kMiscSrc[] = {
   {"amenity", "a16_landlord-home-default-features-enc", "Feature String"},
   {"house-type", "a16_house-types-enc", "Type"},
   {"car-type", "a16_car-models-enc", "Type"},
-  {"animal-zoo", "a16_zoo-animals-enc", "Animal"},
-  {"habitat-zoo", "a16_zoo-habitat-names-enc", "Name"},
+  // The zoo names moved to zooToken (REPORT.en.md 65).
   {"front", "a16_secret-agent-agency-fronts-enc", "Type"},
   {"production", "a16_actor-films-enc", "Title"},
   {"talk-show", "a16_actor-shows-enc", "Title"},
@@ -1336,7 +1369,7 @@ const char* const kMiscPeople[] = {
 };
 
 const char* const kMiscLiterals[] = {
-  "animal-handler", "zoo-veterinarian", "zoo-operations-manager", "hustle-instrument",
+  "hustle-instrument",
   "tenant-address",
 };
 
@@ -1408,6 +1441,19 @@ std::string spyUpperFirst(std::string text) {
 // answers them when the hero has one.
 // The mafia family's own tokens (report 64). The mob tables key their rows on
 // ISO country codes, so the names come from the table for the hero's country.
+bool zooIsToken(const std::string& token) {
+  std::string base = token;
+  const std::string psuffix = "-possessive";
+  if (base.size() > psuffix.size() && base.compare(base.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    base = base.substr(0, base.size() - psuffix.size());
+  static const char* kKeys[] = {"animal-zoo", "zoo-animal", "zoo-animal-other", "zoo-name",
+                                "habitat-zoo", "habitat-animal", "animal-handler",
+                                "zoo-veterinarian", "zoo-operations-manager", "zoo-other",
+                                "rival-zoo-animal-breed"};
+  for (const char* k : kKeys) if (base == k) return true;
+  return false;
+}
+
 bool mafiaIsToken(const std::string& token) {
   std::string key = token;
   const std::string psuffix = "-possessive";
@@ -1604,6 +1650,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (zooIsToken(token)) {
+      const std::string v = zooToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (mafiaIsToken(token)) {
@@ -2525,6 +2575,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (cultYear(life, out, forcedChoice)) return true;
   if (dealerYear(life, out, forcedChoice)) return true;
   if (mafiaYear(life, out, forcedChoice)) return true;
+  if (zooYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -5463,6 +5514,8 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   dealerCache_.clear();
   mafiaAmount_.clear();     // one amount / family name per family card
   mafiaCache_.clear();
+  zooCache_.clear();        // one animal / keeper / park name per zoo card
+  zooOther_.clear();
   std::string title, body, line, tableRef, rowRef;
   std::vector<std::string> extra;
   int happiness = 0;
@@ -8007,6 +8060,725 @@ bool Sim::mafiaYear(Life& life, AgeUp& out, int forcedChoice) {
   out.table = tableRef.empty() ? "a16_mafia-pastimes-enc" : tableRef;
   out.row_id = rowRef.empty() ? std::string("0") : rowRef;
   out.title = title.empty() ? "The family" : title;
+  out.body = body;
+  out.narrative = line;
+  out.extra = extra;
+  out.happiness += happy;
+  return true;
+}
+
+// ------------------------------------------------------------------ the zoo --
+// Section 65: the a16_zoo-* family. The hero owns a park, keeps animals in
+// habitats, pays keepers to look after them, and sells tickets at the gate.
+// Every table in the family is keyed on one of three things: the species, the
+// breed, or the individual animal's name, so a card keeps all three.
+
+// A cell that lists habitats, breeds or features ("aviary, reptile room") is
+// how these tables gate a row, so membership is checked one item at a time.
+static bool zooInList(const std::string& list, const std::string& value) {
+  if (list.empty() || value.empty()) return false;
+  std::vector<std::string> items;
+  splitOn(list, ',', items);
+  for (const std::string& it : items)
+    if (lower(trim(it)) == lower(trim(value))) return true;
+  return false;
+}
+
+// The tables write a name and expect the English possessive after it.
+static std::string zooPossessive(const std::string& name) {
+  if (name.empty()) return name;
+  const char last = name[name.size() - 1];
+  return name + ((last == 's' || last == 'S') ? "'" : "'s");
+}
+
+// One individual drawn out of the bloodline table: the species, the breed, the
+// name and the gender the tables ask for by turns.
+void Sim::zooDrawAnimal(Life& life) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_zoo-animal-names-enc")) return;
+  const Table& names = tbl("a16_zoo-animal-names-enc");
+  if (names.size() == 0) return;
+  const size_t r = pickRow("a16_zoo-animal-names-enc", "Commonness Score", "", "", "", zooRng_);
+  if (r == size_t(-1)) return;
+  h.zooAnimalSpecies = resolve(trim(names.at(r, "Animal")));
+  h.zooAnimalBreed = resolve(trim(names.at(r, "Breed")));
+  const std::string g = lower(resolve(trim(names.at(r, "Gender"))));
+  h.zooAnimalFemale = g == "female" ? true : (g == "male" ? false : zooRng_.chance(0.5));
+  // The name cell is a template of its own ("Ms. <random-surname>"), and a
+  // blank one means the park never got round to naming the animal.
+  std::string nm = resolve(trim(names.at(r, "Name")));
+  if (nm.empty()) nm = h.zooAnimalBreed.empty() ? h.zooAnimalSpecies : h.zooAnimalBreed;
+  h.zooAnimalName = nm;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.zooAnimalFemale;
+}
+
+void Sim::ensureZooFields(Life& life) {
+  Hero& h = life.hero;
+  if (!h.zooName.empty()) return;
+  const size_t n = pickRow("a16_zoo-random-zoo-names-enc", "Commonness Score", "", "", "", zooRng_);
+  h.zooName = n == size_t(-1)
+            ? "The City Zoo"
+            : resolve(trim(tbl("a16_zoo-random-zoo-names-enc").at(n, "Name")));
+  if (ensureTable("a16_zoo-street-names-enc")) {
+    const Table& s = tbl("a16_zoo-street-names-enc");
+    const size_t r = pickRow("a16_zoo-street-names-enc", "Commonness Score", "", "", "", zooRng_);
+    if (r != size_t(-1)) {
+      std::string street = resolve(trim(s.at(r, "Street Name")));
+      if (s.flag(r, "Add Random Street Type")) street += " Street";
+      h.zooStreet = std::to_string(100 + int(zooRng_.below(900))) + " " + street;
+    }
+  }
+  if (ensureTable("a16_zoo-supplier-names-enc")) {
+    const size_t r = pickRow("a16_zoo-supplier-names-enc", "Commonness Score", "", "", "", zooRng_);
+    if (r != size_t(-1)) h.zooSupplier = resolve(trim(tbl("a16_zoo-supplier-names-enc").at(r, "Name")));
+  }
+  // The park opens with one habitat, bought off the type table.
+  if (ensureTable("a16_zoo-habitat-type-enc")) {
+    const Table& t = tbl("a16_zoo-habitat-type-enc");
+    const size_t r = pickRow("a16_zoo-habitat-type-enc", "", "", "", "", zooRng_);
+    if (r != size_t(-1)) h.zooHabitat = resolve(trim(t.at(r, "Type")));
+  }
+  if (h.zooHabitat.empty()) h.zooHabitat = "savanna";
+  h.zooTicket = 15 + int(zooRng_.below(26));
+  h.zooAnimals = 3 + int(zooRng_.below(4));
+  h.zooStaff = 2;
+  h.zooEngagement = 50 + int(zooRng_.below(21));
+  h.zooEmployeeCompetence = 40 + int(zooRng_.below(41));
+  h.zooEmployeeFemale = zooRng_.chance(0.5);
+  h.zooEmployee = drawFirstName(h.zooEmployeeFemale) + " " + drawSurname();
+  h.zooEmployeeRole = "keeper";
+  zooBuilt_.clear();
+}
+
+void Sim::makeZoo(Life& life) {
+  Hero& h = life.hero;
+  h.ownsZoo = true;
+  hero_ = &h;
+  life_ = &life;
+  ensureZooFields(life);
+  zooDrawAnimal(life);
+  h.money -= 25000;   // the park is bought, not inherited
+}
+
+std::string Sim::zooToken(const std::string& key) {
+  Hero& h = *const_cast<Hero*>(hero_);
+  std::string k = key;
+  const std::string psuffix = "-possessive";
+  bool poss = false;
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    poss = true;
+    k = k.substr(0, k.size() - psuffix.size());
+  }
+  const auto cached = [&](const std::string& slot, bool female) -> std::string {
+    std::map<std::string, std::string>::iterator it = zooCache_.find(slot);
+    if (it != zooCache_.end()) return it->second;
+    const std::string nm = drawFirstName(female) + " " + drawSurname();
+    zooCache_[slot] = nm;
+    return nm;
+  };
+  // The animal the card is about, with the pronouns pointed at it.
+  if (k == "animal-zoo" || k == "zoo-animal" || k == "zoo-animal-other") {
+    if (k == "zoo-animal-other") {
+      if (zooOther_.empty()) {
+        zooOtherFemale_ = zooRng_.chance(0.5);
+        zooOther_ = drawFirstName(zooOtherFemale_);
+      }
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = zooOtherFemale_;
+      return poss ? zooPossessive(zooOther_) : zooOther_;
+    }
+    if (h.zooAnimalName.empty()) zooDrawAnimal(*const_cast<Life*>(life_));
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.zooAnimalFemale;
+    return poss ? zooPossessive(h.zooAnimalName) : h.zooAnimalName;
+  }
+  if (k == "zoo-name") return poss ? zooPossessive(h.zooName) : h.zooName;
+  if (k == "habitat-zoo") {
+    if (h.zooHabitat.empty()) ensureZooFields(*const_cast<Life*>(life_));
+    if (h.zooHabitat.empty() && ensureTable("a16_zoo-habitat-names-enc")) {
+      const size_t r = pickRow("a16_zoo-habitat-names-enc", "Commonness Score", "", "", "", zooRng_);
+      if (r != size_t(-1)) h.zooHabitat = resolve(trim(tbl("a16_zoo-habitat-names-enc").at(r, "Habitat Type")));
+    }
+    return poss ? zooPossessive(h.zooHabitat) : h.zooHabitat;
+  }
+  // The habitat the current animal belongs in comes off its own bloodline row.
+  if (k == "habitat-animal") {
+    std::string hab;
+    if (ensureTable("a16_zoo-animals-enc")) {
+      const Table& t = tbl("a16_zoo-animals-enc");
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (lower(resolve(trim(t.at(r, "Breed")))) != lower(h.zooAnimalBreed)) continue;
+        std::vector<std::string> items;
+        splitOn(resolve(trim(t.at(r, "Compatible Habitats"))), ',', items);
+        if (!items.empty()) hab = resolve(trim(items[zooRng_.below(uint32_t(items.size()))]));
+        break;
+      }
+    }
+    if (hab.empty()) hab = h.zooHabitat;
+    return poss ? zooPossessive(hab) : hab;
+  }
+  if (k == "animal-handler") return poss ? zooPossessive(cached("handler", zooRng_.chance(0.5)))
+                                        : cached("handler", zooRng_.chance(0.5));
+  if (k == "zoo-veterinarian") {
+    const std::string vet = cached("vet", zooRng_.chance(0.5));
+    return poss ? zooPossessive(vet) : vet;
+  }
+  if (k == "zoo-operations-manager") return "zoo operations manager";
+  if (k == "zoo-other") {
+    const std::string other = cached("other-zoo", false);
+    return poss ? zooPossessive(other) : other;
+  }
+  if (k == "rival-zoo-animal-breed") {
+    if (!ensureTable("a16_zoo-animal-names-enc")) return std::string();
+    const Table& t = tbl("a16_zoo-animal-names-enc");
+    for (int i = 0; i < 8; ++i) {
+      const size_t r = pickRow("a16_zoo-animal-names-enc", "Commonness Score", "", "", "", zooRng_);
+      if (r == size_t(-1)) break;
+      const std::string breed = resolve(trim(t.at(r, "Breed")));
+      if (!breed.empty() && lower(breed) != lower(h.zooAnimalBreed)) return breed;
+    }
+    return h.zooAnimalBreed;
+  }
+  return std::string();
+}
+
+bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18) return false;
+  if (!zooRng_.chance(0.50)) return false;
+  if (h.zooName.empty()) ensureZooFields(life);
+  if (h.zooAnimalName.empty()) zooDrawAnimal(life);
+
+  std::string title, body, line, tableRef, rowRef;
+  std::vector<std::string> extra;
+  int happy = 0;
+  zooCache_.clear();
+  zooOther_.clear();
+  pronounOtherSet_ = false;
+  auto say = [&body](const std::string& s) {
+    if (!s.empty()) body += body.empty() ? s : " " + s;
+  };
+  auto tell = [&line](const std::string& s) {
+    if (!s.empty()) line += line.empty() ? s : " " + s;
+  };
+  const auto cell = [this](const Table& t, size_t r, const char* col) {
+    return t.has(col) ? resolve(trim(t.at(r, col))) : std::string();
+  };
+  // A zoo log line quotes a cell of its own row ("<rb>", the treatment price),
+  // so every bracketed cell is resolved before the line itself is written.
+  const auto warm = [this](const Table& t, size_t r, const char* keep) {
+    const std::vector<std::string>& cols = t.columns();
+    for (size_t c = 0; c < cols.size(); ++c) {
+      if (keep && cols[c] == keep) continue;
+      if (t.at(r, cols[c]).find('<') != std::string::npos) resolve(t.at(r, cols[c]));
+    }
+  };
+  const auto drawRow = [&](const char* name, const char* weight, const char* fcol, const char* fval, const char* flag) {
+    const size_t r = pickRow(name, weight ? weight : "", fcol ? fcol : "", fval ? fval : "",
+                             flag ? flag : "", zooRng_);
+    if (r != size_t(-1)) { tableRef = name; rowRef = std::to_string(r); }
+    return r;
+  };
+  const auto drawWin = [&](const char* name, const char* weight, const char* fcol, const char* fval,
+                           const char* lo, const char* hi, double value) {
+    const size_t r = pickWindow(name, weight ? weight : "", fcol ? fcol : "", fval ? fval : "",
+                                lo ? lo : "", hi ? hi : "", value, zooRng_);
+    if (r != size_t(-1)) { tableRef = name; rowRef = std::to_string(r); }
+    return r;
+  };
+  // The park speaks about the animal on the card, so the pronouns follow it.
+  const auto aboutAnimal = [&]() {
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.zooAnimalFemale;
+  };
+  const std::string species = lower(h.zooAnimalSpecies);
+
+  // The year's costs come off the books before anything else happens.
+  const long long upkeep = static_cast<long long>(h.zooAnimals) * 2500
+                         + static_cast<long long>(h.zooAttractions) * 5000;
+  h.money -= upkeep;
+  h.zooEngagement = h.zooEngagement > 1 ? h.zooEngagement - 1 : 0;
+
+  // 1. An animal dies. The table's rows are either species-bound or open.
+  if (zooRng_.chance(0.05)) {
+    const size_t r = drawRow("a16_zoo-animal-death-scenarios-enc", "Commonness Score", "Animal", species.c_str(), 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-death-scenarios-enc");
+      const std::string type = cell(t, r, "Type");
+      title = "A death at the zoo";
+      aboutAnimal();
+      warm(t, r, "Sentence");
+      say(spyUpperFirst(cell(t, r, "Sentence")));
+      if (type == "Disease") {
+        const size_t d = drawRow("a16_zoo-animal-diseases-enc", "Commonness Score", "Animal", species.c_str(), 0);
+        if (d != size_t(-1))
+          extra.push_back("The vet put it down to " + lower(resolve(trim(tbl("a16_zoo-animal-diseases-enc").at(d, "Disease")))) + ".");
+      } else if (type == "Euthanized") {
+        extra.push_back("There was nothing left to try, so the vet stepped in.");
+      }
+      if (h.zooAnimals > 0) h.zooAnimals -= 1;
+      h.zooEngagement = h.zooEngagement > 3 ? h.zooEngagement - 3 : 0;
+      happy -= 4;
+      h.zooAnimalName.clear();     // the park draws another one next year
+    }
+  }
+  // 2. An animal gets at somebody.
+  else if (zooRng_.chance(0.06)) {
+    const size_t r = drawRow("a16_zoo-animal-attack-actions-enc", "Commonness Score", "Animal", species.c_str(), 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-attack-actions-enc");
+      title = "An incident";
+      aboutAnimal();
+      say("A visitor was " + lower(resolve(trim(t.at(r, "Past Verb")))) + " by " + h.zooAnimalName +
+          " in the " + lower(h.zooHabitat) + ".");
+      extra.push_back("The report graded the damage " + std::to_string(int(t.num(r, "Damage Score"))) + " out of 5.");
+      h.zooEngagement = h.zooEngagement > 4 ? h.zooEngagement - 4 : 0;
+      happy -= 2;
+    }
+  }
+  // 3. Something the animal caught; treatment, or the organ it destroys.
+  else if (zooRng_.chance(0.07)) {
+    const size_t r = drawRow("a16_zoo-animal-diseases-enc", "Commonness Score", "Animal", species.c_str(), 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-diseases-enc");
+      const std::string disease = lower(resolve(trim(t.at(r, "Disease"))));
+      const bool fatal = t.flag(r, "Can Be Fatal");
+      title = "The vet's rounds";
+      aboutAnimal();
+      say(h.zooAnimalName + " came down with " + withArticle(disease, t.flag(r, "Uses Indefinite Article")) + disease + ".");
+      const int impact = int(t.num(r, "Health Impact Score"));
+      h.zooAnimalHealth -= impact * 4;
+      if (t.flag(r, "Euthanize") && fatal && zooRng_.chance(0.5)) {
+        extra.push_back("It was decided that " + h.zooAnimalName + " would not recover.");
+        if (h.zooAnimals > 0) h.zooAnimals -= 1;
+        h.zooAnimalName.clear();
+        h.zooEngagement = h.zooEngagement > 2 ? h.zooEngagement - 2 : 0;
+        happy -= 3;
+      } else {
+        const long long cost = static_cast<long long>(t.num(r, "Treatment Cost Score")) * 1500;
+        h.money -= cost;
+        extra.push_back("The treatment came to " + money(cost) + ".");
+        if (t.num(r, "Cures Organically Score") > 0)
+          extra.push_back("It would have cleared up on its own, but the vet was not taking the chance.");
+      }
+    }
+  }
+  // 4. An offer in the car park: traffickers sell what the zoo cannot buy.
+  else if (zooRng_.chance(0.07)) {
+    const size_t p = drawRow("a16_zoo-animal-trafficker-persons-enc", "Commonness Score", 0, 0, 0);
+    const size_t a = drawRow("a16_zoo-animals-enc", "", 0, 0, "Rare");
+    if (p != size_t(-1) && a != size_t(-1)) {
+      const Table& pt = tbl("a16_zoo-animal-trafficker-persons-enc");
+      const Table& at = tbl("a16_zoo-animals-enc");
+      const std::string who = lower(resolve(trim(pt.at(p, "Person Type"))));
+      const std::string got = lower(resolve(trim(at.at(a, "Breed"))));
+      const long long price = 5000 + static_cast<long long>(zooRng_.below(25000));
+      title = "An offer in the car park";
+      const std::string whoPhrase = spyUpperFirst(withArticle(who, pt.flag(p, "Uses Indefinite Article")) + who);
+      body = whoPhrase + " offered me " + withArticle(got, true) + got + " for " + money(price) + ".";
+      if (h.money >= price) {
+        h.money -= price;
+        h.zooAnimals += 1;
+        h.zooEngagement += 3;
+        say("I paid in cash and had it moved in overnight.");
+        zooDrawAnimal(life);
+      } else {
+        extra.push_back("I did not have the money, and the offer walked.");
+        happy -= 1;
+      }
+    }
+  }
+  // 5. A sale: the buyer either takes the animal or walks away from it.
+  else if (zooRng_.chance(0.08)) {
+    const size_t b = drawRow("a16_zoo-buyer-person-types-enc", "Commonness Score", 0, 0, 0);
+    if (b != size_t(-1)) {
+      const Table& bt = tbl("a16_zoo-buyer-person-types-enc");
+      const std::string buyer = lower(resolve(trim(bt.at(b, "Description"))));
+      const long long value = static_cast<long long>(bt.num(b, "Money Score")) * 12000
+                            + static_cast<long long>(zooRng_.below(8000));
+      aboutAnimal();
+      if (zooRng_.chance(0.25)) {
+        const size_t rr = drawRow("a16_zoo-trade-rejection-reasons-enc", "Commonness Score", "Reason", "animal", 0);
+        title = "A sale falls through";
+        body = "The " + buyer + " came to look at " + h.zooAnimalName + " and left without a deal.";
+        if (rr != size_t(-1)) say(spyUpperFirst(cell(tbl("a16_zoo-trade-rejection-reasons-enc"), rr, "Snippet")));
+        h.zooEngagement = h.zooEngagement > 2 ? h.zooEngagement - 2 : 0;
+      } else {
+        const size_t sold = drawWin("a16_zoo-animal-sold-color-enc", "Commonness Score", "", "",
+                                    "Min Happiness", "Max Happiness", h.zooAnimalHappiness);
+        const size_t ok = drawRow("a16_zoo-trade-animal-sold-color-enc", "Commonness Score", 0, 0, 0);
+        title = "A sale";
+        body = "A " + buyer + " paid " + money(value) + " for " + h.zooAnimalName + ".";
+        if (sold != size_t(-1)) say(spyUpperFirst(cell(tbl("a16_zoo-animal-sold-color-enc"), sold, "Snippet")));
+        if (ok != size_t(-1)) tell("The buyer promised " + resolve(trim(tbl("a16_zoo-trade-animal-sold-color-enc").at(ok, "Snippet"))) + ".");
+        h.money += value;
+        if (h.zooAnimals > 0) h.zooAnimals -= 1;
+        happy += 2;
+        h.zooAnimalName.clear();
+      }
+    }
+  }
+  // 6. A fundraiser: the reception follows how well the park is thought of.
+  else if (zooRng_.chance(0.08)) {
+    const size_t r = drawRow("a16_zoo-fundraiser-enc", "Commonness Score", 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-fundraiser-enc");
+      const std::string ev = lower(resolve(trim(t.at(r, "Event Type"))));
+      const long long cost = static_cast<long long>(t.num(r, "Cost"));
+      h.money -= cost;
+      title = "A fundraiser";
+      body = "The zoo held " + withArticle(ev, true) + ev + ".";
+      const size_t f = drawWin("a16_zoo-fundraiser-color-enc", "", "Event Type", ev.c_str(),
+                               "Min Reception", "Max Reception", h.zooEngagement);
+      if (f != size_t(-1))
+        say(spyUpperFirst(spySwap(cell(tbl("a16_zoo-fundraiser-color-enc"), f, "Snippet"), "your ", "my ")));
+      const long long raised = static_cast<long long>(t.num(r, "Money Score")) * 6000;
+      h.money += raised;
+      extra.push_back("The event raised " + money(raised) + " against a bill of " + money(cost) + ".");
+      h.zooEngagement += int(t.num(r, "Appeal Score"));
+      happy += 2;
+    }
+  }
+  // 7. A show, unless the animal is on the show table's blacklist.
+  else if (zooRng_.chance(0.09)) {
+    const size_t st = drawRow("a16_zoo-animal-show-enc", "Commonness Score", 0, 0, 0);
+    if (st != size_t(-1) && ensureTable("a16_zoo-animal-show-feedback-enc")) {
+      const Table& ft = tbl("a16_zoo-animal-show-feedback-enc");
+      const std::string show = lower(resolve(trim(tbl("a16_zoo-animal-show-enc").at(st, "Show Type"))));
+      std::vector<size_t> pool;
+      for (size_t i = 0; i < ft.size(); ++i) {
+        if (lower(resolve(trim(ft.at(i, "Show Type")))) != show) continue;
+        if (zooInList(lower(resolve(trim(ft.at(i, "Animal Blacklist")))), h.zooAnimalSpecies)) continue;
+        pool.push_back(i);
+      }
+      if (!pool.empty()) {
+        const size_t r = pool[zooRng_.below(uint32_t(pool.size()))];
+        title = "A show";
+        body = "The zoo put on " + withArticle(show, true) + show + " in the " + lower(h.zooHabitat) + ".";
+        aboutAnimal();
+        say(spyUpperFirst(spySwap(cell(ft, r, "String"), "your ", "my ")));
+        if (ft.flag(r, "Positive")) { h.zooEngagement += 3; happy += 2; }
+        else { h.zooEngagement = h.zooEngagement > 2 ? h.zooEngagement - 2 : 0; happy -= 1; }
+        tableRef = "a16_zoo-animal-show-feedback-enc";
+        rowRef = std::to_string(r);
+      }
+    }
+  }
+  // 8. Something new for the patrons to queue for, or the end of one.
+  else if (zooRng_.chance(0.09)) {
+    if (ensureTable("a16_zoo-attractions-enc")) {
+      const Table& at = tbl("a16_zoo-attractions-enc");
+      const bool tearDown = !zooBuilt_.empty() && zooRng_.chance(0.35);
+      if (tearDown) {
+        const std::string gone = zooBuilt_[zooRng_.below(uint32_t(zooBuilt_.size()))];
+        int score = 0;
+        for (size_t i = 0; i < at.size(); ++i)
+          if (lower(resolve(trim(at.at(i, "Attraction Name")))) == lower(gone)) score = int(at.num(i, "Engagement Score"));
+        const size_t r = drawWin("a16_zoo-attraction-removal-color-enc", "Commonness Score", "", "",
+                                 "Min Engagement", "Max Engagement", h.zooEngagement);
+        title = "Tearing it down";
+        body = "I had the " + lower(gone) + " removed from the park.";
+        if (r != size_t(-1)) say(spyUpperFirst(cell(tbl("a16_zoo-attraction-removal-color-enc"), r, "Snippet")));
+        for (size_t i = 0; i < zooBuilt_.size(); ++i)
+          if (zooBuilt_[i] == gone) { zooBuilt_.erase(zooBuilt_.begin() + long(i)); break; }
+        if (h.zooAttractions > 0) h.zooAttractions -= 1;
+        h.zooEngagement -= score / 2;
+        happy -= 1;
+      } else {
+        std::vector<size_t> pool;
+        for (size_t i = 0; i < at.size(); ++i) {
+          bool have = false;
+          for (const std::string& built : zooBuilt_)
+            if (lower(built) == lower(resolve(trim(at.at(i, "Attraction Name"))))) have = true;
+          if (!have) pool.push_back(i);
+        }
+        if (!pool.empty()) {
+          const size_t r = pool[zooRng_.below(uint32_t(pool.size()))];
+          const std::string name = lower(resolve(trim(at.at(r, "Attraction Name"))));
+          const long long cost = static_cast<long long>(at.num(r, "Installation Cost"));
+          title = "A new attraction";
+          if (h.money >= cost) {
+            h.money -= cost;
+            zooBuilt_.push_back(resolve(trim(at.at(r, "Attraction Name"))));
+            h.zooAttractions += 1;
+            h.zooEngagement += int(at.num(r, "Engagement Score"));
+            body = "I had " + withArticle(name, true) + name + " installed for " + money(cost) + ".";
+            const size_t f = drawRow("a16_zoo-attraction-installation-color-enc", "Commonness Score", 0, 0, 0);
+            if (f != size_t(-1))
+              say(spyUpperFirst(cell(tbl("a16_zoo-attraction-installation-color-enc"), f, "Snippet")));
+            happy += 2;
+          } else {
+            body = "The " + name + " would cost " + money(cost) + ", which the zoo does not have.";
+            happy -= 1;
+          }
+          tableRef = "a16_zoo-attractions-enc";
+          rowRef = std::to_string(r);
+        }
+      }
+    }
+  }
+  // 9. The till in the gift shop.
+  else if (zooRng_.chance(0.09)) {
+    const size_t r = drawRow("a16_zoo-gift-shop-item-enc", "Popularity Score", 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-gift-shop-item-enc");
+      std::string plural = lower(resolve(trim(t.at(r, "Plural"))));
+      if (plural.empty()) plural = lower(resolve(trim(t.at(r, "Product")))) + "s";
+      const int units = 40 + int(zooRng_.below(400));
+      const long long each = static_cast<long long>(t.num(r, "Price Per Unit"));
+      const long long take = each * units;
+      title = "The gift shop";
+      body = "The gift shop moved " + std::to_string(units) + " " + plural + " this year at " + money(each) + " each.";
+      h.money += take;
+      say("That is " + money(take) + " over the counter.");
+      h.zooEngagement += 1;
+    }
+  }
+  // 10. A keeper arrives, or one of them hands in their notice.
+  else if (zooRng_.chance(0.10)) {
+    if (h.zooStaff > 0 && zooRng_.chance(0.35)) {
+      const size_t r = drawWin("a16_zoo-employee-resignation-color-enc", "Commonness Score", "", "",
+                               "Min Competence", "Max Competence", double(h.zooEmployeeCompetence));
+      title = "A resignation";
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_zoo-employee-resignation-color-enc");
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = h.zooEmployeeFemale;
+        body = h.zooEmployee + ", the zoo's " + lower(h.zooEmployeeRole) + ", is leaving.";
+        say(spyUpperFirst(cell(t, r, "String")));
+        const std::string role = lower(resolve(trim(t.at(r, "Employee Type"))));
+        if (!role.empty()) extra.push_back("The " + role + " post is open again.");
+      } else {
+        body = h.zooEmployee + ", the zoo's " + lower(h.zooEmployeeRole) + ", is leaving.";
+      }
+      h.zooStaff -= 1;
+      h.zooEmployee.clear();
+      happy -= 1;
+    } else {
+      const int want = 30 + int(zooRng_.below(61));
+      const size_t r = drawWin("a16_zoo-employee-application-color-enc", "Commonness Score", "", "",
+                               "Min Competence", "Max Competence", double(want));
+      title = "Hiring";
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_zoo-employee-application-color-enc");
+        std::string role = lower(resolve(trim(t.at(r, "Employee Type"))));
+        if (role.empty()) role = "keeper";
+        h.zooEmployeeRole = role;
+        h.zooEmployeeCompetence = want;
+        h.zooEmployeeFemale = zooRng_.chance(0.5);
+        h.zooEmployee = drawFirstName(h.zooEmployeeFemale) + " " + drawSurname();
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = h.zooEmployeeFemale;
+        body = "I hired " + h.zooEmployee + " as a " + role + ".";
+        say(spyUpperFirst(cell(t, r, "String")));
+        h.zooStaff += 1;
+        if (zooRng_.chance(0.40)) {
+          const size_t k = drawWin("a16_zoo-employee-background-check-color-enc", "Commonness Score", "", "",
+                                   "Min Competence", "Max Competence", double(want));
+          if (k != size_t(-1))
+            tell(spyUpperFirst(cell(tbl("a16_zoo-employee-background-check-color-enc"), k, "String")));
+        }
+        happy += 1;
+      } else {
+        body = "Nobody worth the wage came in for an interview.";
+      }
+    }
+  }
+  // 11. A feature for the habitat the animal lives in.
+  else if (zooRng_.chance(0.10)) {
+    const size_t r = drawRow("a16_zoo-habitat-features-enc", "Commonness Score", "Compatible Habitat", lower(h.zooHabitat).c_str(), 0);
+    if (r == size_t(-1)) {
+      // The row's habitat cell holds a list, so a pickRow miss is expected.
+      const size_t any = drawRow("a16_zoo-habitat-features-enc", "Commonness Score", 0, 0, 0);
+      if (any != size_t(-1)) {
+        const Table& t = tbl("a16_zoo-habitat-features-enc");
+        const std::string feat = lower(resolve(trim(t.at(any, "Type"))));
+        const long long cost = static_cast<long long>(t.num(any, "Cost"));
+        title = "Improving the " + lower(h.zooHabitat);
+        if (h.money >= cost) {
+          h.money -= cost;
+          body = "I had " + withArticle(feat, true) + feat + " put in for " + money(cost) + ".";
+          // A feature is judged by the feedback table's own lists.
+          if (ensureTable("a16_zoo-habitat-feedback-enc")) {
+            const Table& ft = tbl("a16_zoo-habitat-feedback-enc");
+            size_t fb = size_t(-1);
+            for (size_t i = 0; i < ft.size(); ++i) {
+              if (zooInList(ft.at(i, "Feature Whitelist"), feat) || zooInList(ft.at(i, "Feature Blacklist"), feat)) {
+                fb = i;
+                if (zooInList(ft.at(i, "Feature Whitelist"), feat)) break;
+              }
+            }
+            if (fb != size_t(-1)) {
+              aboutAnimal();
+              say(spyUpperFirst(cell(ft, fb, "String")));
+              if (ft.flag(fb, "Is Positive")) { h.zooAnimalHappiness += int(t.num(any, "Happiness Impact Score")); h.zooEngagement += 1; }
+              else h.zooAnimalHappiness -= int(t.num(any, "Happiness Impact Score"));
+              tableRef = "a16_zoo-habitat-feedback-enc";
+              rowRef = std::to_string(fb);
+            }
+          }
+          happy += 1;
+        } else {
+          body = withArticle(feat, true) + feat + " would cost " + money(cost) + ", which the zoo does not have.";
+          happy -= 1;
+        }
+        tableRef = "a16_zoo-habitat-features-enc";
+        rowRef = std::to_string(any);
+      }
+    } else {
+      const Table& t = tbl("a16_zoo-habitat-features-enc");
+      const std::string feat = lower(resolve(trim(t.at(r, "Type"))));
+      const long long cost = static_cast<long long>(t.num(r, "Cost"));
+      title = "Improving the " + lower(h.zooHabitat);
+      if (h.money >= cost) {
+        h.money -= cost;
+        body = "I had " + withArticle(feat, true) + feat + " put in for " + money(cost) + ".";
+        h.zooAnimalHappiness += int(t.num(r, "Happiness Impact Score"));
+        h.zooEngagement += 1;
+        happy += 1;
+      } else {
+        body = withArticle(feat, true) + feat + " would cost " + money(cost) + ", which the zoo does not have.";
+        happy -= 1;
+      }
+      tableRef = "a16_zoo-habitat-features-enc";
+      rowRef = std::to_string(r);
+    }
+  }
+  // 12. A new animal moves in, and the table says how it takes to the place.
+  else if (zooRng_.chance(0.10)) {
+    if (ensureTable("a16_zoo-habitat-move-in-feedback-enc")) {
+      const Table& t = tbl("a16_zoo-habitat-move-in-feedback-enc");
+      std::vector<size_t> pool;
+      for (size_t i = 0; i < t.size(); ++i) {
+        const std::string types = resolve(trim(t.at(i, "Animal Type")));
+        const std::string breeds = resolve(trim(t.at(i, "Breed")));
+        if (!types.empty() && !zooInList(types, h.zooAnimalSpecies)) continue;
+        if (!breeds.empty() && !zooInList(breeds, h.zooAnimalBreed)) continue;
+        pool.push_back(i);
+      }
+      if (!pool.empty()) {
+        const size_t r = pool[zooRng_.below(uint32_t(pool.size()))];
+        title = "A new arrival";
+        body = h.zooAnimalName + " moved into the " + lower(h.zooHabitat) + ".";
+        aboutAnimal();
+        say(spyUpperFirst(spySwap(cell(t, r, "String"), "your ", "my ")));
+        h.zooAnimals += 1;
+        h.zooEngagement += 2;
+        happy += 1;
+        tableRef = "a16_zoo-habitat-move-in-feedback-enc";
+        rowRef = std::to_string(r);
+      }
+    }
+  }
+  // 13. Housekeeping, which is most of what running a zoo is.
+  else if (zooRng_.chance(0.12)) {
+    const size_t r = drawRow("a16_zoo-habitat-clean-enc", "Commonness Score", "Habitat Type", lower(h.zooHabitat).c_str(), 0);
+    const size_t any = r != size_t(-1) ? r : drawRow("a16_zoo-habitat-clean-enc", "Commonness Score", 0, 0, 0);
+    if (any != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-habitat-clean-enc");
+      title = "Housekeeping";
+      aboutAnimal();
+      warm(t, any, "Log Version");
+      tell(spySwap(cell(t, any, "Log Version"), "your ", "my "));
+      say(spySwap(cell(t, any, "Snippet"), "You ", "I "));
+      h.zooAnimalHappiness += 1;
+      h.zooEngagement += 1;
+      tableRef = "a16_zoo-habitat-clean-enc";
+      rowRef = std::to_string(any);
+    }
+  }
+  // 14. A treat from the treat table, scored for how much the animal enjoyed it.
+  else if (zooRng_.chance(0.12)) {
+    const size_t r = drawRow("a16_zoo-animal-treat-color-enc", "", "Animal", species.c_str(), 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-treat-color-enc");
+      const std::string treat = lower(resolve(trim(t.at(r, "Treat"))));
+      title = "Treat time";
+      aboutAnimal();
+      body = "I brought " + h.zooAnimalName + " " + treat + ".";
+      h.zooAnimalHappiness += int(t.num(r, "Enjoyment Score"));
+      h.zooEngagement += 1;
+      happy += 1;
+      tableRef = "a16_zoo-animal-treat-color-enc";
+      rowRef = std::to_string(r);
+    }
+  }
+  // 15. An hour with the animal, said the way the pastime table says it.
+  else if (zooRng_.chance(0.12)) {
+    const size_t r = drawRow("a16_zoo-animal-spend-time-color-enc", "", "Animal", species.c_str(), 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-spend-time-color-enc");
+      title = "Time with " + h.zooAnimalName;
+      aboutAnimal();
+      body = "I " + resolve(trim(t.at(r, "Pastime"))) + " " + h.zooAnimalName + ".";
+      h.zooAnimalHappiness += 2;
+      happy += 2;
+      tableRef = "a16_zoo-animal-spend-time-color-enc";
+      rowRef = std::to_string(r);
+    }
+  }
+  // 16. A grooming day, priced and scored by the table.
+  else if (zooRng_.chance(0.08)) {
+    const size_t r = drawRow("a16_zoo-animal-grooming-methods-enc", "Commonness Score", 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-animal-grooming-methods-enc");
+      const long long cost = static_cast<long long>(t.num(r, "Cost"));
+      title = "Grooming";
+      aboutAnimal();
+      body = "I " + spySentence(spyLowerFirst(cell(t, r, "Feedback Snippet"))) +
+             " for " + money(cost) + ".";
+      h.money -= cost;
+      h.zooAnimalHappiness += 1;
+      h.zooEngagement += 1;
+      happy += 1;
+      tableRef = "a16_zoo-animal-grooming-methods-enc";
+      rowRef = std::to_string(r);
+    }
+  }
+  // 17. Something a patron put in the suggestion box.
+  else if (zooRng_.chance(0.14)) {
+    const size_t r = drawRow("a16_zoo-comment-card-color-enc", "Commonness Score", 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_zoo-comment-card-color-enc");
+      const std::string wanted = lower(resolve(trim(t.at(r, "Attraction Type"))));
+      bool have = wanted.empty();
+      for (const std::string& built : zooBuilt_)
+        if (lower(built) == wanted) have = true;
+      title = "In the suggestion box";
+      body = "A patron wrote: " + cell(t, r, "Snippet");
+      if (!have) {
+        say("The park does not have " + withArticle(wanted, true) + wanted + " yet.");
+        h.zooEngagement = h.zooEngagement > 1 ? h.zooEngagement - 1 : 0;
+      } else {
+        h.zooEngagement += 2;
+        happy += 1;
+      }
+      tableRef = "a16_zoo-comment-card-color-enc";
+      rowRef = std::to_string(r);
+    }
+  }
+
+  // 18. The gate, which pays for the year when nothing else happened.
+  if (title.empty() && line.empty() && body.empty()) {
+    const long long gate = static_cast<long long>(h.zooTicket)
+                         * (h.zooAnimals + h.zooAttractions) * 900;
+    h.money += gate;
+    h.zooMoney += gate;
+    title = "A year at the gate";
+    body = "The zoo took " + money(gate) + " with " + std::to_string(h.zooAnimals) +
+           " animals on the books, against " + money(upkeep) + " of upkeep.";
+    tableRef = "a16_zoo-random-zoo-names-enc";
+    rowRef = "0";
+  }
+
+  if (title.empty() && line.empty() && body.empty()) return false;
+  out.table = tableRef.empty() ? "a16_zoo-random-zoo-names-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title;
   out.body = body;
   out.narrative = line;
   out.extra = extra;
