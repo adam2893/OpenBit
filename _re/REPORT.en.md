@@ -6668,35 +6668,35 @@ market fluctuation, or the section-53 dumb scenario.
 
 ### 74.1 The family
 
-The B¶§a16_businessB¶§ family is 12 tables / 1,414 rows. Three of them
-(B¶§-industriesB¶§, B¶§-name-structureB¶§, B¶§-productsB¶§) were already loaded by section 53; the other
-nine are new to B¶§kTablesB¶§:
+The `a16_business` family is 12 tables / 1,414 rows. Three of them
+(`-industries`, `-name-structure`, `-products`) were already loaded by section 53; the other
+nine are new to `kTables`:
 
 | table | rows | the columns that matter |
 | --- | ---: | --- |
-| B¶§a16_business-industries-encB¶§ | 24 | Industry, Country Whitelist/Blacklist, Product Launch Cost, Facility Name (Singular/Plural), Max Facilities, Facility Setup Cost, Facility Annual Cost, Facility Employee Min/Max, Average Employee Salary |
-| B¶§a16_business-products-encB¶§ | 281 | Industry, Product (a comma list), Product Name Base, Unit/Unit Plural, Avg Unit Price, Max Unit Price, Min/Max Unit Cost, Demand Score, Shelf Life Years |
-| B¶§a16_business-product-names-encB¶§ | 259 | Specific Industry, Specific Product, Format (a comma list of brand templates carrying B¶§<product>B¶§), Commonness Score, Hero Owns Company |
-| B¶§a16_business-name-structure-encB¶§ | 24 | Industry, Format, Prefix, Suffix, Predefined |
-| B¶§a16_business-supplier-name-structure-encB¶§ | 24 | the same shape, for the suppliers |
-| B¶§a16_business-demand-fluctuations-encB¶§ | 321 | Specific Industry, Specific Product, Fluctuation Type (increase/decrease), Fluctuation Amount (blank/small/medium/large), Snippet, Commonness Score |
-| B¶§a16_business-competition-fluctuations-encB¶§ | 268 | the same shape |
-| B¶§a16_business-write-off-scenarios-encB¶§ | 53 | Snippet ("after it was ravaged by a fire"), Reason ("Fire"), Impact Score, Commonness Score |
-| B¶§a16_business-consultant-humor-encB¶§ | 52 | Feedback, Log Snippet, Company Health (good/bad), Commonness Score |
-| B¶§a16_business-team-building-activities-encB¶§ | 49 | Index, Activity ("to a baseball game"), Short Version, Cost Per Employee, Commonness Score, Attitude Impact |
-| B¶§a16_business-team-requests-encB¶§ | 32 | Scenario, Log Version (with B¶§<rb>B¶§), Total Cost, Cost Per Employee, Industry Whitelist/Blacklist, Agree/Disagree Attitude Impact, Log Snippet ("buy one"), Commonness Score |
-| B¶§a16_business-market-research-encB¶§ | 27 | String, Demand (high/medium/low), Competition, Industry Blacklist |
+| `a16_business-industries-enc` | 24 | Industry, Country Whitelist/Blacklist, Product Launch Cost, Facility Name (Singular/Plural), Max Facilities, Facility Setup Cost, Facility Annual Cost, Facility Employee Min/Max, Average Employee Salary |
+| `a16_business-products-enc` | 281 | Industry, Product (a comma list), Product Name Base, Unit/Unit Plural, Avg Unit Price, Max Unit Price, Min/Max Unit Cost, Demand Score, Shelf Life Years |
+| `a16_business-product-names-enc` | 259 | Specific Industry, Specific Product, Format (a comma list of brand templates carrying `<product>`), Commonness Score, Hero Owns Company |
+| `a16_business-name-structure-enc` | 24 | Industry, Format, Prefix, Suffix, Predefined |
+| `a16_business-supplier-name-structure-enc` | 24 | the same shape, for the suppliers |
+| `a16_business-demand-fluctuations-enc` | 321 | Specific Industry, Specific Product, Fluctuation Type (increase/decrease), Fluctuation Amount (blank/small/medium/large), Snippet, Commonness Score |
+| `a16_business-competition-fluctuations-enc` | 268 | the same shape |
+| `a16_business-write-off-scenarios-enc` | 53 | Snippet ("after it was ravaged by a fire"), Reason ("Fire"), Impact Score, Commonness Score |
+| `a16_business-consultant-humor-enc` | 52 | Feedback, Log Snippet, Company Health (good/bad), Commonness Score |
+| `a16_business-team-building-activities-enc` | 49 | Index, Activity ("to a baseball game"), Short Version, Cost Per Employee, Commonness Score, Attitude Impact |
+| `a16_business-team-requests-enc` | 32 | Scenario, Log Version (with `<rb>`), Total Cost, Cost Per Employee, Industry Whitelist/Blacklist, Agree/Disagree Attitude Impact, Log Snippet ("buy one"), Commonness Score |
+| `a16_business-market-research-enc` | 27 | String, Demand (high/medium/low), Competition, Industry Blacklist |
 
 ### 74.2 The company at eighteen
 
-B¶§makeBusinessB¶§ still draws the industry, and then draws the rest of the company from that
+`makeBusiness` still draws the industry, and then draws the rest of the company from that
 industry's own row: the facility count (1), the annual facility cost, the average salary, the
 payroll head count rolled between Facility Employee Min and Max, and the launch price. The
-product line comes from one B¶§a16_business-products-encB¶§ row of the same industry (weighted on
+product line comes from one `a16_business-products-enc` row of the same industry (weighted on
 Demand Score): its Product column is a comma list, so one entry is drawn; its Unit, its Avg Unit
 Price (rolled up to Max Unit Price) and its Min/Max Unit Cost follow. The brand name is a
-B¶§a16_business-product-names-encB¶§ Format for that product, and the supplier a
-B¶§a16_business-supplier-name-structure-encB¶§ Format. Demand starts at 45-65 and competition at
+`a16_business-product-names-enc` Format for that product, and the supplier a
+`a16_business-supplier-name-structure-enc` Format. Demand starts at 45-65 and competition at
 40-60, so a fresh company starts near break-even with room to move either way.
 
 ### 74.3 The books
@@ -6729,34 +6729,34 @@ First hit wins, rarest first:
 
 | chance | card | what it does |
 | ---: | --- | --- |
-| 0.06 | A write-off | B¶§a16_business-write-off-scenarios-encB¶§. The loss is the fixed base over eight plus 500 plus 350 an Impact Score point plus a roll, so a food truck loses thousands and a pharmaceutical plant millions. |
-| 0.08 | The consultant's report | B¶§a16_business-consultant-humor-encB¶§, filtered on the row's own Company Health flag against the company's health. Health moves three either way. |
-| 0.10 | A request from the team | B¶§a16_business-team-requests-encB¶§ (Industry Whitelist/Blacklist). The Total Cost is paid if the hero can afford it and agrees (a forced choice, or a 60 per cent coin otherwise); agreeing and refusing each move the staff's attitude. |
-| 0.12 | A team outing | B¶§a16_business-team-building-activities-encB¶§. Cost Per Employee times the payroll, and the row's Attitude Impact. |
-| 0.12 | Market research | B¶§a16_business-market-research-encB¶§. The row's Demand and Competition words set the company's own to 70 / 50 / 30. |
+| 0.06 | A write-off | `a16_business-write-off-scenarios-enc`. The loss is the fixed base over eight plus 500 plus 350 an Impact Score point plus a roll, so a food truck loses thousands and a pharmaceutical plant millions. |
+| 0.08 | The consultant's report | `a16_business-consultant-humor-enc`, filtered on the row's own Company Health flag against the company's health. Health moves three either way. |
+| 0.10 | A request from the team | `a16_business-team-requests-enc` (Industry Whitelist/Blacklist). The Total Cost is paid if the hero can afford it and agrees (a forced choice, or a 60 per cent coin otherwise); agreeing and refusing each move the staff's attitude. |
+| 0.12 | A team outing | `a16_business-team-building-activities-enc`. Cost Per Employee times the payroll, and the row's Attitude Impact. |
+| 0.12 | Market research | `a16_business-market-research-enc`. The row's Demand and Competition words set the company's own to 70 / 50 / 30. |
 | 0.10 | A new supplier | Moves the unit cost one either way and names the supplier. |
 | 0.14 | A new product | Pays the industry's Product Launch Cost, renames the line from the brand pool, and adds 8-15 demand. Says so plainly when the company cannot afford it. |
-| 0.30 | The market | B¶§a16_business-demand-fluctuations-encB¶§ or B¶§a16_business-competition-fluctuations-encB¶§, whichever side is tighter, filtered on the row's Specific Industry and Specific Product (with a fallback to the whole pool) and weighted on Commonness Score. The amount is blank 8, small 5, medium 12, large 20, and a rise in demand is good news while a rise in competition is not. |
-| 0.40 | The everyday card | The section-53 delegate, B¶§a16_dumb-scenarios-business-encB¶§ (167 rows), unchanged, with its age and Industry Whitelist/Blacklist filters. |
+| 0.30 | The market | `a16_business-demand-fluctuations-enc` or `a16_business-competition-fluctuations-enc`, whichever side is tighter, filtered on the row's Specific Industry and Specific Product (with a fallback to the whole pool) and weighted on Commonness Score. The amount is blank 8, small 5, medium 12, large 20, and a rise in demand is good news while a rise in competition is not. |
+| 0.40 | The everyday card | The section-53 delegate, `a16_dumb-scenarios-business-enc` (167 rows), unchanged, with its age and Industry Whitelist/Blacklist filters. |
 
 Every card carries the year's books as its first log line.
 
 ### 74.5 The tokens
 
-B¶§<product>B¶§ now answers from the company's own line rather than a fresh draw, so a card and its
-log line name the same thing. B¶§<supplier>B¶§ and B¶§<facility>B¶§ are new keys; B¶§<facility>B¶§ joins
-the two spellings section 53 already had. B¶§<competitor>B¶§, B¶§<employee>B¶§, B¶§<city>B¶§, B¶§<color>B¶§,
-B¶§<hero-first-name-possessive>B¶§ and the rest were already answered. The family census also turned up
-B¶§<country-other-adjectival>B¶§ (13 residues) and its twin B¶§<hero-country-adjectival>B¶§, used by
-B¶§a16_business-write-off-scenarios-encB¶§ ("delivered to B¶§<country-other-adjectival>B¶§ hackers") and by
+`<product>` now answers from the company's own line rather than a fresh draw, so a card and its
+log line name the same thing. `<supplier>` and `<facility>` are new keys; `<facility>` joins
+the two spellings section 53 already had. `<competitor>`, `<employee>`, `<city>`, `<color>`,
+`<hero-first-name-possessive>` and the rest were already answered. The family census also turned up
+`<country-other-adjectival>` (13 residues) and its twin `<hero-country-adjectival>`, used by
+`a16_business-write-off-scenarios-enc` ("delivered to `<country-other-adjectival>` hackers") and by
 the political headlines. Both are now answered from the countries table's own Demonym: the hero's
 country for the one, a different country for the other.
 
 ### 74.6 The bugs
 
 1. The section-74 state patch was written twice, and the first copy died on a stray walrus in a
-   bare B¶§assertB¶§ before it wrote anything, while the second one died halfway: the header had the
-   new declarations but B¶§src/sim.cppB¶§ had no B¶§kTablesB¶§ entries, and B¶§bizCache_B¶§ was declared
+   bare `assert` before it wrote anything, while the second one died halfway: the header had the
+   new declarations but `src/sim.cpp` had no `kTables` entries, and `bizCache_` was declared
    nowhere - a compile error on both of its uses. Nothing is applied until the script finishes.
 2. The first volume formula (demand minus half the competition, scaled by the plant and the
    payroll) made every company a permanent loss: a pharmaceutical plant carries a 2.5 million
@@ -6764,8 +6764,8 @@ country for the one, a different country for the other.
    hero's balance reached -808,375,041 and no launch was ever affordable. Working the volume back
    from the fixed costs, and giving both market figures a drift towards the midpoint instead of a
    demand-down/competition-up grind, fixed both symptoms at once.
-3. The brand name printed its own brackets: B¶§businessProductNameB¶§ returns one Format entry out of
-   a comma list, and those entries carry B¶§<color>B¶§, B¶§<King/Queen>B¶§, B¶§<hero-name>B¶§ and a dozen
+3. The brand name printed its own brackets: `businessProductName` returns one Format entry out of
+   a comma list, and those entries carry `<color>`, `<King/Queen>`, `<hero-name>` and a dozen
    invented affixes, none of which was resolved. 454 residues over one sweep; both call sites now
    resolve the name.
 4. A rise in competition was announced as "the market moved my way", because the direction came
@@ -6784,18 +6784,18 @@ country for the one, a different country for the other.
   write-off scales with the fixed base (over eight).
 - The books run before the card, so a card that pays a bonus (the delegated dumb scenario) is not
   re-priced; the log line always shows the year's own figures.
-- Competition is not per-competitor: one company, one number. B¶§Average Employee SalaryB¶§ and
-  B¶§Facility Annual CostB¶§ are taken as annual and never inflated.
+- Competition is not per-competitor: one company, one number. `Average Employee Salary` and
+  `Facility Annual Cost` are taken as annual and never inflated.
 
 ### 74.8 Verification
 
-B¶§/tmp/qdir/bizres.pyB¶§ runs 30 seeds by both genders to age 60 with B¶§{"business": true}B¶§: 3,574
-events, 0 rc failures, 0 residues. B¶§/tmp/qdir/bizcov.pyB¶§ (40 seeds by both genders) sees 2,132
+`/tmp/qdir/bizres.py` runs 30 seeds by both genders to age 60 with `{"business": true}`: 3,574
+events, 0 rc failures, 0 residues. `/tmp/qdir/bizcov.py` (40 seeds by both genders) sees 2,132
 business cards over the nine card tables: team-requests 290, team-building 283, market-research
 280, demand-fluctuations 251, consultant 239, product-names 217, competition-fluctuations 202,
 write-off 191, supplier 179. The full family probe sweep (17 probes) is 0 residues each,
-B¶§rescensus.pyB¶§ reports 0 distinct residue tokens, coverage is 109 captured / 107 recoverable,
-B¶§portgap.pyB¶§ reports a gap of 0, B¶§covpush.jsonB¶§ exits 0, and the bench harness still reaches
+`rescensus.py` reports 0 distinct residue tokens, coverage is 109 captured / 107 recoverable,
+`portgap.py` reports a gap of 0, `covpush.json` exits 0, and the bench harness still reaches
 age 34 with no abort. Sample cards, hand checked:
 
     A new product
@@ -6835,7 +6835,7 @@ age 34 with no abort. Sample cards, hand checked:
 
 Two notes on the data as it is: the consultant's own Feedback is a bare imperative ("Stay the
 course", "Eat an apple a day") and the card prints it as both the body and the log line, and
-B¶§a16_business-demand-fluctuations-encB¶§ contains the occasional Snippet whose grammatical subject
+`a16_business-demand-fluctuations-enc` contains the occasional Snippet whose grammatical subject
 is the hero's competitor while the sentence around it is about demand.
 
 ## 75. The car and the races: a class ladder, fifteen ways to spend a year, and thirty-one tables
@@ -7684,3 +7684,227 @@ Two smaller things: the cuisine keeps the pool's own capitalisation (`cooking Fi
     Games at the League of Extraordinary Idiots
     We played telephone.
     The League of Extraordinary Idiots spent the evening playing telephone.
+
+
+---
+
+## 80. The season: a book of games, a stat sheet, and nine more of the sports family
+
+Section 52 gave the hero a sport, a league, a team and a position, then left him there: one
+card a year out of the dumb-scenario pool, and nothing in the port that knew he was an
+athlete. This section is the career that sits on top of that identity. Every year the season
+is played out for real - a book of games with a win-loss record and a paycheque derived from
+the sport row, a stat sheet whose numbers come from the hero's skill against the league's
+percentile ladder, a career curve that takes the edge off after thirty and a retirement that
+either ends at the bottom or ends in the Hall - and then one event out of the nine pools
+that fill the rest of the family. The section-52 dumb pool keeps its own 45 per cent chance
+for the years the season does not claim, so nothing already written stopped firing.
+
+Section 80 is also the first place where the port had to invent growth: nothing in the data
+says how a player improves, so the season book itself does it (see 80.2), and the award gates
+were used as the calibration target.
+
+### 80.1 The family
+
+Nine tables, 676 rows, all new to the port. The four tables section 52 already wired -
+`a16_sports-enc`, `a16_sports-leagues-enc`, `a16_sports-teams-enc`,
+`a16_sports-positions-enc` - keep their roles: the sport row is the season rulebook, the
+league and the team name the club, the position names the hero.
+
+| table | rows | columns |
+|---|---|---|
+| `a16_sports-awards-enc` | 66 | League, Sport, Award, Add Award, Description Snippet, Position, Requires Championship, Requires Top 5 Finish, Performance Increase Award, Min Seasons, Max Seasons, Min Greatness, Max Greatness |
+| `a16_sports-coach-scenarios-enc` | 93 | Positive, Negative, Scenario, Log Version, Hero Gender, Min Fitness, Max Fitness, Min Greatness, Max Greatness, plus one flag column per sport |
+| `a16_sports-fan-interaction-scenarios-enc` | 56 | Positive, Negative, Scenario, Feedback Snippet, Log Version Snippet, Fan Gender, Fan Age, Hero Gender, Min Greatness, Max Greatness, Hero Min Age, Hero Max Age, Min Respect, Max Respect, plus one flag column per sport |
+| `a16_sports-injuries-enc` | 92 | Index, Type, Uses Indefinite Article, Feedback Snippet, Log Version Snippet, Gender, Seriousness Score, Duration Score, Rehab Score, Pain Score, Is Debilitating, Can Heal Organically, Can Have Surgery, Can Be Career Ending, plus one commonness column per sport |
+| `a16_sports-pivotal-moment-scenarios-enc` | 38 | seven sport flags, Position, Body, CTA, then per choice: Choice, Success Odds, Success Feedback, Success Narrative, Success Respect Impact, Failure Feedback, Failure Narrative, Failure Respect Impact |
+| `a16_sports-practice-scenarios-enc` | 171 | Scenario, Log Version, seven `<Sport> Skills` columns (comma lists), Skill Impact, Injury Score |
+| `a16_sports-stats-enc` | 46 | Sport, Stat, Integer Digits, Fraction Digits, Skills, Percentile 1 through 99 |
+| `a16_sports-training-scenarios-enc` | 65 | Scenario, Log Version, Balance, Endurance, Flexibility, Strength, Fitness Impact, Injury Score |
+| `a16_sports-trash-talk-scenarios-enc` | 49 | Scenario Inbound, Scenario Outbound, Recipient Gender, Min Greatness, Max Greatness, seven sport flags |
+
+The nine pools, and what each one is for in the year:
+
+* `a16_sports-awards-enc` - each row gated on the sport, a season window, a greatness
+  window, sometimes a championship or a top-five finish, and often a comma list of eligible
+  positions. Only a row whose `Add Award` flag is set can be won.
+* `a16_sports-injuries-enc` - a seriousness, a duration, a pain score, four flag
+  columns (`Is Debilitating`, `Can Heal Organically`, `Can Have Surgery`,
+  `Can Be Career Ending`) and one commonness column per sport.
+* `a16_sports-practice-scenarios-enc` - the row names the skills it trains in the sport's
+  own `<Sport> Skills` column, so the hero only draws practices that mean something for
+  his sport.
+* `a16_sports-training-scenarios-enc` - four drill flags and a fitness impact.
+* `a16_sports-stats-enc` - an integer width, a fraction width and eleven percentile
+  columns from the 1st to the 99th.
+* `a16_sports-coach-scenarios-enc` - positive and negative coach conversations with
+  fitness and greatness windows.
+* `a16_sports-fan-interaction-scenarios-enc` - positive and negative fan encounters with
+  windows on greatness, respect and the hero's age.
+* `a16_sports-trash-talk-scenarios-enc` - an inbound and an outbound version of each
+  exchange.
+* `a16_sports-pivotal-moment-scenarios-enc` - four choices, each with its own odds, its
+  own feedback, its own narrative and its own respect impact.
+
+### 80.2 The book
+
+The season opens with arithmetic, not with a card, and the arithmetic is the only reason the
+salary and the win-loss record mean anything:
+
+1. `games` = the sport row's `Season Games`, or sixteen.
+2. `edge` = `0.30 + (greatness - 20)/160 + (fitness - 40)/400`, less 0.15 while an
+   injury is carried, clamped to the sport's own `Max Win Percent` at the top and to 0.20
+   at the bottom. An injured star still plays badly.
+3. `wins` = `games * edge * (0.65 + 0.35 * unit())` - a great player on a great team
+   still loses games, and a bad one can win one.
+4. the paycheque is the sport row's minimum salary plus the range scaled by greatness:
+   `min + (max - min) * greatness / 100`, paid into the hero's money and banked in
+   `sportEarned`.
+5. playing is what improves a player: skill grows by one every season, plus another one while
+   the hero is winning at least half his games. This is invented - the data has no growth
+   curve - and it exists so that a long career can reach the gates the award table asks for.
+6. greatness then tracks the numbers: after the stat sheet, greatness becomes
+   `max(greatness, skill - 10 + below(16))`, and every season moves it by four, two or
+   minus one depending on the record.
+
+Every one of those facts is printed into the card as extra lines - `Season 2: 7-31 for
+$9,905,000.` - so the record, the money and the stat sheet are visible in the same card as
+the year's event.
+
+### 80.3 The stat sheet
+
+Up to five `a16_sports-stats-enc` rows of the hero's own sport are drawn. For each, the
+hero's skill with a plus-or-minus five jitter becomes a percentile, and the value is linearly
+interpolated between the two enclosing percentile columns - so a goalkeeper at skill 55 in a
+league whose save ladder runs 0, 4, 9, 17, 30, 52, 78, 110 reads as a number between the 40th
+and 50th percentile entries. The value is printed with the row's own integer and fraction
+widths, which is why points per game can show a decimal and goals cannot. The whole sheet is
+one extra line, e.g. `Season stats: 2 goals, 2 assists, 5 blocked shots, 33 tackles, 53
+saves.`
+
+The sheet is also what makes greatness move, so the stat line the player reads is the input to
+the award he may or may not win later in the same chain.
+
+### 80.4 The year
+
+After the book and the sheet, the year is one event, first hit wins, rarest first:
+
+| chance | event | what it does |
+|---|---|---|
+| 0.55 while hurt | still rehabbing | the injury clock ticks down; at zero the hero is cleared, loses the seriousness in skill, and the card says so |
+| 0.02 | a career-ending injury | draws only from rows flagged `Can Be Career Ending`; sets the flag, ends the career and costs four times the seriousness in skill |
+| 0.04 | an award | the sport's award rows, filtered on the season window, the greatness window, the championship and top-five requirements and the row's position list |
+| 0.05 | an injury | weighted on the sport's own commonness column; stops the player for its duration score and prints the rehab line |
+| 0.06 | a pivotal moment | one of the four choices the row fills in, with its own odds, its own feedback on the card and its own narrative in the journal |
+| 0.06 | trash talk | inbound or outbound, with the other player's pronoun pointed at him |
+| 0.08 | a word from the coach | positive or negative, filtered on the hero's gender, fitness and greatness |
+| 0.10 | a fan | positive or negative, filtered on the fan's gender and the hero's age and respect |
+| 0.14 | practice | only rows whose `<Sport> Skills` cell is non-empty; skill is the point of the card |
+| 0.16 | training | the four drill flags add two each, the fitness impact lands on the season |
+| otherwise | the season | a plain card carrying the record and the club |
+
+Then the curve and the retirement. From thirty the skill drops by one plus a quarter of the
+years over thirty plus a jitter; fitness starts dropping at twenty-eight; and at thirty-three
+a hero under fifteen skill - or one the twelve per cent coin picks - retires. The Hall of Fame
+is reached on eighty greatness, five awards or twelve seasons, and the card lists the trophy
+case when there is one.
+
+### 80.5 The tokens
+
+The nine pools needed exactly one new token. `<opponent>` is not a person: the pools
+write `a player from <opponent>` and `against <opponent>`, so it is another club,
+drawn from the same teams table as the hero's own club and excluding it, memoised per card so
+one card cannot name two different opponents, and answered inside `Sim::sportsToken` so
+that the existing non-athlete guard still protects it. Everything else in the family was
+already served: `<coach>` and `<teammate>` from the section-52 role list,
+`<hero-name>`, the five bracket words, the pronoun pairs, and both number forms
+(`<numN-M>` and `<decnumN-M>`).
+
+### 80.6 The bugs
+
+1. `sportRookie` did not exist. The season block was written without the field the
+   Rookie of the Year gate needs, and the build stopped on exactly one error.
+2. `numberToken` takes the inner text of a tag, not the bracketed tag. The first version
+   of the shared-number fix passed `<num10-15>`, got a false back and silently did
+   nothing, so one card read twelve sets of thirty bench presses while the journal read ten.
+   The pools write the card column and the journal column from the same tag, so a shared draw
+   - the section-76 actor fix, reused here - is what makes them agree.
+3. Awards never fired. Greatness grew too slowly because skill never grew at all: the practice
+   pool only fires about one year in seven, so the hero sat at thirty-odd skill for a whole
+   career and never cleared the `Min Greatness` gates of forty, seventy and ninety-five.
+   Fixing the growth put two awards into sixty scripted lives, which is the intended rarity.
+4. The retirement card kept the event pool as its table and the event's narrative as its
+   journal line, so a card could read `The end of the road` with the practice pool's
+   table and a narrative about crunches. Retirement now forces its own line and is attributed
+   to the sport row.
+5. A card that opens on a pronoun arrived lower-case, because the pools write
+   `<he/she> screams at you`. The body is upper-cased once at the tail of the function.
+
+### 80.7 Shortcuts
+
+* No draft, no contract, no trade and no free agency. The hero stays with the club section 52
+  gave him, and the salary follows greatness alone.
+* One opponent club per card, drawn from the ordinary teams table rather than a fixture list.
+* The skill model has no per-skill values: `sportSkill` is one number, the four training
+  flags are four more, and the percentile ladder is read through the single skill. The
+  `<Sport> Skills` cell is shown on the card but not tracked.
+* The `Rehab Score` column of the injuries table is unused (the port uses the duration
+  score alone), and `Num in Team` and `Max Age` from the positions table are
+  ignored.
+* The award candidate list uses a flat four per cent, and the `League` column of the
+  awards table (a numeric id) is not modelled.
+* The fan and coach cards pay flat stat effects because those pools carry no score columns.
+
+### 80.8 Verification
+
+`/tmp/qdir/spores.py` walks thirty seeds in both genders to sixty with
+`{"sports": true}` and reports `sports events 611 rc failures 0` with
+`RESIDUE 0`. `/tmp/qdir/sssample.py` counts 842 season cards over forty seeds:
+"The season" 389, "Practice" 75, "Training" 49, "Trash talk" 41, "The coach is not happy" 35,
+"Still rehabbing" 33, "The Hall of Fame" 30, "The end of the road" 30, "A moment in the game"
+29, "An injury" 28, "An angry fan" 27, "A fan" 26, "A career-ending injury" 20, "The coach is
+happy" 14, "Back on the field" 14 and "An award" 2, so all fifteen branches fire. Every family
+probe stays at residue zero (actres 668, astres 792, bizres 3574, bmres 1639, casres 1284,
+cultres 1167, dlres 1538, fightres 1242, finres 762, hustres 1408, ltres 1566, luxres 849,
+mafiares 1313, modres 589, outres 1025, petres 2472, racres 856, spores 611, spyres 558,
+stures 1149, traderes 1316, vampres 3297, zoores 1442), `rescensus.py` reports a residue
+census of zero, `coverage.py` still captures 109 scenarios of which 107 are recoverable,
+`portgap.py` reports a gap of zero over 109 entries, `covpush.json` exits zero and
+the bench reaches age thirty-four without an abort.
+
+Some cards, sampled by hand:
+
+    The season = A year of soccer with São Paulo.
+    Season 2: 7-31 for $9,905,000.
+    Season stats: 2 goals, 2 assists, 5 blocked shots, 33 tackles, 53 saves.
+    I played 38 games for São Paulo and won 9.
+
+    Training / You did 12 sets of 30 bench presses at the team training center.
+    I did 12 sets of 30 bench presses.
+
+    An award / Award: Rookie of the Year. For being the most outstanding rookie in the league.
+    I won the Rookie of the Year for being the most outstanding rookie in the league.
+
+    An injury / The diagnosis: a fractured orbital socket.
+    I fractured my orbital socket.
+    It will take 2 years of rehab.
+
+    A moment in the game / It is 4th down and your team is near midfield, down six points with
+    only two seconds left. The quarterback reminds everyone that a touchdown is needed to win,
+    and you are out of timeouts. He then turns to you and asks whether you can get open.
+    Run a slant route? Catch a medium pass
+    I caught a medium pass on the last play of the game against Fave Gnolls and ran the ball
+    into the end zone for the game-winning touchdown!
+
+    The coach is not happy / He screams at you for synonymizing the team's name with defeat.
+    Arianna X berated me for synonymizing our team's name with defeat.
+
+    The Hall of Fame / After 18 seasons the Hall called.
+    I retired after 18 seasons and went into the Hall of Fame.
+
+    The end of the road / After 9 seasons, that was it.
+    I retired after 9 seasons.
+
+A note on the model: the season lines and the event lines are printed together, so a card can
+carry a whole season - record, pay, stat sheet, fitness - before its headline event. That is
+the intended shape: the year is the unit, the event is the story inside it.

@@ -564,6 +564,23 @@ struct Hero {
   int luxIslandSize = 0, luxSocietyRank = 0, luxEvents = 0, luxSpaVisits = 0;
   long long luxValue = 0, luxSpent = 0, luxWindfall = 0;
 
+  // The season (REPORT.en.md 80): the pro-sports career behind the athlete
+  // switch of 52. One season a year, with a stat sheet and an event.
+  bool sportPro = false;
+  int sportSkill = 20, sportGreatness = 10, sportRespect = 20;
+  int sportFitness = 40, sportBalance = 40, sportEndurance = 40;
+  int sportFlexibility = 40, sportStrength = 40;
+  int sportSeasons = 0, sportGames = 0, sportWins = 0, sportAwards = 0;
+  int sportFame = 0;
+  bool sportChampion = false, sportTop5 = false, sportHall = false;
+  bool sportRookie = false;            // true only for the first season
+  bool sportInjured = false;
+  std::string sportInjury;
+  int sportInjuryYears = 0, sportInjurySeverity = 0, sportInjuryPain = 0;
+  bool sportDebilitating = false, sportCareerEnding = false;
+  std::vector<std::string> sportAwardNames;
+  long long sportSalary = 0, sportEarned = 0;
+
 
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
