@@ -4811,3 +4811,192 @@ Three bugs were found while probing this family: the extortion and prison log li
 feedback column read first (`<rb>` again), the packaging cell is itself an alternative list and
 already plural, and `out.row_id` is a string in this simulator, so assigning an integer to it
 produced JSON that no probe could parse.
+
+## 64. The family: a made man at rank one, and seventeen mafia tables
+
+The mafia family is the second half of the underworld the port already had
+(report 63 wired the drug trade). It is the older organisation: a made man
+belongs to a family the mob table assigns to his own country, starts at rank
+one, and climbs by standing. Seventeen tables, 831 rows. Two of them
+(`a16_mafia-mobs-enc`, `a16_mafia-nicknames-enc`) report 56 had already
+wired as misc sources for `<mafia-godfather>`-style tokens; section 64 takes
+them back and gives the family a token handler of its own.
+
+### 64.1 the tables
+
+| rows | table | what it carries |
+|---|---|---|
+| 7 | a16_mafia-mobs-enc | Mob, Associated Country, Host Country, Notoriety Score, Money Score, Rank 1 … Rank 4, Rank 5 Male, Rank 5 Female |
+| 142 | a16_mafia-nicknames-enc | Nickname, Mob Country, Gender (the nickname cells are themselves brackets) |
+| 86 | a16_mafia-calling-cards-enc | Item, Uses Partitive Article, Specific Mob Country |
+| 72 | a16_mafia-excuses-enc | Scenario Snippet, Gender |
+| 36 | a16_mafia-executions-enc | Method, Hero Outbound/Inbound Scenario + Log Version, Third Person Version, Death Snippet, Pain Score |
+| 23 | a16_mafia-extortion-targets-enc | Company Type, Specific Target, Gender, Money Score, Commonness Score |
+| 35 | a16_mafia-feedback-earnings-enc | Feedback |
+| 14 + 22 | a16_mafia-feedback-negative-enc, feedback-positive-enc | Scenario, Log Version, Specific Mob Country |
+| 11 | a16_mafia-join-methods-enc | Method, Feedback Snippet, Log Version Snippet, Success Score, Can Be Punished |
+| 43 | a16_mafia-join-rejections-enc | Feedback, Insufficient Criminal Record, Repeat |
+| 104 | a16_mafia-pastimes-enc | Pastime, Specific Mob Country |
+| 100 | a16_mafia-push-crimes-enc | Present Snippet, Past Snippet, Against Rival Family, Seriousness Score, Get Caught Score, Associated Crime |
+| 73 | a16_mafia-push-targets-enc | Target, Reason, Gender, Can Have Name, Godfather Cannot Order, Get Caught Score |
+| 16 | a16_mafia-scare-methods-enc | Method, Scenario, Log Version, Effectiveness Score, Get Caught Score |
+| 24 | a16_mafia-shakedown-methods-enc | Method, Success/Failure Scenario + Log Version, Third Person Version, Effectiveness Score |
+| 23 | a16_mafia-temptation-scenarios-enc | Scenario, Log Version, Min/Max Amount, Get Caught Score, Is Cash, Dishonorable Choice + Narrative, Honorable Choice |
+
+The mobs table is the spine of the whole family: five rows keyed on ISO country
+codes (Sicilian mafia `it`, triad `cn`, yakuza `jp`, the Italian-American
+mafia `it`, Irish mob `ie`) and the five rank names as columns, with the top
+rank split by gender.
+
+### 64.2 becoming a made man
+
+The script flag is `"mafia": true` (the boolean already existed — report 56 used
+it for the mafia misc pool bit), and `Sim::makeMafia` is called after
+`makeDealer`. It sets the rank to 1, the standing to 35, hands the hero $250,
+and calls `ensureMafiaFields`:
+
+* the hero's country name is turned into its ISO code
+  (`mafiaCountryCode` walks the parsed `a16_countries-enc.json` rows for the
+  name and reads `.code`) because every mob column is keyed on the code;
+* the family is drawn among the mobs rows whose Associated Country is that code,
+  falling back to all rows for a country with no mob of its own (the United
+  States, for instance, has none of the five as an exact match);
+* the rival family is another row of the same table, and the notoriety/money
+  scores are read off the family row into the hero's own state;
+* the hero's nickname comes from the nicknames table filtered on Gender and Mob
+  Country, and the cell is resolved because it is itself a bracket
+  (`<first-name> Meatballs`);
+* the rank title is read from the family's row (`mafiaRankTitle`).
+
+### 64.3 the five ranks
+
+`mafiaRankTitle` finds the hero's mob row and reads `Rank 1` … `Rank 4`, or
+`Rank 5 Male` / `Rank 5 Female` for the top. The rank is a function of
+standing: 45 → soldier, 62 → caporegime, 78 → underboss, 92 → godfather. A rank
+change writes one line into the year's extras ("The family made me soldier."),
+and once the hero holds rank 5 he is the godfather himself: `<mafia-godfather>`
+and `<mafia-boss>` resolve to the hero's own name instead of a drawn one.
+
+### 64.4 a year in the family
+
+`Sim::mafiaYear` runs from age 18 at 40% a year and fires exactly one event,
+first hit wins:
+
+| chance | event |
+|---|---|
+| 0.18 | a shakedown — extortion-targets (Money Score) × shakedown-methods; success is `Effectiveness * 12 + standing > d100` |
+| 0.30 | a job — push-crimes Present/Past with a push-targets reason; heat grows by Seriousness Score, and Get Caught Score × 8 decides whether someone talks |
+| 0.10 | a contract — executions, outbound normally and inbound once standing drops below 20 (35%); a calling-card item is left at the scene |
+| 0.14 | the boss says the hero is not earning enough (feedback-earnings) |
+| 0.14 | praise or disappointment (feedback-positive above standing 50, otherwise negative), filtered to the mob's own country |
+| 0.12 | a temptation — Min/Max Amount becomes `<amount>` and half the time the dishonorable narrative is taken |
+| 0.20 | an evening with the family (pastimes, filtered to the country) |
+| 0.12 | an excuse for missing a job (excuses, filtered on the hero's gender) |
+| else | the family is not ready to promote him (join-rejections) |
+
+Every year also moves the rank when the standing crosses a threshold, and a
+godfather gets a 20% scare-methods line about the rival family. When nothing was
+composed the year falls back to a one-line status ("I am a soldier of the triad
+with 4 jobs behind me."), built from the rank title, the family name and the job
+count.
+
+### 64.5 the tokens
+
+| token | source |
+|---|---|
+| `<mafia-boss>`, `<mafia-godfather>` | the hero once he is rank 5, else a drawn nickname for the mob's country |
+| `<mafia-family>`, `<mafia-rival-family>` | the two mobs rows |
+| `<mafia-colleague>`, `<mafia-rival-family-member>` | one drawn name per card, with the pronoun pair pointed at them |
+| `<mafia-nickname>` | the hero's own nickname |
+| `<mafia-calling-card>` | calling-cards, article by the partitive flag |
+| `<first-name>`, `<last-name>` | the name pools |
+| `<other-person>` | a name per card |
+| `<amount>` | the money drawn by the temptation block |
+| `<city-other>` | another city of the hero's country (the `<country-other>` idea) |
+
+Six of those keys used to be answered by the report 56 misc map through the
+nicknames and mobs tables; those entries were removed from `kMiscSrc` so the
+family's own handler owns the pronouns and the gender of the name it draws.
+
+### 64.6 two things the family's prose needed
+
+**The row's other column.** A log line routinely points back at an alternative
+drawn in a different column of the same row — the shakedown's Success Log
+Version says "I kicked a jockey's `<rb>`!", where the body part lives in the
+Success Scenario cell. A `warm` lambda (in `mafiaYear`) resolves every
+bracketed cell of the row except the one about to be written, in column order, so
+the `<rb>` cache is populated before the line is rendered. Same trick the
+dealer trade needed (report 63), generalised.
+
+**The second person.** The family addresses the hero directly ("`<mafia-boss>`
+told you that you need to make some more money … or you might get clipped"). The
+log has to become first person, and "you" is the object after a verb of address
+and the subject everywhere else, so `toFirst` keeps a hand-written verb list
+(told, warned, reminded, asked, took, taught, made, cost, gave, given, sent,
+brought, handed, offered, dealt, kept, threw, put, left, paid …) and picks `me`
+or `I` accordingly, then fixes up `your`/`yourself`/`you're`/`you'll`.
+This is the one place in the port where a swap needs a little grammar instead of
+a replacement table.
+
+### 64.7 shortcuts
+
+* no prison, no police heat beyond the per-event scores, no paying tribute up
+  the chain; the family's own money score is tracked but never spent;
+* `Godfather Cannot Order`, `Against Rival Family`, `Can Be Punished`,
+  `Insufficient Criminal Record`, `Repeat` and `Is Cash` are read as flags
+  only where the code uses them — the rest are skipped;
+* the `toFirst` verb list is hand-kept (a new table with another verb of
+  address would need one more word);
+* the rank ladder is four standing thresholds, not the game's own progression;
+* one event per year, so a year that fires the shakedown never shows the
+  contract.
+
+### 64.8 verification
+
+`/tmp/qdir/mafiares.py` runs 30 seeds × both genders to age 60 with
+`"mafia": true` and regexes every `<…>` out of the title, body and log lines of
+the events whose table belongs to the family:
+
+    mafia events 1288   residue 0
+    660 a16_dumb-scenarios-mafia-enc      149 a16_mafia-push-crimes-enc
+    140 a16_mafia-join-rejections-enc     130 a16_mafia-shakedown-methods-enc
+     47 a16_mafia-feedback-earnings-enc     46 a16_mafia-pastimes-enc
+     36 a16_mafia-executions-enc            34 a16_mafia-feedback-negative-enc
+     25 a16_mafia-temptation-scenarios-enc  19 a16_mafia-excuses-enc
+      2 a16_mafia-feedback-positive-enc
+
+Sample years (seed 1, male, United States — the Sicilian mafia is picked because
+the country has no mob of its own, so the pool falls back to all five rows):
+
+    A job for the family   The ask: steal the winning horse from the Kentucky Derby.
+                           The target: private investigator, who stuck his nose
+                           where it didn't belong.
+                           I stole the winning horse from the Kentucky Derby.
+                           The family paid me $3,100.
+
+    A contract             The family wanted Dustin Mangrove gone.
+                           Method: mummification.
+                           I left some octopus suckers where they would find it.
+                           I mummified a deaf man's body and stuffed him into a
+                           sarcophagus filled with flesh-eating scarabs!
+
+    The boss noticed       I am a soldier of the triad with 4 jobs behind me.
+                           Rollins Peary shook my hand and nodded.
+
+Three bugs were found by this probe and fixed:
+
+1. push-crimes' Present/Past Snippet cells were read straight out of the table
+   without `resolve`, so eighteen kinds of inline bracket (and the tokens inside
+   them) printed verbatim — 432 residue tokens in the first run, 98 of them
+   `<mafia-rival-family>` alone;
+2. the shakedown, execution, feedback, temptation and scare lines referred to an
+   alternative drawn in another column of their own row, which only the `warm`
+   pass fills;
+3. `withArticle` returns the article alone (`"an "`), not the article plus the
+   word, so the fallback line read "I am an of the Sicilian mafia" until the rank
+   name was appended after it.
+
+Full regression after the family: `rescensus` reports `distinct residue tokens 0
+total 0`, `coverage.py` reports `captured scenarios: 109  recoverable: 107`,
+`portgap.py` reports `ENTRIES 109 rendered-by-port 107 gap 0`, the `covpush`
+script returns 0, and `bench.sh` reaches age 34 with no abort.

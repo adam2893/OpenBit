@@ -132,6 +132,7 @@ class Sim {
   void makeCasino(Life& life);
   void makeCult(Life& life);
   void makeDealer(Life& life);
+  void makeMafia(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -266,6 +267,10 @@ class Sim {
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);
   std::string dealerToken(const std::string& key);
   void ensureDealerFields(Life& life);
+  bool mafiaYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string mafiaToken(const std::string& key);
+  std::string mafiaRankTitle(const Hero& h, int rank);
+  void ensureMafiaFields(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -345,6 +350,7 @@ class Sim {
   Rng casinoRng_;
   Rng cultRng_;
   Rng dealerRng_;
+  Rng mafiaRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -368,6 +374,8 @@ class Sim {
   bool dealerMemberFemale_ = false;
   std::string dealerVictim_;       // one target per trade card
   std::map<std::string, std::string> dealerCache_;
+  std::string mafiaAmount_;        // one <amount> per family card
+  std::map<std::string, std::string> mafiaCache_;  // one name per token per card
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

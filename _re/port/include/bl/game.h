@@ -196,6 +196,23 @@ struct Hero {
   int dealerDoses = 0;             // doses moved in total
   int dealerInfamy = 0;            // 0-100, how known the hero is
   int dealerHeat = 0;              // 0-100, how closely watched
+  // The mafia (REPORT.en.md 64): a made man at one of five ranks, with the
+  // family and the rival family the mob table assigns to his country.
+  bool mafia = false;
+  std::string mafiaFamily;
+  std::string mafiaBoss;
+  std::string mafiaNick;
+  std::string mafiaRival;
+  std::string mafiaRankName;
+  std::string mafiaCountry;        // the ISO code the mob tables key on
+  std::string mafiaJoin;           // how he got in, written once
+  int mafiaRank = 0;               // 1 associate ... 5 godfather
+  int mafiaStanding = 0;           // 0-100, how the family rates him
+  int mafiaMoney = 0;              // what the family's business is worth
+  int mafiaNotoriety = 0;
+  int mafiaHeat = 0;
+  int mafiaHits = 0;
+  long long mafiaEarned = 0;
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

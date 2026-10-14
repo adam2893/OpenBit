@@ -578,7 +578,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       bmRng_(seed ^ 0x8f1bbcdc9e3779b1ULL),
       casinoRng_(seed ^ 0xd1b54a32d192ed03ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
-      dealerRng_(seed ^ 0x9ddfea08eb382d69ULL) {}
+      dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
+      mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -605,6 +606,21 @@ bool Sim::load(std::string* error) {
     "a16_dumb-scenarios-casino-enc",
     "a16_mafia-mobs-enc",
     "a16_mafia-nicknames-enc",
+    "a16_mafia-calling-cards-enc",
+    "a16_mafia-excuses-enc",
+    "a16_mafia-executions-enc",
+    "a16_mafia-extortion-targets-enc",
+    "a16_mafia-feedback-earnings-enc",
+    "a16_mafia-feedback-negative-enc",
+    "a16_mafia-feedback-positive-enc",
+    "a16_mafia-join-methods-enc",
+    "a16_mafia-join-rejections-enc",
+    "a16_mafia-pastimes-enc",
+    "a16_mafia-push-crimes-enc",
+    "a16_mafia-push-targets-enc",
+    "a16_mafia-scare-methods-enc",
+    "a16_mafia-shakedown-methods-enc",
+    "a16_mafia-temptation-scenarios-enc",
     "a16_dealer-cartel-name-enc",
     "a16_hustler-collection-boxes-enc",
     "a16_hustler-busk-music-types-enc",
@@ -1292,12 +1308,7 @@ const char* const kUnresolvedTokens[] = {"<action>"};
 struct MiscSrc { const char* key; const char* table; const char* col; };
 
 const MiscSrc kMiscSrc[] = {
-  {"mafia-godfather", "a16_mafia-nicknames-enc", "Nickname"},
-  {"mafia-boss", "a16_mafia-nicknames-enc", "Nickname"},
-  {"mafia-colleague", "a16_mafia-nicknames-enc", "Nickname"},
-  {"mafia-rival-family-member", "a16_mafia-nicknames-enc", "Nickname"},
-  {"mafia-family", "a16_mafia-mobs-enc", "Mob"},
-  {"mafia-rival-family", "a16_mafia-mobs-enc", "Mob"},
+  // The mafia names moved to their own token handler (REPORT.en.md 64).
   {"cartel", "a16_dealer-cartel-name-enc", "Name"},
   {"drug-cartel", "a16_dealer-cartel-name-enc", "Name"},
   {"rival-cartel", "a16_dealer-cartel-name-enc", "Name"},
@@ -1395,6 +1406,21 @@ std::string spyUpperFirst(std::string text) {
 // The casino family (report 61). '<hero-casino>' and '<casino-room>' used to be
 // served by the misc map with a random row each time; now the hero's own casino
 // answers them when the hero has one.
+// The mafia family's own tokens (report 64). The mob tables key their rows on
+// ISO country codes, so the names come from the table for the hero's country.
+bool mafiaIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key = key.substr(0, key.size() - psuffix.size());
+  static const char* kKeys[] = {"mafia-boss", "mafia-godfather", "mafia-family", "mafia-rival-family",
+                                "mafia-rival-family-member", "mafia-colleague", "mafia-nickname",
+                                "mafia-calling-card", "first-name", "last-name", "other-person",
+                                "amount", "city-other"};
+  for (const char* k : kKeys) if (key == k) return true;
+  return false;
+}
+
 bool dealerIsToken(const std::string& token) {
   std::string k = token;
   const std::string psuffix = "-possessive";
@@ -1578,6 +1604,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (mafiaIsToken(token)) {
+      const std::string v = mafiaToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (dealerIsToken(token)) {
@@ -2494,6 +2524,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (casinoYear(life, out, forcedChoice)) return true;
   if (cultYear(life, out, forcedChoice)) return true;
   if (dealerYear(life, out, forcedChoice)) return true;
+  if (mafiaYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -5430,6 +5461,8 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   dealerMember_.clear();    // one cartel member / target per trade card
   dealerVictim_.clear();
   dealerCache_.clear();
+  mafiaAmount_.clear();     // one amount / family name per family card
+  mafiaCache_.clear();
   std::string title, body, line, tableRef, rowRef;
   std::vector<std::string> extra;
   int happiness = 0;
@@ -7466,6 +7499,516 @@ bool Sim::dealerYear(Life& life, AgeUp& out, int forcedChoice) {
   out.title = title;
   out.body = body;
   out.narrative = narr;
+  out.extra = extra;
+  out.happiness += happy;
+  return true;
+}
+
+// --------------------------------------------------------------- the mafia --
+// Section 64: the a16_mafia-* family. The hero is made, takes his orders from
+// a godfather, and works the neighbourhood the mob table assigns to his
+// country. Most of the family's rows arrive in the second person, so they pass
+// through a one-way swap before they are logged.
+
+// The mob tables key their rows on ISO country codes ("it", "cn"), while the
+// simulator keeps the country name, so the code is looked up for each call.
+static std::string mafiaCountryCode(const std::vector<bl::Country>& countries, const std::string& name) {
+  for (size_t i = 0; i < countries.size(); ++i)
+    if (countries[i].name == name) return lower(trim(countries[i].code));
+  return std::string();
+}
+
+std::string Sim::mafiaToken(const std::string& key) {
+  Hero& h = *const_cast<Hero*>(hero_);
+  std::string k = key;
+  const std::string psuffix = "-possessive";
+  bool poss = false;
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    poss = true;
+    k = k.substr(0, k.size() - psuffix.size());
+  }
+  const auto own = [&](const std::string& v) { return poss ? (v + "'s") : v; };
+  const auto speakAs = [&](bool female) { pronounOtherSet_ = true; pronounOtherFemale_ = female; };
+  const auto cached = [&](const std::string& slot, bool female) -> std::string {
+    std::map<std::string, std::string>::iterator it = mafiaCache_.find(slot);
+    if (it != mafiaCache_.end()) return it->second;
+    const std::string name = drawFirstName(female) + " " + drawSurname();
+    mafiaCache_[slot] = name;
+    return name;
+  };
+  if (k == "mafia-boss" || k == "mafia-godfather") {
+    // Once the hero holds the top rank he is the godfather himself.
+    if (h.mafiaRank >= 5) { speakAs(h.female); return own(h.firstName + " " + h.lastName); }
+    if (h.mafiaBoss.empty()) {
+      size_t r = size_t(-1);
+      if (ensureTable("a16_mafia-nicknames-enc")) {
+        const Table& t = tbl("a16_mafia-nicknames-enc");
+        std::vector<size_t> pool;
+        for (size_t i = 0; i < t.size(); ++i) {
+          const std::string c = lower(trim(t.at(i, "Mob Country")));
+          if (!c.empty() && !h.mafiaCountry.empty() && c != h.mafiaCountry) continue;
+          pool.push_back(i);
+        }
+        if (!pool.empty()) r = pool[mafiaRng_.below(uint32_t(pool.size()))];
+      }
+      h.mafiaBoss = r == size_t(-1)
+                  ? (drawFirstName(false) + " " + drawSurname())
+                  : resolve(trim(tbl("a16_mafia-nicknames-enc").at(r, "Nickname")));
+    }
+    speakAs(false);
+    return own(h.mafiaBoss);
+  }
+  if (k == "mafia-family") return own(h.mafiaFamily);
+  if (k == "mafia-rival-family") return own(h.mafiaRival);
+  if (k == "mafia-rival-family-member") {
+    const bool female = mafiaRng_.chance(0.5);
+    speakAs(female);
+    return own(cached("rival-member", female));
+  }
+  if (k == "mafia-colleague") {
+    const bool female = mafiaRng_.chance(0.5);
+    speakAs(female);
+    return own(cached("colleague", female));
+  }
+  if (k == "mafia-nickname") return own(h.mafiaNick);
+  if (k == "mafia-calling-card") {
+    if (!ensureTable("a16_mafia-calling-cards-enc")) return std::string();
+    const size_t r = pickRow("a16_mafia-calling-cards-enc", "", "", "", "", mafiaRng_);
+    if (r == size_t(-1)) return std::string();
+    const std::string item = resolve(trim(tbl("a16_mafia-calling-cards-enc").at(r, "Item")));
+    // 'Uses Partitive Article' marks the mass nouns ("some dog droppings in a
+    // paper bag"); everything else takes a plain article.
+    return own((tbl("a16_mafia-calling-cards-enc").flag(r, "Uses Partitive Article") ? std::string("some ") : articleFor(item)) + item);
+  }
+  if (k == "first-name") return own(drawFirstName(mafiaRng_.chance(0.5)));
+  if (k == "last-name") return own(drawSurname());
+  if (k == "other-person") {
+    const bool female = mafiaRng_.chance(0.5);
+    speakAs(female);
+    return own(cached("other", female));
+  }
+  if (k == "amount") {
+    if (mafiaAmount_.empty()) mafiaAmount_ = money(1000 + static_cast<long long>(mafiaRng_.below(49000)));
+    return mafiaAmount_;
+  }
+  if (k == "city-other") {
+    // Another city of the hero's own country, the way <country-other> picks
+    // another country (report 38).
+    if (!hero_ || hero_->city.empty()) return std::string();
+    const std::string home = hero_->country;
+    for (size_t i = 0; i < countries_.size(); ++i) {
+      if (countries_[i].name != home || countries_[i].cities.empty()) continue;
+      for (int tries = 0; tries < 12; ++tries) {
+        const std::string cand = countries_[i].cities[mafiaRng_.below(uint32_t(countries_[i].cities.size()))];
+        if (cand != hero_->city) return own(cand);
+      }
+    }
+    return std::string();
+  }
+  return std::string();
+}
+
+// The rank titles live in the mobs table, one column per rank, with the top
+// rank split by gender.
+std::string Sim::mafiaRankTitle(const Hero& h, int rank) {
+  if (rank < 1) rank = 1;
+  if (rank > 5) rank = 5;
+  if (!ensureTable("a16_mafia-mobs-enc")) return std::string();
+  const Table& t = tbl("a16_mafia-mobs-enc");
+  for (size_t i = 0; i < t.size(); ++i) {
+    if (trim(t.at(i, "Mob")) != h.mafiaFamily) continue;
+    const std::string col = rank == 5 ? (h.female ? "Rank 5 Female" : "Rank 5 Male")
+                                      : ("Rank " + std::to_string(rank));
+    if (!t.has(col)) return std::string();
+    return trim(t.at(i, col));
+  }
+  return std::string();
+}
+
+void Sim::ensureMafiaFields(Life& life) {
+  (void)life;
+  Hero& h = *const_cast<Hero*>(hero_);
+  const std::string cc = mafiaCountryCode(countries_, h.country);
+  h.mafiaCountry = cc;
+  // The family owed to the country: a row whose Associated Country is the
+  // hero's, or any row when that country has no mob of its own.
+  if (ensureTable("a16_mafia-mobs-enc")) {
+    const Table& t = tbl("a16_mafia-mobs-enc");
+    std::vector<size_t> pool;
+    for (size_t i = 0; i < t.size(); ++i) {
+      const std::string ac = lower(trim(t.at(i, "Associated Country")));
+      if (!cc.empty() && ac != cc) continue;
+      pool.push_back(i);
+    }
+    if (pool.empty()) for (size_t i = 0; i < t.size(); ++i) pool.push_back(i);
+    const size_t r = pool.empty() ? size_t(-1) : pool[mafiaRng_.below(uint32_t(pool.size()))];
+    if (r == size_t(-1)) {
+      h.mafiaFamily = drawSurname() + " Family";
+    } else {
+      h.mafiaFamily = trim(t.at(r, "Mob"));
+      h.mafiaNotoriety = int(t.num(r, "Notoriety Score") * 10.0);
+      h.mafiaMoney = int(t.num(r, "Money Score") * 10.0);
+    }
+    std::vector<size_t> rivals;
+    for (size_t i = 0; i < t.size(); ++i)
+      if (trim(t.at(i, "Mob")) != h.mafiaFamily) rivals.push_back(i);
+    if (!rivals.empty()) h.mafiaRival = trim(t.at(rivals[mafiaRng_.below(uint32_t(rivals.size()))], "Mob"));
+  }
+  if (h.mafiaFamily.empty()) h.mafiaFamily = drawSurname() + " Family";
+  if (h.mafiaRival.empty()) h.mafiaRival = "the other family";
+  // The hero's own nickname, from the same table the godfathers come from
+  // (report 56 wired it as a misc source first).
+  if (ensureTable("a16_mafia-nicknames-enc")) {
+    const Table& t = tbl("a16_mafia-nicknames-enc");
+    const std::string want = h.female ? "female" : "male";
+    std::vector<size_t> pool;
+    for (size_t i = 0; i < t.size(); ++i) {
+      const std::string g = lower(trim(t.at(i, "Gender")));
+      if (!g.empty() && g != want) continue;
+      const std::string c = lower(trim(t.at(i, "Mob Country")));
+      if (!c.empty() && !cc.empty() && c != cc) continue;
+      pool.push_back(i);
+    }
+    if (pool.empty()) for (size_t i = 0; i < t.size(); ++i) pool.push_back(i);
+    if (!pool.empty()) h.mafiaNick = resolve(trim(t.at(pool[mafiaRng_.below(uint32_t(pool.size()))], "Nickname")));
+  }
+  if (h.mafiaNick.empty()) h.mafiaNick = drawSurname();
+  h.mafiaRankName = mafiaRankTitle(h, h.mafiaRank);
+}
+
+void Sim::makeMafia(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.mafia) return;
+  h.mafia = true;
+  h.mafiaRank = 1;
+  h.mafiaStanding = 35;
+  h.mafiaHeat = 0;
+  h.mafiaHits = 0;
+  h.mafiaEarned = 0;
+  ensureMafiaFields(life);
+  h.money += 250;
+  // How he got in, for the first line of the diary.
+  const size_t r = pickRow("a16_mafia-join-methods-enc", "", "", "", "", mafiaRng_);
+  if (r != size_t(-1)) {
+    const Table& t = tbl("a16_mafia-join-methods-enc");
+    h.mafiaJoin = "I got in by " + spySentence(spyLowerFirst(trim(t.at(r, "Feedback Snippet")))) +
+                  " (" + h.mafiaRankName + " of the " + h.mafiaFamily + ")";
+  }
+}
+
+bool Sim::mafiaYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.mafia || h.age < 18) return false;
+  if (!mafiaRng_.chance(0.40)) return false;
+  if (h.mafiaRankName.empty()) ensureMafiaFields(life);
+
+  std::string title, body, line, tableRef, rowRef;
+  std::vector<std::string> extra;
+  int happy = 0;
+  mafiaAmount_.clear();
+  mafiaCache_.clear();
+  pronounOtherSet_ = false;
+  auto say = [&body](const std::string& s) {
+    if (!s.empty()) body += body.empty() ? s : " " + s;
+  };
+  auto tell = [&line](const std::string& s) {
+    if (!s.empty()) line += line.empty() ? s : " " + s;
+  };
+  const auto cell = [this](const Table& t, size_t r, const char* col) {
+    return t.has(col) ? resolve(trim(t.at(r, col))) : std::string();
+  };
+  // The family talks to the hero in the second person, so the log turns it
+  // around. 'you' is the object after a verb of address ("told you") and the
+  // subject everywhere else, which is as far as a token swap can go.
+  // shortcut: a hand-kept verb list, upgrade if a table adds another verb.
+  const auto toFirst = [](const std::string& s) {
+    static const char* kVerb[] = {"told", "warned", "reminded", "asked", "took", "taught",
+                                  "made", "cost", "gave", "given", "give", "showed", "shown",
+                                  "saw", "heard", "called", "sent", "brought", "handed",
+                                  "offered", "dealt", "kept", "threw", "put", "left", "paid"};
+    std::string t = spySwap(s, "yourself", "myself");
+    t = spySwap(t, "your ", "my ");
+    t = spySwap(t, "you're", "I am");
+    t = spySwap(t, "you'll", "I'll");
+    t = spySwap(t, "you've", "I've");
+    t = spySwap(t, "you don't", "I don't");
+    t = spySwap(t, "you better", "I better");
+    size_t p = 0;
+    while ((p = t.find("you", p)) != std::string::npos) {
+      const char before = p > 0 ? t[p - 1] : ' ';
+      const char after = p + 3 < t.size() ? t[p + 3] : ' ';
+      const bool letter = (before >= 'a' && before <= 'z') || (before >= 'A' && before <= 'Z') || before == '-';
+      const bool tail = (after >= 'a' && after <= 'z') || (after >= 'A' && after <= 'Z') || after == 39;
+      if (letter || tail) { p += 3; continue; }
+      size_t e = p;
+      while (e > 0 && t[e - 1] == ' ') --e;
+      size_t q = e;
+      while (q > 0 && ((t[q - 1] >= 'a' && t[q - 1] <= 'z') || (t[q - 1] >= 'A' && t[q - 1] <= 'Z'))) --q;
+      const std::string prev = lower(t.substr(q, e - q));
+      bool object = false;
+      for (const char* v : kVerb) if (prev == v) object = true;
+      const std::string rep = object ? "me" : "I";
+      t.replace(p, 3, rep);
+      p += rep.size();
+    }
+    t = spySwap(t, "I aren't", "I am not");
+    return t;
+  };
+  // The family's log lines refer back to the alternatives drawn in another
+  // column of the same row ("<rb>", "<amount>"), so every cell of that row
+  // which carries brackets is resolved before the line itself is written.
+  const auto warm = [this](const Table& t, size_t r, const char* keep) {
+    const std::vector<std::string>& cols = t.columns();
+    for (size_t c = 0; c < cols.size(); ++c) {
+      if (keep && cols[c] == keep) continue;
+      if (t.at(r, cols[c]).find('<') != std::string::npos) resolve(t.at(r, cols[c]));
+    }
+  };
+  const auto drawRow = [&](const char* name, const char* weight, const char* fcol, const char* fval, const char* flag) {
+    const size_t r = pickRow(name, weight ? weight : "", fcol ? fcol : "", fval ? fval : "",
+                             flag ? flag : "", mafiaRng_);
+    if (r != size_t(-1)) { tableRef = name; rowRef = std::to_string(r); }
+    return r;
+  };
+
+  // 1. A shakedown: a business that is behind on its payments.
+  if (mafiaRng_.chance(0.18)) {
+    const size_t tg = drawRow("a16_mafia-extortion-targets-enc", "Commonness Score", 0, 0, 0);
+    const size_t sm = drawRow("a16_mafia-shakedown-methods-enc", 0, 0, 0, 0);
+    if (tg != size_t(-1) && sm != size_t(-1)) {
+      const Table& tt = tbl("a16_mafia-extortion-targets-enc");
+      const Table& st = tbl("a16_mafia-shakedown-methods-enc");
+      title = "The shakedown";
+      say("I paid a visit to the owner of a " + lower(trim(tt.at(tg, "Company Type"))) +
+          " who was behind on his payments.");
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = mafiaRng_.chance(0.5);
+      const bool worked = (st.num(sm, "Effectiveness Score") * 12.0 + h.mafiaStanding) > mafiaRng_.below(100);
+      const char* sline = worked ? "Success Log Version" : "Failure Log Version";
+      warm(st, sm, sline);
+      tell(spyUpperFirst(cell(st, sm, sline)));
+      if (worked) {
+        const long long take = static_cast<long long>(tt.num(tg, "Money Score") * 450.0) + h.mafiaStanding * 8;
+        h.money += take;
+        h.mafiaEarned += take;
+        h.mafiaStanding += 3;
+        h.mafiaMoney += 3;
+        extra.push_back("That was worth " + money(take) + " to the family.");
+        happy += 2;
+      } else {
+        h.mafiaStanding -= 4;
+        h.mafiaHeat += int(st.num(sm, "Get Caught Score"));
+        happy -= 2;
+      }
+      tableRef = "a16_mafia-shakedown-methods-enc";
+      rowRef = std::to_string(sm);
+    }
+  }
+  // 2. A job for the family: push-crimes knows how the job is said both ways.
+  else if (mafiaRng_.chance(0.30)) {
+    const size_t cr = drawRow("a16_mafia-push-crimes-enc", 0, 0, 0, 0);
+    const size_t pt = drawRow("a16_mafia-push-targets-enc", 0, 0, 0, 0);
+    if (cr != size_t(-1)) {
+      const Table& ct = tbl("a16_mafia-push-crimes-enc");
+      title = "A job for the family";
+      say("The ask: " + spySentence(spyLowerFirst(resolve(trim(ct.at(cr, "Present Snippet"))))));
+      if (pt != size_t(-1)) {
+        const Table& ptt = tbl("a16_mafia-push-targets-enc");
+        const std::string reason = cell(ptt, pt, "Reason");
+        say("The target: " + lower(trim(ptt.at(pt, "Target"))) +
+            (reason.empty() ? std::string() : (", " + spySentence(spyLowerFirst(reason)))));
+      }
+      tell("I " + spySentence(spyLowerFirst(resolve(trim(ct.at(cr, "Past Snippet"))))));
+      h.mafiaHeat += int(ct.num(cr, "Seriousness Score"));
+      h.mafiaHits += 1;
+      if (mafiaRng_.below(100) < int(ct.num(cr, "Get Caught Score") * 8.0)) {
+        h.mafiaHeat += 4;
+        h.mafiaStanding -= 3;
+        extra.push_back("Someone talked to the police about it.");
+        happy -= 2;
+      } else {
+        h.mafiaStanding += 2;
+        h.mafiaMoney += 2;
+        const long long take = 300 + static_cast<long long>(ct.num(cr, "Seriousness Score") * 700.0);
+        h.money += take;
+        h.mafiaEarned += take;
+        extra.push_back("The family paid me " + money(take) + ".");
+        happy += 2;
+      }
+      tableRef = "a16_mafia-push-crimes-enc";
+      rowRef = std::to_string(cr);
+    }
+  }
+  // 3. A contract, outbound while the hero is in good standing and inbound
+  //    once the family has turned on him.
+  else if (mafiaRng_.chance(0.10)) {
+    const size_t ex = drawRow("a16_mafia-executions-enc", 0, 0, 0, 0);
+    if (ex != size_t(-1)) {
+      const Table& t = tbl("a16_mafia-executions-enc");
+      const bool sentForHim = h.mafiaStanding < 20 && mafiaRng_.chance(0.35);
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = mafiaRng_.chance(0.5);
+      if (sentForHim) {
+        title = "They came for me";
+        say("Two men I did not know took me for a drive.");
+        warm(t, ex, "Hero Inbound Log Version");
+        tell(spyUpperFirst(cell(t, ex, "Hero Inbound Log Version")));
+        h.mafiaHeat += 4;
+        h.mafiaStanding = 0;
+        h.health -= int(t.num(ex, "Pain Score"));
+        happy -= 8;
+      } else {
+        const std::string markName = drawFirstName(pronounOtherFemale_) + " " + drawSurname();
+        title = "A contract";
+        say("The family wanted " + markName + " gone.");
+        warm(t, ex, "Hero Outbound Log Version");
+        tell(spyUpperFirst(cell(t, ex, "Hero Outbound Log Version")));
+        extra.push_back("Method: " + lower(trim(t.at(ex, "Method"))) + ".");
+        const size_t card = drawRow("a16_mafia-calling-cards-enc", 0, 0, 0, 0);
+        if (card != size_t(-1)) {
+          const Table& ct = tbl("a16_mafia-calling-cards-enc");
+          const std::string item = resolve(trim(ct.at(card, "Item")));
+          extra.push_back("I left " + (ct.flag(card, "Uses Partitive Article") ? std::string("some ") : articleFor(item)) +
+                          item + " where they would find it.");
+        }
+        h.mafiaStanding += 5;
+        h.mafiaNotoriety += 4;
+        h.mafiaHeat += 3;
+        h.mafiaHits += 1;
+        h.money += 2500;
+        h.mafiaEarned += 2500;
+        extra.push_back("The contract paid " + money(2500) + ".");
+      }
+      tableRef = "a16_mafia-executions-enc";
+      rowRef = std::to_string(ex);
+    }
+  }
+  // 4. The family says the hero is not earning enough.
+  else if (mafiaRng_.chance(0.14)) {
+    const size_t r = drawRow("a16_mafia-feedback-earnings-enc", 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      title = "A word about my numbers";
+      say("The boss wants more money coming in.");
+      tell(toFirst(cell(tbl("a16_mafia-feedback-earnings-enc"), r, "Feedback")));
+      h.mafiaMoney -= 3;
+      h.mafiaStanding -= 1;
+      happy -= 2;
+    }
+  }
+  // 5. Praise or disappointment, filtered to the mob's own country.
+  else if (mafiaRng_.chance(0.14)) {
+    const bool good = h.mafiaStanding >= 50;
+    const char* name = good ? "a16_mafia-feedback-positive-enc" : "a16_mafia-feedback-negative-enc";
+    size_t r = drawRow(name, 0, "Specific Mob Country", h.mafiaCountry.c_str(), 0);
+    if (r == size_t(-1)) r = drawRow(name, 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl(name);
+      title = good ? "The boss noticed" : "The boss is not happy";
+      warm(t, r, "Log Version");
+      tell(spyUpperFirst(cell(t, r, "Log Version")));
+      if (good) { h.mafiaStanding += 4; h.mafiaMoney += 2; happy += 3; }
+      else { h.mafiaStanding -= 4; h.mafiaMoney -= 3; happy -= 3; }
+      tableRef = name;
+      rowRef = std::to_string(r);
+    }
+  }
+  // 6. A temptation on the job: the cash is right there.
+  else if (mafiaRng_.chance(0.12)) {
+    const size_t r = drawRow("a16_mafia-temptation-scenarios-enc", 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_mafia-temptation-scenarios-enc");
+      const long long lo = static_cast<long long>(t.num(r, "Min Amount"));
+      const long long hi = static_cast<long long>(t.num(r, "Max Amount"));
+      const long long amount = lo + static_cast<long long>(mafiaRng_.unit() * double(hi > lo ? hi - lo : 0));
+      mafiaAmount_ = money(amount);
+      const bool take = mafiaRng_.chance(0.5);
+      title = take ? "Nobody was watching" : "I did it the right way";
+      say("I had the chance to pocket " + mafiaAmount_ + " off the top.");
+      if (take) {
+        warm(t, r, "Dishonorable Choice Narrative");
+        tell(spyUpperFirst(cell(t, r, "Dishonorable Choice Narrative")));
+        h.money += amount;
+        h.mafiaEarned += amount;
+        h.mafiaStanding -= 3;
+        h.mafiaHeat += int(t.num(r, "Get Caught Score"));
+        happy += 2;
+      } else {
+        tell("I turned it in and kept my hands clean.");
+        h.mafiaStanding += 4;
+        h.mafiaMoney += 2;
+        extra.push_back("The family heard about it.");
+        happy += 1;
+      }
+    }
+  }
+  // 7. An evening with the family.
+  else if (mafiaRng_.chance(0.20)) {
+    size_t r = drawRow("a16_mafia-pastimes-enc", 0, "Specific Mob Country", h.mafiaCountry.c_str(), 0);
+    if (r == size_t(-1)) r = drawRow("a16_mafia-pastimes-enc", 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      title = "An evening with the family";
+      tell("I went " + spySentence(spyLowerFirst(resolve(trim(tbl("a16_mafia-pastimes-enc").at(r, "Pastime"))))));
+      h.mafiaStanding += 2;
+      happy += 2;
+    }
+  }
+  // 8. The hero talks his way out of a job.
+  else if (mafiaRng_.chance(0.12)) {
+    const char* want = h.female ? "female" : "male";
+    size_t r = drawRow("a16_mafia-excuses-enc", 0, "Gender", want, 0);
+    if (r == size_t(-1)) r = drawRow("a16_mafia-excuses-enc", 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      title = "I said I could not make it";
+      tell("I told them " + toFirst(spyLowerFirst(cell(tbl("a16_mafia-excuses-enc"), r, "Scenario Snippet"))));
+      h.mafiaStanding -= 2;
+    }
+  }
+  // 9. Nobody is ready to hand out a promotion.
+  else {
+    const size_t r = drawRow("a16_mafia-join-rejections-enc", 0, 0, 0, 0);
+    if (r != size_t(-1)) {
+      title = "Not yet";
+      tell(toFirst(cell(tbl("a16_mafia-join-rejections-enc"), r, "Feedback")));
+      h.mafiaStanding -= 1;
+    }
+  }
+
+  // The ranks move with the standing: 1 associate, 5 godfather.
+  const int wantRank = h.mafiaStanding >= 92 ? 5 : h.mafiaStanding >= 78 ? 4 : h.mafiaStanding >= 62 ? 3
+                    : h.mafiaStanding >= 45 ? 2 : 1;
+  if (wantRank != h.mafiaRank) {
+    const std::string was = h.mafiaRankName;
+    h.mafiaRank = wantRank;
+    h.mafiaRankName = mafiaRankTitle(h, wantRank);
+    if (!h.mafiaRankName.empty() && h.mafiaRankName != was)
+      extra.push_back(wantRank > 1 ? ("The family made me " + h.mafiaRankName + ".")
+                                   : ("I was knocked back down to " + h.mafiaRankName + "."));
+  }
+  if (h.mafiaRank >= 5 && h.mafiaRival != "the other family" && mafiaRng_.chance(0.20)) {
+    const size_t sc = drawRow("a16_mafia-scare-methods-enc", 0, 0, 0, 0);
+    if (sc != size_t(-1)) {
+      const Table& t = tbl("a16_mafia-scare-methods-enc");
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = mafiaRng_.chance(0.5);
+      warm(t, sc, "Log Version");
+      extra.push_back(spyUpperFirst(cell(t, sc, "Log Version")));
+    }
+  }
+  if (extra.empty() && !h.mafiaRankName.empty())
+    extra.push_back("I am " + withArticle(h.mafiaRankName, true) + h.mafiaRankName + " of the " + h.mafiaFamily + " with " +
+                    std::to_string(h.mafiaHits) + (h.mafiaHits == 1 ? " job behind me." : " jobs behind me."));
+
+  if (title.empty() && body.empty() && line.empty()) return false;
+  out.table = tableRef.empty() ? "a16_mafia-pastimes-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title.empty() ? "The family" : title;
+  out.body = body;
+  out.narrative = line;
   out.extra = extra;
   out.happiness += happy;
   return true;
