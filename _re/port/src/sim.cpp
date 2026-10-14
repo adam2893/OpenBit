@@ -765,6 +765,16 @@ bool Sim::load(std::string* error) {
     "a16_business-name-structure-enc",
     "a16_business-products-enc",
     "a16_business-industries-enc",
+    // The rest of the family (REPORT.en.md 74): the company's own year.
+    "a16_business-competition-fluctuations-enc",
+    "a16_business-consultant-humor-enc",
+    "a16_business-demand-fluctuations-enc",
+    "a16_business-market-research-enc",
+    "a16_business-product-names-enc",
+    "a16_business-supplier-name-structure-enc",
+    "a16_business-team-building-activities-enc",
+    "a16_business-team-requests-enc",
+    "a16_business-write-off-scenarios-enc",
     "a16_sports-enc",
     "a16_sports-leagues-enc",
     "a16_sports-teams-enc",
@@ -1514,6 +1524,22 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
     }
     return std::string();
   }
+  // The adjectival twins (REPORT.en.md 74): a16_business-write-off-scenarios and
+  // a16_political-headlines write '<country-other-adjectival> hackers' and
+  // '<hero-country-adjectival> border'. The countries table carries the demonym.
+  if (key == "hero-country-adjectival" || key == "country-adjectival") {
+    for (const Country& c : countries_)
+      if (c.name == h.country && !c.demonym.empty()) return c.demonym;
+    return std::string();
+  }
+  if (key == "country-other-adjectival") {
+    if (countries_.empty()) return std::string();
+    for (int tries = 0; tries < 12; ++tries) {
+      const Country& c = countries_[rng_.below(uint32_t(countries_.size()))];
+      if (c.name != h.country && !c.demonym.empty()) return c.demonym;
+    }
+    return std::string();
+  }
   return std::string();
 }
 
@@ -1997,7 +2023,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (token == "employee" || token == "employee-possessive" ||
                token == "competitor" || token == "competitor-possessive" ||
                token == "facility-singular" || token == "facility-multiple" ||
-               token == "product") {
+               token == "product" || token == "facility" || token == "supplier") {
       const std::string v = businessToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
@@ -2115,7 +2141,8 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else out += articleFor(who) + who;
     } else if (token.compare(0, 5, "hero-") == 0 || token.compare(0, 5, "hero:") == 0 ||
                token == "city" || token == "country" || token == "country2" ||
-               token == "country-other" || token == "country possessive" || token == "first name") {
+               token == "country-other" || token == "country-other-adjectival" ||
+               token == "country possessive" || token == "first name") {
       std::string key = token;
       bool possessive = false;
       const std::string suffix = "-possessive";
@@ -3028,6 +3055,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   outdoorCache_.clear();  // one cave / plant / bird per outdoor card
   hustlerCache_.clear();  // one person / victim / insult per hustle card
   astroCache_.clear();    // one crewmate / body / discovery per space card
+  bizCache_.clear();      // one product / rival / supplier per company card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -14326,13 +14354,96 @@ void Sim::makeBusiness(Life& life) {
   h.industry = trim(t.at(bizRng_.below(uint32_t(t.size())), "Industry"));
   if (h.industry.empty()) return;
   h.ownsBusiness = true;
+
+  // The company itself (REPORT.en.md 74): one industry row carries the plant,
+  // the payroll and the launch price; one product row carries the line. The
+  // numeric fields are rolled once here and then only ever move in businessYear,
+  // so a save/reload of the port keeps the same shop.
+  size_t ind = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r)
+    if (lower(trim(t.at(r, "Industry"))) == lower(h.industry)) { ind = r; break; }
+  const auto inum = [&](const char* col) -> long long {
+    return (ind == size_t(-1) || !t.has(col)) ? 0 : static_cast<long long>(t.num(ind, col));
+  };
+  h.bizFacilities = 1;
+  h.bizFacilityCost = inum("Facility Annual Cost");
+  h.bizSalary = inum("Average Employee Salary");
+  const long long elo = inum("Facility Employee Min"), ehi = inum("Facility Employee Max");
+  h.bizEmployees = static_cast<int>(ehi > elo
+                                        ? elo + static_cast<long long>(bizRng_.below(uint32_t(ehi - elo + 1)))
+                                        : elo);
+  h.bizDemand = 45 + static_cast<int>(bizRng_.below(21));
+  h.bizCompetition = 40 + static_cast<int>(bizRng_.below(21));
+  h.bizHealth = 60;
+  h.bizAttitude = 60;
+  h.bizCash = 0;
+  h.bizRevenue = h.bizCosts = h.bizProfit = 0;
+  if (ensureTable("a16_business-products-enc")) {
+    const Table& prod = tbl("a16_business-products-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < prod.size(); ++r)
+      if (lower(trim(prod.at(r, "Industry"))) == lower(h.industry)) pool.push_back(r);
+    if (pool.empty()) for (size_t r = 0; r < prod.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t row = weightedPickOf(prod, "Demand Score", pool, bizRng_);
+      if (row != size_t(-1)) {
+        std::vector<std::string> parts;
+        splitOn(prod.at(row, "Product"), ',', parts);
+        if (!parts.empty()) h.bizProduct = trim(parts[bizRng_.below(uint32_t(parts.size()))]);
+        h.bizUnit = prod.has("Unit") ? trim(prod.at(row, "Unit")) : std::string();
+        const long long pavg = prod.has("Avg Unit Price") ? static_cast<long long>(prod.num(row, "Avg Unit Price")) : 0;
+        const long long pmax = prod.has("Max Unit Price") ? static_cast<long long>(prod.num(row, "Max Unit Price")) : 0;
+        h.bizPrice = pmax > pavg ? pavg + static_cast<long long>(bizRng_.below(uint32_t(pmax - pavg + 1))) : pavg;
+        const long long clo = prod.has("Min Unit Cost") ? static_cast<long long>(prod.num(row, "Min Unit Cost")) : 0;
+        const long long chi = prod.has("Max Unit Cost") ? static_cast<long long>(prod.num(row, "Max Unit Cost")) : 0;
+        h.bizUnitCost = chi > clo ? clo + static_cast<long long>(bizRng_.below(uint32_t(chi - clo + 1))) : clo;
+        h.bizProductName = resolve(businessProductName(h.bizProduct));
+      }
+    }
+  }
+  if (h.bizProduct.empty()) h.bizProduct = "product";
+  if (h.bizProductName.empty()) h.bizProductName = businessName(h.industry);
+  if (h.bizPrice <= 0) h.bizPrice = 12;
+  if (h.bizUnitCost < 0) h.bizUnitCost = 0;
+  h.bizSupplier = businessSupplier(h.industry);
 }
 
 // A rival's name, using the same mechanical Format/Prefix/Suffix substitution as
 // companyName() but reading a16_business-name-structure-enc.
 std::string Sim::businessName(const std::string& industry) {
-  if (!ensureTable("a16_business-name-structure-enc")) return std::string();
-  const Table& st = tbl("a16_business-name-structure-enc");
+  return businessFormat("a16_business-name-structure-enc", industry);
+}
+
+// The same Format/Prefix/Suffix machinery, pointed at the supplier pool
+// (REPORT.en.md 74).
+std::string Sim::businessSupplier(const std::string& industry) {
+  return businessFormat("a16_business-supplier-name-structure-enc", industry);
+}
+
+// A brand for the product line: the pool's Format is a comma list of templates,
+// each carrying a '<product>' of its own.
+std::string Sim::businessProductName(const std::string& format) {
+  if (!ensureTable("a16_business-product-names-enc")) return std::string();
+  const Table& t = tbl("a16_business-product-names-enc");
+  const std::string want = lower(trim(format));
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (want.empty() || !t.has("Specific Product") || trim(t.at(r, "Specific Product")).empty() ||
+        lower(trim(t.at(r, "Specific Product"))) == want)
+      pool.push_back(r);
+  }
+  if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  if (pool.empty()) return std::string();
+  const size_t row = weightedPickOf(t, "Commonness Score", pool, bizRng_);
+  std::vector<std::string> parts;
+  splitOn(t.at(row, "Format"), ',', parts);
+  if (parts.empty()) return std::string();
+  return trim(parts[bizRng_.below(uint32_t(parts.size()))]);
+}
+
+std::string Sim::businessFormat(const char* table, const std::string& industry) {
+  if (!ensureTable(table)) return std::string();
+  const Table& st = tbl(table);
   std::vector<size_t> pool;
   for (size_t r = 0; r < st.size(); ++r) {
     if (industry.empty() || lower(trim(st.at(r, "Industry"))) == lower(industry)) pool.push_back(r);
@@ -14400,8 +14511,12 @@ std::string Sim::businessToken(const std::string& token) {
   if (!h.ownsBusiness) return std::string();
   if (!ensureTable("a16_business-industries-enc")) return std::string();
   const Table& ind = tbl("a16_business-industries-enc");
-  if (key == "facility-singular" || key == "facility-multiple") {
-    const char* col = key == "facility-singular" ? "Facility Name" : "Facility Name Plural";
+  if (key == "supplier") {
+    if (!h.bizSupplier.empty()) return h.bizSupplier;
+    return businessSupplier(h.industry);
+  }
+  if (key == "facility" || key == "facility-singular" || key == "facility-multiple") {
+    const char* col = key == "facility-multiple" ? "Facility Name Plural" : "Facility Name";
     for (size_t r = 0; r < ind.size(); ++r) {
       if (lower(trim(ind.at(r, "Industry"))) == lower(h.industry) && ind.has(col))
         return trim(ind.at(r, col));
@@ -14409,6 +14524,7 @@ std::string Sim::businessToken(const std::string& token) {
     return std::string();
   }
   if (key == "product") {
+    if (!h.bizProduct.empty()) return h.bizProduct;
     if (!ensureTable("a16_business-products-enc")) return std::string();
     const Table& prod = tbl("a16_business-products-enc");
     std::vector<size_t> pool;
@@ -14431,28 +14547,297 @@ bool Sim::businessYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &h;
   life_ = &life;
   if (h.age < 18) return false;
-  if (!ensureTable("a16_dumb-scenarios-business-enc")) return false;
-  if (!bizRng_.chance(0.4)) return false;
-  const Table& t = tbl("a16_dumb-scenarios-business-enc");
+  bizCache_.clear();
+
+  // The books run every year, card or no card (REPORT.en.md 74): demand against
+  // competition sets the volume, the volume times the price is the revenue, and
+  // the plant, the payroll and the materials are the costs.
+  // The volume is worked back from the costs rather than invented: a company
+  // whose demand and competition are level ships exactly the break-even number
+  // of units, so the profit is the fixed base times how far the market has moved
+  // its way (REPORT.en.md 74). The plant and the payroll are that base.
+  const long long fixedCost = h.bizFacilities * h.bizFacilityCost +
+                              static_cast<long long>(h.bizEmployees) * h.bizSalary;
+  const long long margin = std::max<long long>(1, h.bizPrice - h.bizUnitCost);
+  const int swing = 115 + h.bizDemand - h.bizCompetition;
+  const long long volume =
+      swing <= 0 ? 0 : (fixedCost / margin) * static_cast<long long>(swing) / 100;
+  const long long revenue = volume * h.bizPrice;
+  const long long costs = fixedCost + volume * h.bizUnitCost;
+  const long long profit = revenue - costs;
+  h.bizRevenue = revenue;
+  h.bizCosts = costs;
+  h.bizProfit = profit;
+  h.money += profit;
+  h.bizCash += profit;
+  // The market normalises, it does not grind one way: both figures drift back
+  // towards the midpoint and the year's cards are what move them off it.
+  if (h.bizCompetition > 50) --h.bizCompetition; else if (h.bizCompetition < 50) ++h.bizCompetition;
+  if (h.bizDemand > 50) --h.bizDemand; else if (h.bizDemand < 50) ++h.bizDemand;
+  const auto clamp100 = [](int v) { return std::max(0, std::min(100, v)); };
+  h.bizAttitude = clamp100(h.bizAttitude + (h.bizAttitude < 50 ? 1 : (h.bizAttitude > 50 ? -1 : 0)));
+  h.bizHealth = clamp100(h.bizHealth + (profit < 0 ? -2 : 1) + (h.bizAttitude - 50) / 20);
+
+  std::string title, body, line;
+  std::vector<std::string> extra;
+  std::string tableRef, rowRef;
+  int happy = 0;
+
+  const auto say = [&](const std::string& s) {
+    if (line.empty() && !s.empty()) line = spyUpperFirst(s);
+  };
+  const auto add = [&](const std::string& s) { if (!s.empty()) extra.push_back(spyUpperFirst(s)); };
+  const auto mark = [&](const char* tab, size_t r) { tableRef = tab; rowRef = std::to_string(r + 1); };
+  const std::string mine = lower(trim(h.industry));
+  const std::string product = h.bizProduct.empty() ? std::string("product") : h.bizProduct;
   const auto listHas = [](const std::string& list, const std::string& want) {
     if (trim(list).empty()) return false;
     std::vector<std::string> parts;
     splitOn(list, ',', parts);
-    for (std::string& p : parts)
-      if (lower(trim(p)) == want) return true;
+    for (std::string& x : parts) if (lower(trim(x)) == want) return true;
     return false;
   };
-  const std::string mine = lower(trim(h.industry));
-  std::vector<size_t> pool;
-  for (size_t r = 0; r < t.size(); ++r) {
-    if (t.has("Hero Min Age") && h.age < int(t.num(r, "Hero Min Age"))) continue;
-    if (t.has("Industry Whitelist") && !trim(t.at(r, "Industry Whitelist")).empty() &&
-        !listHas(t.at(r, "Industry Whitelist"), mine)) continue;
-    if (t.has("Industry Blacklist") && listHas(t.at(r, "Industry Blacklist"), mine)) continue;
-    pool.push_back(r);
+  const auto cell = [&](const char* tab, size_t r, const char* col) -> std::string {
+    if (!ensureTable(tab)) return std::string();
+    const Table& t = tbl(tab);
+    if (r == size_t(-1) || r >= t.size() || !t.has(col)) return std::string();
+    return trim(resolve(t.at(r, col)));
+  };
+  const auto numOf = [&](const char* tab, size_t r, const char* col) -> long long {
+    if (!ensureTable(tab)) return 0;
+    const Table& t = tbl(tab);
+    if (r == size_t(-1) || r >= t.size() || !t.has(col)) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  // One row of a pool, honouring the industry whitelist / blacklist and
+  // weighting the draw on the Commonness Score.
+  const auto pool = [&](const char* tab) -> size_t {
+    if (!ensureTable(tab)) return size_t(-1);
+    const Table& t = tbl(tab);
+    std::vector<size_t> rows;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Industry Whitelist") && !trim(t.at(r, "Industry Whitelist")).empty() &&
+          !listHas(t.at(r, "Industry Whitelist"), mine)) continue;
+      if (t.has("Industry Blacklist") && listHas(t.at(r, "Industry Blacklist"), mine)) continue;
+      rows.push_back(r);
+    }
+    if (rows.empty()) return size_t(-1);
+    return weightedPickOf(t, "Commonness Score", rows, bizRng_);
+  };
+  const auto industryNum = [&](const char* col) -> long long {
+    if (!ensureTable("a16_business-industries-enc")) return 0;
+    const Table& t = tbl("a16_business-industries-enc");
+    for (size_t r = 0; r < t.size(); ++r)
+      if (lower(trim(t.at(r, "Industry"))) == mine && t.has(col))
+        return static_cast<long long>(t.num(r, col));
+    return 0;
+  };
+  const auto spend = [&](long long v) { h.money -= v; h.bizCash -= v; };
+  const auto stripDot = [](std::string s) {
+    s = trim(s);
+    if (!s.empty() && s.back() == '.') s.pop_back();
+    return s;
+  };
+
+  // (1) A write-off, the rarest card of the year.
+  if (bizRng_.chance(0.06)) {
+    const char* tab = "a16_business-write-off-scenarios-enc";
+    const size_t r = pool(tab);
+    if (r != size_t(-1)) {
+      const long long loss = fixedCost / 8 + 500 + 350 * numOf(tab, r, "Impact Score") +
+                             static_cast<long long>(bizRng_.below(500));
+      spend(loss);
+      const std::string snip = stripDot(cell(tab, r, "Snippet"));
+      title = "A write-off";
+      body = "Loss: " + money(loss) + ".\nReason: " + cell(tab, r, "Reason") + ".";
+      say("I wrote off " + money(loss) + " of my " + product +
+          (snip.empty() ? std::string() : " " + snip) + ".");
+      mark(tab, r);
+      happy -= 4;
+    }
+  // (2) The consultant, whose mood follows the company's health.
+  } else if (bizRng_.chance(0.08)) {
+    const char* tab = "a16_business-consultant-humor-enc";
+    const bool well = h.bizHealth >= 60;
+    const size_t r = pickRow(tab, "Commonness Score", "Company Health", well ? "good" : "bad", "", bizRng_);
+    if (r != size_t(-1)) {
+      title = "The consultant's report";
+      body = cell(tab, r, "Feedback");
+      h.bizHealth = clamp100(h.bizHealth + (well ? 3 : -3));
+      say(cell(tab, r, "Log Snippet"));
+      mark(tab, r);
+    }
+  // (3) The team asks for something.
+  } else if (bizRng_.chance(0.10)) {
+    const char* tab = "a16_business-team-requests-enc";
+    const size_t r = pool(tab);
+    if (r != size_t(-1)) {
+      long long total = numOf(tab, r, "Total Cost");
+      if (total <= 0)
+        total = numOf(tab, r, "Cost Per Employee") * std::max(1, h.bizEmployees);
+      const bool agree = forcedChoice == 1 || (forcedChoice == -1 && bizRng_.chance(0.6));
+      title = "A request from the team";
+      body = cell(tab, r, "Scenario");
+      if (h.money >= total && agree) {
+        spend(total);
+        h.bizAttitude = clamp100(h.bizAttitude + static_cast<int>(numOf(tab, r, "Agree Attitude Impact")));
+        say(cell(tab, r, "Log Version"));
+        happy += 2;
+      } else {
+        h.bizAttitude = clamp100(h.bizAttitude + static_cast<int>(numOf(tab, r, "Disagree Attitude Impact")));
+        const std::string what = cell(tab, r, "Log Snippet");
+        say(what.empty() ? std::string("I turned the team down.")
+                         : "I turned the team down: we could not " + what + ".");
+        happy -= 2;
+      }
+      mark(tab, r);
+    }
+  // (4) A team outing the staff would like.
+  } else if (bizRng_.chance(0.12)) {
+    const char* tab = "a16_business-team-building-activities-enc";
+    const size_t r = pool(tab);
+    if (r != size_t(-1)) {
+      std::string act = spyUpperFirst(cell(tab, r, "Activity"));
+      const long long total = numOf(tab, r, "Cost Per Employee") * std::max(1, h.bizEmployees);
+      if (!act.empty()) act = lower(act.substr(0, 1)) + act.substr(1);
+      if (h.money >= total) {
+        spend(total);
+        h.bizAttitude = clamp100(h.bizAttitude + static_cast<int>(numOf(tab, r, "Attitude Impact")));
+        title = "A team outing";
+        body = "The team went " + act + ".\nCost: " + money(total) + ".";
+        say("I took the whole team " + act + ".");
+        happy += 2;
+      } else {
+        title = "No outing this year";
+        body = "The team wanted to go " + act + ".\nCost: " + money(total) + ".";
+        say("I could not afford to take the team " + act + " this year.");
+      }
+      mark(tab, r);
+    }
+  // (5) Market research resets demand and competition.
+  } else if (bizRng_.chance(0.12)) {
+    const char* tab = "a16_business-market-research-enc";
+    const size_t r = pool(tab);
+    if (r != size_t(-1)) {
+      const std::string dw = lower(cell(tab, r, "Demand"));
+      const std::string cw = lower(cell(tab, r, "Competition"));
+      const auto lvl = [](const std::string& w) {
+        return w.find("high") != std::string::npos ? 70 : (w.find("low") != std::string::npos ? 30 : 50);
+      };
+      h.bizDemand = lvl(dw);
+      h.bizCompetition = lvl(cw);
+      title = "Market research";
+      body = cell(tab, r, "String");
+      say("The research says demand is " + (dw.empty() ? std::string("steady") : dw) +
+          " and competition is " + (cw.empty() ? std::string("steady") : cw) + ".");
+      mark(tab, r);
+    }
+  // (6) A new supplier nudges the unit cost.
+  } else if (bizRng_.chance(0.10)) {
+    if (!h.bizSupplier.empty()) {
+      const bool down = bizRng_.chance(0.5);
+      h.bizUnitCost = std::max<long long>(0, h.bizUnitCost + (down ? -1 : 1));
+      title = "A new supplier";
+      body = "Supplier: " + h.bizSupplier + ".\nUnit cost: " + money(h.bizUnitCost) + ".";
+      say("I signed with " + h.bizSupplier + " and my unit cost went " + (down ? "down" : "up") + ".");
+      tableRef = "a16_business-supplier-name-structure-enc";
+      rowRef = "0";
+    }
+  // (7) A product launch, if the company can pay for it.
+  } else if (bizRng_.chance(0.14)) {
+    const long long cost = industryNum("Product Launch Cost");
+    const std::string brand = trim(resolve(businessProductName(h.bizProduct)));
+    if (h.money >= cost && !brand.empty()) {
+      spend(cost);
+      h.bizProductName = brand;
+      h.bizDemand = std::min(100, h.bizDemand + 8 + static_cast<int>(bizRng_.below(8)));
+      title = "A new product";
+      body = "Product: " + brand + ".\nLaunch cost: " + money(cost) + ".";
+      say("I launched " + brand + ", a new " + product + " line, for " + money(cost) + ".");
+      tableRef = "a16_business-product-names-enc";
+      rowRef = "0";
+      happy += 2;
+    } else {
+      title = "No launch this year";
+      body = "Launch cost: " + money(cost) + ".";
+      say("I could not afford the " + money(cost) + " to launch a new " + product + " line this year.");
+    }
+  // (8) and (9) The year's fluctuation: whichever side is tighter decides
+  // whether it is demand or competition that moves.
+  } else if (bizRng_.chance(0.30)) {
+    const bool demandSide = h.bizDemand <= h.bizCompetition;
+    const char* tab = demandSide ? "a16_business-demand-fluctuations-enc"
+                                 : "a16_business-competition-fluctuations-enc";
+    if (ensureTable(tab)) {
+      const Table& t = tbl(tab);
+      std::vector<size_t> rows;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (t.has("Specific Industry") && !trim(t.at(r, "Specific Industry")).empty() &&
+            lower(trim(t.at(r, "Specific Industry"))) != mine) continue;
+        if (t.has("Specific Product") && !trim(t.at(r, "Specific Product")).empty() &&
+            lower(trim(t.at(r, "Specific Product"))) != lower(product)) continue;
+        rows.push_back(r);
+      }
+      if (rows.empty()) for (size_t r = 0; r < t.size(); ++r) rows.push_back(r);
+      if (!rows.empty()) {
+        const size_t r = weightedPickOf(t, "Commonness Score", rows, bizRng_);
+        const std::string kind = lower(cell(tab, r, "Fluctuation Type"));
+        const bool up = kind.find("inc") != std::string::npos;
+        const std::string amt = lower(cell(tab, r, "Fluctuation Amount"));
+        const int swing = amt == "large" ? 20 : (amt == "medium" ? 12 : (amt == "small" ? 5 : 8));
+        if (demandSide)
+          h.bizDemand = std::max(5, std::min(100, h.bizDemand + (up ? swing : -swing)));
+        else
+          h.bizCompetition = std::max(5, std::min(100, h.bizCompetition + (up ? swing : -swing)));
+        const std::string snip = stripDot(cell(tab, r, "Snippet"));
+        // A rise in demand is good news, a rise in competition is not.
+        const bool good = demandSide ? up : !up;
+        title = good ? "The market moved my way" : "The market turned";
+        body = "Demand: " + std::to_string(h.bizDemand) + ".\nCompetition: " +
+               std::to_string(h.bizCompetition) + ".";
+        say((demandSide ? "Demand for my " : "Competition for my ") + product + " " +
+            (up ? "rose " : "fell ") + snip + ".");
+        mark(tab, r);
+      }
+    }
+  // (10) The everyday card, handed to the section-53 pool.
+  } else if (bizRng_.chance(0.40)) {
+    if (ensureTable("a16_dumb-scenarios-business-enc")) {
+      const Table& bt = tbl("a16_dumb-scenarios-business-enc");
+      std::vector<size_t> rows;
+      for (size_t r = 0; r < bt.size(); ++r) {
+        if (bt.has("Hero Min Age") && bt.num(r, "Hero Min Age") > h.age) continue;
+        if (bt.has("Industry Whitelist") && !trim(bt.at(r, "Industry Whitelist")).empty() &&
+            !listHas(bt.at(r, "Industry Whitelist"), mine)) continue;
+        if (bt.has("Industry Blacklist") && listHas(bt.at(r, "Industry Blacklist"), mine)) continue;
+        rows.push_back(r);
+      }
+      if (!rows.empty()) {
+        const size_t r = weightedPickOf(bt, "Commonness Score", rows, bizRng_);
+        if (renderRow(bt, r, life, out, forcedChoice)) {
+          add("Revenue " + money(revenue) + ", costs " + money(costs) + ", profit " + money(profit) + ".");
+          std::vector<std::string> moved;
+          moved.swap(out.extra);
+          for (std::string& s : moved) out.extra.push_back(s);
+          return true;
+        }
+      }
+    }
   }
-  if (pool.empty()) return false;
-  return renderRow(t, pool[bizRng_.below(uint32_t(pool.size()))], life, out, forcedChoice);
+
+  if (title.empty()) return false;
+  add("Revenue " + money(revenue) + ", costs " + money(costs) + ", profit " + money(profit) + ".");
+  out.table = tableRef.empty() ? "a16_business-demand-fluctuations-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  const std::vector<std::string> keep = out.extra;
+  out.extra.clear();
+  for (const std::string& s : keep) out.extra.push_back(s);
+  for (const std::string& s : extra) out.extra.push_back(s);
+  out.happiness += happy;
+  return true;
 }
 
 void Sim::makeAthlete(Life& life) {

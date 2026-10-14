@@ -330,6 +330,9 @@ class Sim {
   std::string musicTitle(const char* table, const std::string& genre);
   std::string businessToken(const std::string& token);
   std::string businessName(const std::string& industry);
+  std::string businessFormat(const char* table, const std::string& industry);
+  std::string businessSupplier(const std::string& industry);
+  std::string businessProductName(const std::string& format);
   std::string sportsToken(const std::string& token);
   std::string warToken(const std::string& token);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
@@ -374,6 +377,7 @@ class Sim {
   Rng careerRng_;
   Rng sportsRng_;
   Rng bizRng_;
+  std::map<std::string, std::string> bizCache_;  // one product / rival / supplier per card
   Rng musicRng_;
   Rng politicsRng_;
   Rng miscRng_;

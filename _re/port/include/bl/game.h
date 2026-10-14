@@ -449,6 +449,26 @@ struct Hero {
   std::string bandName;    // a16_music-names-bands-enc 'Title'
   bool ownsBusiness = false;
   std::string industry;  // a16_business-industries-enc 'Industry'
+  // The company itself (REPORT.en.md 74): the product line, its brand name, the
+  // supplier, the staff, and the figures the books run on.
+  std::string bizProduct;      // a16_business-products-enc 'Product', one entry
+  std::string bizProductName;  // a16_business-product-names-enc 'Format', filled in
+  std::string bizSupplier;     // a16_business-supplier-name-structure-enc
+  std::string bizUnit;         // a16_business-products-enc 'Unit'
+  int bizDemand = 50;          // 0..100, the market's appetite for the product
+  int bizCompetition = 50;     // 0..100, how crowded the market is
+  int bizHealth = 60;          // 0..100, what the consultant has to say
+  int bizAttitude = 60;        // 0..100, what the staff think of the boss
+  int bizEmployees = 0;
+  int bizFacilities = 0;
+  long long bizPrice = 0;         // 'Avg Unit Price'
+  long long bizUnitCost = 0;      // 'Min'/'Max Unit Cost'
+  long long bizFacilityCost = 0;  // 'Facility Annual Cost'
+  long long bizSalary = 0;        // 'Average Employee Salary'
+  long long bizCash = 0;
+  long long bizRevenue = 0;
+  long long bizCosts = 0;
+  long long bizProfit = 0;
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'
   std::string league;    // a16_sports-leagues-enc 'Name'

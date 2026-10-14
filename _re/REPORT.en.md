@@ -6656,3 +6656,184 @@ sentence start), and a mission-dumb `Log Version` refers to a Scenario alternati
 were a song - "The crew and I sang 'reading documents relevant to the mission' together during our
 mission." The port's single pronoun flag cannot split a cell that writes `<he/she>` and
 `<his/her>` about two different people, which one such cell does.
+
+## 74. The company: the books run every year, and nine tables behind them
+
+Section 53 gave the hero a company name, an industry, and one dumb scenario a year. This section
+makes the company actually trade. It has a product line with a brand of its own, a supplier, a
+plant, a payroll, a demand figure and a competition figure, and the year's profit is computed
+before any card is drawn. Only then does the year pick a card - a write-off, the consultant, a
+request from the team, an outing, market research, a new supplier, a product launch, the year's
+market fluctuation, or the section-53 dumb scenario.
+
+### 74.1 The family
+
+The B¶§a16_businessB¶§ family is 12 tables / 1,414 rows. Three of them
+(B¶§-industriesB¶§, B¶§-name-structureB¶§, B¶§-productsB¶§) were already loaded by section 53; the other
+nine are new to B¶§kTablesB¶§:
+
+| table | rows | the columns that matter |
+| --- | ---: | --- |
+| B¶§a16_business-industries-encB¶§ | 24 | Industry, Country Whitelist/Blacklist, Product Launch Cost, Facility Name (Singular/Plural), Max Facilities, Facility Setup Cost, Facility Annual Cost, Facility Employee Min/Max, Average Employee Salary |
+| B¶§a16_business-products-encB¶§ | 281 | Industry, Product (a comma list), Product Name Base, Unit/Unit Plural, Avg Unit Price, Max Unit Price, Min/Max Unit Cost, Demand Score, Shelf Life Years |
+| B¶§a16_business-product-names-encB¶§ | 259 | Specific Industry, Specific Product, Format (a comma list of brand templates carrying B¶§<product>B¶§), Commonness Score, Hero Owns Company |
+| B¶§a16_business-name-structure-encB¶§ | 24 | Industry, Format, Prefix, Suffix, Predefined |
+| B¶§a16_business-supplier-name-structure-encB¶§ | 24 | the same shape, for the suppliers |
+| B¶§a16_business-demand-fluctuations-encB¶§ | 321 | Specific Industry, Specific Product, Fluctuation Type (increase/decrease), Fluctuation Amount (blank/small/medium/large), Snippet, Commonness Score |
+| B¶§a16_business-competition-fluctuations-encB¶§ | 268 | the same shape |
+| B¶§a16_business-write-off-scenarios-encB¶§ | 53 | Snippet ("after it was ravaged by a fire"), Reason ("Fire"), Impact Score, Commonness Score |
+| B¶§a16_business-consultant-humor-encB¶§ | 52 | Feedback, Log Snippet, Company Health (good/bad), Commonness Score |
+| B¶§a16_business-team-building-activities-encB¶§ | 49 | Index, Activity ("to a baseball game"), Short Version, Cost Per Employee, Commonness Score, Attitude Impact |
+| B¶§a16_business-team-requests-encB¶§ | 32 | Scenario, Log Version (with B¶§<rb>B¶§), Total Cost, Cost Per Employee, Industry Whitelist/Blacklist, Agree/Disagree Attitude Impact, Log Snippet ("buy one"), Commonness Score |
+| B¶§a16_business-market-research-encB¶§ | 27 | String, Demand (high/medium/low), Competition, Industry Blacklist |
+
+### 74.2 The company at eighteen
+
+B¶§makeBusinessB¶§ still draws the industry, and then draws the rest of the company from that
+industry's own row: the facility count (1), the annual facility cost, the average salary, the
+payroll head count rolled between Facility Employee Min and Max, and the launch price. The
+product line comes from one B¶§a16_business-products-encB¶§ row of the same industry (weighted on
+Demand Score): its Product column is a comma list, so one entry is drawn; its Unit, its Avg Unit
+Price (rolled up to Max Unit Price) and its Min/Max Unit Cost follow. The brand name is a
+B¶§a16_business-product-names-encB¶§ Format for that product, and the supplier a
+B¶§a16_business-supplier-name-structure-encB¶§ Format. Demand starts at 45-65 and competition at
+40-60, so a fresh company starts near break-even with room to move either way.
+
+### 74.3 The books
+
+The profit is not part of any card; it is computed every year from the age of eighteen, whether
+or not a card fires:
+
+    fixedCost = facilities * Facility Annual Cost + employees * Average Employee Salary
+    margin    = max(1, unit price - unit cost)
+    swing     = 115 + demand - competition
+    volume    = fixedCost / margin * swing / 100      (0 when swing <= 0)
+    revenue   = volume * unit price
+    costs     = fixedCost + volume * unit cost
+    profit    = revenue - costs
+
+The volume is worked back from the costs rather than invented, so a company whose market is
+level ships exactly the break-even number of units and the profit is the fixed base times how
+far the market has moved its way. The 115 is a deliberate 15 per cent margin for a level market.
+Both figures drift one point a year back towards 50 - the market normalises, it does not grind
+one way - and the year's cards are what move them off it. Attitude drifts to 50, health rises a
+point on a profitable year and falls two on a losing one. The hero's own bank balance is where
+the profit lands, so a company is now a real income stream: a seed that opens a trombone shop at
+18 prints
+
+    Revenue $583,500, costs $504,044, profit $79,456.
+
+### 74.4 The year
+
+First hit wins, rarest first:
+
+| chance | card | what it does |
+| ---: | --- | --- |
+| 0.06 | A write-off | B¶§a16_business-write-off-scenarios-encB¶§. The loss is the fixed base over eight plus 500 plus 350 an Impact Score point plus a roll, so a food truck loses thousands and a pharmaceutical plant millions. |
+| 0.08 | The consultant's report | B¶§a16_business-consultant-humor-encB¶§, filtered on the row's own Company Health flag against the company's health. Health moves three either way. |
+| 0.10 | A request from the team | B¶§a16_business-team-requests-encB¶§ (Industry Whitelist/Blacklist). The Total Cost is paid if the hero can afford it and agrees (a forced choice, or a 60 per cent coin otherwise); agreeing and refusing each move the staff's attitude. |
+| 0.12 | A team outing | B¶§a16_business-team-building-activities-encB¶§. Cost Per Employee times the payroll, and the row's Attitude Impact. |
+| 0.12 | Market research | B¶§a16_business-market-research-encB¶§. The row's Demand and Competition words set the company's own to 70 / 50 / 30. |
+| 0.10 | A new supplier | Moves the unit cost one either way and names the supplier. |
+| 0.14 | A new product | Pays the industry's Product Launch Cost, renames the line from the brand pool, and adds 8-15 demand. Says so plainly when the company cannot afford it. |
+| 0.30 | The market | B¶§a16_business-demand-fluctuations-encB¶§ or B¶§a16_business-competition-fluctuations-encB¶§, whichever side is tighter, filtered on the row's Specific Industry and Specific Product (with a fallback to the whole pool) and weighted on Commonness Score. The amount is blank 8, small 5, medium 12, large 20, and a rise in demand is good news while a rise in competition is not. |
+| 0.40 | The everyday card | The section-53 delegate, B¶§a16_dumb-scenarios-business-encB¶§ (167 rows), unchanged, with its age and Industry Whitelist/Blacklist filters. |
+
+Every card carries the year's books as its first log line.
+
+### 74.5 The tokens
+
+B¶§<product>B¶§ now answers from the company's own line rather than a fresh draw, so a card and its
+log line name the same thing. B¶§<supplier>B¶§ and B¶§<facility>B¶§ are new keys; B¶§<facility>B¶§ joins
+the two spellings section 53 already had. B¶§<competitor>B¶§, B¶§<employee>B¶§, B¶§<city>B¶§, B¶§<color>B¶§,
+B¶§<hero-first-name-possessive>B¶§ and the rest were already answered. The family census also turned up
+B¶§<country-other-adjectival>B¶§ (13 residues) and its twin B¶§<hero-country-adjectival>B¶§, used by
+B¶§a16_business-write-off-scenarios-encB¶§ ("delivered to B¶§<country-other-adjectival>B¶§ hackers") and by
+the political headlines. Both are now answered from the countries table's own Demonym: the hero's
+country for the one, a different country for the other.
+
+### 74.6 The bugs
+
+1. The section-74 state patch was written twice, and the first copy died on a stray walrus in a
+   bare B¶§assertB¶§ before it wrote anything, while the second one died halfway: the header had the
+   new declarations but B¶§src/sim.cppB¶§ had no B¶§kTablesB¶§ entries, and B¶§bizCache_B¶§ was declared
+   nowhere - a compile error on both of its uses. Nothing is applied until the script finishes.
+2. The first volume formula (demand minus half the competition, scaled by the plant and the
+   payroll) made every company a permanent loss: a pharmaceutical plant carries a 2.5 million
+   facility and 50-250 staff at 80,000, and no volume that formula could reach paid for it. The
+   hero's balance reached -808,375,041 and no launch was ever affordable. Working the volume back
+   from the fixed costs, and giving both market figures a drift towards the midpoint instead of a
+   demand-down/competition-up grind, fixed both symptoms at once.
+3. The brand name printed its own brackets: B¶§businessProductNameB¶§ returns one Format entry out of
+   a comma list, and those entries carry B¶§<color>B¶§, B¶§<King/Queen>B¶§, B¶§<hero-name>B¶§ and a dozen
+   invented affixes, none of which was resolved. 454 residues over one sweep; both call sites now
+   resolve the name.
+4. A rise in competition was announced as "the market moved my way", because the direction came
+   from the row's Fluctuation Type without knowing which side of the market the row was about,
+   and the competition rows reused the demand sentence. The direction is now read per side and the
+   sentence names the right side: "Competition for my trombone rose as Atlanta Robotics has slashed
+   prices."
+
+### 74.7 Shortcuts
+
+- The company never grows a second plant, though Max Facilities is in the data, and never hires or
+  fires after the first day: the payroll is the initial roll for the whole life. A second facility
+  would need a setup-cost card and a hire/fire decision, neither of which is wired.
+- The launch, the outing and the team's request are paid at their printed prices even when the
+  company is a two-billion-dollar operation, so they are cosmetic next to the books. Only the
+  write-off scales with the fixed base (over eight).
+- The books run before the card, so a card that pays a bonus (the delegated dumb scenario) is not
+  re-priced; the log line always shows the year's own figures.
+- Competition is not per-competitor: one company, one number. B¶§Average Employee SalaryB¶§ and
+  B¶§Facility Annual CostB¶§ are taken as annual and never inflated.
+
+### 74.8 Verification
+
+B¶§/tmp/qdir/bizres.pyB¶§ runs 30 seeds by both genders to age 60 with B¶§{"business": true}B¶§: 3,574
+events, 0 rc failures, 0 residues. B¶§/tmp/qdir/bizcov.pyB¶§ (40 seeds by both genders) sees 2,132
+business cards over the nine card tables: team-requests 290, team-building 283, market-research
+280, demand-fluctuations 251, consultant 239, product-names 217, competition-fluctuations 202,
+write-off 191, supplier 179. The full family probe sweep (17 probes) is 0 residues each,
+B¶§rescensus.pyB¶§ reports 0 distinct residue tokens, coverage is 109 captured / 107 recoverable,
+B¶§portgap.pyB¶§ reports a gap of 0, B¶§covpush.jsonB¶§ exits 0, and the bench harness still reaches
+age 34 with no abort. Sample cards, hand checked:
+
+    A new product
+      Product: Crown Regal.
+      Launch cost: $28,000.
+      Revenue $583,500, costs $504,044, profit $79,456.
+      I launched Crown Regal, a new trombone line, for $28,000.
+
+    Market research
+      A decent market for this product exists despite a flood of competition.
+      The research says demand is medium and competition is high.
+
+    A write-off
+      Loss: $45,705.
+      Reason: Lightning Strike.
+      I wrote off $45,705 of my trombone that was incinerated by a lightning strike.
+
+    A request from the team
+      An employee is asking you to buy cocaine for a holiday party.
+      My employees asked me to buy cocaine for a holiday party.
+
+    A team outing
+      The team went to a bar.
+      Cost: $750.
+      I took the whole team to a bar.
+
+    The market turned
+      Demand: 50.
+      Competition: 43.
+      Competition for my trombone rose as Atlanta Robotics has slashed prices.
+
+    No outing this year
+      The team wanted to go to a leadership seminar.
+      Cost: $2,450.
+      Revenue $337,987, costs $415,994, profit -$78,007.
+      I could not afford to take the team to a leadership seminar this year.
+
+Two notes on the data as it is: the consultant's own Feedback is a bare imperative ("Stay the
+course", "Eat an apple a day") and the card prints it as both the body and the log line, and
+B¶§a16_business-demand-fluctuations-encB¶§ contains the occasional Snippet whose grammatical subject
+is the hero's competitor while the sentence around it is about demand.
