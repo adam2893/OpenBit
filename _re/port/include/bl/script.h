@@ -70,6 +70,8 @@ struct ScriptSpec {
   bool model = false;
   // The luxuries (REPORT.en.md 79).
   bool luxury = false;
+  // The boat (REPORT.en.md 81).
+  bool boating = false;
   bool actor = false;
   bool finance = false;    // the market (REPORT.en.md 77)
   bool secret_agent = false;

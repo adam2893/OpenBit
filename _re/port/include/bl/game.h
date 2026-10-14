@@ -581,6 +581,14 @@ struct Hero {
   std::vector<std::string> sportAwardNames;
   long long sportSalary = 0, sportEarned = 0;
 
+  // The boat (REPORT.en.md 81).
+  bool boating = false;
+  std::string boatType, boatCategory, boatName, boatPart, boatDanger;
+  bool boatLicensed = false, boatWrecked = false;
+  int boatCondition = 100, boatPassengers = 1, boatFeet = 0;
+  int boatAge = 0, boatParts = 0, boatTrips = 0;
+  long long boatValue = 0, boatSpent = 0, boatEarned = 0;
+
 
   bool athlete = false;
   std::string sport;     // a16_sports-enc 'Sport'

@@ -593,7 +593,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       financeRng_(seed ^ 0x6a09e667f3bcc909ULL),
       modelRng_(seed ^ 0xbb67ae8584caa73bULL),
       luxuryRng_(seed ^ 0x510e527fade682d1ULL),
-      sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL) {}
+      sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
+      boatRng_(seed ^ 0x1f83d9abfb41bd6bULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -778,6 +779,13 @@ bool Sim::load(std::string* error) {
     "a16_sports-stats-enc",
     "a16_sports-training-scenarios-enc",
     "a16_sports-trash-talk-scenarios-enc",
+
+    // The boat (REPORT.en.md 81): the watercraft family and the boat license.
+    "a16_watercraft-enc",
+    "a16_watercraft-danger-scenarios-enc",
+    "a16_watercraft-names-enc",
+    "a16_watercraft-parts-enc",
+    "a16_license-boat-questions-enc",
 
     "a16_actors-real-enc",
     "a16_secret-agent-agency-fronts-enc",
@@ -1933,6 +1941,17 @@ bool hustlerIsToken(const std::string& token, bool live) {
 // to no other family; <costar> is answered for the dumb-scenario pool too.
 // The luxuries (REPORT.en.md 79). '<island>' is the hero's own island; no
 // other family writes that tag.
+// The watercraft token belongs to the boat family, so it is only claimed while
+// one of that family's cards is rendering (REPORT.en.md 81).
+bool boatIsToken(const std::string& token, bool live) {
+  if (!live) return false;
+  std::string k = trim(token);
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    k.resize(k.size() - psuffix.size());
+  return k == "watercraft";
+}
+
 bool luxIsToken(const std::string& token, bool live) {
   std::string k = trim(token);
   const std::string psuffix = "-possessive";
@@ -2294,6 +2313,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else { out += v; rbLast_ = v; }
     } else if (musicIsToken(token)) {
       const std::string v = musicToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (boatIsToken(token, boatLive_)) {
+      const std::string v = boatToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (token == "sport" || token == "league" || token == "team" ||
@@ -3174,6 +3197,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
+  if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
   if (businessYear(life, out, forcedChoice)) return true;
   if (musicYear(life, out, forcedChoice)) return true;
@@ -3273,6 +3297,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   modelCache_.clear();    // one rival / product / look per catwalk card
   luxuryCache_.clear();   // one island / chef / watch per luxury card
   sportProCache_.clear(); // one opponent per season card
+  boatCache_.clear();     // one craft name / part / mishap per boat card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -18691,6 +18716,386 @@ bool Sim::sportsSeason(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 // ===== end the season (REPORT.en.md 80) ======================================
+
+
+// ===== the boat (REPORT.en.md 81) ===========================================
+// The watercraft family tags every one of its pools (the craft list, the names,
+// the parts and the mishaps) with the same nineteen category columns, so the
+// flag name is the family's own join key.
+static const char* const kBoatCategoryNames[19] = {
+    "Rowing", "Speedboat", "PWC", "Motorized Yacht", "Sailing Yacht", "Sailboat",
+    "Jet Boat", "Crab Boat", "Pontoon", "Research Vessel", "Airboat", "Amphibious",
+    "Cruise Ship", "Icebreaker", "Log Raft", "Submarine", "Tugboat", "Hovercraft",
+    "Pirate Ship"};
+
+static std::string boatCategoryOf(const Table& t, size_t row) {
+  for (int i = 0; i < 19; ++i)
+    if (t.flag(row, kBoatCategoryNames[i])) return std::string(kBoatCategoryNames[i]);
+  return std::string("boat");
+}
+
+static std::vector<size_t> boatPoolOf(const Table& t, const std::string& category) {
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r)
+    if (boatCategoryOf(t, r) == category) pool.push_back(r);
+  return pool;
+}
+
+void Sim::makeBoating(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.boating = true;
+  h.boatCondition = 100;
+  h.boatLicensed = false;
+  h.boatWrecked = false;
+  h.boatParts = 0;
+  h.boatTrips = 0;
+  h.boatAge = 0;
+  h.boatValue = 0;
+  h.boatSpent = 0;
+  h.boatEarned = 0;
+  h.boatType.clear();
+  h.boatCategory.clear();
+  h.boatName.clear();
+  h.boatPart.clear();
+  h.boatDanger.clear();
+  boatLive_ = false;
+  boatCache_.clear();
+  // No other enabled family leaves the hero money to spare (sections 77 and 79
+  // both had to invent a stake), so the first boat comes out of a one-off boat
+  // fund (shortcut, REPORT.en.md 81).
+  h.money += 25000;
+  if (!ensureTable("a16_watercraft-enc")) return;
+  const Table& w = tbl("a16_watercraft-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < w.size(); ++r) {
+    if (w.flag(r, "Luxury Only")) continue;  // those belong to the luxury life
+    if (w.num(r, "Cost") > 25000) continue;
+    pool.push_back(r);
+  }
+  size_t row = weightedPickOf(w, "Commonness Score", pool, boatRng_);
+  if (row == size_t(-1) || row >= w.size()) return;
+  h.boatType = trim(w.at(row, "Type"));
+  h.boatCategory = boatCategoryOf(w, row);
+  h.boatValue = static_cast<long long>(w.num(row, "Cost"));
+  h.boatPassengers = static_cast<int>(w.num(row, "Passengers"));
+  h.boatFeet = static_cast<int>(w.num(row, "Feet"));
+  h.boatLicensed = !w.flag(row, "Requires License");
+  h.money -= h.boatValue;
+  h.boatSpent += h.boatValue;
+  if (ensureTable("a16_watercraft-names-enc")) {
+    const Table& n = tbl("a16_watercraft-names-enc");
+    const std::vector<size_t> npool = boatPoolOf(n, h.boatCategory);
+    const size_t nr = weightedPickOf(n, "", npool, boatRng_);
+    if (nr != size_t(-1)) h.boatName = trim(resolve(n.at(nr, "Name")));
+  }
+  if (h.boatName.empty()) h.boatName = h.boatType;
+}
+
+std::string Sim::boatToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  if (!h) return std::string();
+  std::string k = trim(token);
+  bool poss = false;
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    poss = true;
+    k.resize(k.size() - psuffix.size());
+  }
+  if (k == "watercraft") {
+    const std::string v = h->boatType.empty() ? std::string("boat") : h->boatType;
+    return poss ? llPossessive(v) : v;
+  }
+  return std::string();
+}
+
+bool Sim::boatYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.boating || h.age < 14) return false;
+  if (!ensureTable("a16_watercraft-enc")) return false;
+  if (!boatRng_.chance(0.55)) return false;
+  boatLive_ = true;
+  boatCache_.clear();
+  const std::vector<std::string> saved = out.extra;
+  std::string line, title, body, cardTable = "a16_watercraft-enc";
+  int cardRow = -1;
+  int happy = 0;
+  std::vector<std::string> notes;
+  auto say = [&](const std::string& v) {
+    if (!v.empty() && line.empty()) {
+      line = spyUpperFirst(v);
+      const char last = line[line.size() - 1];
+      if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') line += '.';
+    }
+  };
+  auto add = [&](const std::string& v) { if (!v.empty()) notes.push_back(spyUpperFirst(v)); };
+  auto cell = [&](const Table& t, size_t r, const std::string& col) { return trim(resolve(t.at(r, col))); };
+  auto hasCell = [](const Table& t, size_t r, const std::string& col) {
+    return t.has(col) && !trim(t.at(r, col)).empty();
+  };
+  auto numOf = [](const Table& t, size_t r, const std::string& col) -> long long {
+    if (!t.has(col) || trim(t.at(r, col)).empty()) return 0;
+    return static_cast<long long>(t.num(r, col));
+  };
+  auto mark = [&](const std::string& tab, int row) { cardTable = tab; cardRow = row; };
+  auto pickFrom = [&](const std::string& tab, const std::string& category) -> size_t {
+    if (!ensureTable(tab)) return size_t(-1);
+    const Table& t = tbl(tab.c_str());
+    std::vector<size_t> pool = boatPoolOf(t, category);
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    return weightedPickOf(t, "", pool, boatRng_);
+  };
+  auto nameFor = [&](const std::string& category) -> std::string {
+    if (!ensureTable("a16_watercraft-names-enc")) return std::string();
+    const Table& n = tbl("a16_watercraft-names-enc");
+    const size_t nr = weightedPickOf(n, "", boatPoolOf(n, category), boatRng_);
+    if (nr == size_t(-1)) return std::string();
+    return trim(resolve(n.at(nr, "Name")));
+  };
+  auto buyCraft = [&](long long budget, bool sellOld) -> bool {
+    const Table& w = tbl("a16_watercraft-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < w.size(); ++r) {
+      if (w.flag(r, "Luxury Only")) continue;
+      const double c = w.num(r, "Cost");
+      if (c > double(budget)) continue;
+      if (sellOld && c <= double(h.boatValue)) continue;
+      pool.push_back(r);
+    }
+    const size_t row = weightedPickOf(w, "Commonness Score", pool, boatRng_);
+    if (row == size_t(-1)) return false;
+    if (sellOld && h.boatValue > 0) {
+      h.money += h.boatValue * 3 / 5;
+      h.boatEarned += h.boatValue * 3 / 5;
+    }
+    h.boatType = trim(w.at(row, "Type"));
+    h.boatCategory = boatCategoryOf(w, row);
+    h.boatValue = static_cast<long long>(w.num(row, "Cost"));
+    h.boatPassengers = static_cast<int>(w.num(row, "Passengers"));
+    h.boatFeet = static_cast<int>(w.num(row, "Feet"));
+    if (!w.flag(row, "Requires License")) h.boatLicensed = true;
+    h.money -= h.boatValue;
+    h.boatSpent += h.boatValue;
+    h.boatCondition = 100;
+    h.boatAge = 0;
+    h.boatName = nameFor(h.boatCategory);
+    if (h.boatName.empty()) h.boatName = h.boatType;
+    return true;
+  };
+
+  // The year's upkeep: a boat costs money to keep and wears out whatever else
+  // the year brings (REPORT.en.md 81).
+  if (!h.boatWrecked) {
+    const long long upkeep = h.boatValue / 50 + 120;
+    h.money -= upkeep;
+    h.boatAge += 1;
+    h.boatCondition = std::max(0, h.boatCondition - 1 - int(boatRng_.below(3)));
+    add("Upkeep cost me " + money(upkeep) + " and my " + h.boatType + " sits at " +
+        std::to_string(h.boatCondition) + "%.");
+  }
+
+  if (h.boatWrecked) {
+    if (boatRng_.chance(0.6) && buyCraft(25000 + h.money / 4, false)) {
+      title = "A new boat";
+      body = "The " + h.boatType + " is mine.";
+      say(h.boatName == h.boatType
+              ? ("I bought a " + h.boatType + " for " + money(h.boatValue))
+              : ("I bought a " + h.boatType + " named " + h.boatName + " for " + money(h.boatValue)));
+      happy += 2;
+      mark("a16_watercraft-enc", -1);
+    } else {
+      title = "No boat";
+      body = "The water is quiet this year.";
+      say("I went a year without a boat");
+    }
+  }
+
+  if (title.empty() && !h.boatLicensed && boatRng_.chance(0.05) &&
+      ensureTable("a16_license-boat-questions-enc")) {
+    const Table& q = tbl("a16_license-boat-questions-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < q.size(); ++r) pool.push_back(r);
+    const size_t row = weightedPickOf(q, "", pool, boatRng_);
+    if (row != size_t(-1)) {
+      const std::string question = cell(q, row, "Question");
+      const std::string right = cell(q, row, "Correct Answer");
+      const std::string wrong = hasCell(q, row, "Incorrect Funny") ? cell(q, row, "Incorrect Funny")
+                                                                  : cell(q, row, "Incorrect Decoy");
+      const bool madeIt = boatRng_.unit() < 0.45 + double(h.smarts) / 200.0;
+      title = "The boat license exam";
+      body = question;
+      out.cta = "Answer:";
+      out.choice = madeIt ? right : wrong;
+      if (madeIt) {
+        h.boatLicensed = true;
+        say("I passed my boat license exam");
+        add("Correct answer: " + right);
+        happy += 2;
+      } else {
+        say("I failed my boat license exam");
+        add("I wrote down: " + wrong + ". The answer was " + right + ".");
+        happy -= 1;
+      }
+      mark("a16_license-boat-questions-enc", int(row));
+    }
+  }
+
+  if (title.empty() && boatRng_.chance(0.05)) {
+    const size_t row = pickFrom("a16_watercraft-danger-scenarios-enc", h.boatCategory);
+    if (row != size_t(-1)) {
+      const Table& d = tbl("a16_watercraft-danger-scenarios-enc");
+      const std::string craft = h.boatType;
+      const int danger = static_cast<int>(d.num(row, "Danger Score"));
+      const double survive =
+          std::min(0.95, std::max(0.20, 0.9 - danger * 0.09 + double(h.boatCondition) / 500.0));
+      title = cell(d, row, "Title");
+      body = cell(d, row, "Scenario");
+      if (boatRng_.unit() < survive) {
+        h.boatCondition = std::max(0, h.boatCondition - 20);
+        say("I brought my " + craft + " home through that");
+        add("The " + craft + " lost some paint.");
+      } else {
+        h.boatCondition = std::max(0, h.boatCondition - 35);
+        say(cell(d, row, "Log Version"));
+        if (d.flag(row, "Watercraft Lost")) {
+          h.boatWrecked = true;
+          h.boatValue = 0;
+          h.boatType.clear();
+          h.boatName.clear();
+          add("My " + craft + " is gone.");
+          happy -= 5;
+        } else {
+          add("The " + craft + " made it back, barely.");
+          happy -= 2;
+        }
+      }
+      h.boatDanger = title;
+      mark("a16_watercraft-danger-scenarios-enc", int(row));
+    }
+  }
+
+  if (title.empty() && boatRng_.chance(0.12)) {
+    const size_t row = pickFrom("a16_watercraft-parts-enc", h.boatCategory);
+    if (row != size_t(-1)) {
+      const Table& p = tbl("a16_watercraft-parts-enc");
+      const std::string part = cell(p, row, "Part");
+      const std::string broken =
+          hasCell(p, row, "Broken Terms") ? cell(p, row, "Broken Terms") : std::string("broken");
+      const long long cost = numOf(p, row, "Part Cost Score") * 400 + (100 - h.boatCondition) * 8;
+      h.boatPart = part;
+      title = "Something broke";
+      body = hasCell(p, row, "Optional Description")
+                 ? cell(p, row, "Optional Description")
+                 : ("The " + part + " on my " + h.boatType + " is " + broken + ".");
+      if (h.money >= cost) {
+        h.money -= cost;
+        h.boatSpent += cost;
+        h.boatCondition = std::min(100, h.boatCondition + 6);
+        say("I replaced the " + part + " on my " + h.boatType + " for " + money(cost));
+      } else {
+        h.boatCondition = std::max(0, h.boatCondition - 5);
+        say("The " + part + " on my " + h.boatType + " is " + broken + " and I cannot afford " +
+            money(cost));
+        happy -= 1;
+      }
+      mark("a16_watercraft-parts-enc", int(row));
+    }
+  }
+
+  if (title.empty() && boatRng_.chance(0.12)) {
+    const size_t row = pickFrom("a16_watercraft-parts-enc", h.boatCategory);
+    if (row != size_t(-1)) {
+      const Table& p = tbl("a16_watercraft-parts-enc");
+      const std::string part = cell(p, row, "Part");
+      const long long cost = numOf(p, row, "Part Cost Score") * 500;
+      title = "A refit";
+      body = "The " + part + " goes on the " + h.boatType + ".";
+      if (h.money >= cost) {
+        h.money -= cost;
+        h.boatSpent += cost;
+        h.boatParts += 1;
+        h.boatValue += cost / 2;
+        h.boatCondition = std::min(100, h.boatCondition + 12);
+        say("I fitted a new " + part + " for " + money(cost));
+        add("My " + h.boatType + " is worth " + money(h.boatValue) + " now.");
+      } else {
+        say("I could not afford the " + part + " at " + money(cost));
+      }
+      mark("a16_watercraft-parts-enc", int(row));
+    }
+  }
+
+  if (title.empty() && boatRng_.chance(0.14)) {
+    const std::string old = h.boatType;
+    if (buyCraft(h.money * 3 / 5, true)) {
+      title = "A bigger boat";
+      body = "The " + h.boatType + " replaces the " + old + ".";
+      say("I sold the " + old + " and bought a " + h.boatType +
+          (h.boatName == h.boatType ? "" : " named " + h.boatName) + " for " + money(h.boatValue));
+      happy += 3;
+      mark("a16_watercraft-enc", -1);
+    } else {
+      title = "Boat shopping";
+      body = "I looked at boats I could not afford.";
+      say("I window-shopped boats I could not afford");
+    }
+  }
+
+  if (title.empty() && boatRng_.chance(0.16)) {
+    const size_t row = pickFrom("a16_watercraft-names-enc", h.boatCategory);
+    if (row != size_t(-1)) {
+      const Table& n = tbl("a16_watercraft-names-enc");
+      const std::string nm = cell(n, row, "Name");
+      const bool first = h.boatName.empty() || h.boatName == h.boatType;
+      h.boatName = nm;
+      title = first ? "A christening" : "A new name";
+      body = "The " + h.boatType + " is " + nm + " now.";
+      say(first ? ("I christened my " + h.boatType + " " + nm)
+                : ("I renamed my " + h.boatType + " to " + nm));
+      happy += 1;
+      mark("a16_watercraft-names-enc", int(row));
+    }
+  }
+
+  if (title.empty()) {
+    std::string who = "a friend";
+    if (h.relationshipOn && !h.loverName.empty()) who = h.loverName;
+    title = "A day on the water";
+    body = "The " + h.boatName + " out past " +
+           (h.city.empty() ? std::string("the harbour") : h.city) + " with " + who + ".";
+    say("I took my " + h.boatType + " out for the day with " + who);
+    if (h.luxIslandOwned && !h.luxIsland.empty()) add("We moored at " + h.luxIsland + " for lunch.");
+    happy += 2;
+    h.boatTrips += 1;
+  }
+
+  if (title.empty()) {
+    boatLive_ = false;
+    return false;
+  }
+  if (!h.boatWrecked)
+    add("My " + h.boatType + " is worth " + money(h.boatValue) + " and sits at " +
+        std::to_string(h.boatCondition) + "%.");
+  out.table = cardTable;
+  out.row_id = std::to_string(cardRow < 0 ? 0 : cardRow);
+  out.title = title;
+  out.body = spyUpperFirst(body);
+  if (!out.body.empty()) {
+    const char last = out.body[out.body.size() - 1];
+    if (last != '.' && last != '?' && last != '!') out.body += '.';
+  }
+  out.narrative = line;
+  out.extra = saved;
+  for (size_t i = 0; i < notes.size(); ++i) out.extra.push_back(notes[i]);
+  out.happiness += happy;
+  boatLive_ = false;
+  return true;
+}
+// ===== end the boat (REPORT.en.md 81) =======================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 

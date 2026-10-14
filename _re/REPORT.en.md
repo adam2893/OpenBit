@@ -7908,3 +7908,188 @@ Some cards, sampled by hand:
 A note on the model: the season lines and the event lines are printed together, so a card can
 carry a whole season - record, pay, stat sheet, fitness - before its headline event. That is
 the intended shape: the year is the unit, the event is the story inside it.
+
+## 81. The boat: a licence, a hull that ages, and four watercraft tables
+
+Section 81 takes the last unwired family of the water and wires it as a yearly pastime. The
+a16_watercraft family is small in files and large in rows: four tables plus the boat-licence
+question pool, 569 rows in all. Its craft table joins to everything else by a set of nineteen
+category flags, which is the single most important structural fact about it.
+
+### 81.1 The family
+
+| Table | Rows | Columns that matter |
+| --- | ---: | --- |
+| a16_watercraft-enc | 51 | Index, Type, Category, For Sale Description, Cost, Passengers, Feet, Lifespan Years, Commonness Score, Requires License, the nineteen category flags, Luxury Only |
+| a16_watercraft-names-enc | 412 | Name, the nineteen category flags |
+| a16_watercraft-parts-enc | 60 | Part, Plural Version, Only One Per Watercraft, Part Cost Score, Broken Terms, the nineteen category flags, Optional Description |
+| a16_watercraft-danger-scenarios-enc | 21 | Title, Scenario, Log Version, Danger Score, Watercraft Lost, the nineteen category flags |
+| a16_license-boat-questions-enc | 25 | Index, Question, Correct Answer, Incorrect Funny, Incorrect Decoy |
+
+The nineteen flags are Rowing, Speedboat, PWC, Motorized Yacht, Sailing Yacht, Sailboat, Jet Boat,
+Crab Boat, Pontoon, Research Vessel, Airboat, Amphibious, Cruise Ship, Icebreaker, Log Raft,
+Submarine, Tugboat, Hovercraft and Pirate Ship. A row may carry several of them at once: a craft can
+be both a Speedboat and a PWC, and a name row is joined to a hull only through the flags they share.
+
+The port reads those flags in the data's own order (kBoatCategoryNames) and calls the first one set
+the craft's category. A part, a name or a mishap is then only eligible when it carries the same
+flag. That is the whole join: no id column anywhere in the family.
+
+The family has exactly one token of its own, [watercraft], used 42 times across parts and mishaps
+("riding in my [watercraft]", "hit an iceberg while riding in my [watercraft]"). Everything else in these cells
+is already answered by the port: the pronoun pairs, <city>, <random-person>, <numN-M> and the
+inline slash lists.
+
+### 81.2 The craft
+
+The hero gets a boat at fourteen with a 25,000 dollar windfall (see the shortcuts). The port then
+draws the most expensive a16_watercraft-enc row that costs 25,000 or less and is not flagged Luxury
+Only, weighted on Commonness Score, sets type, category, value, passengers and feet from it, pays
+the cost, and names the craft from a16_watercraft-names-enc filtered on the same category.
+
+The licence is a flag, not an exam you must pass: Requires License on the drawn row decides whether
+the hero starts legal, and the exam card below exists to fix the ones who do not.
+
+Condition starts at 100 and is the only number that really matters. It bleeds 1 to 3 points a year,
+20 on a mishap survived and 35 on one that is not, and every repair price is derived from it.
+
+### 81.3 The year
+
+The year runs from fourteen, on a 0.55 chance, first hit wins, and the upkeep line is written
+before the chain every single year:
+
+- upkeep = value / 50 + 120, added to the log as "Upkeep cost me X and my Y sits at N%."
+- condition loses 1 + below(3).
+
+| Chance | Card | What it does |
+| ---: | --- | --- |
+| - | A wrecked hull | 0.6 chance to replace it with a budget of 25,000 + money / 4; otherwise a quiet year |
+| 0.05 | The boat license exam | only while unlicensed; smart hero passes on 0.45 + smarts / 200 |
+| 0.05 | one of the 21 mishaps | survive on 0.9 - danger * 0.09 + condition / 500; a lost hull wrecks the craft |
+| 0.12 | Something broke | a part of the craft's category; cost = Part Cost Score * 400 + (100 - condition) * 8 |
+| 0.12 | A refit | cost = Part Cost Score * 500, condition + 12, value + half the cost |
+| 0.14 | A bigger boat | sells the old hull at 3/5 of value and buys a costlier one |
+| 0.16 | A new name | a name row of the craft's category |
+| else | A day on the water | the port's own card: "The NAME out past CITY with WHO." |
+
+The mishap card is the family's dramatic one. A survive roll costs 20 condition and reports the
+row's Log Version; a failure costs 35 and, when the row carries the Watercraft Lost flag, sets the
+hull adrift: the type, name and value are cleared after that row's own log line has been resolved,
+so the journal reads "My speedboat is gone." and the next year starts with a replacement card.
+
+The licence card puts the question in the body, the correct answer as the call to action, and one
+of the three answer columns as the choice. The pool's Incorrect Funny column is the joke answer
+("Matches Outfit" for a flotation device) and Incorrect Decoy the plausible one; the port reports
+whichever the hero did not write, so a failed exam reads "I wrote down: X. The answer was Y."
+
+### 81.4 The tokens
+
+| Token | Answer |
+| --- | --- |
+| [watercraft] / [watercraft]-possessive | the hero's craft type; if the craft is named, the possessive returns the name; fallback "boat" |
+
+The guard answers only while the family renders (boatLive), so no other subsystem can pick the
+token up, and the token carries the eleven-character -possessive suffix through the shared
+llPossessive helper.
+
+### 81.5 The bugs
+
+None of the port's own. This is the first family that compiled clean on the first attempt, and the
+probe found no residue on the first run either. Two things were still worth fixing after reading
+the sampled cards:
+
+1. **The redundant name.** When the name pool has no row for the craft's category - the fishing
+   kayak and the WaveRunner both hit that case - the port falls back to naming the craft after its
+   own type, and the purchase line then read "I bought a WaveRunner named WaveRunner". The two
+   purchase lines now drop the " named X" clause when the two strings are equal, and the rename
+   branch treats name-equals-type as a craft that was never really named, so its "A christening"
+   title is reachable.
+2. **The share of the fallback.** The day-out card is what the year does when nothing else fires,
+   and it is 49 percent of all boat cards: the branch chances above are deliberately tuned to leave
+   it that room, because a boat really is mostly a thing you use rather than a thing that happens
+   to you.
+
+### 81.6 Shortcuts
+
+- **The 25,000 boat fund.** The scripted hero is poor in every life, so the family hands out a
+  one-off stake at fourteen, the same device sections 77 and 79 used for the portfolio and the
+  island. Without it the hero could not buy a hull at all.
+- **Luxury Only rows are skipped** at the initial purchase; the yacht-and-helicopter bracket is
+  section 79's business.
+- **One craft at a time.** A bigger boat sells the old hull at three fifths of value; there is no
+  market beyond that, no insurance, no mooring fee, and no second boat.
+- **The upkeep formula is invented.** The data has no cost column for ownership; value / 50 + 120 is
+  the port's own so that a dearer hull costs more to keep.
+- **The day-out card is composed by the port.** The family has no benign scenario pool, so the
+  fallback sentence is written in code, including the "moored at my island for lunch" line that
+  only appears when section 79 has bought an island.
+- **The city is the hero's city**, so a speedboat can be reported "out past Atlanta". The data has
+  no coastal list to check against.
+- **The Lifespan Years and Only One Per Watercraft columns are read but not yet enforced.**
+
+### 81.7 Verification
+
+The probe /tmp/qdir/boatres.py walks 30 seeds in both genders to sixty with the family enabled and
+matches every rendered bracket against the corpus:
+
+    boat events 1458 rc failures 0
+    RESIDUE 0
+    TABLES NEVER SEEN: []
+
+All five pools appear as a card's own table: a16_watercraft-enc 998, parts 254, names 132, mishaps
+62, licence 12. The card titles over the same run: A day on the water 718, A new name 132,
+Something broke 128, A refit 126, Boat shopping 94, A new boat 90, No boat 64, A bigger boat 32,
+The boat license exam 12, plus the mishap pool's own titles (Speed Demon 8, White Squall 6,
+Midnight Fright 6, Revenge of the Birds 6, Flame Out, Big Wave, Direct Hit, Bad Muse, Party Down and
+Shooting Star 4 each, Get Kraken 2).
+
+The full regression is green with the family in: 24 probes at residue zero, the residue census at
+"distinct residue tokens 0 total 0", coverage at 109 captured and 107 recoverable, the port gap at
+zero, the coverage push at exit 0 and the benchmark reaching age 34.
+
+Sample cards:
+
+    A day on the water
+      The Dolce Vita out past Atlanta with a friend.
+      I took my speedboat out for the day with a friend.
+
+    Something broke
+      You snapped the steering wheel off while testing how tight a circle you could make in the water.
+      I replaced the steering wheel on my speedboat for $840.
+
+    Something broke
+      Your throttle isn't performing like it used to and is causing some embarrassing dysfunction in the water.
+      The throttle on my speedboat is broken and I cannot afford $856.
+
+    The boat license exam
+      What does this marker signify?
+      Correct answer: Dangerous Area
+      I passed my boat license exam.
+
+    The boat license exam
+      What is the most important thing to consider when putting on a Personal Flotation Device?
+      I wrote down: Matches Outfit. The answer was Size and Fit.
+      I failed my boat license exam.
+
+    A refit
+      The GPS system goes on the speedboat.
+      I could not afford the GPS system at $1,000.
+
+    A bigger boat
+      The fishing kayak replaces the paddle boat.
+      I sold the paddle boat and bought a fishing kayak for $600.
+
+    A new boat
+      The WaveRunner is mine.
+      I bought a WaveRunner for $10,500.
+
+    Get Kraken
+      While out enjoying calm seas in your speedboat, you suddenly feel the boat jerk hard to the right.
+      You look starboard to discover a massive squid has latched its tentacles to the side of your boat and is pulling it down.
+      I brought my speedboat home through that.
+
+    Da Bomb
+      While enjoying the ocean with some friends aboard your speedboat, you notice what looks like a sea mine just up ahead.
+      You attempt to divert, but it's too late, and the mine detonates, blasting a massive hole in your boat.
+      My speedboat is gone.
+      I struck a sea mine in my speedboat, and it blasted a massive hole in my boat.
