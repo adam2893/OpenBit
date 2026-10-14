@@ -121,7 +121,11 @@ REGISTRY = {
     "ScenarioPushSpendTime": ["I went with my {parent} to {activity}.", ""],
     "ScenarioStepparentCruelty": ["My stepfather {cruelty}. I told my mother about his behavior.",
                                   "My stepfather {cruelty}."],
-    "ScenarioFriendUnfriendInbound": ["{name} unfriended me.", "I unfriended {name}."],
+    "ScenarioFriendUnfriendInbound": [
+        "{name} unfriended me. I tried to salvage our relationship but was unsuccessful.",
+        "{name} unfriended me. I called him mentally defective.",
+        "I unfriended {name}.",
+    ],
     "ScenarioLoverLeaves": ["{name} broke up with me. I begged her to stay and she changed her mind.",
                             "{name} broke up with me."],
     "ScenarioLoveDate": ["I am now dating {name}."],
@@ -141,6 +145,11 @@ REGISTRY = {
     "ScenarioRetentionFreelanceGig": ["I decided against picking up a freelance gig.", ""],
     "ScenarioRetentionLover": ["", ""],
     "ScenarioBase": ["I got my shot to direct a film and chose to make {genre} movie.", ""],
+    "ScenarioSchoolEnrollActivity": [
+        "I thought about joining an extracurricular activity at my new high school but decided "
+        "against it.",
+        "I joined the {club} at my high school.",
+    ],
 }
 
 

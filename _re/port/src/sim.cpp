@@ -351,6 +351,124 @@ const RegScenario kScenarios[] = {
       {"Leave the casino",
        "I ignored an opportunity to purchase a Golden Neko Statue to increase my casino "
        "winnings."}}},
+    // ---- Menu classes (REPORT.en.md 44) ------------------------------------
+    // Cards captured by drive10 (trace_game10.json) and the c5-c10 corpus. A
+    // branch label is the option literal, or the outcome card's Title when that
+    // is all the capture has (drive10 shows the outcome card title IS the tapped
+    // label). A branch the capture never exercised keeps an empty log, which is
+    // the port's "no line" convention. Branch order matches tools/row_recover.py
+    // REGISTRY so a push's choice index means the same thing on both sides.
+    {"ScenarioStepparentCruelty", "Family", "Evil Stepfather",
+     "Your {stepparent} pranked you by convincing you that you're invisible.\n\nWhat will you do?",
+     2,
+     {{"I won't play those games",
+       "My {stepparent} convinced me that I'm invisible. I told my mother about his behavior."},
+      {"Let it slide", "My {stepparent} convinced me that I'm invisible."}}},
+    {"ScenarioSchoolBully", "School", "Bully",
+     "Your classmate, {name}, has been telling everyone on social media that you are a "
+     "teacher's pet.\n\nWhat will you do?",
+     4,
+     {{"Report the bully to my teacher",
+       "I was bullied at school by my classmate, {name}. I reported the bully to my teacher."},
+      {"Do nothing",
+       "I was bullied at school by my classmate, {name}. I decided not to do anything about it."},
+      {"Fight with a bully",
+       "I was bullied at school by my classmate, {name}. I fought the bully and was suspended "
+       "from school for four days."},
+      {"Find the bully and go at him",
+       "I was bullied at school by my classmate, {name}. I found the bully and went at him."}}},
+    {"ScenarioSchoolActivityJoin", "School", "{club}",
+     "Some friends that you are starting high school with are encouraging you to join the "
+     "{club} with them.\n\nWhat will you do?",
+     4,
+     {{"Try out for the {club}", "I tried out for my {club} but did not make the cut."},
+      {"", "I turned down the opportunity to join the {club} at my new high school."},
+      {"", "I thought about joining an extracurricular activity at my new high school but "
+           "decided against it."},
+      {"Join the {club}", "I joined the {club} at my high school."}}},
+    {"ScenarioEncounterProstitute", "", "Working Girl",
+     "While on your walk, you encounter a working girl sitting on the curb.\n\nWhat will you do?",
+     3,
+     {{"Solicit {name}", "I solicited {name} that I met on the street."},
+      {"", "I ignored a working girl who was sitting on the curb."},
+      {"", "I verbally abused a hooker who was winking at me and she asked for forgiveness."}}},
+    {"ScenarioFriendUnfriendInbound", "Friends", "Unfriended",
+     "Your friend, {name}, has unfriended you.\n\nWhat will you do?",
+     3,
+     {{"It's not me it's you",
+       "{name} unfriended me.\nI tried to salvage our relationship but was unsuccessful."},
+      {"Done for good", "{name} unfriended me.\nI called him mentally defective."},
+      {"Unfriend {name}", "I unfriended {name}."}}},
+    {"ScenarioLoverLeaves", "Love", "Break Up",
+     "Your girlfriend, {name}, wants to break up with you.\n\nShe says the alcohol has become "
+     "a problem.\n\nWhat will you do?",
+     2,
+     {{"No shame", "{name} broke up with me. I begged her to stay and she changed her mind."},
+      {"", "{name} broke up with me."}}},
+    {"ScenarioLoveDate", "Love", "Love Interest",
+     "While at the {venue}, you meet a {lady} from {countryother} named {cfirst}.",
+     1,
+     {{"True love", "I am now dating {cfirst} {clast}."}}},
+    {"ScenarioSocialMediaJoinPush", "Social", "{channelbare}",
+     "Your friends are all joining {channelbare}.\n\nWhat will you do?",
+     2,
+     {{"Sign up", "I signed up for {channel} account."}, {"", ""}}},
+    {"ScenarioCarRepair", "", "{car}",
+     "Your car has a worn ball joint.\n\nWhat will you do?",
+     1,
+     {{"Pick a mechanic",
+       "My {car} has a worn ball joint. I paid a shifty mechanic to fix it."}}},
+    {"ScenarioPetDiscipline", "Pets", "Behavior",
+     "Your {pet}, {petname}, just ate your {food}.\n\nWhat will you do?",
+     2,
+     {{"Isn't she cute?",
+       "My {pet}, {petname}, ate my {food}. I rewarded her with a Porterhouse steak."},
+      {"", "My {pet}, {petname}, ate my {food}. I scolded her."}}},
+    {"ScenarioPushSpendTime", "Family", "Quality Time",
+     "Your mother wants to take you to play bingo at the community center.\n\nWill you go with "
+     "her?",
+     2,
+     {{"Good times", "I went to play bingo at the community center with my mother."}, {"", ""}}},
+    {"ScenarioIAPConfiguredPush", "", "Lights, Camera, Action",
+     "While trimming the bush, you stumble upon a film set, where Greta Gerwig is directing "
+     "Elton John and Emma Stone in a new movie, and you start dreaming of becoming a great "
+     "movie director yourself.\n\nWhat will you do?",
+     2,
+     {{"Not interested", "I chose not to learn about becoming a movie director."}, {"", ""}}},
+    {"ScenarioRetentionFreelanceGig", "", "Freelance Gig",
+     "You're looking at your bank account and are thinking of picking up a freelance gig to get "
+     "some extra cash.\n\nWhat will you do?",
+     2,
+     {{"", "I decided against picking up a freelance gig."},
+      {"Okay, moneybags",
+       "Any time your pockets are feeling empty, you can pick up a freelance gig by tapping the "
+       "left-most button on the home screen, then the \"Freelance Gigs\" menu item."}}},
+    {"ScenarioRetentionLover", "", "Love in the Air",
+     "You're noticing that everyone you know is coupled up with someone, but you're not.",
+     1,
+     {{"", "Any time you're feeling lonely, you can find love by tapping the \"Activities\" "
+           "button on the home screen, then the \"Love\" menu item."}}},
+    {"ScenarioMediaOnlyFansArguePush", "", "Argument",
+     "Your girlfriend is arguing with you because she discovered your OnlyFans page and is "
+     "begging you to take it down.\n\nWhat will you do?",
+     1,
+     {{"Apologize", "My girlfriend argued with me because I create content for OnlyFans.\n"
+                    "I apologized to her."}}},
+    {"ScenarioBase", "", "Evaders of the Lost Ark",
+     "You received a script for a movie called 'Evaders of the Lost Ark,' and must decide who "
+     "should play the lead.\n\nIt's a film about an archeology professor who is hired to find "
+     "the Ark of the Cavemen before an evil organization retrieves what's inside it: an artifact "
+     "that can alter the course of history.\n\nWhat will you do?",
+     1,
+     {{"Make an action movie",
+       "I got my shot to direct a film and chose to make an action movie."}}},
+    {"ScenarioSchoolEnrollActivity", "School", "Extracurricular Activity",
+     "Now that you're in high school, you are thinking about participating in an extracurricular "
+     "activity.\n\nWhat will you do?",
+     2,
+     {{"", "I thought about joining an extracurricular activity at my new high school but "
+           "decided against it."},
+      {"Join the {club}", "I joined the {club} at my high school."}}},
 };
 // Real-world date gates for the two dated dumb-scenario sets. Holiday rows name
 // the holiday; calendar rows carry 'Month' + 'Date' (one real day each).
@@ -472,6 +590,10 @@ bool Sim::load(std::string* error) {
       "a16_careers-enc",                             // Career,Commonness Score,...
       "a16_pets-enc",                                // Animal,Breed,Wild,Exotic,Black Market,Commonness Score
       "a16_pet-names-enc",                           // Animal,Name,Color,Gender
+      "a16_car-models-enc",                          // Make,Model,Type,Cost,... (ScenarioCarRepair)
+      "a16_dumb-scenarios-vacation-enc",             // same layout; a coverage push targets it
+      "a16_vacation-destinations-enc",               // Destination,Context,Country,...
+      "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
   };
   try {
     for (const char* name : kTables) {
@@ -660,6 +782,26 @@ std::string Sim::circumstancePublic() {
   return std::string(slot == n ? "While at " : "On your way to ") + articleFor(who) + who + " concert";
 }
 
+// '<vacation-destination>' and '<vacation-cruise>' only occur in
+// a16_dumb-scenarios-vacation-enc (173 and 89 uses). The first is a row of
+// a16_vacation-destinations-enc ('Abu Dhabi', 'Alaska'), the second a row of
+// a16_cruises-enc ('Caribbean'), which is what the game's own strings call a
+// cruise (literal #49729 'You went on {0} cruise.'). The port has no Travel
+// menu, so both draw uniformly from their table.
+std::string Sim::vacationDestination() {
+  if (!ensureTable("a16_vacation-destinations-enc")) return std::string();
+  const Table& t = tbl("a16_vacation-destinations-enc");
+  if (t.size() == 0) return std::string();
+  return t.at(rng_.below(uint32_t(t.size())), "Destination");
+}
+
+std::string Sim::vacationCruise() {
+  if (!ensureTable("a16_cruises-enc")) return std::string();
+  const Table& t = tbl("a16_cruises-enc");
+  if (t.size() == 0) return std::string();
+  return t.at(rng_.below(uint32_t(t.size())), "Type");
+}
+
 // The hero-facing tokens. genesis_master_tags_hero documents the '<hero:...>'
 // spelling; the tables also carry the older '<hero-name>' / '<hero-first-name>'
 // / '<city>' / '<country>' / '<country-other>' forms. The game itself fills a
@@ -784,6 +926,14 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += options[rng_.below(uint32_t(options.size()))];
+    } else if (token == "vacation-destination") {
+      const std::string place = vacationDestination();
+      if (place.empty()) out += text.substr(i, close - i + 1);
+      else out += place;
+    } else if (token == "vacation-cruise") {
+      const std::string line = vacationCruise();
+      if (line.empty()) out += text.substr(i, close - i + 1);
+      else out += line;
     } else if (token == "circumstance-public") {
       out += circumstancePublic();
     } else if (token == "musician-indefinite") {
@@ -1783,8 +1933,16 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     substAll(body, "{name}", name);
   }
 
+  std::string channelBare;
+  // The channel card spells the bare name ("Your friends are all joining Twitch.")
+  // while the log spells it with the article ("I signed up for a Twitch account."),
+  // so both forms come out of one draw.
+  bool wantsChannel = body.find("{channel}") != std::string::npos ||
+                      body.find("{channelbare}") != std::string::npos;
+  for (int i = 0; !wantsChannel && i < s->n; ++i)
+    if (std::string(s->choices[i].log).find("{channel}") != std::string::npos) wantsChannel = true;
   std::string channel;
-  if (body.find("{channel}") != std::string::npos) {
+  if (wantsChannel) {
     // The channel is a real table (a16_social-media-channels-enc, 7 rows). The
     // game's own card literal is "You signed up for {0} account." (metadata
     // #49322) with the article baked into the drawn value, so build it the same
@@ -1794,7 +1952,9 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     if (ct.size() > 0) {
       const std::string cname = trim(ct.at(rng_.below(uint32_t(ct.size())), "Channel"));
       channel = articleFor(cname) + cname;
+      channelBare = cname;
       substAll(body, "{channel}", channel);
+      substAll(body, "{channelbare}", cname);
     }
   }
 
@@ -1902,6 +2062,77 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     strangerWord = who.empty() ? std::string("a stranger") : articleFor(who) + who;
     substAll(body, "{stranger}", strangerWord);
   }
+  // The menu classes of REPORT.en.md 44: the pet, the club, the car, the venue
+  // and the stranger on the date card are the drawn values; everything else on
+  // those cards is captured text.
+  std::string pet, petname, club, car, venueName, otherCountry, cfirst, clast;
+  std::string ladyWord;
+  if (need("{pet}")) {
+    // a16_pets-enc Breed, weighted, restricted to dogs: every captured card is
+    // about a dog ("Your vizsla, Hazel, just ate your fruit snacks.").
+    ensureTable("a16_pets-enc");
+    const Table& pt = tbl("a16_pets-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < pt.size(); ++r)
+      if (lower(trim(pt.at(r, "Animal"))) == "dog") pool.push_back(r);
+    const size_t row = weightedPickOf(pt, "Commonness Score", pool, rng_);
+    if (row != size_t(-1)) pet = lower(trim(pt.at(row, "Breed")));
+    if (!pet.empty()) substAll(body, "{pet}", pet);
+  }
+  if (need("{petname}")) {
+    ensureTable("a16_pet-names-enc");
+    const Table& nt = tbl("a16_pet-names-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < nt.size(); ++r)
+      if (lower(trim(nt.at(r, "Animal"))) == "dog") pool.push_back(r);
+    if (!pool.empty()) petname = trim(nt.at(pool[rng_.below(uint32_t(pool.size()))], "Name"));
+    if (!petname.empty()) substAll(body, "{petname}", petname);
+  }
+  if (need("{club}")) {
+    // shortcut: the club list is code-built in the game (metadata #27937-#27943);
+    // these are the two captured names.
+    static const char* kClubs[] = {"Billiards Club", "Weightlifting Club"};
+    club = kClubs[rng_.below(2)];
+    substAll(body, "{club}", club);
+  }
+  if (need("{car}")) {
+    ensureTable("a16_car-models-enc");
+    const Table& ct = tbl("a16_car-models-enc");
+    if (ct.size() > 0) {
+      const size_t row = rng_.below(uint32_t(ct.size()));
+      car = trim(ct.at(row, "Make")) + " " + trim(ct.at(row, "Model"));
+    }
+    if (!car.empty()) substAll(body, "{car}", car);
+  }
+  if (need("{venue}")) {
+    // shortcut: the meeting place is code-built in the game (gym and library
+    // captured); this list is the stand-in.
+    static const char* kVenues[] = {"gym", "library", "coffee shop", "park", "supermarket"};
+    venueName = kVenues[rng_.below(5)];
+    substAll(body, "{venue}", venueName);
+  }
+  if (need("{stepparent}")) {
+    // shortcut: the port's family model has a stepfather relation but no
+    // gender-neutral slot; every captured card says stepfather.
+    substAll(body, "{stepparent}", "stepfather");
+  }
+  if (need("{lady}")) {
+    static const char* kLadies[] = {"lady", "female"};
+    ladyWord = kLadies[rng_.below(2)];
+    substAll(body, "{lady}", ladyWord);
+  }
+  if (need("{countryother}")) {
+    otherCountry = heroToken("country-other", false);
+    if (!otherCountry.empty()) substAll(body, "{countryother}", otherCountry);
+  }
+  if (need("{cfirst}")) {
+    cfirst = drawFirstName(rng_.chance(0.5));
+    substAll(body, "{cfirst}", cfirst);
+  }
+  if (need("{clast}")) {
+    clast = drawSurname();
+    substAll(body, "{clast}", clast);
+  }
   std::string partner, partnerObj;
   if (need("{partner}")) {
     // The classmate the scene offers is the hero's opposite sex, and the game
@@ -1989,6 +2220,23 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     attackPart = drawFrom("a16_custom-attack-body-parts-enc", "Commonness Score", "Body Part");
     substAll(body, "{victim}", victim);
   }
+    // The drawn values have to reach the card, the button and the log alike:
+  // one filler instead of one substAll per call site.
+  const auto fillAll = [&](std::string& text) {
+    if (!name.empty()) substAll(text, "{name}", name);
+    if (!club.empty()) substAll(text, "{club}", club);
+    if (!pet.empty()) substAll(text, "{pet}", pet);
+    if (!petname.empty()) substAll(text, "{petname}", petname);
+    if (!car.empty()) substAll(text, "{car}", car);
+    if (!cfirst.empty()) substAll(text, "{cfirst}", cfirst);
+    if (!clast.empty()) substAll(text, "{clast}", clast);
+    if (!channelBare.empty()) substAll(text, "{channelbare}", channelBare);
+    if (!otherCountry.empty()) substAll(text, "{countryother}", otherCountry);
+    if (!venueName.empty()) substAll(text, "{venue}", venueName);
+    if (!ladyWord.empty()) substAll(text, "{lady}", ladyWord);
+    // shortcut: the port has no step-parent gender slot (see above).
+    substAll(text, "{stepparent}", "stepfather");
+  };
   if (s->n > 0) {
     // A single-entry list is the no-button form (label ""), so it must not consume
     // a draw: only a real multi-branch scene randomizes its pick.
@@ -1996,6 +2244,7 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
                         ? choice
                         : (s->n > 1 ? int(rng_.below(uint32_t(s->n))) : 0);
     out.choice = s->choices[idx].label;
+    fillAll(out.choice);
     // The physician cards carry a drawn surname inside their option labels.
     if (!doctor2.empty()) substAll(out.choice, "{doctor2}", doctor2);
     if (!doctor1.empty()) {
@@ -2019,6 +2268,15 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     if (!heroCompany.empty()) substAll(log, "{company}", heroCompany);
     if (!insultWord.empty()) substAll(log, "{insult}", insultWord);
     if (!strangerWord.empty()) substAll(log, "{stranger}", strangerWord);
+    fillAll(log);
+    if (!pet.empty()) substAll(log, "{pet}", pet);
+    if (!petname.empty()) substAll(log, "{petname}", petname);
+    if (!club.empty()) substAll(log, "{club}", club);
+    if (!car.empty()) substAll(log, "{car}", car);
+    if (!venueName.empty()) substAll(log, "{venue}", venueName);
+    if (!otherCountry.empty()) substAll(log, "{countryother}", otherCountry);
+    if (!cfirst.empty()) substAll(log, "{cfirst}", cfirst);
+    if (!clast.empty()) substAll(log, "{clast}", clast);
     if (!partner.empty()) {
       substAll(log, "{partner}", partner);
       substAll(log, "{partnerobj}", partnerObj);
@@ -2050,6 +2308,11 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     const std::string teacher = body.find("{teacher}") != std::string::npos ? personName("teacher") : std::string();
     if (!teacher.empty()) substAll(body, "{teacher}", teacher);
   }
+  fillAll(out.title);
+  fillAll(body);
+  if (!car.empty()) substAll(out.title, "{car}", car);
+  if (!club.empty()) substAll(out.title, "{club}", club);
+  if (!pet.empty()) substAll(out.title, "{pet}", pet);
   out.body = body;
   return true;
 }

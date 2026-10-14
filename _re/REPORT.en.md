@@ -2662,3 +2662,143 @@ outcome card be resolved through its parent. `tools/row_recover.py` gained:
 - Unmeasured tails: the remedy and `Search the web` branch sentences (the port appends
   its own), the single-literal dismissal reason of `ScenarioJobTermination`, and the
   first fill of the `InsultRelative` log shape (#69566).
+
+## 44. The menu classes: seventeen cards, and what a rendered push costs
+
+Sections 41 and 43 left 26 pushed scenes that the port could not render. All 26
+now render. This section records what each class needed, where its text came
+from, and the two tool bugs that were hiding the true gap.
+
+### 44.1 The gap was measured wrong first
+
+`tools/coverage.py` says *recoverable*: a scene whose source row was found. It
+says nothing about whether the port can play that row. `/tmp/qdir/portgap.py`
+adds the missing check: for every entry in `/tmp/coverage_push.json`, is the
+class in the port's `kScenarios`, or the table in `kTables`?
+
+The first run reported **73 of 109, gap 34**. Eight of those 34 were false: the
+port's `kTables` is a plain string array (`src/sim.cpp:458`), and the script
+only matched `ensureTable("...")` and `tbl("...")` call sites. Fixing the
+pattern (match the array literal too) left **26 real gaps in 16 classes**. After
+this batch: **rendered 107, gap 0** - the two remaining entries are the
+`ScenarioMiniPaywall` cards, which carry no text at all.
+
+### 44.2 Evidence rule: the outcome card carries the label
+
+Only `trace_game10.json` (drive10) has `_choices`. Every other trace has
+`_choices: null`, so for older captures the button labels are unrecoverable
+from the trace. But a result card (`_class == 'Scenario'`) is titled with the
+**label of the button that was pressed** and bodied with the second-person
+result sentence, and it always follows its parent card in the same round. So
+`row_recover.py` now pairs each `Scenario` record with the most recent
+non-`Scenario` record and inherits the parent's identity: same class, same
+table row, and - when the label matches - the same choice index. All 13
+outcome-card instances in the corpus are now recoverable; before this, they
+were 13 of the 43 unrecovered rows.
+
+### 44.3 The seventeen classes
+
+Choices are listed in the port's order, which `tools/row_recover.py` mirrors, so
+a recovered `choice` index means the same branch on both sides. A blank label
+means the class has one branch or the label was never captured.
+
+| class | card | branches | text source |
+| --- | --- | --- | --- |
+| `ScenarioStepparentCruelty` | Evil Stepfather | 2 | `a16_stepparent-cruelty-scenarios-enc` (49 rows: Scenario / Log Version / Hero Gender / Stepparent Gender / Hetero Parents / age window) |
+| `ScenarioSchoolBully` | Bully | 4 | `a16_bully-scenarios-enc` (34 rows: Scenario / Third Person Scenario / Gender); the fight branch is three literals (#20066, #20233, #49222, #69604) |
+| `ScenarioSchoolActivityJoin` | club name | 4 | literal card (#39433/#39434), labels #44089/#44090, logs #25369/#23935/#25223 |
+| `ScenarioEncounterProstitute` | Hooker / Working Girl | 3 | labels #39410/#39411, log #25125/#25126/#23576 |
+| `ScenarioFriendUnfriendInbound` | Unfriended | 3 | labels #44847/#44848, logs #69636/#70373/#50710 |
+| `ScenarioLoverLeaves` | Break Up | 2 | `a16_breakup-scenarios-enc` (228 rows: Condition / Crazy / Scenario / Gender / Straight Only / Vampire flags), log #69876 |
+| `ScenarioLoveDate` | Love Interest | 1 | log #49725, label #21850 |
+| `ScenarioSocialMediaJoinPush` | channel name | 2 | `a16_social-media-channels-enc` (8 rows) |
+| `ScenarioCarRepair` | Make + Model | 1 | `a16_car-models-enc`; labels #33733, log #24763 |
+| `ScenarioPetDiscipline` | Behavior | 2 | `a16_pets-enc` (Breed, Commonness Score) + `a16_pet-names-enc` (Name); log #49244 |
+| `ScenarioPushSpendTime` | Quality Time | 2 | labels #21956-#21961 |
+| `ScenarioIAPConfiguredPush` | per-offer | 2 | five captured cards, no table: the offer text is code-side |
+| `ScenarioRetentionFreelanceGig` | Freelance Gig | 2 | tutorial literal #11529 |
+| `ScenarioRetentionLover` | Love in the Air | 1 | card #49993, tutorial literal #11527 |
+| `ScenarioMediaOnlyFansArguePush` | Argument | 1 | literals #1308/#1783 |
+| `ScenarioBase` | film title | 1 | the director path; the film data lives in the genesis film tables (pending) |
+| `ScenarioSchoolEnrollActivity` | Extracurricular Activity | 2 | literal card; logs #23935/#25223 |
+
+Two of those are table-driven in the same shape as the symptom card, so the
+port reads the row instead of holding a copy: `ScenarioStepparentCruelty` and
+`ScenarioSchoolBully`. Neither is wired to its table yet - the port carries the
+captured rows - which is the cheap half of a two-stage job; the tables are named
+below.
+
+### 44.4 The token plumbing this needed
+
+A batch of seventeen cards draws sixteen kinds of name. The port grew one
+lambda, `fillAll`, that every drawn value goes through, and calls it on the
+label, the body and the log:
+
+* `{pet}` = `a16_pets-enc` `Breed` where `Animal == dog`, weighted by
+  `Commonness Score`; `{petname}` = `a16_pet-names-enc` `Name` for dogs.
+* `{club}` = the two names the corpus contains (Billiards, Weightlifting). No
+  club table exists; the game's club names are code-side literals
+  (#27937-#27943), so this is a placeholder list.
+* `{car}` = `a16_car-models-enc` `Make` + ` ` + `Model`.
+* `{channel}` is the article-bearing form (`a Twitch account`) and
+  `{channelbare}` the bare one (`Your friends are all joining Twitch.`) -
+  both from one draw of `a16_social-media-channels-enc`, so the card and the
+  log agree on the channel.
+* `{lady}`, `{stepparent}`, `{venue}` are one-word placeholder sets: the
+  first two need a step-parent / stranger gender and age model the port does
+  not have yet, the third a venue table.
+* `{countryother}`, `{cfirst}`, `{clast}` reuse the hero tokens and the
+  name pools.
+
+Card titles resolved as well: `{club}`, `{car}`, `{pet}` and the channel
+name are the literal card titles in the corpus.
+
+### 44.5 The vacation table, and two tokens that only live in it
+
+Adding `a16_dumb-scenarios-vacation-enc` to `kTables` (a coverage push
+targets it) exposed the last residue in the port: `<vacation-destination>`
+(173 uses) and `<vacation-cruise>` (89), both exclusive to that table.
+
+* `<vacation-destination>` is a row of `a16_vacation-destinations-enc`
+  (325 rows: Destination / Context / Use Definite Article / Country /
+  Continent / Cost Score / Appeal Score / Danger Score / Commonness /
+  Pixie Dust Only) - `Abu Dhabi`, `Alaska`.
+* `<vacation-cruise>` is a row of `a16_cruises-enc` (12 rows: Type /
+  Continent / Cost Score / Appeal Score) - `Alaska`, `Bahamas`,
+  `Caribbean`. The game's own strings confirm the reading: literal #49729 is
+  `You went on {0} cruise.`
+
+The port has no Travel menu, so both draw uniformly from their table. With
+these two wired, a full forced push of all 109 recovered entries renders
+**zero** leftover tokens, and the 48-run census (12 seeds x 4 country/gender
+pairs x 95 years) reports no residue either.
+
+### 44.6 Verification
+
+* `python3 tools/coverage.py` - the 17 classes recover row-for-row; the only
+  UNRECOVERED entries left are the two `ScenarioMiniPaywall` cards, which have
+  no title, no body and no log line in the game either.
+* `python3 /tmp/qdir/portgap.py` - ENTRIES 109, rendered-by-port 107, gap 0.
+* `/tmp/qdir/menutest.json` (24 forced pushes, one per class/branch, seed 12345
+  US male 30) - every card, label and log line matched the corpus text,
+  including `My Fiat 500 has a worn ball joint.` and
+  `My pit bull, Snickers, ate my octopus. I rewarded her with a Porterhouse
+  steak.`
+* `bash tools/bench.sh /tmp/trace_c10.json` - 35 years, no abort.
+* `/tmp/qdir/rescensus.py` - distinct residue tokens 0.
+
+### 44.7 What this says about the remaining cost
+
+A menu class is not one scene. Between section 41 and here, the per-class cost
+has settled at roughly: one table or two to three literals, one token draw, one
+branch table mirrored on both sides, and one forced-push run to check it. The
+expensive part was never the text - it is the *identity* of the branch, since a
+recovered `choice` index has to mean the same thing in `row_recover.py` and in
+the port. That is why the two lists are deliberately ordered alike and why a
+blank label is preferred to a guessed one.
+
+Three classes still resolve to a code-side pool the port cannot read
+(`ScenarioIAPConfiguredPush`'s five offers, `ScenarioBase`'s film data, the
+bullies' third-person sentences): each is a `DataHub`-style switch over
+literals, the same shape as the circumstance pools of section 38, and each
+needs one live sampling session, not a CSV read.

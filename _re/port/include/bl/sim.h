@@ -170,6 +170,8 @@ class Sim {
   // '<celebrity>', '<random-person>', '<random-first-name-male>', ...).
   std::string referenceToken(const std::string& token);
   std::string circumstancePublic();
+  std::string vacationDestination();
+  std::string vacationCruise();
   // '<hero-name>', '<hero:age>', '<city>', '<country-other>', ... read the live
   // hero, so the hero of the run being rendered has to be in scope.
   std::string heroToken(const std::string& key, bool possessive);
