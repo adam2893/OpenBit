@@ -582,7 +582,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
       landlordRng_(seed ^ 0x6a09e667f3bcc909ULL),
-      petRng_(seed ^ 0xbb67ae8584caa73bULL) {}
+      petRng_(seed ^ 0xbb67ae8584caa73bULL),
+      studioRng_(seed ^ 0x3c6ef372fe94f82bULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -702,6 +703,29 @@ bool Sim::load(std::string* error) {
     "a16_music-names-songs-enc",
     "a16_music-names-albums-enc",
     "a16_music-genres-enc",
+    "a16_music-album-covers-enc",              // Cover + one x flag column per genre
+    "a16_music-album-rejections-enc",          // Reason,Solo,Band,Album Type
+    "a16_music-album-title-enc",               // Title,Genre,Commonness Score
+    "a16_music-artistic-flair-string-enc",     // String,Log Version,Genre,Reception Impact Score
+    "a16_music-audition-rejections-enc",       // Reason,Solo,Band,Role
+    "a16_music-band-breaks-up-scenarios-enc",  // Reason,Min/Max Popularity
+    "a16_music-band-kicks-out-scenarios-enc",  // Reason,Role,Performance Based,Hero Min/Max Age
+    "a16_music-concert-venues-enc",            // Venue,Min/Max Capacity,Min/Max Popularity,Money Score
+    "a16_music-cover-art-string-enc",          // String,Genre (a comma list on the row)
+    "a16_music-fan-interaction-scenarios-enc", // Positive,Negative,Scenario,Feedback Snippet,...
+    "a16_music-names-compilations-enc",        // Title,Commonness Score,Accommodates Definite Article
+    "a16_music-practice-scenarios-enc",        // Scenario,Log Version,Role
+    "a16_music-record-label-company-name-enc", // Name,Genre,Commonness Score
+    "a16_music-roles-enc",                     // Role,Solo,Band,Solo/Band Fame Score,...
+    "a16_music-sample-track-enc",              // Song,Genre,Commonness Score
+    "a16_music-signature-sound-enc",           // Sound,Use Indefinite Article,Reception Impact Score,Commonness Score
+    "a16_music-subgenres-enc",                 // Subgenre + one x flag column per genre
+    "a16_music-track-beat-enc",                // Beat,Genre,Commonness Score
+    "a16_music-track-lyrical-hook-enc",        // Hook,Genre,Commonness Score
+    "a16_music-track-rejection-string-enc",    // String,Log Version,Reason,Commonness Score
+    "a16_music-track-subject-enc",             // Subject,Genre,Commonness Score
+    "a16_music-track-title-enc",               // Track Title,Genre,Commonness Score
+    "a16_music-track-vibe-enc",                // Vibe,Genre,Commonness Score
     "a16_dumb-scenarios-business-enc",
     "a16_business-name-structure-enc",
     "a16_business-products-enc",
@@ -1468,6 +1492,20 @@ std::string spyUpperFirst(std::string text) {
 // answers them when the hero has one.
 // The mafia family's own tokens (report 64). The mob tables key their rows on
 // ISO country codes, so the names come from the table for the hero's country.
+// The studio's own token names (REPORT.en.md 68.4). 'song-title' is a family of
+// spellings, so it is matched by prefix.
+bool musicIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() && key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    key.resize(key.size() - psuffix.size());
+  }
+  if (key == "album-title" || key == "band-member" || key == "music-genre" ||
+      key == "music-role" || key == "artist-name" || key == "album-description" ||
+      key == "musician-soundcloud") return true;
+  return key.compare(0, 10, "song-title") == 0;
+}
+
 bool petIsToken(const std::string& token) {
   std::string key = token;
   const std::string psuffix = "-possessive";
@@ -1735,8 +1773,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string v = miscToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
-    } else if (token == "album-title" || token.compare(0, 10, "song-title") == 0 ||
-               token == "band-member" || token == "music-genre") {
+    } else if (musicIsToken(token)) {
       const std::string v = musicToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
@@ -2624,6 +2661,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (sportsYear(life, out, forcedChoice)) return true;
   if (businessYear(life, out, forcedChoice)) return true;
   if (musicYear(life, out, forcedChoice)) return true;
+  if (studioYear(life, out, forcedChoice)) return true;
   if (politicalYear(life, out, forcedChoice)) return true;
   if (miscPoolYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
@@ -9746,6 +9784,544 @@ bool Sim::petYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// The studio (REPORT.en.md 68). The genre vocabularies of the music tables do
+// not agree: the album, track, cover-art and sample tables say 'rock', 'K-pop'
+// and 'rhythm and blues' while the record labels say 'hip-hop' where the genres
+// table says 'rap', and a16_music-album-covers-enc keeps one x flag column per
+// genre whose name is 'R&B' with the ampersand. Two helpers bridge them.
+static std::string musicGenreColumn(const std::string& genre) {
+  const std::string g = lower(trim(genre));
+  if (g == "rhythm and blues" || g == "r&b" || g == "rnb") return "R&B";
+  if (g == "k-pop") return "K-Pop";
+  if (g == "heavy metal") return "Heavy Metal";
+  if (g.empty()) return std::string();
+  std::string out = g;
+  if (out[0] >= 'a' && out[0] <= 'z') out[0] = char(out[0] - 32);
+  return out;
+}
+
+static bool musicGenreFits(const std::string& cell, const std::string& genre) {
+  const std::string c = lower(trim(cell));
+  const std::string g = lower(trim(genre));
+  if (c.empty() || g.empty()) return true;   // a blank cell fits any genre
+  if (c == g) return true;
+  if (g == "rap" && c == "hip-hop") return true;
+  if (g == "hip-hop" && c == "rap") return true;
+  if (g == "rhythm and blues" && (c == "r&b" || c == "rnb")) return true;
+  if ((g == "r&b" || g == "rnb") && c == "rhythm and blues") return true;
+  return false;
+}
+
+// The 'Solo' / 'Band' pair of flag columns several music tables carry.
+static bool musicSideFits(const Table& t, size_t r, bool solo) {
+  const char* col = solo ? "Solo" : "Band";
+  if (!t.has(col)) return true;
+  return t.flag(r, col);
+}
+
+void Sim::ensureStudioFields(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.musicRole.empty() && ensureTable("a16_music-roles-enc")) {
+    const Table& t = tbl("a16_music-roles-enc");
+    const bool solo = h.bandName.empty();
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!musicSideFits(t, r, solo)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      h.musicRole = lower(trim(t.at(pool[studioRng_.below(uint32_t(pool.size()))], "Role")));
+    }
+  }
+}
+
+// The phrase several tables use in place of a whole album:
+// "making <album-description> is the worst idea."
+std::string Sim::musicAlbumDescription() {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  const std::string album = h.musicAlbum.empty() ? std::string("an untitled album") : h.musicAlbum;
+  const std::string cover = h.musicCoverArt.empty()
+      ? (h.musicCover.empty() ? std::string("the band on a rooftop") : h.musicCover)
+      : h.musicCoverArt;
+  const std::string n = std::to_string(h.musicTrackList.empty() ? size_t(10) : h.musicTrackList.size());
+  return "an album called " + album + " with " + n + " tracks and " + cover + " on the cover";
+}
+
+// One year of the recording career: an audition, a practice session, an album
+// with its tracks, a show, a fan, or the band coming apart (REPORT.en.md 68.3).
+bool Sim::studioYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.musician) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 16) return false;
+  if (!studioRng_.chance(0.45)) return false;
+  ensureStudioFields(life);
+  const bool solo = h.bandName.empty();
+
+  std::string title, body, line;
+  std::vector<std::string> extra;
+  std::string tableRef, rowRef;
+  int happy = 0;
+
+  const auto say = [&](const std::string& s) {
+    if (s.empty()) return;
+    if (!line.empty()) extra.push_back(s);
+    else line = spyUpperFirst(s);
+  };
+  const auto tell = [&](const std::string& s) { if (!s.empty()) extra.push_back(spySentence(s)); };
+  const auto cell = [&](const Table& t, size_t r, const char* col) -> std::string {
+    if (!t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  const auto mark = [&](const char* tab, size_t r) {
+    tableRef = tab;
+    rowRef = std::to_string(r + 1);
+  };
+  const auto genrePool = [&](const Table& t, const char* weightColumn) -> size_t {
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Genre") && !musicGenreFits(t.at(r, "Genre"), h.musicGenre)) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (pool.empty()) return size_t(-1);
+    if (weightColumn && t.has(weightColumn)) {
+      const size_t picked = weightedPickOf(t, weightColumn, pool, studioRng_);
+      if (picked != size_t(-1)) return picked;
+    }
+    return pool[studioRng_.below(uint32_t(pool.size()))];
+  };
+  const auto allOf = [&](const Table& t) {
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    return pool;
+  };
+  const auto uniformRow = [&](const Table& t) -> size_t {
+    if (!t.size()) return size_t(-1);
+    return studioRng_.below(uint32_t(t.size()));
+  };
+  const std::vector<std::string> keep = out.extra;
+  const auto finish = [&]() -> bool {
+    if (title.empty() && line.empty()) return false;
+    out = AgeUp();
+    out.table = tableRef.empty() ? "a16_music-practice-scenarios-enc" : tableRef;
+    out.row_id = rowRef;
+    out.title = title;
+    out.body = body;
+    out.narrative = line;
+    out.extra = keep;
+    for (size_t i = 0; i < extra.size(); ++i) out.extra.push_back(extra[i]);
+    out.happiness += happy;
+    return true;
+  };
+
+  // Fame drifts back toward the middle of the road every year.
+  if (h.musicFame < 50) h.musicFame += 1;
+  else if (h.musicFame > 50) h.musicFame -= 1;
+
+  // 1. Unsigned: the audition and the label (0.35).
+  if (!h.musicSigned && studioRng_.chance(0.35)) {
+    const bool gotIt = studioRng_.below(100) < uint32_t(45 + h.musicFame / 3);
+    if (gotIt && ensureTable("a16_music-record-label-company-name-enc")) {
+      const Table& labs = tbl("a16_music-record-label-company-name-enc");
+      const size_t r = genrePool(labs, "Commonness Score");
+      const std::string label = r == size_t(-1) ? std::string() : cell(labs, r, "Name");
+      if (!label.empty()) {
+        h.musicSigned = true;
+        h.musicLabel = label;
+        h.money += 2500;
+        h.musicEarned += 2500;
+        h.musicFame = std::min(100, h.musicFame + 3);
+        if (r != size_t(-1)) mark("a16_music-record-label-company-name-enc", r);
+        title = "Signed";
+        body = "Contract: " + label + ".";
+        say("I signed with " + label + " and took a $2,500 advance.");
+        return finish();
+      }
+    }
+    if (ensureTable("a16_music-audition-rejections-enc")) {
+      const Table& t = tbl("a16_music-audition-rejections-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (!musicSideFits(t, r, solo)) continue;
+        if (t.has("Role")) {
+          const std::string role = lower(trim(t.at(r, "Role")));
+          if (!role.empty() && role != h.musicRole) continue;
+        }
+        pool.push_back(r);
+      }
+      if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+        mark("a16_music-audition-rejections-enc", r);
+        title = "The audition";
+        body = cell(t, r, "Reason");
+        say("Nobody signed me this year.");
+        return finish();
+      }
+    }
+  }
+
+  // 2. Practice (0.22). The Log Version says "I spent <rb> doing scale
+  // exercises", so the Scenario has to be resolved first, exactly like the
+  // mafia's shakedown rows.
+  if (studioRng_.chance(0.22) && ensureTable("a16_music-practice-scenarios-enc")) {
+    const Table& t = tbl("a16_music-practice-scenarios-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Role")) {
+        const std::string role = lower(trim(t.at(r, "Role")));
+        if (!role.empty() && role != h.musicRole) continue;
+      }
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+      mark("a16_music-practice-scenarios-enc", r);
+      const std::string sc = cell(t, r, "Scenario");
+      title = "Practice";
+      body = toFirstPerson(spySentence(sc));
+      say(cell(t, r, "Log Version"));
+      h.musicRespect = std::min(100, h.musicRespect + 1);
+      return finish();
+    }
+  }
+
+  // 3. The album (0.35) once there is a label behind it.
+  if ((h.musicSigned || h.musicFame >= 45) && studioRng_.chance(0.35) &&
+      ensureTable("a16_music-album-title-enc")) {
+    const Table& at = tbl("a16_music-album-title-enc");
+    const size_t ar = genrePool(at, "Commonness Score");
+    if (ar != size_t(-1)) {
+      h.musicAlbum = cell(at, ar, "Title");
+      mark("a16_music-album-title-enc", ar);
+      // The compilation is the one album type the rejection table names.
+      const bool compilation = studioRng_.chance(0.15) && ensureTable("a16_music-names-compilations-enc");
+      if (compilation) {
+        const Table& ct = tbl("a16_music-names-compilations-enc");
+        const size_t rr = weightedPickOf(ct, "Commonness Score", allOf(ct), studioRng_);
+        const std::string ct2 = cell(ct, rr, "Title");
+        if (!ct2.empty()) {
+          h.musicAlbum = ct2;
+          h.musicCompilations += 1;
+          if (ct.has("Accommodates Definite Article") && ct.flag(rr, "Accommodates Definite Article")) {
+            h.musicAlbum = ct2;
+          }
+        }
+      }
+      // The subgenre is a flag column per genre in a16_music-subgenres-enc.
+      if (ensureTable("a16_music-subgenres-enc")) {
+        const Table& sg = tbl("a16_music-subgenres-enc");
+        const std::string flag = musicGenreColumn(h.musicGenre);
+        std::vector<size_t> pool;
+        if (!flag.empty() && sg.has(flag.c_str())) {
+          for (size_t r = 0; r < sg.size(); ++r) {
+            if (sg.flag(r, flag.c_str())) pool.push_back(r);
+          }
+        }
+        if (pool.empty()) for (size_t r = 0; r < sg.size(); ++r) pool.push_back(r);
+        if (!pool.empty()) {
+          h.musicSubgenre = lower(trim(sg.at(pool[studioRng_.below(uint32_t(pool.size()))], "Subgenre")));
+        }
+      }
+      // The cover, the cover-art sentence and the tracks.
+      if (ensureTable("a16_music-album-covers-enc")) {
+        const Table& cv = tbl("a16_music-album-covers-enc");
+        const std::string flag = musicGenreColumn(h.musicGenre);
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < cv.size(); ++r) {
+          if (!musicSideFits(cv, r, solo)) continue;
+          if (!flag.empty() && cv.has(flag.c_str()) && !cv.flag(r, flag.c_str())) continue;
+          pool.push_back(r);
+        }
+        if (pool.empty()) {
+          for (size_t r = 0; r < cv.size(); ++r) if (musicSideFits(cv, r, solo)) pool.push_back(r);
+        }
+        if (pool.empty()) for (size_t r = 0; r < cv.size(); ++r) pool.push_back(r);
+        if (!pool.empty()) h.musicCover = cell(cv, pool[studioRng_.below(uint32_t(pool.size()))], "Cover");
+      }
+      if (ensureTable("a16_music-cover-art-string-enc")) {
+        const Table& ca = tbl("a16_music-cover-art-string-enc");
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < ca.size(); ++r) {
+          if (ca.has("Genre") && !h.musicGenre.empty() && !musicGenreFits(ca.at(r, "Genre"), h.musicGenre)) continue;
+          pool.push_back(r);
+        }
+        if (pool.empty()) for (size_t r = 0; r < ca.size(); ++r) pool.push_back(r);
+        if (!pool.empty()) {
+          const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+          h.musicCoverArt = cell(ca, r, "String");
+        }
+      }
+      h.musicTrackList.clear();
+      const int want = 6 + int(studioRng_.below(9));
+      std::vector<std::string> beats, subjects, vibes;
+      std::string hook, sample;
+      for (int i = 0; i < want; ++i) {
+        if (ensureTable("a16_music-track-title-enc")) {
+          const Table& tt = tbl("a16_music-track-title-enc");
+          const size_t r = genrePool(tt, "Commonness Score");
+          if (r != size_t(-1)) {
+            const std::string t2 = cell(tt, r, "Track Title");
+            if (!t2.empty()) h.musicTrackList.push_back(t2);
+          }
+        }
+        if (ensureTable("a16_music-track-beat-enc")) {
+          const Table& tb = tbl("a16_music-track-beat-enc");
+          const size_t r = genrePool(tb, "Commonness Score");
+          if (r != size_t(-1)) beats.push_back(lower(cell(tb, r, "Beat")));
+        }
+        if (ensureTable("a16_music-track-subject-enc")) {
+          const Table& ts = tbl("a16_music-track-subject-enc");
+          const size_t r = genrePool(ts, "Commonness Score");
+          if (r != size_t(-1)) subjects.push_back(lower(cell(ts, r, "Subject")));
+        }
+        if (ensureTable("a16_music-track-vibe-enc")) {
+          const Table& tv = tbl("a16_music-track-vibe-enc");
+          const size_t r = genrePool(tv, "Commonness Score");
+          if (r != size_t(-1)) vibes.push_back(lower(cell(tv, r, "Vibe")));
+        }
+      }
+      if (studioRng_.chance(0.3) && ensureTable("a16_music-track-lyrical-hook-enc")) {
+        const Table& th = tbl("a16_music-track-lyrical-hook-enc");
+        const size_t r = genrePool(th, "Commonness Score");
+        if (r != size_t(-1)) hook = lower(cell(th, r, "Hook"));
+      }
+      if (studioRng_.chance(0.3) && ensureTable("a16_music-sample-track-enc")) {
+        const Table& st = tbl("a16_music-sample-track-enc");
+        const size_t r = genrePool(st, "Commonness Score");
+        if (r != size_t(-1)) sample = cell(st, r, "Song");
+      }
+      if (ensureTable("a16_music-signature-sound-enc")) {
+        const Table& ss = tbl("a16_music-signature-sound-enc");
+        const size_t rr = weightedPickOf(ss, "Commonness Score", allOf(ss), studioRng_);
+        const size_t srow = rr == size_t(-1) ? uniformRow(ss) : rr;
+        const std::string snd = srow == size_t(-1) ? std::string() : lower(cell(ss, srow, "Sound"));
+        if (!snd.empty()) {
+          h.musicSigSound = snd;
+        }
+      }
+      int flairImpact = 0;
+      std::string flair;
+      if (ensureTable("a16_music-artistic-flair-string-enc")) {
+        const Table& af = tbl("a16_music-artistic-flair-string-enc");
+        const size_t r = genrePool(af, "");
+        if (r != size_t(-1)) {
+          flair = cell(af, r, "Log Version");
+          flairImpact = int(af.num(r, "Reception Impact Score"));
+          h.musicRespect = std::min(100, h.musicRespect + 1);
+        }
+      }
+      // The label can refuse the album outright: <album-description> is the
+      // phrase the rejection rows are written around.
+      if (studioRng_.chance(0.15) && ensureTable("a16_music-album-rejections-enc")) {
+        const Table& ar2 = tbl("a16_music-album-rejections-enc");
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < ar2.size(); ++r) {
+          if (!musicSideFits(ar2, r, solo)) continue;
+          if (compilation && ar2.has("Album Type")) {
+            const std::string type = lower(trim(ar2.at(r, "Album Type")));
+            if (!type.empty() && type != "compilation") continue;
+          }
+          pool.push_back(r);
+        }
+        if (pool.empty()) for (size_t r = 0; r < ar2.size(); ++r) pool.push_back(r);
+        const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+        mark("a16_music-album-rejections-enc", r);
+        title = "The label said no";
+        body = cell(ar2, r, "Reason");
+        say("The label shelved " + h.musicAlbum + ".");
+        h.musicRespect = std::max(0, h.musicRespect - 2);
+        return finish();
+      }
+      // Or one track can be refused on its own.
+      if (studioRng_.chance(0.2) && ensureTable("a16_music-track-rejection-string-enc")) {
+        const Table& tr = tbl("a16_music-track-rejection-string-enc");
+        const size_t rr = weightedPickOf(tr, "Commonness Score", allOf(tr), studioRng_);
+        mark("a16_music-track-rejection-string-enc", rr);
+        title = "A track was cut";
+        body = cell(tr, rr, "String");
+        say(cell(tr, rr, "Log Version"));
+        return finish();
+      }
+      // Released: the reception is the fame, the flair and the length of the
+      // record, in that order.
+      const int reception = std::max(5, std::min(100,
+          35 + h.musicFame / 2 + flairImpact * 4 + int(h.musicTrackList.size()) + (sample.empty() ? 0 : 4)));
+      h.musicFame = std::min(100, h.musicFame + reception / 12);
+      h.musicRespect = std::min(100, h.musicRespect + 2);
+      h.musicAlbums += 1;
+      const long long take = reception * 4000LL;
+      h.money += take;
+      h.musicEarned += take;
+      title = "The album drops";
+      std::string list;
+      for (size_t i = 0; i < h.musicTrackList.size() && i < 4; ++i) {
+        if (!list.empty()) list += "; ";
+        list += h.musicTrackList[i];
+      }
+      body = h.musicAlbum + (compilation ? " (compilation)" : std::string());
+      if (!h.musicSubgenre.empty()) body += " - " + h.musicSubgenre;
+      if (!list.empty()) body += ". Tracks: " + list;
+      if (!beats.empty()) tell("Beat: " + beats[0] + ".");
+      if (!subjects.empty()) tell("Subject: " + subjects[0] + ".");
+      if (!vibes.empty()) tell("Vibe: " + vibes[0] + ".");
+      if (!hook.empty()) tell("The hook: " + hook + ".");
+      if (!sample.empty()) tell("Samples " + sample + ".");
+      if (!h.musicCoverArt.empty()) tell("Cover art: " + h.musicCoverArt + ".");
+      if (!h.musicSigSound.empty()) tell("Signature sound: " + h.musicSigSound + ".");
+      if (!flair.empty()) tell(flair + ".");
+      if (h.musicLabel.empty()) say("My album " + h.musicAlbum + " dropped.");
+      else say("My album " + h.musicAlbum + " dropped on " + h.musicLabel + ".");
+      tell("The reception came to " + std::to_string(reception) + " out of 100 and it made $" + std::to_string(take) + ".");
+      happy += 3;
+      return finish();
+    }
+  }
+
+  // 4. The show (0.18).
+  if (h.musicFame >= 20 && studioRng_.chance(0.18) && ensureTable("a16_music-concert-venues-enc")) {
+    const size_t r = pickWindow("a16_music-concert-venues-enc", "", "", "", "Min Popularity", "Max Popularity",
+                               double(h.musicFame), studioRng_);
+    if (r != size_t(-1)) {
+      const Table& v = tbl("a16_music-concert-venues-enc");
+      const std::string venue = lower(cell(v, r, "Venue"));
+      const long long capacity = 500 + static_cast<long long>(studioRng_.below(15000));
+      const long long pay = capacity * static_cast<long long>(v.num(r, "Money Score")) * 2;
+      h.money += pay;
+      h.musicEarned += pay;
+      h.musicFame = std::min(100, h.musicFame + 2);
+      mark("a16_music-concert-venues-enc", r);
+      title = "A show";
+      body = "Venue: " + venue + ".";
+      say("I played " + articleFor(venue) + venue + " to " + std::to_string(capacity) + " people and took $" + std::to_string(pay) + ".");
+      return finish();
+    }
+  }
+
+  // 5. A fan (0.22).
+  if (studioRng_.chance(0.22) && ensureTable("a16_music-fan-interaction-scenarios-enc")) {
+    const Table& t = tbl("a16_music-fan-interaction-scenarios-enc");
+    const bool fanFemale = studioRng_.chance(0.5);
+    const int fanAge = 16 + int(studioRng_.below(40));
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string fg = lower(trim(t.has("Fan Gender") ? t.at(r, "Fan Gender") : std::string()));
+      if (!fg.empty() && fg != "both" && fg != (fanFemale ? "female" : "male")) continue;
+      const std::string hg = lower(trim(t.has("Hero Gender") ? t.at(r, "Hero Gender") : std::string()));
+      if (!hg.empty() && hg != "both" && hg != (h.female ? "female" : "male")) continue;
+      const std::string role = lower(trim(t.has("Role") ? t.at(r, "Role") : std::string()));
+      if (!role.empty() && role != h.musicRole) continue;
+      if (!musicSideFits(t, r, solo)) continue;
+      if (t.has("Fan Age")) {
+        const double fa = t.num(r, "Fan Age");
+        if (fa > 0 && fanAge > int(fa)) continue;   // 'Fan Age' is the ceiling
+      }
+      if (t.has("Min Popularity") && t.num(r, "Min Popularity") > 0 && h.musicFame < int(t.num(r, "Min Popularity"))) continue;
+      if (t.has("Max Popularity") && t.num(r, "Max Popularity") > 0 && h.musicFame > int(t.num(r, "Max Popularity"))) continue;
+      if (t.has("Min Respect") && t.num(r, "Min Respect") > 0 && h.musicRespect < int(t.num(r, "Min Respect"))) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    if (!pool.empty()) {
+      const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+      const bool positive = t.has("Positive") ? t.flag(r, "Positive") : !t.flag(r, "Negative");
+      // A fan row's Log Version Snippet says "<rb>" about an alternative drawn in
+      // the Scenario or Feedback column of its own row, so the whole row is
+      // resolved in column order first (REPORT.en.md 68.3).
+      {
+        const std::vector<std::string>& cols = t.columns();
+        for (size_t c = 0; c < cols.size(); ++c) {
+          if (!t.has(cols[c].c_str())) continue;
+          const std::string raw = t.at(r, cols[c].c_str());
+          if (raw.find('<') == std::string::npos) continue;
+          resolve(raw);
+        }
+      }
+      mark("a16_music-fan-interaction-scenarios-enc", r);
+      const bool savedSet = pronounOtherSet_;
+      const bool savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = fanFemale;
+      title = positive ? "A fan" : "A fan, of sorts";
+      const std::string fb = cell(t, r, "Feedback Snippet");
+      body = fb.empty() ? cell(t, r, "Scenario") : fb;
+      std::string st = cell(t, r, "Log Version Snippet");
+      if (st.empty()) st = cell(t, r, "Scenario");
+      say(st);
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      h.musicFame = std::max(0, std::min(100, h.musicFame + (positive ? 3 : -3)));
+      h.musicRespect = std::max(0, std::min(100, h.musicRespect + (positive ? 2 : -2)));
+      happy += positive ? 2 : -2;
+      return finish();
+    }
+  }
+
+  // 6. The band, when there is one (0.06 each way).
+  if (!solo) {
+    if (studioRng_.chance(0.06) && ensureTable("a16_music-band-breaks-up-scenarios-enc")) {
+      const Table& t = tbl("a16_music-band-breaks-up-scenarios-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (t.has("Min Popularity") && t.num(r, "Min Popularity") > 0 && h.musicFame < int(t.num(r, "Min Popularity"))) continue;
+        if (t.has("Max Popularity") && t.num(r, "Max Popularity") > 0 && h.musicFame > int(t.num(r, "Max Popularity"))) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+        mark("a16_music-band-breaks-up-scenarios-enc", r);
+        title = "The band is over";
+        body = cell(t, r, "Reason");
+        say(h.bandName + " broke up.");
+        h.bandName.clear();
+        happy -= 3;
+        return finish();
+      }
+    }
+    if (studioRng_.chance(0.06) && ensureTable("a16_music-band-kicks-out-scenarios-enc")) {
+      const Table& t = tbl("a16_music-band-kicks-out-scenarios-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (t.has("Role")) {
+          const std::string role = lower(trim(t.at(r, "Role")));
+          if (!role.empty() && role != h.musicRole) continue;
+        }
+        if (t.has("Hero Min Age") && t.num(r, "Hero Min Age") > 0 && h.age < int(t.num(r, "Hero Min Age"))) continue;
+        if (t.has("Hero Max Age") && t.num(r, "Hero Max Age") > 0 && h.age > int(t.num(r, "Hero Max Age"))) continue;
+        pool.push_back(r);
+      }
+      if (pool.empty()) for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+      if (!pool.empty()) {
+        const size_t r = pool[studioRng_.below(uint32_t(pool.size()))];
+        mark("a16_music-band-kicks-out-scenarios-enc", r);
+        title = "Out of the band";
+        body = cell(t, r, "Reason");
+        say("I was out of " + h.bandName + ".");
+        h.bandName.clear();
+        happy -= 4;
+        return finish();
+      }
+    }
+  }
+
+  // 7. A studio day, so that a musician always has something to show.
+  title = "A session at the studio";
+  body = h.musicSigned ? ("Label: " + h.musicLabel + ".") : std::string("Still unsigned.");
+  if (!h.musicRole.empty()) body += " I play " + h.musicRole + ".";
+  say("I put in a day at the studio.");
+  h.musicRespect = std::min(100, h.musicRespect + 1);
+  return finish();
+}
+
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
 bool Sim::miscPoolYear(Life& life, AgeUp& out, int forcedChoice) {
@@ -9874,6 +10450,7 @@ void Sim::makeMusician(Life& life) {
   h.musician = true;
   const std::string band = musicTitle("a16_music-names-bands-enc", h.musicGenre);
   if (!band.empty()) h.bandName = band;
+  ensureStudioFields(life);   // the role: singer, guitarist, bassist, drummer ...
 }
 
 // A title from a music names table, restricted to the genre's own flag column
@@ -9908,6 +10485,16 @@ std::string Sim::musicToken(const std::string& token) {
   }
   if (!h.musician) return std::string();
   if (token == "album-title") return musicTitle("a16_music-names-albums-enc", h.musicGenre);
+  if (token == "music-role") return h.musicRole;
+  if (token == "artist-name" || token == "artist-name-possessive") {
+    const std::string n = h.bandName.empty() ? (h.firstName + " " + h.lastName) : h.bandName;
+    return token == "artist-name" ? n : llPossessive(n);
+  }
+  if (token == "album-description") return musicAlbumDescription();
+  if (token == "musician-soundcloud") {
+    const std::string v = referenceToken("musician_soundcloud");
+    return v.empty() ? referenceToken("musician") : v;
+  }
   if (token.compare(0, 10, "song-title") == 0) return musicTitle("a16_music-names-songs-enc", h.musicGenre);
   return std::string();
 }

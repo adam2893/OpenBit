@@ -5434,3 +5434,142 @@ and one from the release branch:
                                 and ingested crack cocaine before the cops broke up the party
                                 and detained the dog.
                                 he went to the mountains before releasing Cooper to roam wild.
+
+## 68. The studio: a signed artist, an album a year, and the twenty-six tables behind a record
+
+Report 54 gave the hero a genre, a band and a stage name. This section gives the same career a
+middle: an audition, a label, an album with a title, a cover, a track list and a reception score,
+the shows that follow, the fans who turn up, and the two ways a band ends. The a16_music family is
+the largest unwritten cluster in the data - 53 files - and this section takes 26 of its content
+tables. The remaining music files (producer, SoundCloud, club takeover, talent scout, score
+production, stage names, instruments) are left for a later pass.
+
+### 68.1 The twenty-six tables
+
+All under `gamedata_plain/`, prefix `a16_music-`, suffix `-enc`.
+
+| rows | table | columns that matter |
+| ---: | --- | --- |
+| 480 | album-title | Title, Genre, Commonness Score |
+| 370 | sample-track | Song, Genre, Commonness Score |
+| 222 | album-covers | Cover, Solo, Band, then one x flag per genre (Pop, Rap, Country, Folk, R&B, Worship, Rock, Alternative, Reggae, K-Pop, Heavy Metal) |
+| 151 | track-title | Track Title, Genre, Commonness Score |
+| 148 | track-lyrical-hook | Hook, Genre, Commonness Score |
+| 105 | subgenres | Subgenre, then one x flag per genre |
+| 91 | track-subject | Field, Genre, Commonness Score |
+| 87 | cover-art-string | String, Genre (a comma list) |
+| 78 | track-vibe | Field, Genre, Commonness Score |
+| 67 | practice-scenarios | Scenario, Log Version, Role |
+| 63 | signature-sound | Sound, Use Indefinite Article, Reception Impact Score, Commonness Score |
+| 59 | album-rejections | Reason, Solo, Band, Album Type |
+| 52 | band-breaks-up-scenarios | Reason, Min Popularity, Max Popularity |
+| 52 | band-kicks-out-scenarios | Reason, Role, Performance Based, Hero Min Age, Hero Max Age |
+| 52 | fan-interaction-scenarios | Positive, Negative, Scenario, Feedback Snippet, Log Version Snippet, Fan Gender, Fan Age, Hero Gender, Min/Max Popularity, Hero Min/Max Age, Min/Max Respect, Solo, Band, Role |
+| 41 | record-label-company-name | Name, Genre, Commonness Score |
+| 40 | audition-rejections | Reason, Solo, Band, Role |
+| 34 | track-beat | Field, Genre, Commonness Score |
+| 31 | artistic-flair-string | String, Log Version, Genre, Reception Impact Score |
+| 27 | concert-venues | Venue, Min/Max Capacity, Min/Max Popularity, Money Score |
+| 27 | track-rejection-string | String, Log Version, Reason, Commonness Score |
+| 26 | names-compilations | Title, Commonness Score, Accommodates Definite Article |
+| 10 | roles | Role, Solo, Band, Solo Fame Score, Band Fame Score, Primary Instrument, Secondary Instrument, School Activity |
+
+The genre vocabulary is the interesting part. `a16_music-genres-enc` (wired in report 54) names the
+twelve genres one way; the per-genre flag columns of the album tables spell three of them another:
+the data says `rhythm and blues` where `album-title` says `R&B`, `rap` where the label table
+says `hip-hop`, and `heavy metal` and `K-Pop` keep their capitals only in the flag columns. A
+single `musicGenreFits` helper absorbs all of that, so a genre filters every table it owns.
+
+### 68.2 The audition and the label
+
+`ensureStudioFields` runs at the end of `makeMusician`, so the role arrives with the genre.
+The role is drawn from `roles` filtered by the Solo/Band flag pair (a solo artist sings or plays an
+instrument alone; a band act gets a role from the band list), and its `Primary Instrument` and
+`Secondary Instrument` are what the hero plays in the studio card.
+
+Each year from 16 `studioYear` walks a first-hit-wins chain. An unsigned artist gets one audition
+(35% a year): `below(100) < 45 + musicFame/3` signs them to a label drawn from the company-name
+table, pays a $2,500 advance and gives them the `musicSigned` flag; a miss prints a reason from the
+rejection table filtered on the Solo/Band pair and on a blank-or-matching Role.
+
+### 68.3 The album
+
+Once signed (or once fame passes 45) the album year runs: a title from `album-title` filtered on
+genre, a 15% chance it is a compilation instead (title from `names-compilations`, and the album
+rejection table only accepts `Album Type = Compilation` rows for it), a subgenre whose genre flag
+is set, a cover from `album-covers` (Solo/Band flag plus the genre flag), cover art from
+`cover-art-string` whose `Genre` cell is a comma list, then six to fourteen tracks - each a title,
+a beat, a subject and a vibe from their own genre-filtered tables - a 30% lyrical hook, a 30% sampled
+song, a signature sound (stored on the hero and reused) and an artistic-flair line that carries its own
+`Reception Impact Score`.
+
+Then the label answers. 15% of albums are rejected outright and 20% of what remains loses a single
+track to `track-rejection-string`. A released album scores
+
+`reception = clamp(35 + musicFame/2 + flairImpact*4 + tracks + (sampled ? 4 : 0), 5, 100)`
+
+which pays `reception * 4000` and moves fame by `reception/12`. Two sample cards:
+
+> The album drops | Best of Papi Hankey (compilation) - cantopop. Tracks: Silver; Yeongdeungpo Style;
+> Ongoing Story; DUI IUD | Beat: experimental. | Subject: cutesie junk. | Vibe: kawaii-desu.
+
+> The label said no | They said an album called Hung for Me with 14 tracks and a man running proudly
+> with a Jamaican flag on the cover would be a great way for the band to end its career. | The label
+> shelved Hung for Me.
+
+### 68.4 Shows, fans and the end of the band
+
+Four smaller blocks share the year. A show (18% once fame reaches 20) picks a venue through the
+Min/Max Popularity window around the hero fame, seats `500 + below(15000)` people whether or not the
+venue holds them, and pays `capacity * Money Score * 2` - the bar sample reads "I played a bar to 524
+people and took $4192." A fan (22%) is filtered on fan gender, hero gender, role, the Solo/Band pair,
+fame and respect windows, and the row's `Positive` flag decides whether fame moves +3 or -3. The band
+ends two ways: a break-up (6%, windowed on popularity) or a kick-out (6%, filtered on role and the
+hero's age), both of which clear the band name.
+
+> The band is over | There's been nothing but fighting going on for months. | Undisclosed Number broke up.
+
+> Out of the band | They don't like your manner of dress. | I was out of The Knee and the Brain.
+
+### 68.5 The tokens
+
+Five new keys, all in `musicIsToken` so they resolve through the music branch:
+
+`<music-role>` the hero role ("guitarist"); `<artist-name>` and `<artist-name-possessive>` the hero full
+name, or the band name when the hero is in a band; `<album-description>` the album title plus its track
+list; `<musician-soundcloud>` a SoundCloud musician, which falls back to the cassette-era `<musician>`
+reference pool because the SoundCloud family is not wired yet.
+
+### 68.6 Shortcuts
+
+- Reception is a formula over the hero own fame rather than a simulation of the market.
+- The venue capacity is rolled from a flat range, not from the venue row, so a bar can be described
+  as playing to five hundred people.
+- Nothing models the album's chart life, royalties, touring or a second act; the whole career lives
+  in one flag plus a fame number.
+- The compilation flag affects the title and which rejection rows are legal, nothing else.
+- Producer, SoundCloud, club-takeover, talent-scout and score-production tables stay unwired; their
+  tokens fall back or resolve to a drawn name.
+- The fallback studio day registers no table row, so the probe histogram overstates
+  `practice-scenarios`; the card really reads "A session at the studio".
+
+### 68.7 Verification
+
+Forty probes (30 seeds x both genders, ages 60, `{"music": true}`) produce 1149 music events with
+zero bracket residue: `a16_dumb-scenarios-music-enc` 474 (report 54's pool, still running), practice
+376, album-title 77, concert-venues 54, record-label 50, fan-interaction 36, audition-rejections 34,
+band-breaks-up 18, band-kicks-out 14, track-rejection 14, album-rejections 2. Splitting the same run
+by card title (50 seeds x 2) gives 402 fallback studio days, 240 practice sessions, 134 album years
+(~94 releases, 25 track cuts, 15 label refusals), 102 fan cards, 94 shows, 85 signings, 71 rejected
+auditions, 24 break-ups and 22 kick-outs.
+
+The full regression stays green: `rescensus.py` reports zero distinct residue tokens, `coverage.py`
+109 captured / 107 recoverable, `portgap.py` 109 entries with a gap of 0, `covpush.json` exits 0 and
+`bench.sh` walks to age 34 without aborting.
+
+Two bugs were found by the probe rather than the compiler. A `long long(x)` functional cast (twice in
+the show block) is not valid C++ and had to become `static_cast<long long>(x)` - the second time this
+exact mistake has cost a build. And 64 residue tokens all came from `fan-interaction-scenarios`: the
+row's `Log Version Snippet` says `<rb>` about an alternative drawn in the `Scenario` or `Feedback` column of
+its own row, so reading only the one column leaves the cache empty. The fix is the same warm pass the
+mafia year uses - resolve every bracketed cell of the row in column order before composing the card.

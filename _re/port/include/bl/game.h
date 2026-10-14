@@ -273,6 +273,25 @@ struct Hero {
   bool petDead = false;
   std::string petCause;          // the death type, once it is gone
   long long petVetSpend = 0;
+
+  // Recording artist, part two (REPORT.en.md 68): the studio. The genre is
+  // a16_music-genres-enc's, the label a16_music-record-label-company-name-enc's,
+  // the album a16_music-album-title-enc's, the cover a16_music-album-covers-enc's
+  // and the tracks a16_music-track-title-enc's.
+  bool musicSigned = false;   // true once a label has taken the artist on
+  std::string musicLabel;     // a16_music-record-label-company-name-enc 'Name'
+  std::string musicRole;      // a16_music-roles-enc 'Role' (singer, guitarist ...)
+  std::string musicSubgenre;  // a16_music-subgenres-enc 'Subgenre'
+  std::string musicAlbum;     // the record in the works or on the shelf
+  std::string musicCover;     // a16_music-album-covers-enc 'Cover'
+  std::string musicCoverArt;  // a16_music-cover-art-string-enc 'String'
+  std::string musicSigSound;  // a16_music-signature-sound-enc 'Sound'
+  std::vector<std::string> musicTrackList;   // the album's track titles
+  int musicFame = 20;         // 0-100, the door to every venue and fan row
+  int musicRespect = 40;      // 0-100, what the fans and the label think
+  int musicAlbums = 0;
+  int musicCompilations = 0;
+  long long musicEarned = 0;
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.
