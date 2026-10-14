@@ -564,7 +564,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       prisonRng_(seed ^ 0x9e3779b97f4a7c15ULL),
       familyRng_(seed ^ 0x51ed270b2f5a1c31ULL),
       royalRng_(seed ^ 0x2545f4914f6cdd1dULL),
-      vampireRng_(seed ^ 0x27d4eb2f165667c5ULL) {}
+      vampireRng_(seed ^ 0x27d4eb2f165667c5ULL),
+      militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -580,6 +581,8 @@ bool Sim::load(std::string* error) {
   // The five real tables the loop is wired to. Names are verbatim file names
   // from _re/gamedata_plain/ (indexed in _re/gamedata_plain_index.json).
   static const char* kTables[] = {
+    "a16_military-ranks-enc",
+    "a16_war-scenarios-enc",
       "a16_casino-casino-celebrity-name-enc",        // First Name,Last Name,Gender,Skin,Commonness Score
       "a16_dumb-scenarios-universal-enc",            // Index,Hero Min Age,Hero Max Age,...,Choice N,Narrative N,*Impact N
       // The rest of the yearly dumb-scenario pool: the career set applies to an
@@ -976,6 +979,17 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (token.compare(0, 4, "war-") == 0) {
+      const std::string v = warToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else out += v;
+    } else if (token == "military-branch" || token == "military-rank") {
+      if (!hero_) out += text.substr(i, close - i + 1);
+      else {
+        const std::string v = token == "military-branch" ? hero_->militaryBranch : hero_->militaryRank;
+        if (v.empty()) out += text.substr(i, close - i + 1);
+        else out += v;
+      }
     } else if (token == "restaurant") {
       // <restaurant> is the Restaurant row of a16_company-name-structure-enc
       // ('<color> <suffix>, <prefix> <color>, <random-first-name-possessive>
@@ -1804,6 +1818,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   //      main stream -- and therefore every earlier subsystem's draws for a
   //      given seed -- is untouched (REPORT.en.md 45).
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
+  if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2631,6 +2646,153 @@ bool Sim::vampireYear(Life& life, AgeUp& out, int forcedChoice) {
   const size_t r = pickFrom(rows, rng_);
   if (r == size_t(-1)) return false;
   return renderRow(t, r, life, out, forcedChoice);
+}
+
+// ---------------------------------------------------------------------------
+// Military service (REPORT.en.md 50). a16_military-ranks-enc is the ladder:
+// Rank E1..E9 (Enlisted) and O1..O10 (Officer), each row carrying the rank's
+// longhand name per branch, a Salary Average and Minimum Military Years. The
+// game's own lines are code-side literals (#24115 enlist, #24507 officer,
+// #24373 promotion, #25005 retirement); the war pool is a16_war-scenarios-enc,
+// four stages of escalating country-vs-country text.
+void Sim::makeMilitary(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_military-ranks-enc")) return;
+  const Table& t = tbl("a16_military-ranks-enc");
+  static const char* kBranches[] = {"Air Force", "Army", "Coast Guard", "Marines", "Navy"};
+  h.militaryBranch = kBranches[militaryRng_.below(5)];
+  h.militaryOfficer = militaryRng_.chance(0.25);
+  const std::string status = h.militaryOfficer ? "Officer" : "Enlisted";
+  size_t row = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Status")) != status) continue;
+    if (row == size_t(-1) || t.num(r, "Minimum Military Years") < t.num(row, "Minimum Military Years")) row = r;
+  }
+  if (row == size_t(-1)) return;
+  // The switch means "this life serves"; the enlistment itself happens at 18,
+  // so nothing here sets the job yet (REPORT.en.md 50).
+  h.militaryPending = true;
+  h.militaryYears = 0;
+  h.militaryRank = trim(t.at(row, h.militaryBranch + " Longhand"));
+  h.militaryPay = trim(t.at(row, "Salary Average"));
+}
+
+std::string Sim::warToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  if (token == "war-age") return std::to_string(h.age);
+  if (token == "war-city1") {
+    for (const Country& c : countries_) {
+      if (c.name == h.country && !c.cities.empty())
+        return c.cities[militaryRng_.below(uint32_t(c.cities.size()))];
+    }
+    return h.city;
+  }
+  // <war-country1..3> are three different countries, none of them the hero's.
+  // note: compare(pos, len, literal) needs len == literal length; 12 vs an
+  // 11-character literal is never equal, so the prefix test is a plain search.
+  if (token.rfind("war-country", 0) == 0) {
+    while (warCountries_.size() < 3 && !countries_.empty()) {
+      const std::string c = countries_[militaryRng_.below(uint32_t(countries_.size()))].name;
+      if (c == h.country) continue;
+      bool dup = false;
+      for (const std::string& w : warCountries_) if (w == c) dup = true;
+      if (dup) {
+        if (warCountries_.size() >= countries_.size()) break;
+        continue;
+      }
+      warCountries_.push_back(c);
+    }
+    const char* suffix = token.c_str() + 11;  // '', '1', '2', '3', '-leader', '-possessive'
+    int slot = 1;
+    if (suffix[0] >= '1' && suffix[0] <= '3') slot = suffix[0] - '0';
+    if (size_t(slot) > warCountries_.size()) return std::string();
+    const std::string base = warCountries_[size_t(slot) - 1];
+    const std::string rest = suffix[0] >= '1' && suffix[0] <= '3' ? std::string(suffix + 1) : std::string(suffix);
+    if (rest == "-possessive") return base + "'s";
+    if (rest == "-leader") return drawFirstName(militaryRng_.chance(0.5)) + " " + drawSurname();
+    return base;
+  }
+  return std::string();
+}
+
+bool Sim::militaryYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.military && !h.militaryPending) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_military-ranks-enc")) return false;
+  // Enlistment: literals #24115 'I enlisted in the {0} with a salary of {1}.'
+  // and #24507 'I joined the {0} as an officer with a salary of {1}.'
+  if (!h.military) {
+    if (h.age < 18) return false;
+    h.military = true;
+    h.militaryPending = false;
+    h.militaryYears = 0;
+    h.job = h.militaryBranch;
+    h.employed = true;
+    out.narrative = std::string(h.militaryOfficer
+                                    ? "I joined the " + h.militaryBranch + " as an officer"
+                                    : "I enlisted in the " + h.militaryBranch) +
+                    " with a salary of " + h.militaryPay + ".";
+    return true;
+  }
+  const Table& t = tbl("a16_military-ranks-enc");
+  ++h.militaryYears;
+
+  // Promotion: the highest rank row of the hero's status whose Minimum Military
+  // Years the service has reached.
+  const std::string status = h.militaryOfficer ? "Officer" : "Enlisted";
+  size_t best = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Status")) != status) continue;
+    if (t.num(r, "Minimum Military Years") > double(h.militaryYears)) continue;
+    if (best == size_t(-1) || t.num(r, "Minimum Military Years") > t.num(best, "Minimum Military Years")) best = r;
+  }
+  bool promoted = false;
+  if (best != size_t(-1)) {
+    const std::string rank = trim(t.at(best, h.militaryBranch + " Longhand"));
+    if (!rank.empty() && rank != h.militaryRank) {
+      h.militaryRank = rank;
+      h.militaryPay = trim(t.at(best, "Salary Average"));
+      promoted = true;
+    }
+  }
+
+  // shortcut: twenty years of service is the retirement rule; the game's own
+  // discharge/retirement condition was not read. The port then leaves the
+  // service and the war pool stops applying.
+  if (h.militaryYears >= 20) {
+    const std::string line = "I retired from the " + h.militaryBranch + ".";
+    h.military = false;
+    h.employed = false;
+    out.narrative = line;
+    out.choice.clear();
+    return true;
+  }
+
+  if (promoted) {
+    out.narrative = "I have been promoted to " + h.militaryRank + " with a salary of " + h.militaryPay + ".";
+    return true;
+  }
+
+  // Otherwise a war row now and then: the stage follows the years of service.
+  if (!ensureTable("a16_war-scenarios-enc")) return false;
+  if (!militaryRng_.chance(0.35)) return false;
+  const Table& w = tbl("a16_war-scenarios-enc");
+  const int stage = 1 + std::min(3, h.militaryYears / 5);
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < w.size(); ++r) {
+    if (int(w.num(r, "Stage")) == stage) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[militaryRng_.below(uint32_t(pool.size()))];
+  warCountries_.clear();
+  const bool ok = renderRow(w, row, life, out, forcedChoice);
+  warCountries_.clear();
+  return ok;
 }
 
 void Sim::makeRoyal(Life& life) {

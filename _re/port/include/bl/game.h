@@ -102,6 +102,17 @@ struct Hero {
   bool vampire = false;
   std::string vampireName;  // the NPC '<vampire>' names, drawn once per year
   std::string familiar;     // '<familiar>', the hero's companion
+  // Military service (REPORT.en.md 50). The game keeps the branch, status and
+  // rank on the SimCareer side (SimPerson field 0x10 <MilitaryBranch>) and
+  // builds its lines in code, so the port takes the state from the script's
+  // "military" switch and walks a16_military-ranks-enc for the ladder.
+  bool military = false;
+  bool militaryPending = false;  // the switch asked for it; enlistment happens at 18
+  std::string militaryBranch;  // Air Force / Army / Coast Guard / Marines / Navy
+  std::string militaryRank;    // that branch's longhand for the current rank row
+  std::string militaryPay;     // Salary Average of that row, verbatim ('$19,200')
+  bool militaryOfficer = false;
+  int militaryYears = 0;
 };
 
 class GameState {

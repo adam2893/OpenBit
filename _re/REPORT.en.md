@@ -3287,3 +3287,99 @@ being cut at the wrong bracket.
 - Note: making 218 rows reachable changes the port's year-by-year draws, so the bench's
   port-only/game-only lines move. The port stays reproducible per seed; the game comparison is
   per-age, not index-aligned.
+
+## 50. The military branch: a rank ladder, a war pool, and one compare() that never matched
+
+### 50.1 What the game keeps
+
+{B}SimPerson{B} carries {B}<MilitaryBranch>k__BackingField{B} at field 0x10 (getter
+{B}@0x73f347e070{B}, setter {B}@0x73f347e078{B}), {B}AvailableMilitaryBranchItemArray(){B}
+{B}@0x73f35d1150{B}, {B}GetStringForMilitaryBranch(int){B} @0x73f2c9c194,
+{B}EmojiForMilitaryBranch(int){B} @0x73f301b96c and
+{B}GetCareerStringForMilitaryBranchAndStatus(int, int){B} @0x73f28ed588 - the last one is why the
+military lines are code-side: {B}a16_dumb-scenarios-career-enc{B} carries no military token at all,
+and the dumb-scenario dispatcher reaches the military variant through
+{B}GetRandomCareerDumbScenarioForMilitaryBranchAndStatus(int, int){B} @0x73f2cbf0c8.
+
+### 50.2 {B}a16_military-ranks-enc{B} is the ladder
+
+18 rows, columns {B}Rank, Status, Air Force Longhand/Shorthand, Army Longhand/Shorthand, Coast Guard
+Longhand/Shorthand, Marines Longhand/Shorthand, Navy Longhand/Shorthand, Salary Average, Stress
+Score, Minimum Military Years, Minimum Intelligence, Minimum Discipline, Minimum Karma, ...{B}.
+{B}Status{B} is {B}Enlisted{B} on 9 rows (E1-E9) and {B}Officer{B} on 10 (O1-O10); {B}Minimum Military
+Years{B} is the promotion clock (E1 0, E2 1, E3 3, E4 5, E5 7, E6 9, ...; O1 0, O2 2, O3 4, ...),
+and {B}Salary Average{B} is the payslip text ({B}$19,200{B} for E1, {B}$41,121{B} for O1).
+The five branches are the five column families - Air Force, Army, Coast Guard, Marines, Navy.
+
+The lines the game writes are literals: #24115 {B}I enlisted in the {0} with a salary of {1}.{B},
+#24507 {B}I joined the {0} as an officer with a salary of {1}.{B}, #24373 {B}I have been promoted to
+{0} with a salary of {1}.{B}, #25005 {B}I retired from {0}.{B} (plus the pension variants #25003/#25004).
+The lifecycle templates #9384 / #9391 / #9393 / #9395 carry the relatives' versions with
+{B}<military-branch>{B} (#9246) and {B}<military-rank>{B} (#9247).
+
+### 50.3 {B}a16_war-scenarios-enc{B} is the war pool
+
+70 rows, columns {B}Stage, Scenario{B}, four stages: 24 rows of escalation (boycott, denouncement,
+ridicule), 20 of open war, 19 of the middle campaign, 8 of the aftermath ('In total, there were
+more than 10,000 casualties as a result of the conflict.'). Its tokens are
+{B}<war-country1>{B} 58, {B}<war-country2>{B} 59, {B}<war-country1-possessive>{B} 8, {B}<war-city1>{B} 7,
+{B}<war-country3>{B} 5, {B}<war-country2-possessive>{B} 5, {B}<war-country1-leader>{B} 5, {B}<war-age>{B} 4,
+{B}<war-country2-leader>{B} 1, {B}<war-country3-leader>{B} 1 - all of them new to the port.
+
+### 50.4 Implementation
+
+- {B}include/bl/game.h{B}: {B}Hero::military{B}, {B}Hero::militaryPending{B} (line 110),
+  {B}Hero::militaryBranch{B}, {B}Hero::militaryRank{B}, {B}Hero::militaryPay{B},
+  {B}Hero::militaryOfficer{B}, {B}Hero::militaryYears{B}.
+- {B}src/sim.cpp{B}: ctor stream {B}militaryRng_(seed ^ 0x3b9aca07c2b2ae35ULL){B} (line 568); the two
+  tables joined {B}kTables{B} (line 584); {B}Sim::makeMilitary{B} (line 2658) picks the branch and the
+  status and stores the entry rank and its salary; {B}Sim::warToken{B} (line 2682);
+  {B}Sim::militaryYear{B} (line 2721) enlists at 18, promotes along the ladder, retires at twenty
+  years and otherwise renders a war row whose stage follows the years of service; {B}ageUp{B} calls
+  it at line 1821, before the vampire and prison branches.
+- {B}resolveInto{B} gained a {B}war-*{B} branch (line 982) and {B}<military-branch>{B} /
+  {B}<military-rank>{B}. The three war countries are drawn from {B}countries_{B}, excluding the
+  hero's own; {B}<war-city1>{B} comes from the hero's country {B}Cities{B} array, {B}<war-age>{B} is the
+  hero's age and a {B}-leader{B} is a first name plus a surname from the port's pools.
+- {B}include/bl/script.h{B} / {B}src/script.cpp{B}: the {B}"military"{B} boolean, parsed like
+  {B}"royal"{B} and {B}"vampire"{B} and applied with {B}sim.makeMilitary(life){B}.
+
+### 50.5 The bug: {B}compare(0, 12, "war-country"){B} can never be 0
+
+The first build rendered every war row with its tokens verbatim. The cause was the prefix test:
+
+    if (token.compare(0, 12, "war-country") == 0)   // never true
+
+{B}compare(pos, len, const char*){B} compares a substring of length {B}len{B} against the whole literal,
+and the literal is 11 characters, so the lengths differ before the characters are. The test is now
+{B}token.rfind("war-country", 0) == 0{B} (line 2696). Worth recording because the same shape is easy
+to write again: a length argument that does not equal the literal's length silently never matches.
+
+### 50.6 Verification
+
+- Enlisted life (seed 12345): age 18 {B}I enlisted in the Air Force with a salary of $19,200.{B} then
+  Airman, Airman First Class, Senior Airman, Staff Sergeant, Technical Sergeant, Master Sergeant
+  with the matching salaries, war rows in between ({B}Argentina has launched a boycott of all
+  exports from Slovakia.{B}, {B}... has denounced ...{B}, {B}Panama has allied itself with Switzerland,
+  sparking war with France.{B}, {B}United Kingdom's leader, Skylar Janim, has been assassinated in a
+  covert operation conducted by Russia, swiftly ending the war between the two nations.{B}) and
+  {B}I retired from the Air Force.{B}
+- Officer life (seed 1): {B}I joined the Army as an officer with a salary of $41,121.{B} then First
+  Lieutenant, Captain, Major, Lieutenant Colonel, retiring at 20 years.
+- Three seeds x 60 years run clean; residue census 0 tokens; {B}tools/coverage.py{B} 109/107;
+  {B}portgap.py{B} 109 / 107 / gap 0; {B}tools/bench.sh{B} to age 34 with no abort.
+
+### 50.7 Shortcuts
+
+1. The switch asks for the life; enlistment itself happens at 18 (the real gate is the Career menu
+   and its eligibility columns - Minimum Intelligence / Discipline / Karma, drug tests and a clear
+   criminal record - which the port does not model).
+2. Twenty years of service is the retirement rule; the game's own discharge condition was not read.
+3. Officer status is a 25% draw instead of a degree requirement.
+4. A war row is drawn on 35% of service years and its stage follows the years of service; the game
+   drives the war world state (two countries, four stages) from its own systems, and the hero's
+   deployment is not gated.
+5. {B}<war-country3-leader>{B} and the other leader slots use the port's ordinary name pools; no
+   country-leader table exists in the 1071.
+6. The relative-side lifecycle templates (#9384 / #9391 / #9393 / #9395) are not emitted for family
+   members who serve; only the hero's own lines are.

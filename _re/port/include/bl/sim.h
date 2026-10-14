@@ -120,6 +120,7 @@ class Sim {
   // Turns a life into a vampire and gives it a familiar. runScript calls it when
   // the script says "vampire": true (REPORT.en.md 48).
   void makeVampire(Life& life);
+  void makeMilitary(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
   // templates in global-metadata.dat (#9372-#9429, section 36) rendered in the
@@ -217,6 +218,8 @@ class Sim {
   // The vampire's own yearly pool, served instead of the ordinary dumb-scenario
   // draw while the hero is a vampire.
   bool vampireYear(Life& life, AgeUp& out, int forcedChoice);
+  bool militaryYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string warToken(const std::string& token);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
@@ -254,6 +257,8 @@ class Sim {
   Rng royalRng_;
   // The vampire branch's own stream.
   Rng vampireRng_;
+  Rng militaryRng_;
+  std::vector<std::string> warCountries_;  // the three countries one war row names
   std::vector<std::pair<std::string, Table>> tables_;
   std::vector<std::string> loaded_;
   // Next age-up's forced row, set by forceScenario() and cleared when it fires.

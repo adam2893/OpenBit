@@ -54,6 +54,7 @@ struct ScriptSpec {
   // An undead life (REPORT.en.md 48). The game reaches it through the vampire
   // encounter and conversion screens; the port takes it from the switch.
   bool vampire = false;
+  bool military = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;
