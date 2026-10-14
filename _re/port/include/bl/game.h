@@ -101,6 +101,26 @@ struct Hero {
   std::string prisonGift;
   int prisonParoleTries = 0;
   long long prisonCanteen = 0, prisonEarned = 0;
+
+  // ---------------------------------------------------------------------------
+  // The office (REPORT.en.md 83): the hero as somebody's manager. The employee
+  // pools are written from the boss's chair ("You threatened to fire <employee>",
+  // "You sent an email to all <company> employees that lauded the service of
+  // <employee>"), so the family needed one thing above all others: a staff.
+  // ---------------------------------------------------------------------------
+  bool ofcManager = false;
+  std::string ofcJob;        // the hero's own title, from a16_employee-types-enc
+  std::string ofcIndustry;
+  std::string ofcCompany;    // the employer, from companyName()
+  std::string ofcEmployee;   // the one report the year is about
+  std::string ofcEmployeeJob;
+  bool ofcEmployeeFemale = false;
+  int ofcStaff = 3;          // how many people report to the hero
+  int ofcMorale = 55;        // 0..100, what the staff think of the hero
+  int ofcPerf = 50;          // 0..100, the named employee's performance
+  int ofcWarnings = 0;       // written warnings handed out to them
+  int ofcYears = 0, ofcHires = 0, ofcFires = 0;
+  long long ofcPay = 0, ofcEarned = 0;
   // Set when the hero is left with no surviving parent before 18; the orphan
   // dumb-scenario set is gated on it (REPORT.en.md 46).
   bool orphan = false;

@@ -130,6 +130,7 @@ class Sim {
   void makeLuxury(Life& life);
   void makeBoating(Life& life);
   void makePrisoner(Life& life);
+  void makeOffice(Life& life);
   void makeMusician(Life& life);
   void makePolitician(Life& life);
   void makeMisc(Life& life, unsigned mask);
@@ -369,6 +370,8 @@ class Sim {
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
+  bool officeYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string officeToken(const std::string& token);
   // The yearly conviction draw that puts the hero in prison.
   bool maybeConvicted(Life& life, AgeUp& out);
   // The symptom card is the one scenario whose title, body and log line all come
@@ -416,6 +419,7 @@ class Sim {
   Rng luxuryRng_;
   Rng sportProRng_;
   Rng boatRng_;
+  Rng officeRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
@@ -430,6 +434,8 @@ class Sim {
   std::map<std::string, std::string> prisonCache_;    // one inmate / nickname / gift per prison card
   bool prisonLive_ = false;
   bool prisonForced_ = false;  // the script asked for a sentence (REPORT.en.md 82)
+  std::map<std::string, std::string> officeCache_;  // one employee / company per office card
+  bool officeLive_ = false;
   bool boatLive_ = false;
   bool luxuryLive_ = false;
   Rng musicRng_;

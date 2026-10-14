@@ -8278,3 +8278,202 @@ Sample cards:
     The gang's business
     The Brain Brothas kept the yard quiet.
     I did my part for the Brain Brothas
+
+## 83. The office: a staff to manage, eight employee tables, and a year on the other side of the desk
+
+Every career in this port has been the hero's own: the ladder they climb, the salary
+they are paid, the title they earn. The a16_employee family is the first one written
+from the other chair. Its scenarios address the hero as somebody's manager -- "You
+threatened to fire <employee>", "<employee> told you that you suck in front of a bunch
+of people", "You sent an email to all <company> employees that lauded the service of
+<employee>" -- and the port had no staff for those sentences to be about. This section
+gives it one, and wires all eight employee tables.
+
+### 83.1 The family
+
+| table | rows | columns read by the port |
+| --- | --- | --- |
+| a16_employee-types-enc | 202 | Industry, Job Title, Influence Score, Gender, Min Age, Max Age, Commonness Score |
+| a16_employee-interview-questions-enc | 76 | Commonness Score, Question, Choice 1..5, Choice N Score |
+| a16_employee-behavior-bad-scenarios-enc | 65 | Scenario, Log Version, Score |
+| a16_employee-behavior-good-scenarios-enc | 57 | Scenario, Log Version, Score |
+| a16_employee-respect-scenarios-enc | 40 | Scenario, Log Version, Can Be Reaction, Can Be Push, Score |
+| a16_employee-disrespect-scenarios-enc | 37 | Scenario, Log Version, Can Be Reaction, Can Be Push, Score |
+| a16_employee-warn-scenarios-enc | 25 | Scenario, Risk Score, Commonness Score |
+| a16_employee-recognition-scenarios-enc | 14 | Scenario, Commonness Score |
+
+Five hundred and sixteen rows in eight tables, and after this section every one of them
+is a card's own table. The types pool is the big one: it is the game's job catalogue,
+two hundred titles across industries from brewing to pharmaceuticals, each with an
+Influence Score, a gender gate, an age window and a Required Education column the port
+does not evaluate (see the shortcuts).
+
+### 83.2 The office at eighteen
+
+A script asks for a managerial life with "office": true, which calls makeOffice. It
+draws one row of the types catalogue, filtered on the hero's gender and age and
+weighted on Commonness Score, and takes from it the hero's title and industry, the
+staff's pay (32,000 + Influence Score x 7,000 -- a Budtender's influence of two is
+46,000, a Ganjier's five is 67,000) and the ladder. It then draws the report the year
+will be about, another title from the same industry, and an employer name.
+
+The ladder deserves a note: makeOffice sets the hero's career track to their own job
+title, so careerYear -- which hands out a job at eighteen and promotes every four
+years along a comma-separated track -- sees a track with no rungs and stays silent.
+The manager is not given a second, parallel job by the rest of the port.
+
+### 83.3 The year
+
+The year is a boss's year: the salary is paid, the staff's morale drifts back toward
+fifty, one named employee is the subject of the card, and a first-hit-wins chain picks
+what happened.
+
+| chance | branch | what it draws |
+| --- | --- | --- |
+| 0.20 | A dismissal (only at performance below 35 or three warnings) | nothing: the file is closed |
+| 0.25 | A goodbye (only below 45 morale) | nothing: somebody resigns |
+| 0.18 | An interview (only below five reports) | a16_employee-interview-questions-enc, four answers offered |
+| 0.12 | A written warning | a16_employee-warn-scenarios-enc, weighted on Commonness Score |
+| 0.14 | A word of praise | a16_employee-recognition-scenarios-enc |
+| 0.16 | A problem with the staff | a16_employee-disrespect-scenarios-enc, pushed back on or let go |
+| 0.16 | The staff is with me | a16_employee-respect-scenarios-enc |
+| 0.18 | A behaviour problem | a16_employee-behavior-bad-scenarios-enc, performance -3 x Score |
+| 0.18 | A good year for the team | a16_employee-behavior-good-scenarios-enc, performance +3 x Score |
+| else | Another year at X | a16_employee-types-enc: who the report still is |
+
+Three numbers carry the state: performance (dismissal below 35), morale (resignation
+below 45, and it drifts back to 50 every year) and the warning count (three warnings is
+a dismissal on its own). Performance at seventy or more earns a raise of five per cent
+of salary, which is added to the card whatever it turned out to be.
+
+The interview is the only branch that asks the hero a question. Four of the row's five
+answers are offered, a scripted choice indexes them or a coin picks one, and a score of
+four or better hires: the answer the candidate gave is quoted back into the journal
+("I hired Lissie Gnomez as a Ganjier", or "The candidate said interested, so there was
+no hire").
+
+### 83.4 The tokens
+
+The family needs five keys and they are all the manager's: <employee> and
+<employee-possessive> (four hundred and thirty-five uses between them, more than half
+of the family's text), <company>, <industry> and <role>. The guard answers them only
+while an office card renders, because <employee> already has an owner further down the
+resolver: the business pool mints a fresh name for it on every call, which is exactly
+wrong here. The office year draws the report once and memoises it, so the card that
+names them twice names the same person twice.
+
+The pronoun pairs are the family's other trap. Every pool in it speaks about the
+employee -- "<employee> has been half-assing <his/her> work", "You told <employee>
+... <he/she>'s out of here" -- so the year sets the other-pronoun pair to the
+employee's gender for the length of the card and restores it afterwards. Before that
+fix a female report was written about with the male hero's pronouns, which is how a
+line read "You wrote Jihanna Iglesio a strongly-worded letter about how detrimental
+his performance is".
+
+### 83.5 The bugs and the notes
+
+1. Hero already had a field called office: the elected office of section 55. The
+   duplicate member was a compile error, and the new flag is ofcManager.
+2. The employer name came out as "the company" for every industry, because
+   companyName() keys on a Company Type and the types catalogue holds an Industry.
+   The business pool's own name generator is the fallback, which is why the sample
+   cards name their employer ("My job as a Ganjier at Puff Puff Pass Marijuana paid me
+   $67,000 this year").
+3. The resignation branch was dead code in the first build: morale drifted up to 55
+   and nothing pushed it down hard enough to reach the threshold. The drift target is
+   now 50 and a warning costs four points of morale instead of two.
+4. The base loop has its own recognition line: an employed hero gets a 25% draw on
+   a16_employee-recognition-scenarios-enc from the old core-loop code, which still
+   fires and marks the same table. The office's praise branch is separate, so that
+   table shows up in the probe's histogram from two call sites.
+
+### 83.6 Shortcuts
+
+- Required Education, One Per Facility and the age window's upper bound are read for
+  the hero's own title but never enforced against the hero's smarts.
+- The staff is a count plus one named report, not a roster: the port tracks how many
+  people answer to the hero (two to five at eighteen, one more per hire) and draws the
+  card's subject from scratch every year.
+- The interview offers four of the row's five answers and a score of four or better
+  hires; the real screen offers the whole list against the candidate's own profile.
+- A raise is a flat five per cent of salary, and there is no firing budget, no HR, no
+  severance and no office politics beyond the two pools above.
+- A resignation and a dismissal both just decrement the headcount; nobody is
+  remembered by name once they are gone.
+
+### 83.7 Verification
+
+The probe is /tmp/qdir/ofcres.py: thirty seeds times both genders to age sixty with
+{"office": true}, employee tables only, every angle bracket left in a title, body, log
+line or extra line counted.
+
+    office events 1726 rc failures 0
+    RESIDUE 0
+
+Last-mark histogram:
+
+    a16_employee-types-enc                          616
+    a16_employee-recognition-scenarios-enc          288
+    a16_employee-interview-questions-enc            201
+    a16_employee-respect-scenarios-enc              144
+    a16_employee-warn-scenarios-enc                 136
+    a16_employee-behavior-bad-scenarios-enc         132
+    a16_employee-disrespect-scenarios-enc           118
+    a16_employee-behavior-good-scenarios-enc         91
+
+Card titles over the same run: another year at X 522 spread across the catalogue's
+employers, an interview 201, a word of praise 152, the staff is with me 144, a written
+warning 136, a behaviour problem 132, a problem with the staff 118, a good year for
+the team 91, a dismissal 79, a goodbye 30.
+
+Full regression after the last build: allprobes 26/26 with residue 0, rescensus 0
+distinct residue tokens, coverage 109 captured / 107 recoverable, portgap gap 0,
+covpush rc 0, bench rc 0 to age 34.
+
+Sample cards:
+
+    A written warning
+    You wrote Jihanna Iglesio a strongly-worded letter about how detrimental her
+    performance is to her future at the company.
+    I gave Jihanna Iglesio a written warning
+
+    A word of praise
+    You told Carli Letras she is integral to the company's success.
+    I praised Carli Letras in front of the staff
+
+    A problem with the staff
+    Jihanna Iglesio let the elevator door close on you.
+    I pushed back, and the room went quiet.
+    Jihanna Iglesio failed to hold the elevator door open for me.
+
+    The staff is with me
+    Papi Moutha told you he appreciates you so much that he is willing to work
+    holidays for you.
+    Papi Moutha offered to work holidays to show his appreciation for everything
+    I've done for him.
+
+    A behaviour problem
+    Lissie Gnomez has been half-assing her work lately.
+    I noticed Lissie Gnomez has been half-assing her work.
+
+    A good year for the team
+    Jihanna Iglesio has spent time familiarizing herself with the company so she can
+    answer her co-workers' questions more efficiently.
+    I noticed Jihanna Iglesio has become more of an asset to the company.
+
+    An interview
+    How would you describe yourself in one word?   (chosen: Interested)
+    My job as a Ganjier at Puff Puff Pass Marijuana paid me $67,000 this year.
+    I hired Lissie Gnomez as a Ganjier
+
+    A dismissal
+    The file on Lissie Gnomez was thick enough.
+    I let Lissie Gnomez go after a bad year
+
+    A goodbye
+    Jihanna Iglesio handed in a resignation while the office was quiet.
+    Jihanna Iglesio handed in their notice
+
+    Another year at Chateau Doozy
+    Lissie Gnomez is still a Quality Assurance Specialist, and the office ran itself.
+    I managed 4 people for another year

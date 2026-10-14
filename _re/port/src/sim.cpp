@@ -594,7 +594,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       modelRng_(seed ^ 0xbb67ae8584caa73bULL),
       luxuryRng_(seed ^ 0x510e527fade682d1ULL),
       sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
-      boatRng_(seed ^ 0x1f83d9abfb41bd6bULL) {}
+      boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
+      officeRng_(seed ^ 0x5be0cd19137e2179ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -945,6 +946,16 @@ bool Sim::load(std::string* error) {
       "a16_prison-letters-enc",
       "a16_prison-bully-inbound-scenarios-enc",
       "a16_prison-bully-outbound-scenarios-enc",
+      // The office (REPORT.en.md 83): the eight employee tables. Every one of them
+      // is written from the manager's side of the desk.
+      "a16_employee-types-enc",                      // Industry,Job Title,Influence Score,...
+      "a16_employee-behavior-good-scenarios-enc",    // Scenario,Log Version,Score
+      "a16_employee-behavior-bad-scenarios-enc",     // Scenario,Log Version,Score
+      "a16_employee-disrespect-scenarios-enc",       // +Can Be Reaction,Can Be Push
+      "a16_employee-respect-scenarios-enc",          // +Can Be Reaction,Can Be Push
+      "a16_employee-warn-scenarios-enc",             // Scenario,Risk Score,Commonness Score
+      "a16_employee-interview-questions-enc",        // Question,Choice N,Choice N Score
+      "a16_employee-recognition-scenarios-enc",      // Scenario,Commonness Score
       "a16_dumb-scenarios-orphan-enc",               // the orphanage's own pool
       "a16_dumb-scenarios-royal-enc",                // the royal family's own pool (REPORT.en.md 47)
       "a16_country-royal-systems-enc",               // Country,Rank 1 Male/Female,...,Seats
@@ -1969,6 +1980,19 @@ bool luxIsToken(const std::string& token, bool live) {
   return k == "island" || k == "island-name";
 }
 
+// The office (REPORT.en.md 83). The employee pools are written from the manager's
+// side of the desk, so <employee> here is the report the year is about, not the
+// generic name the business pool mints. The guard only claims the keys while an
+// office card renders: every other subsystem keeps its own answer.
+bool officeIsToken(const std::string& token, bool live) {
+  if (!live) return false;
+  std::string t = token;
+  const std::string psuffix = "-possessive";
+  if (t.size() > psuffix.size() && t.compare(t.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    t = t.substr(0, t.size() - psuffix.size());
+  return t == "employee" || t == "company" || t == "industry" || t == "role";
+}
+
 bool modelIsToken(const std::string& token, bool live) {
   std::string k = token;
   // trim
@@ -2232,6 +2256,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       std::vector<std::string> options;
       splitOn(token.substr(5), '|', options);
       out += resolveInto(options[rng_.below(uint32_t(options.size()))], memo);
+    } else if (officeIsToken(token, officeLive_)) {
+      const std::string v = officeToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
     } else if (token == "employee" || token == "employee-possessive" ||
                token == "competitor" || token == "competitor-possessive" ||
                token == "facility-singular" || token == "facility-multiple" ||
@@ -3204,6 +3232,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
+  if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
   if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
   if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
   if (sportsYear(life, out, forcedChoice)) return true;
@@ -3307,6 +3336,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   sportProCache_.clear(); // one opponent per season card
   boatCache_.clear();     // one craft name / part / mishap per boat card
   prisonCache_.clear();   // one inmate / nickname / letter / gift per prison card
+  officeCache_.clear();   // one employee / company per office card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -19514,6 +19544,387 @@ bool Sim::boatYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 // ===== end the boat (REPORT.en.md 81) =======================================
+
+// ---------------------------------------------------------------------------
+// The office (REPORT.en.md 83). a16_employee-* is written from the manager's
+// chair: the Scenario columns address the hero ("You threatened to fire
+// <employee>", "<employee> told you that you suck in front of a bunch of
+// people"), so the family needed a staff before it could say anything. The year
+// is a boss's year: behaviour, respect, warnings, a hire, a dismissal and the
+// annual review.
+// ---------------------------------------------------------------------------
+void Sim::makeOffice(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.ofcManager = true;
+  h.employed = true;
+  h.ofcMorale = 55;
+  h.ofcPerf = 50 + int(officeRng_.below(21)) - 10;
+  h.ofcStaff = 2 + int(officeRng_.below(4));
+  h.ofcYears = 0;
+  h.ofcHires = 0;
+  h.ofcFires = 0;
+  h.ofcWarnings = 0;
+  h.ofcEarned = 0;
+  officeCache_.clear();
+  const std::string hg = heroToken("gender", false);
+  if (ensureTable("a16_employee-types-enc")) {
+    const Table& t = tbl("a16_employee-types-enc");
+    auto numOf = [&](size_t r, const char* c) -> double {
+      return t.has(c) ? t.num(r, c) : 0.0;
+    };
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(trim(t.has("Gender") ? t.at(r, "Gender") : std::string()));
+      if (!g.empty() && g != "both" && g != hg) continue;
+      const double lo = numOf(r, "Min Age"), hi = numOf(r, "Max Age");
+      if (lo > 0 && h.age < lo) continue;
+      if (hi > 0 && h.age > hi) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    const size_t row = weightedPickOf(t, "Commonness Score", pool, officeRng_);
+    if (row != size_t(-1)) {
+      h.ofcJob = trim(t.at(row, "Job Title"));
+      h.ofcIndustry = trim(t.at(row, "Industry"));
+      h.ofcPay = 32000 + static_cast<long long>(numOf(row, "Influence Score")) * 7000;
+      h.job = h.ofcJob;
+      // careerYear must not hand the manager a second job: a track that holds no
+      // comma is a track with no rungs, so its promotion branch stays silent.
+      h.careerTrack = h.ofcJob;
+      h.careerStep = 0;
+      h.careerYears = 0;
+    }
+    std::vector<size_t> same;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (lower(trim(t.at(r, "Industry"))) == lower(h.ofcIndustry)) same.push_back(r);
+    }
+    const size_t er = same.empty() ? row : same[officeRng_.below(uint32_t(same.size()))];
+    if (er != size_t(-1) && er < t.size()) h.ofcEmployeeJob = trim(t.at(er, "Job Title"));
+  }
+  if (h.ofcJob.empty()) h.ofcJob = "Manager";
+  if (h.ofcIndustry.empty()) h.ofcIndustry = "office";
+  if (h.ofcPay <= 0) h.ofcPay = 45000;
+  h.ofcCompany = companyName(h.ofcIndustry, life);
+  if (h.ofcCompany.empty()) h.ofcCompany = businessName(h.ofcIndustry);
+  if (h.ofcCompany.empty()) h.ofcCompany = "the company";
+  const bool ef = officeRng_.chance(0.5);
+  h.ofcEmployeeFemale = ef;
+  h.ofcEmployee = drawFirstName(ef) + " " + drawSurname();
+  if (h.ofcEmployeeJob.empty()) h.ofcEmployeeJob = h.ofcJob;
+}
+
+std::string Sim::officeToken(const std::string& token) {
+  if (!hero_) return std::string();
+  const Hero& h = *hero_;
+  const std::string psuffix = "-possessive";
+  const bool possessive =
+      token.size() > psuffix.size() &&
+      token.compare(token.size() - psuffix.size(), psuffix.size(), psuffix) == 0;
+  const std::string key = possessive ? token.substr(0, token.size() - psuffix.size()) : token;
+  if (key == "employee") {
+    std::string name = h.ofcEmployee;
+    if (name.empty()) {
+      const auto it = officeCache_.find("employee");
+      if (it != officeCache_.end()) name = it->second;
+    }
+    if (name.empty()) {
+      name = drawFirstName(officeRng_.chance(0.5)) + " " + drawSurname();
+      officeCache_["employee"] = name;
+    }
+    return possessive ? name + "'s" : name;
+  }
+  if (key == "company") return h.ofcCompany.empty() ? std::string("the company") : h.ofcCompany;
+  if (key == "industry") return h.ofcIndustry;
+  if (key == "role") return h.ofcEmployeeJob.empty() ? h.ofcJob : h.ofcEmployeeJob;
+  return std::string();
+}
+
+bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ofcManager) return false;
+  if (h.age < 16) return false;
+  if (!ensureTable("a16_employee-types-enc")) return false;
+  if (!officeRng_.chance(0.6)) return false;
+  hero_ = &h;
+  life_ = &life;
+  officeLive_ = true;
+  // Every pool in the family speaks about somebody else: "<employee> has been
+  // half-assing <his/her> work", "You told <employee> ... <he/she>'s out of
+  // here". The pair is the employee's, not the hero's.
+  const bool savedOther = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.ofcEmployeeFemale;
+
+  const std::vector<std::string> keptExtra = out.extra;
+  std::string table = "a16_employee-types-enc";
+  size_t cardRow = 0;
+  std::string title, body, line;
+  std::vector<std::string> extra;
+  int happy = 0;
+  long long take = 0;
+
+  auto say = [&](const std::string& s) {
+    const std::string t = spyUpperFirst(trim(s));
+    if (line.empty()) line = t;
+  };
+  auto add = [&](const std::string& s) {
+    if (!trim(s).empty()) extra.push_back(spyUpperFirst(trim(s)));
+  };
+  auto cell = [&](const Table& t, size_t r, const char* c) {
+    return resolve(trim(t.has(c) ? t.at(r, c) : std::string()));
+  };
+  auto numOf = [&](const Table& t, size_t r, const char* c) -> double {
+    return t.has(c) ? t.num(r, c) : 0.0;
+  };
+  auto flagOf = [&](const Table& t, size_t r, const char* c) -> bool {
+    return t.has(c) && t.flag(r, c);
+  };
+  auto mark = [&](const char* name, size_t r) {
+    table = name;
+    cardRow = r;
+  };
+  // A pool of the rows whose gate column is blank or one of the wanted values.
+  auto poolOf = [&](const Table& t, const char* col, const std::vector<std::string>& want) {
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string v = lower(trim(t.has(col) ? t.at(r, col) : std::string()));
+      if (v.empty()) { pool.push_back(r); continue; }
+      for (const std::string& w : want) {
+        if (v == lower(w)) { pool.push_back(r); break; }
+      }
+    }
+    if (pool.empty())
+      for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    return pool;
+  };
+  // The hero's year as somebody's manager pays the salary first.
+  if (h.ofcPay > 0) {
+    take += h.ofcPay;
+    h.ofcEarned += h.ofcPay;
+    add("My job as a " + h.ofcJob + " at " + (h.ofcCompany.empty() ? "the company" : h.ofcCompany) +
+        " paid me " + money(h.ofcPay) + " this year.");
+  }
+  ++h.ofcYears;
+  h.ofcMorale += h.ofcMorale < 50 ? 1 : (h.ofcMorale > 50 ? -1 : 0);
+  if (h.ofcEmployee.empty()) {
+    h.ofcEmployeeFemale = officeRng_.chance(0.5);
+    h.ofcEmployee = drawFirstName(h.ofcEmployeeFemale) + " " + drawSurname();
+  }
+  const std::string who = h.ofcEmployee;
+  const std::string hg = heroToken("gender", false);
+
+  // (1) A dismissal: a bad performer or three written warnings.
+  if (title.empty() && (h.ofcPerf < 35 || h.ofcWarnings >= 3) && officeRng_.chance(0.20)) {
+    title = "A dismissal";
+    body = "The file on " + who + " was thick enough.";
+    say("I let " + who + " go after a bad year");
+    h.ofcStaff = std::max(1, h.ofcStaff - 1);
+    ++h.ofcFires;
+    h.ofcWarnings = 0;
+    happy -= 1;
+  }
+
+  // (2) Somebody quits: morale below forty.
+  if (title.empty() && h.ofcMorale < 45 && officeRng_.chance(0.25)) {
+    title = "A goodbye";
+    body = who + " handed in a resignation while the office was quiet.";
+    say(who + " handed in their notice");
+    h.ofcStaff = std::max(1, h.ofcStaff - 1);
+    h.ofcMorale = std::min(100, h.ofcMorale + 2);
+  }
+
+  // (3) An interview: the hero is hiring.
+  if (title.empty() && h.ofcStaff < 5 && officeRng_.chance(0.18) &&
+      ensureTable("a16_employee-interview-questions-enc")) {
+    const Table& t = tbl("a16_employee-interview-questions-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      std::vector<std::pair<std::string, int> > opts;
+      for (int k = 1; k <= 5; ++k) {
+        const std::string cn = "Choice " + std::to_string(k);
+        if (!t.has(cn)) continue;
+        const std::string c = trim(t.at(r, cn));
+        if (c.empty()) continue;
+        const std::string sn = cn + " Score";
+        opts.push_back(std::make_pair(resolve(c), int(numOf(t, r, sn.c_str()))));
+      }
+      if (opts.size() > 4) opts.resize(4);
+      if (!opts.empty()) {
+        size_t pick = 0;
+        if (forcedChoice >= 0 && size_t(forcedChoice) < opts.size()) pick = size_t(forcedChoice);
+        else pick = officeRng_.below(uint32_t(opts.size()));
+        const int score = opts[pick].second;
+        title = "An interview";
+        body = cell(t, r, "Question") + "\nAnswer: " + opts[pick].first;
+        mark("a16_employee-interview-questions-enc", r);
+        if (score >= 4) {
+          const bool ef = officeRng_.chance(0.5);
+          h.ofcEmployeeFemale = ef;
+          h.ofcEmployee = drawFirstName(ef) + " " + drawSurname();
+          h.ofcEmployeeJob = h.ofcJob;
+          ++h.ofcStaff;
+          ++h.ofcHires;
+          say("I hired " + h.ofcEmployee + " as a " + h.ofcEmployeeJob);
+          h.ofcMorale = std::min(100, h.ofcMorale + 1);
+        } else {
+          say("The candidate said " + lower(opts[pick].first) + ", so there was no hire");
+        }
+      }
+    }
+  }
+
+  // (4) A written warning.
+  if (title.empty() && officeRng_.chance(0.12) && ensureTable("a16_employee-warn-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-warn-scenarios-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      title = "A written warning";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-warn-scenarios-enc", r);
+      ++h.ofcWarnings;
+      say("I gave " + who + " a written warning");
+      h.ofcMorale = std::max(0, h.ofcMorale - 4);
+    }
+  }
+
+  // (5) Recognition.
+  if (title.empty() && officeRng_.chance(0.14) && ensureTable("a16_employee-recognition-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-recognition-scenarios-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      title = "A word of praise";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-recognition-scenarios-enc", r);
+      say("I praised " + who + " in front of the staff");
+      h.ofcMorale = std::min(100, h.ofcMorale + 4);
+    }
+  }
+
+  // (6) Disrespect: the row can be let go or pushed back on.
+  if (title.empty() && officeRng_.chance(0.16) && ensureTable("a16_employee-disrespect-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-disrespect-scenarios-enc");
+    const std::vector<size_t> pool = poolOf(t, "Can Be Reaction", std::vector<std::string>());
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      const bool canPush = flagOf(t, r, "Can Be Push");
+      const bool canReact = flagOf(t, r, "Can Be Reaction");
+      bool push;
+      if (forcedChoice == 1) push = true;
+      else if (forcedChoice == 0) push = false;
+      else push = canPush && !canReact ? true : (canReact && !canPush ? false : officeRng_.chance(0.5));
+      title = "A problem with the staff";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-disrespect-scenarios-enc", r);
+      if (push) {
+        say(cell(t, r, "Log Version"));
+        h.ofcPerf = std::max(0, h.ofcPerf - 2);
+        h.ofcMorale = std::max(0, h.ofcMorale - 5);
+        extra.push_back("I pushed back, and the room went quiet.");
+      } else {
+        say(cell(t, r, "Log Version"));
+        h.ofcMorale = std::min(100, h.ofcMorale + 1);
+      }
+      (void)pool;
+    }
+  }
+
+  // (7) Respect.
+  if (title.empty() && officeRng_.chance(0.16) && ensureTable("a16_employee-respect-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-respect-scenarios-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      title = "The staff is with me";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-respect-scenarios-enc", r);
+      say(cell(t, r, "Log Version"));
+      h.ofcMorale = std::min(100, h.ofcMorale + 3);
+      h.ofcPerf = std::min(100, h.ofcPerf + 1);
+    }
+  }
+
+  // (8) A behaviour problem.
+  if (title.empty() && officeRng_.chance(0.18) && ensureTable("a16_employee-behavior-bad-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-behavior-bad-scenarios-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      const int score = int(numOf(t, r, "Score"));
+      title = "A behaviour problem";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-behavior-bad-scenarios-enc", r);
+      say(cell(t, r, "Log Version"));
+      h.ofcPerf = std::max(0, h.ofcPerf - score * 3);
+      h.ofcMorale = std::max(0, h.ofcMorale - 4);
+    }
+  }
+
+  // (9) A good year for somebody on the team.
+  if (title.empty() && officeRng_.chance(0.18) && ensureTable("a16_employee-behavior-good-scenarios-enc")) {
+    const Table& t = tbl("a16_employee-behavior-good-scenarios-enc");
+    const size_t r = weightedPick(t, "Commonness Score", officeRng_);
+    if (r != size_t(-1)) {
+      const int score = int(numOf(t, r, "Score"));
+      title = "A good year for the team";
+      body = cell(t, r, "Scenario");
+      mark("a16_employee-behavior-good-scenarios-enc", r);
+      say(cell(t, r, "Log Version"));
+      h.ofcPerf = std::min(100, h.ofcPerf + score * 3);
+      h.ofcMorale = std::min(100, h.ofcMorale + 2);
+    }
+  }
+
+  // (10) Nothing happened: the plain managerial year.
+  if (title.empty()) {
+    if (ensureTable("a16_employee-types-enc")) {
+      const Table& t = tbl("a16_employee-types-enc");
+      std::vector<size_t> same;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (lower(trim(t.at(r, "Industry"))) == lower(h.ofcIndustry)) same.push_back(r);
+      }
+      if (!same.empty()) {
+        const size_t r = same[officeRng_.below(uint32_t(same.size()))];
+        title = "Another year at " + h.ofcCompany;
+        body = who + " is still a " + trim(t.at(r, "Job Title")) + ", and the office ran itself.";
+        mark("a16_employee-types-enc", r);
+      }
+    }
+    if (title.empty()) {
+      title = "Another year at the office";
+      body = "The team came in, did the work, and went home.";
+    }
+    say("I managed " + std::to_string(h.ofcStaff) + " people for another year");
+  }
+
+  // A good year earns the manager a raise, whatever the card was.
+  if (h.ofcPerf >= 70 && officeRng_.chance(0.35)) {
+    const long long raised = h.ofcPay / 20;
+    h.ofcPay += raised;
+    add("The company bumped my pay by " + money(raised) + " a year.");
+  }
+
+  out = AgeUp();
+  out.extra = keptExtra;
+  out.table = table;
+  out.row_id = std::to_string(cardRow + 1);
+  out.title = spyUpperFirst(title);
+  out.body = spyUpperFirst(body);
+  if (!trim(out.body).empty() && out.body[out.body.size() - 1] != '.' &&
+      out.body[out.body.size() - 1] != '!' && out.body[out.body.size() - 1] != '?')
+    out.body += ".";
+  for (const std::string& e : extra) out.extra.push_back(e);
+  out.narrative = line;
+  h.money += take;
+  out.happiness += happy;
+  officeLive_ = false;
+  pronounOtherSet_ = savedOther;
+  pronounOtherFemale_ = savedOtherFemale;
+  return true;
+}
+
+// ===== end the office (REPORT.en.md 83) =====================================
 
 void Sim::makeMisc(Life& life, unsigned mask) { life.hero.miscMask |= mask; }
 
