@@ -212,9 +212,15 @@ const RegScenario kScenarios[] = {
      {{"", "My cat, {name}, died while sleeping peacefully."}}},
     // Captured LifeLog: "I am suffering from tonsillitis." The card and the log each name
     // a different ailment, both drawn at runtime.
-    {"ScenarioDiseaseContract", "", "Middle Ear Infection",
-     "You are suffering from a middle ear infection.", 1,
-     {{"", "I am suffering from tonsillitis."}}},
+    // The symptom card is rendered by renderSymptomCard() straight out of the
+    // 432-row symptom table; this entry only carries the four option labels the
+    // game hard-codes (metadata 27502 / 21936 / 15622 / 40895 / #46595) and is
+    // never used for text. The third label is a home remedy that differs per
+    // symptom ("Chug some water" for a fever, "Take some aspirin" for difficulty
+    // urinating) and is built in code, not in the CSV. REPORT.en.md 43.
+    {"ScenarioDiseaseContract", "", "Fever", "", 4,
+     {{"It doesn't bother me", ""}, {"Go to the doctor", ""},
+      {"Chug some water", ""}, {"Search the web", ""}}},
     {"ScenarioFriendNew", "", "My ride or die", "You are now friends with {name}.", 0, {}},
     {"ScenarioEthicsBreakSomething", "", "Integrity",
      "You broke your parents's {item} while you were playing.\n\nWhat will you do?", 2,
@@ -282,6 +288,69 @@ const RegScenario kScenarios[] = {
      "While on your walk, you find a {find}.\n\nWhat will you do?", 2,
      {{"Turn it in", "I turned in {findarticle} that I found."},
       {"Keep it", ""}}},
+    // ---- The illness chain (REPORT.en.md 43) -------------------------------
+    // The symptom card opens it, ScenarioDoctors picks a physician, and
+    // ScenarioDoctorTreatments names the diagnosis. Every string here is a C#
+    // literal (metadata indices in the comments); the drawn parts are the
+    // physician surnames and the diagnosis.
+    {"ScenarioDoctors", "Health", "Doctor",
+     "Which local doctor will you schedule an appointment to see?", 3,
+     {{"Dr. {doctor}", "I made a doctor's appointment."},
+      {"Dr. {doctor2}", "I made a doctor's appointment."},
+      {"Actually, never mind", ""}}},
+    // Captured card and log: "Dr. Seaman has diagnosed you with kidney stones."
+    // / "You continue to suffer from hay fever." / "Dr. Seaman treated my kidney
+    // stones." (metadata 69923, 70362, 48211). The second sentence names an
+    // ailment the hero already carries.
+    {"ScenarioDoctorTreatments", "Health", "Diagnosis",
+     "Dr. {doctor} has diagnosed you with {diagnosis}.\n\nYou continue to suffer from "
+     "{olddisease}.\n\nSelect a treatment today!",
+     2,
+     {{"Treat me",
+       "Dr. {doctor} diagnosed me with {diagnosis}.\nDr. {doctor} treated my {diagnosis}.\n"
+       "I continue to suffer from {diagnosis}."},
+      {"I'll pass for now",
+       "Dr. {doctor} diagnosed me with {diagnosis}.\nI decided not to get treated."}}},
+    // Captured card, three labels and the insult branch's line ("I called my
+    // supervisor a chode mongrel on my way out.", insult drawn from
+    // a16_insults-enc). The other two branches are first-person rewrites of the
+    // card sentence.
+    // shortcut: the dismissal reason is code-built; only the captured one is
+    // modelled.
+    {"ScenarioJobTermination", "", "Termination",
+     "You have been let go from your position as {job} for {company}.\n\nThey tell you "
+     "it's because {reason}.",
+     3,
+     {{"Insult my supervisor",
+       "I was let go from my job as {job} for {company}.\nI called my supervisor a {insult} "
+       "on my way out."},
+      {"Wish my supervisor well",
+       "I was let go from my job as {job} for {company}.\nI wished my supervisor well on my "
+       "way out."},
+      {"Beg my supervisor to stay",
+       "I was let go from my job as {job} for {company}.\nI begged my supervisor to let me "
+       "stay."}}},
+    // Captured card: "You just observed a firearms activist call your mother
+    // foolhardy!" The bystander is a random person with a definite article, the
+    // relative is the port's fixed parent word. metadata 69566 is the captured
+    // log shape "{0} I forgave {1}." whose first fill is unmeasured, so the
+    // branches below are first-person rewrites.
+    {"ScenarioInsultRelative", "", "Insult",
+     "You just observed {stranger} call your {parent} {insult}!\n\nWhat will you do?", 3,
+     {{"Forgive him", "I forgave {stranger}."},
+      {"Insult him back", "I insulted {stranger} right back."},
+      {"Attack him", "I attacked {stranger}."}}},
+    // Fully captured card and both branch lines (metadata 23807 / 24465).
+    {"ScenarioCasinoGoldenNekoAd", "Casino", "Golden Neko Statue",
+     "Just as you're leaving the casino, you see a little old lady counting the biggest pile "
+     "of coins you've ever seen.\n\nShe tells you that ever since she bought a Golden Neko "
+     "Statue, her casino winnings have increased by 20%.",
+     2,
+     {{"Get one of my own",
+       "I considered purchasing a Golden Neko Statue to increase my casino winnings."},
+      {"Leave the casino",
+       "I ignored an opportunity to purchase a Golden Neko Statue to increase my casino "
+       "winnings."}}},
 };
 // Real-world date gates for the two dated dumb-scenario sets. Holiday rows name
 // the holiday; calendar rows carry 'Month' + 'Date' (one real day each).
@@ -989,6 +1058,17 @@ std::string Sim::drawFirstName(bool female) {
   return p == size_t(-1) ? std::string() : names.at(p, "First Name");
 }
 
+// The local physicians of the illness chain carry surnames only ("Dr. Seaman",
+// "Dr. Coleman" in the capture). The game fills its own pool from the same
+// celebrity name table the port draws personal names from, so the surname column
+// is the right source.
+std::string Sim::drawSurname() {
+  ensureTable("a16_casino-casino-celebrity-name-enc");
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  if (names.size() == 0) return std::string();
+  return names.at(rng_.below(uint32_t(names.size())), "Last Name");
+}
+
 // A company name built the way the game builds one. a16_company-name-structure-enc
 // holds the per-industry format ('<color> <suffix>', '<color> <suffix>, <city>
 // <suffix>') and, for the industries that ship fixed names, a 'Predefined' name
@@ -1611,10 +1691,68 @@ bool Sim::forceScenario(const std::string& table, long long row) {
   return true;
 }
 
-bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& out, int choice) {
+// The symptom card is the only scenario whose title, body and log line all come
+// out of one table row: a16_disease-symptom-scenarios-enc (432 rows). The game
+// shows the abbreviated symptom as the card title (falling back to the symptom
+// itself, capitalised), the row's own 'Scenario' text plus the fixed question,
+// and four literal option labels. Only the first log sentence is table-driven
+// (the 'Log Version' column) - the branch sentence that follows it is built in
+// code, and only two of the four variants were ever captured.
+// shortcut: the third label (the home remedy) is modelled for two symptoms and
+// the remedy branch logs no branch sentence; the second symptom sentence the
+// game appends is a coin flip, not its own gate.
+bool Sim::renderSymptomCard(const Life& life, AgeUp& out, int choice) {
   (void)life;
+  ensureTable("a16_disease-symptom-scenarios-enc");
+  const Table& t = tbl("a16_disease-symptom-scenarios-enc");
+  std::vector<size_t> pool, supp;
+  for (size_t r = 0; r < t.size(); ++r) {
+    // The 169 rows whose Supplementary cell is set are the extra sentences the
+    // game stacks on a card; only the others carry a card of their own.
+    if (!trim(t.at(r, "Supplementary")).empty()) { supp.push_back(r); continue; }
+    if (!trim(t.at(r, "Scenario")).empty()) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[rng_.below(uint32_t(pool.size()))];
+  const std::string symptom = lower(trim(t.at(row, "Symptom")));
+  std::string title = trim(t.at(row, "Abbreviated Symptom"));
+  if (title.empty() && !symptom.empty()) {
+    title = symptom;
+    title[0] = static_cast<char>(::toupper(static_cast<unsigned char>(title[0])));
+  }
+  std::string body = trim(t.at(row, "Scenario"));
+  if (!supp.empty() && rng_.chance(0.5))
+    body += " " + trim(t.at(supp[rng_.below(uint32_t(supp.size()))], "Scenario"));
+  body += "\n\nWhat will you do?";
+
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_disease-symptom-scenarios-enc";  // the row is the provenance
+  out.row_id = std::to_string(row + 1);
+  out.title = title;
+  out.body = resolve(body);
+
+  const bool water = symptom.find("fever") != std::string::npos ||
+                     symptom.find("vomit") != std::string::npos ||
+                     symptom.find("nausea") != std::string::npos ||
+                     symptom.find("dehydrat") != std::string::npos;
+  static const char* kLabel[4] = {"It doesn't bother me", "Go to the doctor", nullptr,
+                                  "Search the web"};
+  static const char* kTail[4] = {" I didn't let it bother me.", " I made a doctor's appointment.",
+                                 "", " I searched the web for my symptoms."};
+  const int idx = choice >= 0 && choice < 4 ? choice : int(rng_.below(4));
+  out.choice = kLabel[idx] ? kLabel[idx] : (water ? "Chug some water" : "Take some aspirin");
+  out.narrative = resolve(trim(t.at(row, "Log Version")) + kTail[idx]);
+  return true;
+}
+
+bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& out, int choice) {
   const RegScenario* s = findScenario(cls);
   if (!s) return false;
+  // The symptom card draws its own title, body and log line from the symptom
+  // table, so it never uses the registry's literals.
+  if (cls == "ScenarioDiseaseContract") return renderSymptomCard(life, out, choice);
   // The year's family lifecycle lines were written before the scenario was
   // picked and belong to no row, so they survive this reset.
   const std::vector<std::string> extra = out.extra;
@@ -1694,6 +1832,76 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     const size_t row = weightedPickOf(t, weightCol, pool, rng_);
     return row == size_t(-1) ? std::string() : lower(trim(t.at(row, valueCol)));
   };
+  // The illness chain: ScenarioDoctors offers two local physicians by surname,
+  // and the treatment card reads back the one that was picked.
+  std::string doctor1, doctor2, diagnosis, lingering, heroJob, heroCompany, insultWord, strangerWord;
+  if (need("{doctor}") || need("{doctor2}") || cls == "ScenarioDoctors" ||
+      cls == "ScenarioDoctorTreatments") {
+    doctor1 = lastDoctor_.empty() ? drawSurname() : lastDoctor_;
+    doctor2 = drawSurname();
+    if (doctor2 == doctor1) doctor2 = drawSurname();
+    substAll(body, "{doctor2}", doctor2);
+    substAll(body, "{doctor}", doctor1);
+  }
+  if (cls == "ScenarioDoctorTreatments") {
+    // The freshly diagnosed ailment is a real disease row; the sentence that
+    // follows names a second condition the hero already has (both symptom
+    // names in the capture: kidney stones / hay fever).
+    diagnosis = drawFrom("a16_disease-types-enc", "Contracts Organically Score", "Disease");
+    ensureTable("a16_disease-symptom-scenarios-enc");
+    const Table& st = tbl("a16_disease-symptom-scenarios-enc");
+    if (st.size() > 0)
+      lingering = lower(trim(st.at(rng_.below(uint32_t(st.size())), "Symptom")));
+    substAll(body, "{diagnosis}", diagnosis);
+    substAll(body, "{olddisease}", lingering);
+  }
+  if (need("{job}") || need("{company}")) {
+    // The termination card names the hero's own position and employer; the
+    // employer is built from the career's 'Company Type' row, the same way the
+    // family lifecycle lines build one.
+    heroJob = lower(life.hero.job.empty() ? std::string("housekeeper") : life.hero.job);
+    ensureTable("a16_careers-enc");
+    const Table& cr = tbl("a16_careers-enc");
+    std::string ctype;
+    for (size_t r = 0; r < cr.size(); ++r)
+      if (lower(trim(cr.at(r, "Career"))) == heroJob) { ctype = trim(cr.at(r, "Company Type")); break; }
+    if (ctype.empty() && cr.size() > 0) {
+      // The card can fire while the hero holds no career at all (it did at age
+      // 4 in the forced-row test), so fall back to a real career row rather than
+      // leaving the position unnamed.
+      const size_t r = rng_.below(uint32_t(cr.size()));
+      heroJob = lower(trim(cr.at(r, "Career")));
+      ctype = trim(cr.at(r, "Company Type"));
+    }
+    heroCompany = companyName(ctype, life);
+    substAll(body, "{job}", heroJob);
+    substAll(body, "{company}", heroCompany);
+  }
+  std::string reason;
+  if (need("{reason}")) {
+    // shortcut: the dismissal reason is a code-built sentence; only the captured
+    // one is modelled.
+    reason = "you danced too promiscuously at the holiday party";
+    substAll(body, "{reason}", reason);
+  }
+  if (need("{insult}")) {
+    insultWord = drawFrom("a16_insults-enc", "Clean", "Insult");
+    // The insult table's own rows carry the article ('a douche'); the card's
+    // sentence supplies its own, so strip it here.
+    static const char* kArt[3] = {"a ", "an ", "the "};
+    for (const char* art : kArt) {
+      const size_t n = std::string(art).size();
+      if (insultWord.compare(0, n, art) == 0) { insultWord = insultWord.substr(n); break; }
+    }
+    substAll(body, "{insult}", insultWord);
+  }
+  if (need("{stranger}")) {
+    // Whoever insulted the relative is a random person with the indefinite
+    // article the game spells ("a firearms activist" in the capture).
+    const std::string who = referenceToken("random-person");
+    strangerWord = who.empty() ? std::string("a stranger") : articleFor(who) + who;
+    substAll(body, "{stranger}", strangerWord);
+  }
   std::string partner, partnerObj;
   if (need("{partner}")) {
     // The classmate the scene offers is the hero's opposite sex, and the game
@@ -1788,6 +1996,12 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
                         ? choice
                         : (s->n > 1 ? int(rng_.below(uint32_t(s->n))) : 0);
     out.choice = s->choices[idx].label;
+    // The physician cards carry a drawn surname inside their option labels.
+    if (!doctor2.empty()) substAll(out.choice, "{doctor2}", doctor2);
+    if (!doctor1.empty()) {
+      substAll(out.choice, "{doctor}", doctor1);
+      if (cls == "ScenarioDoctors") lastDoctor_ = idx == 1 ? doctor2 : doctor1;
+    }
     std::string log = s->choices[idx].log;
     if (log.find("{name}") != std::string::npos) {
       if (name.empty()) name = personName("classmate");
@@ -1797,6 +2011,14 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
     if (!item.empty()) substAll(log, "{item}", item);
     if (!channel.empty()) substAll(log, "{channel}", channel);
     if (!disease.empty()) substAll(log, "{disease}", disease);
+    if (!doctor2.empty()) substAll(log, "{doctor2}", doctor2);
+    if (!doctor1.empty()) substAll(log, "{doctor}", doctor1);
+    if (!diagnosis.empty()) substAll(log, "{diagnosis}", diagnosis);
+    if (!lingering.empty()) substAll(log, "{olddisease}", lingering);
+    if (!heroJob.empty()) substAll(log, "{job}", heroJob);
+    if (!heroCompany.empty()) substAll(log, "{company}", heroCompany);
+    if (!insultWord.empty()) substAll(log, "{insult}", insultWord);
+    if (!strangerWord.empty()) substAll(log, "{stranger}", strangerWord);
     if (!partner.empty()) {
       substAll(log, "{partner}", partner);
       substAll(log, "{partnerobj}", partnerObj);

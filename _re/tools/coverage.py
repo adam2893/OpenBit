@@ -24,18 +24,25 @@ def collect():
                     n += 1
                     b = ages.setdefault(n, {"age": n, "scenarios": [], "logs": []})
                     b["scenarios"].append(
-                        {"cls": c, "title": s.get("title") or s.get("Title"), "body": s.get("body") or s.get("Body")})
+                        {"cls": c, "title": s.get("title") or s.get("Title"),
+                         "body": s.get("body") or s.get("Body"),
+                         "choices": s.get("choices") or s.get("_choices") or []})
         elif isinstance(d, list):
             for r in d:
                 for lg in (r.get("logs") or []):
+                    # The round's own logs belong to the bucket of the first scenario
+                    # that follows them, and the age field has to equal that bucket
+                    # key or every push index shifts by one.
                     txt = lg.get("text") if isinstance(lg, dict) else lg
                     if txt:
-                        ages.setdefault(n + 1 if n else 1, {"age": n or 1, "scenarios": [], "logs": []})["logs"].append(txt)
+                        ages.setdefault(n + 1 if n else 1,
+                                        {"age": n + 1 if n else 1, "scenarios": [], "logs": []})["logs"].append(txt)
                 for s in (r.get("scenarios") or []):
                     c = s.get("_class") or s.get("cls") or "?"
                     n += 1
                     b = ages.setdefault(n, {"age": n, "scenarios": [], "logs": []})
-                    b["scenarios"].append({"cls": c, "title": s.get("Title"), "body": s.get("Body")})
+                    b["scenarios"].append({"cls": c, "title": s.get("Title"), "body": s.get("Body"),
+                                           "choices": s.get("_choices") or s.get("choices") or []})
     return {"source": "game", "ages": [ages[k] for k in sorted(ages)]}
 
 def main():

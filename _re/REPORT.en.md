@@ -2569,3 +2569,96 @@ Residue census: `distinct residue tokens 0` (48 runs x 95 years). Bench: 35 year
 both sides with a different draw (`i lost # # on the hand of blackjack ...` versus
 `i won # # on this bet at {name}`).
 
+## 43. The illness chain, and what a menu class costs to recover
+
+The menu classes are the part of the game that is not driven by a CSV row: the
+card, its option labels and the sentence that follows a tap are C# string
+literals. Section 41 paired one captured card with its outcome record; this
+section closes the chain the capture opened (the symptom card, the doctor card
+and the treatment card) and re-measures recovery.
+
+### 43.1 How many menu classes there are
+
+`tools/metadata_strings.py list --raw` over global-metadata.dat (76031 literals)
+holds **1401 Scenario* class-name literals** - the game's real total - and
+**282 game-data table paths** under `data/`. Both inventories are dumped to
+`/tmp/qdir/scenario_classes.txt` and `/tmp/qdir/data_tables.txt`; the port's
+registry (`port/src/sim.cpp` kScenarios) covered 26 of them before this section
+and 31 after it. The gap is therefore a list, not a guess: a later section can
+pick a class off it and look for a capture.
+
+### 43.2 The symptom card is a table row, not a literal
+
+`a16_disease-symptom-scenarios-enc` (432 rows, header `Symptom,Abbreviated
+Symptom,Supplementary,Scenario,Log Version,Gender,Concern Score,Min Age`) is the
+first menu class whose whole card is table-driven:
+
+| card part | source |
+| --- | --- |
+| Title | `Abbreviated Symptom`, else the capitalised `Symptom` (`Fever`, `Difficulty Urinating` in the capture) |
+| Body | the row's own `Scenario` text, plus `What will you do?` |
+| Body, second sentence | a random row whose `Supplementary` cell is set - 169 of the 432 rows are these stacked sentences (`To further complicate things, ...`) |
+| log line, first sentence | the row's `Log Version` column |
+| option labels | four literals: `It doesn't bother me` (#27502), `Go to the doctor` (#21936), the home remedy, `Search the web` |
+
+The third label is the one part that is not in the CSV: it is a remedy chosen per
+symptom (`Chug some water` #15622 for a fever, `Take some aspirin` #40895 for
+difficulty urinating) and a string search over all 1071 game-data files finds
+neither, so it is code-built. `Sim::renderSymptomCard` (`src/sim.cpp`) renders
+the row, appends the supplementary sentence on a coin flip and appends the branch
+tail to the `Log Version` column.
+
+### 43.3 The five classes this section implements
+
+Every string below was captured (trace_game10) or read out of the literal table;
+the drawn parts are the ones the port builds at render time.
+
+| class | card | options | drawn values | log |
+| --- | --- | --- | --- | --- |
+| `ScenarioDoctors` | `Which local doctor will you schedule an appointment to see?` | `Dr. <surname>` x2, `Actually, never mind` (#10716) | surnames from the celebrity name pool | `I made a doctor's appointment.` (#24634) |
+| `ScenarioDoctorTreatments` | `Dr. X has diagnosed you with Y. / You continue to suffer from Z. / Select a treatment today!` | `Treat me`, `I'll pass for now` (#25929) | X is the doctor card's surname (`lastDoctor_`), Y a disease row, Z a symptom row | `Dr. X diagnosed me with Y.` (#69923) + `Dr. X treated my Y.` (#70362) or `I decided not to get treated.` (#23866) |
+| `ScenarioJobTermination` | `You have been let go from your position as <job> for <company>.` | `Insult my supervisor`, `Wish my supervisor well`, `Beg my supervisor to stay` | job from the hero, company from the career row's `Company Type` | `I called my supervisor a <insult> on my way out.` (insult from `a16_insults-enc`) |
+| `ScenarioInsultRelative` | `You just observed <stranger> call your <relative> <insult>!` | `Forgive him`, `Insult him back`, `Attack him` (#12345) | stranger is a random person with its own article | `{0} I forgave {1}.` (#69566) is the captured shape; the port writes the branch sentence |
+| `ScenarioCasinoGoldenNekoAd` | the 20%-winnings pitch | `Get one of my own`, `Leave the casino` | none | both branches captured: #23807 and #24465 |
+
+The termination card needed a fallback the capture did not show: the forced-row
+run pushed it at age 4, where the hero holds no career at all, so the port draws a
+real career row rather than leaving the position unnamed.
+
+### 43.4 What the recovery tool learned
+
+`tools/coverage.py` flattened the list-format traces with the log bucket's `age`
+field one lower than its own key, so every push index landed one scenario early.
+The flattened records now also carry the card's `_choices`, which is what lets an
+outcome card be resolved through its parent. `tools/row_recover.py` gained:
+
+- the symptom index (title -> row of the symptom table, since the card title is
+  the `Abbreviated Symptom` column and never matches a `Title` column);
+- outcome-card resolution: the game's outcome title is a pun on the tapped label
+  (`Treat me` -> `Treat me right`), so the pairing is positional - the result card
+  belongs to the card before it - and the branch index is used when the label does
+  match;
+- `REGISTRY` templates for the five implemented classes plus the captured classes
+  the port does not render yet, so identification and port coverage stay separable.
+
+### 43.5 Verification
+
+- forced-row run (`/tmp/qdir/illtest.json`, seed 12345, 8 ages): `ScenarioDiseaseContract` rendered row 47 (`Chills`, log `I experienced chills. I made a doctor's appointment.`), `ScenarioDoctors` -> `Dr. Denty`, `ScenarioDoctorTreatments` -> `Dr. Denty has diagnosed you with asthma. / You continue to suffer from feet blisters.`, `ScenarioJobTermination` -> `let go from your position as bartender for Transcendent Diner` + `I called my supervisor a dick on my way out.`, `ScenarioInsultRelative` -> `an accountant call your mother nimrod!`, `ScenarioCasinoGoldenNekoAd` -> both captured lines.
+- `tools/coverage.py`: **captured 109, recoverable 66 -> 107**. The 13 outcome cards are now resolved through their parent; the only two left are `ScenarioMiniPaywall` (2), the pure store flow with an empty card and no narrative line.
+- `bash tools/bench.sh /tmp/trace_c10.json` runs 35 years with no abort.
+- `blsim --script /tmp/qdir/covpush.json` (all 109 recovered slots pushed at once) replays to age 83 and dies normally, so the mixed registry/table/symptom push array loads.
+
+### 43.6 What is still open
+
+- `ScenarioMiniPaywall` has nothing to recover: title, body and log are empty.
+- Classes that are identified but have no port renderer yet: `ScenarioPetDiscipline`,
+  `ScenarioPushSpendTime`, `ScenarioStepparentCruelty`, `ScenarioFriendUnfriendInbound`,
+  `ScenarioLoverLeaves`, `ScenarioLoveDate`, `ScenarioSchoolBully`,
+  `ScenarioSchoolActivityJoin`, `ScenarioEncounterProstitute`,
+  `ScenarioMediaOnlyFansArguePush`, `ScenarioSocialMediaJoinPush`, `ScenarioCarRepair`,
+  `ScenarioIAPConfiguredPush`, `ScenarioRetentionFreelanceGig`, `ScenarioRetentionLover`,
+  `ScenarioBase`. Their cards and logs are captured (section 41 digest); each needs its
+  drawn values wired the way the five above are.
+- Unmeasured tails: the remedy and `Search the web` branch sentences (the port appends
+  its own), the single-literal dismissal reason of `ScenarioJobTermination`, and the
+  first fill of the `InsultRelative` log shape (#69566).

@@ -188,6 +188,13 @@ class Sim {
   // '<city> <suffix>', Predefined wins when set), filled from the color and
   // suffix pools. Table found by the trace line "<job> for Helsinki Travel".
   std::string companyName(const std::string& companyType, const Life& life);
+  // One surname from the same celebrity-name pool, for the local physicians the
+  // illness chain offers ("Dr. Seaman" in the capture).
+  std::string drawSurname();
+  // The symptom card is the one scenario whose title, body and log line all come
+  // from a table row (a16_disease-symptom-scenarios-enc); the registry entry for
+  // ScenarioDiseaseContract only carries the four hard-coded option labels.
+  bool renderSymptomCard(const Life& life, AgeUp& out, int choice);
   // The game caches every '<a/b/c>' alternative it draws while parsing one
   // scenario, in draw order, and lets the log line point back at them with
   // '<rb>' / '<rb1>' (the 1st draw), '<rb2>' (the 2nd) up to '<rb4>'. The cache
@@ -199,6 +206,9 @@ class Sim {
   // takes no Life, and the '<hero:...>' / '<city>' tokens need one.
   const Hero* hero_ = nullptr;
 
+  // The physician the last ScenarioDoctors card picked, read back by the
+  // treatment card that follows it in the same illness chain.
+  std::string lastDoctor_;
   std::string reDir_;
   Rng rng_;
   std::vector<std::pair<std::string, Table>> tables_;
