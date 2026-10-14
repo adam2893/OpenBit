@@ -5191,3 +5191,157 @@ Full regression after the zoo: `rescensus` reports `distinct residue tokens 0
 total 0`, `coverage.py` reports `captured scenarios: 109  recoverable: 107`,
 `portgap.py` reports `ENTRIES 109 rendered-by-port 107 gap 0`, the `covpush`
 script returns 0, and `bench.sh` reaches age 34 with no abort.
+
+## 66. The landlord: a house the hero owns, a tenant in it, and the squatter who replaces them
+
+Section 65 gave the hero a zoo. Section 66 gives them a rental: one property,
+one tenant, and the long tail of things a tenant does to a landlord — late rent,
+damage, notices, inspections, and the year they simply stop paying. The family
+is 22 files and 1198 data rows, and before this section the port had never
+mentioned a property at all.
+
+### 66.1 The tables
+
+| rows | table | what it holds |
+| ---: | --- | --- |
+| 212 | `a16_landlord-tenant-damaged-property-scenario` | Scenario, Log Version, Amenity, Tenant Pet Type, house-type whitelist and blacklist, the four bedroom/bathroom flags, repair band, craziness window, Impact Score |
+| 112 | `a16_landlord-amenity-feedback-scenario` | Scenario, Log Version, Amenity, Commonness Score |
+| 105 | `a16_landlord-home-default-features` | Feature String, house-type whitelist and blacklist, Enjoyment Score, Requires Haunted House, property-condition window (already wired by section 56 as `<amenity>`) |
+| 97 | `a16_landlord-tenant-inspection-color` | Positive flag, Scenario, Log Version, craziness window, Lover Exclusive, Brackets Used |
+| 85 | `a16_landlord-maintenance-request-scenario` | Body Snippet, Feedback Present Snippet, Feedback Past Snippet, room flags, repair band, Agree and Disagree Satisfaction Impact, May Cause Move-Out |
+| 84 | `a16_landlord-background-check-color` | Crime, Commonness Score, craziness window |
+| 79 | `a16_landlord-tenant-leave-color` | Scenario, Log Version, Requires Haunted House, satisfaction window |
+| 66 | `a16_landlord-tenant-employment-check` | Career, Gender, craziness and income windows — "Dog Food Taster", "Snake Milker", "Serial Redditor" |
+| 58 | `a16_landlord-tenant-beg-lower-rent-scenario` | Scenario, Log Version, craziness and relationship windows |
+| 52 | `a16_landlord-real-estate-portfolio` | String, Only Squatters, Single Squatter, Singular Tenant, satisfaction and condition windows — the quiet year, and where the rent lands |
+| 37 | `a16_landlord-home-remodel-feature` | Project, Secondary Line Text, cost band, house-type whitelist and blacklist, Enjoyment Score, Value Percentage, Country Blacklist |
+| 36 | `a16_landlord-tenant-late-rent-color` | Scenario, Log Version, Commonness Score, craziness window |
+| 31 | `a16_landlord-natural-disaster-scenario` | Type, Scenario, Impact Score, Can Demolish, house-type blacklist |
+| 26 | `a16_landlord-tenant-lover-nags-hero` | Scenario, Log Version, Hero Gender, Lover Gender, craziness and relationship windows |
+| 23 | `a16_landlord-tenant-warn-scenario` | Scenario (second person: "You threatened to evict <tenant>."), Risk Score |
+| 17 | `a16_landlord-tenant-beg-to-stay-scenario` | Scenario, Log Version, craziness window |
+| 17 | `a16_landlord-spooked-contractor-quit-color` | Scenario, Log Version, Hauntedness Score |
+| 14 | `a16_landlord-ghost-kill-tenant-color` | **not loaded**: the shipped file's header row is blank (the real header sits on line 3), so the reader would see one unnamed column |
+| 13 | `a16_landlord-squatter-reason-color` | Scenario, Log Version, Rent-Related flag |
+| 12 | `a16_landlord-tenant-late-rent-insist` | Scenario, Log Version, Commonness Score |
+| 12 | `a16_landlord-squatter-push-scenario` | Scenario, Log Version, Hero Gender, Squatter Gender |
+| 10 | `a16_landlord-maintenance-refusal-scenario` | Feedback Snippet, Log Version, craziness window |
+
+Two tables outside the family carry the property: `a16_house-types-enc` (29
+rows: Type, bed and bathroom windows, Price Score, Haunted Score, Commonness
+Score, Street Type) and `a16_street-names-enc` for the address.
+
+### 66.2 Buying the property
+
+`ensureLandlordFields` draws one row of `a16_house-types-enc` weighted by
+Commonness Score and takes the type, the Haunted Score, a value of
+`Price Score × 60000` plus a roll, and a bedroom and bathroom count rolled
+inside that row's own windows. The address is a house number plus a street name,
+with " Street" appended when the street row's Add Random Street Type flag is
+set. Rent is derived from the value (`value / 1500 × 10`, floor $100). The
+hero pays a flat $20,000 on the way in — the port has no mortgage model.
+
+`landlordDrawTenant` then draws the tenant: a gender coin, a name from the
+shared name pools, and a row of `a16_landlord-tenant-employment-check`
+filtered on Gender, which supplies the job ("snake milker"), the income, and the
+craziness window that most of the tenant tables gate on. Satisfaction starts at
+55 plus a roll.
+
+### 66.3 A year with a tenant
+
+`landlordYear` runs from age 18 at 55% a year, drifts condition down by one
+and satisfaction two points toward 50, then fires exactly one branch, first hit
+wins:
+
+| chance | branch | what it does |
+| ---: | --- | --- |
+| — | squatter | the year the tenant stopped paying: 55% they clear out, otherwise the police call it a civil matter |
+| — | empty property | draws a tenant and writes the move-in card, with a 45% background check (craziness +15) |
+| 0.05 | natural disaster | `Impact Score` × 8 off the condition and × 4000 of damage; a Can Demolish row can total the place |
+| 0.05 | haunted contractor | needs Haunted Score ≥ 3, windowed on Hauntedness Score |
+| 0.25 | squatter | when satisfaction has fallen below 45: `squatter-reason-color` with the Rent-Related flag checked against a rent above $1500 |
+| 0.20 | maintenance request | room and type flags gate the pool; 65% agree and pay the repair band, condition +2; 25% of those add a refusal; disagree and a May Cause Move-Out row can end the tenancy |
+| 0.18 | damaged property | amenity, type and room flags, craziness window; the repair band is paid and the condition takes `Impact Score × 5` |
+| 0.15 | inspection | the Positive flag is checked against satisfaction ≥ 60; a failed one brings `tenant-warn-scenario` and 25% of the time a beg-to-stay |
+| 0.12 | late rent | 50% insist, and 60% of those collect three months of arrears, else satisfaction +4 |
+| 0.12 | rent reduction asked | 40% agree (rent × 9/10, satisfaction +7) |
+| 0.10 | tenant leaves | haunted properties and the satisfaction window; the tenant slot empties |
+| 0.10 | lover nags | `tenant-lover-nags-hero` with the hero's own lover |
+| 0.12 | amenity feedback | filtered to an Amenity the property actually has |
+| 0.10 | remodel | the cost band is paid, the project is stored on the property and value rises by Value Percentage |
+| else | portfolio | `real-estate-portfolio`, and the rent: twelve months of it, or nothing while the squatter sits there |
+
+### 66.4 The tokens and the misc-map handover
+
+`landlordIsToken` answers `tenant`, `squatter`, `address`,
+`tenant-address`, `squatter-address`, `property-city` and
+`house-type`, each with an optional `-possessive`. All four of those
+names were counted across the whole corpus first: `house-type` (90 uses),
+`tenant` (175 of 422 uses), `tenant-address` and `amenity` are used
+only by landlord files, so the family can own them. `kMiscSrc` therefore
+lost its `house-type` line, `kMiscPeople` lost `tenant` and
+`kMiscLiterals` lost `tenant-address`; `<amenity>` stays in the
+shared map because it reads a different column of a shared table.
+
+### 66.5 Shortcuts
+
+* The property is bought outright; there is no mortgage, no equity, and no sale.
+* Rent is collected only in the portfolio branch, so a year that fires a
+  maintenance request or an inspection collects nothing.
+* Value Percentage is read as a percentage of the money spent, not of any
+  market model, and the property never appreciates on its own.
+* `a16_landlord-ghost-kill-tenant-color` is skipped: its header row is
+  blank in the shipped data.
+* Tenant Pet Type, Singular Tenant, Brackets Used and Risk Score are read only
+  where a branch needs them; nothing is modelled about pets.
+* The second-person lines are turned around by `toFirstPerson`, the same
+  helper section 64 wrote for the mafia, now hoisted out of `mafiaYear` into
+  a file-static function so both families share it.
+
+### 66.6 Verification
+
+`/tmp/qdir/ltres.py` (30 seeds × both genders, ages 60, `landlord: true`)
+reports 1629 landlord events and **residue 0**. The histogram:
+`a16_dumb-scenarios-landlord-enc` 811, `real-estate-portfolio` 231,
+`maintenance-request-scenario` 99, `tenant-damaged-property-scenario` 95,
+`tenant-inspection-color` 68, `squatter-push-scenario` 58,
+`tenant-late-rent-color` 55, `natural-disaster-scenario` 47,
+`tenant-leave-color` 42, `tenant-beg-lower-rent-scenario` 37,
+`amenity-feedback-scenario` 30, `squatter-reason-color` 27,
+`home-remodel-feature` 20, `spooked-contractor-quit-color` 9.
+
+A few cards from the run:
+
+* "I told a lawyer about Willie Walid, and he immediately advised me to take
+  care of that situation ASAP." / "The police said it was a civil matter."
+* "Dustin Shott began squatting on my property at 184 Dingleberry Dr as a means
+  of protesting land ownership."
+* "A maintenance request came in: rising waters during a recent storm flooded
+  the entryway." / "Maria Dollar was not pleased to hear it was their problem."
+* "Seismic activity in Atlanta caused considerable damage to your futuristic at
+  494 Sequoia Street." / "The futuristic took $12000 of damage."
+* "I had a fire pit put in at 494 Sequoia Street for $2772." / "Get toasty next
+  to open flames"
+* "I collected $48600 in rent this year."
+
+Three bugs were found by probing and fixed:
+
+1. `<random-surname>` and `<city>` leaked 83 times from the address —
+   the street-name cell is itself a token template, so the draw needs
+   `resolve(trim(…))`.
+2. The portfolio String leaked `<tenant>`, `<his/her>` and every one of
+   its own inline brackets (97 tokens). It is now resolved with the pronoun pair
+   pointed at the tenant for the length of the resolve, which also fixed the
+   pronoun.
+3. The second-person swap skipped a capitalised "You" — the walk searched only
+   lowercase `you`, so "You told Maria Dollar to shape up" came out
+   unchanged. It now matches both, and "Your " swaps to "My " as well. Five
+   lines that appended a period to a cell that already had one ("…in the dining
+   room..") now go through `spySentence`.
+
+Full regression after the landlord: `rescensus` reports `distinct residue
+tokens 0 total 0`, `coverage.py` reports `captured scenarios: 109
+recoverable: 107`, `portgap.py` reports `ENTRIES 109 rendered-by-port 107
+gap 0`, the `covpush` script returns 0, and `bench.sh` reaches age 34
+with no abort. The mafia probe was rerun after the shared helper changed and
+still reports `mafia events 1288 / residue 0`.

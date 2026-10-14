@@ -580,7 +580,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
-      zooRng_(seed ^ 0x3c79ac492ba7b653ULL) {}
+      zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
+      landlordRng_(seed ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -628,6 +629,26 @@ bool Sim::load(std::string* error) {
     "a16_hustler-panhandle-strategies-enc",
     "a16_landlord-home-default-features-enc",
     "a16_house-types-enc",
+  "a16_landlord-amenity-feedback-scenario-enc",
+  "a16_landlord-background-check-color-enc",
+  "a16_landlord-home-remodel-feature-enc",
+  "a16_landlord-maintenance-refusal-scenario-enc",
+  "a16_landlord-maintenance-request-scenario-enc",
+  "a16_landlord-natural-disaster-scenario-enc",
+  "a16_landlord-real-estate-portfolio-enc",
+  "a16_landlord-spooked-contractor-quit-color-enc",
+  "a16_landlord-squatter-push-scenario-enc",
+  "a16_landlord-squatter-reason-color-enc",
+  "a16_landlord-tenant-beg-lower-rent-scenario-enc",
+  "a16_landlord-tenant-beg-to-stay-scenario-enc",
+  "a16_landlord-tenant-damaged-property-scenario-enc",
+  "a16_landlord-tenant-employment-check-enc",
+  "a16_landlord-tenant-inspection-color-enc",
+  "a16_landlord-tenant-late-rent-color-enc",
+  "a16_landlord-tenant-late-rent-insist-enc",
+  "a16_landlord-tenant-leave-color-enc",
+  "a16_landlord-tenant-lover-nags-hero-enc",
+  "a16_landlord-tenant-warn-scenario-enc",
     "a16_street-names-enc",
     "a16_zoo-animals-enc",
     "a16_zoo-habitat-names-enc",
@@ -1350,7 +1371,6 @@ const MiscSrc kMiscSrc[] = {
   {"hustle-act", "a16_hustler-panhandle-strategies-enc", "Strategy"},
   {"hustle-street", "a16_street-names-enc", "Street Name"},
   {"amenity", "a16_landlord-home-default-features-enc", "Feature String"},
-  {"house-type", "a16_house-types-enc", "Type"},
   {"car-type", "a16_car-models-enc", "Type"},
   // The zoo names moved to zooToken (REPORT.en.md 65).
   {"front", "a16_secret-agent-agency-fronts-enc", "Type"},
@@ -1364,13 +1384,12 @@ const MiscSrc kMiscSrc[] = {
 // The same family spelled as a person: the pools ask for a name, the tables
 // above do not hold one.
 const char* const kMiscPeople[] = {
-  "cartel-member", "cartel-kingpin", "tenant", "booking-agent", "director", "costar",
+  "cartel-member", "cartel-kingpin", "booking-agent", "director", "costar",
   "agent", "agency-rival", "model", "product-model",
 };
 
 const char* const kMiscLiterals[] = {
   "hustle-instrument",
-  "tenant-address",
 };
 
 // The tokens the lover family owns, possessive spellings included. This is
@@ -1441,6 +1460,18 @@ std::string spyUpperFirst(std::string text) {
 // answers them when the hero has one.
 // The mafia family's own tokens (report 64). The mob tables key their rows on
 // ISO country codes, so the names come from the table for the hero's country.
+bool landlordIsToken(const std::string& token) {
+  std::string key = token;
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  static const char* kTokens[] = {"tenant", "squatter", "address", "tenant-address",
+                                  "squatter-address", "property-city", "house-type"};
+  for (const char* t : kTokens) if (key == t) return true;
+  return false;
+}
+
 bool zooIsToken(const std::string& token) {
   std::string base = token;
   const std::string psuffix = "-possessive";
@@ -1650,6 +1681,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "country-other-possessive" ||
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (landlordIsToken(token)) {
+      const std::string v = landlordToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (zooIsToken(token)) {
@@ -2576,6 +2611,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (dealerYear(life, out, forcedChoice)) return true;
   if (mafiaYear(life, out, forcedChoice)) return true;
   if (zooYear(life, out, forcedChoice)) return true;
+  if (landlordYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -5515,6 +5551,7 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   mafiaAmount_.clear();     // one amount / family name per family card
   mafiaCache_.clear();
   zooCache_.clear();        // one animal / keeper / park name per zoo card
+  llSquatter_.clear();      // one squatter per landlord card
   zooOther_.clear();
   std::string title, body, line, tableRef, rowRef;
   std::vector<std::string> extra;
@@ -7751,6 +7788,46 @@ void Sim::makeMafia(Life& life) {
   }
 }
 
+static std::string toFirstPerson(const std::string& s) {
+
+  static const char* kVerb[] = {"told", "warned", "reminded", "asked", "took", "taught",
+                                "made", "cost", "gave", "given", "give", "showed", "shown",
+                                "saw", "heard", "called", "sent", "brought", "handed",
+                                "offered", "dealt", "kept", "threw", "put", "left", "paid"};
+  std::string t = spySwap(s, "yourself", "myself");
+  t = spySwap(t, "your ", "my ");
+  t = spySwap(t, "Your ", "My ");
+  t = spySwap(t, "you're", "I am");
+  t = spySwap(t, "you'll", "I'll");
+  t = spySwap(t, "you've", "I've");
+  t = spySwap(t, "you don't", "I don't");
+  t = spySwap(t, "you better", "I better");
+  size_t p = 0;
+  while (p < t.size()) {
+    // 'you' and 'You' both count; npos is the largest size_t so min() is safe.
+    const size_t at = std::min(t.find("you", p), t.find("You", p));
+    if (at == std::string::npos) break;
+    p = at;
+    const char before = p > 0 ? t[p - 1] : ' ';
+    const char after = p + 3 < t.size() ? t[p + 3] : ' ';
+    const bool letter = (before >= 'a' && before <= 'z') || (before >= 'A' && before <= 'Z') || before == '-';
+    const bool tail = (after >= 'a' && after <= 'z') || (after >= 'A' && after <= 'Z') || after == 39;
+    if (letter || tail) { p += 3; continue; }
+    size_t e = p;
+    while (e > 0 && t[e - 1] == ' ') --e;
+    size_t q = e;
+    while (q > 0 && ((t[q - 1] >= 'a' && t[q - 1] <= 'z') || (t[q - 1] >= 'A' && t[q - 1] <= 'Z'))) --q;
+    const std::string prev = lower(t.substr(q, e - q));
+    bool object = false;
+    for (const char* v : kVerb) if (prev == v) object = true;
+    const std::string rep = object ? "me" : "I";
+    t.replace(p, 3, rep);
+    p += rep.size();
+  }
+  t = spySwap(t, "I aren't", "I am not");
+  return t;
+}
+
 bool Sim::mafiaYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
@@ -7779,40 +7856,7 @@ bool Sim::mafiaYear(Life& life, AgeUp& out, int forcedChoice) {
   // around. 'you' is the object after a verb of address ("told you") and the
   // subject everywhere else, which is as far as a token swap can go.
   // shortcut: a hand-kept verb list, upgrade if a table adds another verb.
-  const auto toFirst = [](const std::string& s) {
-    static const char* kVerb[] = {"told", "warned", "reminded", "asked", "took", "taught",
-                                  "made", "cost", "gave", "given", "give", "showed", "shown",
-                                  "saw", "heard", "called", "sent", "brought", "handed",
-                                  "offered", "dealt", "kept", "threw", "put", "left", "paid"};
-    std::string t = spySwap(s, "yourself", "myself");
-    t = spySwap(t, "your ", "my ");
-    t = spySwap(t, "you're", "I am");
-    t = spySwap(t, "you'll", "I'll");
-    t = spySwap(t, "you've", "I've");
-    t = spySwap(t, "you don't", "I don't");
-    t = spySwap(t, "you better", "I better");
-    size_t p = 0;
-    while ((p = t.find("you", p)) != std::string::npos) {
-      const char before = p > 0 ? t[p - 1] : ' ';
-      const char after = p + 3 < t.size() ? t[p + 3] : ' ';
-      const bool letter = (before >= 'a' && before <= 'z') || (before >= 'A' && before <= 'Z') || before == '-';
-      const bool tail = (after >= 'a' && after <= 'z') || (after >= 'A' && after <= 'Z') || after == 39;
-      if (letter || tail) { p += 3; continue; }
-      size_t e = p;
-      while (e > 0 && t[e - 1] == ' ') --e;
-      size_t q = e;
-      while (q > 0 && ((t[q - 1] >= 'a' && t[q - 1] <= 'z') || (t[q - 1] >= 'A' && t[q - 1] <= 'Z'))) --q;
-      const std::string prev = lower(t.substr(q, e - q));
-      bool object = false;
-      for (const char* v : kVerb) if (prev == v) object = true;
-      const std::string rep = object ? "me" : "I";
-      t.replace(p, 3, rep);
-      p += rep.size();
-    }
-    t = spySwap(t, "I aren't", "I am not");
-    return t;
-  };
-  // The family's log lines refer back to the alternatives drawn in another
+  const auto toFirst = [](const std::string& s) { return toFirstPerson(s); };  // The family's log lines refer back to the alternatives drawn in another
   // column of the same row ("<rb>", "<amount>"), so every cell of that row
   // which carries brackets is resolved before the line itself is written.
   const auto warm = [this](const Table& t, size_t r, const char* keep) {
@@ -8779,6 +8823,631 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   out.table = tableRef.empty() ? "a16_zoo-random-zoo-names-enc" : tableRef;
   out.row_id = rowRef.empty() ? std::string("0") : rowRef;
   out.title = title;
+  out.body = body;
+  out.narrative = line;
+  out.extra = extra;
+  out.happiness += happy;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The rental property (REPORT.en.md 66). One house, one tenant, and the tables
+// the landlord family keeps for both of them.
+// ---------------------------------------------------------------------------
+static std::string llPossessive(const std::string& name) {
+  if (name.empty()) return name;
+  return name[name.size() - 1] == 's' ? name + "'" : name + "'s";
+}
+
+static bool llInList(const std::string& list, const std::string& value) {
+  const std::string want = lower(trim(value));
+  if (want.empty()) return false;
+  std::string item;
+  for (size_t i = 0; i <= list.size(); ++i) {
+    if (i == list.size() || list[i] == ',') {
+      if (lower(trim(item)) == want) return true;
+      item.clear();
+    } else {
+      item += list[i];
+    }
+  }
+  return false;
+}
+
+std::string Sim::landlordToken(const std::string& key) {
+  if (!hero_) return std::string();
+  Hero& h = *const_cast<Hero*>(hero_);
+  const std::string psuffix = "-possessive";
+  std::string base = key;
+  bool own = false;
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    base = key.substr(0, key.size() - psuffix.size());
+    own = true;
+  }
+  auto person = [&](std::string& slot, bool& female) -> std::string {
+    if (slot.empty()) {
+      female = landlordRng_.chance(0.5);
+      slot = drawFirstName(female) + " " + drawSurname();
+    }
+    return own ? llPossessive(slot) : slot;
+  };
+  if (base == "tenant") return person(h.tenantName, h.tenantFemale);
+  if (base == "squatter") return person(llSquatter_, llSquatterFemale_);
+  if (base == "address" || base == "tenant-address" || base == "squatter-address") return h.propAddress;
+  if (base == "property-city") return h.city;
+  if (base == "house-type") {
+    if (h.propType.empty()) {
+      const size_t row = pickRow("a16_house-types-enc", "Commonness Score", "", "", "", landlordRng_);
+      if (row != size_t(-1)) h.propType = trim(tbl("a16_house-types-enc").at(row, "Type"));
+    }
+    return h.propType;
+  }
+  return std::string();
+}
+
+void Sim::ensureLandlordFields(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.propType.empty() && ensureTable("a16_house-types-enc")) {
+    const size_t row = pickRow("a16_house-types-enc", "Commonness Score", "", "", "", landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& types = tbl("a16_house-types-enc");
+      h.propType = trim(types.at(row, "Type"));
+      h.propHaunted = int(types.num(row, "Haunted Score"));
+      const double price = types.num(row, "Price Score");
+      h.propValue = static_cast<long long>((price > 0 ? price : 2.0) * 60000.0) +
+                    static_cast<long long>(landlordRng_.below(20000));
+      const double blo = types.num(row, "Minimum Bedrooms"), bhi = types.num(row, "Maximum Bedrooms");
+      h.propBeds = int(blo + (bhi > blo ? (bhi - blo) * landlordRng_.unit() : 1.0));
+      const double alo = types.num(row, "Minimum Bathrooms"), ahi = types.num(row, "Maximum Bathrooms");
+      h.propBaths = int(alo + (ahi > alo ? (ahi - alo) * landlordRng_.unit() : 1.0));
+    }
+  }
+  if (h.propType.empty()) {
+    h.propType = "bungalow";
+    h.propHaunted = 1;
+    h.propValue = 150000;
+    h.propBeds = 2;
+    h.propBaths = 1;
+  }
+  if (h.propBeds <= 0) h.propBeds = 2;
+  if (h.propBaths <= 0) h.propBaths = 1;
+  if (h.propCondition <= 0) h.propCondition = 70 + int(landlordRng_.below(31));
+  if (h.propAddress.empty()) {
+    std::string street = "Main";
+    if (ensureTable("a16_street-names-enc")) {
+      const size_t row = pickRow("a16_street-names-enc", "Commonness Score", "", "", "", landlordRng_);
+      if (row != size_t(-1)) {
+        const Table& names = tbl("a16_street-names-enc");
+        street = resolve(trim(names.at(row, "Street Name")));
+        if (names.has("Add Random Street Type") && names.flag(row, "Add Random Street Type"))
+          street += " Street";
+      }
+    }
+    h.propAddress = std::to_string(100 + int(landlordRng_.below(900))) + " " + street;
+  }
+  if (h.propRent <= 0) h.propRent = std::max(100, int(h.propValue / 1500) * 10);
+}
+
+void Sim::landlordDrawTenant(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.tenantFemale = landlordRng_.chance(0.5);
+  h.tenantName = drawFirstName(h.tenantFemale) + " " + drawSurname();
+  h.tenantJob.clear();
+  h.tenantIncome = 0;
+  const std::string want = h.tenantFemale ? "female" : "male";
+  if (ensureTable("a16_landlord-tenant-employment-check-enc")) {
+    const Table& jobs = tbl("a16_landlord-tenant-employment-check-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < jobs.size(); ++r) {
+      const std::string g = lower(trim(jobs.at(r, "Gender")));
+      if (!g.empty() && g != want) continue;  // a blank Gender fits anyone
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t row = pool[landlordRng_.below(uint32_t(pool.size()))];
+      h.tenantJob = lower(trim(jobs.at(row, "Career")));
+      const double lo = jobs.num(row, "Min Income"), hi = jobs.num(row, "Max Income");
+      h.tenantIncome = int(lo + (hi > lo ? (hi - lo) * landlordRng_.unit() : 0.0));
+      const double clo = jobs.num(row, "Min Craziness"), chi = jobs.num(row, "Max Craziness");
+      h.tenantCraziness = int(clo + (chi > clo ? (chi - clo) * landlordRng_.unit() : 10.0));
+    }
+  }
+  if (h.tenantJob.empty()) h.tenantJob = "unemployed";
+  h.tenantSatisfaction = 55 + int(landlordRng_.below(21));
+  h.tenantSquatting = false;
+  h.tenantYears = 0;
+}
+
+void Sim::makeLandlord(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.landlord = true;
+  h.propCity = h.city;
+  ensureLandlordFields(life);
+  landlordDrawTenant(life);
+  h.money -= 20000;  // the deposit and the paperwork
+  if (h.money < 0) h.money = 0;
+  h.miscMask |= 1u << 3;
+}
+
+// A year of the rental business. One event fires, and the quieter branches
+// fall through to the portfolio line so a landlord year is never silent.
+bool Sim::landlordYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.landlord || h.age < 18) return false;
+  if (!landlordRng_.chance(0.55)) return false;
+  ensureLandlordFields(life);
+
+  std::string line;
+  std::string body;
+  std::string title;
+  std::vector<std::string> extra;
+  std::string tableRef;
+  std::string rowRef;
+  int happy = 0;
+
+  auto say = [&](const std::string& text) {
+    if (text.empty()) return;
+    line += (line.empty() ? std::string() : " ") + text;
+  };
+  auto tell = [&](const std::string& text) {
+    if (text.empty()) return;
+    extra.push_back(spyUpperFirst(text));
+  };
+  auto cell = [this](const Table& t, size_t r, const char* col) -> std::string {
+    if (r == size_t(-1) || !t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  auto mark = [&](const std::string& name, const Table& t, size_t r) {
+    if (!tableRef.empty() || r == size_t(-1)) return;
+    tableRef = name;
+    rowRef = std::to_string(r);
+  };
+  // A log line refers back to a bracket drawn in another column of its own row
+  // ("<rb>"), so every bracketed cell of that row is resolved before it is read.
+  auto warm = [&](const Table& t, size_t r, const char* skip) {
+    if (r == size_t(-1)) return;
+    for (const std::string& col : t.columns()) {
+      if (skip && col == skip) continue;
+      if (!t.has(col)) continue;
+      const std::string value = t.at(r, col);
+      if (value.find('<') != std::string::npos) resolve(value);
+    }
+  };
+  auto poolPick = [&](const Table& t, const std::vector<size_t>& pool, const char* weight) -> size_t {
+    if (pool.empty()) return size_t(-1);
+    if (!weight || !*weight || !t.has(weight))
+      return pool[landlordRng_.below(uint32_t(pool.size()))];
+    const size_t row = weightedPickOf(t, weight, pool, landlordRng_);
+    return row == size_t(-1) ? pool[landlordRng_.below(uint32_t(pool.size()))] : row;
+  };
+  auto fitsRooms = [&](const Table& t, size_t r) {
+    if (t.has("Requires Single Bedroom") && t.flag(r, "Requires Single Bedroom") && h.propBeds != 1) return false;
+    if (t.has("Requires Multiple Bedrooms") && t.flag(r, "Requires Multiple Bedrooms") && h.propBeds < 2) return false;
+    if (t.has("Requires Single Bathroom") && t.flag(r, "Requires Single Bathroom") && h.propBaths != 1) return false;
+    if (t.has("Requires Multiple Bathrooms") && t.flag(r, "Requires Multiple Bathrooms") && h.propBaths < 2) return false;
+    return true;
+  };
+  auto fitsType = [&](const Table& t, size_t r) {
+    if (t.has("House Type Whitelist") && !trim(t.at(r, "House Type Whitelist")).empty() &&
+        !llInList(t.at(r, "House Type Whitelist"), h.propType)) return false;
+    if (t.has("House Type Blacklist") && llInList(t.at(r, "House Type Blacklist"), h.propType)) return false;
+    return true;
+  };
+  auto allRows = [&](const Table& t) {
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    return pool;
+  };
+
+  if (h.propCondition > 0) --h.propCondition;
+  if (h.tenantSatisfaction < 50) h.tenantSatisfaction = std::min(100, h.tenantSatisfaction + 2);
+  else if (h.tenantSatisfaction > 50) h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 2);
+  if (!h.tenantName.empty()) ++h.tenantYears;
+
+  if (h.tenantSquatting) {
+    const size_t row = pickRow("a16_landlord-squatter-push-scenario-enc", "Commonness Score", "", "", "",
+                               landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_landlord-squatter-push-scenario-enc");
+      warm(t, row, "Log Version");
+      title = "The squatter";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-squatter-push-scenario-enc", t, row);
+      if (landlordRng_.chance(0.55)) {
+        tell(llSquatter_ + " finally cleared out of " + h.propAddress + ".");
+        h.tenantName.clear();
+        h.tenantJob.clear();
+        h.tenantIncome = 0;
+        h.tenantCraziness = 20;
+        h.tenantSatisfaction = 55;
+        h.tenantYears = 0;
+        h.tenantSquatting = false;
+      } else {
+        tell("The police said it was a civil matter.");
+        h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 4);
+      }
+      happy -= 2;
+    }
+  } else if (h.tenantName.empty()) {
+    landlordDrawTenant(life);
+    title = "A new tenant";
+    say(h.tenantName + " moved into " + h.propAddress + ".");
+    tell(h.tenantName + " works as a " + h.tenantJob + " and earns $" +
+         std::to_string(h.tenantIncome) + " a year.");
+    if (ensureTable("a16_landlord-background-check-color-enc") && landlordRng_.chance(0.45)) {
+      const size_t row = pickRow("a16_landlord-background-check-color-enc", "Commonness Score", "", "", "",
+                                 landlordRng_);
+      if (row != size_t(-1)) {
+        const Table& t = tbl("a16_landlord-background-check-color-enc");
+        tell("The background check came back: " + lower(trim(t.at(row, "Crime"))) + ".");
+        h.tenantCraziness = std::min(100, h.tenantCraziness + 15);
+      }
+    } else {
+      tell("The background check came back clean.");
+    }
+  } else if (landlordRng_.chance(0.05) && ensureTable("a16_landlord-natural-disaster-scenario-enc")) {
+    const Table& t = tbl("a16_landlord-natural-disaster-scenario-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (!t.has("House Type Blacklist") || !llInList(t.at(r, "House Type Blacklist"), h.propType))
+        pool.push_back(r);
+    const size_t row = poolPick(t, pool, "");
+    if (row != size_t(-1)) {
+      title = trim(t.at(row, "Type"));
+      say(cell(t, row, "Scenario"));
+      mark("a16_landlord-natural-disaster-scenario-enc", t, row);
+      const int impact = int(t.num(row, "Impact Score"));
+      h.propCondition = std::max(0, h.propCondition - impact * 8);
+      h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - impact * 4);
+      if (t.flag(row, "Can Demolish") && landlordRng_.chance(0.4)) {
+        h.propValue = 0;
+        h.propCondition = 5;
+        tell("The " + h.propType + " was a total loss.");
+      } else {
+        tell("The " + h.propType + " took $" + std::to_string(impact * 4000) + " of damage.");
+      }
+      happy -= 3;
+    }
+  } else if (h.propHaunted >= 3 && landlordRng_.chance(0.05) &&
+             ensureTable("a16_landlord-spooked-contractor-quit-color-enc")) {
+    const size_t row = pickWindow("a16_landlord-spooked-contractor-quit-color-enc", "Commonness Score", "",
+                                  "", "Hauntedness Score", "", double(h.propHaunted), landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_landlord-spooked-contractor-quit-color-enc");
+      warm(t, row, "Log Version");
+      title = "The contractor";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-spooked-contractor-quit-color-enc", t, row);
+      h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 3);
+    }
+  } else if (h.tenantSatisfaction < 45 && landlordRng_.chance(0.25) &&
+             ensureTable("a16_landlord-squatter-reason-color-enc")) {
+    const bool renty = h.propRent > 1500;
+    const Table& t = tbl("a16_landlord-squatter-reason-color-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (t.flag(r, "Rent-Related") == renty) pool.push_back(r);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      title = "The rent stopped";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-squatter-reason-color-enc", t, row);
+      llSquatter_ = h.tenantName;
+      llSquatterFemale_ = h.tenantFemale;
+      h.tenantSquatting = true;
+      h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 6);
+      tell(llSquatter_ + " stopped paying rent on the " + h.propType + ".");
+      happy -= 3;
+    }
+  } else if (landlordRng_.chance(0.20) && ensureTable("a16_landlord-maintenance-request-scenario-enc")) {
+    const Table& t = tbl("a16_landlord-maintenance-request-scenario-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (fitsType(t, r) && fitsRooms(t, r)) pool.push_back(r);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      warm(t, row, "Body Snippet");
+      const bool agree = landlordRng_.chance(0.65);
+      title = "A maintenance request";
+      say(spySentence("A maintenance request came in: " + cell(t, row, "Body Snippet")));
+      mark("a16_landlord-maintenance-request-scenario-enc", t, row);
+      const double lo = t.num(row, "Min Repair Cost"), hi = t.num(row, "Max Repair Cost");
+      const long long cost = static_cast<long long>(lo + (hi > lo ? (hi - lo) * landlordRng_.unit() : 0.0));
+      if (agree) {
+        h.money -= cost;
+        h.propCondition = std::min(100, h.propCondition + 2);
+        h.tenantSatisfaction = std::min(100, h.tenantSatisfaction + int(t.num(row, "Agree Satisfaction Impact")));
+        tell(spySentence("I paid $" + std::to_string(cost) + " to " + lower(cell(t, row, "Feedback Past Snippet"))));
+      } else {
+        h.tenantSatisfaction = std::max(0, h.tenantSatisfaction + int(t.num(row, "Disagree Satisfaction Impact")));
+        tell(h.tenantName + " was not pleased to hear it was their problem.");
+        if (t.flag(row, "May Cause Move-Out") && landlordRng_.chance(0.3)) {
+          tell(h.tenantName + " gave notice over it.");
+          h.tenantName.clear();
+          h.tenantJob.clear();
+          h.tenantIncome = 0;
+          h.tenantCraziness = 20;
+          h.tenantSatisfaction = 55;
+          h.tenantYears = 0;
+        }
+      }
+      if (agree && !h.tenantName.empty() && landlordRng_.chance(0.25) &&
+          ensureTable("a16_landlord-maintenance-refusal-scenario-enc")) {
+        const size_t refused = pickWindow("a16_landlord-maintenance-refusal-scenario-enc", "Commonness Score",
+                                          "", "", "Min Tenant Craziness", "", double(h.tenantCraziness),
+                                          landlordRng_);
+        if (refused != size_t(-1)) {
+          const Table& rt = tbl("a16_landlord-maintenance-refusal-scenario-enc");
+          tell(spySentence(cell(rt, refused, "Log Version")));
+          h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 3);
+        }
+      }
+      happy += agree ? 1 : -1;
+    }
+  } else if (landlordRng_.chance(0.18) && ensureTable("a16_landlord-tenant-damaged-property-scenario-enc")) {
+    const Table& t = tbl("a16_landlord-tenant-damaged-property-scenario-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!fitsType(t, r) || !fitsRooms(t, r)) continue;
+      if (t.has("Amenity") && !trim(t.at(r, "Amenity")).empty()) {
+        bool have = false;
+        for (const std::string& f : h.propFeatures) if (llInList(t.at(r, "Amenity"), f)) have = true;
+        if (!have) continue;
+      }
+      if (t.has("Min Craziness") && t.num(r, "Min Craziness") > 0 &&
+          h.tenantCraziness < t.num(r, "Min Craziness")) continue;
+      if (t.has("Max Craziness") && t.num(r, "Max Craziness") > 0 &&
+          h.tenantCraziness > t.num(r, "Max Craziness")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) pool = allRows(t);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      warm(t, row, "Log Version");
+      title = "Damage to the " + h.propType;
+      say(cell(t, row, "Scenario"));
+      mark("a16_landlord-tenant-damaged-property-scenario-enc", t, row);
+      const double lo = t.num(row, "Min Repair Cost"), hi = t.num(row, "Max Repair Cost");
+      const long long cost = static_cast<long long>(lo + (hi > lo ? (hi - lo) * landlordRng_.unit() : 0.0));
+      h.money -= cost;
+      h.propCondition = std::max(0, h.propCondition - int(t.num(row, "Impact Score")) * 5);
+      h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 4);
+      tell(spySentence(cell(t, row, "Log Version")));
+      tell("The repair came to $" + std::to_string(cost) + ".");
+      happy -= 2;
+    }
+  } else if (landlordRng_.chance(0.15) && ensureTable("a16_landlord-tenant-inspection-color-enc")) {
+    const bool good = h.tenantSatisfaction >= 60;
+    const Table& t = tbl("a16_landlord-tenant-inspection-color-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.flag(r, "Positive") != good) continue;
+      if (t.has("Lover Exclusive") && t.flag(r, "Lover Exclusive") && h.loverName.empty()) continue;
+      if (t.has("Min Craziness") && t.num(r, "Min Craziness") > 0 &&
+          h.tenantCraziness < t.num(r, "Min Craziness")) continue;
+      if (t.has("Max Craziness") && t.num(r, "Max Craziness") > 0 &&
+          h.tenantCraziness > t.num(r, "Max Craziness")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) pool = allRows(t);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      warm(t, row, "Scenario");
+      title = good ? "Inspection day" : "A failed inspection";
+      say("Inspection day at " + h.propAddress + ".");
+      tell(spySentence("What I walked into: " + cell(t, row, "Scenario")));
+      mark("a16_landlord-tenant-inspection-color-enc", t, row);
+      if (good) {
+        h.tenantSatisfaction = std::min(100, h.tenantSatisfaction + 5);
+        h.propCondition = std::min(100, h.propCondition + 1);
+        happy += 2;
+      } else {
+        h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 6);
+        if (ensureTable("a16_landlord-tenant-warn-scenario-enc")) {
+          const size_t warn = pickRow("a16_landlord-tenant-warn-scenario-enc", "Commonness Score", "", "", "",
+                                      landlordRng_);
+          if (warn != size_t(-1)) {
+            const Table& wt = tbl("a16_landlord-tenant-warn-scenario-enc");
+            extra.push_back(toFirstPerson(cell(wt, warn, "Scenario")));
+            if (landlordRng_.chance(0.25) && ensureTable("a16_landlord-tenant-beg-to-stay-scenario-enc")) {
+              const size_t beg = pickWindow("a16_landlord-tenant-beg-to-stay-scenario-enc", "Commonness Score",
+                                            "", "", "Min Craziness", "Max Craziness",
+                                            double(h.tenantCraziness), landlordRng_);
+              if (beg != size_t(-1))
+                extra.push_back(spyUpperFirst(cell(tbl("a16_landlord-tenant-beg-to-stay-scenario-enc"), beg,
+                                                   "Log Version")));
+            }
+          }
+        }
+        happy -= 3;
+      }
+    }
+  } else if (landlordRng_.chance(0.12) && ensureTable("a16_landlord-tenant-late-rent-color-enc")) {
+    const size_t row = pickWindow("a16_landlord-tenant-late-rent-color-enc", "Commonness Score", "", "",
+                                  "Min Craziness", "Max Craziness", double(h.tenantCraziness), landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_landlord-tenant-late-rent-color-enc");
+      warm(t, row, "Log Version");
+      title = "Late rent";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-tenant-late-rent-color-enc", t, row);
+      if (landlordRng_.chance(0.5) && ensureTable("a16_landlord-tenant-late-rent-insist-enc")) {
+        const Table& it = tbl("a16_landlord-tenant-late-rent-insist-enc");
+        const size_t ins = poolPick(it, allRows(it), "Commonness Score");
+        if (ins != size_t(-1)) extra.push_back(spyUpperFirst(cell(it, ins, "Log Version")));
+        if (landlordRng_.chance(0.6)) {
+          h.money += static_cast<long long>(h.propRent) * 3;
+          tell(h.tenantName + " paid up the arrears.");
+        } else {
+          tell(h.tenantName + " promised to pay next month.");
+        }
+        h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 5);
+      } else {
+        tell("I let it slide this month.");
+        h.tenantSatisfaction = std::min(100, h.tenantSatisfaction + 4);
+      }
+    }
+  } else if (landlordRng_.chance(0.12) && ensureTable("a16_landlord-tenant-beg-lower-rent-scenario-enc")) {
+    const size_t row = pickWindow("a16_landlord-tenant-beg-lower-rent-scenario-enc", "Commonness Score", "",
+                                  "", "Min Craziness", "Max Craziness", double(h.tenantCraziness),
+                                  landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_landlord-tenant-beg-lower-rent-scenario-enc");
+      warm(t, row, "Log Version");
+      title = "A discount asked for";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-tenant-beg-lower-rent-scenario-enc", t, row);
+      if (landlordRng_.chance(0.4)) {
+        h.propRent = std::max(100, h.propRent * 9 / 10);
+        h.tenantSatisfaction = std::min(100, h.tenantSatisfaction + 7);
+        tell("I dropped the rent to $" + std::to_string(h.propRent) + " a month.");
+      } else {
+        h.tenantSatisfaction = std::max(0, h.tenantSatisfaction - 6);
+        tell("I told " + h.tenantName + " the rent stands.");
+      }
+    }
+  } else if (landlordRng_.chance(0.10) && ensureTable("a16_landlord-tenant-leave-color-enc")) {
+    const Table& t = tbl("a16_landlord-tenant-leave-color-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Requires Haunted House") && t.flag(r, "Requires Haunted House") && h.propHaunted < 3) continue;
+      if (t.has("Min Satisfaction") && t.num(r, "Min Satisfaction") > 0 &&
+          h.tenantSatisfaction < t.num(r, "Min Satisfaction")) continue;
+      if (t.has("Max Satisfaction") && t.num(r, "Max Satisfaction") > 0 &&
+          h.tenantSatisfaction > t.num(r, "Max Satisfaction")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) pool = allRows(t);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      warm(t, row, "Scenario");
+      title = "A tenant leaving";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-tenant-leave-color-enc", t, row);
+      tell(cell(t, row, "Scenario"));
+      h.tenantName.clear();
+      h.tenantJob.clear();
+      h.tenantIncome = 0;
+      h.tenantCraziness = 20;
+      h.tenantSatisfaction = 55;
+      h.tenantYears = 0;
+      h.tenantSquatting = false;
+    }
+  } else if (!h.loverName.empty() && landlordRng_.chance(0.10) &&
+             ensureTable("a16_landlord-tenant-lover-nags-hero-enc")) {
+    const size_t row = pickWindow("a16_landlord-tenant-lover-nags-hero-enc", "", "", "", "Min Craziness",
+                                  "Max Craziness", double(h.loverCraziness), landlordRng_);
+    if (row != size_t(-1)) {
+      const Table& t = tbl("a16_landlord-tenant-lover-nags-hero-enc");
+      warm(t, row, "Log Version");
+      title = "A word from home";
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-tenant-lover-nags-hero-enc", t, row);
+      tell(cell(t, row, "Scenario"));
+      happy -= 1;
+    }
+  } else if (landlordRng_.chance(0.12) && ensureTable("a16_landlord-amenity-feedback-scenario-enc")) {
+    const Table& t = tbl("a16_landlord-amenity-feedback-scenario-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (h.propFeatures.empty()) { pool.push_back(r); continue; }
+      for (const std::string& f : h.propFeatures)
+        if (llInList(t.at(r, "Amenity"), f)) { pool.push_back(r); break; }
+    }
+    if (pool.empty()) pool = allRows(t);
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      warm(t, row, "Log Version");
+      title = "Time at the " + h.propType;
+      say(cell(t, row, "Log Version"));
+      mark("a16_landlord-amenity-feedback-scenario-enc", t, row);
+      happy += 2;
+    }
+  } else if (landlordRng_.chance(0.10) && ensureTable("a16_landlord-home-remodel-feature-enc")) {
+    const Table& t = tbl("a16_landlord-home-remodel-feature-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!fitsType(t, r)) continue;
+      if (t.has("Country Blacklist") && llInList(t.at(r, "Country Blacklist"), h.country)) continue;
+      bool have = false;
+      for (const std::string& f : h.propFeatures)
+        if (lower(trim(f)) == lower(trim(t.at(r, "Project")))) have = true;
+      if (have) continue;
+      pool.push_back(r);
+    }
+    const size_t row = poolPick(t, pool, "Commonness Score");
+    if (row != size_t(-1)) {
+      const double lo = t.num(row, "Minimum Cost"), hi = t.num(row, "Maximum Cost");
+      const long long cost = static_cast<long long>(lo + (hi > lo ? (hi - lo) * landlordRng_.unit() : 0.0));
+      const std::string project = lower(trim(t.at(row, "Project")));
+      title = "The " + project;
+      say("I had a " + project + " put in at " + h.propAddress + " for $" + std::to_string(cost) + ".");
+      mark("a16_landlord-home-remodel-feature-enc", t, row);
+      h.money -= cost;
+      h.propFeatures.push_back(project);
+      const double pct = t.num(row, "Value Percentage");
+      h.propValue += static_cast<long long>(cost * (pct > 0 ? pct : 0.0) / 100.0);
+      tell(cell(t, row, "Secondary Line Text"));
+      happy += int(t.num(row, "Enjoyment Score"));
+    }
+  } else {
+    const Table& t = ensureTable("a16_landlord-real-estate-portfolio-enc")
+                         ? tbl("a16_landlord-real-estate-portfolio-enc")
+                         : tbl("a16_landlord-real-estate-portfolio-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Only Squatters") && t.flag(r, "Only Squatters") && !h.tenantSquatting) continue;
+      if (t.has("Single Squatter") && t.flag(r, "Single Squatter") && !h.tenantSquatting) continue;
+      if (t.has("Min Satisfaction") && t.num(r, "Min Satisfaction") > 0 &&
+          h.tenantSatisfaction < t.num(r, "Min Satisfaction")) continue;
+      if (t.has("Max Satisfaction") && t.num(r, "Max Satisfaction") > 0 &&
+          h.tenantSatisfaction > t.num(r, "Max Satisfaction")) continue;
+      if (t.has("Min Property Condition") && t.num(r, "Min Property Condition") > 0 &&
+          h.propCondition < t.num(r, "Min Property Condition")) continue;
+      if (t.has("Max Property Condition") && t.num(r, "Max Property Condition") > 0 &&
+          h.propCondition > t.num(r, "Max Property Condition")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) pool = allRows(t);
+    const size_t row = poolPick(t, pool, "");
+    title = "The portfolio";
+    if (row != size_t(-1)) {
+      // The portfolio line talks about the tenant, so the pronoun pair points at
+      // them for the length of the resolve.
+      const bool savedSet = pronounOtherSet_;
+      const bool savedFemale = pronounOtherFemale_;
+      if (!h.tenantName.empty()) { pronounOtherSet_ = true; pronounOtherFemale_ = h.tenantFemale; }
+      say(spyUpperFirst(resolve(trim(t.at(row, "String")))));
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      mark("a16_landlord-real-estate-portfolio-enc", t, row);
+    } else {
+      say("The rental business rolls on.");
+    }
+    if (!h.tenantSquatting) {
+      const long long collected = static_cast<long long>(h.propRent) * 12;
+      h.money += collected;
+      h.rentCollected += collected;
+      tell("I collected $" + std::to_string(collected) + " in rent this year.");
+    } else {
+      tell("Nothing came in while the squatter sits there.");
+    }
+  }
+
+  if (title.empty() && body.empty() && line.empty()) return false;
+  out.table = tableRef.empty() ? "a16_landlord-real-estate-portfolio-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title.empty() ? ("The " + h.propType) : title;
   out.body = body;
   out.narrative = line;
   out.extra = extra;

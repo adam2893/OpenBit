@@ -236,6 +236,29 @@ struct Hero {
   int zooEngagement = 50;        // 0-100, what the patrons make of it
   int zooTicket = 20;            // gate price
   long long zooMoney = 0;        // the takings this year
+
+  // The rental property (REPORT.en.md 66): a house the hero lets out, the
+  // tenant in it, and the squatter who may replace them.
+  bool landlord = false;
+  std::string propType;          // a16_house-types-enc 'Type'
+  std::string propAddress;       // what '<address>' and '<tenant-address>' print
+  std::string propCity;          // the city the property stands in
+  int propBeds = 0;
+  int propBaths = 0;
+  int propCondition = 0;         // 0-100, what the repair bills are about
+  int propHaunted = 0;           // the type's Haunted Score
+  long long propValue = 0;
+  int propRent = 0;              // dollars a month
+  std::vector<std::string> propFeatures;   // remodelled projects and amenities
+  std::string tenantName;
+  bool tenantFemale = false;
+  std::string tenantJob;         // from the employment check
+  int tenantIncome = 0;
+  int tenantSatisfaction = 60;   // 0-100, the gate on most tenant tables
+  int tenantCraziness = 20;      // 0-100, drawn with the job
+  bool tenantSquatting = false;
+  int tenantYears = 0;
+  long long rentCollected = 0;
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.
