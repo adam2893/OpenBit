@@ -5960,3 +5960,228 @@ Two shipped quirks are visible in that output and left as they are: the council 
 reads "endure being pelted with **he**" is the data's own pronoun bug, and the familiar
 description cell is a predicate ("smells of sewage water"), so the body reads "My familiar
 smells of sewage water."
+## 71. The outdoors: six ways out of the house, and forty-two tables behind a trip
+
+The `a16_outdoor` family was the largest unwired family left: forty-two tables, 1307 rows.
+It is not a career and not a place. It is the card the hero gets for going outside, and every
+one of those forty-two tables hangs off that single trip: the destination, what the hero does
+there, what they find, what finds them, what they bring home.
+
+### 71.1 The family
+
+Every file is `<name>-enc` under `gamedata_plain`. Thirty-seven of the forty-two are
+read. Twenty-four of them carry a card of their own; thirteen are colour, companion or item
+pools drawn into another pool's line; five are left unused (`titles`,
+`hiking-dumb-scenario`, `animal-treat`, `bird-treat`,
+`bird-discovery-scenario`).
+
+The columns that matter:
+
+| table | columns the port reads |
+|-------|------------------------|
+| `destination` | `Location`, `Country`, `Uses Definite Article`, `Habitat` (`lake` / `river` / `pond` / `ocean` / blank), `Activity` (`hike` / `camp` / blank), `Landmarks` (a quoted comma list), `Cost` / `Danger` / `Appeal` / `Commonness Score` |
+| `vehicle` | `Make`, `Model`, `Type` (`ATV` 16 rows, `Dirt Bike` 16, `Mountain Bike` 12, `Road Bike` 12) |
+| `catchable-fish` | `Species`, `Habitat`, `Preferred Bait`, `Min`/`Max Weight (lbs)`, `Min`/`Max Value`, `Difficulty Score`, `Commonness Score` |
+| `hiking-item-discoverie` | `Item`, `Min`/`Max Item Value`, `Commonness Score` |
+| `fishing-treasure` | `Name`, `List Item Name`, `Uses Indefinite`/`Definite Article`, `Plural`, `Min`/`Max Value`, `Location` (a comma list: `lake, river`) |
+| `plant` | `Species`, `Plural`, `Habitat`, `Hiking Only`, `Camping Only`, `Enjoyment Score`, `Toxicity Score`, `Health Impact`, `Happiness Impact`, `Hallucinations`, `Tastes Like` |
+| `animal` | `Species`, `Plural`, `Habitat`, `Hiking Only`, `Camping Only`, `Danger Score`, `Aggression Score`, `Successful Attack String`, `Failed Attack String` |
+| `bird` | `Species`, `Plural`, `Habitat`, `Danger Score`, `Difficulty Score`, `Attack String` |
+| `marine-life` | `Species`, `Plural`, `Habitat` (`open ocean shelf`, `sandy-bottom shallow`, `coastal inlet`, `deep sea`), `Danger Score`, `Difficulty Score`, `Attack String` |
+| `cave` | `Name`, `Location` (a country), `Difficulty Score` |
+| `dog-behavior` | `Activity`, `Scenario`, `Log Version`, `Min`/`Max Dog Craziness`, `Pet Gender` |
+| the four dumb cards | `Hero Min Age`, `Hero Max Age`, `Gender Bracket`, `Requires Companion`, `Companion Type`, `Scenario`, `Choice N`, `Narrative N`, `<X> Impact N` |
+
+The dumb cards are `camping-dumb-scenario`, `bike-ride-dumb`, `cave-discoverie`
+and the unused `hiking-dumb-scenario`. All four are the same shape: an opening
+`Scenario` paragraph full of inline alternatives, buttons, and a log line that points back
+at those alternatives with `<rb>`, `<rb2>`, `<rb3>`.
+
+### 71.2 The trip
+
+`makeOutdoor` runs once, when the script sets `"outdoor": true`. It sets the
+`outdoors` flag, draws a vehicle where `Type` contains `atv` (fallback `ATV`)
+and a bicycle where `Type` is not `Dirt Bike` (fallback `Mountain Bike`), and
+seeds the trip state: enjoyment 55, bicycle condition 85 minus a small roll, no trips, no
+catches, nothing earned.
+
+`outdoorYear` then runs once a year from age 8, after the pet and before the misc runner,
+on a 0.5 chance. A trip is one of six activities, weighted:
+
+| weight | activity |
+|--------|----------|
+| 0.30 | hike |
+| 0.22 | camp |
+| 0.20 | fish |
+| 0.13 | off-road |
+| 0.10 | bike |
+| 0.05 | snorkel |
+
+The destination is drawn first and is the card's identity: hike and camp filter the pool on
+`Activity`, fish and snorkel read `Habitat` into the trip's habitat and later filter
+the fish and marine-life pools on it, and one `Landmarks` entry is split out of the quoted
+list so the landmark pools can land on a landmark that belongs to the place. The companion is
+the lover 45% of the time and a drawn stranger another 35%; while a row is written about the
+companion the pronoun pair points at them and is restored afterwards. Each trip adds 3 to
+enjoyment and one to the trip count.
+
+### 71.3 The six activities
+
+**Hike** (title `A hike`, body `Trail: X.`). An item find (0.45, money rolled inside
+`Min`/`Max Item Value`), a plant (0.35, with `Enjoyment`/`Happiness`/
+`Health Impact`, and a 0.6 follow-up hallucination and symptom line when the row is
+flagged `Hallucinations`), an animal (0.25: `A <species> <Successful Attack String> me`
+and `Danger` points of health at 35% when `Danger Score` is 3 or more, otherwise a
+line about backing away), a bird (0.20 plus its behaviour line), a landmark (0.15 through its
+view reflection, memento or selfie colour), a cave (0.10, drawn against the hero's own country,
+which then delegates to the `cave-discoverie` card), a drink (0.10) and a ghost (0.08). A
+dog comes along (0.30) through `hiking-dog-discovery-scenario`, its fetch item, and the
+walk line; the `Hiking Only` flag is not read because the activity already is the filter.
+
+**Camp** (title `A night under the stars`, body `Campsite: X.`). A 0.35 delegation to
+the camping dumb card, an animal (0.22), a plant (0.18), a ghost (0.15), and the dog (0.35)
+through the `Activity == camping` rows of `dog-behavior` and a camping treat.
+
+**Fish** (title `A fish on the line`, body `Catch: X.`). One of `lake`,
+`river`, `pond` and `ocean` is thrown and the `catchable-fish` pool is filtered
+on it. The fight is one of two colour pools keyed on the `Difficulty Score` of the fish,
+written in the second person and turned back into the first person the log uses. The weight is
+rolled inside `Min`/`Max Weight (lbs)` and the price inside `Min`/`Max Value`,
+both paid. A fish of 20 lbs or more is mounted and named from `mounted-fish-name`, and 0.15
+of the time the catch includes treasure drawn from `fishing-treasure` filtered on the
+water.
+
+**Off-road** (title `A day off-road`, body `Route: X.`). A trick (0.50) succeeds when a
+d100 beats `Difficulty Score` scaled from 0.95, and prints the `Success Feedback
+Version` column; a failure prints the infinitive `String` back at the hero and costs 5
+points of bicycle condition. Then the drive's colour line (0.45, filtered on the trick's own
+`Location`), an encounter (0.35, `Danger Score` health when it is 3 or more), a reward
+(0.30, windowed on the hero's age and printed with the right article), and the passenger when
+there is one (0.25).
+
+**Bike** (title `A bike ride`, body `Route: X.`). A 0.35 delegation to the bike dumb
+card, the route's own colour pool, and the bicycle condition drifting down by a few points a
+ride.
+
+**Snorkel** (title `A snorkel trip`, body `Site: X.`). The discovery card, then a
+marine animal filtered on the trip's habitat, the play line, its behaviour line, and 40% of the
+time the animal's `Danger Score` in health when it is 4 or more.
+
+### 71.4 The eight tokens
+
+The family's cards use fifteen distinct tokens; eight of them are new and one is a typo.
+
+`outdoor-location` is the destination (article aware), `outdoor-companion` is the
+companion with the pronoun pair switched while the row is written, `outdoor-cave` is a cave
+whose `Location` is the hero's country (falling back to any row), `bicycle` is the
+drawn bike, `outdoor-landmark` is the destination's landmark, and `outdoor-plant`,
+`outdoor-marine-life` and `outdoor-bird` are species drawn `Habitat`-filtered and
+remembered per card, so a second mention of the same token names the same species. `pet`
+was already handled but is spelled ` pet` with a leading space in three rows of the
+family, so `outdoorIsToken` trims the token before answering. `<alcohol>` and
+`<person-possessive>` resolve through the reference and person handlers that were already
+in `resolveInto`.
+
+### 71.5 The six bugs
+
+1. **The table names lost their `-enc` suffix.** The forty-two entries were added to
+   `kTables` without it, so every run died at startup with `load failed: cannot open
+   table: .../a16_outdoor-animal`: the loader reads every entry eagerly, so one bad name
+   stops all sixty runs, not just the family's year.
+2. **`makeOutdoor` was declared in the private block.** The declaration has to sit next to
+   `makePet` in the public block of `include/bl/sim.h`, or `src/script.cpp` cannot
+   call it.
+3. **The back-references leaked.** The family writes a card as one `Scenario` paragraph
+   full of inline alternatives and then a log line that points back at them with `<rb>`
+   and `<rb2>`. The first helper resolved one named owner column and left the other shapes
+   leaking 38 `<rb>`, 15 `<rb2>` and 3 `<rb3>`. `withBrackets(table, row,
+   want)` now resolves every *other* bracketed column of the row in table order — the order
+   the game draws them — and only then the column that was asked for. The off-road trick pools
+   have no paragraph at all (their two columns refer to each other), so `String` is
+   resolved first into a local and the `Success Feedback Version` after it.
+4. **`renderRow` read the card's body from `Body`.** No table in this family has a
+   `Body` column; the dumb cards and the cave and bike cards call the opening paragraph
+   `Scenario`. Every one of them therefore rendered an empty body and never drew the
+   paragraph's alternatives, which is exactly where the back-references were coming from. The
+   full-card path now falls back to `Scenario`, resolved before the narrative so the cache
+   fills in draw order.
+5. **A card with no `Title` was treated as a narrative-only row.** The narrative-only
+   branch was chosen by `!has(Title) && !has(Body)`, but `bike-ride-dumb` has neither
+   and still has a `CTA` and four choices, so it took the wrong branch and its log line
+   came out as the prompt. A table with a `CTA`, a `ChoiceList` or numbered choices is
+   now a card whatever else it has.
+6. **Three of the six activities never emitted a card.** Off-road, bike and snorkel set no
+   title, and the year ends on `if (title.empty()) return false;`. Their titles are now
+   `A day off-road`, `A bike ride` and `A snorkel trip`, each with the route as the
+   body.
+
+### 71.6 Shortcuts
+
+* The colour pools (`*color-string`, `selfie-color`, `marine-life-play-string`)
+  carry no meaning at all: the port has no colour channel.
+* The fish's weight and price are rolled in range rather than tracked; a mounted fish is a log
+  line, not an inventory.
+* A landlocked destination can still be the snorkel or fishing site: the `Activity` column
+  is only read for hike and camp, because the values it holds (`hike`, `camp`) do not
+  cover the other four.
+* The vehicle, the bicycle and the destination are drawn once at the start and keep their
+  names for the hero's whole life.
+* Nobody ages out of the outdoors and the trip is once a year on a coin flip; the game's real
+  cadence is not reproduced.
+* The dog that comes along is the hero's `pet` when it is a dog, and no dog row is written
+  when it is not.
+
+### 71.7 Verification
+
+`outres.py` walks 30 seeds x both genders to age 60 with `outdoor` on: **1025 cards, 0
+failures, residue 0**. The histogram is the number of cards that drew a row from each pool:
+
+```
+167 destination          106 catchable-fish        78 plant
+ 76 animal                74 camping-dumb-scenario  65 bike-ride-location
+ 51 ghost-encounter       48 mounted-fish-name     46 marine-life-play-string
+ 46 bird                  44 bike-ride-dumb        37 hiking-item-discoverie
+ 28 offroading-reward     26 offroading-encounter  24 offroading-trick
+ 23 cave-discoverie       18 fishing-treasure      18 hiking-drink
+ 14 hiking-dog-discovery  10 offroading-make-love-string
+ 10 landmark-view-reflection  6 dog-behavior       6 landmark-memento-scenario
+  4 hallucination
+```
+
+All fourteen family probes still report residue 0 after the shared `renderRow` change, the
+census reports no residue at all, coverage holds at 109 captured / 107 recoverable, the port
+renders 107 of the 109 entries, the coverage push exits 0 and the bench walks to age 34
+without an abort. One card per activity:
+
+```
+A hike      | Trail: Kungsleden Trail.
+            | I found a novelty rubber chicken worth $8.
+            | I hiked through Kungsleden Trail.
+
+A night under the stars | Campsite: Tongariro National Park.
+            | The campsite was surrounded by death camas.
+            | I camped at Tongariro National Park.
+
+A fish on the line | Catch: mahi-mahi.
+            | I don't feel anything while holding my rod but notice the bobber on my bait
+              is bouncing.
+            | I landed a mahi-mahi that weighed 43 lbs and sold it for $82.
+            | I had Dory mounted above the fireplace.
+
+A day off-road | Route: Okavango Delta.
+            | I did a no-hander in the Trailmaster Hunter-Youth.
+            | I drove and doing donuts in an open field.
+
+A bike ride | Route: Camino de Santiago.
+            | I rode around the city on the Specialized Stumpjumper.
+
+A snorkel trip | Site: Maasai Mara National Reserve.
+            | I fed a snack to a deep-sea catshark.
+            | It decided to dart in close, then speed off.
+```
+
+Two shipped quirks are visible there and left as they are. The off-road colour pool has one
+gerund row (`and doing donuts in an open field`) among forty-five prepositional ones, so
+the line glues it to the drive verb and reads awkwardly; and the snorkel card's site is a
+landlocked park, which is the shortcut above rather than a residue.
+

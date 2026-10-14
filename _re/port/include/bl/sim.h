@@ -136,6 +136,7 @@ class Sim {
   void makeZoo(Life& life);
   void makeLandlord(Life& life);
   void makePet(Life& life);
+  void makeOutdoor(Life& life);
   void ensureStudioFields(Life& life);
   std::string musicAlbumDescription();
   // The five studio trades (REPORT.en.md 69). kind: 1 producer, 2 SoundCloud,
@@ -291,6 +292,8 @@ class Sim {
   bool petYear(Life& life, AgeUp& out, int forcedChoice);
   std::string petToken(const std::string& key);
   void petDraw(Life& life);
+  bool outdoorYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string outdoorToken(const std::string& key);
   bool studioYear(Life& life, AgeUp& out, int forcedChoice);
   bool tradeYear(Life& life, AgeUp& out, int forcedChoice);
   std::string tradeToken(const std::string& key);
@@ -379,6 +382,8 @@ class Sim {
   Rng zooRng_;
   Rng landlordRng_;
   Rng petRng_;
+  Rng outdoorRng_;
+  std::map<std::string, std::string> outdoorCache_;  // one draw per token per card
   Rng studioRng_;
   Rng tradeRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card

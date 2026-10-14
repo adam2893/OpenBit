@@ -74,6 +74,8 @@ struct ScriptSpec {
   bool casino = false;
   bool cult = false;
   bool pet = false;
+  // The outdoors (REPORT.en.md 71).
+  bool outdoor = false;
   // The five studio trades (REPORT.en.md 69).
   bool producer = false;
   bool soundcloud = false;

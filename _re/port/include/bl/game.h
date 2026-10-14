@@ -294,6 +294,27 @@ struct Hero {
   std::string petCause;          // the death type, once it is gone
   long long petVetSpend = 0;
 
+  // The great outdoors (REPORT.en.md 71): the off-roader, the bicycle and the
+  // six activities of the a16_outdoor family.
+  bool outdoors = false;
+  std::string outdoorVehicle;    // a16_outdoor-vehicle-enc, "Make Model"
+  std::string outdoorBike;
+  std::string outdoorPlace;      // the destination's Location
+  std::string outdoorHabitat;    // its Habitat, lowercased
+  std::string outdoorCompanion;  // whoever came along this year
+  bool outdoorCompanionFemale = false;
+  std::string outdoorCave;       // the place '<outdoor-cave>' names
+  std::string outdoorLandmark;
+  std::string outdoorPlant;
+  std::string outdoorBird;
+  std::string outdoorMarine;
+  std::string outdoorFish;       // the species on the line this year
+  int outdoorJoy = 55;           // 0-100
+  int outdoorBikeCondition = 85; // 0-100
+  int outdoorTrips = 0;
+  int outdoorCatches = 0;
+  long long outdoorEarned = 0;
+
   // Recording artist, part two (REPORT.en.md 68): the studio. The genre is
   // a16_music-genres-enc's, the label a16_music-record-label-company-name-enc's,
   // the album a16_music-album-title-enc's, the cover a16_music-album-covers-enc's
