@@ -178,6 +178,24 @@ struct Hero {
   int cultLoyalty = 55;            // what the followers believe
   int cultCharisma = 50;           // how well the hero holds a room
   int communards = 0;              // how many followers there are
+  // ---- the drug trade (section 63) ----
+  bool dealer = false;             // the hero moves product
+  bool dealerKingpin = false;      // and runs the cartel rather than working it
+  std::string dealerDrug;          // what is on the shelf right now
+  std::string dealerCut;           // what it was cut with, if anything
+  std::string dealerCartel;        // the crew the hero answers to
+  std::string dealerNick;          // the cartel nickname
+  std::string dealerPackage;       // how the doses are wrapped
+  std::string dealerStreet;        // where the drop is
+  std::string dealerRunStatus;     // complete / ended, read by the flavour pool
+  int dealerDemand = 0;            // 0-100, how badly the street wants it
+  int dealerStanding = 0;          // 0-100, where the hero sits in the crew
+  int dealerWillpower = 0;         // 0-100, holds up under a stop
+  int dealerPrice = 0;             // dollars per dose
+  int dealerBatch = 0;             // doses on hand
+  int dealerDoses = 0;             // doses moved in total
+  int dealerInfamy = 0;            // 0-100, how known the hero is
+  int dealerHeat = 0;              // 0-100, how closely watched
   // The black market (report 60): the hero deals in items whose provenance is
   // best left out of the paperwork, sells them through their own auction house,
   // and shows the best finds in a museum of their own.

@@ -577,7 +577,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       fightRng_(seed ^ 0x2545f4914f6cdd1dULL),
       bmRng_(seed ^ 0x8f1bbcdc9e3779b1ULL),
       casinoRng_(seed ^ 0xd1b54a32d192ed03ULL),
-      cultRng_(seed ^ 0xa24baed4963ee407ULL) {}
+      cultRng_(seed ^ 0xa24baed4963ee407ULL),
+      dealerRng_(seed ^ 0x9ddfea08eb382d69ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -875,6 +876,44 @@ bool Sim::load(std::string* error) {
       "a16_cult-totem-inspiration-enc",
       "a16_cult-totem-lecture-enc",
       "a16_cult-workshop-products-enc",
+      "a16_dealer-batch-tester-feedback-enc",
+      "a16_dealer-cartel-drug-enc",
+      "a16_dealer-cartel-give-money-feedback-enc",
+      "a16_dealer-cartel-member-leave-scenario-enc",
+      "a16_dealer-cartel-member-murder-scenario-enc",
+      "a16_dealer-cartel-member-nickname-enc",
+      "a16_dealer-cartel-name-enc",
+      "a16_dealer-cartel-party-refusal-enc",
+      "a16_dealer-cartel-street-name-enc",
+      "a16_dealer-cartel-takeover-method-enc",
+      "a16_dealer-cartel-threat-enc",
+      "a16_dealer-cut-drug-name-enc",
+      "a16_dealer-cut-drug-substance-enc",
+      "a16_dealer-deal-activity-item-enc",
+      "a16_dealer-deal-person-drug-experience-enc",
+      "a16_dealer-drug-barter-item-enc",
+      "a16_dealer-drug-drop-off-location-enc",
+      "a16_dealer-drug-effect-enc",
+      "a16_dealer-drug-package-type-enc",
+      "a16_dealer-drug-pastime-enc",
+      "a16_dealer-drug-purchase-reason-enc",
+      "a16_dealer-drug-run-dumb-scenario-enc",
+      "a16_dealer-drug-sale-refusal-snippet-enc",
+      "a16_dealer-drug-sale-rejection-reason-enc",
+      "a16_dealer-drug-trip-experience-enc",
+      "a16_dealer-drug-worker-action-enc",
+      "a16_dealer-drug-worker-murder-scenario-enc",
+      "a16_dealer-extortion-color-snippet-enc",
+      "a16_dealer-extortion-method-enc",
+      "a16_dealer-hero-threatens-rival-cartel-member-enc",
+      "a16_dealer-kingpin-mutiny-success-snippets-enc",
+      "a16_dealer-mutiny-methods-enc",
+      "a16_dealer-overdose-snippet-enc",
+      "a16_dealer-police-warning-enc",
+      "a16_dealer-prison-cartel-packages-enc",
+      "a16_dealer-prison-drug-trips-enc",
+      "a16_dealer-run-outcome-flavor-enc",
+      "a16_insults-enc",
   };
   try {
     for (const char* name : kTables) {
@@ -1356,6 +1395,22 @@ std::string spyUpperFirst(std::string text) {
 // The casino family (report 61). '<hero-casino>' and '<casino-room>' used to be
 // served by the misc map with a random row each time; now the hero's own casino
 // answers them when the hero has one.
+bool dealerIsToken(const std::string& token) {
+  std::string k = token;
+  const std::string psuffix = "-possessive";
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    k = k.substr(0, k.size() - psuffix.size());
+  else if (k == "victim-possesive")
+    k = "victim";
+  return k == "cartel-member" || k == "member" || k == "partner" ||
+         k == "cartel-rival-member" || k == "rival-member" || k == "rival-cartel-member" ||
+         k == "cartel-kingpin" || k == "kingpin" || k == "victim" ||
+         k == "other-person" || k == "random-person" || k == "cartel-remember" ||
+         k == "insult" || k == "random-first-name-male" || k == "random-first-name-female" ||
+         k == "drug-illegal" || k == "dealer-drug" || k == "dealer-package" ||
+         k == "cartel" || k == "drug-cartel" || k == "rival-cartel";
+}
+
 bool cultIsToken(const std::string& token) {
   std::string t = token;
   const std::string psuffix = "-possessive";
@@ -1488,6 +1543,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
         // appended.
         const std::string picked = resolveInto(drawn, memo);
         if (rndCache_.size() < 8) rndCache_.push_back(picked);
+        rbLast_ = picked;
         out += picked;
       }
     } else if (token.size() >= 2 && token[0] == 'r' && token[1] == 'b' &&
@@ -1500,6 +1556,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       // port reuses the last one instead of leaking the token (REPORT.en.md 56).
       if (n >= 1 && size_t(n) <= rndCache_.size()) out += rndCache_[size_t(n) - 1];
       else if (!rndCache_.empty()) out += rndCache_.back();
+      else if (!rbLast_.empty()) out += rbLast_;   // the card drew no alternative, so the last bracket value stands in (REPORT 63)
       else out += text.substr(i, close - i + 1);
     } else if (token == "br") {
       out += '\n';
@@ -1514,7 +1571,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "product") {
       const std::string v = businessToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token == "jurisdiction" || token == "jurisdiction-possessive" ||
                token == "political-office" || token == "political-office-possessive" ||
                token == "opponent" || token == "opponent-possessive" ||
@@ -1522,41 +1579,45 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
+    } else if (dealerIsToken(token)) {
+      const std::string v = dealerToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
     } else if (cultIsToken(token)) {
       const std::string v = cultToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (casinoIsToken(token)) {
       const std::string v = casinoToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (miscIsToken(token)) {
       const std::string v = miscToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token == "album-title" || token.compare(0, 10, "song-title") == 0 ||
                token == "band-member" || token == "music-genre") {
       const std::string v = musicToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token == "sport" || token == "league" || token == "team" ||
                token == "teammate" || token == "coach" || token == "ball" ||
                token == "referee" || token == "game" || token == "field" ||
                token == "stadium") {
       const std::string v = sportsToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token.compare(0, 4, "war-") == 0) {
       const std::string v = warToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token == "military-branch" || token == "military-rank") {
       if (!hero_) out += text.substr(i, close - i + 1);
       else {
         const std::string v = token == "military-branch" ? hero_->militaryBranch : hero_->militaryRank;
         if (v.empty()) out += text.substr(i, close - i + 1);
-        else out += v;
+        else { out += v; rbLast_ = v; }
       }
     } else if (token == "restaurant") {
       // <restaurant> is the Restaurant row of a16_company-name-structure-enc
@@ -1609,19 +1670,19 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (relIsToken(token)) {
       const std::string v = relationshipToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (spyIsToken(token)) {
       const std::string v = spyToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (fightIsToken(token)) {
       const std::string v = fightToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (bmIsToken(token)) {
       const std::string v = bmToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
-      else out += v;
+      else { out += v; rbLast_ = v; }
     } else if (token == "a" || token == "a/an") {
       // '<a>' and '<a/an>' are indefinite articles, so the choice between a and
       // an comes from the word that follows in the same sentence.
@@ -2349,7 +2410,7 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
-  rndCache_.clear();  // one scenario per year: the '<rbN>' cache starts empty
+  rndCache_.clear(); rbLast_.clear();  // one scenario per year: the '<rbN>' cache starts empty
   ++life.year;
   Hero& h = life.hero;
   ++h.age;
@@ -2432,6 +2493,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (bmYear(life, out, forcedChoice)) return true;
   if (casinoYear(life, out, forcedChoice)) return true;
   if (cultYear(life, out, forcedChoice)) return true;
+  if (dealerYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2490,7 +2552,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   hero_ = &life.hero;
   life_ = &life;
   (void)life;  // the row's text is already gender-gated by scenarioEligible()
-  rndCache_.clear();  // the body is parsed first, its draws feed the log line
+  rndCache_.clear(); rbLast_.clear();  // the body is parsed first, its draws feed the log line
   relNameCache_.clear();  // one <name> per card
   spyCache_.clear();      // one target / client / colleague name per spy card
   fightCache_.clear();    // one circumstance phrase per fight card
@@ -5360,11 +5422,14 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.ownsCasino || h.age < 18) return false;
   if (!casinoRng_.chance(0.50)) return false;
   ensureCasinoFields(life);
-  rndCache_.clear();        // the '<rb>' alternatives belong to one card
+  rndCache_.clear(); rbLast_.clear();        // the '<rb>' alternatives belong to one card
   casinoGambler_.clear();  // one punter per card
   casinoRoom_.clear();
   cultCommunard_.clear();   // one follower per cult card
   cultExCommunard_.clear();
+  dealerMember_.clear();    // one cartel member / target per trade card
+  dealerVictim_.clear();
+  dealerCache_.clear();
   std::string title, body, line, tableRef, rowRef;
   std::vector<std::string> extra;
   int happiness = 0;
@@ -5508,7 +5573,7 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
                 const Table& dt = tbl("a16_casino-casino-celeb-party-death-string-enc");
                 // The death row is its own card: its '<rb>' refers to the
                 // alternatives its own String draws.
-                rndCache_.clear();
+                rndCache_.clear(); rbLast_.clear();
                 const std::string s = resolve(trim(dt.at(dr2, "String")));
                 if (!s.empty()) {
                   const std::string who = h.casinoCelebrity.empty() ? std::string("the guest") : h.casinoCelebrity;
@@ -6095,7 +6160,7 @@ bool Sim::cultYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.cultLeader || h.age < 18) return false;
   if (!cultRng_.chance(0.55)) return false;
   ensureCultFields(life);
-  rndCache_.clear();
+  rndCache_.clear(); rbLast_.clear();
   cultCommunard_.clear();
   cultExCommunard_.clear();
   pronounOtherSet_ = false;
@@ -6713,6 +6778,696 @@ bool Sim::cultYear(Life& life, AgeUp& out, int forcedChoice) {
   out.narrative = line;
   out.extra = extra;
   out.happiness = happiness;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Section 63: the drug trade.
+//
+// The family ships 37 tables and no career model of its own. The hero either
+// moves small batches on the street or moves kilos for a cartel; both are the
+// same loop, so the port keeps one item slot (dealerDrug + dealerPackage) and
+// two Hero ints (dealerDemand, dealerStanding) and lets a sale in year 40 name
+// the batch that was bought in year 19.
+
+std::string Sim::dealerToken(const std::string& key) {
+  Hero& h = *const_cast<Hero*>(hero_);
+  std::string k = key;
+  const std::string psuffix = "-possessive";
+  bool poss = false;
+  if (k.size() > psuffix.size() && k.compare(k.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    poss = true;
+    k = k.substr(0, k.size() - psuffix.size());
+  } else if (k == "victim-possesive") {          // the data ships this spelling
+    poss = true;
+    k = "victim";
+  }
+  const auto own = [&](const std::string& name) { return poss ? (name + "'s") : name; };
+  const auto drawPerson = [&](bool female) { return drawFirstName(female) + " " + drawSurname(); };
+  const auto speakAs = [&](bool female) {
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = female;
+  };
+  const auto cached = [&](const std::string& slot, bool female) -> std::string {
+    std::map<std::string, std::string>::iterator it = dealerCache_.find(slot);
+    if (it != dealerCache_.end()) return it->second;
+    const std::string name = drawPerson(female);
+    dealerCache_[slot] = name;
+    return name;
+  };
+
+  if (k == "cartel-member" || k == "member" || k == "partner") {
+    if (dealerMember_.empty()) {
+      dealerMemberFemale_ = dealerRng_.chance(0.5);
+      dealerMember_ = drawPerson(dealerMemberFemale_);
+    }
+    speakAs(dealerMemberFemale_);
+    return own(dealerMember_);
+  }
+  if (k == "cartel-rival-member" || k == "rival-member" || k == "rival-cartel-member") {
+    const bool female = dealerRng_.chance(0.5);
+    speakAs(female);
+    return own(cached("rival-member", female));
+  }
+  if (k == "cartel-kingpin" || k == "kingpin") {
+    if (h.dealerKingpin) return own(h.firstName + " " + h.lastName);
+    speakAs(false);
+    return own(cached("kingpin", false));
+  }
+  if (k == "victim") {
+    if (dealerVictim_.empty()) dealerVictim_ = drawPerson(dealerRng_.chance(0.5));
+    return own(dealerVictim_);
+  }
+  if (k == "other-person" || k == "random-person") return own(cached("other", dealerRng_.chance(0.5)));
+  if (k == "cartel-remember") {
+    if (!h.dealerCartel.empty()) return own(h.dealerCartel);
+    return own(cached("cartel", false));
+  }
+  if (k == "insult") {
+    const Table& t = tbl("a16_insults-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.has("Gender")) {
+        const std::string g = lower(trim(t.at(r, "Gender")));
+        if (!g.empty() && g != "both" && g != "any" && g != "all" &&
+            g != (h.female ? "female" : "male")) continue;
+      }
+      pool.push_back(r);
+    }
+    const size_t r = pool.empty() ? size_t(-1) : pool[dealerRng_.below(uint32_t(pool.size()))];
+    return r == size_t(-1) ? std::string("a fool") : trim(t.at(r, "Insult"));
+  }
+  if (k == "random-first-name-male") return drawFirstName(false);
+  if (k == "random-first-name-female") return drawFirstName(true);
+  if (k == "drug-illegal" || k == "dealer-drug") {
+    if (!h.dealerDrug.empty()) return h.dealerDrug;
+    const Table& t = tbl("a16_dealer-cartel-drug-enc");
+    const size_t r = pickRow("a16_dealer-cartel-drug-enc", "", "", "", "", dealerRng_);
+    return r == size_t(-1) ? std::string("yayo") : trim(t.at(r, "Drug"));
+  }
+  if (k == "dealer-package") return h.dealerPackage.empty() ? std::string("bag") : h.dealerPackage;
+  if (k == "cartel" || k == "drug-cartel") {
+    if (!h.dealerCartel.empty()) return own(h.dealerCartel);
+    return own(cached("cartel", false));
+  }
+  if (k == "rival-cartel") return own(cached("rival-cartel", false));
+  return std::string();
+}
+
+void Sim::ensureDealerFields(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.dealerCartel.empty()) {
+    const size_t c = pickRow("a16_dealer-cartel-name-enc", "Commonness Score", "", "", "", dealerRng_);
+    if (c != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-name-enc");
+      h.dealerCartel = resolve(trim(t.at(c, "Name")));
+    }
+    if (h.dealerCartel.empty()) h.dealerCartel = drawSurname() + " Crew";
+  }
+  if (h.dealerNick.empty()) {
+    const Table& t = tbl("a16_dealer-cartel-member-nickname-enc");
+    std::vector<size_t> pool;
+    double total = 0.0;
+    std::vector<double> weights;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!h.dealerKingpin && t.has("Kingpin Only") && t.flag(r, "Kingpin Only")) continue;
+      if (t.has("Gender")) {
+        const std::string g = lower(trim(t.at(r, "Gender")));
+        if (!g.empty() && g != "both" && g != "any" && g != "all" &&
+            g != (h.female ? "female" : "male")) continue;
+      }
+      const double w = t.has("Commonness Score") ? t.num(r, "Commonness Score") : 1.0;
+      pool.push_back(r);
+      weights.push_back(w > 0 ? w : 1.0);
+      total += weights.back();
+    }
+    if (!pool.empty()) {
+      double roll = dealerRng_.unit() * total;
+      size_t pick = pool.size() - 1;
+      for (size_t i = 0; i < pool.size(); ++i) {
+        roll -= weights[i];
+        if (roll <= 0) { pick = i; break; }
+      }
+      h.dealerNick = resolve(trim(t.at(pool[pick], "Nickname")));
+    }
+  }
+  if (h.dealerStreet.empty()) {
+    const size_t s = pickRow("a16_dealer-cartel-street-name-enc", "Commonness Score", "", "", "", dealerRng_);
+    if (s != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-street-name-enc");
+      std::string street = trim(t.at(s, "Street Name"));
+      if (t.has("Add Random Street Type") && t.flag(s, "Add Random Street Type")) street += " Street";
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%d ", 100 + int(dealerRng_.below(900)));
+      h.dealerStreet = std::string(buf) + street;
+    }
+  }
+  if (h.dealerDrug.empty()) {
+    const size_t d = pickRow("a16_dealer-cartel-drug-enc", "", "", "", "", dealerRng_);
+    if (d != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-drug-enc");
+      h.dealerDrug = trim(t.at(d, "Drug"));
+      const double lo = t.has("Min Price Per Dose") ? t.num(d, "Min Price Per Dose") : 20.0;
+      const double hi = t.has("Max Price Per Dose") ? t.num(d, "Max Price Per Dose") : lo + 40.0;
+      h.dealerPrice = int(lo + dealerRng_.unit() * (hi - lo));
+      const double demand = t.has("Base Demand") ? t.num(d, "Base Demand") : 3.0;
+      h.dealerDemand = int(30.0 + demand * 8.0);
+    }
+  }
+  if (h.dealerDrug.empty()) h.dealerDrug = "yayo";
+  if (h.dealerPrice <= 0) h.dealerPrice = 40;
+  if (h.dealerPackage.empty()) {
+    const size_t p = pickRow("a16_dealer-drug-package-type-enc", "Commonness Score", "", "", "", dealerRng_);
+    if (p != size_t(-1)) h.dealerPackage = lower(resolve(trim(tbl("a16_dealer-drug-package-type-enc").at(p, "Packaging Type"))));
+  }
+  if (h.dealerPackage.empty()) h.dealerPackage = "bag";
+}
+
+void Sim::makeDealer(Life& life) {
+  Hero& h = life.hero;
+  h.dealer = true;
+  ensureDealerFields(life);
+  if (h.dealerDemand <= 0) h.dealerDemand = 50;
+  if (h.dealerStanding <= 0) h.dealerStanding = 50;
+  h.dealerWillpower = 45 + int(dealerRng_.below(31));
+  h.dealerBatch = 20 + int(dealerRng_.below(81));
+  h.money += 500;
+}
+// ---------------------------------------------------------------------------
+// The trade's year. Blocks are ordered so the core money loop lands first and
+// the flavour lines fill whatever is left, the same way the other subsystems
+// order their yearly tables.
+
+bool Sim::dealerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  (void)forcedChoice;
+  if (!h.dealer || h.age < 16) return false;
+  if (!dealerRng_.chance(0.50)) return false;
+  ensureDealerFields(life);
+
+  std::string tableName, title, body, narr;
+  size_t tableRow = size_t(-1);
+  std::vector<std::string> extra;
+  int happy = 0;
+
+  const auto tell = [&](const std::string& s) { if (!trim(s).empty()) extra.push_back(spySentence(s)); };
+  const auto say = [&](const std::string& s) {
+    if (trim(s).empty()) return;
+    narr = narr.empty() ? spySentence(s) : narr + " " + spySentence(s);
+  };
+  const auto mark = [&](const std::string& t, size_t r) {
+    if (tableName.empty() && r != size_t(-1)) {
+      tableName = t;
+      tableRow = r;
+    }
+  };
+  const auto cell = [&](const Table& t, size_t r, const char* col) -> std::string {
+    return t.has(col) ? resolve(trim(t.at(r, col))) : std::string();
+  };
+  const auto winLo = [&](const Table& t, size_t r, const char* col, double v) {
+    const std::string s = t.has(col) ? trim(t.at(r, col)) : std::string();
+    return s.empty() || v >= t.num(r, col);
+  };
+  const auto winHi = [&](const Table& t, size_t r, const char* col, double v) {
+    const std::string s = t.has(col) ? trim(t.at(r, col)) : std::string();
+    return s.empty() || v <= t.num(r, col);
+  };
+  const auto drawRow = [&](const char* table, const char* weight, const char* fcol,
+                           const std::string& fval, const char* flag) {
+    return pickRow(table, weight ? weight : "", fcol ? fcol : "", fval, flag ? flag : "", dealerRng_);
+  };
+  const auto nameOf = [&](bool female) { return drawFirstName(female) + " " + drawSurname(); };
+  // The packaging cell is already plural ("unlubricated condoms"), so only a
+  // singular word gets an "s".
+  const auto plural = [](const std::string& w) {
+    return (!w.empty() && w[w.size() - 1] == 's') ? w : w + "s";
+  };
+  const auto doseWord = [](int n) { return std::to_string(n) + (n == 1 ? " dose" : " doses"); };
+
+  // 1. Shaking down a customer who is behind on the money.
+  if (h.dealerStanding >= 45 && dealerRng_.chance(0.08)) {
+    const size_t r = drawRow("a16_dealer-extortion-method-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-extortion-method-enc");
+      const bool female = dealerRng_.chance(0.5);
+      dealerVictim_ = nameOf(female);
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      title = "Money owed";
+      say("I went with the " + lower(cell(t, r, "Method")) + " approach.");
+      // The Feedback Scenario carries the alternative list and the Log Version
+      // refers back to it as "<rb>", so the two cells are read in that order.
+      const std::string owed = cell(t, r, "Feedback Scenario");
+      if (!owed.empty()) tell(spySwap(spySwap(owed, "You ", "I "), "your ", "my "));
+      say(cell(t, r, "Log Version"));
+      const size_t c = drawRow("a16_dealer-extortion-color-snippet-enc", "Commonness Score", "Target Gender",
+                               female ? "female" : "male", h.dealerKingpin ? "Hero is Kingpin" : 0);
+      if (c != size_t(-1)) tell(cell(tbl("a16_dealer-extortion-color-snippet-enc"), c, "Snippet"));
+      mark("a16_dealer-extortion-method-enc", r);
+      const long long take = 200 + static_cast<long long>(t.num(r, "Effectiveness Score") * 120.0) + h.dealerStanding * 10;
+      h.money += take;
+      tell("That was worth " + money(take) + ".");
+      h.dealerStanding += 2;
+      h.dealerHeat += 1;
+    }
+  }
+  // 2. The run: the batch goes out and comes back as money, or it does not.
+  else if (dealerRng_.chance(0.22)) {
+    if (h.dealerBatch <= 0) h.dealerBatch = 20 + int(dealerRng_.below(61));
+    const size_t r = drawRow("a16_dealer-drug-drop-off-location-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-drop-off-location-enc");
+      const std::string where = cell(t, r, "Location");
+      const double risk = t.num(r, "Risk Score");
+      const int doses = h.dealerBatch;
+      const bool clean = (h.dealerWillpower + int(dealerRng_.below(41))) > (int(risk * 12.0) + h.dealerHeat);
+      title = "A run out to " + where;
+      body = "I loaded " + doseWord(doses) + " of " + h.dealerDrug + " in " +
+             plural(h.dealerPackage) + " and drove out to " + where + ".";
+      if (clean) {
+        const long long take = static_cast<long long>(doses) * static_cast<long long>(h.dealerPrice) * 2;
+        h.money += take;
+        h.dealerBatch = 0;
+        h.dealerRunStatus = "complete";
+        say(spySwap(cell(t, r, "Success Feedback Snippet"), "your ", "my "));
+        tell(spySwap(cell(t, r, "Success Log Version"), "your ", "my "));
+        tell("The run cleared " + money(take) + ".");
+        const size_t f = drawRow("a16_dealer-run-outcome-flavor-enc", "Commonness Score", "Run Status", "complete", 0);
+        if (f != size_t(-1)) tell(spyUpperFirst(spySwap(spySwap(cell(tbl("a16_dealer-run-outcome-flavor-enc"), f, "String"), "you ", "me "), "your ", "my ")));
+        h.dealerInfamy += 2;
+        if (h.dealerHeat > 2) h.dealerHeat -= 2;
+        happy += 2;
+      } else {
+        const int lost = doses / 2;
+        h.dealerBatch -= lost;
+        h.dealerRunStatus = "ended";
+        h.dealerHeat += 3;
+        say(spySwap(cell(t, r, "Failure Feedback Snippet"), "your ", "my "));
+        tell(spySwap(cell(t, r, "Failure Log Version"), "your ", "my "));
+        tell("I lost half the batch on the road.");
+        const size_t f = drawRow("a16_dealer-run-outcome-flavor-enc", "Commonness Score", "Run Status", "ended", 0);
+        if (f != size_t(-1)) tell(spyUpperFirst(spySwap(spySwap(cell(tbl("a16_dealer-run-outcome-flavor-enc"), f, "String"), "you ", "me "), "your ", "my ")));
+        happy -= 3;
+      }
+      mark("a16_dealer-drug-drop-off-location-enc", r);
+    }
+  }
+  // 3. The everyday sale: a customer, a package, a reason to say no.
+  else if (dealerRng_.chance(0.30)) {
+    const size_t r = drawRow("a16_dealer-drug-sale-rejection-reason-enc", "", "Reason", "", 0);
+    const bool female = dealerRng_.chance(0.5);
+    const std::string buyer = nameOf(female);
+    const int doses = 1 + int(dealerRng_.below(10));
+    const long long price = static_cast<long long>(doses) * static_cast<long long>(h.dealerPrice) + 20;
+    const bool refused = int(dealerRng_.below(100)) > ((h.dealerWillpower + h.dealerDemand) / 2);
+    if (refused && r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-sale-rejection-reason-enc");
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      title = "A customer walks";
+      say(spySwap(cell(t, r, "Snippet"), "you ", "I "));
+      tell(buyer + " said no because " + lower(trim(t.at(r, "Reason"))) + ".");
+      const size_t q = drawRow("a16_dealer-drug-sale-refusal-snippet-enc", "", "Reason", trim(t.at(r, "Reason")), 0);
+      if (q != size_t(-1)) say(spyUpperFirst(cell(tbl("a16_dealer-drug-sale-refusal-snippet-enc"), q, "Reason")));
+      mark("a16_dealer-drug-sale-rejection-reason-enc", r);
+      h.dealerDemand -= 2;
+    } else {
+      title = "Selling " + h.dealerDrug;
+      body = "I sold " + doseWord(doses) + " to " + buyer + " for " + money(price) + ".";
+      h.money += price;
+      h.dealerDoses += doses;
+      h.dealerBatch += 5;
+      say("I moved the batch without a problem.");
+      const size_t e = drawRow("a16_dealer-drug-effect-enc", "", "", "", 0);
+      if (e != size_t(-1)) {
+        const Table& t = tbl("a16_dealer-drug-effect-enc");
+        tell(buyer + " reported " + lower(cell(t, e, "Effect")) + ".");
+        const size_t pr = drawRow("a16_dealer-drug-purchase-reason-enc", "", "Target Gender", female ? "female" : "male", 0);
+        if (pr != size_t(-1) && winLo(tbl("a16_dealer-drug-purchase-reason-enc"), pr, "Min Addiction", h.dealerDemand) &&
+            winHi(tbl("a16_dealer-drug-purchase-reason-enc"), pr, "Max Addiction", h.dealerDemand))
+          tell(buyer + " bought it because " + lower(cell(tbl("a16_dealer-drug-purchase-reason-enc"), pr, "Snippet")) + ".");
+        mark("a16_dealer-drug-effect-enc", e);
+      }
+      h.dealerDemand += 2;
+      happy += 1;
+    }
+  }
+  // 4. A police warning scales with how much heat the trade has picked up.
+  else if (h.dealerHeat >= 2 && dealerRng_.chance(0.10)) {
+    const Table& t = tbl("a16_dealer-police-warning-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (winLo(t, r, "Min Willpower", h.dealerWillpower) && winHi(t, r, "Max Willpower", h.dealerWillpower)) pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t r = pool[dealerRng_.below(uint32_t(pool.size()))];
+      title = "A warning";
+      say("A detective pulled me over and " + lower(cell(t, r, "String")) + ".");
+      mark("a16_dealer-police-warning-enc", r);
+      h.dealerHeat += 2;
+      h.dealerWillpower += 3;
+      happy -= 2;
+    }
+  }
+  // 5. Killing a member of the cartel.
+  else if (h.dealerStanding >= 50 && dealerRng_.chance(0.06)) {
+    const size_t r = drawRow("a16_dealer-cartel-member-murder-scenario-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-member-murder-scenario-enc");
+      if (dealerMember_.empty()) {
+        dealerMemberFemale_ = dealerRng_.chance(0.5);
+        dealerMember_ = nameOf(dealerMemberFemale_);
+      }
+      dealerVictim_ = dealerMember_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = dealerMemberFemale_;
+      title = "What happened to " + dealerMember_;
+      say(spyUpperFirst(cell(t, r, "Success String")));
+      mark("a16_dealer-cartel-member-murder-scenario-enc", r);
+      h.dealerStanding += 4;
+      h.dealerHeat += 4;
+      h.dealerInfamy += 6;
+      dealerMember_.clear();
+      happy -= 3;
+    }
+  }
+  // 6. A member has had enough.
+  else if (h.dealerStanding <= 55 && dealerRng_.chance(0.06)) {
+    const size_t r = drawRow("a16_dealer-cartel-member-leave-scenario-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-member-leave-scenario-enc");
+      if (winLo(t, r, "Min Relationship", h.dealerStanding) && winHi(t, r, "Max Relationship", h.dealerStanding)) {
+        if (dealerMember_.empty()) {
+          dealerMemberFemale_ = dealerRng_.chance(0.5);
+          dealerMember_ = nameOf(dealerMemberFemale_);
+        }
+        title = "Someone wanted out";
+        say(cell(t, r, "String"));
+        mark("a16_dealer-cartel-member-leave-scenario-enc", r);
+        h.dealerStanding -= 3;
+        dealerMember_.clear();
+      }
+    }
+  }
+  // 7. The takeover: the hero moves on the rival cartel.
+  else if (h.dealerStanding >= 55 && dealerRng_.chance(0.05)) {
+    const size_t r = drawRow("a16_dealer-cartel-takeover-method-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-takeover-method-enc");
+      const double violence = t.num(r, "Violence Score");
+      const bool won = (h.dealerStanding + int(dealerRng_.below(31))) > (int(violence * 10.0) + 40);
+      title = won ? "The other side folded" : "The takeover went wrong";
+      body = won ? cell(t, r, "Success Scenario") : cell(t, r, "Failure Scenario");
+      say(won ? cell(t, r, "Success Log Version") : cell(t, r, "Failure Log Version"));
+      mark("a16_dealer-cartel-takeover-method-enc", r);
+      if (won) {
+        h.dealerStanding += 5;
+        h.dealerInfamy += 8;
+        h.money += 2500;
+        tell("The street was mine and it paid " + money(2500) + ".");
+      } else {
+        h.dealerStanding -= 5;
+        h.dealerHeat += 3;
+        happy -= 3;
+      }
+    }
+  }
+  // 8. The hero's own men move against the kingpin.
+  else if (h.dealerKingpin && dealerRng_.chance(0.05)) {
+    if (dealerRng_.chance(0.5)) {
+      const size_t r = drawRow("a16_dealer-mutiny-methods-enc", "Commonness Score", "", "", 0);
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_dealer-mutiny-methods-enc");
+        title = "A quiet conversation";
+        body = cell(t, r, "Log Version");
+        say("I made it clear where the money comes from.");
+        mark("a16_dealer-mutiny-methods-enc", r);
+        h.dealerStanding += 2;
+      }
+    } else {
+      const size_t r = drawRow("a16_dealer-kingpin-mutiny-success-snippets-enc", "Commonness Score", "Kingpin Gender", h.female ? "female" : "male", 0);
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_dealer-kingpin-mutiny-success-snippets-enc");
+        title = "My own people turned";
+        say(cell(t, r, "String"));
+        tell(cell(t, r, "Log Version Snippet"));
+        mark("a16_dealer-kingpin-mutiny-success-snippets-enc", r);
+        h.dealerKingpin = false;
+        h.dealerStanding -= 12;
+        h.dealerInfamy += 4;
+        happy -= 4;
+      }
+    }
+  }
+  // 9. Warning the other side off.
+  else if (h.dealerStanding >= 50 && dealerRng_.chance(0.05)) {
+    const size_t r = drawRow("a16_dealer-hero-threatens-rival-cartel-member-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-hero-threatens-rival-cartel-member-enc");
+      title = "A word with the other side";
+      say(cell(t, r, "Scenario"));
+      mark("a16_dealer-hero-threatens-rival-cartel-member-enc", r);
+      h.dealerStanding += 2;
+      h.dealerHeat += 1;
+    }
+  }
+  // 10. Cutting the batch to stretch it further.
+  else if (dealerRng_.chance(0.06)) {
+    const size_t n = drawRow("a16_dealer-cut-drug-name-enc", "Commonness Score", "Base Drug", h.dealerDrug, 0);
+    const size_t s = drawRow("a16_dealer-cut-drug-substance-enc", "Commonness Score", "", "", 0);
+    if (n != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cut-drug-name-enc");
+      const std::string cutName = cell(t, n, "Name");
+      title = "Cutting the batch";
+      body = h.dealerDrug + " became " + cutName + ".";
+      mark("a16_dealer-cut-drug-name-enc", n);
+      say("I cut the batch and started moving it as " + cutName + ".");
+      h.dealerDemand -= 4;
+      h.dealerBatch += 30;
+      h.money += 300 + static_cast<long long>(h.dealerPrice) * 4;
+      if (s != size_t(-1)) {
+        const Table& st = tbl("a16_dealer-cut-drug-substance-enc");
+        tell("Cut with " + lower(cell(st, s, "Substance")) + ".");
+        if (st.flag(s, "Is Fatal") && dealerRng_.chance(0.4)) {
+          tell("One of them never came back from it.");
+          h.dealerHeat += 2;
+          h.dealerStanding -= 3;
+          happy -= 3;
+        }
+      }
+    }
+  }
+  // 11. What the product does to the people who use it.
+  else if (dealerRng_.chance(0.10)) {
+    const bool shared = dealerRng_.chance(0.5);
+    const bool female = dealerRng_.chance(0.5);
+    const std::string user = nameOf(female);
+    const char* which = shared ? "a16_dealer-drug-trip-experience-enc" : "a16_dealer-deal-person-drug-experience-enc";
+    const size_t r = drawRow(which, "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl(which);
+      title = "The product did its job";
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      say(cell(t, r, "Effect"));
+      tell(user + " says it " + lower(cell(t, r, "String")) + ".");
+      mark(which, r);
+      h.dealerDemand += 3;
+      h.money += 150;
+    }
+  }
+  // 12. Passing the time at a party the trade runs.
+  else if (dealerRng_.chance(0.08)) {
+    const size_t r = drawRow("a16_dealer-drug-pastime-enc", "", "Target Gender", h.female ? "male" : "female", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-pastime-enc");
+      if (h.dealerInfamy >= int(t.num(r, "Target Min Infamy"))) {
+        title = "A night off the money";
+        say(cell(t, r, "String"));
+        mark("a16_dealer-drug-pastime-enc", r);
+        h.dealerStanding += 1;
+        happy += 2;
+      }
+    }
+  }
+  // 13. Trading dope for something that is not cash.
+  else if (dealerRng_.chance(0.07)) {
+    const size_t r = drawRow("a16_dealer-drug-barter-item-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-barter-item-enc");
+      const std::string bare = cell(t, r, "Item");
+      const std::string item = t.flag(r, "Plural") ? bare : withArticle(bare, t.flag(r, "Uses Indefinite Article")) + bare;
+      title = "A trade";
+      body = "I swapped " + plural(h.dealerPackage) + " of " + h.dealerDrug + " for " + item + ".";
+      say("I took " + item + " for the package.");
+      mark("a16_dealer-drug-barter-item-enc", r);
+      h.money += static_cast<long long>(t.num(r, "Max Value"));
+      h.dealerDemand += 1;
+    }
+  }
+  // 14. One of the workers does something about the business.
+  else if (dealerRng_.chance(0.06)) {
+    const size_t r = drawRow("a16_dealer-drug-worker-action-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-worker-action-enc");
+      if (dealerMember_.empty()) {
+        dealerMemberFemale_ = dealerRng_.chance(0.5);
+        dealerMember_ = nameOf(dealerMemberFemale_);
+      }
+      title = "Someone on the corner got ideas";
+      say(dealerMember_ + " " + lower(cell(t, r, "Snippet")) + ".");
+      mark("a16_dealer-drug-worker-action-enc", r);
+      if (t.num(r, "Threat Score") >= 6) {
+        tell("I had to make an example of someone.");
+        const size_t m = drawRow("a16_dealer-drug-worker-murder-scenario-enc", "Commonness Score", "", "", 0);
+        if (m != size_t(-1)) tell(cell(tbl("a16_dealer-drug-worker-murder-scenario-enc"), m, "String"));
+        h.dealerStanding -= 2;
+        h.dealerHeat += 2;
+      } else {
+        h.dealerStanding += 1;
+      }
+      dealerMember_.clear();
+    }
+  }
+  // 15. The cartel wants its cut.
+  else if (dealerRng_.chance(0.08)) {
+    const size_t r = drawRow("a16_dealer-cartel-give-money-feedback-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-give-money-feedback-enc");
+      const bool refusal = t.flag(r, "Is Refusal");
+      const long long due = 500 + h.dealerStanding * 20;
+      title = refusal ? "I said no to the dues" : "Paying the dues";
+      if (refusal) {
+        say(spyUpperFirst(spySwap(spySwap(cell(t, r, "String"), "you ", "me "), "your ", "my ")));
+        const size_t th = drawRow("a16_dealer-cartel-threat-enc", "", "", "", h.dealerKingpin ? "Kingpin Only" : 0);
+        if (th != size_t(-1)) {
+          const Table& tt = tbl("a16_dealer-cartel-threat-enc");
+          if (winLo(tt, th, "Min Standing", h.dealerStanding) && winHi(tt, th, "Max Standing", h.dealerStanding))
+            tell(spyUpperFirst(spySwap(spySwap(cell(tt, th, "Snippet"), "you ", "me "), "your ", "my ")));
+        }
+        h.dealerStanding -= 4;
+      } else if (h.money >= due) {
+        h.money -= due;
+        say("I paid " + money(due) + " up the chain.");
+        h.dealerStanding += 2;
+      } else {
+        say("I did not have the money and they knew it.");
+        h.dealerStanding -= 2;
+      }
+      mark("a16_dealer-cartel-give-money-feedback-enc", r);
+    }
+  }
+  // 16. Turning down the invitation.
+  else if (dealerRng_.chance(0.06)) {
+    const size_t r = drawRow("a16_dealer-cartel-party-refusal-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-cartel-party-refusal-enc");
+      title = "Not tonight";
+      say(cell(t, r, "String"));
+      const std::string why = lower(trim(t.at(r, "Reason")));
+      if (!why.empty()) tell("The reason: " + why + ".");
+      mark("a16_dealer-cartel-party-refusal-enc", r);
+      h.dealerStanding -= 1;
+    }
+  }
+  // 17. The trade follows the hero inside.
+  else if (h.inPrison && dealerRng_.chance(0.05)) {
+    const size_t r = drawRow("a16_dealer-prison-drug-trips-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-prison-drug-trips-enc");
+      title = "Inside";
+      // The Feedback Snippet carries the alternative list ("nearly broke your
+      // <foot/toe/...>") that the Log Version abbreviates as "<rb>".
+      tell(spySwap(spySwap(cell(t, r, "Feedback Snippet"), "You ", "I "), "your ", "my "));
+      say(cell(t, r, "Log Version"));
+      mark("a16_dealer-prison-drug-trips-enc", r);
+      h.dealerStanding += 1;
+      h.money += 200;
+    } else {
+      const size_t p = drawRow("a16_dealer-prison-cartel-packages-enc", "Commonness Score", "", "", 0);
+      if (p != size_t(-1)) {
+        const Table& t = tbl("a16_dealer-prison-cartel-packages-enc");
+        title = "A package came in";
+        body = "A " + lower(cell(t, p, "Contents")) + " arrived in the yard.";
+        mark("a16_dealer-prison-cartel-packages-enc", p);
+        h.dealerStanding += 1;
+      }
+    }
+  }
+  // 18. Testing a batch before it goes out.
+  else if (dealerRng_.chance(0.08)) {
+    const Table& t = tbl("a16_dealer-batch-tester-feedback-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (winLo(t, r, "Min Demand", h.dealerDemand) && winHi(t, r, "Max Demand", h.dealerDemand)) pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t r = pool[dealerRng_.below(uint32_t(pool.size()))];
+      title = "Testing the batch";
+      say(cell(t, r, "String"));
+      mark("a16_dealer-batch-tester-feedback-enc", r);
+      h.dealerDemand += 2;
+      h.money += 200;
+    }
+  }
+  // 19. Someone takes too much.
+  else if (dealerRng_.chance(0.05)) {
+    const size_t r = drawRow("a16_dealer-overdose-snippet-enc", "Commonness Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-overdose-snippet-enc");
+      title = "An overdose";
+      say(spyUpperFirst(spySwap(cell(t, r, "Snippet"), "your ", "my ")));
+      mark("a16_dealer-overdose-snippet-enc", r);
+      h.dealerHeat += 3;
+      h.dealerStanding -= 3;
+      h.dealerDemand -= 5;
+      happy -= 3;
+    }
+  }
+
+  // 19b. Moving the cheap gear that keeps the corner running.
+  else if (dealerRng_.chance(0.07)) {
+    const size_t r = drawRow("a16_dealer-deal-activity-item-enc", "Appeal Score", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-deal-activity-item-enc");
+      const long long take = static_cast<long long>(t.num(r, "Max Sale Value"));
+      title = "Selling the small stuff";
+      const std::string bare = cell(t, r, "Item");
+      body = "I sold " + (t.flag(r, "Plural") ? bare : withArticle(bare, t.flag(r, "Uses Indefinite Article")) + bare)
+           + " to a " + lower(cell(t, r, "Person Type")) + " for " + money(take) + ".";
+      say("I moved " + lower(cell(t, r, "Item")) + " on the side.");
+      mark("a16_dealer-deal-activity-item-enc", r);
+      h.money += take;
+      h.dealerDemand += 1;
+    }
+  }
+  // 20. The trade asks a question the hero has to answer.
+  if (title.empty() && narr.empty()) {
+    const size_t r = drawRow("a16_dealer-drug-run-dumb-scenario-enc", "", "", "", 0);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_dealer-drug-run-dumb-scenario-enc");
+      title = cell(t, r, "Scenario Title");
+      body = spySwap(cell(t, r, "Body"), "your ", "my ");
+      const std::string cta = cell(t, r, "CTA");
+      if (!cta.empty()) tell(cta);
+      mark("a16_dealer-drug-run-dumb-scenario-enc", r);
+      h.dealerStanding += 1;
+      h.money += 400;
+    }
+  }
+
+  if (title.empty() && narr.empty() && body.empty()) return false;
+  out.table = tableName.empty() ? "a16_dealer-cartel-drug-enc" : tableName;
+  out.row_id = std::to_string(tableRow == size_t(-1) ? size_t(0) : tableRow);
+  out.title = title;
+  out.body = body;
+  out.narrative = narr;
+  out.extra = extra;
+  out.happiness += happy;
   return true;
 }
 

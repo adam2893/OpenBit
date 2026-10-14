@@ -131,6 +131,7 @@ class Sim {
   void makeBlackMarketeer(Life& life);
   void makeCasino(Life& life);
   void makeCult(Life& life);
+  void makeDealer(Life& life);
   void makeRelationships(Life& life);
   // The per-person lifecycle lines of one year: illness, school milestones, the
   // relations' jobs and new siblings. Each line is one of the 58 '<person>'
@@ -262,6 +263,9 @@ class Sim {
   std::string cultHonorificPick();
   void ensureCasinoFields(Life& life);
   void ensureCultFields(Life& life);
+  bool dealerYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string dealerToken(const std::string& key);
+  void ensureDealerFields(Life& life);
   size_t pickWindow(const std::string& table, const std::string& weightColumn,
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
@@ -304,6 +308,7 @@ class Sim {
   // lives for one scenario render: the body and the branch's narrative share it.
   // BracketParser.SelectedRandomBracketList / CacheRandomBrackets, report 33.
   std::vector<std::string> rndCache_;
+  std::string rbLast_;      // the last bracket value resolved, for "<rb>" when no alternative was drawn
   // The hero of the life currently being rendered, set by the four resolve
   // callers (birthLines / ageUp / renderRow / checkDeath): resolve() itself
   // takes no Life, and the '<hero:...>' / '<city>' tokens need one.
@@ -339,6 +344,7 @@ class Sim {
   Rng bmRng_;
   Rng casinoRng_;
   Rng cultRng_;
+  Rng dealerRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   std::string spyColleague_;   // the other agent a train/warning row names
   bool spyAgentIsOther_ = false;
@@ -358,6 +364,10 @@ class Sim {
   bool cultCommunardFemale_ = false;
   std::string cultExCommunard_;   // one ex-follower per cult card
   std::map<std::string, std::string> cultCache_;
+  std::string dealerMember_;       // one cartel member per trade card
+  bool dealerMemberFemale_ = false;
+  std::string dealerVictim_;       // one target per trade card
+  std::map<std::string, std::string> dealerCache_;
   // The lover pools write about the partner, not the hero, so the pronoun
   // brackets have to follow the partner while one of those rows renders.
   std::string relNameCache_;  // one <name> per card

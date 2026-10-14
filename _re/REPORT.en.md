@@ -4648,3 +4648,166 @@ The full suite stays green: residue 0, 109 captured / 107 recoverable scenarios,
 port entries 109 with 107 rendered and gap 0, `covpush` rc 0, and the bench
 reaches age 34 without an abort.
 
+## 63. The drug trade: a cartel, a batch, and thirty-eight dealer tables
+
+The dealer family is the underworld the hero works for rather than runs: a cartel that owns him,
+a batch he moves, and a standing score that decides whether the night ends in cash or in a threat.
+Thirty-eight tables, 1525 rows, of which 37 were unwired before this section.
+
+### 63.1 The tables
+
+`a16_dealer-` prefix, `-enc` suffix, all under `gamedata_plain/`:
+
+| rows | table | what it holds |
+| --- | --- | --- |
+| 200 | breakup-scenarios | wired in section 57 (the relationship subsystem) |
+| 121 | deal-activity-item | petty goods sold on the side, with article and plural flags |
+| 109 | cut-drug-name | the name a cut batch is sold under, keyed to its base drug |
+| 81 | deal-person-drug-experience | the trip the customer had |
+| 74 | drug-trip-experience | the same, third person about the user |
+| 67 | cartel-member-nickname | Gender and Kingpin Only flags; the cell is a bracket over a first name |
+| 64 | cartel-name | the cartel itself (already a source for `<cartel>` since section 56) |
+| 51 | prison-cartel-packages | what gets smuggled inside |
+| 50 | drug-barter-item | Min/Max Value and Min/Max Person Money |
+| 48 | cartel-street-name | Street Name, Add Random Street Type |
+| 47 | drug-pastime | Target Gender, Min/Max Target Infamy |
+| 40 | prison-drug-trips | Drug Effect, Feedback Snippet, Log Version |
+| 32 | drug-package-type | the packaging cell is already plural |
+| 32 | cut-drug-substance | Demand Impact, Is Fatal |
+| 32 | cartel-give-money-feedback | Is Refusal flag; the dues |
+| 30 | cartel-threat | Kingpin Only, Min/Max Standing |
+| 30 | cartel-party-refusal | String, Reason |
+| 28 | drug-purchase-reason | keyed to addiction and willpower |
+| 27 | police-warning | keyed to a Willpower window |
+| 27 | drug-sale-refusal-snippet | Keyed to a Reason |
+| 27 | cartel-member-leave-scenario | Min/Max Relationship |
+| 27 | batch-tester-feedback | Min/Max Demand |
+| 25 | overdose-snippet | |
+| 25 | extortion-color-snippet | Hero is Kingpin, Target Gender |
+| 23 | kingpin-mutiny-success-snippets | the members succeed against the hero |
+| 22 | run-outcome-flavor | Run Status complete / ended |
+| 21 | hero-threatens-rival-cartel-member | |
+| 21 | drug-worker-action | Threat Score |
+| 20 | drug-worker-murder-scenario | |
+| 20 | drug-sale-rejection-reason | Reason plus a Min/Max Willpower window |
+| 19 | drug-drop-off-location | Success/Failure feedback and log versions, Risk Score |
+| 17 | cartel-drug | Schedule, Street Value, Min/Max Cost and Price Per Dose, Base Demand |
+| 14 | extortion-method | the alternative list lives in Feedback Scenario, the log says `<rb>` |
+| 13 | drug-effect | Good Trip Likelihood |
+| 12 | cartel-member-murder-scenario | Method, Effectiveness, Success / Attempt / Retaliatory String |
+| 11 | cartel-takeover-method | Success / Failure / Miss versions of a coup |
+| 10 | drug-run-dumb-scenario | a four-choice prompt card |
+| 8 | mutiny-methods | the hero plotting against the kingpin |
+
+### 63.2 Founding the trade
+
+`Hero` carries `dealer`, `dealerKingpin`, `dealerDrug`, `dealerCut`,
+`dealerCartel`, `dealerNick`, `dealerPackage`, `dealerStreet`, `dealerRunStatus`
+and the counters `dealerDemand`, `dealerStanding`, `dealerWillpower`, `dealerPrice`,
+`dealerBatch`, `dealerDoses`, `dealerInfamy`, `dealerHeat`.
+
+`makeDealer` sets the standing and the willpower, hands over $500 of seed money and calls
+`ensureDealerFields`, which draws the cartel (weighted Commonness Score), a nickname honouring the
+Kingpin Only and Gender flags (the cell is a bracket, so it goes back through the resolver), a street
+with an optional street type and a house number, the drug (whose Min/Max Price Per Dose becomes the
+port's price and whose Base Demand raises the demand score) and the packaging.
+
+`dealerYear` runs from age 16 at a 50% chance and fires exactly one event, first hit wins:
+the order below is the order in the code, and the chance is the chance after the age gate.
+
+| # | event | chance | gate |
+| --- | --- | --- | --- |
+| 1 | extortion | 0.08 | standing 45+ |
+| 2 | the run | 0.22 | a batch to move |
+| 3 | the sale | 0.30 | always |
+| 4 | police warning | 0.10 | heat 2+ |
+| 5 | killing a member | 0.06 | standing 50+ |
+| 6 | a member leaves | 0.06 | |
+| 7 | taking over the cartel | 0.05 | |
+| 8 | a mutiny against the hero | 0.05 | kingpin |
+| 9 | threatening a rival | 0.05 | |
+| 10 | cutting the batch | 0.06 | |
+| 11 | the customer trips | 0.10 | |
+| 12 | a pastime with the crew | 0.08 | |
+| 13 | barter instead of cash | 0.07 | |
+| 14 | a worker acts up | 0.06 | |
+| 15 | the cartel wants its cut | 0.08 | |
+| 16 | turning down an invitation | 0.06 | |
+| 17 | the trade inside prison | 0.05 | in prison |
+| 18 | testing a batch | 0.08 | |
+| 19 | an overdose | 0.05 | |
+| 20 | selling the small stuff | 0.07 | |
+| 21 | the drug-run prompt card | fallback | |
+
+### 63.3 Tokens
+
+`dealerIsToken` answers `<cartel-member>` / `<member>` / `<partner>`,
+`<cartel-rival-member>` / `<rival-member>` / `<rival-cartel-member>`,
+`<cartel-kingpin>` / `<kingpin>`, `<victim>` (and the data's own misspelling
+`<victim-possesive>`), `<other-person>` / `<random-person>`, `<cartel-remember>`,
+`<insult>` (drawn from `a16_insults-enc`, which no earlier section had wired),
+`<random-first-name-male>`, `<random-first-name-female>`, `<drug-illegal>`,
+`<dealer-drug>`, `<dealer-package>`, `<cartel>`, `<drug-cartel>` and
+`<rival-cartel>`. The cartel member, the victim and the rival are each cached once per card, and
+the pronoun pair is pointed at whoever the row is talking about before the row is resolved.
+
+The family also forced one shared fix. Several of its rows keep the alternative list in one column and
+refer back to it from another with `<rb>` — extortion writes the vehicle damage in Feedback Scenario
+(`You <keyed every side of/shattered the windows on/...> <his/her> <car-type>!`) and then the log line
+says `I <rb> <his/her> <car-type>`. Two things had to become true: the column that owns the list has
+to be read first, and `<rb>` has to be able to fall back to a bracket whose value was a token rather
+than an inline alternative, because `a16_dumb-scenarios-dealer-enc` row 5 writes its Body as plain
+tokens (`<friend> ... one of the <cartel> ... free doses of <drug-cartel>`) and then says
+`<rb>` in every narrative. `Sim` now keeps `rbLast_` next to `rndCache_`: every resolved
+token records its value, every drawn alternative records its value, and `<rb>` checks the per-card
+cache first and `rbLast_` second. That single member removed 176 leaked brackets across the family
+and every earlier family kept its residue at zero.
+
+### 63.4 Shortcuts
+
+- Founding the trade costs nothing; the cash, the cartel and the standing all arrive at once.
+- The cartel's drug is drawn once and never changes; `<dealer-drug>` is always the hero's own batch.
+- Risk is one roll: `willpower + 0..40 > risk * 12 + heat` decides the run, not the police column.
+- `a16_dealer-deal-activity-item-enc` and `a16_dealer-drug-barter-item-enc` pay Max Value /
+  Max Sale Value outright; the Min column and the Person Money band are read but not compounded.
+- The prison line fires only when `inPrison` is set by something else; the dealer career does not put
+  the hero there.
+- Cut substances move the demand score but never kill anyone; `Is Fatal` is read and ignored.
+- The prompt cards take their first choice, because a year-up card has no prompt to route a choice
+  through.
+
+### 63.5 Verification
+
+`python3 /tmp/qdir/dlres.py` runs 30 seeds x both genders to age 60 with `"dealer": true` and
+regexes every bracket out of title, body and log lines of the events whose table is a dealer table:
+1521 events, residue 0. The histogram:
+
+    a16_dumb-scenarios-dealer-enc          645
+    a16_dealer-drug-run-dumb-scenario-enc  207
+    a16_dealer-drug-drop-off-location-enc  163
+    a16_dealer-drug-effect-enc             115
+    a16_dealer-extortion-method-enc         73
+    a16_dealer-drug-sale-rejection-reason   70
+    a16_dealer-cartel-member-murder         27
+    a16_dealer-cartel-give-money-feedback   27
+    a16_dealer-hero-threatens-rival         25
+    a16_dealer-deal-person-drug-experience  24
+    a16_dealer-cut-drug-name                24
+    a16_dealer-drug-barter-item-enc         20
+    the remaining eleven tables               1-14 each
+
+Samples:
+
+    A trade | I swapped drinking straws of stimmy for a prosthetic finger. | I took a prosthetic finger for the package.
+    A run out to an empty back alley | I loaded 74 doses of stimmy in drinking straws and drove out to an empty back alley. | The run cleared $7,252. | A group of cartel members took me out to celebrate the successful run.
+    Selling stimmy | I sold 1 dose to John Janim for $69. | John Janim reported hallucinations.
+    What happened to John Stonemason | He set John Stonemason on fire with a Molotov cocktail!
+
+The full suite is green: `rescensus.py` reports distinct residue tokens 0, `coverage.py` reports
+109 captured / 107 recoverable, `portgap.py` reports ENTRIES 109, rendered-by-port 107, gap 0,
+`covpush.json` exits 0 and `bench.sh` runs to age 34 without an abort.
+
+Three bugs were found while probing this family: the extortion and prison log lines needed their
+feedback column read first (`<rb>` again), the packaging cell is itself an alternative list and
+already plural, and `out.row_id` is a string in this simulator, so assigning an integer to it
+produced JSON that no probe could parse.

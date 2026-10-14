@@ -319,14 +319,6 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("mafia is not a boolean");
   }
 
-  p = findValue(json, "dealer");
-  if (p != std::string::npos) {
-    skipWs(json, p);
-    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.dealer = true;
-    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.dealer = false;
-    else return fail("dealer is not a boolean");
-  }
-
   p = findValue(json, "hustler");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -422,6 +414,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.cult = true;
     else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.cult = false;
     else return fail("cult is not a boolean");
+  }
+
+  p = findValue(json, "dealer");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.dealer = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.dealer = false;
+    else return fail("dealer is not a boolean");
   }
 
   p = findValue(json, "music");
@@ -565,6 +565,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.black_market) sim.makeBlackMarketeer(life);
   if (spec.casino) sim.makeCasino(life);
   if (spec.cult) sim.makeCult(life);
+  if (spec.dealer) sim.makeDealer(life);
   if (!spec.date.empty()) {
     // "MM-DD": the calendar/holiday dumb-scenario sets are gated on a real date,
     // so the script has to say which one. Unparsable text leaves the date unset.
