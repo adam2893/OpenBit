@@ -6185,3 +6185,217 @@ gerund row (`and doing donuts in an open field`) among forty-five prepositional 
 the line glues it to the drive verb and reads awkwardly; and the snorkel card's site is a
 landlocked park, which is the shortcut above rather than a residue.
 
+## 72. The hustle: three trades on the street, and twenty-two tables behind a day out there
+
+The hero who has nothing can still go out and get something: stand on a corner with a sign,
+set up with an instrument and play, or work a mark with a story. The port calls all three
+the hustle. Twenty-two files, 1,375 rows, and one card a year for as long as the hero keeps
+at it.
+
+### 72.1 The family
+
+Every file is `<name>-enc` under `gamedata_plain`. All twenty-two are read. Six shape the hero's
+setup and never carry a card of their own: `attire` (51), `busk-music-types` (32),
+`panhandle-props` (41), `panhandle-signs` (83), `panhandle-strategies` (38) and
+`collection-boxes` (55). The rest are cards, colour pools or item pools:
+
+| table | rows | what it is |
+|-------|------|-----------|
+| `panhandle-strategies` | 38 | `Strategy`, `Hero Gender`, `Effectiveness`/`Police Risk`/`Theft Risk`/`Confrontation Risk Score` |
+| `panhandle-signs` | 83 | `String` (the short form), `Full String` (the sign as it hangs), `Hero Gender`, `Hero Min`/`Max Age`, `Confrontation Score`, `Male`/`Female Effectiveness Score` |
+| `panhandle-props` | 41 | `Prop`, `Plural`, `Male`/`Female Effectiveness Score` |
+| `panhandle-items` | 84 | `Item`, `Plural`, `Uses Indefinite Article`, `Fits In Collection Box`, `Worthless`, `Min`/`Max Value` |
+| `panhandle-food` | 129 | `Item`, `Plural`, `Uses Indefinite Article`, `Health`/`Happiness Impact`, `Poison Risk Score` |
+| `panhandle-excuses` | 120 | `Condition` (`child` / `default`), `Excuse`, `Commonness Score`, `Sympathy Score` |
+| `panhandle-confrontation-scenarios` | 30 | `Scenario`, `Log Version`, `Person Gender`, `Anger Score` |
+| `police-scenarios` | 34 | `Scenario`, `Log Version`, `Ask To Leave`, `Person Gender`, `Anger Score`, `Is Universal` |
+| `insults` | 58 | `Insult`, `Gender` — the insult describes the hero (a female hero is the "bag lady"), so the pool is filtered on the hero's own gender |
+| `collection-boxes` | 55 | `Item`, `Panhandler`, `Performer`, `Panhandler`/`Performer Effectiveness Score` |
+| `busk-music-types` | 32 | `Music Type`, `Needs Music Appended`, `Best Instruments` (a comma list), `Success Score` |
+| `perform-acts` | 10 | `Act`, `Act Person`, `Difficulty`/`Money`/`Danger Score`, `Danger Body Parts`, `Danger Verbs` |
+| `perform-positive` / `negative` pools | 23 / 30 | `Scenario`, `Log Version`, `Can Be Unskilled`, `Positive`/`Negative Score` |
+| `perform-respect` / `disrespect-scenarios` | 35 / 42 | `Scenario`, `Log Version`, `Act` (blank means any act), `Positive`/`Negative Score` |
+| `busk-requests` | 167 | `Request`, `Is Proper Noun` |
+| `serenade-songs` | 164 | `Song`, `Reaction Score` |
+| `scam-types` | 17 | `Scam`, `Description`, `List Description`, `Gender`, `Victim Gender`, `Success`/`Refuse`/`Insist String`, `Difficulty`/`Money`/`Confrontation`/`Police Score`, `Tier` |
+| `scam-items` | 48 | `Item Singular`, `Item Plural`, `Hero Gender`, `Victim Gender`, `Can Be Broken`, `Can Be Stolen`, `Is Fake Merch`, `Min`/`Max Value` |
+| `scam-victim-scenarios` | 84 | `Scenario`, `Log Version`, `Is Police`, `Undercover Cop Score`, `Min`/`Max Friendliness Score` |
+
+`scam-types` writes its own log line with the hero in it — `<you/I> sold <victim> <item> for
+<amount>.` — which is why the first-person pairs below are fixed rather than drawn.
+
+### 72.2 The street
+
+`makeHustler` runs once when the flag is set. It draws the trade (panhandling 0.45,
+busking 0.35, scamming 0.20), the attire, the genre and the instrument, the act, the song,
+the sign, the strategy, the prop and the collection box, and seeds `hustlerSkill` at
+`40 + below(35)`.
+
+`hustlerYear` needs the hero to be 13 or over and flips a 0.5 coin, then draws the corner
+of the year. No table holds that pool — the game keeps it inline in the scenario cells
+(`<restaurant/cafe/coffee shop/bookstore/...>`), so the port carries ten corners of its own
+and records it as a shortcut.
+
+**Panhandling.** `I spent the day trying to <strategy> in my <attire>, holding up my sign:
+<sign>`. The take is `6 + below(25) + effectiveness * 3` when the
+`Effectiveness Score` of the drawn strategy plus the skill carries the day, and
+`below(5)` when it does not. Then, in order: a handout that fits the box 0.35 (its own
+`Min`/`Max Value` pays out and the box is named), a meal from a stranger 0.30
+(`Health` and `Happiness Impact`, and a 30% follow-up when the `Poison Risk Score` is 3
+or more), an excuse 0.22 from the pool the hero's household picks, a confrontation 0.18, an
+insult 0.15, the police 0.10, and a last line about the box 0.10.
+
+**Busking.** `I set up <street> in my <attire> with my <instrument> and played <music>
+while I did my <act> act.` The pay is `Money Score * (2 + below(5))` on a good day and
+`below(4)` on a bad one, where the day turns on `unit + (skill - 50) / 200 - (Difficulty - 3) /
+20`. Then: a positive-scenario row 0.45 on a good day, a negative-scenario row 0.45 on a
+bad one, a response to the act 0.35, a hostile response 0.25, a request 0.25, a song 0.25
+(`Reaction Score` 4 or more pays another `$5`), an injury 0.25 when the act's
+`Danger Score` is 3 or more (`Danger Body Parts` and `Danger Verbs` name the wound),
+an insult 0.15 and the police 0.10. The two unskilled pools — negative scenarios and
+disrespect scenarios — are drawn with the `Can Be Unskilled` flag required while the
+hero's skill is under 50, so a hero who cannot really play only draws rows the game allows a
+beginner.
+
+**A scam.** `My scam of the day: <List Description>. My mark was <victim> in my <attire>.`
+The mark is drawn from the indefinite-person reference pool, with a coin for its gender, and
+the item is filtered on `Victim Gender`. The sting lands when
+`unit < 0.45 + skill / 220 - Difficulty / 25 - Money / 40`; on a win the log line is the
+pool's own `Success String` with the hero's take rolled inside the item's value range, on a
+loss it is the `Refuse String` and half the time the `Insist String`. Then the mark's own
+scene 0.30, the police at `0.10 + heat / 40` when the trade's `Police Score` is 3 or
+more, and an insult 0.15.
+
+The take is added to `h.money` and to `hustlerEarned`, the card's happiness lands on the
+year, and a hero the police have noticed three times loses one point of heat at the end of
+the card instead of gaining another.
+
+### 72.3 The tokens
+
+Eight family keys, plus three the family shares with the reference pools:
+
+| token | what answers it |
+|-------|-----------------|
+| `<hustle-act>` | the hero's act, "street performing" before one is drawn |
+| `<hustle-street>` | the corner of the year, "the street" as a fallback |
+| `<hustle-instrument>` | the hero's instrument, "guitar" as a fallback |
+| `<hustle-box>` | the collection box, "hat" as a fallback |
+| `<victim>`, `<victim-possessive>`, `<victim-possesive>` | the mark of the card, then the indefinite-person reference pool, then "a passer-by"; the possessive form appends `'s`. The data spells the key both ways and the misspelling is folded in |
+| `<amount>` | the card's take |
+| `<item>` | the scam item of the card, remembered per card so two mentions agree |
+| `<insult>` | a row of `insults` filtered on the hero's gender, remembered per card |
+
+Every slot that can be named twice on one card — the mark, the item, the insult — goes
+through a per-card memo map that `renderRow` clears at the start of each card, so a line
+about "a tech bro" and a later line about him name the same person.
+
+The three shared tokens `<victim>`, `<amount>` and `<insult>` are also claimed by the
+vampire subsystem's token pass, which sits earlier in `resolveInto`. The new
+`hustlerIsToken(token, hustlerLive_)` branch is therefore placed **before** the vampire
+branch and only answers those three while a hustle card is rendering; the four
+hustle-prefixed keys are always answered, because nothing else claims them.
+
+`genderToken` gained four fixed pairs: `<you/I>` is always `I`, `<your/my>` always
+`my`, `<you/me>` always `me` and `<son/daughter>` follows the hero. Before, they fell
+through to the generic bracket branch and were picked by coin toss, which flips the voice of
+the log line — and on the scam tables the log line is the whole card.
+
+### 72.4 The five bugs
+
+1. **A flag that already existed.** `include/bl/script.h` already declared `bool hustler`: the
+   generic dumb-scenario runner of the port shares the name (the `a16_dumb-scenarios-hustler`
+   pool is driven by the same switch), and `src/script.cpp` already parsed the key. Adding a
+   second declaration is a compile error, and adding a second parse would have shadowed the
+   first.
+2. **`p >= 0` on a `size_t`.** While removing the duplicate parse block, the original
+   `if (p != std::string::npos)` went with it and a `if (p >= 0)` was left behind. `p` is a
+   `std::string::size_type`, so `p >= 0` is always true: every run whose script has no
+   `"hustler"` key reached `json.compare(std::string::npos, 4, "true")` and died with
+   `std::out_of_range: basic_string` — the regression script aborted with `Abort trap: 6`
+   (rc 134) and every subsystem probe reported rc 1 with zero events. The port's
+   `findValue` returns `npos`, and every other flag compares against it.
+3. **`hero_` is a `const Hero*`.** `hustlerToken` only reads it, so it converts once at the
+   top with `const_cast`, exactly as `outdoorToken` does.
+4. **Cells that hold a list.** `panhandle-signs` `Full String` carries a celebrity list
+   (`<Andy Dick/Kristen Stewart/...>`), `panhandle-food` `Item` a lollipop flavour
+   list, `busk-requests` `Request` a `<his/her>` pronoun, and one `attire` row a list of
+   its own. None of them is a log column, so none is resolved by the row renderer; the port
+   resolves each cell at the point it is stored or printed.
+5. **No children in the port.** The `panhandle-excuses` pool keys its rows on a `Condition`
+   of `child` or `default` and the port models no children at all, so the child rows are
+   unreachable and every excuse comes from the default pool. Recorded as a shortcut rather
+   than papered over with a stand-in.
+
+A sixth, smaller one: the panhandling body named the strategy's own corner
+(`stand outside the lottery headquarters`) and then the street of the year after it, so the
+sentence named two places and read as a double location. The street now appears only in the
+log line.
+
+### 72.5 Shortcuts
+
+- The corner of the year is a hard-coded pool of ten `the ...` strings (`kStreets`); the game
+  keeps those inline in its scenario cells and no table holds them.
+- The `child` condition of `panhandle-excuses` never fits (no children model).
+- `scam-victim-scenarios` is drawn uniformly; its `Min`/`Max Friendliness Score` window
+  that the game uses to pick the mark's mood is not read.
+- `scam-types` `Tier` is not read: every scam is available from the first year.
+- `collection-boxes` is drawn once at setup with the `Panhandler` flag; the performer's box
+  is not drawn separately, so a busker's box is the panhandler's.
+- The `Is Proper Noun` flag on `busk-requests` is not read; a proper-noun request is
+  printed as ordinary text.
+- The hustle flag also drives the generic `a16_dumb-scenarios-hustler` pool through the `72`
+  runner of `56`, so a hustling hero gets both the family's card and the dumb-scenario
+  pool.
+
+### 72.6 Verification
+
+Build clean. `/tmp/qdir/hustres.py` walks 30 seeds in both genders to age 60 with
+`{"hustler": true}`, filters the family's tables, and regexes `<[^>]*>` out of title, body,
+log lines and extra lines:
+
+    hustler events 1408  rc failures 0  RESIDUE 0
+
+The last-marking table over those runs: `a16_dumb-scenarios-hustler` 815,
+`panhandle-strategies` 108, `panhandle-food` 75, `police-scenarios` 58,
+`scam-items` 58, `panhandle-items` 54, `panhandle-confrontation` 49,
+`perform-disrespect` 32, `serenade-songs` 32, `perform-respect` 28,
+`busk-requests` 27, `perform-acts` 26, `scam-victim-scenarios` 26, `busk-positive` 16,
+`busk-negative` 4.
+
+A second probe (`/tmp/qdir/hustcov.py`, 40 seeds in both genders, 773 hustle cards) matches
+rendered text against the stripped first fourteen characters of every row of each sub-pool,
+which is what counts the pools that are never the last mark:
+
+    Panhandling 340  Busking 291  A scam 142
+    panhandle-excuses 22   panhandle-confrontation 48   insults 27   police 74
+    busk-positive 94   busk-negative 54   perform-respect 79   perform-disrespect 56
+    busk-requests 63   serenade 52   scam-victim 18
+
+All fifteen family probes report residue 0 after the change; `rescensus.py` reports zero
+distinct residue tokens; the coverage tool still reports 109 captured and 107 recoverable
+scenarios; `portgap.py` still reports `ENTRIES 109 rendered-by-port 107 gap 0`; the push
+script runs rc 0; and `bench.sh` runs to age 34 without aborting.
+
+Cards sampled by hand:
+
+    Panhandling
+      I spent the day trying to stand outside the lottery headquarters in my muscle tee,
+      holding up my sign: God bless
+      Someone dropped a roll of toilet paper in my garbage can lid, worth $2.
+      My garbage can lid was rattling with change by the end of it.
+      I worked the market square all day and only made $0.
+
+    Busking
+      I set up the park bench in my Sgt. Pepper's suit with my harp and played romantic
+      music while I did my juggling act.
+      A phone sex operator twerked while I played the harp.
+      A headhunter laughed at my juggling act.
+      I busked the park bench and the crowd left me $10.
+
+    A scam
+      My scam of the day: Sell fake VIP concert tickets. My mark was a pimp in my Medieval
+      bard attire.
+      I sold a pimp a bogus VIP ticket to an upcoming Charli xcx concert for $1.
+
+The `$0` take is not a bug: a hero with no skill who picks a strategy the data rates at 1 and
+rolls badly really does come home with nothing.

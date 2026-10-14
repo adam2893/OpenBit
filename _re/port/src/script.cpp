@@ -319,13 +319,6 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("mafia is not a boolean");
   }
 
-  p = findValue(json, "hustler");
-  if (p != std::string::npos) {
-    skipWs(json, p);
-    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.hustler = true;
-    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.hustler = false;
-    else return fail("hustler is not a boolean");
-  }
 
   p = findValue(json, "landlord");
   if (p != std::string::npos) {
@@ -422,6 +415,13 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.outdoor = true;
     else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.outdoor = false;
     else return fail("outdoor is not a boolean");
+  }
+  p = findValue(json, "hustler");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.hustler = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.hustler = false;
+    else return fail("hustler is not a boolean");
   }
   p = findValue(json, "cult");
   if (p != std::string::npos) {
@@ -634,6 +634,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);
   if (spec.outdoor) sim.makeOutdoor(life);
+  if (spec.hustler) sim.makeHustler(life);
   if (spec.producer) sim.makeTrade(life, 1);
   if (spec.soundcloud) sim.makeTrade(life, 2);
   if (spec.scout) sim.makeTrade(life, 3);

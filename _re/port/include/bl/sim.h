@@ -137,6 +137,7 @@ class Sim {
   void makeLandlord(Life& life);
   void makePet(Life& life);
   void makeOutdoor(Life& life);
+  void makeHustler(Life& life);
   void ensureStudioFields(Life& life);
   std::string musicAlbumDescription();
   // The five studio trades (REPORT.en.md 69). kind: 1 producer, 2 SoundCloud,
@@ -293,7 +294,9 @@ class Sim {
   std::string petToken(const std::string& key);
   void petDraw(Life& life);
   bool outdoorYear(Life& life, AgeUp& out, int forcedChoice);
+  bool hustlerYear(Life& life, AgeUp& out, int forcedChoice);
   std::string outdoorToken(const std::string& key);
+  std::string hustlerToken(const std::string& key);
   bool studioYear(Life& life, AgeUp& out, int forcedChoice);
   bool tradeYear(Life& life, AgeUp& out, int forcedChoice);
   std::string tradeToken(const std::string& key);
@@ -383,7 +386,12 @@ class Sim {
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;
+  Rng hustlerRng_;
   std::map<std::string, std::string> outdoorCache_;  // one draw per token per card
+  std::map<std::string, std::string> hustlerCache_;  // one draw per token per card
+  // While a hustle card renders, '<victim>', '<amount>' and '<insult>' belong to
+  // the family rather than to the vampire one, which claims them first otherwise.
+  bool hustlerLive_ = false;
   Rng studioRng_;
   Rng tradeRng_;
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card

@@ -585,7 +585,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       petRng_(seed ^ 0xbb67ae8584caa73bULL),
       studioRng_(seed ^ 0x3c6ef372fe94f82bULL),
       tradeRng_(seed ^ 0xd6e8feb86659fd93ULL),
-      outdoorRng_(seed ^ 0xa0761d6478bd642fULL) {}
+      outdoorRng_(seed ^ 0xa0761d6478bd642fULL),
+      hustlerRng_(seed ^ 0x9e3779b97f4a7c15ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -889,6 +890,29 @@ bool Sim::load(std::string* error) {
       "a16_outdoor-snorkeling-discovery-scenario-enc",
       "a16_outdoor-titles-enc",
       "a16_outdoor-vehicle-enc",
+      // The hustle (REPORT.en.md 72): 22 tables.
+      "a16_hustler-attire-enc",
+      "a16_hustler-busk-music-types-enc",
+      "a16_hustler-busk-negative-scenarios-enc",
+      "a16_hustler-busk-positive-scenarios-enc",
+      "a16_hustler-busk-requests-enc",
+      "a16_hustler-collection-boxes-enc",
+      "a16_hustler-insults-enc",
+      "a16_hustler-panhandle-confrontation-scenarios-enc",
+      "a16_hustler-panhandle-excuses-enc",
+      "a16_hustler-panhandle-food-enc",
+      "a16_hustler-panhandle-items-enc",
+      "a16_hustler-panhandle-props-enc",
+      "a16_hustler-panhandle-signs-enc",
+      "a16_hustler-panhandle-strategies-enc",
+      "a16_hustler-perform-acts-enc",
+      "a16_hustler-perform-disrespect-scenarios-enc",
+      "a16_hustler-perform-respect-scenarios-enc",
+      "a16_hustler-police-scenarios-enc",
+      "a16_hustler-scam-items-enc",
+      "a16_hustler-scam-types-enc",
+      "a16_hustler-scam-victim-scenarios-enc",
+      "a16_hustler-serenade-songs-enc",
       "a16_vacation-destinations-enc",               // Destination,Context,Country,...
       "a16_cruises-enc",                             // Type,Continent,Cost Score,Appeal Score
       // The lover family (REPORT.en.md 57): one pool per stage of a relationship.
@@ -1478,6 +1502,10 @@ bool Sim::genderToken(const std::string& token, std::string& out) {
     {"his/her", "his", "her"},           {"His/Her", "His", "Her"},
     {"his/hers", "his", "hers"},         {"His/Hers", "His", "Hers"},
     {"himself/herself", "himself", "herself"},
+    // The hustle logs are written about the hero ('<you/I> sold <victim> ...'),
+    // so the pair is fixed rather than a coin toss (REPORT.en.md 72).
+    {"you/I", "I", "I"},                {"your/my", "my", "my"},
+    {"you/me", "me", "me"},             {"son/daughter", "son", "daughter"},
     {"Himself/Herself", "Himself", "Herself"},
   };
   // The lover pools write about the partner ('<he/she> says it's not you, it's
@@ -1674,6 +1702,23 @@ bool outdoorIsToken(const std::string& token) {
                                   "bicycle", "outdoor-landmark", "outdoor-plant",
                                   "outdoor-marine-life", "outdoor-bird", "pet"};
   for (const char* t : kTokens) if (key == t) return true;
+  return false;
+}
+
+// The hustle (REPORT.en.md 72). '<victim>', '<amount>' and '<insult>' are the
+// vampire pools' own tokens, so a hustle card only takes them while it renders.
+bool hustlerIsToken(const std::string& token, bool live) {
+  std::string key = trim(token);
+  const std::string psuffix = "-possessive";
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0)
+    key.resize(key.size() - psuffix.size());
+  static const char* kAlways[] = {"hustle-act", "hustle-street", "hustle-instrument",
+                                  "hustle-box"};
+  for (const char* t : kAlways) if (key == t) return true;
+  if (!live) return false;
+  static const char* kLive[] = {"victim", "victim-possesive", "amount", "insult", "item"};
+  for (const char* t : kLive) if (key == t) return true;
   return false;
 }
 
@@ -1907,6 +1952,10 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
                token == "jurisdiction adjective" || token == "jurisdiction-adjective") {
       const std::string v = politicalToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
+    } else if (hustlerIsToken(token, hustlerLive_)) {
+      const std::string v = hustlerToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
       else { out += v; rbLast_ = v; }
     } else if (vampIsToken(token)) {
       const std::string v = vampToken(token);
@@ -2851,6 +2900,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   if (landlordYear(life, out, forcedChoice)) return true;
   if (petYear(life, out, forcedChoice)) return true;
   if (life.hero.outdoors && outdoorYear(life, out, forcedChoice)) return true;
+  if (life.hero.hustle && hustlerYear(life, out, forcedChoice)) return true;
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -2915,6 +2965,7 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
   fightCache_.clear();    // one circumstance phrase per fight card
   vampCache_.clear();     // one victim / council member per vampire card
   outdoorCache_.clear();  // one cave / plant / bird per outdoor card
+  hustlerCache_.clear();  // one person / victim / insult per hustle card
   if (hero_ != nullptr) const_cast<Hero*>(hero_)->vampireVictim.clear();
   bmCache_.clear();       // one item / vendor / auctioneer per black-market card
   casinoGambler_.clear(); // one punter per casino card
@@ -12753,6 +12804,544 @@ bool Sim::outdoorYear(Life& life, AgeUp& out, int forcedChoice) {
   for (size_t i = 0; i < extra.size(); ++i) out.extra.push_back(extra[i]);
   out.happiness += happy;
   if (h.outdoorBikeCondition <= 20) out.happiness -= 1;
+  return true;
+}
+
+// ---------------------------------------------------------------- the hustle
+// REPORT.en.md 72. The family works the street three ways: panhandling, busking
+// and scamming. The kind, the attire, the instrument, the act, the song and the
+// props are drawn once when the hero takes the street up; the corner, the mark
+// and the take belong to the year's card.
+void Sim::makeHustler(Life& life) {
+  Hero& h = life.hero;
+  h.hustle = true;
+  h.hustlerSkill = 40 + static_cast<int>(hustlerRng_.below(35));
+  h.hustlerHeat = 0;
+  h.hustlerEarned = 0;
+
+  const double kind = hustlerRng_.unit();
+  h.hustlerKind = kind < 0.45 ? "panhandle" : (kind < 0.80 ? "busk" : "scam");
+  const std::string gender = h.female ? "female" : "male";
+
+  const size_t att = pickRow("a16_hustler-attire-enc", "Attention Score", "Hero Gender", gender, "", hustlerRng_);
+  if (att != size_t(-1)) h.hustlerAttire = resolve(trim(tbl("a16_hustler-attire-enc").at(att, "Attire")));
+  if (h.hustlerAttire.empty()) h.hustlerAttire = "tattered clothes";
+
+  const size_t mu = pickRow("a16_hustler-busk-music-types-enc", "Success Score", "", "", "", hustlerRng_);
+  if (mu != size_t(-1)) {
+    const Table& t = tbl("a16_hustler-busk-music-types-enc");
+    h.hustlerMusic = resolve(trim(t.at(mu, "Music Type")));
+    // 'Needs Music Appended' means the game writes the type as a genre
+    // ('peaceful' -> 'peaceful music').
+    if (t.flag(mu, "Needs Music Appended")) h.hustlerMusic += " music";
+    const std::string inst = trim(t.at(mu, "Best Instruments"));
+    std::vector<std::string> list;
+    if (!inst.empty()) splitOn(inst, ',', list);
+    if (!list.empty()) h.hustlerInstrument =
+        resolve(trim(list[hustlerRng_.below(static_cast<uint32_t>(list.size()))]));
+  }
+  if (h.hustlerInstrument.empty()) h.hustlerInstrument = "guitar";
+  if (h.hustlerMusic.empty()) h.hustlerMusic = "some tunes";
+
+  const size_t act = pickRow("a16_hustler-perform-acts-enc", "Money Score", "", "", "", hustlerRng_);
+  if (act != size_t(-1)) h.hustlerAct = resolve(trim(tbl("a16_hustler-perform-acts-enc").at(act, "Act")));
+  if (h.hustlerAct.empty()) h.hustlerAct = "breakdancing";
+
+  const size_t song = pickRow("a16_hustler-serenade-songs-enc", "Reaction Score", "", "", "", hustlerRng_);
+  if (song != size_t(-1)) h.hustlerSong = resolve(trim(tbl("a16_hustler-serenade-songs-enc").at(song, "Song")));
+
+  // The sign: gender-filtered and age-windowed ('Hungry old man' belongs to a
+  // hero of 60 or more), then weighted on the effectiveness score that matches
+  // the hero's gender.
+  if (ensureTable("a16_hustler-panhandle-signs-enc")) {
+    const Table& t = tbl("a16_hustler-panhandle-signs-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = lower(trim(t.at(r, "Hero Gender")));
+      if (!g.empty() && g != "both" && g != gender) continue;
+      const double lo = t.num(r, "Hero Min Age");
+      const double hi = t.num(r, "Hero Max Age");
+      if (lo > 0 && h.age < lo) continue;
+      if (hi > 0 && h.age > hi) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t r = weightedPickOf(t, h.female ? "Female Effectiveness Score" : "Male Effectiveness Score",
+                                      pool, hustlerRng_);
+      const size_t row = r == size_t(-1) ? pool[0] : r;
+      // 'Full String' is the sign as it hangs; 'String' is the teaser the game
+      // shows in a list, so it is only a fallback.
+      h.hustlerSign = resolve(trim(t.at(row, "Full String")));
+      if (h.hustlerSign.empty()) h.hustlerSign = resolve(trim(t.at(row, "String")));
+    }
+  }
+  if (h.hustlerSign.empty()) h.hustlerSign = "Spare some change?";
+
+  const size_t st = pickRow("a16_hustler-panhandle-strategies-enc", "Effectiveness Score",
+                            "Hero Gender", gender, "", hustlerRng_);
+  if (st != size_t(-1)) h.hustlerStrategy = resolve(trim(tbl("a16_hustler-panhandle-strategies-enc").at(st, "Strategy")));
+  if (h.hustlerStrategy.empty()) h.hustlerStrategy = "ask for money on a corner";
+
+  if (ensureTable("a16_hustler-panhandle-props-enc")) {
+    const Table& t = tbl("a16_hustler-panhandle-props-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+    const size_t r = weightedPickOf(t, h.female ? "Female Effectiveness Score" : "Male Effectiveness Score",
+                                    pool, hustlerRng_);
+    if (r != size_t(-1)) h.hustlerProp = resolve(trim(t.at(r, "Prop")));
+  }
+  if (h.hustlerProp.empty()) h.hustlerProp = "cardboard box";
+
+  const size_t bx = pickRow("a16_hustler-collection-boxes-enc", "Panhandler Effectiveness Score",
+                            "", "", "Panhandler", hustlerRng_);
+  if (bx != size_t(-1)) h.hustlerBox = resolve(trim(tbl("a16_hustler-collection-boxes-enc").at(bx, "Item")));
+  if (h.hustlerBox.empty()) h.hustlerBox = "hat";
+}
+
+std::string Sim::hustlerToken(const std::string& token) {
+  Hero* h = const_cast<Hero*>(hero_);
+  std::string key = trim(token);
+  const std::string psuffix = "-possessive";
+  bool poss = false;
+  if (key.size() > psuffix.size() &&
+      key.compare(key.size() - psuffix.size(), psuffix.size(), psuffix) == 0) {
+    key.resize(key.size() - psuffix.size());
+    poss = true;
+  }
+  if (key == "victim-possesive") { key = "victim"; poss = true; }   // the data's spelling
+  // One draw per slot per card, so a screen that names the same thing twice
+  // names the same thing.
+  const auto remembered = [&](const char* slot, const std::string& value) -> std::string {
+    auto it = hustlerCache_.find(slot);
+    if (it == hustlerCache_.end()) it = hustlerCache_.emplace(slot, value).first;
+    return it->second;
+  };
+  if (h != nullptr) {
+    if (key == "hustle-act") return h->hustlerAct.empty() ? std::string("street performing") : h->hustlerAct;
+    if (key == "hustle-street") return h->hustlerStreet.empty() ? std::string("the street") : h->hustlerStreet;
+    if (key == "hustle-instrument") return h->hustlerInstrument.empty() ? std::string("guitar") : h->hustlerInstrument;
+    if (key == "hustle-box") return h->hustlerBox.empty() ? std::string("hat") : h->hustlerBox;
+    if (key == "victim") {
+      std::string who = h->hustlerVictim;
+      if (who.empty()) who = referenceToken("random_person_indefinite");
+      if (who.empty()) who = "a passer-by";
+      return poss ? who + "'s" : who;
+    }
+    if (key == "amount") return money(h->hustlerAmount > 0 ? h->hustlerAmount : 20);
+    if (key == "item") {
+      const size_t r = pickRow("a16_hustler-scam-items-enc", "", "", "", "", hustlerRng_);
+      std::string v;
+      if (r != size_t(-1)) v = trim(tbl("a16_hustler-scam-items-enc").at(r, "Item Singular"));
+      if (v.empty()) v = "trinket";
+      return remembered("item", v);
+    }
+    if (key == "insult") {
+      // The insult is aimed at the hero ('he called you <insult>'), so the pool
+      // is filtered on the hero's own gender.
+      const size_t r = pickRow("a16_hustler-insults-enc", "", "Gender",
+                               lower(trim(heroToken("gender", false))), "", hustlerRng_);
+      std::string v;
+      if (r != size_t(-1)) v = trim(tbl("a16_hustler-insults-enc").at(r, "Insult"));
+      if (v.empty()) v = "a bum";
+      return remembered("insult", v);
+    }
+  }
+  return std::string();
+}
+
+bool Sim::hustlerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.hustle) return false;
+  if (h.age < 13) return false;
+  if (!ensureTable("a16_hustler-attire-enc")) return false;
+  if (!hustlerRng_.chance(0.5)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  std::string title, body, line;
+  std::vector<std::string> extra;
+  std::string tableRef, rowRef;
+  int happy = 0;
+  long long take = 0;
+  const std::string gender = h.female ? "female" : "male";
+
+  const auto say = [&](const std::string& s) {
+    if (line.empty() && !s.empty()) line = spyUpperFirst(s);
+  };
+  const auto add = [&](const std::string& s) { if (!s.empty()) extra.push_back(spyUpperFirst(s)); };
+  const auto cell = [&](const Table& t, size_t r, const char* col) -> std::string {
+    if (r == size_t(-1) || !t.has(col)) return std::string();
+    return resolve(trim(t.at(r, col)));
+  };
+  const auto mark = [&](const char* tab, size_t r) { tableRef = tab; rowRef = std::to_string(r + 1); };
+  // Rows whose log line points back at an alternative drawn earlier in the row
+  // ('<rb>', '<rb2>'): every other bracketed column is resolved first, in column
+  // order, which is the order the game draws them in (REPORT.en.md 57).
+  const auto withBrackets = [&](const Table& t, size_t r, const char* wantCol) -> std::string {
+    if (r == size_t(-1)) return std::string();
+    for (const std::string& cc : t.columns()) {
+      if (cc == wantCol) continue;
+      if (t.at(r, cc).find('<') == std::string::npos) continue;
+      cell(t, r, cc.c_str());
+    }
+    return cell(t, r, wantCol);
+  };
+  // A pool that writes about somebody else: the pronoun pair follows that person
+  // rather than the hero while the row renders.
+  const auto scene = [&](const char* tab, size_t r, bool otherFemale, bool other) -> std::string {
+    if (r == size_t(-1)) return std::string();
+    const Table& t = tbl(tab);
+    const bool oSave = pronounOtherSet_, fSave = pronounOtherFemale_;
+    pronounOtherSet_ = other;
+    pronounOtherFemale_ = otherFemale;
+    std::string s = withBrackets(t, r, "Log Version");
+    if (s.empty()) s = cell(t, r, "Scenario");
+    pronounOtherSet_ = oSave;
+    pronounOtherFemale_ = fSave;
+    return s;
+  };
+  // A face-to-face pool ('a cop', 'a stranger') carries the gender of the person
+  // speaking in its own column.
+  const auto sceneOf = [&](const char* tab, size_t r) -> std::string {
+    if (r == size_t(-1)) return std::string();
+    const Table& t = tbl(tab);
+    bool female = hustlerRng_.chance(0.5);
+    if (t.has("Person Gender")) {
+      const std::string g = lower(trim(t.at(r, "Person Gender")));
+      if (g == "female") female = true;
+      else if (g == "male") female = false;
+    }
+    return scene(tab, r, female, true);
+  };
+  const auto delegate = [&](const char* tab, size_t r) -> bool {
+    const bool p = hustlerLive_;
+    hustlerLive_ = true;
+    const bool ok = renderRow(tbl(tab), r, life, out, forcedChoice);
+    hustlerLive_ = p;
+    return ok;
+  };
+
+  const bool live0 = hustlerLive_;
+  hustlerLive_ = true;
+  // The street corner of the year: no table holds the pool, which the game keeps
+  // inline in the scenario cells, so the port carries its own (shortcut).
+  static const char* kStreets[] = {"the sidewalk", "the subway platform", "the park bench",
+                                   "the plaza", "the boardwalk", "the bus stop",
+                                   "the market square", "the overpass", "the tourist pier",
+                                   "the alley behind the diner"};
+  h.hustlerStreet = kStreets[hustlerRng_.below(10)];
+  h.hustlerAmount = 0;
+  h.hustlerVictim.clear();
+  h.hustlerPerson.clear();
+  h.hustlerPersonFemale = hustlerRng_.chance(0.5);
+  if (h.hustlerKind.empty()) h.hustlerKind = "panhandle";
+
+  if (h.hustlerKind == "panhandle") {
+    title = "Panhandling";
+    const size_t st = pickRow("a16_hustler-panhandle-strategies-enc", "Effectiveness Score",
+                              "Hero Gender", gender, "", hustlerRng_);
+    double eff = 3;   // the props, the sign and the box are worth a flat bonus
+    std::string strategy = h.hustlerStrategy;
+    if (st != size_t(-1)) {
+      const Table& t = tbl("a16_hustler-panhandle-strategies-enc");
+      eff += t.num(st, "Effectiveness Score");
+      strategy = resolve(trim(t.at(st, "Strategy")));
+      h.hustlerStrategy = strategy;
+      mark("a16_hustler-panhandle-strategies-enc", st);
+    }
+    eff += double(h.hustlerSkill - 50) / 8.0;
+    // The strategy already carries its own corner ("stand outside the lottery
+    // headquarters"), so the body names it without repeating the street.
+    body = "I spent the day trying to " + strategy + " in my " +
+           h.hustlerAttire + ", holding up my sign: " + h.hustlerSign;
+    const bool good = hustlerRng_.unit() < 0.30 + eff / 25.0;
+    take = good ? 6 + static_cast<long long>(hustlerRng_.below(25)) + static_cast<long long>(eff * 3.0)
+                : static_cast<long long>(hustlerRng_.below(5));
+    h.hustlerAmount = take;
+    line = good ? ("I worked " + h.hustlerStreet + " all day and came away with " + money(take) + ".")
+                : ("I worked " + h.hustlerStreet + " all day and only made " + money(take) + ".");
+
+    h.hustlerPerson = referenceToken("random_person_indefinite");
+    if (h.hustlerPerson.empty()) h.hustlerPerson = "a passer-by";
+
+    // A handout that lands in the box.
+    if (hustlerRng_.chance(0.35)) {
+      const size_t it = pickRow("a16_hustler-panhandle-items-enc", "", "", "", "Fits In Collection Box", hustlerRng_);
+      if (it != size_t(-1)) {
+        const Table& t = tbl("a16_hustler-panhandle-items-enc");
+        const double lo = t.num(it, "Min Value"), hi = t.num(it, "Max Value");
+        const long long worth = static_cast<long long>(lo) +
+            static_cast<long long>(hustlerRng_.below(static_cast<uint32_t>(hi > lo ? hi - lo + 1 : 1)));
+        const std::string item = resolve(trim(t.at(it, "Item")));
+        take += worth;
+        h.hustlerAmount = take;
+        add("Someone dropped " + withArticle(item, true) + item + " in my " + h.hustlerBox +
+            ", worth " + money(worth) + ".");
+        mark("a16_hustler-panhandle-items-enc", it);
+      }
+    }
+    // A meal from a stranger.
+    if (hustlerRng_.chance(0.30)) {
+      const size_t fd = pickRow("a16_hustler-panhandle-food-enc", "", "", "", "", hustlerRng_);
+      if (fd != size_t(-1)) {
+        const Table& t = tbl("a16_hustler-panhandle-food-enc");
+        const std::string item = resolve(trim(t.at(fd, "Item")));
+        const double poison = t.num(fd, "Poison Risk Score");
+        happy += static_cast<int>(t.num(fd, "Happiness Impact"));
+        h.health = std::max(0, std::min(100, h.health + static_cast<int>(t.num(fd, "Health Impact"))));
+        add("Someone handed me " + withArticle(item, true) + item + " and I ate it.");
+        if (poison >= 3 && hustlerRng_.chance(0.30)) {
+          add("It did not agree with me.");
+          h.health = std::max(0, h.health - 2);
+        }
+        mark("a16_hustler-panhandle-food-enc", fd);
+      }
+    }
+    // The story the hero tells, from the pool the child condition picks.
+    if (hustlerRng_.chance(0.22)) {
+      // shortcut: the port models no children, so the "child" condition of the excuse
+      // pool never fits and only the "default" rows are drawn; revisit when children land.
+      const bool child = false;
+      const size_t ex = pickRow("a16_hustler-panhandle-excuses-enc", "Commonness Score", "Condition",
+                                child ? "child" : "default", "", hustlerRng_);
+      if (ex != size_t(-1)) add(scene("a16_hustler-panhandle-excuses-enc", ex, hustlerRng_.chance(0.5), true));
+    }
+    // Somebody stops to lecture, to shout, or to call a cop.
+    if (hustlerRng_.chance(0.18)) {
+      const size_t cf = pickRow("a16_hustler-panhandle-confrontation-scenarios-enc", "Anger Score",
+                                "", "", "", hustlerRng_);
+      if (cf != size_t(-1)) {
+        add(sceneOf("a16_hustler-panhandle-confrontation-scenarios-enc", cf));
+        mark("a16_hustler-panhandle-confrontation-scenarios-enc", cf);
+      }
+    }
+    if (hustlerRng_.chance(0.15)) {
+      const size_t ins = pickRow("a16_hustler-insults-enc", "", "Gender", gender, "", hustlerRng_);
+      if (ins != size_t(-1))
+        add("On the way home somebody called me " +
+            resolve(trim(tbl("a16_hustler-insults-enc").at(ins, "Insult"))) + ".");
+    }
+    if (hustlerRng_.chance(0.10)) {
+      const size_t p = pickRow("a16_hustler-police-scenarios-enc", "", "", "", "", hustlerRng_);
+      if (p != size_t(-1)) {
+        add(sceneOf("a16_hustler-police-scenarios-enc", p));
+        h.hustlerHeat += 1;
+        mark("a16_hustler-police-scenarios-enc", p);
+      }
+    }
+    // The box the collection goes in, named once for the card.
+    if (hustlerRng_.chance(0.10)) add("My " + h.hustlerBox + " was rattling with change by the end of it.");
+  } else if (h.hustlerKind == "busk") {
+    title = "Busking";
+    const size_t act = pickRow("a16_hustler-perform-acts-enc", "", "", "", "", hustlerRng_);
+    double diff = 2, moneyScore = 3, danger = 0;
+    if (act != size_t(-1)) {
+      const Table& t = tbl("a16_hustler-perform-acts-enc");
+      h.hustlerAct = resolve(trim(t.at(act, "Act")));
+      diff = t.num(act, "Difficulty Score");
+      moneyScore = t.num(act, "Money Score");
+      danger = t.num(act, "Danger Score");
+      mark("a16_hustler-perform-acts-enc", act);
+    }
+    const double mood = hustlerRng_.unit() + double(h.hustlerSkill - 50) / 200.0 - (diff - 3.0) / 20.0;
+    const bool good = mood > 0.35;
+    take = good ? static_cast<long long>(moneyScore) * (2 + static_cast<long long>(hustlerRng_.below(5)))
+                : static_cast<long long>(hustlerRng_.below(4));
+    h.hustlerAmount = take;
+    body = "I set up " + h.hustlerStreet + " in my " + h.hustlerAttire + " with my " +
+           h.hustlerInstrument + " and played " + h.hustlerMusic + " while I did my " +
+           h.hustlerAct + " act.";
+    line = good ? ("I busked " + h.hustlerStreet + " and the crowd left me " + money(take) + ".")
+                : ("I busked " + h.hustlerStreet + " and only picked up " + money(take) + ".");
+
+    h.hustlerPerson = referenceToken("random_person_indefinite");
+    if (h.hustlerPerson.empty()) h.hustlerPerson = "a passer-by";
+
+    // The crowd. 'Can Be Unskilled' rows are the ones the game allows a hero who
+    // cannot really play, so an unskilled hero only draws those.
+    const char* unskilled = h.hustlerSkill < 50 ? "Can Be Unskilled" : "";
+    if (good && hustlerRng_.chance(0.45)) {
+      const size_t r = pickRow("a16_hustler-busk-positive-scenarios-enc", "Positive Score", "", "", "", hustlerRng_);
+      if (r != size_t(-1)) {
+        add(scene("a16_hustler-busk-positive-scenarios-enc", r, h.hustlerPersonFemale, true));
+        mark("a16_hustler-busk-positive-scenarios-enc", r);
+      }
+    }
+    if (!good && hustlerRng_.chance(0.45)) {
+      const size_t r = pickRow("a16_hustler-busk-negative-scenarios-enc", "Negative Score", "", "", unskilled, hustlerRng_);
+      if (r != size_t(-1)) {
+        add(scene("a16_hustler-busk-negative-scenarios-enc", r, h.hustlerPersonFemale, true));
+        mark("a16_hustler-busk-negative-scenarios-enc", r);
+      }
+    }
+    if (hustlerRng_.chance(0.35)) {
+      const size_t r = pickRow("a16_hustler-perform-respect-scenarios-enc", "Positive Score", "", "", "", hustlerRng_);
+      if (r != size_t(-1)) {
+        add(scene("a16_hustler-perform-respect-scenarios-enc", r, h.hustlerPersonFemale, true));
+        mark("a16_hustler-perform-respect-scenarios-enc", r);
+      }
+    }
+    if (hustlerRng_.chance(0.25)) {
+      const size_t r = pickRow("a16_hustler-perform-disrespect-scenarios-enc", "Negative Score", "", "", unskilled, hustlerRng_);
+      if (r != size_t(-1)) {
+        add(scene("a16_hustler-perform-disrespect-scenarios-enc", r, h.hustlerPersonFemale, true));
+        mark("a16_hustler-perform-disrespect-scenarios-enc", r);
+      }
+    }
+    if (hustlerRng_.chance(0.25)) {
+      const size_t r = pickRow("a16_hustler-busk-requests-enc", "", "", "", "", hustlerRng_);
+      if (r != size_t(-1)) {
+        add("Somebody asked me to play " +
+            resolve(trim(tbl("a16_hustler-busk-requests-enc").at(r, "Request"))) + ".");
+        mark("a16_hustler-busk-requests-enc", r);
+      }
+    }
+    // The song of the year: 'Reaction Score' is how the crowd takes it.
+    if (!h.hustlerSong.empty() && hustlerRng_.chance(0.25)) {
+      const size_t r = pickRow("a16_hustler-serenade-songs-enc", "Reaction Score", "", "", "", hustlerRng_);
+      if (r != size_t(-1)) {
+        const Table& t = tbl("a16_hustler-serenade-songs-enc");
+        const std::string song = resolve(trim(t.at(r, "Song")));
+        const double reaction = t.num(r, "Reaction Score");
+        h.hustlerSong = song;
+        mark("a16_hustler-serenade-songs-enc", r);
+        if (reaction >= 4) {
+          add("I sang " + song + " and the crowd loved it.");
+          take += 5;
+          h.hustlerAmount = take;
+        } else {
+          add("I tried " + song + " and it did not land.");
+        }
+      }
+    }
+    // A prop act can go wrong.
+    if (!good && danger >= 3 && hustlerRng_.chance(0.25)) {
+      const Table& t = tbl("a16_hustler-perform-acts-enc");
+      std::vector<std::string> parts, verbs;
+      if (t.has("Danger Body Parts")) splitOn(trim(t.at(act, "Danger Body Parts")), ',', parts);
+      if (t.has("Danger Verbs")) splitOn(trim(t.at(act, "Danger Verbs")), ',', verbs);
+      if (!parts.empty() && !verbs.empty()) {
+        const std::string part = trim(parts[hustlerRng_.below(static_cast<uint32_t>(parts.size()))]);
+        const std::string verb = trim(verbs[hustlerRng_.below(static_cast<uint32_t>(verbs.size()))]);
+        add("I " + verb + " my " + part + " in the middle of it.");
+        h.health = std::max(0, h.health - 3);
+      }
+    }
+    if (hustlerRng_.chance(0.15)) {
+      const size_t ins = pickRow("a16_hustler-insults-enc", "", "Gender", gender, "", hustlerRng_);
+      if (ins != size_t(-1))
+        add("Somebody in the crowd called me " +
+            resolve(trim(tbl("a16_hustler-insults-enc").at(ins, "Insult"))) + ".");
+    }
+    if (hustlerRng_.chance(0.10)) {
+      const size_t p = pickRow("a16_hustler-police-scenarios-enc", "", "", "", "", hustlerRng_);
+      if (p != size_t(-1)) {
+        add(sceneOf("a16_hustler-police-scenarios-enc", p));
+        h.hustlerHeat += 1;
+        mark("a16_hustler-police-scenarios-enc", p);
+      }
+    }
+  } else {
+    title = "A scam";
+    const size_t st = pickRow("a16_hustler-scam-types-enc", "Money Score", "", "", "", hustlerRng_);
+    std::string listDesc, successS, refuseS, insistS;
+    double diff = 1, moneyScore = 2, policeScore = 2;
+    if (st != size_t(-1)) {
+      const Table& t = tbl("a16_hustler-scam-types-enc");
+      listDesc = trim(t.at(st, "List Description"));
+      successS = trim(t.at(st, "Success String"));
+      refuseS = trim(t.at(st, "Refuse String"));
+      insistS = trim(t.at(st, "Insist String"));
+      diff = t.num(st, "Difficulty Score");
+      moneyScore = t.num(st, "Money Score");
+      policeScore = t.num(st, "Police Score");
+      mark("a16_hustler-scam-types-enc", st);
+    }
+    if (listDesc.empty()) listDesc = "work a mark";
+    // The mark is a person with an article, because the pool's strings write the
+    // victim straight into a sentence.
+    h.hustlerVictim = referenceToken("random_person_indefinite");
+    if (h.hustlerVictim.empty()) h.hustlerVictim = "a passer-by";
+    h.hustlerVictimFemale = hustlerRng_.chance(0.5);
+    const size_t it = pickRow("a16_hustler-scam-items-enc", "", "Victim Gender",
+                              h.hustlerVictimFemale ? "female" : "male", "", hustlerRng_);
+    std::string itemName = "valuables";
+    long long worthLo = 10, worthHi = 200;
+    if (it != size_t(-1)) {
+      const Table& t = tbl("a16_hustler-scam-items-enc");
+      itemName = resolve(trim(t.at(it, "Item Singular")));
+      worthLo = static_cast<long long>(t.num(it, "Min Value"));
+      worthHi = static_cast<long long>(t.num(it, "Max Value"));
+      if (worthHi < worthLo) worthHi = worthLo;
+      mark("a16_hustler-scam-items-enc", it);
+    }
+    if (itemName.empty()) itemName = "valuables";
+    hustlerCache_["item"] = itemName;   // '<item>' inside the pool's own strings
+    take = worthLo + static_cast<long long>(hustlerRng_.below(static_cast<uint32_t>(worthHi - worthLo + 1)));
+    h.hustlerAmount = take;
+    body = "My scam of the day: " + listDesc + ". My mark was " + h.hustlerVictim + " in my " +
+           h.hustlerAttire + ".";
+    const bool wins = hustlerRng_.unit() <
+        0.45 + double(h.hustlerSkill) / 220.0 - diff / 25.0 - moneyScore / 40.0;
+    // The strings speak about the mark ('<he/she> was not interested'), so the
+    // pronoun pair follows the mark rather than the hero.
+    const bool oSave = pronounOtherSet_, fSave = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.hustlerVictimFemale;
+    line = resolve(wins ? successS : refuseS);
+    if (line.empty())
+      line = wins ? ("I sold " + h.hustlerVictim + " " + itemName + " for " + money(take) + ".")
+                  : ("I tried to sell " + h.hustlerVictim + " " + itemName + " but it did not work out.");
+    if (!wins) {
+      take = 0;
+      h.hustlerAmount = 0;
+      if (!insistS.empty() && hustlerRng_.chance(0.5)) add(resolve(insistS));
+    }
+    pronounOtherSet_ = oSave;
+    pronounOtherFemale_ = fSave;
+    if (policeScore >= 3 || h.hustlerHeat > 0) h.hustlerHeat += 1;
+    // The mark's own scene, from the pool the friendliness window picks.
+    if (hustlerRng_.chance(0.30)) {
+      const double friendliness = 1 + hustlerRng_.below(6);
+      const size_t v = pickRow("a16_hustler-scam-victim-scenarios-enc", "", "", "", "", hustlerRng_);
+      if (v != size_t(-1)) {
+        add(scene("a16_hustler-scam-victim-scenarios-enc", v, h.hustlerVictimFemale, true));
+        mark("a16_hustler-scam-victim-scenarios-enc", v);
+      }
+      (void)friendliness;
+    }
+    if (policeScore >= 3 && hustlerRng_.chance(0.10 + double(h.hustlerHeat) / 40.0)) {
+      const size_t p = pickRow("a16_hustler-police-scenarios-enc", "", "", "", "", hustlerRng_);
+      if (p != size_t(-1)) {
+        add(sceneOf("a16_hustler-police-scenarios-enc", p));
+        h.hustlerHeat += 1;
+        mark("a16_hustler-police-scenarios-enc", p);
+      }
+    }
+    if (hustlerRng_.chance(0.15)) {
+      const size_t ins = pickRow("a16_hustler-insults-enc", "", "Gender", gender, "", hustlerRng_);
+      if (ins != size_t(-1))
+        add("My mark called me " +
+            resolve(trim(tbl("a16_hustler-insults-enc").at(ins, "Insult"))) + " on the way out.");
+    }
+  }
+
+  if (title.empty()) { hustlerLive_ = live0; return false; }
+  out.table = tableRef.empty() ? "a16_hustler-attire-enc" : tableRef;
+  out.row_id = rowRef.empty() ? std::string("0") : rowRef;
+  out.title = title;
+  out.body = body;
+  out.narrative = line;
+  const std::vector<std::string> keep = out.extra;
+  out.extra.clear();
+  for (size_t i = 0; i < keep.size(); ++i) out.extra.push_back(keep[i]);
+  for (size_t i = 0; i < extra.size(); ++i) out.extra.push_back(extra[i]);
+  h.money += take;
+  h.hustlerEarned += take;
+  out.happiness += happy;
+  // The police keep an eye on a hero who is known on the street.
+  if (h.hustlerHeat >= 3) h.hustlerHeat -= 1;
+  hustlerLive_ = live0;
   return true;
 }
 

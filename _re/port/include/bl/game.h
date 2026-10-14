@@ -315,6 +315,30 @@ struct Hero {
   int outdoorCatches = 0;
   long long outdoorEarned = 0;
 
+  // The hustle (REPORT.en.md 72): panhandling, busking or scamming for a living.
+  // The kind and the props are drawn once and kept; the person, the mark and the
+  // take belong to one year's card.
+  bool hustle = false;
+  std::string hustlerKind;        // panhandle / busk / scam
+  std::string hustlerAttire;      // a16_hustler-attire-enc
+  std::string hustlerAct;         // the perform act, or the scam in the year's card
+  std::string hustlerInstrument;  // the busk instrument
+  std::string hustlerMusic;       // the busk music type
+  std::string hustlerSong;        // the song of the year, when one is played
+  std::string hustlerSign;        // the panhandler's sign
+  std::string hustlerStrategy;    // how the hero works the street
+  std::string hustlerProp;        // what the hero carries
+  std::string hustlerBox;         // the collection box
+  std::string hustlerStreet;      // where the year's card happens
+  std::string hustlerPerson;      // the passer-by of the year's card
+  bool hustlerPersonFemale = false;
+  std::string hustlerVictim;      // the mark of a scam
+  bool hustlerVictimFemale = false;
+  int hustlerSkill = 40;          // 0-100, the hero's way with a crowd
+  int hustlerHeat = 0;            // police attention
+  long long hustlerAmount = 0;    // the take of the year's card, for '<amount>'
+  long long hustlerEarned = 0;
+
   // Recording artist, part two (REPORT.en.md 68): the studio. The genre is
   // a16_music-genres-enc's, the label a16_music-record-label-company-name-enc's,
   // the album a16_music-album-title-enc's, the cover a16_music-album-covers-enc's
