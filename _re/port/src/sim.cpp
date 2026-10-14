@@ -1153,6 +1153,9 @@ bool Sim::load(std::string* error) {
       "a16_lover-make-love-nags-enc",                // Scenario,..,Married,Min/Max Relationship
       "a16_lover-marriage-nags-enc",                 // Scenario,..,Min/Max Relationship
       "a16_anniversary-date-enc",                    // Activity,Feedback String,Log String,Cost
+      "a16_anniversary-gift-enc",                    // Gift,Cost,..,Appreciation Score,Hero/Lover Gender
+      "a16_anniversary-gift-color-enc",              // String,..: the partner's line about the gift
+      "a16_anniversary-community-goals-titles-enc",  // Scenario Tag,Option 1..5,Situation Description
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -23193,7 +23196,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     h.relationship = 75;
     return true;
   }
-  if (h.loverStatus == "married" && fire("a16_anniversary-date-enc", 0.12)) { bump(8); return true; }
+  // The anniversary is its own subsystem (REPORT.en.md 88): the date pool, both
+  // gift directions and the badge table the feed captions come from.
+  if (h.loverStatus == "married" && anniversaryYear(life, out, forcedChoice)) return true;
   if (h.relationship < 35 && fire("a16_relationship-counseling-scenarios-enc", 0.10)) { bump(12); return true; }
   if (h.relationship < 30 && fire("a16_breakup-scenarios-enc", 0.30)) {
     h.exName = h.loverName;
@@ -23207,4 +23212,231 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   return false;
 }
 
+
+// The anniversary (REPORT.en.md 88): the date pool, the two gift directions and
+// the badge table the relationship feed draws its captions from. Every branch is
+// one card, the badge table names it, and the ledger line is the score.
+std::string Sim::annBadgeOption(const std::string& tag, std::string& situation, int* rowOut) {
+  situation.clear();
+  if (tag.empty() || !ensureTable("a16_anniversary-community-goals-titles-enc")) return std::string();
+  const Table& t = tbl("a16_anniversary-community-goals-titles-enc");
+  if (!t.has("Scenario Tag")) return std::string();
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (lower(trim(t.at(r, "Scenario Tag"))) != lower(tag)) continue;
+    if (rowOut != nullptr) *rowOut = int(r);  // the card's badge row, for bookkeeping
+    std::vector<std::string> captions;
+    for (int k = 1; k <= 5; ++k) {
+      const std::string col = "Option " + std::to_string(k);
+      if (t.has(col) && !trim(t.at(r, col)).empty()) captions.push_back(trim(t.at(r, col)));
+    }
+    if (t.has("Situation Description")) situation = trim(t.at(r, "Situation Description"));
+    if (captions.empty()) return std::string();
+    return captions[relRng_.below(uint32_t(captions.size()))];
+  }
+  return std::string();
+}
+
+bool Sim::anniversaryYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.loverStatus != "married" || h.loverName.empty() || forcedChoice >= 0) return false;
+  // The port's own gate: 45% of a married year is the anniversary, the rest of
+  // the years belong to the lover family's chain (REPORT.en.md 88).
+  if (!relRng_.chance(0.45)) return false;
+  rndCache_.clear();
+  rbLast_.clear();
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  // The partner is the 'other' person of every pool of the family: '<lover>',
+  // '<he/she>' and '<his/her>' all read as the spouse (REPORT.en.md 88).
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.loverFemale;
+
+  std::string title, body, line, tableRef;
+  int cardRow = -1;
+  int happy = 0;
+  int spent = 0;
+  int gifts = 0;
+
+  auto sub = [](const std::string& s, const std::string& from, const std::string& to) {
+    if (from.empty()) return s;
+    std::string o = s;
+    size_t at = o.find(from, 0);
+    while (at != std::string::npos) { o.replace(at, from.size(), to); at = o.find(from, at + to.size()); }
+    return o;
+  };
+  auto lowerFirst = [](std::string s) {
+    if (!s.empty() && std::isupper(static_cast<unsigned char>(s[0])))
+      s[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(s[0])));
+    return s;
+  };
+  auto tell = [&](const std::string& s) { if (!s.empty()) line += line.empty() ? s : " " + s; };
+  auto add = [&](const std::string& s) { if (!s.empty()) out.extra.push_back(spyUpperFirst(s)); };
+  auto mark = [&](const std::string& table, int row) { tableRef = table; cardRow = row; };
+  // The badge is the family's own vocabulary: the row's situation description
+  // plus one of the row's five captions, drawn. A branch with no matching tag
+  // (a gift the partner did not want) carries the gift's own name instead.
+  auto badge = [&](const std::string& tag) -> std::string {
+    std::string situation;
+    int rowOut = -1;
+    const std::string caption = annBadgeOption(tag, situation, &rowOut);
+    // The caption is the card's whole text when no pool supplied one (the night
+    // and the failed afternoon), so the badge row is the card's source row.
+    if (tableRef.empty() && rowOut >= 0) {
+      tableRef = "a16_anniversary-community-goals-titles-enc";
+      cardRow = rowOut;
+    }
+    if (!situation.empty() || !caption.empty()) {
+      add("Badge: " + (caption.empty() ? tag : caption) +
+          (situation.empty() ? std::string() : " - " + situation + "."));
+    }
+    return caption.empty() ? tag : caption;
+  };
+  // A pool the hero can take this year: the table exists and holds a row he
+  // passes. The money pools are gated on the price as well, because a hero who
+  // cannot pay for anything cannot arrange anything.
+  auto draw = [&](const char* name, const char* costCol, const Table** tp, size_t* rp) -> bool {
+    if (!ensureTable(name)) return false;
+    const Table& t = tbl(name);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (!relEligible(t, r, life)) continue;
+      if (costCol != nullptr && t.has(costCol) &&
+          static_cast<long long>(t.num(r, costCol)) > h.money) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) return false;
+    *tp = &t;
+    *rp = pool[relRng_.below(uint32_t(pool.size()))];
+    return true;
+  };
+  // The four ways an anniversary is spent, in one weighted draw. The weights are
+  // the port's own: the family has no rate column and the whole year is one card.
+  // A phase whose pool has nothing the hero can take falls into the family's own
+  // failed-activity badge instead of leaking into the next phase (REPORT 87).
+  const double roll = relRng_.unit() * 27.0;
+  const int kind = roll < 10.0 ? 0 : roll < 17.0 ? 1 : roll < 21.0 ? 2 : 3;
+  const Table* t = nullptr;
+  size_t r = 0;
+  if (kind == 0 && draw("a16_anniversary-date-enc", "Cost", &t, &r)) {
+    mark(t->name(), int(r));
+    const long long cost = t->has("Cost") ? static_cast<long long>(t->num(r, "Cost")) : 0;
+    // The feedback column owns the inline lists the log column points back at
+    // with '<rb>'/'<rb2>', so it has to be resolved FIRST (REPORT.en.md 87).
+    const std::string feed = trim(resolve(t->at(r, "Feedback String")));
+    const std::string journal = trim(resolve(t->at(r, "Log String")));
+    const int impact = t->has("Relationship Impact") ? static_cast<int>(t->num(r, "Relationship Impact")) : 0;
+    // The row's own impact decides the badge: a shared experience that moved the
+    // meter is the stronger one, a pleasant anniversary is the other.
+    title = badge(impact >= 3 ? "STRONGER_THAN_EVER" : "TOGETHER_FOREVER");
+    body = "For your anniversary, you and " + h.loverName + " " + lowerFirst(feed);
+    if (!journal.empty()) tell("We " + lowerFirst(journal) + ".");
+    h.relationship += impact;
+    if (cost > 0) { h.money -= cost; spent = int(cost); }
+  } else if (kind == 1 && draw("a16_anniversary-gift-enc", "Cost", &t, &r)) {
+    mark(t->name(), int(r));
+    const std::string gift = trim(resolve(t->at(r, "Gift")));
+    const long long cost = t->has("Cost") ? static_cast<long long>(t->num(r, "Cost")) : 0;
+    const int appr = t->has("Appreciation Score") ? static_cast<int>(t->num(r, "Appreciation Score")) : 0;
+    if (cost > 0) { h.money -= cost; spent = int(cost); }
+    ++gifts;
+    if (appr > 0) {
+      title = badge("AWW_YOU_SHOULDNT_HAVE");
+      body = "For your anniversary, you gave " + h.loverName + " " + gift;
+      tell("I gave " + h.loverName + " " + gift + " and " + h.loverName + " loved it.");
+    } else {
+      // The table has no tag for a hopeless gift, so the card carries the gift's
+      // own name and the partner's disappointment (REPORT.en.md 88).
+      title = spyUpperFirst(gift);
+      body = "For your anniversary, you gave " + h.loverName + " " + gift;
+      tell("I gave " + h.loverName + " " + gift + " and " + h.loverName + " was not impressed.");
+    }
+    h.relationship += appr;
+    happy += appr > 0 ? 2 : -2;
+  } else if (kind == 2 && draw("a16_anniversary-gift-enc", nullptr, &t, &r)) {
+    // The other direction: the partner is the one giving, and the hero can take
+    // it or hand it back. The pool's own appreciation decides which.
+    mark(t->name(), int(r));
+    const std::string gift = trim(resolve(t->at(r, "Gift")));
+    const int appr = t->has("Appreciation Score") ? static_cast<int>(t->num(r, "Appreciation Score")) : 0;
+    ++gifts;
+    if (appr >= 0) {
+      title = badge("THANKS_BABE");
+      body = "For your anniversary, " + h.loverName + " gave you " + gift;
+      tell("I accepted it.");
+      h.relationship += appr;
+      happy += 2;
+    } else {
+      title = badge("OH_OKAY_THEN");
+      body = "For your anniversary, " + h.loverName + " gave you " + gift + ", and you handed it back";
+      tell("I gave it straight back.");
+      h.relationship -= 2;
+      happy -= 2;
+    }
+    // The partner's own line about the gift, drawn from the colour pool: the pool
+    // speaks through '<lover>' and '<he/she>', which the pronoun pair above
+    // points at the spouse.
+    if (ensureTable("a16_anniversary-gift-color-enc")) {
+      const Table& colours = tbl("a16_anniversary-gift-color-enc");
+      std::vector<size_t> pool;
+      for (size_t i = 0; i < colours.size(); ++i) pool.push_back(i);
+      const size_t cr = colours.has("Commonness Score")
+                            ? weightedPickOf(colours, "Commonness Score", pool, relRng_)
+                            : (pool.empty() ? size_t(-1) : pool[relRng_.below(uint32_t(pool.size()))]);
+      if (cr != size_t(-1)) tell(trim(resolve(colours.at(cr, "String"))));
+    }
+  } else if (kind == 3) {
+    // The anniversary night. The hero can turn the partner down, and the table
+    // has two badges for that - the partner who is hurt and the partner who
+    // accepts the refusal - so the coin decides which the feed shows.
+    if (relRng_.chance(0.7)) {
+      title = badge("HAPPY_ANNIVERSARY_BABE");
+      body = "For your anniversary, you and " + h.loverName + " spent a night to remember";
+      tell("We had a night to remember.");
+      h.relationship += 6;
+      happy += 4;
+    } else {
+      h.relationship -= 6;
+      happy -= 3;
+      if (relRng_.chance(0.5)) {
+        title = badge("OKAY_I_GUESS");
+        body = "You turned " + h.loverName + " down on your anniversary";
+        tell("I was not in the mood and " + h.loverName + " said 'I love you too...' and went to bed.");
+      } else {
+        title = badge("WHAT_ARE_WE_DOING_HERE");
+        body = "You turned " + h.loverName + " down on your anniversary";
+        tell("I was not in the mood and " + h.loverName + " said the vibes were way off.");
+      }
+    }
+  } else {
+    // Nothing the hero could arrange: the family's own failed-activity badge.
+    title = badge("OMG_SO_PICKY");
+    body = "You could not decide what to do for your anniversary and the day went by";
+    tell("I ran out of ideas and we did nothing at all.");
+    happy -= 2;
+  }
+
+  if (body.empty()) body = "Your anniversary came and went";  // a pool with no text at all
+  out.table = tableRef;
+  out.row_id = cardRow >= 0 ? std::to_string(cardRow + 1) : std::string();
+  out.title = title;
+  {
+    const char last = body[body.size() - 1];
+    if (last != '.' && last != '!' && last != '?' && last != '"' && last != ')') body += '.';
+  }
+  out.body = body;
+  if (!line.empty()) out.narrative = spyUpperFirst(line);
+  if (happy != 0) out.happiness += happy;
+  h.relationship = std::max(0, std::min(100, h.relationship));
+  ++h.anniversaries;
+  h.annGifts += gifts;
+  if (spent > 0) add("I spent " + money(spent) + " on the anniversary.");
+  add("Our relationship stands at " + std::to_string(h.relationship) + "% after " +
+      std::to_string(h.anniversaries) + (h.anniversaries == 1 ? " anniversary" : " anniversaries") +
+      " and " + std::to_string(h.annGifts) + (h.annGifts == 1 ? " gift." : " gifts."));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
 }  // namespace bl

@@ -340,6 +340,10 @@ class Sim {
                           const std::string& weightColumn, const std::string& filterColumn,
                           const std::string& filterValue, const std::string& flagColumn, Rng& rng);
   bool relationshipYear(Life& life, AgeUp& out, int forcedChoice);
+  bool anniversaryYear(Life& life, AgeUp& out, int forcedChoice);
+  // The badge table of the anniversary family: the row's five captions and the
+  // situation description the feed shows (REPORT.en.md 88).
+  std::string annBadgeOption(const std::string& tag, std::string& situation, int* rowOut = nullptr);
   bool relEligible(const Table& t, size_t row, const Life& life) const;
   void ensureOfficeFields(Life& life);
   std::string musicToken(const std::string& token);

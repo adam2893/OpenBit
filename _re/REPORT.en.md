@@ -9462,8 +9462,267 @@ The palace         Another year passed at the palace.
 ```
 
 The whole regression is green with the section in place: `allprobes.py` runs
-thirty probes at residue 0 (the new `royres.py` joins the list), `rescensus.py`
+thirty-one probes at residue 0 (section 88 adds `annres.py` to the list), `rescensus.py`
 `distinct residue tokens 0 total 0`, `coverage.py` 109 captured / 107 recoverable,
 `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim --script
 covpush.json` rc 0 with 33078 bytes of stdout and an empty stderr, and
 `bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.
+
+## 88. The anniversary: a family with a vocabulary and no year
+
+Section 57 put relationships on their feet -- hookups, cheating, suspicion, the
+nagging road to a wedding -- and left the anniversary one line long:
+
+```cpp
+if (h.loverStatus == "married" && fire("a16_anniversary-date-enc", 0.12)) { bump(8); return true; }
+```
+
+That line renders one of a hundred date plans and adds eight points. The family
+behind it is 565 rows over four tables, and the other three had no path at all:
+338 gifts, 116 lines the partner says about a gift, and an eleven row table that
+*names* what happened -- the badge the relationship feed carries over the card.
+A married year in the port was a restaurant booking with no present, no
+reaction, no caption and nothing in the ledger.
+
+This section gives the family a year: one card per married year, drawn from four
+ways to spend an anniversary, capped by the family's own badge, and scored in
+the relationship meter the section 57 chain already shares.
+
+### 88.1 The family
+
+| table | rows | what it holds |
+|---|---|---|
+| `a16_anniversary-gift-enc` | 338 | Gift (article included), Cost, Min Age, Max Age, Appreciation Score (-5..5), Hero Gender, Lover Gender, Commonness Score |
+| `a16_anniversary-gift-color-enc` | 116 | String, Commonness Score -- what the partner says about the gift, in `<lover>`/`<he/she>` |
+| `a16_anniversary-date-enc` | 100 | Activity, Feedback String, Log String, Cost, Min Age, Max Age, Relationship Impact (wired by 57) |
+| `a16_anniversary-community-goals-titles-enc` | 11 | Scenario Tag, Option 1..5, Situation Description |
+
+Two tables are pools the hero can take (the date and the gift), one is a pool of
+reactions (the colour table), and the last is not a pool of prose at all but the
+family's index: every card the family shows in the feed carries one of its eleven
+tags, and each tag owns five captions and one sentence of situation.
+
+The two pools that carry prices have opposite shapes. A date is a *price*: costs
+run 0, 15, 20, 25, 30, 40, 50, 60, 65, 80, 90, 100, 120, 150, 180, 200, 300,
+400, 500, 700, 1000, and every row pays off with a Relationship Impact of 1..5.
+A gift is a *verdict*: the Appreciation Score runs -5..5, so a present can cost
+the meter points as well as money, and the pool is mostly jokes -- "a pair of
+used socks", "an expired bottle of Tylenol", "a single french fry", "an empty
+beer bottle" -- with a few good ones: "a poem", "a home cooked meal", "a coupon
+for a handjob". Its gender pair is mostly open -- both/both 291, both/male 20,
+both/female 17, male/male 5, male/both 3, male/female 2.
+
+### 88.2 The four ways
+
+The year is a single weighted draw over the four ways an anniversary is spent,
+not a ladder of tests. That is deliberate, and it is section 87's lesson applied
+before the bug instead of after it: a chain of `if (roll < X)` with no lower
+bound lets an unavailable branch fall through into a later window, and the family
+would have spent every anniversary doing whatever the tail of the chain happened
+to be.
+
+The draw picks a *kind*, and each kind then draws a row from its own pool:
+
+| kind | weight | the card |
+|---|---|---|
+| date | 10/27 | a row of `a16_anniversary-date-enc` the hero is old enough for and can afford |
+| the hero's gift | 7/27 | a row of `a16_anniversary-gift-enc`, the same gates, paid for by the hero |
+| the partner's gift | 4/27 | a row of the same table, **no cost gate** -- the partner is paying |
+| the night | 6/27 | the port's own text; the family has no pool for it |
+
+A kind whose pool has nothing the hero can take -- too young for every row, too
+poor for every price, or a gender gate that excludes them all -- does not fall
+through. It becomes the family's own failed-afternoon badge, `OMG_SO_PICKY`, and
+the year ends with the day gone. In a hundred runs that is 22 of 278
+anniversaries, which is the honest rate at which a married hero has nothing to do.
+
+The gate on every pool is the shared `relEligible`, so the family inherits the
+whole column vocabulary section 57 already reads (`Hero Gender`, `Lover Gender`,
+`Hero Min Age`/`Hero Max Age`, `Min Age`/`Max Age`, and the rest). The cost
+gate is the port's own addition, and it is the one place the family's money
+becomes a decision: a hero with nothing in the bank cannot book the anniversary
+and gets the picky badge. The `draw` helper takes the cost column as a parameter
+precisely so that the partner's gift can opt out of it.
+
+### 88.3 The badge table
+
+Eleven tags, nine of them reachable in a one-card year:
+
+| tag | reached when | what the card shows |
+|---|---|---|
+| `STRONGER_THAN_EVER` | the date's own Relationship Impact >= 3 | In it for the long haul / Power couple / Unbreakable bond / How lovely / Relationship goals |
+| `TOGETHER_FOREVER` | the date's Impact < 3 | Love is in the air / My one and only / Sealed the deal / And they lived happily ever after / Just the two of us |
+| `AWW_YOU_SHOULDNT_HAVE` | the hero's gift, Appreciation Score > 0 | Such a sweetheart / Aww, you should't have / Gift giving pro / Straight to the heart / Nailed it |
+| `THANKS_BABE` | the partner's gift, Appreciation Score >= 0 | A thoughtful gift / It's the thought that counts / You shouldn't have! / I'll cherish this / So sweet |
+| `OH_OKAY_THEN` | the partner's gift, Appreciation Score < 0 | Well that was awkward / That simply won't do / Maybe I shouldn't have / There was no thought / You wanna try again? |
+| `HAPPY_ANNIVERSARY_BABE` | the night, a 0.70 success | Mission accomplished / Bow-chicka-wow-wow / A night to remember / Good work all around / I love anniversaries |
+| `OKAY_I_GUESS` | the night refused, coin A | I love you too... / Spark is gone / No love in the air / Fine by me / Go to bed |
+| `WHAT_ARE_WE_DOING_HERE` | the night refused, coin B | Not in the mood / Went in too cold / Vibes are way off / Am I just some sex bot?! / So unromantic |
+| `OMG_SO_PICKY` | every pool for the drawn kind was empty | Indecisive much? / Can't have it all / Decision paralysis / Those are some high standards / The moment has come and went |
+| `ONCE_IS_ENOUGH` | -- | "The hero tried to do an activity again too soon": one card a year cannot repeat itself |
+| `TURNED_UP_A_NOTCH` | -- | "The hero and their partner were inspired by watching a rewarded video": the port has no rewarded video |
+
+`annBadgeOption(tag, situation, rowOut)` is the whole index: it finds the row
+whose `Scenario Tag` matches (case and space insensitive), collects whichever of
+`Option 1`..`Option 5` are non-empty, states the row's `Situation Description`,
+and draws one caption. The card's title is that caption, the feed line carries
+the situation, and the ledger gets both:
+
+```
+Badge: Nailed it - The hero gave their partner a thoughtful gift.
+Our relationship stands at 63% after 4 anniversaries and 3 gifts.
+```
+
+A card whose gift the partner did not want has no tag to carry -- the table has
+no fifth "bad present" row -- so it takes the gift's own name as its title, with
+"was not impressed" in the log. `a chewed up pencil ` in the corpus ends in a
+space, hence the `trim` on every gift name.
+
+### 88.4 The tokens
+
+The family speaks through one pronoun pair and one back-reference, and both
+needed the care section 57 already learned:
+
+* **`<lover>`, `<he/she>`, `<his/her>` are the partner** -- the *other*
+  person, not the hero. Every pool is written from the hero's side, so
+  `pronounOtherSet_` is set and `pronounOtherFemale_` is pinned to
+  `h.loverFemale` for the whole card. Get that backwards and every husband
+  becomes "she" in a line the hero is supposedly reading about himself.
+* **The date's `Feedback String` must resolve before its `Log String`.** The
+  log is the first-person plural twin of the feed and points back into it with
+  `<rb>`/`<rb2>` -- "went to the happiest place `<on Earth/in the world>`" then
+  "We went to the happiest place `<rb>`". Resolve the log first and the
+  back-reference has nothing to point at.
+* **`<num5-27>` and friends need no work.** `numberToken` (section 22) already
+  covers `<number:natural10-12000>`, `<number:currency120-5000>`, the legacy
+  `<num2-5>`/`<currency...>` forms and the `_roundup` suffixes, so the
+  handful of log strings that carry one resolve like any other token.
+* **The partner's line about a gift** is drawn from the colour table by
+  `Commonness Score` and appended after the hero's own sentence, which is why a
+  card can read "I accepted it." and then be told about the zombie apocalypse by
+  the spouse.
+
+### 88.5 What it caught
+
+This is the first section in a while whose bug list is short, and the reason is
+worth stating: the family has exactly one cross-table hand-off (the date's own
+`<rb>`) and no shared counters, so there was no token plumbing to get wrong.
+The bugs it did have:
+
+1. **Cards with no source table.** The night and the failed afternoon have no
+   pool row, so `out.table` stayed empty and the two most common cards of the
+   family appeared to come from nowhere. The badge row *is* their source, and
+   `annBadgeOption` now reports its index so the card can name
+   `a16_anniversary-community-goals-titles-enc` as the table it came from. The
+   first probe run reported 84 cards as `(none)`; the second reports none.
+2. **The probe's own taxonomy.** The first two histograms called
+   `OKAY_I_GUESS`'s captions part of the angry night, which made a correct card
+   look like a badge/text mismatch: "No love in the air" and "Spark is gone"
+   belong to the reluctant *refusal* row, not the angry one. The fix was to the
+   probe, and the check it left behind -- every card's badge family must agree
+   with the text in its log -- is now an assertion: 0 mismatches over 278 cards.
+3. **A gift name with a trailing space** (`a chewed up pencil `), which would have
+   produced a double space in the middle of a sentence. Trimmed.
+4. **No `lowerFirst` anywhere in the port.** Every card here joins two strings
+   with the pool's own sentence ("you and Adele " + "Grabbed nets and ran..."),
+   so the family carries a four-line lambda that lowercases the first byte.
+5. **A negative score column through `num()`.** `Appreciation Score` is the
+   first column the port reads that is negative *and* decides a branch, so
+   `OH_OKAY_THEN` is the assertion that `num` parses a leading minus: six cards
+   in the run, and that branch is the only way to reach them.
+
+### 88.6 Shortcuts
+
+* **45% of a married year is the anniversary.** The family carries no rate
+  column; a year is a card, and the rest of the married years belong to the
+  section 57 chain -- hookups, cheating, nags, counseling, breakup.
+* **The four weights are the port's own** (10/7/4/6 out of 27). The corpus has no
+  table that says how often a couple goes out, gives a present, or spends the
+  night together.
+* **The night has no pool at all.** The two refusal texts are the port's own,
+  because the corpus's refusal pool (`a16_make-love-rejections-enc`, 193 rows) is
+  the *partner's* excuses -- "`<he/she>` says `<he/she>` is too
+  `<exhausted/tired/sleepy>`" -- and the two badges the family offers are about
+  the hero turning the partner down instead.
+* **A repeat cannot happen inside one year**, so `ONCE_IS_ENOUGH` has no path,
+  and `TURNED_UP_A_NOTCH` needs a rewarded video the port does not model.
+* **The night's success is a flat 0.70** with +6 relationship and +4 happiness;
+  the refusal is -6 and -3, and the two refusal badges are split by a coin.
+* **One card per year, one subject.** The ledger counters (`anniversaries`,
+  `annGifts`) are the only state the family adds to the hero.
+
+### 88.7 Verification
+
+`annres.py` runs 100 lives to age 80 with relationships enabled
+(`relationship: true` in the script spec, which turns `makeRelationships` on)
+across the seventeen countries of `a16_country-royal-systems-enc`, and reads
+back every event whose log carries the family's ledger line -- the one line no
+other family writes. The final run:
+
+```
+runs 100 rc failures 0 anniversary years 278 lives with one 40
+phase by tag: TOGETHER_FOREVER 75, HAPPY_ANNIVERSARY_BABE 45, AWW_YOU_SHOULDNT_HAVE 44,
+  THANKS_BABE 31, OMG_SO_PICKY 22, gift-name 20, STRONGER_THAN_EVER 18,
+  WHAT_ARE_WE_DOING_HERE 9, OKAY_I_GUESS 8, OH_OKAY_THEN 6
+card sources: a16_anniversary-gift-enc 101, a16_anniversary-date-enc 93,
+  a16_anniversary-community-goals-titles-enc 84
+distinct badge captions 42 of 45
+badge/text mismatches 0
+RESIDUE 0 []
+```
+
+Forty of the hundred lives reached a marriage and an anniversary at all, which is
+the corpus's own rate: the section 57 chain ends a relationship that falls under
+30, and most heroes who do marry marry late. Forty-two of the forty-five captions
+of the nine reachable tags appeared; the three that did not are the rarest draws
+-- a caption is one of five, drawn uniformly, and 278 cards is not enough to
+cover every corner of that table. All four tables are a card's own mark, and no
+card is left without one.
+
+Nine cards, one per branch:
+
+```
+date           And they lived happily ever after
+               For your anniversary, you and Maylor grabbed nets and ran through the
+               fields capturing and releasing wild butterflies.
+               We grabbed nets and ran through the fields capturing and releasing
+               wild butterflies.
+gift (hero)    Nailed it
+               For your anniversary, you gave Mary a home cooked meal.
+               I gave Mary a home cooked meal and Mary loved it.
+gift (hero)    A pair of used underwear with skid marks
+               For your anniversary, you gave Mary a pair of used underwear with
+               skid marks.
+               I gave Mary a pair of used underwear with skid marks and Mary was
+               not impressed.
+gift (partner) It's the thought that counts
+               For your anniversary, Adele gave you all of Lord of the Rings.
+               I accepted it. Adele says that if the zombie apocalypse ever came to
+               pass, she would make sure you're never infected with anything but her love.
+night          Mission accomplished
+               For your anniversary, you and Adele spent a night to remember.
+               We had a night to remember.
+refusal A      Fine by me
+               You turned Whit-Leigh down on your anniversary.
+               I was not in the mood and Whit-Leigh said 'I love you too...' and
+               went to bed.
+refusal B      Vibes are way off
+               You turned Mary down on your anniversary.
+               I was not in the mood and Mary said the vibes were way off.
+picky          Decision paralysis
+               You could not decide what to do for your anniversary and the day
+               went by.
+               I ran out of ideas and we did nothing at all.
+date           Power couple
+               For your anniversary, you and Whit-Leigh put on Gordon Ramsey videos
+               and competed against each other cooking gourmet dishes.
+               We put on Gordon Ramsey videos and competed against each other
+               cooking gourmet dishes.
+```
+
+The whole regression is green with the section in place: `allprobes.py` runs
+thirty-one probes at residue 0 (the new `annres.py` joins the list),
+`rescensus.py` `distinct residue tokens 0 total 0`, `coverage.py` 109 captured /
+107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107 gap 0`, `blsim
+--script covpush.json` rc 0 with an empty stderr, and `bench.sh
+/tmp/trace_c10.json` reaching age 34 without an abort.

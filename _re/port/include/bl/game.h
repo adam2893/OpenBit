@@ -163,7 +163,11 @@ struct Hero {
   int royalGifts = 0;        // subjects rewarded
   int royalExecutions = 0;   // subjects executed on his order
   std::string royalNewspaper;  // the paper that covers him
-  std::string royalSubject;    // the person a sentence, gift or execution names
+  std::string royalSubject;
+  // The anniversary (REPORT.en.md 88): the score ledger of a married life.
+  int anniversaries = 0;
+  int annGifts = 0;
+    // the person a sentence, gift or execution names
   // Vampire state (REPORT.en.md 48). SimPerson carries a SimVampire object at
   // offset 0x1e0 (plus VampireDiseaseCarrier 0x1e8 and IsDestinedToBecomeVampire
   // 0x1e9); the port models only "is one" and the two people a vampire card
