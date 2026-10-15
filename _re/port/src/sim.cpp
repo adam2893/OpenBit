@@ -626,7 +626,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       skipRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL),
       mobRng_(seed ^ 0xa0761d6478bd642fULL ^ 0xe7037ed1a0b428dbULL),
       advRng_(seed ^ 0xe7037ed1a0b428dbULL ^ 0x8ebc6af09c88c6e3ULL),
-      prankRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0x9e3779b97f4a7c15ULL) {}
+      prankRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0x9e3779b97f4a7c15ULL),
+      rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1241,6 +1242,7 @@ bool Sim::load(std::string* error) {
       "a16_friend-lover-scenarios-enc",              // Scenario,Log Version,Hero/Friend Min/Max Age
       "a16_friend-advice-enc",                       // Scenario,Log Version,Hero/Friend age+gender,..
       "a16_friend-pranks-enc",                       // Outbound/Inbound Scenario,Log Versions,ages,Vampire
+      "a16_friend-rumors-enc",                       // Outbound/Inbound Scenario,Inbound Log Version,ages
       "a16_coworker-hookup-scenarios-enc",           // Inbound/Outbound Scenario,Sender Gender
       "a16_disease-types-enc",                       // Disease,..: '<disease>' in the lover pools
       "a16_secret-agent-random-hero-agency-names-enc",  // Name,..: the hero's agency
@@ -3544,6 +3546,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // next to the advice card. It draws on its own stream
   // (include/bl/sim.h prankRng_), so no earlier subsystem's sequence moves.
   if (friendPrankYear(life, out, forcedChoice)) return true;
+  // The friend-rumor card (REPORT.en.md 102) is the same kind of friend push --
+  // the friend opens it and the relationship year never sees it -- so it is
+  // tried next to the prank card. It draws on its own stream
+  // (include/bl/sim.h rumorRng_), so no earlier subsystem's sequence moves.
+  if (friendRumorYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24020,28 +24027,219 @@ bool Sim::friendPrankYear(Life& life, AgeUp& out, int forcedChoice) {
   } else if (pick == 1) {
     // 0x73f3c4b1ac: friend relationship +1, ImpactDiscipline(3), the hero's
     // vtable slot 0x408 with +1 (the impact the port reads as happiness -- the
-    // insult branch calls the same slot with -3), and the card's own line is
-    // replaced by 'I laughed it off.' (#69099).
+    // insult branch calls the same slot with -3), and then its journal line is
+    // formatted through '{0}\nI laughed it off.' (#69099), whose {0} is the
+    // card's own line, so the entry keeps the prank and gains the reaction.
     out.choice = "Laugh it off";
     out.discipline = pointsForImpact(3);
     out.happiness = pointsForImpact(1);
-    out.narrative = "I laughed it off.";
+    out.narrative = logLine + "\nI laughed it off.";
   } else if (pick == 2) {
-    // 0x73f3c4b250: ImpactDiscipline(2) and 'I ignored {1} antics.' (#69093),
-    // whose {1} is the friend's pronoun (PronounStringForType(1)).
+    // 0x73f3c4b250: ImpactDiscipline(2) and '{0}\nI ignored {1} antics.'
+    // (#69093), whose {0} is the card's own line and {1} the friend's pronoun
+    // (PronounStringForType(1)).
     out.choice = "Ignore " + them;
     out.discipline = pointsForImpact(2);
-    out.narrative = "I ignored " + them + " antics.";
+    out.narrative = logLine + "\nI ignored " + them + " antics.";
   } else {
     // 0x73f3c4b33c: the friend's relationship -3, the same vtable slot 0x408
-    // with -3, ImpactDiscipline(-2) and ImpactKarma(-2). The branch then draws a
-    // random row from a16_insults-enc and builds a whole reaction card out of it
-    // (three Formats, pushed with Scenario::PushFront), which the port has no
-    // scenario push for (shortcut): the card's own line stands in for it.
+    // with -3, ImpactDiscipline(-2) and ImpactKarma(-2), then
+    // GetRandomInsultForGender(EffectiveGender(), false) @0x73f2ca2580 draws an
+    // insult from a16_insults-enc -- filtered by the hero's gender the way the
+    // port's own '<insult>' consumer is -- and the branch builds a whole reaction
+    // card out of it (a random title from 'Not cool' / 'How was that funny' /
+    // 'Calling a foul' / 'Not the time or place' / 'You serious?', a body of
+    // 'You called your {0}, {1}, {2}.' #47966 and Scenario::PushFront). The port
+    // has no scenario push (shortcut), so the drawn insult survives only in the
+    // journal line '{0}\nI called {1} {2}.' (#69007).
+    std::string insult = "a fool";
+    if (ensureTable("a16_insults-enc")) {
+      const Table& ins = tbl("a16_insults-enc");
+      std::vector<size_t> ipool;
+      for (size_t ir = 0; ir < ins.size(); ++ir) {
+        if (ins.has("Gender")) {
+          const std::string g = lower(trim(ins.at(ir, "Gender")));
+          if (!g.empty() && g != "both" && g != "any" && g != "all" &&
+              g != (h.female ? "female" : "male")) continue;
+        }
+        ipool.push_back(ir);
+      }
+      if (!ipool.empty())
+        insult = trim(ins.at(ipool[prankRng_.below(uint32_t(ipool.size()))], "Insult"));
+    }
     out.choice = "Insult " + them;
     out.discipline = pointsForImpact(-2);
     out.karma = pointsForImpact(-2);
     out.happiness = pointsForImpact(-3);
+    out.narrative = logLine + "\nI called " + them + " " + insult + ".";
+  }
+  return true;
+}
+
+// The friend-rumor card (REPORT.en.md 102): a friend starts a rumor about the
+// hero out of a16_friend-rumors-enc (the Inbound Scenario column is written in
+// the second person -- "you have not just one, but many venereal diseases") and
+// the hero picks one of the card's four reactions. It is the prank card's
+// sibling: same three eligibility gates, no presented cap, one row per card.
+bool Sim::friendRumorYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // ScenarioIsEligibleForRandomPush @0x73f3c52d8c: the hero is 18 or older, is
+  // not in prison, and there is a friend to start the rumor -- the same three
+  // gates the prank card's own push carries, with no presented cap.
+  if (h.age < 18 || h.inPrison) return false;
+  // shortcut: the class carries no push rate (the friend subsystem opens the
+  // card, and the outbound half is opened from the Relationships tab), so the
+  // coin is the port's. It draws on its own stream (rumorRng_) so no other
+  // family's draw sequence moves for a given seed.
+  if (!rumorRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_friend-rumors-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card: personName() draws a fresh one per call, so
+  // the friend token is settled here and substituted into both cells first.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = rumorRng_.chance(0.5);
+  const int friendAge = h.age;  // the port's friend stands at the hero's own age
+
+  // DataFriendRumor
+  // .GetRandomRumorForSenderAgeSenderGenderReceiverAgeReceiverGender
+  // @0x73f2ccace4 runs the same six tests as the prank picker (Sender Min Age
+  // is a floor, Sender Max Age a ceiling when set, Sender Gender must match or
+  // read 2, then the receiver's three) and has no seventh test: the rumor table
+  // carries no Vampire column. Sender is the friend and receiver the hero, the
+  // same assignment the prank picker gets -- so the friend spreads the rumor
+  // about the hero.
+  const Table& t = tbl("a16_friend-rumors-enc");
+  auto genderOk = [&](size_t r, const char* col, bool subjectFemale) {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !subjectFemale;
+    if (v == "female") return subjectFemale;
+    return true;
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Inbound Scenario")).empty()) continue;
+    const int sMin = int(t.num(r, "Sender Min Age"));
+    const int sMax = int(t.num(r, "Sender Max Age"));
+    if (sMin > 0 && friendAge < sMin) continue;
+    if (sMax > 0 && friendAge > sMax) continue;
+    if (!genderOk(r, "Sender Gender", friendFemale)) continue;
+    const int rMin = int(t.num(r, "Receiver Min Age"));
+    const int rMax = int(t.num(r, "Receiver Max Age"));
+    if (rMin > 0 && h.age < rMin) continue;
+    if (rMax > 0 && h.age > rMax) continue;
+    if (!genderOk(r, "Receiver Gender", h.female)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[rumorRng_.below(uint32_t(pool.size()))];
+
+  std::string scenario = trim(t.at(row, "Inbound Scenario"));
+  std::string logCell = trim(t.at(row, "Inbound Log Version"));
+  substAll(scenario, "<friend-possessive>", friendName + "'s");
+  substAll(scenario, "<friend>", friendName);
+  substAll(logCell, "<friend-possessive>", friendName + "'s");
+  substAll(logCell, "<friend>", friendName);
+  // The card's text draws come out of the card's own stream, and the alternative
+  // the body picks is the one the journal line's '<rb>' points back at (14 of
+  // the 40 log cells carry that token), so the body is read first and its draws
+  // are kept.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      // A pronoun pair belongs to the resolver (it keys the pair on the friend),
+      // and the friend is already named: only the alternatives are drawn here.
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[rumorRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = friendFemale;
+  const std::string rumor = resolve(drawCardText(scenario, true));
+  const std::string line = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  // The card's own body is 'Your {0}, {1}, started a rumor that {2}.' (#50783)
+  // with the friend's relationship word, the friend's first name and the row,
+  // wrapped by '{0}\n\nWhat will you do?'. The journal line is the same shape
+  // from 'My {0}, {1}, started a rumor that {2}.' (#30998) and the Inbound Log
+  // Version column. The relationship word is 'best friend' only when the
+  // friend's FriendStatus is 2 and 'enemy' when it is 3 (the port's friend is a
+  // drawn slot, so it always reads 'friend' -- the prank card's shortcut).
+  const std::string logLine = "My friend, " + friendName + ", started a rumor that " + line + ".";
+  const std::string them = friendFemale ? "her" : "him";
+  const int pick = int(rumorRng_.below(4));
+  out = AgeUp();
+  out.table = "a16_friend-rumors-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Rumor";  // the parameterless .ctor's own literal cell 0x5C60ED0
+  out.body = "Your friend, " + friendName + ", started a rumor that " + rumor + ".";
+  out.cta = "What will you do?";
+  // Every response costs the friend -2 relationship: the handler calls the
+  // friend's vtable slot 0x508 with -2 before it dispatches on the label. The
+  // port's friend is a drawn slot with no bar, so that is a shortcut, as it is
+  // in the prank card.
+  // The four choices, in the order the card adds them: 'Attack {0}' (#12347),
+  // 'Deny it' (#17528), "It doesn't bother me", and 'Start a rumor about {0}'
+  // (#39875). The game lets the hero pick any of them; the port draws the one
+  // that happens (the same shape the prank and advice cards use).
+  if (pick == 0) {
+    // 0x73f3c52b18: no stat changes -- the branch hands the card off to
+    // ScenarioCustomAttack(friend) as its child. The port carries that card but
+    // has no scenario push, so the hand-off is a shortcut and the card's own
+    // line is what gets logged.
+    out.choice = "Attack " + them;
+    out.narrative = logLine;
+  } else if (pick == 1) {
+    // 0x73f3c52b6c: the hero's vtable slot 0x408 with -3 (the impact the port
+    // reads as happiness -- the prank card's laugh branch calls the same slot
+    // with +1), and the journal line is reformatted through
+    // '{0}\nI denied it to everyone I know.' (#69062), whose {0} is the card's
+    // own line.
+    out.choice = "Deny it";
+    out.happiness = pointsForImpact(-3);
+    out.narrative = logLine + "\nI denied it to everyone I know.";
+  } else if (pick == 2) {
+    // 0x73f3c52bc0: the same slot with -1, ImpactDiscipline(3), ImpactKarma(3),
+    // and the journal line becomes the card's own line plus '{0}\nI didn't let
+    // it bother me.' (#69065) -- the same shape as the deny branch's
+    // '{0}\nI denied it to everyone I know.'.
+    out.choice = "It doesn't bother me";
+    out.happiness = pointsForImpact(-1);
+    out.discipline = pointsForImpact(3);
+    out.karma = pointsForImpact(3);
+    out.narrative = logLine + "\nI didn't let it bother me.";
+  } else {
+    // 0x73f3c52ccc: ImpactDiscipline(-3) and ImpactKarma(-3), then the branch
+    // builds a ScenarioFriendRumorOutbound(friend, retaliatory: true) and pushes
+    // it with the child link at 0x128 -- the friend's answer, a dismiss-only
+    // card whose title is drawn from its own reaction set ('In good faith', 'We
+    // joke, we joke', ...). The port has no scenario push, so the card's own
+    // line stands in for it (shortcut).
+    out.choice = "Start a rumor about " + them;
+    out.discipline = pointsForImpact(-3);
+    out.karma = pointsForImpact(-3);
     out.narrative = logLine;
   }
   return true;

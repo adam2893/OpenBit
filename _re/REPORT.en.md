@@ -13244,7 +13244,8 @@ class carries both the picker and a readable push gate.
 The port writes none of this card's prose. The body is the row's `Inbound Scenario` cell inside
 the class's own `Your {0}, {1}, {2}.`, the journal line is the row's `Inbound Log Version`
 cell inside `My {0}, {1}, {2}.`, the four buttons are four more literals with one pronoun slot
-each, and two of the four reactions replace the journal line with a literal of their own. What
+each, and three of the four reactions keep the journal line and append a sentence of their own
+to it. What
 the port adds is its usual `What will you do?` prompt (src/sim.cpp:24003) - the line the game
 itself writes at the end of its body wrapper and which the port keeps as a field of its own, the
 same one 98, 99 and 100 carry. The table is also the first paired one in the report: sixty-two
@@ -13306,9 +13307,11 @@ By literal id, the card's vocabulary is: the title `Pranked` (`#34445`), the inb
 `Your {0}, {1}, {2}.` (`#50810`), the narrative wrapper `My {0}, {1}, {2}.` (`#31011`),
 the label `Attack {0}` (`#12347`), the label `Laugh it off` (`#28540`), the vampire
 prefix `Hypnotize ` (`#23341`), the label `Ignore {0}` (`#26382`), the label
-`Insult {0}` (`#26846`) and the two journal replacements `I laughed it off.` (`#69099`)
-and `I ignored {1} antics.` (`#69093`). The last one is the game's own wording, typo
-included. Two more wrappers have no id to cite because they are not in the metadata at all:
+`Insult {0}` (`#26846`) and the three sentences that reactions append to the card's own journal
+line: `I laughed it off.` (`#69099`), `I ignored {1} antics.` (`#69093`) and
+`I called {1} {2}.` (`#69007`). The middle one is the game's own wording, typo included - the
+appended sentence leaves out the possessive the same phrase carries in the rest of the game. Two
+more wrappers have no id to cite because they are not in the metadata at all:
 `{0}\n\nWhat will you do?` (the live cell at module offset 0x5c35668) and `{0}` (the
 narrative cell at 0x5c31470).
 
@@ -13354,10 +13357,19 @@ The outcomes, all of which end with `Log(line)` `0x73f380158c` and `RefreshUI()`
 | label | friend relationship | hero meters | journal line |
 | --- | --- | --- | --- |
 | attack | unchanged | none | the card's own line |
-| laugh | +1 | discipline +3, happiness +1 | `I laughed it off.` |
-| ignore | unchanged | discipline +2 | `I ignored {pronoun} antics.` |
-| insult | -3 | discipline -2, karma -2, happiness -3 | the card's own line, then a reaction card |
+| laugh | +1 | discipline +3, happiness +1 | the card's own line, then `I laughed it off.` |
+| ignore | unchanged | discipline +2 | the card's own line, then `I ignored {pronoun} antics.` |
+| insult | -3 | discipline -2, karma -2, happiness -3 | the card's own line, then `I called {pronoun} {insult}.`, then a reaction card |
 | hypnotize | -1 | karma -2, notoriety -1 | the card's own line |
+
+The three appended sentences are built the same way in every branch that has one: the handler
+formats the cell `{0}` (0x5c31470) with the card's own `_narrative` string first, and then
+formats the branch's sentence literal with that string as its first argument - so the sentence
+lands inside the same log entry as a second line rather than replacing the line the row wrote
+(102.5 keeps the same shape for the rumor card, whose literals are built identically). The
+insult branch does both things at once: it formats `I called {1} {2}.` (`#69007`) with the
+friend's pronoun and the insult it drew, and then hands the result to the reaction card it
+pushes in front of the player.
 
 The friend's relationship is moved through the vtable slot at 0x508 - the same unnamed slot 100
 found - and the hero's happiness through the vtable slot at 0x408, which the insult branch calls
@@ -13365,9 +13377,10 @@ with -3 and the laugh branch with +1, which is what names it. The attack branch 
 all: it allocates `ScenarioCustomAttack` `0x73f3cda45c` with the friend and chains it as the
 card's child scenario, so the attack is played out by that card rather than by this one. The
 insult branch does the same kind of thing after its meter changes: it draws an insult from the
-`a16_insults-enc` pool the port already ships (src/sim.cpp:1464), tests it for `fool`, builds
-three formats and pushes a reaction card built from the result, and records the name in
-`ListPeopleNamesInsulted`. The port's `pointsForImpact` maps those moves as 1 to 4, 2 to 8, 3
+`a16_insults-enc` pool the port already ships (src/sim.cpp:1464), tests it for `fool`, appends
+the drawn insult to the card's own journal line through `I called {1} {2}.` (`#69007`), builds
+three more formats from the same insult and pushes a reaction card built from the result, and
+records the name in `ListPeopleNamesInsulted`. The port's `pointsForImpact` maps those moves as 1 to 4, 2 to 8, 3
 to 16, -2 to -8 and -3 to -16.
 
 ### 101.3 Who can ask: two gates, and then the row's own seven
@@ -13494,37 +13507,28 @@ the body is the row's `Inbound Scenario` cell inside `Your friend, NAME, ...` wi
 substituted back into any `<friend>` token, that the label is one of the four the game ships,
 that the deltas match the branch (nothing for attack, discipline 16 and happiness 4 for laugh,
 discipline 8 for ignore, karma -8, discipline -8 and happiness -16 for insult), that the journal
-line is the branch's own line where the branch replaces it and the row's `Inbound Log Version`
-cell where it does not, and that no angle-bracket token survives anywhere in the body, the label
+line is the row's `Inbound Log Version` cell and, in the three branches that append a sentence,
+carries that branch's sentence as a second line - laugh, ignore and insult each checked against
+their own literal, with the insult branch also checked for having drawn a real insult out of
+`a16_insults-enc` - and that no angle-bracket token survives anywhere in the body, the label
 or the journal line. It also counts what a vampire life sees, which is the measurement quoted at
 the end of 101.4.
 
 ```
 lives 160
-cards 242
-cards per life {0: 49, 1: 34, 2: 43, 3: 20, 4: 10, 5: 2, 6: 2}
-responses {'Attack': 50, 'Ignore': 61, 'Insult': 55, 'Laugh': 76}
+cards 244
+cards per life {0: 48, 1: 39, 2: 36, 3: 21, 4: 12, 5: 2, 6: 2}
+responses {'Attack': 49, 'Ignore': 60, 'Insult': 56, 'Laugh': 79}
 rows drawn 27 of 62
 hero age at the card min 18 max 80
 a vampire hero: 68 of 71 years are a16_vampire cards, prank cards 0
 failures 0
 ```
 
-```
-lives 160
-cards 242
-cards per life {0: 49, 1: 34, 2: 43, 3: 20, 4: 10, 5: 2, 6: 2}
-responses {'Attack': 50, 'Ignore': 61, 'Insult': 55, 'Laugh': 76}
-rows drawn 27 of 62
-hero age at the card min 18 max 80
-a vampire hero: 68 of 71 years are a16_vampire cards, prank cards 0
-failures 0
-```
-
-Two hundred and forty-two cards over one hundred and sixty lives is one and a half pranks per
+Two hundred and forty-four cards over one hundred and sixty lives is one and a half pranks per
 life, and the distribution on the next line shows why: most lives see one, two or three of them
-and a few see five or six. The response tally is the line that matters for this card - seventy-six
-laughs, sixty-one ignores, fifty-five insults and fifty attacks - because it says all four
+and a few see five or six. The response tally is the line that matters for this card - seventy-nine
+laughs, sixty ignores, fifty-six insults and forty-nine attacks - because it says all four
 branches are exercised rather than one of them being dead code, and the deltas of each branch
 appear in the samples below. The row count is the twenty-seven explained in 101.4, which is a
 window on the table and not a filter over it. The age line is the gate itself: no card below 18,
@@ -13538,57 +13542,60 @@ draws its own alternative, one at the table's floor age, and one held by an olde
 
 ```
 === the attack response: no stat moves, the prank is handed the fight card
-seed 1  male  United States  years 80  age 75  row 14
-table cells : Sender Min Age 18  Sender Gender -  Receiver Min Age 18  Vampire -
+seed 2  male  United States  years 80  age 66  row 10
+table cells : Sender Min Age 10  Sender Gender -  Receiver Min Age 10  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Cady Peary, signed you up to a mailing list for a political party that you hate.
-CHOICE : Attack her
-LOG    : My friend, Cady Peary, signed me up to a mailing list for a political party that I hate.
+BODY   : Your friend, Catrina Woodworker, gave you a plate of Oreo cookies after secretly replacing the sweet cream filling with toothpaste.
+CHOICE : Attack him
+LOG    : My friend, Catrina Woodworker, pranked me by giving me a plate of Oreo cookies after he had replaced the sweet cream filling with toothpaste.
 DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
 
-=== the laugh response: discipline 16 and happiness 4, and the card line is replaced
+=== the laugh response: discipline 16 and happiness 4, and the line gains a sentence
 seed 2  male  United States  years 80  age 49  row 18
 table cells : Sender Min Age 14  Sender Gender -  Receiver Min Age 14  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Brittany Shears, switched the contact numbers of everyone in your phone.
+BODY   : Your friend, Kravitz Shott, switched the contact numbers of everyone in your phone.
 CHOICE : Laugh it off
-LOG    : I laughed it off.
+LOG    : My friend, Kravitz Shott, pranked me by switching the contact numbers of everyone in my phone.
+I laughed it off.
 DELTAS : {"discipline": 16, "happiness": 4, "karma": 0, "looks": 0, "smarts": 0}
 
-=== the ignore response: discipline 8, with the friend pronoun in the line
-seed 3  male  United States  years 80  age 77  row 18
+=== the ignore response: discipline 8, with the friend pronoun in the appended sentence
+seed 3  female  United States  years 80  age 77  row 18
 table cells : Sender Min Age 14  Sender Gender -  Receiver Min Age 14  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Later Rocky, switched the contact numbers of everyone in your phone.
+BODY   : Your friend, April Levine, switched the contact numbers of everyone in your phone.
 CHOICE : Ignore him
-LOG    : I ignored him antics.
+LOG    : My friend, April Levine, pranked me by switching the contact numbers of everyone in my phone.
+I ignored him antics.
 DELTAS : {"discipline": 8, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
 
-=== the insult response: karma -8, discipline -8, happiness -16
-seed 1  male  United States  years 80  age 80  row 28
+=== the insult response: karma -8, discipline -8, happiness -16, and the drawn insult in the line
+seed 5  male  United States  years 80  age 40  row 16
 table cells : Sender Min Age 14  Sender Gender -  Receiver Min Age 14  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Luka Ryan, cut out a cardboard silhouette of a centipede and placed it on the inside of your lamp shade.
+BODY   : Your friend, Deejay Walid, posted an advertisement online for free purebred golden retriever puppies including your contact information.
 CHOICE : Insult her
-LOG    : My friend, Luka Ryan, pranked me by placing a cardboard silhouette of a centipede on the inside of my lamp shade.
+LOG    : My friend, Deejay Walid, pranked me by posting an online ad for free golden retriever puppies using my contact information.
+I called her dust for brains.
 DELTAS : {"discipline": -8, "happiness": -16, "karma": -8, "looks": 0, "smarts": 0}
 
 === a row whose journal cell reads back the body's own <rb> draw
-seed 1  female  United States  years 80  age 80  row 28
-table cells : Sender Min Age 14  Sender Gender -  Receiver Min Age 14  Vampire -
-TITLE  : Pranked
-BODY   : Your friend, Brittany Shears, cut out a cardboard silhouette of a centipede and placed it on the inside of your lamp shade.
-CHOICE : Insult her
-LOG    : My friend, Brittany Shears, pranked me by placing a cardboard silhouette of a centipede on the inside of my lamp shade.
-DELTAS : {"discipline": -8, "happiness": -16, "karma": -8, "looks": 0, "smarts": 0}
-
-=== a row whose body cell draws one of its own alternatives
 seed 4  male  United States  years 80  age 59  row 5
 table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Maylor Shift, set 24 separate alarms on your phone for a couple of hours before you need to wake up.
+BODY   : Your friend, Beyawnce Gnolls, set 24 separate alarms on your phone for a couple of hours before you need to wake up.
 CHOICE : Attack him
-LOG    : My friend, Maylor Shift, bombarded my morning by setting 24 alarms on my phone.
+LOG    : My friend, Beyawnce Gnolls, bombarded my morning by setting 24 alarms on my phone.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a row whose body cell draws one of its own alternatives
+seed 4  female  United States  years 80  age 59  row 5
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Vampire -
+TITLE  : Pranked
+BODY   : Your friend, Megan Mare, set 24 separate alarms on your phone for a couple of hours before you need to wake up.
+CHOICE : Attack him
+LOG    : My friend, Megan Mare, bombarded my morning by setting 24 alarms on my phone.
 DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
 
 === a card at the table floor age
@@ -13601,12 +13608,12 @@ LOG    : My friend, Olive Roderick, pranked me by shaving my head while I was sl
 DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
 
 === a card held by an older hero
-seed 1  female  United States  years 80  age 75  row 14
-table cells : Sender Min Age 18  Sender Gender -  Receiver Min Age 18  Vampire -
+seed 2  female  United States  years 80  age 66  row 10
+table cells : Sender Min Age 10  Sender Gender -  Receiver Min Age 10  Vampire -
 TITLE  : Pranked
-BODY   : Your friend, Duke Combs, signed you up to a mailing list for a political party that you hate.
-CHOICE : Attack her
-LOG    : My friend, Duke Combs, signed me up to a mailing list for a political party that I hate.
+BODY   : Your friend, Catrina Woodworker, gave you a plate of Oreo cookies after secretly replacing the sweet cream filling with toothpaste.
+CHOICE : Attack him
+LOG    : My friend, Catrina Woodworker, pranked me by giving me a plate of Oreo cookies after he had replaced the sweet cream filling with toothpaste.
 DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
 ```
 
@@ -13614,4 +13621,414 @@ Every card in the run resolves its tokens, the two wrappers reproduce the game's
 character for character, and the four labels are the four the game ships. What the port does not
 do with this family is let the player choose which of them happens.
 
-The full regression after the section: 44 probes at residue 0 (the new `prankres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+The full regression after the section: 45 probes at residue 0, the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 102. The friend rumor card: forty rumors in one half, four reactions, and the three
+rows nobody can live long enough to hear
+
+Section 101 opened the friend family with its prank table. This section takes the sibling
+`ScenarioFriendRumorInbound` (il2cpp_dump.txt:40895): the same shape as 100 and 101 - one row
+drawn from a table, the row wrapped in the class's own sentence, four reactions - but the row is
+a rumor the friend has started *about the hero* ("you have not just one, but many venereal
+diseases"), and the card carries a second shape the prank card never had. A flag at 0x178
+(`_isRetaliatory`) turns the same class into a dismiss-only card whose title is drawn from five
+short reactions instead of a body with buttons, and the handler dispatches on the button's
+*text* again: four `Contains` tests, in the order attack, deny, bother, rumor (102.2).
+
+The family around it is the one section 101 listed, and this is its fourth member.
+`ScenarioFriendRumorOutbound` (il2cpp_dump.txt:40906) is the other half of the same table: the
+card the hero is handed for choosing the fourth button, `Start a rumor about {0}`. The inbound
+handler builds it, sets its friend and its retaliatory flag, chains it as a child at 0x128, and
+the card does exactly one thing when it is dismissed - `DismissSelected()` `0x73f3c53cd8` is 27
+instructions, `Log(_narrative)` and a return (102.1). The pair is data-driven exactly as the prank
+pair is: both cards are filled by `DataFriendRumor`'s picker, which is four arguments wide and has
+no vampire argument to pass.
+
+The port writes none of this card's prose. The body is the row's `Inbound Scenario` cell inside
+the class's own `Your {0}, {1}, started a rumor that {2}.`, the journal line is the row's
+`Inbound Log Version` cell inside `My {0}, {1}, started a rumor that {2}.`, the four buttons are
+four more literals with one pronoun slot in two of them, and two of the four reactions append a
+sentence of their own to the journal line. That appended shape is the same one the prank card's
+laugh, ignore and insult branches use, and it is why this section had to go back and correct
+section 101: the templates carry a newline inside them, so the card's own line is kept and the
+sentence follows it - the earlier reading of those cells, which showed only the sentence, was a
+truncation in the reading tool, not the game's text (102.6). What the port adds is the usual
+`What will you do?` prompt (src/sim.cpp:24198) - the line the game itself writes at the end of its
+body wrapper, which the port keeps as a field of its own. The table is a single half: forty rows
+with no vampire column, no outbound log version and, unlike the prank table, live age floors on
+both people - a card the friend of an eighteen-year-old can start and the friend of a
+sixty-year-old cannot (102.4).
+
+### 102.1 The family
+
+`class ScenarioFriendRumorInbound : Scenario` (il2cpp_dump.txt:40895) holds three fields:
+`_friend` (SimPerson, 0x170), `_isRetaliatory` (System.Boolean, 0x178) and `_narrative`
+(System.String, 0x180). Its methods are `.ctor(SimPerson)` `0x73f3c51f9c` (15 instructions),
+`.ctor()` `0x73f3c51fd8` (27), `RefreshScenario()` `0x73f3c523b4` (351), `DismissSelected()`
+`0x73f3c52930`, `ChoiceSelectedAtIndex(System.Int32)` `0x73f3c5299c` (239), `GetFriend()`
+`0x73f3c52044` and `System.Boolean ScenarioIsEligibleForRandomPush()` `0x73f3c52d8c` (33).
+The two constructors differ in more than their arguments, and that difference is the card's second
+shape: `.ctor(SimPerson)` stores the friend, sets `_isRetaliatory` to 1 and writes a constant
+0x0101 across 0x132 - two adjacent one-byte flags; `.ctor()` calls the base with false, takes its
+friend from `GetFriend()`, sets `_isRetaliatory` to 0, clears `Scenario.HasDismissButton` (0x28),
+stores the friend a second time at 0x60 and sets the title from a literal cell at module offset
+0x5C60ED0, which reads `Rumor`. So the card whose buttons the player sees is the one built by the
+parameterless constructor, and its title is a single word.
+
+The data class is `DataFriendRumor` (il2cpp_dump.txt:9650) with nine backing fields:
+`OutboundScenario` 0x10, `InboundScenario` 0x18, `InboundLogVersion` 0x20, `SenderMinAge` 0x28,
+`SenderMaxAge` 0x2c, `SenderGender` 0x30, `ReceiverMinAge` 0x34, `ReceiverMaxAge` 0x38 and
+`ReceiverGender` 0x3c. Compared with `DataFriendPrank` (101.1) there is no outbound log version
+and no `Vampire` flag, and the field order is different - the age and gender gates sit at 0x28 to
+0x3c rather than 0x30 to 0x48 - which is why the picker's tests read the fields in an order the
+table's column list does not suggest (102.3).
+
+The set is filled by `LoadFriendRumorSet()` `0x73f2b92cb0` and stored at 0x5a8 of the same
+data holder that carries `_coworkerRumorSet` (0x550) and `_politicalRumorSet` (0x6f0), so the
+rumor family has three sets in one holder and this section takes the friend one.
+`DataFriendRumor GetRandomRumorForSenderAgeSenderGenderReceiverAgeReceiverGender(System.Int32,
+System.Int32, System.Int32, System.Int32)` `0x73f2ccace4` is 320 instructions and reads four
+arguments - sender age, sender gender, receiver age, receiver gender - where the prank picker
+reads five. It builds a pool, picks one with `GetRandomNumber(0, count)` `0x73f32ab2a8` and
+returns null for an empty pool.
+
+The outbound sibling is `class ScenarioFriendRumorOutbound : Scenario` (il2cpp_dump.txt:40906)
+with `.ctor(SimPerson, System.Boolean)` `0x73f3c52d58`, `RefreshScenario()` `0x73f3c52e10`
+(946 instructions) and `DismissSelected()` `0x73f3c53cd8` (27). It has no
+`ChoiceSelectedAtIndex`, so every path through it ends in the log and a refresh. Its literals
+were read live for this section: the title reaction set is fifteen strings - `In good faith`
+(#26455), `We joke, we joke` (#46140), `This is hilarious` (#43323), `Didn't hear it from me`
+(#17716), `Don't overexaggerate` (#18060), `But you're somebody now` (#14261), `It's a shame
+really` (#27671), `Who told you that!?` (#46865), `Not my words` (#32100), `Start a rumor about
+your best friend` (#39874), `Spread the word` (#39742), `No bad publicity` (#31569), `It wasn't
+me` (#27628), `It's probably true` (#27782) and `Don't believe me?` (#18007) - and the body pair
+`I started a rumor that {0}.` (#25153) with `You started a rumor that {0}.` (#49370). Its
+946-instruction `RefreshScenario` was not mapped branch by branch, so the outbound card is not
+ported; the title set and the two body templates are what this section can state about it.
+
+The rest of the set is the list section 101 gave, and two more members of it are rumor halves:
+`ScenarioCultCommunardRumorInbound` (il2cpp_dump.txt:36671) and its outbound sibling (36372),
+which use the same shape with a cult member instead of a friend. The table is
+a16_friend-rumors-enc: forty data rows and nine columns, comma-separated, listed in
+_re/gamedata_plain (the same-named file in _re/gamedata is the encrypted blob). The port loads it
+eagerly from the list at src/sim.cpp:1244, directly under the prank table section 101 added at
+src/sim.cpp:1243.
+
+### 102.2 The card
+
+By literal id, the card's vocabulary is: the body wrapper `Your {0}, {1}, started a rumor that
+{2}.` (#50783), the narrative wrapper `My {0}, {1}, started a rumor that {2}.` (#30998), the
+first label `Attack {0}` (#12347, the same literal section 101 uses), the second label
+`Deny it` (#17528), the fourth label `Start a rumor about {0}` (#39875), the deny branch's
+appended sentence `{0}\nI denied it to everyone I know.` (#69062), the bother branch's
+`{0}\nI didn't let it bother me.` (#69065), and the five titles of the retaliatory variant:
+`Fair play` (#19833), `Goes around, comes around` (#21988), `I deserved that` (#23977),
+`Not bad` (#32032) and `The savagery` (#42433). Three more strings have no id to cite because
+they are live cells the metadata reader cannot name: the title `Rumor` (module offset 0x5C60ED0),
+the third label `It doesn't bother me` (0x5c3a750) and the two shared wrappers
+`{0}\n\nWhat will you do?` (0x5c35668) and `{0}` (0x5c31470).
+
+`RefreshScenario()` builds the card in this order. It takes the hero from the sim singleton and
+the friend from `_friend`, reads the friend's gender and age from 0x1c and 0x20 and the hero's from
+the sim, and calls the picker with the friend as the *sender* and the hero as the *receiver* -
+the same assignment the prank card uses, which is what makes the friend the one spreading the
+rumor. It then formats the inbound wrapper three ways: the friend's relationship word
+(`FriendRelationshipStatusString` `0x73f30e169c`, which returns `best friend` for a FriendStatus
+of 2, `enemy` for 3 and `friend` for everything else), the friend's first name (`_friend` 0x10,
+`SimPersonName` 0x18) and the row's `Inbound Scenario` cell. The `My {0}, {1}, started a rumor
+that {2}.` narrative is the same three arguments with the row's `Inbound Log Version` cell. Both
+strings go through the parser (`GetParsedBodyString` `0x73f337bb5c`,
+`GetParsedNarrativeString` `0x73f337bb64`), the narrative is wrapped once more by the `{0}` cell
+and stored at `_narrative` (0x180), and only then does the method branch on the flag:
+
+- `_isRetaliatory` set (0x73f3c5266c, `cbz w8, ...`): the body becomes the parsed body wrapped by
+  the `{0}` cell, and the title becomes a random pick from the five reactions above. The method
+  then jumps *straight to its epilogue* - no `ChoiceArray` is built and the 0x110 flag is never
+  set - so this is the dismiss-only shape: five possible titles, no buttons. In this port nothing
+  reaches it (the only constructor the port models is the parameterless one).
+- `_isRetaliatory` clear: the body becomes the parsed body inside `{0}\n\nWhat will you do?`
+  (stored at `Scenario.Body`, 0x48), the flag at 0x110 is set to 1, and four buttons are added to
+  a fresh `ArrayList` in this order, each a `ScenarioChoice::.ctor(System.String, Boolean,
+  Boolean)` `0x73f2eb9c50` called with false and true:
+
+1. `Attack {0}` with the friend's pronoun (`PronounStringForType(2)` `0x73f30e64d0`).
+2. `Deny it`.
+3. `It doesn't bother me`.
+4. `Start a rumor about {0}` with the pronoun.
+
+`ChoiceSelectedAtIndex` `0x73f3c5299c` does not trust the index either. It indexes `ChoiceArray`,
+loads the choice's label at 0x10, lowercases it, formats the journal candidate through the `{0}`
+cell, and moves the friend's relationship -2 through the vtable slot at 0x508 *before* it looks at
+the label, so every one of the four answers costs the friend two points. Then it runs four
+`Contains` tests in order: `attack` (module offset 0x5C38710, the string section 101 shares),
+`deny` (0x5C3E3B8), `bother` (0x5C60E18) and `rumor` (0x5C3E3C8). A label that matches none of
+them falls through to the shared tail, and every path ends with `Log(line)` `0x73f380158c` and
+`RefreshUI()` `0x73f3580f5c`.
+
+| label | hero meters | journal line |
+| --- | --- | --- |
+| attack | unchanged | the card's own line, then a fight card |
+| deny | happiness -3 | the card's own line, then `I denied it to everyone I know.` |
+| it doesn't bother me | happiness -1, discipline +3, karma +3 | the card's own line, then `I didn't let it bother me.` |
+| start a rumor about | discipline -3, karma -3 | the card's own line, then the outbound card |
+
+The attack branch moves nothing at all: it allocates `ScenarioCustomAttack` `0x73f3cda45c` with
+the friend and chains it as the card's child scenario, so the fight is played out by that card.
+The rumor branch does the same kind of thing after its two meter moves: it allocates
+`ScenarioFriendRumorOutbound` `0x73f2eb9db8` with false, stores the friend at 0x170, sets
+`_isRetaliatory` to 1 and chains the card at 0x128 - and since the child was built with the flag
+set, the card the player then sees is the dismiss-only variant above, with a title drawn from
+`Fair play` / `Goes around, comes around` / `I deserved that` / `Not bad` / `The savagery`. The
+friend's relationship is moved through the unnamed vtable slot at 0x508, the same slot 100, 101
+and this card's own handler use, and the hero's happiness through the slot at 0x408, which this
+handler calls with -3 (deny) and -1 (bother) and the prank handler calls with +1 (laugh) and -3
+(insult) - which is what names it. The port's `pointsForImpact` maps those moves as -1 to -4,
+-3 to -16 and +3 to 16.
+
+### 102.3 Who can ask: the same three gates, then the row's own six
+
+`ScenarioIsEligibleForRandomPush()` `0x73f3c52d8c` is 33 instructions: a one-time dictionary
+fill, then the hero's age at least 18 (compared against 0x12), then `CurrentlyInPrison()`
+`0x73f2f0e1d8`, then `GetFriend()` not null. That is the whole gate, instruction for instruction
+the same one section 101 documented - the same three tests in the same order, with no presented
+cap, so nothing limits how often a life that qualifies is handed this card beyond the push
+scheduler itself.
+
+The picker then applies six tests to each row, with the friend as sender and the hero as receiver.
+The field offsets are the ones the data class declares, so the order is the class's, not the
+table's:
+
+1. `SenderMinAge` (0x28) must be at most the sender's age, else the row is skipped.
+2. `SenderMaxAge` (0x2c) must be zero, or at least the sender's age.
+3. `SenderGender` (0x30) must equal the sender's gender, or be 2, which means any.
+4. `ReceiverMinAge` (0x34) must be at most the receiver's age.
+5. `ReceiverMaxAge` (0x38) must be zero, or at least the receiver's age.
+6. `ReceiverGender` (0x3c) must equal the receiver's gender, or be 2.
+
+There is no seventh test: this table has no vampire column, which is the structural difference
+between the two pickers. Tests 2, 3, 5 and 6 are not all inert here the way they are for the prank
+table. Test 3 is inert - `Sender Gender` is empty on all forty rows - but test 2 has two rows
+(10 and 11), test 5 has four (10, 11, 16 and 40) and test 6 has seven, three of them female and
+four male. That makes this the first friend card whose rows are conditioned on the hero's sex:
+four rows can only reach a male hero and three only a female one (102.4).
+
+### 102.4 The rows: forty rumors in one half, three rows the port can never draw, and one wrong verb
+
+The table has forty data rows and nine columns: Outbound Scenario, Inbound Scenario,
+Inbound Log Version, Sender Min Age, Sender Max Age, Sender Gender, Receiver Min Age,
+Receiver Max Age and Receiver Gender. The file holds forty-one records in forty lines, because
+the last row has no trailing newline - which is how a line count of this file reads one row short.
+Fifteen rows carry no gate at all (1 to 6, 11, 12, 15, 16, 19, 21, 22, 25 and 27), and the rest are
+gated on one to three values.
+
+The gates do not repeat the prank table's shape, where both age floors were the same number on
+every row. Here Sender Min Age is filled on eighteen rows - 18 on seven, 60 on five, 12 on three,
+and 14, 15 and 30 on one each - while Receiver Min Age is filled on twenty-two: the same 18, 60,
+12 and 15 sets, plus 16, 17, 25 and 50. The two columns differ on nine rows, and rows 14, 17, 18,
+20 and 32 are the plain cases of it: they have no sender floor at all and a receiver floor of 25,
+16, 50, 18 and 25. A ceiling exists on four rows only: 23 and 24 cap *both* people at 11 and 10,
+29 caps the receiver at 16, and 32 caps the receiver at 40. Receiver Gender is filled on seven
+rows - female on 7, 8 and 32, male on 9, 18, 30 and 35 - which makes this the first friend card in
+the report whose rows are conditioned on the hero's sex. Sender Gender is empty on all forty rows,
+so the picker's third test is inert and the port's gender lambda is answering for the receiver
+only.
+
+Reachability, exhaustively: a hero of any age from 18 to 85, either hero gender and either friend
+gender, can draw thirty-seven of the forty rows. Rows 23, 24 and 29 can never be drawn in this
+port, and for one reason: the port's friend stands at the hero's own age, while the card requires
+the hero to be 18 or older, so a row that caps the sender below 18 is unreachable even though its
+sender floor is empty. Row 23 caps both people at 11 ("if you don't suck on your pinky toes at
+night, you won't fall asleep"), row 24 caps both at 10 ("you have collected two years worth of
+boogers in your hair") and row 29 caps the receiver at 16 ("you are a foreign midget spy"). Row 32
+is the one live ceiling: a female hero between 25 and 40 can be shown the menopause rumor and no
+other age can.
+
+The probe draws thirty of the forty rows across its one hundred and sixty lives, and that
+number is the same window section 101.4 documents rather than a filter: the picker admits all
+thirty-seven drawable rows at the ages the sweep visits, and the generator the port reproduces
+returns only part of the index space for a given seed, so a seed sweep samples part of the table
+and takes the rest on other seeds. The difference between thirty and thirty-seven is
+therefore a property of the sweep, not of the card.
+
+The prose columns are dense in tokens, and the inbound column is the one that carries the card's
+point of view. Outbound Scenario is the only column that names the friend - `<friend>` on
+thirty-five rows, plus `<his/her>` nine times, `<he/she>` six, `<friend-possessive>` five,
+`<him/her>` four and eighteen one-of lists - because the outbound cell is the friend's sentence
+about themselves. Inbound Scenario has nineteen one-of lists and no friend token at all: it is
+written in the second person ("you have not just one, but many venereal diseases"), which is what
+makes the card read as the friend telling the hero what is being said about them. Inbound Log
+Version is the first-person version of the same row and carries `<rb>` on fourteen rows - the
+body's own draw, the mechanism section 100 built for the port - plus one `<musician>`, one
+`<country-other>`, one `<drug-illegal>` and one `<he/she>`. One row's log cell is the game's own
+typo: row 27 reads `I'm are incredibly turned on by <rb>`, because the log column was written for
+the "you are" phrasing and never adjusted. The port reproduces the cell; it does not repair it.
+
+### 102.5 Shortcuts
+
+1. The push rate is invented. `rumorRng_.chance(0.05)` (src/sim.cpp:24095) carries a shortcut
+   comment because the class carries no rate - the friend subsystem opens the card and the push
+   scheduler decides when. Section 101 used 0.05 for the prank card and section 100 used 0.06 for
+   the advice card, for the same reason. The gate in front of it (age 18, not in prison, a friend
+   present, src/sim.cpp:24090) is the game's own.
+2. The port draws which response happens instead of the player choosing it. The card is a decision
+   with four labels; the port picks one with `rumorRng_.below(4)` and reports it as the card's
+   `choice`. All four labels are implemented.
+3. The friend is a drawn slot with no relationship record, so `FriendStatus` is always 0 and the
+   wrapper's relationship word is always `friend`; the class's
+   `FriendRelationshipStatusString` has nothing to switch between. Section 100's shortcut 1 and
+   section 101's shortcut 3 are the same admission.
+4. The friend relationship -2 is dropped. The game's handler calls the friend's vtable slot 0x508
+   with -2 *before* it dispatches on the label, so every one of the four answers costs the friend
+   two points; the port has no friend relationship bar (shortcut 3).
+5. The friend's age is the hero's age. The real card passes the friend's own age to the picker,
+   while the port's friend is a name drawn from the hero's own record and has no age of its own, so
+   Sender Min Age and Sender Max Age filter at the hero's age (src/sim.cpp:24105) - which is what
+   makes rows 23, 24 and 29 undrawable in 102.4.
+6. The attack branch moves nothing beyond the label. The game hands the card off to
+   `ScenarioCustomAttack(friend)` as a child scenario, and the port has no child-scenario push
+   from inside a card. The port does ship a captured `ScenarioCustomAttack` (src/sim.cpp:267), but
+   nothing reaches it from here. Section 101's shortcut 4 is the same trade.
+7. The rumor branch's second card is not built. The game allocates
+   `ScenarioFriendRumorOutbound`, sets the friend and the retaliatory flag on it and chains it as
+   the child, so the player who answers "start a rumor about him" is handed a second card. The port
+   moves the two meters and reports the label; the outbound card's 946 instructions are unmapped
+   (102.1) and it is the one member of this pair that is not ported at all.
+8. The retaliatory variant of the inbound card is unreachable, so its five titles are recorded and
+   never rendered. It is built only by `.ctor(SimPerson)`, which the port does not call: the
+   card the port models is the parameterless one, and no path in the port pushes a scenario at all
+   (shortcuts 6 and 7). Sections 101.4 and 101.5 made the same kind of note about the vampire half
+   of the prank table.
+9. The `{0}` identity cells and the `{0}\n\nWhat will you do?` wrapper have no literal id to
+   cite. They are live metadata cells (0x5c31470, 0x5c35668) whose text the reader can print but
+   whose literal index it cannot name, so 102.2 cites their module offsets instead. Section 101.2
+   did the same for the same two cells.
+10. The two appended sentences are one log entry with a newline inside it, not two entries. The
+    game writes one string through its own `Log` call, so the port keeps one narrative string that
+    contains a newline (src/script.cpp:146 pushes `ev.narrative` whole) and the probe joins the
+    lines before matching. The rendered log is the same text either way.
+
+```
+lives 160
+cards 198
+cards per life {0: 42, 1: 65, 2: 34, 3: 11, 4: 8}
+responses {'Attack': 36, 'Deny': 72, 'It': 43, 'Start': 47}
+rows drawn 30 of 40
+hero age at the card min 19 max 77
+failures 0
+```
+
+The sweep runs one hundred and sixty lives through the whole age range and takes the card one
+hundred and ninety-eight times: 42 lives see it once, 65 see it twice, 34 three times, 11 four
+times and 8 five times, with no life above five. That is a lighter card than the prank it
+answers - 244 draws over the same 160 lives - and the reason is the gate: the prank card spends
+its rate on years where a friend exists, and the rumor card spends its rate after that, on the
+years the prank did not take and the hero is 18 and not in prison. The first card can arrive at
+19 and the last at 77, so a long life sees the card repeatedly and a short one may never see it.
+
+The four answers are drawn near-evenly, which is what an uninformed sweep through a four-way
+branch should produce: Attack 36, Deny 72, It (the "didn't let it bother me" label) 43 and
+Start (the rumor answer) 47. Deny is the heaviest because it is one of the two positive-meter
+answers and the port's draw is uniform over four, so the run's shape is the run's own noise
+rather than a weighting - the card's real distribution is the player's, and this port has no
+player. Thirty of the forty rows were drawn, at ages 19 to 77, and the ten that were not are
+the three undrawable rows of 102.4 plus seven the sweep's seed window did not reach.
+
+Two things in the samples are worth reading closely. The first is the pair of appended
+sentences: a deny sample logs the friend's sentence and then "I denied it to everyone I know."
+on the next line, and the bother sample logs the friend's sentence and then "I didn't let it
+bother me." The card's own sentence is not replaced - it is the first line of a two-line log
+entry, which is the shape the metadata records and the shape the port now reproduces. The
+second is the bother sample's body, which reads "I'm are incredibly turned on by fingernail
+clippings": that is row 27's own text, kept exactly, because the inbound column was written in
+the second person ("you are incredibly turned on by <rb>") and the log column was rewritten
+without adjusting the verb. The port reproduces the table, typos and all.
+
+```
+=== the attack response: no stat moves, the rumor is handed the fight card
+seed 8  male  United States  age 27  row 2
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Larry Wyles, started a rumor that you are turned on by the mere sight of Hagrid the gamekeeper from Harry Potter.
+CHOICE : Attack him
+LOG    : My friend, Larry Wyles, started a rumor that I'm turned on by the mere sight of Hagrid the gamekeeper from Harry Potter.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== the deny response: happiness -16, and the line gains a denial sentence
+seed 1  female  United States  age 58  row 6
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Dustin Steeber, started a rumor that your mother fed you like a bird for nine years.
+CHOICE : Deny it
+LOG    : My friend, Dustin Steeber, started a rumor that my mother fed me like a bird for nine years.
+I denied it to everyone I know.
+DELTAS : {"discipline": 0, "happiness": -16, "karma": 0, "looks": 0, "smarts": 0}
+
+=== the it-doesn't-bother-me response: happiness -4, discipline 16, karma 16, and a second log line
+seed 2  male  United States  age 69  row 27
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Mary Overwood, started a rumor that you are incredibly turned on by fingernail clippings.
+CHOICE : It doesn't bother me
+LOG    : My friend, Mary Overwood, started a rumor that I'm are incredibly turned on by fingernail clippings.
+I didn't let it bother me.
+DELTAS : {"discipline": 16, "happiness": -4, "karma": 16, "looks": 0, "smarts": 0}
+
+=== the start-a-rumor-back response: discipline -16, karma -16
+seed 1  male  United States  age 58  row 9
+table cells : Sender Min Age 18  Sender Gender -  Receiver Min Age 18  Receiver Gender male
+TITLE  : Rumor
+BODY   : Your friend, Jam Roll, started a rumor that you overdosed on Viagra, twice.
+CHOICE : Start a rumor about him
+LOG    : My friend, Jam Roll, started a rumor that I overdosed on Viagra twice.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+
+=== a row whose journal cell reads back the body's own <rb> draw
+seed 1  female  United States  age 60  row 14
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age 25  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Jam Roll, started a rumor that you were accidentally switched at birth, but after figuring out the truth 15 years later, you decided that you never wanted to meet your actual parents.
+CHOICE : Deny it
+LOG    : My friend, Jam Roll, started a rumor that I was accidentally switched at birth, but after figuring out the truth 15 years later, I decided that I never wanted to meet my actual parents.
+I denied it to everyone I know.
+DELTAS : {"discipline": 0, "happiness": -16, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a row whose body cell draws one of its own alternatives
+seed 2  male  United States  age 46  row 10
+table cells : Sender Min Age 15  Sender Gender -  Receiver Min Age 15  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Ram Smith, started a rumor that your family refers to you as the short stick.
+CHOICE : Start a rumor about him
+LOG    : My friend, Ram Smith, started a rumor that my family refers to me as the short stick.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+
+=== a card at the table floor age
+seed 9  male  United States  age 20  row 6
+table cells : Sender Min Age -  Sender Gender -  Receiver Min Age -  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Fave Mathews, started a rumor that your mother fed you like a bird for six years.
+CHOICE : It doesn't bother me
+LOG    : My friend, Fave Mathews, started a rumor that my mother fed me like a bird for six years.
+I didn't let it bother me.
+DELTAS : {"discipline": 16, "happiness": -4, "karma": 16, "looks": 0, "smarts": 0}
+
+=== a card held by an older hero
+seed 2  female  United States  age 69  row 26
+table cells : Sender Min Age 12  Sender Gender -  Receiver Min Age 17  Receiver Gender -
+TITLE  : Rumor
+BODY   : Your friend, Mary Overwood, started a rumor that you were adopted from Austria.
+CHOICE : Start a rumor about her
+LOG    : My friend, Mary Overwood, started a rumor that I was adopted from United Arab Emirates.
+DELTAS : {"discipline": -16, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+```
+
+Section 102 is the fourth family in this series that turned out to be a pair, and the first
+where the two halves sit on different classes: the inbound card the player answers and the
+outbound card the "start a rumor" answer pushes are both `ScenarioFriendRumor` in the
+narrower outbound sense, built by two constructors with different titles, different buttons
+and different handlers. The port ships the inbound half only, and it ships it with the game's
+own prose, its own four labels, its own meters and now its own two-line log entries. What it
+does not ship is the second card, the friend relationship the game charges on every answer,
+and the friend's own age - three admissions of the same kind the rest of this series has made,
+all three recorded in 102.5 and none of them visible from the outside of a life.
+
+The full regression after the section: 45 probes at residue 0 (the new `rumres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
