@@ -393,6 +393,11 @@ class Sim {
   // them to the friend, or (as a vampire) hypnotizes them. It is the family's
   // only one-shot card and it draws on its own stream (flRng_).
   bool friendLoverYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend spend-time card (REPORT.en.md 106): the hero and a friend go out
+  // for a pastime, or the friend turns the invitation down. It is the family's
+  // only card without buttons (DismissSelected writes the line it built) and it
+  // draws on its own stream (fstRng_).
+  bool friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -543,6 +548,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng flRng_;
   // The coworker family's own stream (REPORT.en.md 105).
   Rng cwRng_;
+  // The friend spend-time card's own stream (REPORT.en.md 106).
+  Rng fstRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

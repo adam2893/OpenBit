@@ -630,7 +630,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
       partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL),
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
-      cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL) {}
+      cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
+      fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3571,6 +3572,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // presented cap. They are tried after the friend cards and draw on their own
   // stream (include/bl/sim.h cwRng_), so no earlier subsystem's sequence moves.
   if (coworkerYear(life, out, forcedChoice)) return true;
+  // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
+  // its only buttonless one. It is tried last of the friend cards and draws on
+  // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
+  // sequence moves.
+  if (friendSpendTimeYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24666,6 +24672,115 @@ bool Sim::friendLoverYear(Life& life, AgeUp& out, int forcedChoice) {
     }
   }
   ++life.loverPresented;
+  return true;
+}
+
+// The friend spend-time card (REPORT.en.md 106): the hero and a friend go out for
+// a pastime, or the friend turns the invitation down. It is the family's only
+// card without buttons -- ScenarioFriendSpendTime has no ChoiceSelectedAtIndex,
+// its RefreshScenario never fills the choice array, and the card leaves through
+// DismissSelected @0x73f3c544c8, which tail-calls Log(String) with the line the
+// refresh built, so the whole card is one journal entry. It is also the family's
+// only code-built one: no table names it, the pastime is a draw from
+// a16_pastimes-enc (GetRandomPastime @0x73f2d0ca3c, the same pool the
+// skip-school and mobster cards use) and the two title pools are five il2cpp
+// literals each. The game opens it from Game.Genesis.BluePrints.BluePrintSpendTime
+// .GetNextScenario @0x73f36b911c (a blueprint step) and from
+// LifeInterface.RelationshipItemArrayForFriend @0x73f357b860 (the Relationships
+// tab's own list item) -- both code-side, so the class carries no
+// ScenarioIsEligibleForRandomPush and no rate of its own.
+bool Sim::friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // shortcut: with no eligibility method to copy, the port gives the card the
+  // friend family's own floor -- the party card's five, the only low gate in the
+  // family; the advice, prank, rumor and lover cards all ask for eighteen -- and
+  // a coin of its own, drawn on fstRng_ so no other family's sequence moves.
+  if (h.age < 5 || h.inPrison) return false;
+  if (!fstRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, drawn before any of the card's own draws (the
+  // friend-party card's pattern, src/sim.cpp 24289).
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = fstRng_.chance(0.5);
+
+  // GetRandomPastime @0x73f2d0ca3c: the pool's Holiday flag must equal
+  // IsChristmasSeason() @0x73f3479fe4 (a December date in the port), the row is
+  // picked with GetRandomNumber(0, count) and the pick is retried when the row
+  // is null; the text is the row's Pastime run through the dictionary parser.
+  std::string pastime;
+  const int pastimeRow = pickPastime(fstRng_, pastime);
+  if (pastimeRow < 0) return false;
+
+  // The {0} the card's own templates carry is
+  // GetFriendRelationshipStatusForDisplay @0x73f3c5449c -- the friend's
+  // FriendStatus, which reads 'friend', 'best friend' or 'enemy'. The port's
+  // friend is a drawn slot with no status, so it always reads 'friend' (the
+  // friend-prank card's shortcut, src/sim.cpp 102).
+  const std::string rel = "friend";
+  // PronounStringForType(0) @0x73f30e64d0, the friend's own person pronoun.
+  const std::string them = friendFemale ? "she" : "he";
+
+  // The two title pools, appended to an ArrayList and drawn with
+  // PickRandomFromStringArray @0x73f32b0608: the accept branch's cells 0x5C43188,
+  // 0x5CBC4B8, 0x5CBC4A0, 0x5CBC498, 0x5CBC2A0 and the refusal branch's
+  // 0x5CBC4C8, 0x5CBC4B0, 0x5CBC4A8, 0x5CBC4C0, 0x5CBC4D0.
+  static const char* const kYes[5] = {"Good times", "Chillin' with my villain",
+                                      "Loving the crew", "What a trip",
+                                      "Always a blast"};
+  static const char* const kNo[5] = {"Next time...", "With friends like these...",
+                                     "Busy buddy", "Preoccupied pal",
+                                     "Alright well lmk"};
+
+  out = AgeUp();
+  out.table = "a16_pastimes-enc";
+  out.row_id = std::to_string(pastimeRow);
+  // The branch is the friend's own willingness test -- vtable slot 0x3f8 on
+  // SimPerson, one bit of the friend's state, code-side and unmeasurable from the
+  // running game -- so the port flips a coin of its own. shortcut: both pools are
+  // real content and a dead branch would hide half of them; the coin is 0.5.
+  if (fstRng_.chance(0.5)) {
+    out.title = kYes[fstRng_.below(5)];
+    // You and your {0}, {1}, went {2}.  (template 0x5C60A90, Format(String,
+    // Object, Object, Object) over relationship, friend name, pastime)
+    out.body = "You and your " + rel + ", " + friendName + ", went " + pastime + ".";
+    // The block behind the friendly branch (@0x73f3c53fd4) first syncs the
+    // friend's stored age ([friend+0x120]) to the hero's when the two differ,
+    // then raises the friend's relationship by three (slot 0x508 -- a bar the
+    // port's drawn friend does not carry, the family's documented shortcut),
+    // moves the hero's own slot 0x408 by +2 and calls ImpactKarma(1).
+    // shortcut: the age-sync only runs on a friend the card has already met; the
+    // port's friend has no age field, so the card always reads first-encounter.
+    out.happiness = pointsForImpact(2);
+    out.karma = pointsForImpact(1);
+    // I went {0} with my {1}, {2}.  (template 0x5C60A98; DismissSelected logs it)
+    out.narrative =
+        "I went " + pastime + " with my " + rel + ", " + friendName + ".";
+    // Two side effects the port deliberately drops: the refresh opens by pushing
+    // the community-goal scenario (+2, ContributeToCommunityGoal @0x73f36f3974
+    // then PushFront @0x73f2ebf2f8 -- the port models no community goals, only
+    // the anniversary titles table, src/sim.cpp 25215), and the accept branch
+    // then tests the pastime against one literal cell (0x5C74BB8) and completes
+    // an achievement (AchievementManager.get_SharedAchievementManager
+    // @0x73f2817388, CompleteAchievement @0x73f2817434) -- the port keeps no
+    // achievements and that cell is unresolved.
+  } else {
+    out.title = kNo[fstRng_.below(5)];
+    // You asked your {0}, {1}, to go {2} but {3} refused.  (template 0x5C60A88,
+    // Format(String, Object[]) @0x73f52a7254 over relationship, friend name,
+    // pastime, the friend's own pronoun)
+    out.body = "You asked your " + rel + ", " + friendName + ", to go " + pastime +
+               " but " + them + " refused.";
+    // @0x73f3c541fc: the friend's relationship drops by two (slot 0x508) and the
+    // hero's own slot 0x408 by one; no karma move.
+    out.happiness = pointsForImpact(-1);
+    // My {0}, {1}, refused to go {2} with me.  (template 0x5C60A50)
+    out.narrative = "My " + rel + ", " + friendName + ", refused to go " + pastime +
+                    " with me.";
+  }
   return true;
 }
 

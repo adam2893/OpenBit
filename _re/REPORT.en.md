@@ -15380,3 +15380,236 @@ half -- the cards the colleague is the subject of rather than the author of -- a
 classes of the hookup table that the relationship year already fires but never narrates.
 
 The full regression after the section: 49 probes at residue 0 (the new `cwres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to
+refuse, and a journal written by the dismiss button
+
+The friend family's sixth card is the first one that carries no scenario table at all.
+ScenarioFriendSpendTime does not read a16_friend-anything: its content is one row of
+a16_pastimes-enc, the same 271-row list the push-spend-time card uses, and everything else
+the card shows -- the title, the two sentences -- is a template wrapped around that row and
+around the friend's name. It is also the family's only card with no choices: there is no
+ChoiceSelectedAtIndex in the class, the button the player is given is Dismiss, and the
+dismiss handler is what writes the journal line. Where the prank card needs the player to
+pick a side and the rumor card needs him to pick a revenge, this one needs him to close it.
+
+Three things make it worth a section of its own. The first is who opens it: the class has
+no eligibility method of its own, and the two callers of its constructor turn out to be a
+blueprint and the Relationships tab, not the yearly random push. The second is that the
+friend gets a vote: the card's first branch is a test on the friend's own state, and when
+it fails the card is a refusal -- a different title pool, a different body, a different
+narrative, and a happiness cost rather than a happiness gain. The third is the pastime
+itself, which is drawn out of the same table the push card draws from, filtered by a
+Christmas flag that only the season can set.
+
+What the port models is the whole card: the age floor, its own stream, the pastime row,
+the two title pools, both bodies and both narratives, the friend's name drawn once per
+card, the pronoun, the stat deltas and the empty choice.
+
+### 106.1 The card
+
+The class is small even for this family. Its three fields are a SimPerson at 0x170, a
+SimSeniorPerson at 0x178 and a String at 0x180, the narrative; two constructors,
+ctor(SimPerson) @0x73f3c53d44 and ctor(SimSeniorPerson) @0x73f3c53d70, are the same
+three-instruction thunk to Scenario::.ctor(false) that every other card in the yearly chain
+has, and three methods carry the content: RefreshScenario @0x73f3c53d9c (448 instructions),
+DismissSelected @0x73f3c544c8 (27) and GetFriendRelationshipStatusForDisplay @0x73f3c5449c
+(11). The 448 instructions are mostly IL2CPP metadata registration -- roughly the first
+seventy lines of the disassembly are adrp/ldr pairs over type-usage cells, each guarded by
+a byte at 0x73f656d000 and each followed by FillDictionary -- so the card's own work is
+about a hundred instructions, and every string it needs is a literal cell it loads.
+
+The refresh builds the card in one pass. It writes 0x101 into the halfword at self+0x132
+(the two "this card has no choices" flags the base class reads), makes sure _friend is
+non-null, asks the friend's virtual slot 0x3f8 for an int and keeps bit 0, calls
+GetRandomPastime, and then splits. Both halves end with a title from a five-string list
+picked by PickRandomFromStringArray @0x73f32b0608 and two Format calls, one into the body
+at self+0x48 and one into the narrative at self+0x180.
+
+The relationship word comes from GetFriendRelationshipStatusForDisplay, which is a
+two-line decision: if _seniorFriend is set it asks the SimSeniorPerson for
+SeniorRelationshipStatusForDisplay @0x73f30fde5c, otherwise it asks the SimPerson for
+FriendRelationshipStatusString @0x73f30e169c, and if neither field is set it throws. The
+word is the first argument of both templates.
+
+DismissSelected does one thing: it walks the game chain from [game+0xb8] through [0] and
++0x20 to +0x48, and tail-calls Log(String) @0x73f380158c with self+0x180. There is no stat
+move, no relationship move, no second card -- the button's whole job is to put the
+narrative into the journal, which is why the journal sentence in this family is the only
+one the player never saw marked as a choice.
+
+### 106.2 Who opens it
+
+Nothing in the class decides when the card may appear. There is no
+ScenarioIsEligibleForRandomPush and no table predicate, so the question is who calls the
+constructor, and that is answerable directly: scan libil2cpp.so for every BL word, decode
+the target with the same 0x73F049E000 delta tools/dis_range.py uses, and resolve the
+addresses with tools/addr2method.py. Two callers turn up.
+
+The first is BluePrintSpendTime.GetNextScenario(String) @0x73f36b8b04, which instantiates
+the class with a SimPerson at 0x73f36b911c and with a SimSeniorPerson at 0x73f36b9314 --
+the same blueprint method, one overload per friend type. The blueprint itself is at
+il2cpp_dump.txt:129489 with .ctor @0x73f36b8810 and ConditionSelected @0x73f36b8818, and
+ConditionSelected is 187 instructions of payload and type comparison (GetData() @0x73f354378c,
+then string equality against its own cells): it decides which blueprint answers, not
+whether this card may run.
+
+The second caller is LifeInterface.RelationshipItemArrayForFriend @0x73f357b860, the
+method that builds the Relationships tab's rows for one friend. So the card is reached two
+ways -- from the yearly spend-time blueprint, and from tapping the friend in the
+Relationships list -- and neither of them is a gate this class owns. That is why the port
+gives the card its own floor and its own rate rather than mirroring a push count like the
+coworker family does.
+
+### 106.3 The two branches
+
+The split is one bit of one call. RefreshScenario keeps the friend's virtual slot 0x3f8
+result in w21, then does tbz w21,#0 to 0x73f3c541fc: bit 0 clear takes the refusal half,
+bit 0 set takes the main half. What slot 0x3f8 computes lives in the SimPerson class rather
+than in the card, and the port has no friend object to ask, so the port's coin -- one
+fifty-fifty draw on its own stream -- stands in for it, and both halves of the card are
+live in the port exactly as they are in the game.
+
+The main half, in order: it pushes the community-goal scenario (ContributeToCommunityGoal(2)
+@0x73f36f3974 through [game+0xb8]+0x50, then PushFront(Scenario) @0x73f2ebf2f8), it
+compares [friend+0x120], the friend's stored age, against the hero's age at [hero+0x20],
+and when they differ it writes the hero's age over the friend's, calls the friend's slot
+0x508 with 3, calls the hero's slot 0x408 with 2 and calls ImpactKarma(1) @0x73f30e4bfc.
+Then it builds a five-string list -- the cells at 0x5C43188, 0x5CBC4B8, 0x5CBC4A0,
+0x5CBC498 and 0x5CBC2A0 -- and draws the title out of it, formats the body from the
+template cell 0x5C60A90 with the relationship, the friend's name object and the pastime,
+formats the narrative from cell 0x5C60A98 with the pastime, the relationship and the name,
+and finishes with an Equals against the cell at 0x5C74BB8 which, on a match, tails into
+AchievementManager.get_SharedAchievementManager() @0x73f2817388 and
+CompleteAchievement(String) @0x73f2817434 with the cell at 0x5C734B8 as the name.
+
+The refusal half is the same shape with the opposite values: the friend's slot 0x508 gets
+-2, the hero's slot 0x408 gets -1, the title comes from a second five-string list (cells
+0x5CBC4C8, 0x5CBC4B0, 0x5CBC4A8, 0x5CBC4C0 and 0x5CBC4D0), the body comes from cell
+0x5C60A88 through the object-array overload of Format @0x73f52a7254 -- whose fourth
+argument is the friend's PronounStringForType(0) @0x73f30e64d0 -- and the narrative comes
+from cell 0x5C60A50.
+
+All six templates and both title pools were read out of the running process, so their text
+is measured rather than guessed:
+
+| where | cell | text |
+| --- | --- | --- |
+| title, main | 0x5C43188, 0x5CBC4B8, 0x5CBC4A0, 0x5CBC498, 0x5CBC2A0 | Good times / Chillin' with my villain / Loving the crew / What a trip / Always a blast |
+| title, refusal | 0x5CBC4C8, 0x5CBC4B0, 0x5CBC4A8, 0x5CBC4C0, 0x5CBC4D0 | Next time... / With friends like these... / Busy buddy / Preoccupied pal / Alright well lmk |
+| body, main | 0x5C60A90 | You and your {0}, {1}, went {2}. |
+| narrative, main | 0x5C60A98 | I went {0} with my {1}, {2}. |
+| body, refusal | 0x5C60A88 | You asked your {0}, {1}, to go {2} but {3} refused. |
+| narrative, refusal | 0x5C60A50 | My {0}, {1}, refused to go {2} with me. |
+
+The two refusals are worth reading twice, because the sentence changes subject: the quiet
+refusal is "Next time..." with a body that blames nobody, and the loud one is "With friends
+like these..." with a body that names the friend and points at her. The game draws one of
+the five at random rather than scaling the wording to the relationship, so a friend of
+twenty years can get "Busy buddy" and a friend of a week can get "With friends like these...".
+
+### 106.4 The rows
+
+The pastime is not part of this class. GetRandomPastime @0x73f2d0ca3c is a static 168
+instructions that lazily fills a static set hanging off the game object at [game+0xb8]+0x250
+with an ArrayList (ctor @0x73f5381f78) and then LoadPastimeSet() @0x73f2b72520, works out
+whether the day is a holiday -- IsChristmasSeason() @0x73f3479fe4, and when that is true a
+GetRandomNumber(0,2) @0x73f32ab2a8 that only sometimes turns it on -- and then rejection
+samples: draw an index in [0, Count), take the row, require that it is a DataPastime (a
+class comparison against the cell at 0x73f60e9000+0x7e8), require that the bool at row+0x18
+equals the flag, and retry on any failure. Then it formats "{0}" (cell 0x5C31470) over the
+row's Pastime string and runs the result through GetParsedBodyString @0x73f337bb5c, which
+is the same dictionary pass the rest of the report's tables go through.
+
+The table itself is one of the smaller ones the port already carries:
+
+| table | bytes | rows | what a row is | split |
+| --- | --- | --- | --- | --- |
+| a16_pastimes-enc | 8234 | 271 | a thing two people can go and do, from "to the park" and "golfing" to a 178-character evening | 224 ordinary rows, 47 marked in the Holiday column |
+
+The Holiday column is not a bool in the file: 224 rows leave it empty and 47 rows carry an
+'x', and the port's flag() reads that the same way the game's bool does. Eighteen rows also
+carry the family's one-of syntax inside the cell itself -- a pastime that expands to one of
+several outings -- and one of them carries a <musician> token, so a row's text is not
+always its final text. The port resolves both through the same fillOneOf path REPORT.en.md
+97 documents for the push card, which means the spend-time card and the push card agree on
+what "golfing" means; the difference between them is only who is asked and whether a no is
+possible.
+
+Because the port's holiday flag is dateMonth_ == 12 and a script run sets no date, the
+probe's 160 lives draw 49 distinct rows and every one of them comes from the ordinary 224;
+the holiday half of the table stays dark in a headless run, exactly as it does for the
+push card.
+
+### 106.5 Shortcuts
+
+1. The coin is the port's. The friend's willingness is bit 0 of SimPerson virtual slot
+   0x3f8, which is a friend-side computation the port has no friend object to run, so the
+   port spends one fifty-fifty draw on its own stream. The census behind the section shows
+   both halves firing in the hundreds of cards, and a separate 326-card tally at the same
+   rate splits 165 for 161 against, so the substitution is not shape-changing -- it is a
+   real draw replacing a call the port cannot make.
+2. The relationship bar does not move. The game moves the friend's slot 0x508 by +3 or -2
+   on every card and the hero's slot 0x408 by +2 or -1, and on the accept path it also
+   calls ImpactKarma(1). The port's friend is a drawn name with no bar, so the 0x508 moves
+   are dropped, as they are throughout the friend family; the hero's side is kept as
+   out.happiness = pointsForImpact(2) with out.karma = pointsForImpact(1) on an accept and
+   out.happiness = pointsForImpact(-1) on a refusal.
+3. The age sync is dropped. The block at the top of the accept path writes the hero's age
+   over the friend's and runs its three calls only when the two differ, which is the
+   first-encounter state for a new friend; the port's friend carries no age field at all,
+   so there is nothing to compare and nothing to sync.
+4. The community-goal push is dropped. The card contributes 2 to the community goal and
+   pushes the goal scenario in front of itself when that goal exists; the port models no
+   community goals (only the a16_anniversary-community-goals-titles-enc table at
+   sim.cpp:25215), so the contribution is a comment rather than a call.
+5. The achievement trigger is unresolved and therefore dropped. The accept path tests the
+   pastime against the literal cell at 0x5C74BB8 and awards the cell at 0x5C734B8, and
+   neither cell decodes cleanly: the first is tagged 0xc00331af, and the second is tagged
+   0xa0012b23, whose index arithmetic lands on "Sculpture-garden" -- a key that appears in
+   the emoji-visual data rather than as a pastime. Rather than guess an achievement name
+   out of an index that does not round-trip, the port drops the branch. This is the one
+   place in the section where a decoded fact is left as an open question instead of a
+   shortcut with a reason.
+6. The friend's relationship word is always "friend". GetFriendRelationshipStatusForDisplay
+   returns whatever the friend's own status string is -- the game distinguishes at least a
+   friend from a best friend, and the senior overload has its own vocabulary -- while the
+   port's drawn friend only has the one word. The template slot is the same either way.
+7. The senior overload is a second constructor, not a second card. ctor(SimSeniorPerson)
+   differs from ctor(SimPerson) only in the field the refresh reads, and
+   GetFriendRelationshipStatusForDisplay prefers it when both are set; the port has no
+   SimSeniorPerson, so the card is reachable only through the plain friend path.
+8. The dismiss handler is the journal writer. Because the card has no choice, the port
+   emits an empty choice and the narrative; the game's button calls DismissSelected, which
+   logs self+0x180 through Log(String). The port's script already prints the narrative when
+   the choice is empty, so the journal path is the same one the base class uses -- there is
+   no separate dismiss log to model.
+
+```
+=== a1  (accept)
+seed 6  male  United States  age 50  row 263  friend Skylar Maker (female)
+table cells : Pastime to volunteer in a classroom at the local middle school - Holiday
+TITLE  : Chillin' with my villain
+BODY   : You and your friend, Skylar Maker, went to volunteer in a classroom at the local middle school.
+CHOICE : None
+LOG    : I went to volunteer in a classroom at the local middle school with my friend, Skylar Maker.
+DELTAS : {"discipline": 0, "happiness": 8, "karma": 4, "looks": 0, "smarts": 0}
+
+=== b1  (refuse)
+seed 3  male  United States  age 27  row 110  friend Skylar Maker (female)
+table cells : Pastime tire swinging - Holiday
+TITLE  : Busy buddy
+BODY   : You asked your friend, Skylar Maker, to go tire swinging but she refused.
+CHOICE : None
+LOG    : My friend, Skylar Maker, refused to go tire swinging with me.
+DELTAS : {"discipline": 0, "happiness": -4, "karma": 0, "looks": 0, "smarts": 0}
+```
+
+The card closes the friend family's inbound side: with it, every class in the yearly chain
+that the game constructs from a friend row, a friend and a pastime has a port twin. What
+remains is what the family sends out rather than what it shows -- ScenarioFriendRumorOutbound,
+ScenarioFriendUnfriendInbound and ScenarioFriendStatusInbound, the four outbound coworker
+cards the coworker section named, and the friend threesome and status cards that sit outside
+the yearly chain entirely.
+
+The full regression after the section: 50 probes at residue 0 (the new `fstres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, the persistent test at `friend spend-time cards: {'accept': 45, 'cards': 115, 'refuse': 70}` and the benchmark reaching age 34.
