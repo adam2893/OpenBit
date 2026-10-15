@@ -627,7 +627,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       mobRng_(seed ^ 0xa0761d6478bd642fULL ^ 0xe7037ed1a0b428dbULL),
       advRng_(seed ^ 0xe7037ed1a0b428dbULL ^ 0x8ebc6af09c88c6e3ULL),
       prankRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0x9e3779b97f4a7c15ULL),
-      rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
+      rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
+      partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1243,6 +1244,7 @@ bool Sim::load(std::string* error) {
       "a16_friend-advice-enc",                       // Scenario,Log Version,Hero/Friend age+gender,..
       "a16_friend-pranks-enc",                       // Outbound/Inbound Scenario,Log Versions,ages,Vampire
       "a16_friend-rumors-enc",                       // Outbound/Inbound Scenario,Inbound Log Version,ages
+      "a16_friend-party-scenarios-enc",              // Inbound/Outbound Scenario,Log Version,ages,gender,..
       "a16_coworker-hookup-scenarios-enc",           // Inbound/Outbound Scenario,Sender Gender
       "a16_disease-types-enc",                       // Disease,..: '<disease>' in the lover pools
       "a16_secret-agent-random-hero-agency-names-enc",  // Name,..: the hero's agency
@@ -3551,6 +3553,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // tried next to the prank card. It draws on its own stream
   // (include/bl/sim.h rumorRng_), so no earlier subsystem's sequence moves.
   if (friendRumorYear(life, out, forcedChoice)) return true;
+  // The friend-party card (REPORT.en.md 103) is the same kind of friend push --
+  // the friend opens it and the relationship year never sees it -- so it is
+  // tried next to the rumor card. It draws on its own stream
+  // (include/bl/sim.h partyRng_), so no earlier subsystem's sequence moves.
+  if (friendPartyYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24245,6 +24252,183 @@ bool Sim::friendRumorYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The friend-party card (REPORT.en.md 103): a friend invites the hero out of
+// a16_friend-party-scenarios-enc and the hero accepts, declines or makes up an
+// excuse. It is the prank and rumor cards' sibling, but its floor is five
+// rather than eighteen and its three cells are assembled through a per-card
+// token dictionary rather than a wrapper literal.
+bool Sim::friendPartyYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // ScenarioIsEligibleForRandomPush @0x73f3c4981c: the hero is five or older
+  // (cmp w8,#5 -- the prank and rumor cards both ask for eighteen), is not in
+  // prison, and there is a friend to invite the hero. No presented cap.
+  if (h.age < 5 || h.inPrison) return false;
+  // shortcut: the class carries no push rate (the friend subsystem opens the
+  // card and its outbound half is opened from the Relationships tab), so the
+  // coin is the port's. It draws on its own stream (partyRng_) so no other
+  // family's draw sequence moves for a given seed.
+  if (!partyRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_friend-party-scenarios-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card: personName() draws a fresh one per call, so
+  // the friend is settled here, before any of the card's own draws.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = partyRng_.chance(0.5);
+  const int friendAge = h.age;  // the port's friend stands at the hero's own age
+
+  // DataFriendPartyScenario
+  // .GetRandomFriendPartyScenarioForHeroAgeAndHeroGenderAndFriendAgeAndFriendGenderAndFriendHasJobAndFriendIsStudent
+  // @0x73f2ccb1e4 filters the table into a candidate list and draws one index
+  // with GetRandomNumber(0, count): no retry and no fallback, so nothing
+  // matching returns null and the card does not open. Hero Min Age and Friend
+  // Min Age are floors, the two Max Age columns are ceilings when set (0 is
+  // unbounded), and a gender of 2 matches whatever is passed -- the wildcard
+  // test is on the row's field, not on the argument. The caller @0x73f3c48578
+  // feeds the HERO's script value into the picker's FriendHasJob argument (a
+  // quirk of the game's own RefreshScenario); the port models neither the
+  // friend's job nor the friend's student status, so the five rows that need
+  // one are skipped (shortcut).
+  const Table& t = tbl("a16_friend-party-scenarios-enc");
+  auto genderOk = [&](size_t r, const char* col, bool subjectFemale) {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !subjectFemale;
+    if (v == "female") return subjectFemale;
+    return true;
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Inbound Scenario")).empty()) continue;
+    const int hMin = int(t.num(r, "Hero Min Age"));
+    const int hMax = int(t.num(r, "Hero Max Age"));
+    if (hMin > 0 && h.age < hMin) continue;
+    if (hMax > 0 && h.age > hMax) continue;
+    if (!genderOk(r, "Hero Gender", h.female)) continue;
+    const int fMin = int(t.num(r, "Friend Min Age"));
+    const int fMax = int(t.num(r, "Friend Max Age"));
+    if (fMin > 0 && friendAge < fMin) continue;
+    if (fMax > 0 && friendAge > fMax) continue;
+    if (!genderOk(r, "Friend Gender", friendFemale)) continue;
+    if (!trim(t.at(r, "Friend Has Job")).empty()) continue;
+    if (!trim(t.at(r, "Friend Is Student")).empty()) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[partyRng_.below(uint32_t(pool.size()))];
+
+  // RefreshScenario @0x73f3c48578 assembles the three cells through a per-card
+  // token dictionary: 'your {0}, {1},' (#68451) around the friendship word and
+  // the friend's first name -- and the same wrapper around the possessive name
+  // (AddPossessionToNameString) -- goes into the dictionary the body and the
+  // feedback string are parsed against, and 'my {0}, {1},' (#62743) into the
+  // one the journal line is parsed against. The dictionary's keys are the token
+  // literals '<friend>' (cell 0x5c4a3a0) and '<friend-possessive> (0x5c650f0),
+  // so a '<friend>' in the body reads 'your friend, Dana,' -- the trailing
+  // comma being the appositive the rest of the row continues.
+  std::string inbound = trim(t.at(row, "Inbound Scenario"));
+  std::string logCell = trim(t.at(row, "Log Version"));
+  const std::string relWord = "friend";  // the port's friend is a drawn slot
+  substAll(inbound, "<friend-possessive>", "your " + relWord + ", " + friendName + "'s,");
+  substAll(inbound, "<friend>", "your " + relWord + ", " + friendName + ",");
+  substAll(logCell, "<friend-possessive>", "my " + relWord + ", " + friendName + "'s,");
+  substAll(logCell, "<friend>", "my " + relWord + ", " + friendName + ",");
+  // The card's text draws come out of the card's own stream: the body draws
+  // first and its picks are kept, the journal line reads the same cache.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      // A pronoun pair belongs to the resolver (it keys the pair on the friend),
+      // and the friend is already named: only the alternatives are drawn here.
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[partyRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = friendFemale;
+  const std::string invite = resolve(drawCardText(inbound, true));
+  const std::string line = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  const std::string them = friendFemale ? "her" : "him";
+  const int pick = int(partyRng_.below(3));
+  out = AgeUp();
+  out.table = "a16_friend-party-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Party Time";  // the .ctor's own literal cell 0x5CBC220
+  // The card's body is the row's Inbound Scenario, parsed against the 'your'
+  // dictionary and wrapped by the CTA literal cell 0x5C35668.
+  out.body = invite;
+  out.cta = "What will you do?";
+  // The three choices, in the order the card adds them, with the labels the
+  // .ctor reads: 'I’m in' (0x5CA8F70), 'No, thanks' (0x5CBC228) and 'Make up an
+  // excuse' (0x5CA62D8). The handler dispatches by Contains() on the lowercased
+  // label -- 'i’m in', 'thanks', 'excuse' -- in that order, and a label
+  // matching none of the three changes nothing at all (the journal falls back to
+  // an empty literal cell). The game lets the hero pick any of the three; the
+  // port draws the one that happens, as the prank and rumor cards do.
+  if (pick == 0) {
+    // 0x73f3c48c8c: the friend's relationship goes +3 (vtable slot 0x508, a bar
+    // the port's drawn friend slot does not carry -- the prank card's
+    // shortcut), the hero's own slot 0x408 goes +3 and ImpactKarma(2). The
+    // block behind it runs only when the row's Includes Alcohol cell is set and
+    // ShouldBecomeAddictedToDrug passes: ImpactDiscipline(-3), the same slot
+    // with -3 and BecomeAddictedToDrug -- the port has no addiction model, so
+    // the block is a shortcut. The branch then pushes a reaction card (a title
+    // from 'Always a blast' / 'It was lit' / 'Bonding time' / "It's a
+    // lituation" / 'Flocking together' / 'Party hardy', an enjoyment stat for
+    // the hero and the friend, and the counters at hero+0xdc / +0x1c8 / +0x210);
+    // the port has no scenario push, so the card's own line is what gets logged.
+    out.choice = "I'm in";
+    out.happiness = pointsForImpact(3);
+    out.karma = pointsForImpact(2);
+    out.narrative = line;
+  } else if (pick == 1) {
+    // 0x73f3c490a0: the friend's relationship -3, the hero's slot 0x408 with -1,
+    // no karma and no draw of its own -- the journal line is built from
+    // 'I declined my {0}, {1}, invitation to go partying.' (#23954) with the
+    // friendship word and the friend's possessive name, not from the row.
+    out.choice = "No, thanks";
+    out.happiness = pointsForImpact(-1);
+    out.narrative = "I declined my " + relWord + ", " + friendName +
+                    "'s, invitation to go partying.";
+  } else {
+    // 0x73f3c49114: the friend's relationship -2, ImpactKarma(-3), then a
+    // GetRandomPastime() draw and a five-title reaction card the port has no
+    // push for (shortcut). The journal line is the two-line #30988 -- 'My {0},
+    // {1}, invited me to go partying with {2}.\nI lied and told {3} that I
+    // already had plans to go {4} instead.' -- whose {2} and {3} are both
+    // PronounStringForType(2) and whose {4} is the pastime.
+    std::string pastime;
+    if (pickPastime(partyRng_, pastime) < 0) pastime = "to the gym";
+    out.choice = "Make up an excuse";
+    out.karma = pointsForImpact(-3);
+    out.narrative = "My " + relWord + ", " + friendName + ", invited me to go partying with " +
+                    them + ".\nI lied and told " + them + " that I already had plans to go " +
+                    pastime + " instead.";
+  }
+  return true;
+}
 bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {
   // A pushed card owns the year: the app never hijacks one (the same rule the
   // school year's own code-built cards follow).

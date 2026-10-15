@@ -14032,3 +14032,333 @@ and the friend's own age - three admissions of the same kind the rest of this se
 all three recorded in 102.5 and none of them visible from the outside of a life.
 
 The full regression after the section: 45 probes at residue 0 (the new `rumres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that
+renames the friend instead of printing the name twice
+
+Sections 100, 101 and 102 walked the friend family in order: the advice table, the prank table and
+the rumor table. This section takes the fourth member, `ScenarioFriendPartyInbound`
+(il2cpp_dump.txt:40800). The shape is the one the three siblings share - a single row drawn from a
+table, the row wrapped in a sentence the card builds for itself, a handful of replies - and the
+handler dispatches on the button's `text` again: three `Contains` tests over the lowercased label,
+in the order `i'm in`, `thanks`, `excuse`, plus a fourth path that matches nothing and changes
+nothing at all. The card's title is one literal, `Party Time`, and its body wrapper is one more:
+the class appends the `What will you do?` line itself, so the port keeps it as its own field.
+
+Where this card differs from its siblings is the age axis. Its push gate does not ask for eighteen:
+the test is `hero age >= 5`, `not in prison` and a non-null friend, so a five-year-old can be
+invited to a birthday bash, which is the lowest floor in the table. The gate carries no vampire test
+and no presented-scenario cap either, and unlike the rumor table this one gates both people at once:
+every row carries a hero floor and a friend floor, fifteen rows carry ceilings on top of them, and a
+handful carry genders and two flags. The picker is six arguments wide rather than four, and its
+caller feeds the `hero's` script value into the friend's job argument - a two-line quirk inside
+`RefreshScenario` that the port reproduces as a skip, because it models neither flag (103.3).
+
+The third difference is where the prose comes from, and it is the reason the port's substitution is
+four calls rather than two. The card does not paste the friend's name in front of the row. It builds
+two small token dictionaries first - one whose `<friend>` entry is `your {0}, {1},` and one whose
+`<friend>` entry is `my {0}, {1},`, each filled with the friend's relationship word and first name,
+the possessive form `AddPossessionToNameString` filling a second entry - and then `parses` the row's
+cells against them. The row's sentence therefore reads `your friend, Dana, has invited you to...`:
+the name lands inside the sentence as an appositive, which is what the comma at the end of the
+wrapper is for, and why a prefix reading would print the friend twice on the fifty-five rows that
+open with the token. Ten rows also use `<friend-possessive>`, which the same dictionary resolves to
+`your friend, Dana's,`. The wrapper literals are the two `{0}`-shaped strings, `your {0}, {1},`
+(#68451) and `my {0}, {1},` (#62743), and the entries they are keyed on are the token literals
+themselves, cells 0x5C4A3A0 and 0x5C650F0 (103.2).
+
+The card also has somewhere to send the player after a reply, and there the family splits again.
+Accepting pushes a second scenario onto the card's child chain: a title drawn from six party
+reactions, a text that is the row's `Outbound Scenario` cell, and two stat rows labelled
+`Your Enjoyment` and `<pronoun> Enjoyment` whose numbers are derived from the hero's and the
+friend's own mood floats. Lying pushes a scenario whose own text is `You told your ... that you
+already had plans to go ... instead.`. Declining pushes nothing, and spends no draw at all. The port
+models none of the three pushes (103.5); it models the two journals the branches write, and instead
+of waiting for a button it draws the reply on its own stream, the same shortcut the prank and rumor
+cards already take.
+
+### 103.1 The family
+
+`class ScenarioFriendPartyInbound : Scenario` (il2cpp_dump.txt:40800) holds five fields: `_friend`
+(SimPerson, 0x170), `_yesFeedbackString` (System.String, 0x178), `_yesNarrative` (System.String,
+0x180), `_partyIncludesAlcohol` (System.Boolean, 0x188) and `_enjoymentScore` (System.Int32,
+0x18C). Its methods are `.ctor()` 0x73f3c481a4 (26 instructions), `RefreshScenario()`
+0x73f3c48578 (376), `ChoiceSelectedAtIndex(System.Int32)` 0x73f3c48b58 (817), `GetFriend()`
+0x73f3c4820c and `System.Boolean ScenarioIsEligibleForRandomPush()` 0x73f3c4981c (33). Where the
+rumor card next door has a constructor pair, this one has a single parameterless constructor: it
+calls the base `Scenario::.ctor(Boolean)` 0x73f2eb9db8 with false, takes its friend from
+`GetFriend()`, clears `Scenario.HasDismissButton` (0x28), stores the friend a second time at 0x60 -
+the field `Scenario` renders the invitee from - and sets its title from the literal cell at module
+offset 0x5CBC220, which reads `Party Time`. Both string fields are filled at refresh rather than at
+construction, which is why the constructor is the shortest method in the family and why a card with
+no refresh has no prose.
+
+The data class is `DataFriendPartyScenario` (il2cpp_dump.txt:9574) with thirteen backing fields:
+`InboundScenario` 0x10, `OutboundScenario` 0x18, `LogVersion` 0x20, `HeroMinAge` 0x28,
+`HeroMaxAge` 0x2C, `HeroGender` 0x30, `FriendMinAge` 0x34, `FriendMaxAge` 0x38, `FriendGender`
+0x3C, `FriendHasJob` (Boolean) 0x40, `FriendIsStudent` (Boolean) 0x41, `EnjoymentScore` 0x44 and
+`IncludesAlcohol` (Boolean) 0x48. One row of `a16_friend-party-scenarios-enc` fills all thirteen,
+and the three text fields are the table's first three columns in the same order. The picker is
+`GetRandomFriendPartyScenarioForHeroAgeAndHeroGenderAndFriendAgeAndFriendGenderAndFriendHasJobAndFriendIsStudent(System.Int32, System.Int32, System.Int32, System.Int32, System.Boolean, System.Boolean)`
+0x73f2ccb1e4: it filters the static list into a fresh candidate list and then draws exactly once,
+`GetRandomNumber(0, count)` 0x73f32ab2a8 at 0x73f2ccb610 used as an index through the list's
+`get_Item`, with nothing matching returning null - no retry and no fallback (103.3). The static
+list is filled by `LoadFriendPartySet` 0x73f2b930d8 under [0x73f60ca000+0x8E0] through 0xB8 to
+0x5B0, one slot of the same object that holds the advice, prank and rumor sets.
+
+`class ScenarioFriendPartyOutbound : Scenario` (il2cpp_dump.txt:40811) is the other half of the
+family: `_friend` (SimPerson, 0x170), `_seniorFriend` (SimSeniorPerson, 0x178) and `_narrative`
+(System.String, 0x180), with two constructors - `.ctor(SimPerson)` 0x73f3c498a0 and
+`.ctor(SimSeniorPerson)` 0x73f3c498cc - plus `RefreshScenario()` 0x73f3c498f8, `DismissSelected()`
+0x73f3c4a588 and `GetFriendRelationshipStatusForDisplay()` 0x73f3c4a55c. None of the three branches
+read in 103.2 constructs it: the accept branch pushes a plain `Scenario`, the lie branch pushes
+another, and the senior constructor's second caller is not in this card - the party table's two
+retirement-home rows reach this inbound card like every other row, and the class that would answer
+them stays unported. The two cards the player actually sees are therefore the inbound one and the
+two reaction variants it builds for itself.
+
+### 103.2 The card
+
+`RefreshScenario` 0x73f3c48578 assembles everything from one row, and the row is chosen before any
+prose is built. It reads the hero through the static chain at 0x5C30250 to the sim's `[0xB8]`
+script and then to the hero at `[+0x28]`, takes `ldp w21, w20, [hero, 0x1C]` so that w21 is the
+hero's gender and w20 the hero's age, does the same on the friend for w23 and w22, and calls
+`SimThirdPersonScript::get_Script()` 0x73f30d24b8 on the hero and then on the friend so that w24
+is the hero's script value at `[script+0x30]` and w25 the friend's. The picker then receives w0 =
+hero age, w1 = hero gender, w2 = friend age, w3 = friend gender, w4 = (w24 == 2) and w5 = (w25 ==
+1). The parameter names say the last two are the friend's job and student flags, but w24 came from
+the `hero's` script: the game feeds the hero's script value into the friend's job slot. A null row
+branches straight to the shared bail tail.
+
+The three cells are then identity-formatted through the `{0}` cell 0x5C31470, and two generic
+list objects are built. The first receives, as its two entries, `Format(your {0}, {1}, [hero's friend
+status], [friend's first name])` and the same wrapper around `AddPossessionToNameString(name)` -
+that is, the possessive form of the same name. The second receives the same pair built from
+`my {0}, {1},`. Each of the three cells is then parsed against that holder: the `Inbound Scenario`
+cell becomes the body, wrapped by `{0}
+
+What will you do?` (#68715) and stored at 0x48; the
+`Outbound Scenario` cell becomes `_yesFeedbackString` at 0x178; the `Log Version` cell becomes
+`_yesNarrative` at 0x180. The row's `IncludesAlcohol` byte lands at 0x188, its `EnjoymentScore`
+int at 0x18C, `Scenario`'s `[0x110]` is set, and three `ScenarioChoice::.ctor(String, Boolean,
+Boolean)` 0x73f2eb9c50 calls with w2 = 0 and w3 = 1 append to the list at 0x108. The labels come
+from cells 0x5CA8F70 (`I'm in`), 0x5CBC228 (`No, thanks`) and 0x5CA62D8 (`Make up an excuse`).
+
+That dictionary is the piece worth stating in the port's own terms, because the port cannot parse.
+The two list objects are the substitution context for the three cells: the body and the feedback
+string are parsed against the `your` context, the journal line against the `my` context, and the two
+entries are keyed on the tokens `<friend>` and `<friend-possessive>`, which are exactly the two
+literals the cells hold. Three facts settle the reading. All fifty-nine `Inbound` cells contain
+`<friend>` and fifty-five of them open with it, so a prefix reading would name the friend twice in
+one sentence. The wrappers end in a comma, which is the appositive separator the rest of the row
+continues. And the `<friend-possessive>` entry is the possessive `name` string, not the plain one,
+so the token cannot be a stand-alone noun phrase either. The port substitutes the four values
+before it resolves the card's own alternatives (103.5).
+
+The handler `ChoiceSelectedAtIndex` 0x73f3c48b58 is 817 instructions and does exactly four things
+with the reply. It reads the choice from the list at 0x108 through the virtual `get_Item` slot
+0x2E8, checks the returned object against the `ScenarioChoice` type cell 0x5C308F0, lowercases its
+label at 0x10 with `ToLower()` 0x73f52aa938, and then walks three `Contains` tests 0x73f52aafdc in
+a fixed order - 0x5CBC298, 0x5CBC258, 0x5CBC060 - so a label carrying two of the three tokens takes
+the earlier branch. A label matching none of them falls through with no state change at all and
+logs the value of the static cell 0x5C2F928, ten bytes above the `object[]` type cell next to it;
+that cell reads empty live, so the path either cannot occur or logs nothing. The port's three labels
+never reach it.
+
+| Button | Test token | Friend | Hero | Karma | Journal | Pushed after the reply |
+| --- | --- | --- | --- | --- | --- | --- |
+| `I'm in` | `i'm in` (cell #60591) | relationship +3 | slot 0x408 with +3 | `ImpactKarma(2)` | the row's `Log Version`, which refresh stored as `_yesNarrative` | a reaction `Scenario`: a title from six party reactions, the row's `Outbound Scenario` text, and two enjoyment stat rows; the alcohol block runs before it on the twenty-three rows that carry the flag |
+| `No, thanks` | `thanks` (cell #66727) | relationship -3 | slot 0x408 with -1 | none | `I declined my {0}, {1}, invitation to go partying.` (#23954) with the status and the possessive name | none |
+| `Make up an excuse` | `excuse` (cell #58515) | relationship -2 | no slot-0x408 call | `ImpactKarma(-3)` | `My {0}, {1}, invited me to go partying with {2}.
+I lied and told {3} that I already had plans to go {4} instead.` (#30988), with a drawn pastime in the last slot | a `Scenario` whose own text is `You told your {0}, {1}, that you already had plans to go {2} instead.` (#49524) |
+| (no button) | a label matching none | none | none | none | the unread static cell 0x5C2F928 | none |
+
+The accept branch is the only one that draws for its own card. It pushes the alcohol block first
+when the row's byte at 0x188 is set: `GetDrugForName` 0x73f2ca778c on the `alcohol` cell 0x5C38F38,
+a `ShouldBecomeAddictedToDrug` test 0x73f2f1d674, and then `ImpactDiscipline(-3)` 0x73f30e4cdc, the
+hero's slot 0x408 with -3, and an addiction wrapper from `BecomeAddictedToDrug` 0x73f2f1dcdc pushed
+at 0x128. Then it builds a list of six titles - 0x5CBC2A0 `Always a blast`, 0x5CBC278 `It was
+lit`, 0x5CBC238 `Bonding time`, 0x5CBC270 `It's a lituation`, 0x5CBC280 `Flocking together`,
+0x5CBC260 `Party hardy` - picks one with `PickRandomFromStringArray` 0x73f32b0608, and computes two
+numbers. The hero's number starts as `GetRandomNumber(0, 100)` and is then replaced by a draw near
+the top or the bottom of the range according to the hero's float at 0xA8: below 20.0 it becomes
+`80 + GetRandomNumber(0, 20)`, above 80.0 it becomes `GetRandomNumber(0, 20)`, and between the two
+the base draw stands. The friend's number does the same with the friend's float at 0xC0 and a second
+base draw. Then the row's `EnjoymentScore` overrides both: a score of 5 replaces them with
+`90 + GetRandomNumber(0, 10)` each, a score of 1 with `GetRandomNumber(0, 20)` each, and anything
+else keeps what the floats produced. The new `Scenario` is built from the picked title, the row's
+`Outbound Scenario` string and a null child, then two `StatChange` rows - `Your Enjoyment`
+0x5C34A68 with the hero's number and `{0} Enjoyment` 0x5C3DAE0 with `PronounStringForType(6)` and
+the friend's number - are attached at the card's `[0xB8]` and the whole thing is pushed at 0x128
+ahead of the previous chain. Two counters follow: the sim's byte at `+0xDC` is set to 1 when the
+friend's own `[0x180]` is non-zero, the int at `+0x1C8` is always incremented, and the int at
+`+0x210` is incremented as well when the hero's `[0x20]` is 51 or more. The lie branch draws only
+once for its card - `GetRandomPastime()` 0x73f2d0ca3c, called before its five-title pick - and
+builds its `Scenario` with the short `You told your ...` text while the five-slot template becomes
+the journal line. The decline branch draws nothing: friend -3, hero -1, the journal, and the shared
+tail.
+
+All four paths end in the same tail: the sim's journal object at `[[+0x20]+0x48]` logs one string
+with `Log()` 0x73f380158c, and the sim's UI receiver at `[[+0x20]+0x10]` is tail-called into
+`RefreshUI` 0x73f3580f5c. One reply, one journal line, one refresh - and the RNG order that matters
+to a port: the accept branch draws `PickRandomFromStringArray` first, then the hero's base 0..100,
+the hero's extra 0..20 when its float is out of the 20..80 band, the friend's base 0..100, the
+friend's extra 0..20 on the same terms, and finally two `EnjoymentScore` draws when the score is 1
+or 5; the decline branch draws nothing at all; the lie branch draws its pastime first and its
+reaction title second.
+
+### 103.3 Who can ask: five, a friend, and a picker six arguments wide
+
+`ScenarioIsEligibleForRandomPush` 0x73f3c4981c is 33 instructions and asks three things: the hero's
+age is at least five (`cmp w8, #5`), the hero is not in prison (`CurrentlyInPrison` 0x73f2f0e1d8),
+and `GetFriend()` is non-null. There is no vampire test - the prank and rumor cards both carry one -
+and no cap on presented scenarios. The class is therefore pushable from the age of five, which is
+the lowest floor any member of this family opens at, and the card's own table then applies six more
+tests.
+
+Those six are the picker's: `HeroMinAge` is a floor and `HeroMaxAge` a ceiling when set (zero reads
+as unbounded), then the row's `HeroGender`, then the `FriendMinAge` and `FriendMaxAge` pair, then
+the row's `FriendGender`, and two booleans. Every test is inclusive (`b.gt` and `b.lt` against the
+argument), and the gender test is `argument == row field || row field == 2`, so the wildcard lives
+on the row: a caller passing 2 for a gender matches only the rows that are themselves ungated, not
+every row. The filter is a full pass with no early exit, and only then does one draw pick an index,
+which is why a row is as likely as any other row that matches. Nothing matching returns null, so
+the card simply does not open; there is no relaxed second pass.
+
+The port's model of that gate is the three tests plus the picker's six, with two of the six argued
+away. First, the flags: the friend's job and the friend's student status are the two booleans, the
+port has no friend with either property, and so the five rows that require them - row 5 for the job,
+rows 38, 39, 41 and 44 for the student - are skipped rather than guessed at. Second, the friend's
+age: the port's friend slot stands at the hero's own age, the same shortcut the rumor card takes, so
+the friend's floor and ceiling are applied to the hero's age. The port also strips the caller's
+argument mix-up by ignoring it, which loses nothing, because the rows that would need a flag are
+skipped either way. The gate that remains is `age >= 5 && !inPrison` plus a drawn friend, and the
+table's own six tests then run unchanged (103.4).
+
+### 103.4 The rows: fifty-nine parties, five the port can never attend, and one column it never reads
+
+The table is `a16_friend-party-scenarios-enc`: 17224 bytes, 59 newlines, 60 CSV records, which is one header and 59 data rows with no trailing newline — a line count reads this file one row short, the same trap the prank and rumor sets set. The header is the thirteen columns the loader splits the row into: `Inbound Scenario,Outbound Scenario,Log Version,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max Age,Friend Gender,Friend Has Job,Friend Is Student,Enjoyment Score,Includes Alcohol`.
+
+The floors are never optional. Hero Min Age is 21 on fifteen rows, 50 on fourteen, 18 and 5 on eight each, 14 on five, 10 on four, and one row each for 65, 17, 15, 12 and 8; Friend Min Age repeats those numbers and adds 60 on three rows with 65 and 55 on two each. The two floors disagree often enough to matter: on 49, 52, 54, 57, 58 and 59 the friend's floor sits above the hero's, and since the port keeps its friend at the hero's own age those rows simply wait for a later birthday. The ceilings are the rarer thing — Hero Max Age and Friend Max Age are filled on exactly the same fifteen rows, 30 through 44, and nowhere else in the table. Row 32 asks for a hero between ten and twenty-one and a friend between ten and twenty; row 34 allows a hero to twenty-five but a friend only to twenty-one; rows 33 and 37 are four-year windows at 14 to 18, row 44 is 14 to 17, row 36 is 10 to 16. Because the port's friend shares the hero's age, each row's window collapses to the overlap of the two: `[max(Hmin, Fmin, 5), min(Hmax, Fmax)]`. No row's overlap is empty, so unlike §102 every row here is age-reachable in principle — the undrawable rows are undrawable for another reason.
+
+That reason is the two flags. Friend Has Job is set on row 5 alone and Friend Is Student on 38, 39, 41 and 44, and the port's pool loop drops all five with a bare `continue` (src/sim.cpp:24317-24318): it models neither. The gender columns gate nine more rows — the hero's gender on 27, 29 and 41 (male) and 28 and 40 (female), the friend's on 2, 27, 29, 41, 57 and 59 (male) and 28, 40 and 58 (female) — and those the port does honour, comparing the row's field against the hero it drew and the friend it coined. The flags are also where the game's own assembly mis-wires: RefreshScenario feeds the `w4` argument from the HERO's script value and `w5` from the FRIEND's (0x73f3c48578), so the picker's `FriendHasJob` parameter is really being asked about the hero.
+
+| rows | what the row asks for | what the port does |
+| --- | --- | --- |
+| 5 | `Friend Has Job` | skipped, never drawn |
+| 38, 39, 41, 44 | `Friend Is Student` | skipped, never drawn |
+| 27, 29, 41 (male), 28, 40 (female) | `Hero Gender` | matched against the drawn hero |
+| 2, 27, 29, 41, 57, 59 (male), 28, 40, 58 (female) | `Friend Gender` | matched against the coined friend |
+| 30-44 | both ceilings | matched, both against the hero's age |
+
+So the pool the probe draws from is 54 rows wide, not 59, and the probe's 160 lives drew 40 of them. The nineteen it missed are exactly the five flag rows plus fourteen the seeds stepped over: five rows that only open at hero age 50 or later (46, 48, 54, 57, 58 — where the friend's floor of 55 or 60 is the real cost), two rows that open at 18 (12, 26) and duly get outdrawn by the twenty-odd other rows open by then, and seven rows whose entire window is ten to twelve years wide (31 at 5 to 15, 36 at 10 to 16, 37 at 14 to 18, 40 at 5 to 10, 35 at 21 to 25, 43 at 14 to 25 and 34 at 12 to 21) — a life walks through those once and the coin has to land in that year.
+
+The text is 177 cells across the three prose columns, and no two are alike. Every one of the 59 Inbound cells contains `<friend>`, 55 of them beginning with it; the Inbound column carries `<him/her>` 23 times, `<his/her>` 20, `<he/she>` four and `<her/his>` once, plus sixteen alternative lists of its own: a party game, a number, a games console, a costume, a superhero, a fundraising brand, a barnyard animal, a school club, a school, a parent, a decade, an indulgence, two different drinks menus, a medieval prop and a wine list. One further token, `<musician>`, is a bare data lookup rather than an alternative list. The possessive token, though, never once appears in an Inbound cell: it lives in the Outbound and Log columns of twelve rows (4, 5, 17, 25, 30, 31, 32, 33, 34, 41, 46 and 59), and the port substitutes it in both columns anyway — cheap, and it means the journal line shows the apostrophe where the game does. Fourteen `<rb>` tokens sit in the Outbound and Log columns for the nickname resolver. The Outbound column is otherwise never read at all: the port takes the body from Inbound and the journal from Log Version, because it builds no accept-and-dismiss half.
+
+### 103.5 Shortcuts
+
+1. `shortcut: the class carries no push rate` (src/sim.cpp:24267-24271). The real predicate is age, prison and a friend, nothing else; the port opens the card on a 0.05 coin, the same number the rumor card uses, drawn from its own stream.
+2. The floor is five, not eighteen (src/sim.cpp:24266). This is the only card in the family a child can be pulled into, and the port has no presented cap and no vampire test here.
+3. The friend's age is the hero's (src/sim.cpp:24281). Every friend floor and friend ceiling in the table therefore collapses onto the hero's own age, which is what makes rows 49, 52, 54, 57, 58 and 59 late-life rows.
+4. The friend's gender is a coin (src/sim.cpp:24280), not a fact about a person the port has on file, so the nine friend-gated rows are gated against a coin toss.
+5. The job and student flags are skipped rather than asked (src/sim.cpp:24317-24318), which is why rows 5, 38, 39, 41 and 44 can never be drawn.
+6. The port draws the response (src/sim.cpp:24374) instead of letting the hero pick one: the probe's 95 accepts, 110 declines and 82 excuses are the port's own distribution, not a measurement of the game's players.
+7. The friend-relationship impacts the three branches apply through vtable slot 0x508 (+3 accept, -3 decline, -2 lie) are dropped, as the prank and rumor cards' are — the port's friend slot has no such bar.
+8. The accept branch's alcohol block is not modelled: no `GetDrugForName("alcohol")`, no `ShouldBecomeAddictedToDrug`, no discipline -3 and no `SimAddiction` card chained in front of the card. Accepting an alcohol row in the port is worth happiness 16 and karma 8 and nothing else.
+9. The accept branch's reaction card is not modelled either: the six titles, the two `Enjoyment` StatChange rows, the hero and friend mood floats that decide whether the base draw is 0 to 100 or 0 to 19, the `_enjoymentScore` override (5 means 90 to 99, 1 means 0 to 19), and the three counters at +0xdc, +0x1c8 and +0x210.
+10. The lie branch's reaction card and its five titles are dropped the same way, and the branch only keeps the pastime draw and the karma. The pastime is the port's own list (`pickPastime`), so the sentence's `instead` clause is the port's phrase, not the game's.
+11. The `Outbound Scenario` column is never read. The game parses it into the feedback string the outbound half of the flow eventually shows; the port builds no such half, so the column's 46 `<friend>`, twelve possessives and fourteen `<rb>` tokens do no work here.
+12. The two token dictionaries are the port's reading of the assembly, not a mechanism it decoded: the `'your {0}, {1},'` and `'my {0}, {1},'` wrappers, the `<friend>` and `<friend-possessive>` cell literals, and the appositive comma are the evidence, and the report shows the samples so the reading can be checked against the prose.
+
+```
+lives 160
+cards 287
+cards per life {0: 29, 1: 30, 2: 59, 3: 35, 4: 2, 5: 4, 6: 1}
+responses {"I'm in": 95, 'Make up an excuse': 82, 'No, thanks': 110}
+rows drawn 40 of 59
+rows undrawn [5, 12, 26, 31, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 48, 54, 57, 58]
+flag rows never drawable [5, 38, 39, 41, 44]
+hero age at the card min 5 max 79
+failures 0
+```
+
+One hundred and sixty lives, both genders, two run lengths: the card opens 287 times, an average of 1.79 per life, against the prank card's 244 over the same probe. The distribution is the recognizable shape of a coin-flip family — 29 lives see none at all, 59 see two, and one life saw six. The branch split is the port's own draw (95 accepts, 110 declines, 82 excuses) and nothing in it should be read as the game's numbers; what it does show is that all three sentences are reachable and each logs the text the branch claims.
+
+Forty of the 59 rows came up across those 160 lives, and the nineteen that did not are named in the log: the five flag rows the pool skips, and fourteen the seeds simply walked past — the 50-and-older block, the two rows that open at 18, and the seven narrow-window rows. The age spread runs from a five-year-old hero at the family floor to a seventy-nine-year-old, which is the table's own spread and not the probe's: the probe drives lives to eighty.
+
+Seven samples are printed below. The accept response carries the row's own journal line: a twenty-five-year-old's invite to a listening party logs `my friend, Beyawnce Gnolls, and I attended an exclusive listening party for the new album by Pitbull.` — and the invite above it names Sam Smith, because `<musician>` is not one of the drawn alternative lists but a data token the resolver fills at each parse, once for the body and once for the journal. The decline response is the card's own sentence, built from the friendship word and the possessive name rather than from the row: `I declined my friend, Montero X's, invitation to go partying.` The excuse response logs two lines with a pastime the port drew. The possessive sample is the one to read twice: its journal line is the row's own prose with the apostrophe in place — `I wore my favorite pajamas to a sleepover party at my friend, Court Kurbain's, house.` — which is the whole point of the possessive dictionary. The fifth and sixth blocks are the same row at two ages, and it is the one that shows a dressed alternative drawn from the sixteen lists (a vampire; a princess, for a male friend — the port coins the friend's sex and draws the name independently, so that pairing is the port's and not a claim about the game's). The seventh is the far end of the table: a sixty-one-year-old drawing row 49, whose friend floor of 60 sits above its hero floor of 50 — a late-life row the port reaches only because its friend shares the hero's birthday.
+
+Every printed block was checked as it was produced: the body against the row's Inbound cell parsed through the `your` dictionary with every captured name forced equal, the journal line against the row's Log Version through the `my` dictionary on an accept and against the branch's own sentence otherwise, each pronoun pair against a single consistent alternative inside one card, the deltas against the exact non-zero entries, and every printed string against a leftover `<token>`. Two hundred and eighty-seven cards' worth of cells went through those checks with no failure, and the probe's own residue count is the zero the regression fence reports below.
+
+```
+=== the accept response: the row's own line, happiness +16, karma +8
+seed 1  male  United States  age 25  row 42  friend female
+table cells : Hero Min Age 15  Hero Gender -  Friend Min Age 15  Friend Gender -  Enjoyment 5  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Beyawnce Gnolls, enthusiastically asks you to accompany her to an exclusive listening party for the new album by Sam Smith.
+CHOICE : I'm in
+LOG    : my friend, Beyawnce Gnolls, and I attended an exclusive listening party for the new album by Pitbull.
+DELTAS : {"discipline": 0, "happiness": 16, "karma": 8, "looks": 0, "smarts": 0}
+
+=== the decline response: happiness -4, and the line is the card's own decline sentence
+seed 1  male  United States  age 13  row 32  friend female
+table cells : Hero Min Age 10  Hero Gender -  Friend Min Age 10  Friend Gender -  Enjoyment 3  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Montero X, has invited you to her father's wedding reception.
+CHOICE : No, thanks
+LOG    : I declined my friend, Montero X's, invitation to go partying.
+DELTAS : {"discipline": 0, "happiness": -4, "karma": 0, "looks": 0, "smarts": 0}
+
+=== the make-up-an-excuse response: karma -16, a pastime drawn, a two-line journal
+seed 1  male  United States  age 54  row 25  friend female
+table cells : Hero Min Age 5  Hero Gender -  Friend Min Age 5  Friend Gender -  Enjoyment 3  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Brittany Shears, has invited you to come to a pizza party at her house this upcoming weekend.
+CHOICE : Make up an excuse
+LOG    : My friend, Brittany Shears, invited me to go partying with her.
+I lied and told her that I already had plans to go to make friendship bracelets instead.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+
+=== the possessive friend token in the journal line (my friend, Dana's,)
+seed 4  male  United States  age 49  row 17  friend male
+table cells : Hero Min Age 5  Hero Gender -  Friend Min Age 5  Friend Gender -  Enjoyment 2  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Court Kurbain, has invited you to wear your favorite pajamas to a sleepover party he is having.
+CHOICE : I'm in
+LOG    : I wore my favorite pajamas to a sleepover party at my friend, Court Kurbain's, house.
+DELTAS : {"discipline": 0, "happiness": 16, "karma": 8, "looks": 0, "smarts": 0}
+
+=== a row whose Inbound cell carries one of the table's alternative lists
+seed 4  female  United States  age 49  row 16  friend male
+table cells : Hero Min Age 5  Hero Gender -  Friend Min Age 5  Friend Gender -  Enjoyment 4  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Micky Mirage, has asked you to go to a costume party with him dressed as a vampire.
+CHOICE : Make up an excuse
+LOG    : My friend, Micky Mirage, invited me to go partying with him.
+I lied and told him that I already had plans to go to play tennis instead.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+
+=== a card at the family floor (hero five or older)
+seed 8  male  United States  age 5  row 16  friend male
+table cells : Hero Min Age 5  Hero Gender -  Friend Min Age 5  Friend Gender -  Enjoyment 4  Alcohol -
+TITLE  : Party Time
+BODY   : your friend, Brianna Denty, has asked you to go to a costume party with him dressed as a princess.
+CHOICE : Make up an excuse
+LOG    : My friend, Brianna Denty, invited me to go partying with him.
+I lied and told him that I already had plans to go to do a puzzle at the library instead.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+
+=== a card held by an older hero
+seed 3  male  United States  age 61  row 49  friend drawn
+table cells : Hero Min Age 50  Hero Gender -  Friend Min Age 60  Friend Gender -  Enjoyment 2  Alcohol x
+TITLE  : Party Time
+BODY   : your friend, Dustin Steeber, has invited you to a retirement benefits presentation that includes free appetizers and an open bar.
+CHOICE : Make up an excuse
+LOG    : My friend, Dustin Steeber, invited me to go partying with him.
+I lied and told him that I already had plans to go to a Muslim mosque instead.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0}
+```
+
+What the card adds to the port is not a new mechanic — the hero's year is already full of them — but a third door into the same friendship, opened nine years earlier than the prank and rumor cards and standing on prose the port does not own. The three cells come out of a file, the friend's name comes out of the resolver, the friendship word is the port's, and what is left for the port to get wrong is exactly what this section has been about: which dictionary the body is read against, where the apostrophe goes, and which of the three sentences the hero is supposed to be living when the year turns over.
+
+The full regression after the section: 46 probes at residue 0 (the new `partres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
