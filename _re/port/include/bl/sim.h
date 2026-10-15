@@ -93,6 +93,16 @@ struct Life {
   bool unfriendOutPending = false;
   std::string unfriendOutFriend;
   bool unfriendOutFemale = false;
+  // The assault the friend-weapon encounter hands off to (REPORT.en.md 113):
+  // ScenarioAttackInbound(friend, weapon) is linked at [self+0x128] by the
+  // encounter's shared tail, so the port queues it and renders it on the next
+  // age-up, the unfriend pair's pattern. The friend and the weapon the encounter
+  // drew travel with it, and there is no coin, because the game has no yearly push.
+  bool attackInPending = false;
+  std::string attackInFriend;
+  bool attackInFemale = false;
+  std::string attackInWeapon;
+  std::string attackInVerb;
   // The best-friend request's own clock (REPORT.en.md 109): the game tests the
   // hero's age minus the friend's HeroAgeAtLastBestFriendRequest (>= 11) and
   // stamps that field with the hero's age when the card is pushed, so the port
@@ -447,6 +457,12 @@ class Sim {
   // assault family. It has no push site of its own and draws on its own stream
   // (fwRng_).
   bool friendWeaponYear(Life& life, AgeUp& out, int forcedChoice);
+  // The assault card (REPORT.en.md 113): ScenarioAttackInbound @0x73f3cd79ec, the
+  // card the friend-weapon encounter's shared tail links at [self+0x128]. The class
+  // has nine constructors; this is the ctor(SimPerson,DataWeapon) variant the
+  // encounter calls, and it is queued rather than pushed. It draws on its own stream
+  // (aiRng_).
+  bool attackInboundYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -609,6 +625,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng unrOutRng_;
   // The friend-weapon encounter's own stream (REPORT.en.md 112).
   Rng fwRng_;
+  // The assault card's own stream (REPORT.en.md 113).
+  Rng aiRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

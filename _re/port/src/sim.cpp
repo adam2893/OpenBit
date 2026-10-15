@@ -636,7 +636,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
       fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL),
       unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL),
-      fwRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0x6a09e667f3bcc909ULL) {}
+      fwRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0x6a09e667f3bcc909ULL),
+      aiRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3616,6 +3617,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // sequence moves. shortcut: the game has no push site for it at all (a generic
   // factory builds the class), so the coin is the port's.
   if (friendWeaponYear(life, out, forcedChoice)) return true;
+  // The assault card (REPORT.en.md 113) is queued rather than pushed: it is the card
+  // the friend-weapon encounter's shared tail links, so it is tried right after the
+  // encounter and draws on its own stream (include/bl/sim.h aiRng_), moving no earlier
+  // subsystem's sequence.
+  if (attackInboundYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -25402,6 +25408,11 @@ bool Sim::friendWeaponYear(Life& life, AgeUp& out, int forcedChoice) {
   // withArticle() returns the article alone (see the house call sites); the noun has to
   // be appended here.
   const std::string weaponArt = withArticle(weaponName, true) + weaponName;
+  // The attack card's own column (REPORT.en.md 113): DataWeapon.Verb is what the
+  // assault sentence puts between the friend and the hero, and 'attacked' (cell
+  // 0x5C3CDC8) is the class's own fallback verb for a weapon without one.
+  const std::string weaponVerbRaw = trim(wt.at(wrow, "Verb"));
+  const std::string weaponVerb = weaponVerbRaw.empty() ? "attacked" : weaponVerbRaw;
   // The body's own branch: DangerScore <= 2 is the sneaking weapon, above it the one
   // the hero is already looking at.
   const bool sneaking = wt.num(wrow, "Danger") <= 2.0;
@@ -25500,9 +25511,127 @@ bool Sim::friendWeaponYear(Life& life, AgeUp& out, int forcedChoice) {
       out.narrative = "You ran for your life but " + he + " caught you!";
     }
   }
-  // The tail the game shares with the assault family pushes ScenarioAttackInbound
-  // @0x73f3cd79ec and moves the friend's relationship slot 0x508 by -6; the port has
-  // no friend object and no child push (the section's standing shortcut).
+  // The tail every reply shares pushes ScenarioAttackInbound @0x73f3cd79ec and moves
+  // the friend's relationship slot 0x508 by -6. The port has no friend object to move a
+  // relationship on, so that half stays a shortcut; the child card is queued instead
+  // (the unfriend pair's pending-flag pattern) and the encounter's own friend and weapon
+  // travel with it, which is exactly what the assault card's constructor stores.
+  life.attackInPending = true;
+  life.attackInFriend = friendName;
+  life.attackInFemale = friendFemale;
+  life.attackInWeapon = weaponName;
+  life.attackInVerb = weaponVerb;
+  return true;
+}
+
+// The assault card (REPORT.en.md 113): ScenarioAttackInbound @0x73f3cd79ec is the card
+// the friend-weapon encounter's shared tail links at [self+0x128] -- the encounter
+// becomes the assault the hero has just talked their way out of, or walked into. The
+// class has nine constructors (a friend with a weapon, a hitman with a weapon, a
+// bully, a sibling, a prisoner, a secret agent, a street person, a generic person and
+// a person with a reason list); this section ports ctor(SimPerson,DataWeapon)
+// @0x73f3cd79ec, the one the encounter calls, and nothing else.
+//
+// The constructor stores the two formatted who-strings ('Your {0}, {1},', cell
+// 0x5C3D200, and 'My {0}, {1},', cell 0x5C3D1E0), titles the card 'Aggravated
+// Assault' (cell 0x5CBF4E0) and appends three choices through
+// ScenarioChoice(String,Boolean,Boolean) @0x73f2eb9c50: 'Run away from {0}', 'Fight
+// back' and 'Call the police on {0}'. Its RefreshScenario @0x73f3cd80c8 builds the
+// sentence out of the weapon's Verb and the weapon's article form -- '{0} {1} you{2}!'
+// (cell 0x5C3CDC0) with its first-person twin '{0} {1} me{2}!' (cell 0x5C3CDA8), where
+// {2} is the ' with {0}' phrase (cell 0x5C3CDB0) -- and the handler logs the
+// first-person sentence before it dispatches, which is why the card's body and its
+// LifeLog line are two halves of one sentence.
+//
+// ChoiceSelectedAtIndex @0x73f3cd9470 dispatches by label text (ToLower then Contains
+// against 'run away', 'fight' and 'police'), and each arm writes its own stat move and
+// its own log line. shortcut: the assault's damage and the death roll (the DangerScore
+// branch at 0x73f3cd8400 and the hit test at 0x73f3cd8518), the eight other
+// constructors, the child ScenarioCustomAttack the fight reply links, the child
+// scenario the police reply links, and the obituary colour lines ('Friends describe {0}
+// as sometimes cowardly.', cell 0x5CBF5C0) are all dropped; the three replies carry
+// their own discipline and karma moves and their LifeLog sentences.
+bool Sim::attackInboundYear(Life& life, AgeUp& out, int forcedChoice) {
+  // Queued, not pushed: no coin, and a scripted choice cannot summon it.
+  if (!life.attackInPending) return false;
+  if (forcedChoice > 2) return false;
+  // One-shot, like the queued unfriend card: clearing it here keeps the assault a
+  // single card and keeps a queued one from following the hero into the next life.
+  life.attackInPending = false;
+  Hero& h = life.hero;
+  // The encounter that queues it already demanded eighteen and a hero out of prison,
+  // and the hero cannot lose an age between the two cards, so only the age is re-read.
+  if (h.age < 18) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // The friend and the weapon are the encounter's own draws, handed over so the
+  // assault names the friend who walked in and the weapon they carried.
+  const std::string friendName =
+      life.attackInFriend.empty() ? resolve("<friend>") : life.attackInFriend;
+  if (friendName.empty()) return false;
+  const bool friendFemale = life.attackInFemale;
+  // FriendRelationshipStatusString, which the port's drawn slot does not carry, so the
+  // relationship word is always 'friend' (the family's standing shortcut).
+  const std::string rel = "friend";
+  const std::string he = friendFemale ? "she" : "he";
+  const std::string him = friendFemale ? "her" : "him";
+  const std::string weaponName = life.attackInWeapon.empty() ? std::string("weapon") : life.attackInWeapon;
+  // withArticle() returns the article alone; the noun has to be appended (see the
+  // encounter's own call site).
+  const std::string weaponArt = withArticle(weaponName, true) + weaponName;
+  const std::string weaponVerb = life.attackInVerb.empty() ? std::string("attacked") : life.attackInVerb;
+
+  out = AgeUp();
+  // 'Aggravated Assault' (cell 0x5CBF4E0). The lower-case variant (cell 0x5CBF4E8) is
+  // the Random.Range(0,4) pool the class swaps in when its own flag is set, and the
+  // constructor the encounter calls never sets it.
+  out.title = "Aggravated Assault";
+  // {0} {1} you{2}!: the who-string, the weapon's verb and the weapon's phrase, so the
+  // card reads 'Your friend, Kaya, whacked you with a rolling pin!'.
+  out.body = "Your " + rel + ", " + friendName + ", " + weaponVerb + " you with " + weaponArt + "!";
+
+  // The button is the player's; the port draws one of the three (the family's own coin,
+  // on this card's stream).
+  const int pick = forcedChoice >= 0 ? forcedChoice : int(aiRng_.below(3));
+
+  if (pick == 0) {
+    // 'Run away from {0}' (cell 0x5CBF4A0, the object pronoun). The run block
+    // @0x73f3cd995c runs ImpactDiscipline(1) when the attacker is not a bully (an
+    // encounter's friend never is) and ImpactDiscipline(-3) when it is.
+    out.choice = "Run away from " + him;
+    out.discipline = pointsForImpact(1);
+    // I ran away from {0}. (cell 0x5CBF580, the object pronoun)
+    out.narrative = "I ran away from " + him + ".";
+  } else if (pick == 1) {
+    // 'Fight back' (cell 0x5CBF4B8). The fight block @0x73f3cd9a18 runs
+    // ImpactDiscipline(4) over the friend at [self+0x1a0] and links
+    // ScenarioCustomAttack(_friend) at [self+0x128]; the port keeps the stat move and
+    // drops the child.
+    out.choice = "Fight back";
+    out.discipline = pointsForImpact(4);
+    // The arm's own message stays the empty string the dispatch loads (cell
+    // 0x5C2F928), so the card's first-person sentence is the only line the reply writes.
+    out.narrative = "";
+  } else {
+    // 'Call the police on {0}' (cell 0x5CBF4B0, the object pronoun). The police block
+    // @0x73f3cd98f0 runs ImpactKarma(-1) and then GetRandomNumber(0,10) picks between
+    // the arrest, the flight and the warning.
+    out.choice = "Call the police on " + him;
+    out.karma = pointsForImpact(-1);
+    const int roll = int(aiRng_.below(10));
+    if (roll <= 2) {
+      // I called the police on {0} and {1} was arrested. (cell 0x5CBF5D0)
+      out.narrative = "I called the police on " + him + " and " + he + " was arrested.";
+    } else if (roll <= 7) {
+      // I called the police on {0} but {1} fled before they arrived. (cell 0x5CBF568)
+      out.narrative = "I called the police on " + him + " but " + he + " fled before they arrived.";
+    } else {
+      // I called the police on {0}. The police warned me for wasting their time.
+      // (cell 0x5CBF5B0)
+      out.narrative = "I called the police on " + him + ". The police warned me for wasting their time.";
+    }
+  }
   return true;
 }
 

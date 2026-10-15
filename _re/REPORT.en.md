@@ -16476,3 +16476,199 @@ the residue census at `distinct residue tokens 0 total 0`, coverage at
 `captured scenarios: 109  recoverable: 107`, the port gap at
 `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the
 benchmark reaching age 34 unchanged (age 33 happiness delta 17, age 34 karma delta 30).
+
+## 113. The assault card: the friend who walked in armed comes back swinging
+
+Section 112 ended on a shortcut. The friend weapon encounter's shared tail -- the block
+every one of its four replies jumps into -- moves the friend's relationship slot by -6
+and links a second scenario at [self+0x128]. That second scenario is
+ScenarioAttackInbound (il2cpp_dump.txt:41670), and section 112 could only document the
+link. This section ports it, in the one shape the encounter actually produces.
+
+ScenarioAttackInbound is a large class with nine constructors -- one each for a
+SimPerson plus an Int32 and some strings, a SimSecretAgent, a SimClassmate, a
+SimSibling, a SimPrisoner, a SimPerson plus a DataWeapon, a DataHitman plus a
+DataWeapon, a SimDealerStreetPerson, and a SimPerson plus a list of strings -- and their
+cards are all titled, worded and priced differently. The one the friend weapon
+encounter links is .ctor(SimPerson,DataWeapon) @0x73f3cd79ec, and that is the one this
+section ports. The other eight keep their shortcut entries in 113.4.
+
+### 113.1 The card
+
+The class carries the attacker in every form it can take: _whoString 0x178 and
+_whoStringNarrative 0x180 (the pre-built caller phrases), _attackerIsBully 0x188,
+_attackerIsSibling 0x189 and _attackerIsPrisoner 0x18a (three flags), _weapon 0x190
+(DataWeapon), _bully 0x198, _friend 0x1a0, _hitman 0x1a8, _attackerGender 0x1b0,
+_person 0x1b8, _heroDeathOverride 0x1c0, _secretAgent 0x1c8 and _streetPerson 0x1d0.
+The friend overload fills exactly five of them and then builds its own buttons:
+
+| field | value |
+|---|---|
+| title [0x38] | Aggravated Assault (cell 0x5CBF4E0) |
+| _person [0x1b8], _friend [0x1a0], the attacker slot [0x60] | the SimPerson it was handed |
+| _attackerGender [0x1b0] | that person's own gender field |
+| _weapon [0x190] | the DataWeapon it was handed |
+| _whoString [0x178] | String.Format(Your {0}, {1},) over the relationship word and the name |
+| _whoStringNarrative [0x180] | String.Format(My {0}, {1},) over the same two |
+| [0x110] | 1 (the card is a charged scenario) |
+
+The three buttons go in through the ScenarioChoice(String,Boolean,Boolean) constructor
+@0x73f2eb9c50, appended to the list at [0x108]:
+
+| label | cell |
+|---|---|
+| Run away from {0} | 0x5CBF4A0 (the object pronoun comes from PronounStringForType(person,2,null)) |
+| Fight back | 0x5CBF4B8 |
+| Call the police on {0} | 0x5CBF4B0 (same pronoun) |
+
+The sentence itself is not built in the constructor; RefreshScenario @0x73f3cd80c8
+composes it from the two who-strings, the weapon's own verb and its article form.
+Two literal pairs are involved: cell 0x5C3CDC0 ('{0} {1} you{2}!') writes the card body
+at [0x48] and the first-person twin cell 0x5C3CDA8 ('{0} {1} me{2}!') writes the
+narrative at [0x170]; {0} is _whoString for the body and _whoStringNarrative for the
+narrative, {1} is DataWeapon.Verb, and {2} is String.Format(cell 0x5C3CDB0, ' with {0}')
+over DataWeapon::GetNameWithIndefiniteArticle() @0x73f2e61780. A weapon that carries no
+verb falls back to the literal 'attacked' (cell 0x5C3CDC8). The card therefore reads
+Your friend, Sabrina Stonemason, hit you with a prosthetic leg! on screen and
+My friend, Sabrina Stonemason, hit me with a prosthetic leg! in the log.
+
+### 113.2 The three replies, dispatched by their own label text
+
+ChoiceSelectedAtIndex @0x73f3cd9470 opens by logging the narrative it was carrying
+([self+0x170] through LifeLog::Log @0x73f380158c), then lowercases the chosen label
+(System.String::ToLower @0x73f52aa938) and tests it with Contains @0x73f52aafdc against
+one word per arm: 'run away' (cell 0x5CBF578), 'fight' (cell 0x5C3F728) and 'police'
+(cell 0x5C3CED0). A fourth Contains site answers the prison guard word, which only the
+prisoner constructor's cards can reach. Every arm ends by jumping to one shared tail
+0x73f3cd9ac0, which loads the LifeLog singleton and tail-calls Log with whatever message
+that arm left in x20 -- an arm that writes no message logs nothing at all.
+
+| button | impact | log line |
+|---|---|---|
+| Run away from {0} | ImpactDiscipline(1), or ImpactDiscipline(-3) when _attackerIsBully | I ran away from {0}. (cell 0x5CBF580) |
+| Fight back | ImpactDiscipline(4) | none -- the arm leaves the empty string in the log register |
+| Call the police on {0} | ImpactKarma(-1) | three-way split on GetRandomNumber(0,10) |
+
+The police arm rolls GameReference::GetRandomNumber(0,10) @0x73f32ab2a8 and then
+branches twice: a roll of 2 or less takes the arrest line (cell 0x5CBF5D0, 'I called the
+police on {0} and {1} was arrested.'), 3 through 7 takes the flight line (cell 0x5CBF568,
+'I called the police on {0} but {1} fled before they arrived.'), and 8 or more takes the
+warning line (cell 0x5CBF5B0, 'I called the police on {0}. The police warned me for
+wasting their time.'). The three outcomes move nothing but that single karma point.
+The fight arm instead builds a ScenarioCustomAttack over the friend
+(.ctor(SimPerson) @0x73f3cda45c) and chains it at [self+0x128], so a fight leads
+straight into the custom attack card. The run-away arm closes with an obituary colour
+line rather than a life log line: 'Friends describe {0} as sometimes cowardly.'
+(cell 0x5CBF5C0) through ObituaryGenerator::AddColorString @0x73f3803dc0.
+
+### 113.3 How the port reaches it
+
+The encounter that hands the assault its victim and its weapon is section 112's card, so
+the queue lives on the Life: attackInPending, attackInFriend, attackInFemale,
+attackInWeapon and attackInVerb (port/include/bl/sim.h:101-105). Section 112 used to end
+by documenting the unmodelled child push; it now fills those five fields instead
+(port/src/sim.cpp:25519-25523) and returns. The relationship move stays a shortcut
+because the port's relationship model is a single value rather than the game's slot
+array.
+
+The card itself is Sim::attackInboundYear (port/src/sim.cpp:25554, declared at
+port/include/bl/sim.h:465), called last in the friend family right after the encounter
+(port/src/sim.cpp:3624), and it behaves like this:
+
+1. It refuses anything that is not queued: if attackInPending is false, or a forced
+   choice above 2 is asked for, the year belongs to another card and the function
+   returns false without consuming the queue.
+2. It clears the queue on entry, then re-reads the age gate the encounter imposed -- the
+   hero must still be 18 or older -- so a queued assault cannot surface in a later
+   childhood.
+3. The friend, the gender, the weapon and the verb all come from the queue rather than
+   from a fresh draw, which is what makes the card traceable to the encounter that
+   armed it. The weapon's article form is rebuilt with withArticle(weaponName, true) +
+   weaponName, the same helper pair section 112 uses.
+4. The title is Aggravated Assault and the body is the second-person sentence over the
+   friend, the verb and the weapon, exactly as RefreshScenario composes it.
+5. The button is forced when the harness asks for one and otherwise drawn from the
+   card's own stream aiRng_ (port/include/bl/sim.h:629, initialised at
+   port/src/sim.cpp:640). The three arms write the label, the impact through
+   pointsForImpact and the narrative: run away gives discipline +1 with the first-person
+   line, fight back gives discipline +4 and no narrative (the fight arm's log line is the
+   button itself, which is what the empty message in the game produces), and the police
+   arm gives karma -1 and then rolls its own aiRng_.below(10) for the three outcomes.
+   pointsForImpact (port/src/sim.cpp:3877) maps 1 to 4, 4 to 30 and -1 to -4.
+
+### 113.4 Shortcuts
+
+1. Only the ctor(SimPerson,DataWeapon) overload is ported. The eight others -- the
+   sibling, bully, prisoner, secret agent, hitman, street person, string-list and
+   person-plus-int attackers -- never appear, with their own attacker selection,
+   wording and prices.
+2. RefreshScenario's own attacker selection (the bully, sibling and prisoner flags, the
+   Random.value draw that sends an unsupported card to the throw helper, and the
+   secret-agent path behind [self+0x1c8]) is not modelled: the port only ever produces
+   the card the encounter queues.
+3. The weapon fallback is not modelled either. In the game a constructor that arrives
+   without a weapon asks DataHub::GetRandomAssaultWeaponAndIsInPrison(
+   SimHero::CurrentlyInPrison()) for one; the port always has the encounter's weapon.
+4. The damage and the death test are dropped. The game rolls GetRandomNumber(0,0xc)
+   when the weapon's DangerScore is 4 or above (GetRandomNumber(0,0x14) on the hitman
+   path), compares it against the DangerScore, honours the Medieval flag at [weapon+0x2d]
+   and lets _heroDeathOverride [self+0x1c0] suppress the whole test. The port's hero
+   cannot be killed by this card, and the assault moves no health.
+5. The miss phrasing and the assassination phrasing are unmodelled: cells 0x5CBF538 and
+   0x5CBF508 ('... but missed!') and the four 'for trying to assassinate {3}' lines
+   belong to sub-variants the friend overload never selects, so every ported card wears
+   the plain '{0} {1} you{2}!' wording.
+6. The fight arm's child card is documented rather than pushed: the game links a
+   ScenarioCustomAttack over the friend at [self+0x128], and the port stops at the
+   discipline price.
+7. The prison guard arm, its ImpactKarma(-2) and its 'I snitched on {0} to the prison
+   guards.' line stay out of the port, because only the prisoner constructor's cards can
+   reach that Contains site.
+8. The obituary colour lines ('Friends describe {0} as sometimes cowardly.' and
+   'Friends say {0} was tramautized for life after once being attacked with {1}.') are
+   not written to the port's obituary, and the -6 relationship move the encounter's tail
+   performs is still not modelled.
+
+A few cards from a seeded run:
+
+```
+seed 2 female age 52  Aggravated Assault
+  Your friend, Sabrina Stonemason, hit you with a prosthetic leg!
+  [Fight back]                 discipline +30
+seed 2 female age 57  Aggravated Assault
+  Your friend, Mary Overwood, shot you with a BB gun!
+  [Call the police on him]     I called the police on him and he was arrested.
+                               karma -4
+seed 3 female age 71  Aggravated Assault
+  Your friend, Hung Cook, blew up you with a homemade bomb!
+  [Call the police on her]     I called the police on her but she fled before they
+                               arrived.   karma -4
+```
+
+The card also shows the game's own grammar: a multi-word verb such as 'blew up' lands
+between the attacker phrase and the object, so the sentence reads 'blew up you with a
+homemade bomb'. The port keeps that wording rather than repairing it.
+
+Verification for the section: tools/test_friend_unfriend.py covers the assault card as
+well, so the family regression now drives 113's three buttons from the encounter the
+previous section queues: the assault's friend must be one the same life already saw walk
+in armed, the weapon and its verb are read back against a16_weapons-enc (an in-prison
+row is never drawn and the article agrees with the vowel), and each branch asserts its
+own label, narrative and deltas. It reports `unfriend cards: {'attack': 74,
+'attack_fight': 28, 'attack_police': 23, 'attack_run': 23, 'cards': 94, 'insult': 40,
+'let_go': 31, 'out': 67, 'prison': 6, 'salvage_lost': 15, 'salvage_win': 2, 'weapon':
+80, 'weapon_argue': 20, 'weapon_forgive': 15, 'weapon_reason': 13, 'weapon_run_away':
+20, 'weapon_run_caught': 12}` at rc=0. The section's own probe, /tmp/qdir/aires.py,
+drives blsim over seeds 1..40 x both genders x an 80-year and a 50-year run (160 lives)
+and found 108 assault cards, every single one carried from an encounter the same life had
+already seen -- which is the queue working, not a fresh coin: `cards per life {0: 87, 1:
+40, 2: 31, 3: 2}`, `branches {'Call the': 31, 'Fight back': 42, 'Run away': 35}`, titles
+all 'Aggravated Assault', 31 distinct weapons (horse whip 10, boomerang 8, prosthetic leg
+6) and 11 distinct verbs (hit 28, shot 22, sliced 17, whipped 10, blew up 8), hero age at
+the card 21..80, runtime 24s, failures 0, RESIDUE 0. The full batch ran 57 probes, every
+one at rc=0 residue=0 (aires.py events=108, fwres.py events=118, fuoutres.py events=109,
+unfrres.py events=140, fuprres.py events=8), the residue census reported `distinct
+residue tokens 0 total 0`, coverage `captured scenarios: 109  recoverable: 107`, the port
+gap `ENTRIES 109 rendered-by-port 107 gap 0`, the push replay rc=0 with empty stderr, and
+tools/bench.sh still matches the game through age 34 (age 33 happiness delta 17, age 34
+karma delta 30).

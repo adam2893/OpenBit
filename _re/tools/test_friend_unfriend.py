@@ -1,4 +1,6 @@
-"""Row, gate, and carry regression for the friend family: the three unfriendcards (REPORT.en.md 108, 110, 111) and the weapon card (112)."""
+"""Row, gate, and carry regression for the friend family: the three unfriend
+cards (REPORT.en.md 108, 110, 111), the weapon card (112) and the assault it
+links (113)."""
 import collections
 import csv
 import json
@@ -53,6 +55,13 @@ WSTAND = re.compile(r"^While .+, you turn around to discover your friend, (.+?),
 RUN_AWAY_NAR = re.compile(r"^You ran for your life and got away from (him|her)!$")
 RUN_CAUGHT_NAR = re.compile(r"^You ran for your life but (he|she) caught you!$")
 
+# ScenarioAttackInbound (REPORT.en.md 113): the assault card the weapon card's
+# shared tail links, carrying the encounter's friend and weapon. The sentence is
+# '{0} {1} you{2}!' with {1} the weapon's own Verb column and {2} its article form.
+WEAPON_VERBS = {row["Weapon"].strip(): row["Verb"].strip()
+                for row in csv.DictReader((ROOT / "gamedata_plain" / "a16_weapons-enc").open(newline=""))}
+ATTACK_BODY = re.compile(r"^Your friend, (.+?), (.+?) you with (.+)!$")
+
 seen = collections.Counter()
 for seed in range(1, 41):
     for gender in ("male", "female"):
@@ -61,6 +70,7 @@ for seed in range(1, 41):
                              input=json.dumps(spec), text=True, capture_output=True,
                              check=True, cwd=ROOT / "port")
         ended = []
+        armed_ended = []
         for event in json.loads(run.stdout)["events"]:
             out_match = OUT_BODY.match(str(event.get("body") or ""))
             if out_match:
@@ -85,6 +95,7 @@ for seed in range(1, 41):
                 # in with a weapon and the four buttons are keyed by their label.
                 seen["weapon"] += 1
                 name, armed = wm.group(1), wm.group(2)
+                armed_ended.append((event["age"], name))
                 assert not event.get("table"), event
                 # The class's own gate: hero age >= 18 and not in prison.
                 assert event["age"] >= 18, event
@@ -129,6 +140,57 @@ for seed in range(1, 41):
                         seen["weapon_run_caught"] += 1
                         assert event["title"] in CAUGHT, event
                     assert deltas == {"happiness": -30, "discipline": -16}, event
+                else:
+                    raise AssertionError(event)
+                continue
+            # ScenarioAttackInbound (REPORT.en.md 113): the assault the weapon
+            # card's shared tail links, queued by the encounter and shown on the
+            # next age-up with the friend and the weapon the encounter drew.
+            am = ATTACK_BODY.match(str(event.get("body") or ""))
+            if am:
+                seen["attack"] += 1
+                name, verb, armed = am.group(1), am.group(2), am.group(3)
+                # The encounter hands both halves over, so the assault names a
+                # friend this life already saw walk in armed.
+                assert any(friend == name for _, friend in armed_ended), (event, armed_ended)
+                # The encounter's own gate demanded eighteen and a hero out of
+                # prison, and the hero cannot lose an age between the two cards.
+                assert event["age"] >= 18, event
+                assert event["title"] == "Aggravated Assault", event
+                assert not event.get("table"), event
+                article, weapon_name = armed.split(" ", 1)
+                assert article in ("a", "an") and weapon_name in WEAPONS, event
+                # DataWeapon.Verb is the word the sentence puts between the
+                # friend and the hero, with 'attacked' the class's own fallback.
+                assert verb in (WEAPON_VERBS.get(weapon_name, ""), "attacked"), event
+                choice = str(event.get("choice") or "")
+                narrative = event["logLines"][0]
+                if choice.startswith("Run away from "):
+                    seen["attack_run"] += 1
+                    ran = re.match(r"^I ran away from (him|her)[.]$", narrative)
+                    assert ran and choice == "Run away from " + ran.group(1), event
+                    deltas = {k: v for k, v in event["deltas"].items() if v}
+                    assert deltas == {"discipline": 4}, event
+                elif choice == "Fight back":
+                    seen["attack_fight"] += 1
+                    # ImpactDiscipline(4) over the friend; the arm's own message
+                    # stays the empty string the dispatch loads, so the reply
+                    # writes no log line at all.
+                    deltas = {k: v for k, v in event["deltas"].items() if v}
+                    assert deltas == {"discipline": 30}, event
+                    assert event["logLines"][1] == "Fight back", event
+                elif choice.startswith("Call the police on "):
+                    seen["attack_police"] += 1
+                    called = re.match(r"^I called the police on (him|her)( and | but |[.] )", narrative)
+                    assert called and choice == "Call the police on " + called.group(1), event
+                    # The three GetRandomNumber(0,10) outcomes, each keyed to the
+                    # same pronoun the label used.
+                    subject = "he" if called.group(1) == "him" else "she"
+                    assert (narrative.endswith(" and " + subject + " was arrested.")
+                            or narrative.endswith(" but " + subject + " fled before they arrived.")
+                            or narrative.endswith(". The police warned me for wasting their time.")), event
+                    deltas = {k: v for k, v in event["deltas"].items() if v}
+                    assert deltas == {"karma": -4}, event
                 else:
                     raise AssertionError(event)
                 continue
@@ -193,5 +255,5 @@ for seed in range(1, 41):
                 assert deltas == INSULT, event
             else:
                 raise AssertionError(event)
-assert seen["cards"] and seen["weapon"], seen
+assert seen["cards"] and seen["weapon"] and seen["attack"], seen
 print("unfriend cards:", dict(sorted(seen.items())))
