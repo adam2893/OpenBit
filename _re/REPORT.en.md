@@ -15769,3 +15769,179 @@ The full regression after the section: 51 probes at residue 0 (the new `frores.p
 
 The section's own probe, `frores.py`, drives 160 lives and reports `lives 160 / inbound start-rumor picks 46 / outbound cards 42 / cards per life {1: 38, 2: 2} / titles ... / rows drawn 17 of 40 / hero age at the card min 24 max 74 / runtime 39s / failures 0 / RESIDUE 0 {}`.
 
+## 108. The unfriend card: the friend leaves first, and three answers
+
+Seven sections have now ported cards the hero chooses to open. This one is the family's
+mirror: the hero does not decide anything to make it happen. `ScenarioFriendUnfriendInbound`
+is pushed by the yearly `Life.IncrementAge` loop, its rate is the hero's own karma rather
+than a fixed percentage, and the three things the hero can say about it are the whole
+interaction. Its sibling `ScenarioFriendUnfriendOutbound` -- the version the Relationships
+tab opens, the same shape section 107 ported for the rumor pair -- is left for a later
+section.
+
+### 108.1 The card
+
+`ScenarioFriendUnfriendInbound` sits at `il2cpp_dump.txt:40947`. One field, `0x170
+SimPerson _friend`, and three methods: `.ctor(SimPerson)` @0x73f3c58ac4, `RefreshScenario()`
+@0x73f3c58b34 (134 instructions) and `ChoiceSelectedAtIndex(Int32)` @0x73f3c58d4c (668
+instructions). There is no `ScenarioIsEligibleForRandomPush`, no `GetNextScenario` and no
+`DismissSelected`: the push gate lives in the caller, and a card with no dismiss handler is
+a card that always ends in one of its buttons.
+
+`RefreshScenario` writes the body and the buttons and nothing else:
+
+1. `_friend` from `[self+0x170]`; null leaves through the throw stub 0x73f3c58d48.
+2. The relationship word and the display name: `FriendRelationshipStatusString`
+   @0x73f30e169c and `[friend+0x10]+0x18`, handed to `Format(String,Object,Object)`
+   @0x73f52a71cc with template cell 0x5CBC748 -- **"Your {0}, {1}, has unfriended you."** --
+   and the result stored at `[self+0x48]` (Body). A byte flag is set at `[self+0x110]`.
+3. Three `ScenarioChoice` objects (ctor 0x73f2eb9c50, the `(false, true)` overload), each
+   text built by `Format(String,Object)` @0x73f52976b4 over `PronounStringForType(2)`
+   @0x73f30e64d0, in this order: cell 0x5CBC730 **"Try to salvage our friendship"**, cell
+   0x5CBC740 **"Let {0} go"**, cell 0x5CBC738 **"Insult {0} one last time"**. The list lands
+   at `[self+0x108]`.
+
+There is no title in `RefreshScenario` at all. Every title this card ever shows is written
+later, inside the button handler, by the branch the hero picked.
+
+### 108.2 Who opens it
+
+The push is in the yearly friend loop at 0x73f2f03d30, and it runs three tests before the
+card is built:
+
+1. `ldr w8,[x22,#0x184]` (`FriendStatus`) then `ccmp w8,#1,#0,gt; b.ne 0x73f2f03df8` -- only
+   an active friend can unfriend the hero.
+2. `ldr w8,[x21,#0x20]` (hero age) minus `[x22,#0x190]` (`HeroAgeAtLastBestFriendRequest`),
+   `cmp w8,#0xb; b.lt` -- at least eleven years have to have passed since that milestone.
+3. `GetRandomNumber(0,0x96)` @0x73f32ab2a8 (0..149) against `ldr s1,[x21,#0x9c]` (the hero's
+   `Att_karma`), `fcmp s1,s0; b.le skip` -- **the card needs hero karma to beat the draw**, so
+   its rate is karma/150 per year, not a coin. A kind hero is told about it far more often
+   than a nasty one.
+
+A hero helper @0x73f2f0e1d8 then picks the variant on bit 0: at 0x73f2f03e34 the prison
+card (`ScenarioFriendUnfriendPrison`, ctor 0x73f3c59adc) and at 0x73f2f03e74 this one. Both
+post themselves with 0x73f24bd170 and the loop moves on to the next friend, so a life with
+several friends can be told several times in one year.
+
+The outbound sibling `ScenarioFriendUnfriendOutbound` (ctor 0x73f3c597bc) has exactly one
+caller, 0x73f357ba58, inside `LifeInterface.RelationshipItemArrayForFriend` -- the
+Relationships tab, the same shape as section 107's outbound rumor card. The yearly chain
+never sends it.
+
+### 108.3 The three answers
+
+`ChoiceSelectedAtIndex` @0x73f3c58d4c opens with a shared preamble: the rendered button text
+comes back lower-cased into `x22`, the journal line is built as
+`Format(cell 0x5CBC7E8 = "{0} unfriended me.", friend.FullName())`, and the hero's happiness
+hit is computed once as `w21 = -5`, or `-4` when `[friend+0x188] YearsFriends < 20`. Dispatch
+is two `Contains` tests: "salvage" (cell 0x5CBC7C0) and "insult" (cell 0x5C346A8); anything
+else is the middle button.
+
+1. **Try to salvage our friendship.** `ImpactDiscipline(3)` and `ImpactKarma(3)` first, then
+   the outcome, which the game decides with three tests: `[friend+0xa8]` (`Att_willpower`)
+   against `GetRandomNumber(0,100)`; a second failure when `HeroDeservesToBeUnfriended()`
+   @0x73f30e42b8 and willpower is ten or more; and a success window only when the hero's age
+   is six or more years past `[friend+0x160]` (`HeroAgeAtLastUnfriendAttempt`). On success the
+   friend's relationship slot 0x508 takes **+4**, the log line is "You successfully salvaged
+   your friendship with your {0}, {1}.", and the title is one of five. On failure the log line
+   is "You tried to salvage your friendship with {0} but were unsuccessful.", the title is one
+   of six, and the shared tail applies the -5/-4.
+2. **Let {0} go.** No title, no child card, no extra stat call: the hero's happiness takes the
+   -5/-4, the friend is dropped, and the journal gets "NAME unfriended me.".
+3. **Insult {0} one last time.** `ImpactDiscipline(-4)` and `ImpactKarma(-3)`, the friend's
+   relationship slot 0x508 takes **-6**, and the insult comes from
+   `SimPerson.GetRandomInsultForGender(friend.EffectiveGender(), 0)` @0x73f2ca2580. The log
+   line is "You called {0} {1} as {2} was walking out the door." and the title is one of four.
+   Two extras ride along: when the insult contains "fool" (cell 0x5C372A8) a byte is set at
+   `[hero+0x70]+0x290`, and every insulted friend's full name is appended to the hero's
+   `get_ListPeopleNamesInsulted()` list, which is then handed to `HandleNativeMessage`
+   @0x73f4e366f4.
+
+All three converge on a shared tail at 0x73f3c59548: the branch's log line is packed into a
+child scenario object (ctor 0x73f2ebf510) linked at `[self+0x128]` -- the same child-link
+field sections 102 and 107 use -- then the hero's happiness slot **0x408** takes the -5/-4,
+then `friend.Unfriend()` @0x73f30e4240, then `Log(String)` @0x73f380158c with "{name}
+unfriended me.", then `RefreshUI()` @0x73f3580f5c. Note that the journal line passed to
+`Log` is the same short one on every path; the longer per-branch line travels inside the
+child scenario.
+
+The three title pools, read from the cells:
+
+| branch | titles |
+| --- | --- |
+| salvage, success | Under the bridge / Beef behind us / Forgiven / Can't shake me / This isn't Facebook |
+| salvage, failure | Bye then / Unfriended / It's not me it's you / Done for good / Stale mate / So long, partner |
+| insult | Nail in the coffin / Done for good / Irreparable / No going back |
+
+"Done for good" is in two pools, which is why a title alone does not identify the branch.
+
+### 108.4 The rows
+
+This card has no table. Every line it shows is a string cell in the binary -- the body
+template, the three button labels, the three title pools and the two journal lines -- so
+unlike the rest of the family there is nothing to draw a row from and nothing to gate on a
+column. The one table it touches is `a16_insults-enc`, for the insult word: 204 rows over
+`Insult,Plural,Gender,Clean,Vampire`, with the Gender column reading `both` 122 times, `male`
+55 and `female` 28 (`Clean` marks 120 rows and `Vampire` 64, exactly as the port's older
+insulter at `src/sim.cpp:4096` already ignores them). The port filters it the way the game
+does: the friend's gender first, falling back to the generic rows.
+
+### 108.5 Shortcuts
+
+1. The karma gate is the game's own. The port keeps `h.karma <= int(unfrRng_.below(150))`
+   verbatim, so the rate matches -- and because the port's friend is a drawn slot rather
+   than a roster entry, the card can fire again in the same life. That is why the probe sees
+   0 to 16 cards per 80-year life (893 over 160 lives, 5.6 per life, making this the port's
+   most frequent scenario card). In the game each firing removes one friend from the roster,
+   so a hero with one friend gets the card once.
+2. `FriendStatus == 1` and the eleven-year `HeroAgeAtLastBestFriendRequest` distance are not
+   modelled. The port's drawn friend is always a friend and carries no milestone age, so
+   only test 3 survives into the port.
+3. The salvage outcome is one coin. The game's three tests -- willpower against a random
+   0..100, `HeroDeservesToBeUnfriended()` with its willpower floor of ten, and the six-year
+   distance since the last attempt -- collapse into a single `chance(0.5)`.
+4. Happiness is always -4 (`pointsForImpact(-4)` = -30). The game's -5 for a friendship of
+   twenty years or more needs `[friend+0x188] YearsFriends`, which the port does not track.
+5. The "fool" achievement byte, the `[hero+0x3a8]` insult counter, and the
+   `ListPeopleNamesInsulted` / `HandleNativeMessage` pair are dropped: the port has no
+   achievement, counter or native-message layer.
+6. The child scenario is not built. The per-branch log line goes straight into the age-up's
+   narrative instead, which is the documented stand-in since section 101 (the port has no
+   scenario push).
+7. The prison variant is not modelled. `inPrison` heroes skip the card entirely rather than
+   receiving `ScenarioFriendUnfriendPrison`.
+8. The title is chosen by the branch, not by the card. The real `RefreshScenario` never
+   writes a Title field; the port renders the branch's title on the same age-up, which is
+   what the next refresh of the card would have shown.
+
+```
+=== seed 1  female  United States  age 19  friend Seo Taji (female)
+BODY   : Your friend, Seo Taji, has unfriended you.
+TITLE  : Irreparable                       (insult lane)
+CHOICE : Insult her one last time
+LOG    : You called Seo Taji foolhardy as she was walking out the door.
+DELTAS : {"discipline": -30, "happiness": -30, "karma": -16}
+
+=== seed 1  female  United States  age 26  friend Larry Wyles (male)
+BODY   : Your friend, Larry Wyles, has unfriended you.
+TITLE  : This isn't Facebook                (salvage, won)
+CHOICE : Try to salvage our friendship
+LOG    : You successfully salvaged your friendship with your friend, Larry Wyles.
+DELTAS : {"discipline": 16, "karma": 16}
+
+=== seed 1  female  United States  age 27  friend Beyawnce Gnolls (male)
+BODY   : Your friend, Beyawnce Gnolls, has unfriended you.
+TITLE  : None                               (let go)
+CHOICE : Let him go
+LOG    : Beyawnce Gnolls unfriended me.
+DELTAS : {"happiness": -30}
+```
+
+The unfriend pair is half done: the card the hero receives now renders, and the card the
+Relationships tab opens about a friend (`ScenarioFriendUnfriendOutbound`) is what is left of
+it, together with the prison variant `ScenarioFriendUnfriendPrison`. The family's other open
+halves are the status pair, the threesome card, and the four outbound coworker cards
+section 105 named.
+The full regression after the section: 52 probes at residue 0 (the new `unfrres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0` (with `ScenarioFriendUnfriendInbound` now counted as rendered), the push script at rc 0 with empty stderr, the persistent test at `unfriend cards: {'cards': 526, 'insult': 192, 'let_go': 174, 'salvage_lost': 92, 'salvage_win': 68}` and the benchmark reaching age 34.
+
+The section's own probe, `unfrres.py`, drives 160 lives and reports `lives 160 / cards 893 / cards per life {0: 9, 1: 23, 2: 11, 3: 25, 4: 12, 5: 13, 6: 7, 7: 8, 8: 9, 9: 6, 10: 16, 11: 7, 12: 1, 13: 5, 14: 2, 15: 2, 16: 4} / branches {insult: 324, let_go: 292, salvage_lost: 157, salvage_win: 120} / hero age at the card min 18 max 79 / runtime 25s / failures 0 / RESIDUE 0 {}`, with the title/branch pairing checked line by line.

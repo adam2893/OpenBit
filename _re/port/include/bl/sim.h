@@ -413,6 +413,12 @@ class Sim {
   // only card without buttons (DismissSelected writes the line it built) and it
   // draws on its own stream (fstRng_).
   bool friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice);
+  // The unfriend card (REPORT.en.md 108): a friend gives the hero up, and the
+  // hero can try to salvage the friendship, let the friend go or insult them one
+  // last time. It is the family's only card with three buttons and the only one
+  // the game pushes out of Life.IncrementAge's friend loop rather than a table;
+  // it draws on its own stream (unfrRng_).
+  bool friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -567,6 +573,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).
   Rng rumOutRng_;
+  // The unfriend card's own stream (REPORT.en.md 108).
+  Rng unfrRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

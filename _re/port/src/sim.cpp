@@ -632,7 +632,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
-      rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL) {}
+      rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
+      unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3583,6 +3584,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // the previous age-up, so it is tried here and draws on its own stream
   // (include/bl/sim.h rumOutRng_), moving no earlier subsystem's sequence.
   if (friendRumorOutYear(life, out, forcedChoice)) return true;
+  // The unfriend card (REPORT.en.md 108) is the family's seventh push and its
+  // only push the game makes out of the yearly friend loop rather than a table.
+  // It is tried last of the friend cards and draws on its own stream
+  // (include/bl/sim.h unfrRng_), so no earlier subsystem's sequence moves.
+  if (friendUnfriendYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24920,6 +24926,151 @@ bool Sim::friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = "My " + rel + ", " + friendName + ", refused to go " + pastime +
                     " with me.";
   }
+  return true;
+}
+
+// The unfriend card (REPORT.en.md 108): the yearly push in which a friend gives
+// the hero up.
+// ScenarioFriendUnfriendInbound (il2cpp_dump.txt:40947; .ctor(SimPerson)
+// @0x73f3c58ac4, RefreshScenario @0x73f3c58b34, ChoiceSelectedAtIndex
+// @0x73f3c58d4c) has no ScenarioIsEligibleForRandomPush and no DismissSelected:
+// the game pushes it out of Life.IncrementAge's friend loop and the three buttons
+// are its own. RefreshScenario sets no title and stores only the body
+// ("Your {0}, {1}, has unfriended you.", cell 0x5CBC748) plus the buttons
+// 'Try to salvage our friendship' (0x5CBC730), 'Let {0} go' (0x5CBC740) and
+// 'Insult {0} one last time' (0x5CBC738); each chosen button pushes a child
+// scenario (ctor 0x73f2ebf510, linked at [self+0x128]) whose own headline comes
+// from the pool that answers it, and the port folds that child into this age-up
+// (shortcut). The two siblings -- ScenarioFriendUnfriendOutbound @0x73f3c597bc,
+// the hero's own unfriend opened from the Relationships tab, and
+// ScenarioFriendUnfriendPrison @0x73f3c59adc, the same card for a friend in
+// prison -- stay unwired.
+bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // The push site is Life.IncrementAge's friend loop (@0x73f2f03d30): the friend
+  // must still be a friend ([friend+0x184] FriendStatus == 1); eleven years must
+  // have passed since that friend's last best-friend request (the hero's age
+  // minus [friend+0x190] >= 11); and the hero's karma must beat a draw out of
+  // 0..149 (GetRandomNumber(0,0x96) against [hero+0x9c] Att_karma), so the card's
+  // rate rises with the hero's karma. shortcut: the port's friend is a drawn slot
+  // with no status and no event clock, so the first two tests have nothing to read
+  // and the karma test is this card's rate, under the family's own eighteen floor.
+  // It draws on its own stream (unfrRng_), so no earlier subsystem's sequence
+  // moves for a given seed.
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.karma <= int(unfrRng_.below(150))) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, drawn before any of the card's own draws (the
+  // friend-party card's pattern, src/sim.cpp 24289).
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = unfrRng_.chance(0.5);
+  // GetFriendRelationshipStatusForDisplay reads the friend's FriendStatus, which
+  // the port's drawn slot does not carry, so it always reads 'friend' (the
+  // friend-prank card's shortcut). PronounStringForType(0) @0x73f30e64d0 is the
+  // subject pronoun; type 2, the object pronoun the two labels use, is the
+  // friend-prank card's 'them'.
+  const std::string rel = "friend";
+  const std::string he = friendFemale ? "she" : "he";
+  const std::string him = friendFemale ? "her" : "him";
+
+  out = AgeUp();
+  out.body = "Your " + rel + ", " + friendName + ", has unfriended you.";
+  // The button is the player's; the port draws one out of the three (the friend
+  // family's own coin, on this card's stream).
+  const int pick = int(unfrRng_.below(3));
+  if (pick == 0) {
+    // 'Try to salvage our friendship'. The salvage path opens with
+    // ImpactDiscipline(3) @0x73f30e4cdc and ImpactKarma(3) @0x73f30e4bfc on the
+    // hero, before it tests anything.
+    out.choice = "Try to salvage our friendship";
+    out.discipline = pointsForImpact(3);
+    out.karma = pointsForImpact(3);
+    // The outcome is the game's own three tests (@0x73f3c58ff4): the friend's
+    // Att_willpower ([friend+0xa8]) against GetRandomNumber(0,100), then
+    // HeroDeservesToBeUnfriended() @0x73f30e42b8 with a willpower floor of ten,
+    // then six years since [friend+0x160] HeroAgeAtLastUnfriendAttempt. shortcut:
+    // the port's drawn friend carries no willpower and the hero keeps no unfriend
+    // clock, so the three collapse into one coin; the success path's write of the
+    // hero's age into [friend+0x160] and its +4 relationship move (slot 0x508, the
+    // bar the port does not carry) go with them.
+    if (unfrRng_.chance(0.5)) {
+      // The success pool, cells 0x5CBC7C8, 0x5CBC760, 0x5CBC7B0, 0x5CBC7B8,
+      // 0x5CBC770.
+      static const char* const kWin[5] = {"Under the bridge", "Beef behind us",
+                                          "Forgiven", "Can't shake me",
+                                          "This isn't Facebook"};
+      out.title = kWin[unfrRng_.below(5)];
+      // You successfully salvaged your friendship with your {0}, {1}.
+      // (template 0x5CBC750)
+      out.narrative = "You successfully salvaged your friendship with your " +
+                      rel + ", " + friendName + ".";
+    } else {
+      // The failure pool, cells 0x5CBC758, 0x5CBC728, 0x5CBC778, 0x5CBC788,
+      // 0x5CBC7A8, 0x5CBC7A0.
+      static const char* const kLost[6] = {"Bye then", "Unfriended",
+                                           "It's not me it's you", "Done for good",
+                                           "Stale mate", "So long, partner"};
+      out.title = kLost[unfrRng_.below(6)];
+      // You tried to salvage your friendship with {0} but were unsuccessful.
+      // (template 0x5CBC7D8)
+      out.narrative = "You tried to salvage your friendship with " + friendName +
+                      " but were unsuccessful.";
+      out.happiness = pointsForImpact(-4);
+    }
+  } else if (pick == 1) {
+    // 'Let {0} go'. This path builds no headline and no journal line of its own:
+    // it reaches the shared tail carrying the default line "{0} unfriended me."
+    // (cell 0x5CBC7E8 over the friend's full name).
+    out.choice = "Let " + him + " go";
+    out.happiness = pointsForImpact(-4);
+    out.narrative = friendName + " unfriended me.";
+  } else {
+    // 'Insult {0} one last time'. ImpactDiscipline(-4) and ImpactKarma(-3) on the
+    // hero, then the friend's relationship (slot 0x508) by -6.
+    out.choice = "Insult " + him + " one last time";
+    out.discipline = pointsForImpact(-4);
+    out.karma = pointsForImpact(-3);
+    out.happiness = pointsForImpact(-4);
+    // The insult is SimPerson.GetRandomInsultForGender(friend.EffectiveGender(),
+    // 0) @0x73f2ca2580, read out of a16_insults-enc by the friend's gender; the
+    // row keeps its own article ('You called Jimbo a fool ...').
+    std::string insult = "a fool";
+    if (ensureTable("a16_insults-enc")) {
+      const Table& it = tbl("a16_insults-enc");
+      std::vector<size_t> pool;
+      for (size_t r = 0; r < it.size(); ++r) {
+        const std::string g = lower(trim(it.at(r, "Gender")));
+        if (g.empty() || g == "both" || g == "all" || g == "any" ||
+            g == (friendFemale ? "female" : "male"))
+          pool.push_back(r);
+      }
+      if (!pool.empty())
+        insult = trim(it.at(pool[unfrRng_.below(uint32_t(pool.size()))], "Insult"));
+    }
+    // The insult pool, cells 0x5CBC7D0, 0x5CBC788, 0x5CBC6C0, 0x5CBC7E0.
+    static const char* const kBad[4] = {"Nail in the coffin", "Done for good",
+                                        "Irreparable", "No going back"};
+    out.title = kBad[unfrRng_.below(4)];
+    // You called {0} {1} as {2} was walking out the door. (template 0x5CBC768)
+    out.narrative = "You called " + friendName + " " + insult + " as " + he +
+                    " was walking out the door.";
+    // Two side effects the port drops: the 'fool' test on the drawn insult sets a
+    // flag on the hero's assets ([hero+0x70]+0x290, an achievement), and the same
+    // branch counts the insult ([hero+0x3a8] += 1) and hands the friend's full
+    // name to get_ListPeopleNamesInsulted() @0x73f3d9ce44 and HandleNativeMessage
+    // @0x73f4e366f4 -- the port keeps no such list and no native message.
+  }
+  // The hero's happiness move on this card is its own vtable slot 0x408 with
+  // w1 = -4: the game's -5 is for a friendship of twenty years or more
+  // ([friend+0x188] YearsFriends >= 20), which a drawn friend has not reached.
+  // The shared tail then calls friend.Unfriend() @0x73f30e4240, Log(String)
+  // @0x73f380158c with the default line and RefreshUI() @0x73f3580f5c; the port
+  // keeps no friend roster, so the unfriending is the card's own outcome rather
+  // than a state change -- the next friend card draws a fresh name anyway.
   return true;
 }
 
