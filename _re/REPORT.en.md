@@ -15774,7 +15774,9 @@ The section's own probe, `frores.py`, drives 160 lives and reports `lives 160 / 
 Seven sections have now ported cards the hero chooses to open. This one is the family's
 mirror: the hero does not decide anything to make it happen. `ScenarioFriendUnfriendInbound`
 is pushed by the yearly `Life.IncrementAge` loop, its rate is the hero's own karma rather
-than a fixed percentage, and the three things the hero can say about it are the whole
+than a fixed percentage (corrected: that rate belongs to the friend-status card -- see the
+correction at the end of this section and REPORT.en.md 109), and the three things the hero
+can say about it are the whole
 interaction. Its sibling `ScenarioFriendUnfriendOutbound` -- the version the Relationships
 tab opens, the same shape section 107 ported for the rumor pair -- is left for a later
 section.
@@ -15816,7 +15818,8 @@ card is built:
 3. `GetRandomNumber(0,0x96)` @0x73f32ab2a8 (0..149) against `ldr s1,[x21,#0x9c]` (the hero's
    `Att_karma`), `fcmp s1,s0; b.le skip` -- **the card needs hero karma to beat the draw**, so
    its rate is karma/150 per year, not a coin. A kind hero is told about it far more often
-   than a nasty one.
+   than a nasty one. *(Corrected in REPORT.en.md 109: this test gates the friend-status card,
+   not this one.)*
 
 A hero helper @0x73f2f0e1d8 then picks the variant on bit 0: at 0x73f2f03e34 the prison
 card (`ScenarioFriendUnfriendPrison`, ctor 0x73f3c59adc) and at 0x73f2f03e74 this one. Both
@@ -15888,7 +15891,9 @@ does: the friend's gender first, falling back to the generic rows.
 
 ### 108.5 Shortcuts
 
-1. The karma gate is the game's own. The port keeps `h.karma <= int(unfrRng_.below(150))`
+1. *(Corrected in REPORT.en.md 109: this gate belongs to the friend-status card; the port now
+   uses the friend's twelve-year floor and a flat coin, so the counts below are historical.)*
+   The karma gate is the game's own. The port keeps `h.karma <= int(unfrRng_.below(150))`
    verbatim, so the rate matches -- and because the port's friend is a drawn slot rather
    than a roster entry, the card can fire again in the same life. That is why the probe sees
    0 to 16 cards per 80-year life (893 over 160 lives, 5.6 per life, making this the port's
@@ -15945,3 +15950,100 @@ section 105 named.
 The full regression after the section: 52 probes at residue 0 (the new `unfrres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0` (with `ScenarioFriendUnfriendInbound` now counted as rendered), the push script at rc 0 with empty stderr, the persistent test at `unfriend cards: {'cards': 526, 'insult': 192, 'let_go': 174, 'salvage_lost': 92, 'salvage_win': 68}` and the benchmark reaching age 34.
 
 The section's own probe, `unfrres.py`, drives 160 lives and reports `lives 160 / cards 893 / cards per life {0: 9, 1: 23, 2: 11, 3: 25, 4: 12, 5: 13, 6: 7, 7: 8, 8: 9, 9: 6, 10: 16, 11: 7, 12: 1, 13: 5, 14: 2, 15: 2, 16: 4} / branches {insult: 324, let_go: 292, salvage_lost: 157, salvage_win: 120} / hero age at the card min 18 max 79 / runtime 25s / failures 0 / RESIDUE 0 {}`, with the title/branch pairing checked line by line.
+**Correction (REPORT.en.md 109).** The gate section 108 attributed to the unfriend card -- the friend's `FriendStatus == 1`, eleven years since `[friend+0x190]` `HeroAgeAtLastBestFriendRequest`, and the hero's karma beating `GetRandomNumber(0,150)` -- belongs to the card the next section ports. That block (`0x73f2f03d28`-`0x73f2f03d88`) is reached only from `0x73f2f03d1c`, the failure exit of the unfriend block, and its success edge (`0x73f2f03df4`, `cmp w0,#5; b.ge`) leads to `0x73f2f03e98`, the `ScenarioFriendStatusInbound` push with `w2 = 2` -- the best-friend request. The unfriend card's own gate is the block at `0x73f2f03c5c`: the friend twelve or older, not already an enemy, the strength/willpower test, `HeroDeservesToBeUnfriended`, and a three-in-four escape for a hero in school. The port's `friendUnfriendYear` now carries the friend's twelve-year floor (the hero's age, the drawn friend having none) and a flat coin on its own stream instead of the karma test, so this section's own numbers move: `tools/test_friend_unfriend.py` at `unfriend cards: {'cards': 73, 'insult': 28, 'let_go': 27, 'salvage_lost': 16, 'salvage_win': 2}` and `unfrres.py` at `lives 160 / cards 123 / cards per life {0: 70, 1: 64, 2: 19, 3: 7} / branches {insult: 50, let_go: 47, salvage_lost: 24, salvage_win: 2} / hero age at the card min 12 max 80 / runtime 29s / failures 0 / RESIDUE 0 {}`. The body template, the three buttons, the two title pools and the point deltas are unchanged.
+
+## 109. The friend-status card: the best-friend request, the enemy, and the gate correction
+
+The yearly friend loop makes three decisions about a friend, and this section ports the third: what the friendship *is*. `ScenarioFriendStatusInbound` (`il2cpp_dump.txt:40922`) carries two cards in one class, chosen by an `Int32` the push site passes in -- a friend asking to become best friends, and a friend turning into an enemy.
+
+### 109.1 The card
+
+`ScenarioFriendStatusInbound` (`.ctor(SimPerson, Int32) @0x73f3c54534`, `RefreshScenario @0x73f3c545d4`, `ChoiceSelectedAtIndex @0x73f3c54d7c`, `DismissSelected @0x73f3c55544`, `EmojiString @0x73f3c555b0`) holds `_friend` at `0x170`, the flavour in `_status` at `0x178` and `_narrative` at `0x180`. `RefreshScenario` reads `_status` once and does nothing at all for any value but 2 and 3 (`cmp w8,#3; b.eq 0x73f3c548bc`, `cmp w8,#2; b.ne` to the exit).
+
+The status-3 flavour -- the enemy -- is the family's second mute card, after the spend-time card: no title and no `_choices`, so the only way out is the dismiss button, which tail-calls `Log(String) @0x73f380158c` with `_narrative`. Its body is `Your {0}, {1}, has made you {2} enemy.` (cell `0x5CBC4F8`, literal 50704, `{2}` = `PronounStringForType(1)`, the possessive form) and its narrative `My {0}, {1}, and I became enemies.` (cell `0x5CBC4F0`, literal 30943). It moves the hero's happiness by -3 (vtable slot `0x408`), stamps the friend's `FriendStatus` to 3 (`[friend+0x184]`) and `[friend+0x194]` with the hero's age, runs `ImpactLoyalty(-5) @0x73f30c760c` through the place chain, and bumps two counters on the hero's assets (`[hero+0x70]+0x5c`, and `+0xd8` when `EffectiveGender() == 1`).
+
+The status-2 flavour -- the best-friend request -- is a two-button card. It stamps the friend's `HeroAgeAtLastBestFriendRequest` (`[friend+0x190] = hero age`), looks for a current best friend in the hero's `get_FriendArray() @0x73f3722ebc` (elements with `Alive` and `[+0x184] == 2`, whose name is wrapped through the `{0}` pass-through at cell `0x5CBC510`), and writes the body `Your {0}, {1}, wants to become best friends with you.` (cell `0x5CBC518`, literal 50796) plus the narrative `My {0}, {1}, asked me to become best friends with {2}.` (cell `0x5CBC508`, literal 30947, `{2}` = `PronounStringForType(2)`, the object form). The two buttons are `Agree to become best friends` (cell `0x5CBC4E8`, literal 11005) and `Keep the status quo` (cell `0x5CBC500`, literal 28217).
+
+### 109.2 Who opens it
+
+Both flavours come out of `Life.IncrementAge`'s friend loop, from the same constructor with a different second argument: the enemy at `0x73f2f03c38` (`w2 = 3`) and the request at `0x73f2f03ec0` (`w2 = 2`). Both post through `bl 0x73f24bd170` with the child-link cell `0x5c3a1d8` as the third argument and then continue the loop at `0x73f2f03dfc`, so a friend can produce one of these cards per year and the year can still produce other cards for other friends. The constructor has one further caller, `0x73f29f9998`, inside some other class's `ChoiceSelectedAtIndex` -- not wired in the port.
+
+### 109.3 The two answers, and what they move
+
+`ChoiceSelectedAtIndex` reads the chosen label lower-cased, wraps `_narrative` through the `{0}` parser at cell `0x5C31470`, and dispatches on `Contains(choice, "agree")` (cell `0x5C35048`) and `Contains(choice, "keep")` (cell `0x5C3B578`). The relevant fact about this handler is what it does *not* have: no `Impact*` call at all, on either path.
+
+- **Agree** (`0x73f3c54f04`): the hero's happiness rises by 5 (vtable slot `0x408` with `w1 = +5`), the friend's relationship rises by 5 (slot `0x508`), and every other best friend is demoted -- the handler walks `get_FriendArray()` and writes `FriendStatus = 1` onto each element that was 2, with a -4 relationship move. It then checks `get_ListEnemyTurnedToFriend() @0x73f3d9d9dc` and `HandleNativeMessage() @0x73f4e36a88` for the friend's full name, setting `[hero+0x70]+0x5f8` when the friend had been an enemy, sets the requesting friend's `FriendStatus` to 2, and sets `[hero+0x70]+0x629` through `IsBestFriendAndDoctor() @0x73f3a35f14` and `[hero+0x70]+0x62a` for a classmate best friend of at least 85.0 (`[friend+0x23c]`, `CurrentlyInSchool() @0x73f2f0ccf4`). Eight of those ten effects are achievement or roster bookkeeping the port has no room for; the one that lands is the +5.
+- **Keep** (`0x73f3c55118`): the friend's relationship falls by 4 (slot `0x508`) and nothing else happens. No hero stat moves at all.
+- Any other label -- including the one the enemy card never offers -- falls straight through to the shared tail at `0x73f3c5545c`, which logs whatever line it built (`Log(String) @0x73f380158c`) and calls `RefreshUI() @0x73f3580f5c`.
+
+### 109.4 The gates, and what they cost the port
+
+The friend loop decides in a fixed order, and the order is the whole story of the previous section's correction.
+
+1. **The enemy decision**, first, at `0x73f2f03b3c`. A friend whose `FriendStatus` is already 3 skips it, as does one the hero's helper `0x73f2f0e1d8` marks; so does a friend whose friendship floats (`[friend+0xc0]`, `[friend+0xc8]`) average below a threshold, and one whose total relationship strength has reached 20.0. What remains is decided by the hero's karma: `Att_karma` (`[hero+0x9c]`) losing to `GetRandomNumber(0,100)` (`0x73f2f03bb8`), or `HeroDeservesToBeUnfriended @0x73f30e42b8` holding (`0x73f2f03bd0`), turns the friend into an enemy. A friend who was *also* the current best friend sets `[hero+0x70]+0x1cc` first (`0x73f2f03c10`).
+2. **The unfriend card** (REPORT.en.md 108), if the enemy decision declined: `0x73f2f03c5c`.
+3. **The best-friend request**, last, at `0x73f2f03d28`: `FriendStatus == 1` (`ccmp w8,#1,#0,gt` at `0x73f2f03d40`), the hero's age minus `[friend+0x190]` at least 11 (`0x73f2f03d48`-`0x73f2f03d58`), and `Att_karma` beating `GetRandomNumber(0,150)` (`0x73f2f03d70`-`0x73f2f03d88`), after which the shared helper `0x73f2f0e1d8` still gets a veto (`0x73f2f03d8c`). Element `0x73f2f03d1c` is a latch (`w28`) that lets the request test run only for the first friend of the year that reaches it.
+
+The port's card, `friendStatusYear` (`port/src/sim.cpp:25140`, declared at `port/include/bl/sim.h:427` with its own stream `fsRng_` = `seed ^ 0x94d049bb133111eb ^ 0xbf58476d1ce4e5b9` at `port/src/sim.cpp:637` and `port/include/bl/sim.h:589`), keeps both flavours and the order they are decided in: a hero at 12 or older, out of prison, then one coin of 0.05 on its own stream, then the enemy flavour when the hero's karma loses to a draw out of 0..99, and otherwise the request when the hero's age minus `life.bestFriendAge` (the port's copy of `HeroAgeAtLastBestFriendRequest`, `port/include/bl/sim.h:89`) is at least 11 and the karma beats a draw out of 0..149. When the request fires, the clock is stamped with the hero's age, exactly as `RefreshScenario` stamps the friend's field.
+
+### 109.5 Shortcuts
+
+1. The friend is a drawn slot, not an object (the family's standing shortcut, REPORT.en.md 102): the port draws `resolve("<friend>")` and a gender on this card's stream, and `GetFriendRelationshipStatusForDisplay` always reads `friend`.
+2. The enemy gate's friend-only tests -- the friendship floats `[friend+0xc0]`/`[friend+0xc8]`, total relationship strength against 20.0, the helper bits and `[hero+0x70]+0x1cc` -- are dropped; the karma draw the game makes at `0x73f2f03bb8` is kept, since it reads the hero.
+3. The request's `FriendStatus == 1` test and the classmate/doctor achievements are dropped; the eleven-year clock and the karma draw are kept, since both read the hero.
+4. The friend's relationship moves (+5 / -4 on slot `0x508`, and the -4 each demoted best friend takes) have no bar to land on.
+5. The enemy's `ImpactLoyalty(-5)`, its `FriendStatus = 3` write and its two asset counters are dropped; its hero-side -3 is kept.
+6. The two buttons are the player's, so the port draws one on this card's stream -- the friend family's own convention. The keep path therefore moves nothing at all, which is what the game's own handler does when the hero picks it.
+7. The order inside one friend's turn differs: the game decides the enemy before it offers the unfriend card, the port after it, so a year in which both would fire shows the unfriend card first (noted at `port/src/sim.cpp:3593`).
+8. The enemy flavour's second push site is the same constructor with `w2 = 3`, so a hero who never loses karma to the draw sees only requests; the flavour split in the census below is the port's, not the game's own per-life balance.
+
+Six cards, three seeds, both flavours:
+
+```
+=== seed 1 female age 54
+TITLE  : (none)
+BODY   : Your friend, Later Rocky, wants to become best friends with you.
+LOG    : My friend, Later Rocky, asked me to become best friends with her.
+CHOICE : Keep the status quo
+DELTAS : {}
+
+=== seed 2 female age 32
+TITLE  : (none)
+BODY   : Your friend, Felony Martinez, has made you her enemy.
+LOG    : My friend, Felony Martinez, and I became enemies.
+CHOICE : (none -- the dismiss button writes the line)
+DELTAS : {"happiness": -16}
+
+=== seed 2 male age 32
+TITLE  : (none)
+BODY   : Your friend, Arianna Venti, has made you her enemy.
+LOG    : My friend, Arianna Venti, and I became enemies.
+CHOICE : (none)
+DELTAS : {"happiness": -16}
+
+=== seed 2 male age 55
+TITLE  : (none)
+BODY   : Your friend, Jam Roll, has made you his enemy.
+LOG    : My friend, Jam Roll, and I became enemies.
+CHOICE : (none)
+DELTAS : {"happiness": -16}
+
+=== seed 3 female age 60
+TITLE  : (none)
+BODY   : Your friend, Skylar Maker, wants to become best friends with you.
+LOG    : My friend, Skylar Maker, asked me to become best friends with him.
+CHOICE : Agree to become best friends
+DELTAS : {"happiness": 50}
+
+=== seed 1 female age 30
+TITLE  : (none)
+BODY   : Your friend, Keisha Dollar, has made you her enemy.
+LOG    : My friend, Keisha Dollar, and I became enemies.
+CHOICE : (none)
+DELTAS : {"happiness": -16}
+```
+
+The friend family is now three quarters wired: meet, new, advice, prank, rumor (both halves), party, lover, spend time, unfriend (inbound) and status all render. What is left of it is the unfriend pair's other two classes -- `ScenarioFriendUnfriendOutbound @0x73f3c597bc`, the card the Relationships tab opens about a friend, and `ScenarioFriendUnfriendPrison @0x73f3c59adc`, which the same push site builds when the helper's bit is set -- then the threesome, and the four outbound coworker cards section 105 named.
+The full regression after the section: 53 probes at residue 0 (the new `fsstres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, the persistent tests at `friend status cards: {'cards': 77, 'request': 31, 'keep': 17, 'enemy': 46, 'dismiss': 46, 'agree': 14}` and (after the gate correction) `unfriend cards: {'cards': 73, 'insult': 28, 'let_go': 27, 'salvage_lost': 16, 'salvage_win': 2}`, and the benchmark reaching age 34.
+
+The section's own probe, `fsstres.py`, drives 160 lives and reports `lives 160 / cards 130 / cards per life {0: 68, 1: 60, 2: 26, 3: 6} / flavours {enemy: 77, request: 53} / request object pronouns {her: 33, him: 20} / hero age at the card min 12 max 78 / distinct friends 50 / runtime 23s / failures 0 / RESIDUE 0 {}`, with the eleven-year clock checked between two requests in one life and the object pronoun checked against the flavour's own narrative line.

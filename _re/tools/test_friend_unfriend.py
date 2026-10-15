@@ -39,7 +39,10 @@ for seed in range(1, 41):
             seen["cards"] += 1
             name = match.group(1)
             assert not event.get("table"), event
-            assert event["age"] >= 18, event
+            # The card's own gate reads the friend's age (>= 12) and the port's
+            # drawn friend has none, so the hero's age carries the floor
+            # (REPORT.en.md 108, corrected in 109).
+            assert event["age"] >= 12, event
             choice = str(event.get("choice") or "")
             narrative = event["logLines"][0]
             deltas = {k: v for k, v in event["deltas"].items() if v}

@@ -633,7 +633,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
-      unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
+      unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
+      fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3589,6 +3590,14 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // It is tried last of the friend cards and draws on its own stream
   // (include/bl/sim.h unfrRng_), so no earlier subsystem's sequence moves.
   if (friendUnfriendYear(life, out, forcedChoice)) return true;
+  // The friend-status card (REPORT.en.md 109) is the friend loop's third decision
+  // and the family's eighth push: the best-friend request, or a friend who turns
+  // into an enemy. It is tried after the unfriend card and draws on its own stream
+  // (include/bl/sim.h fsRng_), so no earlier subsystem's sequence moves. shortcut:
+  // the game runs the enemy decision before the unfriend card inside one friend's
+  // turn, the port after it, so a year in which both would fire shows the unfriend
+  // card first.
+  if (friendStatusYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24948,18 +24957,26 @@ bool Sim::friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;
-  // The push site is Life.IncrementAge's friend loop (@0x73f2f03d30): the friend
-  // must still be a friend ([friend+0x184] FriendStatus == 1); eleven years must
-  // have passed since that friend's last best-friend request (the hero's age
-  // minus [friend+0x190] >= 11); and the hero's karma must beat a draw out of
-  // 0..149 (GetRandomNumber(0,0x96) against [hero+0x9c] Att_karma), so the card's
-  // rate rises with the hero's karma. shortcut: the port's friend is a drawn slot
-  // with no status and no event clock, so the first two tests have nothing to read
-  // and the karma test is this card's rate, under the family's own eighteen floor.
-  // It draws on its own stream (unfrRng_), so no earlier subsystem's sequence
-  // moves for a given seed.
-  if (h.age < 18 || h.inPrison) return false;
-  if (h.karma <= int(unfrRng_.below(150))) return false;
+  // The push site is Life.IncrementAge's friend loop (@0x73f2f03c5c), reached when
+  // the friend does not turn into an enemy first: the friend must be twelve or
+  // older ([friend+0x20] >= 12), must not already be an enemy (FriendStatus != 3),
+  // must clear the strength test (GetTotalHeroRelationshipStrength >= 5.0, else
+  // [friend+0xa8] Att_willpower minus 1.5 * [friend+0x188] YearsFriends against
+  // GetRandomNumber(0,25)) and must be one the hero deserves to lose
+  // (HeroDeservesToBeUnfriended @0x73f30e42b8), the hero must clear helper
+  // 0x73f2f0e128, and a hero in school escapes three years out of four
+  // (CurrentlyInSchool -> GetRandomNumber(0,3) == 0). Correction to REPORT.en.md
+  // 108: the karma / eleven-year / FriendStatus == 1 block at 0x73f2f03d28 is
+  // reached only from 0x73f2f03d1c, this block's failure exit, and its success edge
+  // (0x73f2f03df4) leads to 0x73f2f03e98, the ScenarioFriendStatusInbound status-2
+  // push -- it gates the best-friend request, this card's successor (REPORT.en.md
+  // 109), not the unfriend card. shortcut: every test above reads a field of the
+  // friend object, and the port's friend is a drawn slot with no object, so a flat
+  // coin stands in under the friend's own twelve-year floor, which becomes the
+  // hero's. It draws on its own stream (unfrRng_), so no earlier subsystem's
+  // sequence moves for a given seed.
+  if (h.age < 12 || h.inPrison) return false;
+  if (!unfrRng_.chance(0.05)) return false;
   hero_ = &life.hero;
   life_ = &life;
 
@@ -25071,6 +25088,111 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   // @0x73f380158c with the default line and RefreshUI() @0x73f3580f5c; the port
   // keeps no friend roster, so the unfriending is the card's own outcome rather
   // than a state change -- the next friend card draws a fresh name anyway.
+  return true;
+}
+
+// The friend-status card (REPORT.en.md 109): the yearly friend loop's own decision
+// about what the friendship is, in two flavours.
+// ScenarioFriendStatusInbound (il2cpp_dump.txt:40922; .ctor(SimPerson, Int32)
+// @0x73f3c54534, RefreshScenario @0x73f3c545d4, ChoiceSelectedAtIndex @0x73f3c54d7c,
+// DismissSelected @0x73f3c55544, EmojiString @0x73f3c555b0) is pushed twice out of
+// Life.IncrementAge's friend loop with the flavour as its second argument: _status
+// == 3 at 0x73f2f03c38 (the friend becomes an enemy -- no title and no buttons) and
+// _status == 2 at 0x73f2f03ec0 (the best-friend request, two buttons).
+// RefreshScenario dispatches on _status and ignores every other value, so the class
+// carries two cards.
+//
+// The status-3 flavour sets the friend's FriendStatus ([friend+0x184] = 3), moves
+// the hero's happiness by -3 (vtable slot 0x408 with w1 = -3), stamps
+// [friend+0x194] with the hero's age, runs ImpactLoyalty(-5) @0x73f30c760c through
+// the place chain and bumps two asset counters; its body is "Your {0}, {1}, has made
+// you {2} enemy." (cell 0x5CBC4F8, {2} = PronounStringForType(1) = his/her) and its
+// narrative "My {0}, {1}, and I became enemies." (cell 0x5CBC4F0). DismissSelected
+// tail-calls Log(String) @0x73f380158c with the narrative, so the card needs no
+// button.
+//
+// The status-2 flavour stamps the friend's HeroAgeAtLastBestFriendRequest
+// ([friend+0x190] = hero age) and looks for the hero's current best friend
+// (FriendArray, [x0+0x184] == 2) before writing the body "Your {0}, {1}, wants to
+// become best friends with you." (cell 0x5CBC518) and the narrative "My {0}, {1},
+// asked me to become best friends with {2}." (cell 0x5CBC508, {2} =
+// PronounStringForType(2) = him/her), plus the two buttons 'Agree to become best
+// friends' (cell 0x5CBC4E8) and 'Keep the status quo' (cell 0x5CBC500).
+// ChoiceSelectedAtIndex has no stat move of its own: the agree path (0x73f3c54f04)
+// moves the hero's happiness by +5 (slot 0x408 with w1 = +5), demotes every existing
+// best friend to FriendStatus 1 with a -4 relationship move and sets the requesting
+// friend's FriendStatus to 2; the keep path (0x73f3c55118) moves the friend's
+// relationship by -4; both log the narrative through Log(String) @0x73f380158c and
+// RefreshUI() @0x73f3580f5c, and any other label falls through to the same tail.
+//
+// The game's own gates, in the order the friend loop runs them: the enemy decision
+// first (0x73f2f03b3c), where the hero's Att_karma [hero+0x9c] must lose to
+// GetRandomNumber(0,100) or HeroDeservesToBeUnfriended @0x73f30e42b8 must hold; then
+// the best-friend request (0x73f2f03d28), where FriendStatus must be 1 (a plain
+// friend), the hero's age minus [friend+0x190] must be at least 11 and Att_karma
+// must beat GetRandomNumber(0,150), after which the shared helper 0x73f2f0e1d8 may
+// still cancel it. shortcut: the port's friend is a drawn slot with no object, so
+// the enemy flavour takes the karma draw the game makes, the request keeps the
+// game's own karma draw and eleven-year clock (life.bestFriendAge carries the
+// clock), both sit under the friend's twelve-year floor, which becomes the hero's,
+// and the friendship bar's moves (+5 / -4 / -5 on slot 0x508), the best-friend
+// demotion, the loyalty hit and the asset counters have nothing to land on.
+bool Sim::friendStatusYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 12 || h.inPrison) return false;
+  if (!fsRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, drawn before any of the card's own draws (the
+  // friend-party card's pattern, src/sim.cpp 24289).
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = fsRng_.chance(0.5);
+  // GetFriendRelationshipStatusForDisplay reads the friend's FriendStatus, which
+  // the port's drawn slot does not carry, so it always reads 'friend' (the
+  // friend-prank card's shortcut). PronounStringForType(1) is the possessive form
+  // and type 2 the object form (src/sim.cpp 1855).
+  const std::string rel = "friend";
+  const std::string his = friendFemale ? "her" : "his";
+  const std::string him = friendFemale ? "her" : "him";
+
+  // The enemy decision comes first, the order the game's friend loop uses
+  // (0x73f2f03b3c runs before the best-friend request at 0x73f2f03d28).
+  if (h.karma < int(fsRng_.below(100))) {
+    out = AgeUp();
+    out.body = "Your " + rel + ", " + friendName + ", has made you " + his +
+               " enemy.";
+    // My {0}, {1}, and I became enemies. (cell 0x5CBC4F0)
+    out.narrative = "My " + rel + ", " + friendName + ", and I became enemies.";
+    // The hero's happiness move is this card's own vtable slot 0x408 with w1 = -3.
+    out.happiness = pointsForImpact(-3);
+    return true;
+  }
+
+  // The request comes only once eleven years have passed since the last one
+  // (0x73f2f03d48: the hero's age minus [friend+0x190] >= 11) and while the hero's
+  // karma beats a draw out of 0..149 (0x73f2f03d70: GetRandomNumber(0,0x96) against
+  // Att_karma), so the card's rate rises with the hero's karma.
+  if (h.age - life.bestFriendAge < 11) return false;
+  if (h.karma <= int(fsRng_.below(150))) return false;
+  life.bestFriendAge = h.age;
+
+  out = AgeUp();
+  out.body = "Your " + rel + ", " + friendName +
+             ", wants to become best friends with you.";
+  // My {0}, {1}, asked me to become best friends with {2}. (cell 0x5CBC508)
+  out.narrative = "My " + rel + ", " + friendName +
+                  ", asked me to become best friends with " + him + ".";
+  // The button is the player's; the port draws one of the two (the friend family's
+  // own coin, on this card's stream).
+  if (fsRng_.chance(0.5)) {
+    out.choice = "Agree to become best friends";
+    out.happiness = pointsForImpact(5);
+  } else {
+    out.choice = "Keep the status quo";
+  }
   return true;
 }
 

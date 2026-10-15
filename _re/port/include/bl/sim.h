@@ -86,6 +86,11 @@ struct Life {
   bool rumorOutPending = false;
   std::string rumorOutFriend;
   bool rumorOutFemale = false;
+  // The best-friend request's own clock (REPORT.en.md 109): the game tests the
+  // hero's age minus the friend's HeroAgeAtLastBestFriendRequest (>= 11) and
+  // stamps that field with the hero's age when the card is pushed, so the port
+  // keeps the hero's age at the last such request.
+  int bestFriendAge = 0;
 };
 
 class Sim {
@@ -419,6 +424,11 @@ class Sim {
   // the game pushes out of Life.IncrementAge's friend loop rather than a table;
   // it draws on its own stream (unfrRng_).
   bool friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-status card (REPORT.en.md 109): the yearly friend loop's own
+  // decision about what the friendship is -- a best-friend request with two
+  // buttons, or a friend who turns into an enemy. It carries an eleven-year clock
+  // of its own (life.bestFriendAge) and draws on its own stream (fsRng_).
+  bool friendStatusYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -575,6 +585,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng rumOutRng_;
   // The unfriend card's own stream (REPORT.en.md 108).
   Rng unfrRng_;
+  // The friend-status card's own stream (REPORT.en.md 109).
+  Rng fsRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
