@@ -628,7 +628,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       advRng_(seed ^ 0xe7037ed1a0b428dbULL ^ 0x8ebc6af09c88c6e3ULL),
       prankRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0x9e3779b97f4a7c15ULL),
       rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
-      partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL) {}
+      partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL),
+      flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3558,6 +3559,12 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // tried next to the rumor card. It draws on its own stream
   // (include/bl/sim.h partyRng_), so no earlier subsystem's sequence moves.
   if (friendPartyYear(life, out, forcedChoice)) return true;
+  // The friend-lover card (REPORT.en.md 104) is the family's fifth push and its
+  // only one-shot -- the class's own gate reads PresentedCountForScenario, which
+  // life.loverPresented carries -- so it is tried after the party card. It draws
+  // on its own stream (include/bl/sim.h flRng_), so no earlier subsystem's
+  // sequence moves.
+  if (friendLoverYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24429,6 +24436,233 @@ bool Sim::friendPartyYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// The friend-lover card (REPORT.en.md 104): the hero meets a lover of a
+// friend's -- a person the card generates when it opens, not the hero's own
+// partner -- out of a16_friend-lover-scenarios-enc, and hooks up with them,
+// ignores them, reports them to the friend, or (as a vampire) hypnotizes them.
+// It is the friend family's fifth push and its only one-shot.
+bool Sim::friendLoverYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // ScenarioIsEligibleForRandomPush @0x73f3c46468: the hero is eighteen or
+  // older, is not in prison, has looks over fifty (the hero[0x94]
+  // Att_appearance float, which the port keeps as h.looks), carries a friend,
+  // and the scenario has never been presented -- 'cmp w0,#0; cset w0,eq' on
+  // PresentedCountForScenario, so this is the family's only one-shot card
+  // (life.loverPresented). The game's own Sexuality test (hero[0x24] <= 1) has
+  // no port field behind it (shortcut).
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.looks <= 50) return false;
+  if (life.loverPresented > 0) return false;
+  // shortcut: the class carries no push rate -- the friend subsystem is what
+  // opens the card, and its outbound half sits behind the Relationships tab --
+  // so the coin is the port's. It draws on its own stream (flRng_), so no other
+  // family's sequence moves for a given seed.
+  if (!flRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_friend-lover-scenarios-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One friend and one lover for the whole card: personName() draws a fresh
+  // name per call, so both are settled here, before any of the card's own
+  // draws.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = flRng_.chance(0.5);
+  const int friendAge = h.age;  // the port's friend stands at the hero's own age
+  // The .ctor @0x73f3c4466c generates the friend's lover with
+  // GenerateLoverCandidateOfGenderAndSexualityAndOverrideAgeTo...: the opposite
+  // sex to the hero (w0 = hero.Gender == 0), the hero's own Sexuality and an age
+  // of floor + GetRandomNumber(0, ceiling - floor), where the floor is 18 or, when
+  // the friend is married, the spouse's AgeAtCurrentSpouseMarriage + 18, and the
+  // ceiling is friend age + 10 raised to floor + 10 when it would fall below it.
+  // Nothing the card renders reads that age, so the port does not draw it
+  // (shortcut), and the class's spouse branch -- the husband/wife pair off the
+  // friend proxy's Spouse field, with the lover's name copied from that spouse
+  // and the age floor raised to the marriage's own age + 18 -- has no port
+  // equivalent: the port's friend carries no marriage record.
+  const bool loverFemale = !h.female;
+  const std::string loverName = drawFirstName(loverFemale) + " " + drawSurname();
+  // The relationship word is the same GetRandomNumber(0, 3) the .ctor runs when
+  // the friend carries no spouse: 0 or 1 is the boyfriend/girlfriend pair, 2 the
+  // fiance/fiancee pair (the six cells at 0x5C46B80). The game keys the pair on
+  // the friend's gender, which works out because its friend is the hero's own
+  // sex; the port draws the friend's sex independently, so the word follows the
+  // lover it describes instead.
+  static const char* kLoverWords[3][2] = {{"boyfriend", "girlfriend"},
+                                          {"boyfriend", "girlfriend"},
+                                          {"fianc\u00e9", "fianc\u00e9e"}};
+  const std::string word = kLoverWords[int(flRng_.below(3))][loverFemale ? 1 : 0];
+
+  // DataFriendLoverScenario.GetRandomFriendLoverScenarioForHeroAgeAndHeroGenderAndFriendAge
+  // @0x73f2cca1f8 filters the table into a candidate list and draws one index
+  // with GetRandomNumber(0, count): one draw, no retry and no fallback, so
+  // nothing matching returns null and the card does not open. Hero Min Age and
+  // Friend Min Age are floors, the two Max Age columns are ceilings when set,
+  // and a gender of 2 on the row matches whatever was passed. Nothing in the
+  // family -- picker, gate or RefreshScenario -- reads the table's Vampire Hero
+  // or Vampire Friend Lover columns, so the port does not filter on them either:
+  // the vampire-flavoured rows reach a mortal hero, and the card's only vampire
+  // test is the fourth button.
+  const Table& t = tbl("a16_friend-lover-scenarios-enc");
+  auto genderOk = [&](size_t r, const char* col, bool subjectFemale) {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !subjectFemale;
+    if (v == "female") return subjectFemale;
+    return true;
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    const int hMin = int(t.num(r, "Hero Min Age"));
+    const int hMax = int(t.num(r, "Hero Max Age"));
+    if (hMin > 0 && h.age < hMin) continue;
+    if (hMax > 0 && h.age > hMax) continue;
+    if (!genderOk(r, "Hero Gender", h.female)) continue;
+    const int fMin = int(t.num(r, "Friend Min Age"));
+    const int fMax = int(t.num(r, "Friend Max Age"));
+    if (fMin > 0 && friendAge < fMin) continue;
+    if (fMax > 0 && friendAge > fMax) continue;
+    if (!genderOk(r, "Friend Gender", friendFemale)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[flRng_.below(uint32_t(pool.size()))];
+
+  // RefreshScenario @0x73f3c44d1c assembles the two cells through a per-card
+  // token dictionary whose keys are the token literals themselves: '<friend>'
+  // (cell 0x5C4A3A0) becomes 'your {0}, {1},' (#68451) around the friendship
+  // word and the friend's name, and '<friend-lover>' (0x5CBBFB0) becomes the
+  // four-slot 'your {0}, {1}, {2}, {3},' (#68453) around the friend,
+  // the possessive friend, the relationship word and the lover -- 'your friend,
+  // Dana's, girlfriend, Alex,'. The journal line is parsed against the same two
+  // wrappers with 'my' (0x5CBC110), which is why the row's own '<he/she>' and
+  // '<him/her>' tokens resolve to the lover and not to the friend.
+  std::string bodyCell = trim(t.at(row, "Scenario"));
+  std::string logCell = trim(t.at(row, "Log Version"));
+  const std::string friendRel = "friend";  // the port's friend carries no relationship word
+  const std::string loverBody = "your " + friendRel + ", " + friendName + "'s, " + word + ", " + loverName + ",";
+  const std::string loverLog = "my " + friendRel + ", " + friendName + "'s, " + word + ", " + loverName + ",";
+  substAll(bodyCell, "<friend-lover>", loverBody);
+  substAll(bodyCell, "<friend>", "your " + friendRel + ", " + friendName + ",");
+  substAll(logCell, "<friend-lover>", loverLog);
+  substAll(logCell, "<friend>", "my " + friendRel + ", " + friendName + ",");
+  // The card's text draws come out of the card's own stream: the body draws
+  // first and its picks are kept, the journal line reads the same cache.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      // A pronoun pair belongs to the resolver (it keys the pair on the card's
+      // other person) and the lover is already named: only the alternatives are
+      // drawn here.
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[flRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = loverFemale;
+  const std::string invite = resolve(drawCardText(bodyCell, true));
+  const std::string line = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  const std::string them = loverFemale ? "her" : "him";
+  // RefreshScenario builds three choices, and a fourth only for a vampire hero
+  // whose friend-lover is mortal (IsVampire() @0x73f3c45590 and the second call
+  // at 0x73f3c455a4): 'Hook up with {0}' (#23093), 'Ignore {0}' (#26382),
+  // 'Report {0} to {1}' (#35792) and 'Hypnotize ' (#23341) concatenated with the
+  // lover's PronounStringForType(2) -- a Concat, so #23343's 'Hypnotize {0}' is
+  // some other card's template. The handler
+  // dispatches by Contains on the lowercased label -- 'hook up', 'ignore',
+  // 'report', 'hypnotize' -- in that order, and a label matching none changes
+  // nothing at all. The game lets the hero pick; the port draws the one that
+  // happens, and its generated lover is never a vampire, so a vampire hero
+  // always sees the fourth button.
+  const int pick = int(flRng_.below(h.vampire ? 4u : 3u));
+  out = AgeUp();
+  out.table = "a16_friend-lover-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Indecent Proposal";  // the .ctor's own literal cell 0x5CBC0F0
+  // The card's body is the row's Scenario, parsed against the 'your' dictionary
+  // and wrapped by the CTA literal cell 0x5C35668.
+  out.body = invite;
+  out.cta = "What will you do?";
+  if (pick == 0) {
+    // 0x73f3c45964: ImpactKarma(-5), ImpactDiscipline(-5), the hero's own slot
+    // 0x408 with +3 (the impact the port reads as happiness, the prank card's
+    // own reading of that slot) and four unidentified calls on
+    // the lover -- the hookup's own machinery, which the port has no model for.
+    // A counter on the game's player object ticks when the lover is male; the
+    // port has no reader for it either.
+    out.choice = "Hook up with " + them;
+    out.happiness = pointsForImpact(3);
+    out.karma = pointsForImpact(-5);
+    out.discipline = pointsForImpact(-5);
+    out.narrative = line + "\nI decided to have a one night stand with " + them + ".";  // #69034
+  } else if (pick == 1) {
+    // 0x73f3c45ad4: ImpactKarma(1), ImpactDiscipline(1) and nothing else -- no
+    // reaction card, no draw, the journal line is the row's own.
+    out.choice = "Ignore " + them;
+    out.karma = pointsForImpact(1);
+    out.discipline = pointsForImpact(1);
+    out.narrative = line + "\nI ignored " + them + ".";  // #69094
+  } else if (pick == 2) {
+    // 0x73f3c45b80: ImpactKarma(2), ImpactDiscipline(2), then a reaction card --
+    // a title from 'Gotta be honest' / 'Doing you a favor' / 'On your side' /
+    // 'Real one' / 'Harsh truth', GetRandomNumber(0, 31) and (0, 200) against
+    // the friend's craziness float, the friend's relationship bar +4 carrying
+    // 70 + the first draw or +2 carrying a third draw, and a '{0} Appreciation'
+    // stat row for the friend. The port pushes no card and keeps no
+    // appreciation bar (shortcut), so the row's own line is what gets logged.
+    out.choice = "Report " + them + " to " + friendName;
+    out.karma = pointsForImpact(2);
+    out.discipline = pointsForImpact(2);
+    out.narrative = line;
+  } else {
+    // 0x73f3c45de4: GetRandomNumber(0, 100) against the lover's Att_willpower
+    // float decides success. The port's generated lover carries no willpower, so
+    // the coin is the port's (shortcut). Success journals ' ' + the row's line +
+    // #24429 and moves ImpactKarma(2) with ImpactNotoriety(-2); failure journals
+    // #25430 with ImpactKarma(1) and ImpactNotoriety(2). Both lines parse the
+    // card's own two-token dictionary, which maps the tokens to the BARE names
+    // -- not the four-slot wrapper the row's own prose uses. The push of the
+    // reaction card (and the extra scenario get_Hypnotize may hand back) is the
+    // port's usual shortcut.
+    const bool worked = flRng_.chance(0.5);
+    out.choice = "Hypnotize " + them;
+    if (worked) {
+      out.karma = pointsForImpact(2);
+      h.vampireNotoriety -= 2;
+      out.narrative = " " + line + "I hypnotized " + loverName +
+                      " to fall back in love with " + friendName + ".";  // #24429
+    } else {
+      out.karma = pointsForImpact(1);
+      h.vampireNotoriety += 2;
+      out.narrative = " " + line + "I tried to hypnotize " + loverName +
+                      " to fall back in love with " + friendName + ", but failed.";  // #25430
+    }
+  }
+  ++life.loverPresented;
+  return true;
+}
+
 bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {
   // A pushed card owns the year: the app never hijacks one (the same rule the
   // school year's own code-built cards follow).

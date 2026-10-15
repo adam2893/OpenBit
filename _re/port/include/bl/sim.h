@@ -66,6 +66,10 @@ struct Life {
   // The friend-advice card's PresentedCountForScenario counter (REPORT.en.md
   // 100): the game shows that card at most twice in one life.
   int advicePresented = 0;
+  // The friend-lover card's own PresentedCountForScenario counter (REPORT.en.md
+  // 104): its gate reads the count and pushes only at zero, so that card is the
+  // family's one-shot.
+  int loverPresented = 0;
 };
 
 class Sim {
@@ -375,6 +379,12 @@ class Sim {
   // an excuse. Its floor is five rather than eighteen and it carries no
   // presented cap either; it draws on its own stream (partyRng_).
   bool friendPartyYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-lover card (REPORT.en.md 104): the hero meets a lover of a
+  // friend's -- a person the card generates at push time -- out of
+  // a16_friend-lover-scenarios-enc and hooks up with them, ignores them, reports
+  // them to the friend, or (as a vampire) hypnotizes them. It is the family's
+  // only one-shot card and it draws on its own stream (flRng_).
+  bool friendLoverYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -513,6 +523,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng rumorRng_;
   // The friend-party card's own stream (REPORT.en.md 103).
   Rng partyRng_;
+  // The friend-lover card's own stream (REPORT.en.md 104).
+  Rng flRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

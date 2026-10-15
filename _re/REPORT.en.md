@@ -14362,3 +14362,536 @@ DELTAS : {"discipline": 0, "happiness": 0, "karma": -16, "looks": 0, "smarts": 0
 What the card adds to the port is not a new mechanic — the hero's year is already full of them — but a third door into the same friendship, opened nine years earlier than the prank and rumor cards and standing on prose the port does not own. The three cells come out of a file, the friend's name comes out of the resolver, the friendship word is the port's, and what is left for the port to get wrong is exactly what this section has been about: which dictionary the body is read against, where the apostrophe goes, and which of the three sentences the hero is supposed to be living when the year turns over.
 
 The full regression after the section: 46 probes at residue 0 (the new `partres.py` joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and
+the fourth button only a vampire can see
+
+Sections 100 to 103 walked the friend family in order: the advice table, the prank table, the rumor
+table and the party card. This section takes the fifth and last member,
+`ScenarioFriendLoverHookup` (il2cpp_dump.txt:40770), and it is the family's shortest push and its
+only one-shot. The shape is the one the four siblings share - a single row drawn from a table, the
+row wrapped in a sentence the card builds for itself, a handful of replies - and the handler
+dispatches on the button's `text` again: four `Contains` tests over the lowercased label, in the
+order `hook up`, `ignore`, `report`, `hypnotize`, plus a path that matches nothing and changes
+nothing at all. The card's title is one literal, `Indecent Proposal`, and its body wrapper is one
+more: the class appends the `What will you do?` line itself, so the port keeps it as its own field.
+
+Where this card differs from its siblings is who it asks. Its gate is six tests rather than three:
+the hero is eighteen or older, is not in prison, carries a friend, holds a `Sexuality` value of 0 or
+1, has an appearance float above 50.0 - the only card in the family that asks about looks - and has
+never seen the scenario presented, because the sixth test is a presented-count of zero on the
+scenario's own type. The party card's floor of five is the family's lowest; this one sits at
+eighteen, and it is the only member with a one-shot cap, which the probe confirms from the other
+side: 240 lives produced 71 cards and no life ever produced two. The table also carries two boolean
+columns nothing reads - `Vampire Hero` and `Vampire Friend Lover` - and the port does not filter on
+them either, which is why mortal heroes are drawn the vampire-flavoured rows (104.4).
+
+The second difference is the lover. The other four cards take a person the sim already has on file;
+this one builds one, at construction, and the person it builds is generated for the hero rather
+than for the friend. The picker is three arguments wide - hero age, hero gender, friend age - the
+narrowest of the family's five, and it draws exactly once over its filtered pool. The constructor
+then calls
+`GenerateLoverCandidateOfGenderAndSexualityAndOverrideAgeToAndOverrideBirthplaceToAndMustBeSingleAndCanBeCustom`
+with the complement of the hero's own gender, the hero's own sexuality and a must-be-single flag, so
+the friend's partner is machine-made to the hero's taste; the relationship word that labels them is
+the same `GetRandomNumber(0, 3)` the constructor runs, giving `boyfriend` or `girlfriend` on the low
+draws and `fiancé` or `fiancée` on the third, with `husband` and `wife` reserved for the branch where
+the friend already carries a spouse. The port's friend is the hero's own sex, so the word follows the
+lover it describes instead (104.3).
+
+The third difference is the prose, and it is why this card's wrapper is four slots rather than two.
+The card does not print the friend's name in front of the row: it builds two small token dictionaries
+whose `<friend>` entry is `your {0}, {1},` and whose `<friend-lover>` entry is
+`your {0}, {1}, {2}, {3},`, then parses the row's cells against them. The two-slot wrapper carries
+the friendship word and the friend's first name; the four-slot one carries those two again plus the
+relationship word and the lover's own name, which is what makes a sentence read `your friend, Ron
+Mendes's, girlfriend, Nikki Stonemason, 'accidentally' falls on your lap`. Every one of the fifty-two rows uses
+`<friend-lover>` in both cells and 43 of the 52 log cells open with it, so the token is the card's
+whole subject, and two rows (3 and 4) mention the bare `<friend>` as well. The journal line is parsed against the same two wrappers built with `my`
+instead of `your`, which is why the row's own `<he/she>` and `<him/her>` tokens resolve to the lover
+on 27 rows and never to the friend (104.2).
+
+The port models the card in full minus four approximations. It reproduces the four labels, the four
+journal lines and the shared tail; it draws the response rather than waiting for a button, the same
+shortcut the prank, rumor and party cards take; it coins the fourth button because its generated
+lover carries no float to compare; and it drops the reaction cards the hook-up and report branches
+push, along with the friend's relationship bar those two branches move (104.5). The one thing it
+cannot show at all is the fourth button reached by a real vampire: the port's yearly chain gives a
+vampire hero its own vampire years first, so a vampire life never reaches a friend card of any
+family - the coverage gap §101 recorded for the prank card's hypnotize branch.
+
+### 104.1 The family
+
+`class ScenarioFriendLoverHookup : Scenario` (il2cpp_dump.txt:40770) holds four fields: `_friend`
+(SimPerson, 0x170), `_friendLover` (SimLover, 0x178), `_friendLoverRelationship` (System.String,
+0x180) and `_narrative` (System.String, 0x188). Its methods are `.ctor()` 0x73f3c4466c (210
+instructions), `RefreshScenario()` 0x73f3c44d1c (598), `ChoiceSelectedAtIndex(System.Int32)`
+0x73f3c45674 (893), `GetFriend()` 0x73f3c449b4 and `System.Boolean ScenarioIsEligibleForRandomPush()`
+0x73f3c46468 (78). The constructor is parameterless and takes no row: it calls the base
+`Scenario::.ctor(Boolean)` 0x73f2eb9db8 with false, takes its friend from `GetFriend()` and stores
+them a second time at 0x60 - the field `Scenario` renders the invitee from - clears
+`Scenario.HasDismissButton` (0x28), and sets its title from the literal cell at module offset
+0x5CBC0F0, which reads `Indecent Proposal`. That cell is the constructor's only string work: the
+title is fixed for all fifty-two rows, and both prose fields are filled at refresh, so a card that
+is never refreshed has no body, no journal line and no choices.
+
+The same constructor also builds the card's other person, and the arithmetic is where the spouse
+branch shows. Its first move after the base call is the proxy: the field at `[SimPerson+0x1D0]` of
+the friend, cast to `SimLover` through the type cell 0x73F60D4308, and every relationship decision
+in the card comes off that proxy rather than off the friend - the spouse at `[proxy+0x2E0]` and its
+marriage record at `[proxy+0x2E8]` decide both the lover's age floor and the relationship word. The
+floor is 18 in the ordinary case and, when the friend is married, the spouse's
+`AgeAtCurrentSpouseMarriage + 18`; the ceiling is friend age + 10, raised to floor + 10 when that
+would fall below the floor; the lover's age is `floor + GetRandomNumber(0, ceiling - floor)`. A
+second type test guards the floor: when the proxy carries no spouse the constructor asks whether the
+friend object is itself a `SimLover` - `GetType()` against the handle cell 0x73F60DE3B0 - and takes
+that instance's own `AgeAtCurrentSpouseMarriage + 18` only when the answer is yes. Nothing the card
+renders reads the generated age, so the port does not draw it (104.5), and the port's friend carries
+no marriage record, so the whole branch reduces to 18.
+
+The generation itself is one call,
+`GenerateLoverCandidateOfGenderAndSexualityAndOverrideAgeToAndOverrideBirthplaceToAndMustBeSingleAndCanBeCustom`
+0x73f38101d8 (il2cpp_dump.txt:29423), with w0 = `(hero.Gender == 0) ? 1 : 0` - the complement of
+the hero's own sex - w1 = the hero's `Sexuality` at `[hero+0x24]`, w2 = the drawn age, a zero
+birthplace, w4 = 1 for must-be-single, and two zero flags. The lover is therefore a person for the
+hero wearing the label of the friend's partner, which is the card's joke and its data model at once:
+the sim never looks for a lover the friend actually has.
+
+The relationship word is the constructor's second and last draw. When the friend proxy carries no
+spouse, `GetRandomNumber(0, 3)` at 0x73F3C4491C picks a pair: 0 or 1 gives `boyfriend` and
+`girlfriend`, 2 gives `fiancé` and `fiancée`, and the cell inside the pair follows the friend's own
+gender at `[_friend+0x1C]` - gender 0 takes the feminine second cell. When the proxy does carry a
+spouse, no draw happens at all: the pair becomes `husband` and `wife`, the lover's name is
+overwritten with the spouse's through `GetDuplicatePersonName` 0x73F2FCD7E4, and the card reads
+`your friend, X's, husband, X,` - the friend's own spouse standing in as the friend's lover. The six
+cells are 0x5C46B80 and 0x5C46B90 for the two drawn pairs and 0x5C46B80 and 0x5C46BC0 for the
+married one, all six within one page of the module's string table.
+
+The data class is `DataFriendLoverScenario` (il2cpp_dump.txt:9545) with nine backing fields:
+`Scenario` 0x10, `LogVersion` 0x18, `HeroMinAge` 0x20, `HeroMaxAge` 0x24, `HeroGender` 0x28,
+`FriendMinAge` 0x2C, `FriendMaxAge` 0x30, `VampireHero` (Boolean) 0x34 and `VampireFriendLover`
+(Boolean) 0x35. It is the family's narrowest row - nine fields against the party card's thirteen -
+and it has no `FriendGender` column at all, so no row here can be gated on who the friend is. The
+picker is
+`GetRandomFriendLoverScenarioForHeroAgeAndHeroGenderAndFriendAge(System.Int32, System.Int32, System.Int32)`
+0x73f2cca1f8 (311 instructions, il2cpp_dump.txt:19564): it filters the static list into a fresh
+candidate list and then draws exactly once, `GetRandomNumber(0, count)` 0x73f32ab2a8 at 0x73f2cca5e0
+used as an index through the list's `get_Item` slot 0x2E8, with nothing matching returning null - no
+retry, no second pass and no fallback. Its three arguments make it the narrowest of the family's five
+pickers: the advice picker takes two arguments, the lover three, the rumor four, the prank five and
+the party six, and all five sit in one DataHub block that runs from 0x73f2cc98fc to 0x73f2ccb1e4.
+
+The family has a second class, and this card builds it instead of keeping it. The hook-up branch
+chains a reaction scenario whose constructor is `Scenario(SimLover, SimPerson, String)` 0x73f3da84ac:
+it takes the lover, the friend and the stored relationship word, builds its own title and body, and
+is spliced into the card's child chain in place, with no prose supplied by the handler. The report
+branch does the same with a plain `Scenario` built from a drawn title and a composed body, and the
+hypnotize branch pushes one or two more, including whatever `get_Hypnotize()` 0x73f311f5ac hands
+back. None of those cards is ported, which is the family's usual shape: the port models the card the
+player answers and the line the year logs, not the card that follows it.
+
+### 104.2 The card
+
+`RefreshScenario` 0x73f3c44d1c assembles the whole card from one row, and the row is chosen before
+any prose is built. It reads the hero through the static chain at 0x5C30250 to the sim's script at
+`[0xB8]` and then to the hero at `[+0x28]`, takes `ldp w21, w20, [hero, 0x1C]` so that w21 is the
+hero's gender and w20 the hero's age, takes the friend's age from `[_friend+0x20]`, and calls the
+picker at 0x73f3c44eec with w0 = hero age, w1 = hero gender and w2 = friend age. The friend's own
+age is what the third argument carries, which is the difference between this card and the party card
+next door: there the caller fed the hero's script value into the friend's slot. A null row branches
+straight to the shared bail tail.
+
+The two row cells are then copied through the identity cell 0x5C31470 - the `{0}` format - and a
+token holder is built. A bracket-parser object is constructed (0x73f337959c) together with two copies
+of the template object the parser consumes (`Q::.ctor` 0x73f49adbec from the cell at 0x5C2ECF8), and
+each copy receives two entries. The first holder gets the `your` pair: `Format(your {0}, {1}, [the
+friend's relationship status], [the friend's first name])` under the key `<friend>` (cell 0x5C4A3A0),
+and `Format(your {0}, {1}, {2}, {3}, [status], [possessive friend name], [_friendLoverRelationship],
+[the lover's display name])` under the key `<friend-lover>` (cell 0x5CBBFB0). The second holder gets
+the same two entries built from the `my` wrappers, cells 0x5C39AA0 and 0x5CBC110. The body is then
+`Format(cell 0x5C35668, get_ParsedBodyString(Scenario cell))` stored at 0x48, and `_narrative` is
+`Format(cell 0x5C31470, get_ParsedNarrativeString(Log Version cell))` stored at 0x188; both
+expansions are computed before either store. The relationship word the four-slot entry carries is the
+constructor's own `_friendLoverRelationship` at 0x180, read - not drawn - at refresh: the refresh
+spends no randomness of its own at all. The same class of object is pinned at the parser's `[0x28]`
+slot, which is the card's strong reference to the generated lover.
+
+Three things are left. The card's stat bar is a fresh `ArrayList` holding one
+`ScenarioBarGraph(String, Single)` 0x73f2ec31f8 whose label is the lover's-gender cell 0x5CBC100 or
+0x5CBC108 and whose float is the lover's `Att_appearance` at `[lover+0x94]`; it lands at `[0xB8]`,
+and `Scenario`'s `[0x110]` byte is set, so the card is dismissible by waving it away. The choices are
+a second list at `[0x108]`: three `ScenarioChoice::.ctor(String, Boolean, Boolean)` 0x73f2eb9c50 calls
+with w2 = 0 and w3 = 1, labelled from cells 0x5C386F8 (`Hook up with {0}`), 0x5C34638
+(`Ignore {0}`) and 0x5CBC0F8 (`Report {0} to {1}`). The pronoun in the first two comes from the
+lover's gender, not the friend's: gender 0 takes cell 0x5C35D08, which reads `him`, and gender 1
+takes 0x5C35D00, which reads `her`. The fourth choice is built only for a hero who passes
+`IsVampire()` 0x73f30e1058 while the generated lover does not: its label is `String.Concat` of cell
+0x5C5E510, which reads `Hypnotize `, and `PronounStringForType(2)` on the lover - a concatenation
+rather than a format, which is why the literal `Hypnotize {0}` (#23343) is some other card's
+template.
+
+The dictionary is the piece worth stating in the port's own terms, because the port cannot parse.
+The two holders are the substitution context for the two cells: the body is parsed against the
+`your` holder and the journal line against the `my` holder, and the keys are the token literals
+themselves, `<friend>` and `<friend-lover>`. Three facts settle the reading. All fifty-two
+`Scenario` cells contain `<friend-lover>` - one row opens with it and the rest introduce the person a
+few words in - so the token cannot be a prefix the row repeats. The `Log Version` column is the
+blunter one: 43 of its 52 cells begin with the token and the other nine name the person later, and
+the wrapper ends in a comma, which is the appositive separator the rest of the sentence continues. And the four-slot
+wrapper's second slot is the possessive form of the friend's name - `AddPossessionToNameString`
+0x73f32af094 - so the person named is the friend, while the relationship word and the name in slots
+three and four describe the lover. The port substitutes the two wrappers before it resolves the
+card's own alternatives, exactly as the game's parser does (104.5).
+
+The handler `ChoiceSelectedAtIndex` 0x73f3c45674 is 893 instructions and does five things with the
+reply. It reads the choice from the list at 0x108 through the virtual `get_Item` slot 0x2E8, takes
+its label at 0x10, lowercases it with `ToLower()` 0x73f52aa938, makes one working copy of `_narrative`
+through the `{0}` cell 0x5C31470, and then walks four `Contains` tests 0x73f52aafdc in a fixed order
+- cells 0x5C38740, 0x5C346C0, 0x5C45690 and 0x5C60E58, which read `hook up`, `ignore`, `report` and
+`hypnotize` - so a label carrying two of the four tokens takes the earlier branch. The index is only
+used to fetch the choice; which branch runs is decided by the label's text. A label matching none of
+them falls through with no state change at all and logs the narrative copy.
+
+| Button | Test token | Friend | Hero | Karma | Journal | Pushed after the reply |
+| --- | --- | --- | --- | --- | --- | --- |
+| `Hook up with {0}` | `hook up` (cell #60362) | none | happiness slot 0x408 with +3 | `ImpactKarma(-5)` and `ImpactDiscipline(-5)` | the row's `Log Version` through the `my` holder, plus the branch's own one-night-stand sentence | a reaction `Scenario(SimLover, SimPerson, String)` 0x73f3da84ac chained in place, then four unidentified calls on the lover |
+| `Ignore {0}` | `ignore` (cell #60762) | none | none | `ImpactKarma(1)` and `ImpactDiscipline(1)` | the row's `Log Version` through the `my` holder, plus `I ignored him.` | none, and no draw at all |
+| `Report {0} to {1}` | `report` (cell #64521) | relationship slot 0x508 with +4 on the high path and +2 on the drawn path | none | `ImpactKarma(2)` and `ImpactDiscipline(2)` | the row's own `Log Version`, unchanged | a `Scenario` from five drawn titles, plus one `{0} Appreciation` stat row for the friend |
+| `Hypnotize {0}` (vampire heroes only) | `hypnotize` (cell #60586) | none | notoriety only: `ImpactNotoriety(-2)` on success and +2 on failure | `ImpactKarma(2)` on success and `ImpactKarma(1)` on failure | `' '` + the row's line + `I hypnotized <friend-lover> to fall back in love with <friend>.` (#24429) or its `but failed.` twin (#25430) | a `Scenario` from a single drawn title, plus whatever `get_Hypnotize()` 0x73f311f5ac hands back |
+| (no button) | a label matching none | none | none | none | the same narrative the row would have logged | none |
+
+The hook-up branch is the widest one and the only one that touches the body. It moves karma and
+discipline by -5 each through `ImpactKarma` 0x73f30e4bfc and `ImpactDiscipline` 0x73f30e4cdc, calls
+the hero's slot 0x408 with 3 - the same happiness slot the prank card moves - and then performs four
+unidentified calls on the lover itself (0x73f3563e24, 0x73f3960c98, 0x73f3a478f0 and 0x73f3b0abcc,
+each with a zero argument and an ignored return), which is the hook-up's own machinery and the one
+part of the card whose effects the port cannot check. It ticks an int counter at
+`[GAME+0x20][0x70][0x38C]` when the lover is male. Its journal line is the two-slot
+`Format(cell 0x5CBC160, narrative, genderWord)`, which reads as the row's own line followed by `I
+decided to have a one night stand with him.` - the row's prose, then the branch's confession. Then
+it builds its reaction card and chains it in place, and that card is not ported.
+
+The ignore branch is the shortest: karma +1, discipline +1, the same `genderWord`, the two-slot
+journal `Format(cell 0x5C4B3D8, narrative, genderWord)`, no reaction, no push, no field write and no
+draw of any kind. The report branch moves karma +2 and discipline +2, draws one title from a list of
+five - cells 0x5CBC128, 0x5CBC170, 0x5CBC138, 0x5CBC158 and 0x5CBC168, which read `Gotta be honest`,
+`Doing you a favor`, `On your side`, `Real one` and `Harsh truth` - through
+`PickRandomFromStringArray` 0x73f32b0608, and composes its reaction body from the drawn
+`genderWord`, the friend's relationship status and the friend's name through the three-slot
+`Format` 0x73f52a7210. Then it draws `GetRandomNumber(0, 31)` and `GetRandomNumber(0, 200)` and tests
+the friend's float at `[0xC0]` against the second draw: when the float is less than or equal to the
+draw the branch takes the path with no further draw, calls the friend's slot 0x508 with 4 and sets
+the appreciation score to `70 + the first draw`; otherwise it draws `GetRandomNumber(0, 51)`, calls
+the same slot with 2 and uses that draw. The reaction card gets a single child row labelled
+`{0} Appreciation` (#69489) off the friend's `PronounStringForType(6)`. The journaled text does not
+change: the row's own line is what the year logs, which is why the port's report branch writes
+nothing but the two stat deltas.
+
+The hypnotize branch is the only one whose text is parsed twice over. It first builds a nine-element
+concatenation out of the wrapper's own pieces - the leading cell 0x5CBC178, the friend's relationship
+status, a comma, the possessive friend name, another comma, `_friendLoverRelationship`, a third
+comma, the lover's display name and the trailing cell 0x5CBC190 - which is the four-slot wrapper
+spelled out by hand for a card that is not the row's. Then it builds the message object: a
+`Msg`-shaped object (class cell 0x73F60C8CA8, constructor 0x73f49adbec) with two `Method3` entries,
+`<friend-lover>` (cell 0x5CBBFB0) mapped to the lover's bare name and `<friend>` (cell 0x5C4A3A0)
+mapped to the friend's bare name, both with the same filler cell 0x5C2ED00; and a second object at
+0x73f337959c holding that message at `[0x18]` and the lover itself at `[0x28]`. One draw follows,
+`GetRandomNumber(0, 100)`, compared against the lover's float at `[lover+0xA8]`: below it the parse
+uses cell 0x5CBC130, which reads `I hypnotized <friend-lover> to fall back in love with <friend>.`
+(#24429), the journal becomes `' '` + the row's line + that sentence, karma moves 2 and notoriety
+-2, and a second scenario is pushed first, the one `get_Hypnotize()` 0x73f311f5ac returns; at or
+above it the parse uses cell 0x5CBC180, which reads `I tried to hypnotize <friend-lover> to fall back
+in love with <friend>, but failed.` (#25430), karma moves 1 and notoriety +2, and only the built card
+is pushed. Both halves then build their reaction body from the nine-element prefix, a cell, the
+lover's `PronounStringForType(5)` and either two more pieces (success) or one (failure), draw a
+single-element title list, and land on the shared push, `ImpactKarma` and an `ImpactNotoriety`
+0x73f2fead3c on the player's notoriety component. The token dictionary here is the point: it maps
+the two tokens to the bare names, not to the four-slot wrapper the row's own prose receives, so the
+sentence reads `I hypnotized Nikki Stonemason to fall back in love with Ron Mendes.` - the two people
+without their labels.
+
+All five paths end in the same tail: the sim's journal object at `[[+0x20]+0x48]` logs one string with
+`Log()` 0x73f380158c, and the sim's UI receiver at `[[+0x20]+0x10]` is tail-called into
+`RefreshUI()` 0x73f3580f5c. One reply, one journal line, one refresh - and the RNG order that matters
+to a port, which is short because the class itself draws at only two places and both are at
+construction: the picker's single `GetRandomNumber(0, count)`, and the relationship word's
+`GetRandomNumber(0, 3)` when the friend is unmarried, plus the generated lover's age draw that no
+rendered string reads. Refresh spends nothing. The handler's own draws are per branch: none for
+hook up and ignore, the five-title pick plus 0..30, 0..200 and - only on the high path - 0..50 for
+report, and one 0..99 comparison plus a one-element pick for hypnotize, with the contents of
+`get_Hypnotize()` unknown. The port's order is its own and runs on its own stream: the push coin,
+the friend's name, the friend's sex, the relationship word, the pool index, the row's own
+alternative lists read once for the body and reused for the journal line, the response pick, and
+the hypnotize coin when the fourth button is the one drawn.
+
+### 104.3 Who can ask: six tests, a friend, and a picker three arguments wide
+
+`ScenarioIsEligibleForRandomPush` 0x73f3c46468 is 78 instructions and asks six things, and it never
+touches its own argument: the method starts from the static cell chain, so it behaves as a static
+predicate. The tests are the hero's age at `[player+0x20]` of at least 18; the hero is not in prison
+(`CurrentlyInPrison` 0x73f2f0e1d8); the hero's `[0x24]`, the sexuality value, is at most 1 - so a
+bisexual or homosexual hero is turned away where a straight or a hero at 0 is not, and the branch on
+`b.hi` means the test fails for 2 and above; the hero's `[0x94]`, the appearance float, is strictly
+above 50.0 (`b.le` fails the test); `GetFriend()` returns a non-null friend; and
+`PresentedCountForScenario` 0x73f3736430 on the scenario's own type returns 0. Five of the six
+return false on failure, and the sixth is what makes this card the family's only one-shot: once the
+card has been presented, the count is non-zero forever and the gate can never pass again. A null
+anywhere in the static chain throws through the stub at 0x73f26d4aac rather than returning false.
+
+The picker then applies its own six tests, one per data column. `HeroMinAge` is a floor and
+`HeroMaxAge` a ceiling when set (a zero reads as unbounded); then the row's `HeroGender`; then the
+`FriendMinAge` and `FriendMaxAge` pair; then the row's `FriendGender` - which this table does not
+have, so the sixth test is vacuous here and the port's `genderOk` helper finds no column and passes
+every row. The gender test is `argument == row field || row field == 2`, so the wildcard lives on the
+row and not on the caller: an empty cell matches everyone, `male` and `female` match one sex, and
+nothing matches both. The filter is a full pass with no early exit, and only then does one draw pick
+an index, which is why a row is as likely as any other row that matches. Nothing matching returns
+null; the card simply does not open. There is no relaxed second pass and no fallback row.
+
+The port's model of the gate is five of the six tests - age, prison, looks and the one-shot cap,
+plus a drawn friend - because it has no sexuality field behind the hero: the `[0x24] <= 1` test is a
+declared shortcut (104.5). Its model of the picker is the same six columns, but two of them are
+supplied by the port's own invented values: the friend's age is the hero's own age, the same shortcut
+the prank, rumor and party cards already take, which turns the friend's floor and ceiling into a
+narrower hero window - and in this table that window never closes, because only two rows carry a
+friend ceiling at all and both are inside the hero's own range from eighteen. The friend's sex is a
+coin, which matters more here than in the other cards because this table has no friend-gender column
+to gate on. Finally the port drops the two vampire columns entirely, so the sixteen rows the table
+marks `Vampire Hero` and the seventeen it marks `Vampire Friend Lover` are drawn by mortal heroes
+and mortal lovers alike (104.4). The class's own vampire test survives in the port in the only place
+it has an effect: the fourth button is built for a vampire hero and never for a vampire lover.
+
+### 104.4 The rows: fifty-two rows, two ceilings, and two columns nothing reads
+
+The table is `a16_friend-lover-scenarios-enc`: 13034 bytes, 52 newlines, 53 CSV records, which is one
+header and 52 data rows with no trailing newline - a line count reads this file one row short, the
+same trap the prank, rumor and party sets set. The header is the nine columns the loader splits the
+row into: `Scenario,Log Version,Hero Min Age,Hero Max Age,Hero Gender,Friend Min Age,Friend Max
+Age,Vampire Hero,Vampire Friend Lover`.
+
+The floors are almost constant and the ceilings are almost absent. `Hero Min Age` is 18 on 49 rows,
+14 on two (rows 14 and 15) and 21 on one (row 9); `Hero Max Age` is empty on all 52 rows, so no row
+in this table ever closes from the hero's side. `Friend Min Age` is 18 on 45 rows, 21 on three, 14 on
+two and empty on two; `Friend Max Age` carries a value on exactly two rows - rows 1 and 2, both 35 -
+and nowhere else. Since the port keeps its friend at the hero's own age, each row's window collapses
+to `[max(Hmin, Fmin), min(Hmax, Fmax)]`, with the two 35 ceilings the only upper bounds the table
+supplies: rows 1 and 2 are therefore open from eighteen to thirty-five and shut afterwards, and every
+other row is open from its floor to the end of the life. At eighteen or nineteen the pool is 43 rows for a
+male hero and 32 for a female one, because the three rows with a friend floor of 21 on rows 3, 4 and
+9 wait for that birthday; from twenty-one on it is 46 and 35. Nothing in the table asks for an attribute, an age above 21, a
+flag, a job or a student status, and the two boolean columns it does carry are read by nothing. Where
+§103 had five rows the port could never attend and §102 had rows gated on a partner's job, this table
+has no unreachable row at all.
+
+| rows | what the row asks for | what the port does |
+| --- | --- | --- |
+| 1, 2 | a friend ceiling of 35 | matched against the hero's own age; closed after thirty-five |
+| 9 | a hero floor of 21 | matched |
+| 14, 15 | a hero and friend floor of 14 | matched, but moot: the gate's own floor is 18 |
+| 27, 29, 30, 34, 35, 36, 38, 39, 40, 41, 43, 44, 47, 48, 49, 52 | `Vampire Hero` | skipped: no row is filtered on it |
+| 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 40, 42, 43, 45, 46, 50, 51 | `Vampire Friend Lover` | skipped: no row is filtered on it |
+| 17 male (1, 2, 3, 5, 10, 12, 18, 19, 20, 22, 25, 35, 37, 45, 46, 47, 50) | `Hero Gender` male | matched against the drawn hero |
+| 6 female (4, 6, 11, 13, 26, 42) | `Hero Gender` female | matched against the drawn hero |
+
+The genders are where the pool's real width comes from, because there is no friend-gender column to
+balance them. Twenty-nine rows are ungated, seventeen ask for a male hero and six for a female one,
+so a male hero draws from 46 rows once he is twenty-one and a female hero from 35 - and before that
+birthday, from 43 and 32. Both of those widths are small enough that a one-shot card per life covers
+them slowly, which is what the probe's spread shows.
+
+The text is 104 cells across the two prose columns, and almost none of it repeats: 52 distinct
+`Scenario` cells and 49 distinct `Log Version` cells, so only three rows share a journal line. Every
+one of the 52 `Scenario` cells contains `<friend-lover>`, though only one of them opens with it, while
+43 of the 52 log cells begin with the token and the remaining nine reach it within the first clause -
+which is what makes the four-slot wrapper the card's entire subject. Two rows (3 and 4) also name
+the bare `<friend>`, the only two in the table, and both put it in the opening clause of the
+Scenario cell. The pronoun tokens sit on the lover: `<he/she>` appears 16 times in the
+`Scenario` column and 7 in the log, `<his/her>` 15 and 9, `<him/her>` 4 and 7, and the log carries
+`<himself/herself>` once. Twenty-seven rows use at least one of them (7, 14, 15, 16, 17, 21, 23, 25,
+27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 44, 45, 46, 47, 48 and 50), and the game's own
+parser is what makes them the lover rather than the friend. Sixteen log cells carry the nickname
+token `<rb>` (rows 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 33, 34, 49 and 52) and two cells carry
+`<circumstance-public>`. The remainder is one-off alternative lists, seventeen of them, and they are
+the card's flavour: a twenty-item lingerie list, a thirteen-item bow-tie list, a thirteen-item
+costume list, an eleven-item emergency-services list, a nine-item oral-fixation list, a nine-item
+vampire-name list (Drusilla, Blade, Dracula and six more), a six-item blood cocktail menu (`bloody
+mary`, `corpse reviver 2`, `vampire's kiss`) and single rows for Alucard, Dio Brando, D, Lenore and
+Shell.
+
+So the pool the probe draws from is the whole table, and the probe's 240 lives drew 24 of the 52 rows
+across 71 cards. The twenty-eight it missed are named in the log, and none of them is structurally
+out of reach: rows 1 and 2 are the only two the table ever closes - they shut at thirty-five - and the probe's 71
+picks simply never landed inside their window; rows 3 and 4 are the two that also use the bare `<friend>`; rows 14 and
+15 open at a hero age of fourteen that the gate floors at eighteen; and the remaining twenty-two -
+13, 17, 19, 20, 21, 28, 29, 30, 31, 32, 36, 37, 38, 40, 41, 43, 45, 46, 49, 50, 51 and 52 - are
+simply the spread of 71 uniform picks over pools of thirty-two to forty-six rows, split across both
+hero sexes. With no flag row to skip and no closed window, a longer probe would close the gap; what
+the missing rows show is the pool's shape, not a gate.
+
+### 104.5 Shortcuts
+
+1. `shortcut: the class carries no push rate` (src/sim.cpp:24461). The real predicate is the gate's
+six tests and nothing else; the port opens the card on a 0.05 coin, the same number the three other
+friend cards use, drawn from its own stream.
+2. The hero's sexuality is not modelled (src/sim.cpp:24452). The game's third test is `hero[0x24] <=
+1`, so half the table's audience is a hero the port cannot describe; every life reaches the card.
+3. The generated lover's age is not drawn (src/sim.cpp:24477, src/sim.cpp:24483). The game draws
+`floor + GetRandomNumber(0, ceiling - floor)` and the port substitutes an age of its own, which is
+invisible because no rendered string reads the age.
+4. The spouse branch is missing (src/sim.cpp:24477). The game promotes the friend's own spouse into
+the lover's chair and raises the age floor to the marriage's age + 18; the port's friend carries no
+marriage record, so `husband` and `wife` are unreachable and the drawn pair is always
+`boyfriend`/`girlfriend`/`fiancé`/`fiancée`.
+5. The relationship word follows the lover, not the friend (src/sim.cpp:24493). The game keys the pair
+on the friend's own gender at `[_friend+0x1C]`, which works out for the game because its friend is
+the hero's own sex; the port coins the friend's sex independently, so its word follows the person it
+describes.
+6. The friend's age is the hero's (src/sim.cpp:24472). Every friend floor and ceiling therefore
+collapses onto the hero's own age, which is what turns rows 1 and 2 into eighteen-to-thirty-five rows
+and leaves rows 14 and 15 unreachable before the gate's own eighteenth birthday.
+7. The friend's relationship word is a constant (src/sim.cpp:24543). The game's two wrappers carry
+`FriendRelationshipStatusString()`; the port's friend has no status, so both wrappers read `your
+friend` and the possessive slot is the name's apostrophe form.
+8. The two vampire columns are not filtered on (src/sim.cpp:24511-24531). The table marks sixteen
+rows `Vampire Hero` and seventeen `Vampire Friend Lover`, and neither the picker, the gate nor the
+refresh reads either one - so the port is faithful to the game here rather than lazy, and the probe's
+21 vampire-hero rows and 8 vampire-lover rows drawn by mortal heroes are the game's own behaviour.
+9. The fourth button's coin is the port's (src/sim.cpp:24644). The game draws
+`GetRandomNumber(0, 100)` against the lover's float at `[lover+0xA8]`; the port's generated lover has
+no such attribute, so the success coin is a 0.5 draw on the card's own stream.
+10. The notoriety the hypnotize branch moves is invisible to the harness (src/sim.cpp:24652). The
+branch moves `ImpactNotoriety(-2)` on success and +2 on failure, and the per-event delta object the
+probe reads carries karma, discipline, happiness, smarts and looks only, so only the karma move is
+measurable.
+11. The reaction cards are not ported: the hook-up branch's `Scenario(SimLover, SimPerson, String)`,
+the report branch's five titles and its `{0} Appreciation` bar, and the hypnotize branch's two
+reaction bodies. The friend's relationship slot 0x508, which the report branch moves by +4 or +2, is
+dropped with them, as the prank, rumor and party cards' relationship impacts are.
+12. The port draws the response (src/sim.cpp:24594) instead of letting the hero pick one: the probe's
+15 hook-ups, 27 ignores and 29 reports are the port's own distribution over three equal labels.
+13. The vampire fourth button is unreachable in the port's own model (src/sim.cpp:3567). The yearly
+chain runs `vampireYear` at src/sim.cpp:3520, ahead of every friend card, so a vampire hero never
+sees this card at all - the probe's 80 vampire lives produced no card of any kind. The button's own
+condition is modelled faithfully; what is missing is a vampire life that reaches it, the same
+coverage gap §101 recorded for the prank card's hypnotize branch.
+
+```
+lives 240
+cards 71
+cards per life {0: 169, 1: 71}
+responses {'hook up': 15, 'ignore': 27, 'report': 29}
+relationship words {'boyfriend': 25, 'fiancé': 12, 'fiancée': 12, 'girlfriend': 22}
+rows drawn 24 of 52
+rows undrawn [1, 2, 3, 4, 13, 14, 15, 17, 19, 20, 21, 28, 29, 30, 31, 32, 36, 37, 38, 40, 41, 43, 45, 46, 49, 50, 51, 52]
+vampire-flagged rows drawn hero 21 lover 8
+vampire pass lives 80 cards 0
+hero age at the card min 19 max 76
+failures 0
+```
+
+Two hundred and forty lives, both genders, two run lengths: the card opens 71 times,
+an average of 0.30 per life, and never twice - the per-life counts are 169 lives with none and 71
+with exactly one, which is the one-shot cap doing its work. The 169 empty lives are the other half of
+the gate: five per cent a year from eighteen with an appearance float above 50 on top of it, and the
+probe's long-lived seeds spend their looks before their coin lands. The branch split is the port's own
+draw (15 hook-ups, 27 ignores and 29 reports) and nothing in it should be read as the game's numbers;
+what it does show is that three of the four labels are reachable and each logs the text the branch
+claims. The fourth is not: the hypnotize label was never drawn, because the port's yearly chain gives
+a vampire hero its own vampire events first (104.5, src/sim.cpp:3567), and the separate vampire pass -
+80 more lives, both genders, run to eighty - produced no card at all.
+
+The relationship words split the way the port's own two draws predict: 25 `boyfriend`, 22
+`girlfriend`, 12 `fiancé` and 12 `fiancée` over the 71 cards, with nothing drawing `husband` or
+`wife` because the port's friend carries no marriage record. Twenty-one of the 71 cards drew a row
+the table marks `Vampire Hero` and 8 drew one marked `Vampire Friend Lover`, all of them held by a
+mortal hero and a mortal lover - the picker's blindness to both columns, visible from the outside.
+24 of the 52 rows came up; the 28 that did not are named in the log, and 104.4 argues them down to
+the pool's width. The hero's age at the card runs from 19 to 76, which is the table's floor - the
+gate's eighteen plus the year it takes the coin to land - and the long tail of the port's own
+appearance float.
+
+Seven samples are printed below. The first three are the three reachable branches: the hook-up sample
+logs the row's own line followed by `I decided to have a one night stand with her.`, and its deltas
+are the only place the two -5 impacts show as the table's -50 and -50; the ignore sample, at
+seventy-six, is the oldest card in the probe and shows the branch's whole cost as karma +4 and
+discipline +4; the report sample logs the row's line alone, because that is the journal every path
+that is not hook up or hypnotize shares. The fourth sample is the first of the table's drawn
+alternative lists - a row whose prose ends in a request the resolver renders from ordinary words -
+and the fifth is the same row 47 the first sample drew, at a different seed, which is worth reading
+twice because it is one of the sixteen rows the table flags `Vampire Hero`: the card still opens, the
+body still reads `nearly staked her good`, and the fourth button is not there, because the hero is
+mortal and the button is built for a vampire. The sixth sample is the report branch at fifty-seven,
+where the row's flirtation is a pun and the logged line is the row's, not the branch's.
+
+Every printed block was checked as it was produced: the body against the row's `Scenario` cell parsed
+through the `your` holder with one consistent friend name and one consistent lover name, the journal
+line against the row's `Log Version` through the `my` holder plus the branch's own sentence where the
+branch has one, each pronoun pair against a single consistent alternative inside one card, the
+relationship word against the lover's sex, the label's last word against the friend's name on the
+report branch, the deltas against the exact non-zero entries the branch claims, and every printed
+string against a leftover `<token>`. Seventy-one cards' worth of cells went through those checks with
+no failure, and the probe's own residue count is the zero the regression fence reports below.
+
+```
+=== the hook-up response: happiness +16, karma -50, discipline -50 and the line gains the one night stand
+seed 12  male  United States  age 21  row 47  friend Ron Mendes  lover Nikki Stonemason
+table cells : Hero Min Age 18  Hero Gender male  Friend Min Age 18  Friend Max Age -  Vampire Hero x  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : While watching a movie with some friends, your friend, Ron Mendes's, girlfriend, Nikki Stonemason, stands up to use the bathroom and 'accidentally' falls on your lap, making a joke about how you nearly staked her good.
+CHOICE : Hook up with her
+LOG    : my friend, Ron Mendes's, girlfriend, Nikki Stonemason, 'accidentally' fell on my lap, making a joke on how I almost staked her good.
+I decided to have a one night stand with her.
+DELTAS : {"discipline": -50, "happiness": 16, "karma": -50, "looks": 0, "smarts": 0}
+
+=== the ignore response: karma +4, discipline +4 and nothing else moves
+seed 2  female  United States  age 76  row 39  friend Kravitz Shott  lover Haden Two
+table cells : Hero Min Age 18  Hero Gender -  Friend Min Age 18  Friend Max Age -  Vampire Hero x  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : While at the gym, your friend, Kravitz Shott's, boyfriend, Haden Two, puts your hand on his neck and asks you to check his pulse after an intense workout.
+CHOICE : Ignore him
+LOG    : my friend, Kravitz Shott's, boyfriend, Haden Two, asked me to check his pulse after an intense workout.
+I ignored him.
+DELTAS : {"discipline": 4, "happiness": 0, "karma": 4, "looks": 0, "smarts": 0}
+
+=== the report response: karma +8, discipline +8 and the row's own line is the journal
+seed 1  female  United States  age 68  row 7  friend Tank Sea  lover Larry Veranda
+table cells : Hero Min Age 18  Hero Gender -  Friend Min Age -  Friend Max Age -  Vampire Hero -  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : You're having dinner at home when your friend, Tank Sea's, boyfriend, Larry Veranda, shows up and suggestively asks if he can borrow some of your sugar.
+CHOICE : Report him to Tank Sea
+LOG    : my friend, Tank Sea's, boyfriend, Larry Veranda, came to my front door suggestively asking for sugar.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 8, "looks": 0, "smarts": 0}
+
+=== a row whose Scenario cell carries one of the table's alternative lists
+seed 4  female  United States  age 35  row 16  friend Cady Peary  lover Hung Ryan
+table cells : Hero Min Age 18  Hero Gender -  Friend Min Age 18  Friend Max Age -  Vampire Hero -  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : While chatting with your friend, Cady Peary's, boyfriend, Hung Ryan, at a get together, he admits that he is feeling extremely thirsty, and asks you if you could help.
+CHOICE : Ignore him
+LOG    : my friend, Cady Peary's, boyfriend, Hung Ryan, asked me to help him because he said he was feeling thirsty.
+I ignored him.
+DELTAS : {"discipline": 4, "happiness": 0, "karma": 4, "looks": 0, "smarts": 0}
+
+=== a row the table marks Vampire Hero, drawn by a mortal hero (the picker ignores the column)
+seed 8  male  United States  age 25  row 47  friend Larry Wyles  lover Lacey Malone
+table cells : Hero Min Age 18  Hero Gender male  Friend Min Age 18  Friend Max Age -  Vampire Hero x  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : While watching a movie with some friends, your friend, Larry Wyles's, girlfriend, Lacey Malone, stands up to use the bathroom and 'accidentally' falls on your lap, making a joke about how you nearly staked her good.
+CHOICE : Report her to Larry Wyles
+LOG    : my friend, Larry Wyles's, girlfriend, Lacey Malone, 'accidentally' fell on my lap, making a joke on how I almost staked her good.
+DELTAS : {"discipline": 8, "happiness": 0, "karma": 8, "looks": 0, "smarts": 0}
+
+=== a card held by an older hero
+seed 25  male  United States  age 57  row 25  friend Brittany Shears  lover Rachel Mercury
+table cells : Hero Min Age 18  Hero Gender male  Friend Min Age 18  Friend Max Age -  Vampire Hero -  Vampire Friend Lover -
+TITLE  : Indecent Proposal
+BODY   : While hanging out with a group of friends, your friend, Brittany Shears's, girlfriend, Rachel Mercury, approaches you to say she is wanting to spell "infidelity", and asks if you know where the "D" goes.
+CHOICE : Hook up with her
+LOG    : my friend, Brittany Shears's, girlfriend, Rachel Mercury, asked me if I know where the "D" goes in "infidelity".
+I decided to have a one night stand with her.
+DELTAS : {"discipline": -50, "happiness": 16, "karma": -50, "looks": 0, "smarts": 0}
+```
+
+What the card adds to the port is not a new mechanic — the hero's year is already full of them — but the friend family's only one-shot and its only card that builds the person it is about. The lover's name, the relationship word and the friend's sex are the port's own draws, the row is the table's, and the one thing the card does that no sibling does — generate a partner to the hero's taste and hand them the friend's label — is the sentence the whole section has been about: `your friend, Ron Mendes's, girlfriend, Nikki Stonemason`, a person assembled from the hero's own preferences and introduced as somebody else's.
+
+The full regression after the section: 47 probes at residue 0 (the `partres.py` entry among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
