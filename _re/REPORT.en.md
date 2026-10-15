@@ -16288,3 +16288,191 @@ with the outbound flavour, reads `unfriend cards: {'cards': 93, 'insult': 38, 'l
 `captured scenarios: 109  recoverable: 107`, the port gap at
 `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the
 benchmark reaching age 34 unchanged (age 33 happiness delta 17, age 34 karma delta 30).
+
+## 112. The friend weapon encounter: a friend walks in armed
+
+The friend family so far has been a family of social cards. `ScenarioFriendWeaponEncounter`
+(`il2cpp_dump.txt:40964-40972`) is its one escalation -- a friend comes into the home of the
+hero holding a weapon -- and it is a doorway: whichever of the four replies the hero picks, the
+friendship loses the same six points, and the assault family then opens with the weapon the
+friend was carrying.
+
+### 112.1 The card
+
+Fields `_friend` at `+0x170` (`SimPerson`), `_weapon` at `+0x178` (`DataWeapon`) and
+`_narrative` at `+0x180` (`System.String`). Methods: `.ctor()` `@0x73f3c59dec`, `GetFriend()`
+`@0x73f3c59e90`, `RefreshScenario` `@0x73f3c5a1b4` (338 instructions),
+`ChoiceSelectedAtIndex` `@0x73f3c5a6fc` (1187) and `ScenarioIsEligibleForRandomPush`
+`@0x73f3c5b988` (33). The last one asks four things: the hero is not null, `Age >= 18`
+(`cmp w8,#0x12` / `b.lt`), `!SimHero::CurrentlyInPrison()` `@0x73f2f0e1d8`, and `GetFriend()`
+is not null.
+
+`RefreshScenario` builds the body from `DataHub.GetRandomCircumstanceAtHome()` `@0x73f2ce322c`
+-- the ~45 `While ...` home phrases the port already carries as `kCircumstanceHomeScenes`
+(`src/sim.cpp:1640`) -- and a drawn `DataWeapon` (`il2cpp_dump.txt:15595`: `Name` `+0x10`,
+`Plural` `+0x18`, `Verb` `+0x20`, `DangerScore` `+0x28`, `FoundInPrison` `+0x2c`, `Medieval`
+`+0x2d`). The table behind it is `gamedata_plain/a16_weapons-enc` -- 88 rows, exactly those
+columns. The drawn weapon's own `DangerScore` picks between two templates:
+
+| cell | idx | text |
+| --- | --- | --- |
+| `0x5CBC860` | 70593 | `{0}, you notice out of the corner of your eye your {1}, {2}, sneaking up on you with {3}.` |
+| `0x5CBC840` | 70594 | `{0}, you turn around to discover your {1}, {2}, standing there with {3}.` |
+
+`{1}` is the relationship word of the friend, `{2}` its name, `{3}` the article form of the
+weapon (`AddIndefiniteArticleToString` over `Name`), and the assembled body lands in
+`[self+0x48]` through `Format(String,Object[])` `@0x73f52a7254`. The narrative in `[self+0x180]`
+is a second pass, `Format(String,Object,Object,Object)` `@0x73f52a7210` with cell `0x5CBC858`
+(idx 30976) `My {0}, {1}, entered my home with {2}.`. `RefreshScenario` never writes
+`[self+0x38]`, so the card presents no title of its own: the headline the player sees is the
+reply the branch picks.
+
+The four buttons are appended through vtable slot `0x308` as `ScenarioChoice(String,Boolean,
+Boolean)` `@0x73f2eb9c50`: `Reason with {0}` (`0x5CBC848`, the pronoun filled in by
+`PronounStringForType(2)`), `Beg for forgiveness` (`0x5CBC850`), `Argue with {0}` (`0x5C386C8`)
+and `Run for my life` (`0x5C3CE08`).
+
+### 112.2 The four replies, dispatched by label
+
+`ChoiceSelectedAtIndex` never reads a choice index. It lowercases the tapped label
+(`[self+0x10]`) and `Contains`-tests one word per block: `reason` (`0x5C77FA0`, idx 64327),
+`forgiveness` (`0x5CBC8F0`, idx 59224), `argue` (`0x5C346B8`, idx 54365) and `run`
+(`0x5C3CEF8`). A label that matches none of the four falls into the `FillDictionary` throw
+helper `@0x73f3c5b974`.
+
+| button | happiness | ImpactDiscipline | reply pool | log line |
+| --- | --- | --- | --- | --- |
+| `Reason with {0}` | -3 | 2 | five lines, `0x5CBC8E0`..`0x5CBC890` | `0x5CBC8A8` (idx 47844) `You attemped to reason with {0}!` |
+| `Beg for forgiveness` | -5 | -3 | five lines, `0x5CBC918`..`0x5CBC898` | `0x5CBC8F8` (idx 47884) `You begged {0} for forgiveness!` |
+| `Argue with {0}` | -2 | -3 | four lines, `0x5CBC870`..`0x5CBC8B0` | `0x5CBC8E8` (idx 49902) `You {0} {1}!` |
+| `Run for my life` | -4 | -3 | five + five lines, `0x5CAFC90`..`0x5CAFD00` and `0x5CAFD68`..`0x5CAFD20` | `0x5CAFCF0` (idx 49172) `You ran for your life and got away from {0}!` / `0x5CAFD08` (idx 49174) `You ran for your life but {0} caught you!` |
+
+The replies, in the order of each pool. Reason: `Woah, take it easy`, `It's me remember?`,
+`This isn't you`, `Whatcha got there...`, `*nervous chuckle*`. Forgiveness: `It's not worth it`,
+`Think about your future`, `I'm on my knees`, `Spare me`, `Let's use our words`. Argue:
+`Uncalled for`, `What's gotten into you`, `Put that away`, `Are you crazy?!`. The away pool of
+the run arm: `Dodge, duck, dip, dive, & dodge`, `Too close for comfort`, `Wild goose chase`,
+`No fight, just flight`, `Run. Don't stop. Go!`; the caught pool: `Back to the wall`,
+`Out of options`, `Cat & mouse`, `Dead end`, `Nowhere to go`. Through `pointsForImpact` the four
+pairs are -16/+8, -50/-16, -8/-16 and -30/-16. The `attemped` in the reason line is the spelling
+of the game itself (idx 47844), not a transcription slip.
+
+The argue line is the one line that is not a constant: `DataHub.GetRandomArguerAction`
+`@0x73f2ca2120` supplies the verb, so `You {0} {1}!` reads `You scratched her!`, `You punched
+him!` and so on, with the object pronoun in the second slot.
+
+Every block then jumps to the same tail (`b 0x73f3c5b824`): `mov w1,#-6` into the relationship
+slot of the friend at `+0x508` -- the friendship takes the same hit whatever the hero says --
+then `ScenarioAttackInbound::.ctor(SimPerson,DataWeapon)` `@0x73f3cd79ec` pushed as a child at
+`[self+0x128]`, then `Log(Fmt1)` `@0x73f380158c` and `RefreshUI()` `@0x73f3580f5c`. The weapon
+the friend walked in with is the weapon the assault family then swings.
+
+### 112.3 How the port reaches it
+
+`bool Sim::friendWeaponYear` (`src/sim.cpp:25365`) runs as the last of the friend cards, wired
+in `ageUp` right after `friendStatusYear` (`src/sim.cpp:3618`), and draws on its own stream
+`fwRng_ = seed ^ 0x9fb21c651e98df25 ^ 0x6a09e667f3bcc909` (`include/bl/sim.h:603`, initialized
+at `src/sim.cpp:638`), so no sequence of another subsystem moves for a given seed. In order:
+
+1. `forcedChoice > 3` returns false, so the harness can only ask for one of the four buttons;
+2. the three gates of the class itself: `h.age >= 18`, not in prison, a friend;
+3. a flat `fwRng_.chance(0.05)` coin;
+4. a weapon drawn uniformly over the `a16_weapons-enc` rows whose `Weapon` cell is non-empty
+   and which are not flagged `Found in Prison` (the gate has already refused a hero in prison);
+5. the body template from `wt.num(wrow, "Danger") <= 2.0`, with `{0}` from `circumstanceHome()`
+   and `{3}` from `withArticle(weaponName, true) + weaponName`;
+6. the reply: `forcedChoice` when the harness gave one, else `fwRng_.below(4)`;
+7. the reply pool of that branch as the title, its button text, its `pointsForImpact` pair and
+   its own log line as the narrative.
+
+The argue arm takes its verb from the `Past Verb` column of `a16_custom-attack-actions-enc`
+weighted by `Commonness Score` (`weightedPickOf`, `src/sim.cpp:25469-25478`); the run arm draws
+`fwRng_.chance(0.5)` for the outcome and then one of its two five-line pools
+(`src/sim.cpp:25479-25501`). The function ends with the shared tail left unmodelled
+(`src/sim.cpp:25502-25507`).
+
+```
+=== seed 6 female age 54
+TITLE  : Whatcha got there...
+BODY   : While relaxing on the couch Googling yourself, you turn around to discover your friend, Brittany Shears, standing there with a spiked mace.
+BUTTON : Reason with her
+LOG    : You attemped to reason with her!
+DELTAS : {"discipline": 8, "happiness": -16}
+
+=== seed 4 female age 21
+TITLE  : Put that away
+BODY   : While sitting on the toilet trying to work out your constipation issues, you turn around to discover your friend, Olive Roderick, standing there with a laser blaster.
+BUTTON : Argue with her
+LOG    : You scratched her!
+DELTAS : {"discipline": -16, "happiness": -8}
+
+=== seed 2 female age 51
+TITLE  : Out of options
+BODY   : While exfoliating the dead skin on your face, you notice out of the corner of your eye your friend, Sabrina Stonemason, sneaking up on you with a prosthetic leg.
+BUTTON : Run for my life
+LOG    : You ran for your life but he caught you!
+DELTAS : {"discipline": -16, "happiness": -30}
+
+=== seed 2 female age 54
+TITLE  : Wild goose chase
+BODY   : While chilling in bed listening to a Barbra Streisand, you notice out of the corner of your eye your friend, Donna del Slay, sneaking up on you with a BB gun.
+BUTTON : Run for my life
+LOG    : You ran for your life and got away from him!
+DELTAS : {"discipline": -16, "happiness": -30}
+```
+
+The first card is a `Danger > 2` template and the reason arm; the second is a `Danger > 2`
+template with a verb the argue arm drew; the last two are the `Danger <= 2` sneaking template
+across the two run outcomes, one of each.
+
+### 112.4 Shortcuts
+
+1. `.ctor()` `@0x73f3c59dec` has no caller inside BitLife -- a generic factory instantiates the
+   class -- so there is no push site to read and the port cannot derive the rate of this card
+   the way sections 104-111 derive theirs. The flat 0.05 is the coin of the port; the
+   instrumentation measured 22 cards in 414 age-ups while it was in place, and the 121 cards of
+   the probe in 160 lives sit at the same scale.
+2. `GetRandomArguerAction` (`@0x73f2ca2120`) is not pinned, so the port substitutes the
+   `Past Verb` column of `a16_custom-attack-actions-enc` weighted by `Commonness Score`: the
+   right kind of word, drawn from a substitute table.
+3. The forgiveness block pushes a child `Scenario(String,String,Scenario)` `@0x73f2ebf510` whose
+   labels are `Mercy! Mercy!` (`0x5CBC928`, idx 30003) and `Finally, some sense` (`0x5CBC910`,
+   idx 20187); the port writes the reply and log line of the branch alone.
+4. The shared tail is not modelled: the port has no friend object to move by -6 and no
+   `ScenarioAttackInbound` to push, so the weapon encounter does not hand off to the assault
+   family and the -6 is not charged. This is the mirror of the sections 108 and 110 shortcut,
+   where the friend is a drawn slot and not an object.
+5. The reason branch shows its reply through `BarGraph(String,Single)` `@0x73f2ec31f8` under the
+   label `{0} Receptiveness` (`0x5C44C50`, idx 69689) -- a widget the port does not render -- so
+   the reply becomes the headline of the card instead.
+6. The narrative `My {0}, {1}, entered my home with {2}.` is not carried; the journal of the
+   port keeps the log line of the branch, as it does for every card in this family.
+7. The relationship word is always `friend`: `GetFriendRelationshipStatusForDisplay` reads the
+   `FriendStatus` field of the friend, which the drawn slot of the port does not carry (the
+   standing shortcut of the family, sections 105-111).
+8. The gender of the friend is its own coin, independent of the name the `<friend>` pool drew
+   (the pattern of the family, `src/sim.cpp:23846` and the six cards that follow it), so a
+   female name can carry `him` in the log line.
+
+The card closes the inbound side of the friend family: sections 108 and 110 dealt the end of
+the friendship to the hero, 111 let the hero deal it out, and this is the member of the family
+that hands off to another family entirely. It is also the first ported card to read
+`gamedata_plain/a16_weapons-enc`, the table the assault family needs in full.
+
+Verification for the section: the port’s own test `tools/test_friend_unfriend.py`, extended
+with the weapon card, reads `unfriend cards: {'cards': 85, 'insult': 37, 'let_go': 29,
+'out': 65, 'prison': 5, 'salvage_lost': 12, 'salvage_win': 2, 'weapon': 83, 'weapon_argue': 20,
+'weapon_forgive': 15, 'weapon_reason': 13, 'weapon_run_away': 20, 'weapon_run_caught': 15}` --
+the unfriend counts move against the section 111 run because the new card consumes draws from
+the shared streams and occupies years. The new probe `/tmp/qdir/fwres.py` renders 121 weapon
+cards over 160 lives (seeds 1..40, both genders, 80- and 50-year runs) and reports `branches
+{'Argue with her': 16, 'Argue with him': 18, 'Beg for forgiveness': 21, 'Reason with her': 9,
+'Reason with him': 8, 'Run for my life': 49}`, cards per life `{0: 84, 1: 43, 2: 23, 3: 8,
+4: 2}`, 34 distinct weapons with `horse whip` at 9, hero age at the card 18..78, `failures 0`
+and `RESIDUE 0 {}`. The full regression after the section: 56 probes, every one at `rc=0` and
+`residue=0` (the `idres.py` row prints its own summary format, `residue=? fails=- events=?`, in
+every section so far), this section’s probe at `fwres.py rc=0 residue=0 fails=0 events=121`;
+the residue census at `distinct residue tokens 0 total 0`, coverage at
+`captured scenarios: 109  recoverable: 107`, the port gap at
+`ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the
+benchmark reaching age 34 unchanged (age 33 happiness delta 17, age 34 karma delta 30).

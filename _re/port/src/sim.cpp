@@ -635,7 +635,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
       fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL),
-      unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL) {}
+      unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL),
+      fwRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -1339,6 +1340,11 @@ bool Sim::load(std::string* error) {
       "a16_black-market-historical-artifacts-enc",
       "a16_black-market-sports-memorabilia-enc",
       "a16_black-market-weapons-enc",
+      // The friend-weapon encounter (report 112) and the assault family it hands
+      // off to draw a DataWeapon out of the one table whose columns are its fields
+      // (Weapon, Plural, Verb, Danger, Found in Prison, Medieval).
+      "a16_weapons-enc",
+      "a16_custom-attack-actions-enc",
       "a16_black-market-auction-house-names-enc",
       "a16_black-market-auctioneer-color-enc",
       "a16_black-market-chemist-feedback-color-enc",
@@ -3604,6 +3610,12 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // turn, the port after it, so a year in which both would fire shows the unfriend
   // card first.
   if (friendStatusYear(life, out, forcedChoice)) return true;
+  // The friend-weapon encounter (REPORT.en.md 112) is the family's ninth push and the
+  // one that hands off to the assault family. It is tried last of the friend cards and
+  // draws on its own stream (include/bl/sim.h fwRng_), so no earlier subsystem's
+  // sequence moves. shortcut: the game has no push site for it at all (a generic
+  // factory builds the class), so the coin is the port's.
+  if (friendWeaponYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -25300,6 +25312,197 @@ bool Sim::friendStatusYear(Life& life, AgeUp& out, int forcedChoice) {
   } else {
     out.choice = "Keep the status quo";
   }
+  return true;
+}
+
+// The friend-weapon encounter (REPORT.en.md 112): the friend who comes at the hero
+// with a weapon and gives them one beat to talk them down. It is the card the friend
+// family shares with the assault family, and the only one whose follow-up is another
+// scenario.
+// ScenarioFriendWeaponEncounter (il2cpp_dump.txt:40964; .ctor() @0x73f3c59dec,
+// RefreshScenario @0x73f3c5a1b4, ChoiceSelectedAtIndex @0x73f3c5a6fc,
+// GetFriend @0x73f3c59e90, ScenarioIsEligibleForRandomPush @0x73f3c5b988). Its three
+// fields are _friend ([self+0x170], a SimPerson), _weapon ([self+0x178], a DataWeapon)
+// and _narrative ([self+0x180]).
+//
+// The gate asks for nothing but a hero of eighteen or more who is not in prison and
+// who has a friend at all: 0x73f3c5b988 tests the hero for null, then
+// `cmp w8,#0x12 / b.lt` on the hero's age, then SimHero.CurrentlyInPrison()
+// @0x73f2f0e1d8, then GetFriend() != null. The card is pushed out of prison too
+// (Found in Prison is a column of its own weapon table), but its own gate keeps it
+// out of the yard.
+//
+// The class has no BusinessLogic caller at all: a generic factory instantiates it,
+// so unlike every other card in the family there is no push site to read a rate off.
+// The port draws a flat coin on this card's own stream (fwRng_), the friend family's
+// standing shortcut for a missing object field.
+//
+// RefreshScenario draws {0} = DataHub.GetRandomCircumstanceAtHome() @0x73f2ce322c,
+// which the port already renders as circumstanceHome() (src/sim.cpp 1747), and picks
+// the body off the weapon's DangerScore: <= 2 gives cell 0x5CBC860, > 2 gives cell
+// 0x5CBC840. It writes the card's narrative "My {0}, {1}, entered my home with {2}."
+// (cell 0x5CBC858, the weapon in its article form) to [self+0x180] and sets the
+// button-visible flag [self+0x110]. No title is ever written: the four buttons are the
+// card.
+//
+// ChoiceSelectedAtIndex dispatches on the button's LABEL TEXT, not on an index --
+// ToLower then Contains against one word per block: 'reason' (cell 0x5C77FA0),
+// 'forgiveness' (0x5CBC8F0), 'argue' (0x5C346B8) and 'run' (0x5C3CEF8), with an
+// unmatched label falling into a FillDictionary throw helper @0x73f3c5b974. The port's
+// forced choice is the button's number instead, 0..3 in the order the buttons are
+// appended, which is the same order the labels are tested in.
+//
+// Every block writes the hero's happiness through its own vtable slot 0x408 (the -3
+// of the reason block, the -5 of forgiveness, the -2 of argue, the -4 of the run) and
+// runs ImpactDiscipline @0x73f30e4cdc, whose arguments are +2 for reason and -3 for
+// the other three. pointsForImpact turns those into the numbers below.
+//
+// The shared tail moves the friend's relationship slot 0x508 by -6 and links a
+// ScenarioAttackInbound @0x73f3cd79ec at [self+0x128] -- the encounter becomes the
+// assault the hero has just talked their way out of, or walked into. shortcut: the
+// port has no friend object to move a relationship on and pushes no child scenario,
+// the two side effects this section drops.
+bool Sim::friendWeaponYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice > 3) return false;
+  Hero& h = life.hero;
+  // The class's own gate, in its own order.
+  if (h.age < 18 || h.inPrison) return false;
+  if (!fwRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_weapons-enc")) return false;
+  if (!ensureTable("a16_custom-attack-actions-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, drawn before any of the card's own draws (the
+  // friend-party card's pattern, src/sim.cpp 24289).
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = fwRng_.chance(0.5);
+  // GetFriendRelationshipStatusForDisplay reads the friend's FriendStatus, which the
+  // port's drawn slot does not carry, so the relationship word is always 'friend' (the
+  // family's standing shortcut). PronounStringForType(0) @0x73f30e64d0 is the subject
+  // pronoun, type 2 the object pronoun the labels and two of the four log lines use.
+  const std::string rel = "friend";
+  const std::string he = friendFemale ? "she" : "he";
+  const std::string him = friendFemale ? "her" : "him";
+
+  // The weapon is a DataWeapon: DataHub.GetRandomAssaultWeaponAndIsInPrison(Boolean)
+  // @0x73f2ca1ac0 hands one out, and a16_weapons-enc is the table whose columns are
+  // exactly its fields -- Weapon, Plural, Verb, Danger, Found in Prison, Medieval. The
+  // gate above has already refused a hero in prison, so the rows flagged Found in
+  // Prison are out of the pool, and the rest are drawn evenly.
+  const Table& wt = tbl("a16_weapons-enc");
+  std::vector<size_t> weapons;
+  for (size_t r = 0; r < wt.size(); ++r) {
+    if (!trim(wt.at(r, "Weapon")).empty() && !wt.flag(r, "Found in Prison")) weapons.push_back(r);
+  }
+  if (weapons.empty()) return false;
+  const size_t wrow = weapons[fwRng_.below(uint32_t(weapons.size()))];
+  const std::string weaponName = trim(wt.at(wrow, "Weapon"));
+  // withArticle() returns the article alone (see the house call sites); the noun has to
+  // be appended here.
+  const std::string weaponArt = withArticle(weaponName, true) + weaponName;
+  // The body's own branch: DangerScore <= 2 is the sneaking weapon, above it the one
+  // the hero is already looking at.
+  const bool sneaking = wt.num(wrow, "Danger") <= 2.0;
+  const std::string scene = circumstanceHome();
+
+  out = AgeUp();
+  if (sneaking) {
+    // {0}, you notice out of the corner of your eye your {1}, {2}, sneaking up on you
+    // with {3}. (template 0x5CBC860)
+    out.body = scene + ", you notice out of the corner of your eye your " + rel + ", " +
+               friendName + ", sneaking up on you with " + weaponArt + ".";
+  } else {
+    // {0}, you turn around to discover your {1}, {2}, standing there with {3}.
+    // (template 0x5CBC840)
+    out.body = scene + ", you turn around to discover your " + rel + ", " + friendName +
+               ", standing there with " + weaponArt + ".";
+  }
+  // The button is the player's; the port draws one of the four (the friend family's
+  // own coin, on this card's stream).
+  const int pick = forcedChoice >= 0 ? forcedChoice : int(fwRng_.below(4));
+
+  if (pick == 0) {
+    // 'Reason with {0}' (cell 0x5CBC848, the object pronoun). The reason block
+    // @0x73f3c5aa48 moves the hero's happiness by -3 (slot 0x408) and runs
+    // ImpactDiscipline(2) before it tests anything.
+    static const char* const kReply[5] = {"Woah, take it easy", "It's me remember?",
+                                          "This isn't you", "Whatcha got there...",
+                                          "*nervous chuckle*"};
+    out.title = kReply[fwRng_.below(5)];
+    out.choice = "Reason with " + him;
+    out.happiness = pointsForImpact(-3);
+    out.discipline = pointsForImpact(2);
+    // You attemped to reason with {0}! (cell 0x5CBC8A8, the game's own typo)
+    out.narrative = "You attemped to reason with " + him + "!";
+  } else if (pick == 1) {
+    // 'Beg for forgiveness' (cell 0x5CBC850). The forgiveness block @0x73f3c5ad3c
+    // moves the hero's happiness by -5 and runs ImpactDiscipline(-3), then opens a
+    // child Scenario(String,String,Scenario) @0x73f2ebf510 on the mercy pool, whose
+    // line is "Your {0}, {1}, took mercy on you and left with {2} {3}." (cell
+    // 0x5CBC8C0). shortcut: the port pushes no child card.
+    static const char* const kReply[5] = {"It's not worth it", "Think about your future",
+                                          "I'm on my knees", "Spare me",
+                                          "Let's use our words"};
+    out.title = kReply[fwRng_.below(5)];
+    out.choice = "Beg for forgiveness";
+    out.happiness = pointsForImpact(-5);
+    out.discipline = pointsForImpact(-3);
+    // You begged {0} for forgiveness! (cell 0x5CBC8F8, the object pronoun)
+    out.narrative = "You begged " + him + " for forgiveness!";
+  } else if (pick == 2) {
+    // 'Argue with {0}' (cell 0x5C386C8). The argue block @0x73f3c5b49c moves the
+    // hero's happiness by -2 and runs ImpactDiscipline(-3).
+    static const char* const kReply[4] = {"Uncalled for", "What's gotten into you",
+                                          "Put that away", "Are you crazy?!"};
+    out.title = kReply[fwRng_.below(4)];
+    out.choice = "Argue with " + him;
+    out.happiness = pointsForImpact(-2);
+    out.discipline = pointsForImpact(-3);
+    // You {0} {1}! (cell 0x5CBC8E8): {0} is SimPerson.GetRandomArguerAction()
+    // @0x73f2ca2120, {1} the object pronoun. shortcut: the table behind
+    // GetRandomArguerAction is not pinned; the port draws the past-tense verb out of
+    // a16_custom-attack-actions-enc (Action, Past Verb, Commonness Score, Damage
+    // Score), the only action table with a Past Verb column, weighted by Commonness
+    // Score.
+    std::string action = "argued with";
+    const Table& at = tbl("a16_custom-attack-actions-enc");
+    std::vector<size_t> actions;
+    for (size_t r = 0; r < at.size(); ++r)
+      if (!trim(at.at(r, "Past Verb")).empty()) actions.push_back(r);
+    if (!actions.empty()) {
+      const size_t arow = weightedPickOf(at, "Commonness Score", actions, fwRng_);
+      if (arow != size_t(-1)) action = trim(at.at(arow, "Past Verb"));
+    }
+    out.narrative = "You " + action + " " + him + "!";
+  } else {
+    // 'Run for my life' (cell 0x5C3CE08). The run block @0x73f3c5b2a0 moves the
+    // hero's happiness by -4 and runs ImpactDiscipline(-3), then draws between the two
+    // real outcomes, each with its own headline pool.
+    static const char* const kAway[5] = {"Dodge, duck, dip, dive, & dodge",
+                                         "Too close for comfort", "Wild goose chase",
+                                         "No fight, just flight", "Run. Don't stop. Go!"};
+    static const char* const kCaught[5] = {"Back to the wall", "Out of options",
+                                           "Cat & mouse", "Dead end", "Nowhere to go"};
+    out.choice = "Run for my life";
+    out.happiness = pointsForImpact(-4);
+    out.discipline = pointsForImpact(-3);
+    if (fwRng_.chance(0.5)) {
+      out.title = kAway[fwRng_.below(5)];
+      // You ran for your life and got away from {0}! (cell 0x5CAFCF0, the object
+      // pronoun)
+      out.narrative = "You ran for your life and got away from " + him + "!";
+    } else {
+      out.title = kCaught[fwRng_.below(5)];
+      // You ran for your life but {0} caught you! (cell 0x5CAFD08, the subject
+      // pronoun)
+      out.narrative = "You ran for your life but " + he + " caught you!";
+    }
+  }
+  // The tail the game shares with the assault family pushes ScenarioAttackInbound
+  // @0x73f3cd79ec and moves the friend's relationship slot 0x508 by -6; the port has
+  // no friend object and no child push (the section's standing shortcut).
   return true;
 }
 

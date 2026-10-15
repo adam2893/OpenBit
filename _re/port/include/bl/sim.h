@@ -441,6 +441,12 @@ class Sim {
   // buttons, or a friend who turns into an enemy. It carries an eleven-year clock
   // of its own (life.bestFriendAge) and draws on its own stream (fsRng_).
   bool friendStatusYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-weapon encounter (REPORT.en.md 112): a friend comes at the hero
+  // with a weapon and gives them one beat to talk them down -- four buttons, each
+  // with its own stat move, and the encounter the friend family shares with the
+  // assault family. It has no push site of its own and draws on its own stream
+  // (fwRng_).
+  bool friendWeaponYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -601,6 +607,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng fsRng_;
   // The unfriend outbound card's own stream (REPORT.en.md 111).
   Rng unrOutRng_;
+  // The friend-weapon encounter's own stream (REPORT.en.md 112).
+  Rng fwRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
