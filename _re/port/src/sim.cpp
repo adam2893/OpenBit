@@ -629,7 +629,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       prankRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0x9e3779b97f4a7c15ULL),
       rumorRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xc2b2ae3d27d4eb4fULL),
       partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL),
-      flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL) {}
+      flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
+      cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3565,6 +3566,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // on its own stream (include/bl/sim.h flRng_), so no earlier subsystem's
   // sequence moves.
   if (friendLoverYear(life, out, forcedChoice)) return true;
+  // The coworker family (REPORT.en.md 105) is the fifth table-driven push: four
+  // cards about the person next to the hero at work, each with its own
+  // presented cap. They are tried after the friend cards and draw on their own
+  // stream (include/bl/sim.h cwRng_), so no earlier subsystem's sequence moves.
+  if (coworkerYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24661,6 +24667,253 @@ bool Sim::friendLoverYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   ++life.loverPresented;
   return true;
+}
+
+// The coworker family (REPORT.en.md 105): four inbound cards about the person
+// sitting next to the hero at work -- a16_coworker-annoy-scenarios-enc (40
+// rows), a16_coworker-behavior-scenarios-enc (20), a16_coworker-pranks-enc (65)
+// and a16_coworker-rumors-enc (46). Unlike the friends' cards each of these
+// carries its own presented cap: ScenarioCoworkerAnnoying's gate reads
+// PresentedCountForScenario and stops after five showings, Inappropriate after
+// four, Prank and Rumor after three. All four are RefreshScenario-only -- their
+// .ctor methods are three-instruction thunks into Scenario::.ctor(false) -- and
+// none of the twelve methods (four ctors, four GetCoworker, four refreshes)
+// draws a random number, so every coin in this function is the port's own. The
+// four also share one coworker: the game's GetCoworker() walks a SimWorkplace
+// roster and keeps the last colleague whose total relationship strength is
+// under 25 and whose combined unprofessionalism and uncoolness average over 70;
+// the port has no roster and keeps a single slot instead.
+bool Sim::coworkerYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // The shared half of ScenarioIsEligibleForRandomPush (0x73f2e2cdac Annoying,
+  // 0x73f2e2dff8 Inappropriate, 0x73f2e2f7a8 Prank, 0x73f2e3111c Rumor, 74
+  // instructions each): the hero is 18 or older, and he has a job or the
+  // military. The card's own half is the presented cap tested in the loop
+  // below.
+  if (h.age < 18) return false;
+  if (!h.employed && !h.military) return false;
+
+  struct CwCard {
+    const char* table;
+    const char* title;       // the .ctor's own title cell
+    const char* colScenario;
+    const char* colLog;
+    const char* colHero;     // gender column tested against the hero ("" for none)
+    const char* colCw;       // ... and against the coworker
+    bool vampireRow;         // the pranks table keys its rows on Vampire
+    int* presented;
+    int cap;                 // the class's own B.LE bound
+  };
+  CwCard cards[] = {
+      {"a16_coworker-annoy-scenarios-enc", "Workplace Annoyance", "Scenario",
+       "Log Version", "Hero Gender", "Coworker Gender", false,
+       &life.cwAnnoyPresented, 4},
+      {"a16_coworker-behavior-scenarios-enc", "Workplace Behavior", "Scenario",
+       "Log Version", "Recipient Gender", "Sender Gender", false,
+       &life.cwInappPresented, 3},
+      {"a16_coworker-pranks-enc", "Workplace Prank", "Inbound Scenario",
+       "Inbound Log Version", "", "", true, &life.cwPrankPresented, 2},
+      {"a16_coworker-rumors-enc", "Rumor", "Inbound Scenario Snippet",
+       "Inbound Log Version Snippet", "Victim Gender", "", false,
+       &life.cwRumorPresented, 2},
+  };
+  for (int kind = 0; kind < 4; ++kind) {
+    CwCard& card = cards[kind];
+    if (*card.presented > card.cap) continue;
+    // shortcut: the class carries no push rate of its own -- the game's own
+    // random-push queue decides -- so the coin is the port's. It draws on the
+    // family's own stream (cwRng_) so no other family's sequence moves.
+    if (!cwRng_.chance(0.05)) continue;
+    if (!ensureTable(card.table)) continue;
+    hero_ = &life.hero;
+    life_ = &life;
+    // One coworker for the whole life (shortcut: the game refreshes a roster
+    // every time the hero takes a job), drawn once and its sex with it.
+    if (h.cwName.empty()) {
+      h.cwName = resolve("<coworker>");
+      if (h.cwName.empty()) return false;
+      h.cwFemale = cwRng_.chance(0.5);
+    }
+    const std::string cwName = h.cwName;
+    const std::string them = h.cwFemale ? "her" : "him";
+
+    // The gender tests the DataHub pickers apply before their single draw:
+    // GetRandomCoworkerAnnoyScenarioForCoworkerGenderAndHeroGender @0x73f2cc781c
+    // (coworker, hero), GetRandomCoworkerBehaviorScenarioForCoworkerGender-
+    // AndHeroGender @0x73f2cc7398 (sender = coworker, recipient = hero),
+    // GetRandomCoworkerPrank @0x73f2cc8144 (the Vampire flag against
+    // IsVampire(hero)) and GetRandomCoworkerRumorForVictimGender @0x73f2cc85ec
+    // (the victim is the hero). The loader decodes male as 0, female as 1 and
+    // anything else as 2, the wildcard.
+    const Table& t = tbl(card.table);
+    const auto genderOk = [&](size_t r, const char* col, bool female) {
+      if (!col[0] || !t.has(col)) return true;
+      const std::string v = lower(trim(t.at(r, col)));
+      if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+      if (v == "male") return !female;
+      if (v == "female") return female;
+      return true;
+    };
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (trim(t.at(r, card.colScenario)).empty()) continue;
+      if (!genderOk(r, card.colHero, h.female)) continue;
+      if (!genderOk(r, card.colCw, h.cwFemale)) continue;
+      if (card.vampireRow && t.has("Vampire") && t.flag(r, "Vampire") != h.vampire)
+        continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) continue;
+    const size_t row = pool[cwRng_.below(uint32_t(pool.size()))];
+
+    std::string scenario = trim(t.at(row, card.colScenario));
+    std::string logCell = trim(t.at(row, card.colLog));
+    if (kind != 3) {
+      // RefreshScenario registers a two-entry dictionary for each parse: the
+      // token '<coworker>' (#8833) expands to 'your {0}, {1},' (#68451) with the
+      // relationship word and the name, '<coworker-possessive>' (#8832) to the
+      // same with the name's possessive, and the journal's own parse uses the
+      // 'my {0}, {1},' (#62743) pair.
+      substAll(scenario, "<coworker-possessive>", "your coworker, " + cwName + "'s,");
+      substAll(scenario, "<coworker>", "your coworker, " + cwName + ",");
+      substAll(logCell, "<coworker-possessive>", "my coworker, " + cwName + "'s,");
+      substAll(logCell, "<coworker>", "my coworker, " + cwName + ",");
+    }
+    // The card's text draws come out of the card's own stream, and the
+    // alternative the body picks is the one the journal line's '<rb>' points
+    // back at, so the body is read first and its draws are kept.
+    rndCache_.clear();
+    rbLast_.clear();
+    const auto drawCardText = [&](std::string text, bool keep) {
+      for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+        const size_t close = text.find('>', i);
+        if (close == std::string::npos) break;
+        const std::string inner = text.substr(i + 1, close - i - 1);
+        std::string genderValue;
+        if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+          continue;
+        std::vector<std::string> parts;
+        splitOn(inner, '/', parts);
+        if (parts.empty()) continue;
+        const std::string drawn = parts[cwRng_.below(uint32_t(parts.size()))];
+        if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+        text.replace(i, close - i + 1, drawn);
+        i += drawn.size() - 1;
+      }
+      return text;
+    };
+    const bool savedOtherSet = pronounOtherSet_;
+    const bool savedOtherFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.cwFemale;
+    std::string body, logLine;
+    if (kind == 3) {
+      // The rumor card is the one card that does not use the dictionary: its
+      // body is Format3 'Your {0}, {1}, started a rumor that {2}.' (#50783) and
+      // its narrative the matching 'My {0}, {1}, started a rumor that {2}.'
+      // (#30998), with the column's own snippet as {2}.
+      body = "Your coworker, " + cwName + ", started a rumor that " +
+             resolve(drawCardText(scenario, true)) + ".";
+      logLine = "My coworker, " + cwName + ", started a rumor that " +
+                resolve(drawCardText(logCell, false)) + ".";
+    } else {
+      // Body and narrative are the row's own cells, wrapped by
+      // '{0}\n\nWhat will you do?' (cell 0x5C35668) and the identity '{0}'
+      // (#68635) -- the first half of the wrapper is the sentence and its second
+      // half is the CTA, so the wrapper is the card's title bar and CTA text.
+      body = resolve(drawCardText(scenario, true));
+      logLine = resolve(drawCardText(logCell, false));
+    }
+    pronounOtherSet_ = savedOtherSet;
+    pronounOtherFemale_ = savedOtherFemale;
+
+    // The card's choices, in the order RefreshScenario adds them. The handler
+    // dispatches on the lowercased label with String.Contains in a fixed order
+    // -- attack, report, talk, ignore, bother, laugh, hypnotize, attention,
+    // rumor -- and a label matching none changes nothing at all. The game lets
+    // the hero pick; the port draws the one that happens.
+    const int pick = int(cwRng_.below(4));
+    out = AgeUp();
+    out.table = card.table;
+    out.row_id = std::to_string(row + 1);
+    out.title = card.title;
+    out.body = body;
+    out.cta = "What will you do?";  // #46439
+    out.narrative = logLine;
+    if (pick == 0) {
+      // 0x73f2e2c6ac and its three siblings: the coworker's own impact slot
+      // (0x508/0x510) with -6, then a GetRandomNumber(0, 150) against one of the
+      // hero's attributes picks between the HR card and the supervisor card, and
+      // ScenarioCustomAttack(coworker) is pushed either way. The hero's own
+      // stats never move. The port keeps no coworker bar and pushes no card
+      // (shortcut), so the row's own line is what gets logged.
+      out.choice = "Attack " + them;  // #12347
+    } else if (pick == 1 && kind == 2 && h.vampire) {
+      // 0x73f2e2ecf8, the prank card's own fourth button, and the only branch
+      // that builds two cards. GetRandomNumber(0, 100) against the coworker's
+      // willpower decides: the port's coworker carries no attributes, so the
+      // coin is the port's. Success moves the coworker's own slot with -2 and
+      // ImpactNotoriety(-1); failure moves it with -3 and ImpactNotoriety(2),
+      // and pushes the failure card.
+      out.choice = "Hypnotize " + them;  // #23343
+      if (cwRng_.chance(0.5)) {
+        h.vampireNotoriety -= 1;
+        out.narrative = logLine +
+            " I hypnotized " + them + " to act like an animal because of the prank.";  // #24432
+      } else {
+        h.vampireNotoriety += 2;
+        out.narrative = logLine + " I tried to hypnotize " + them + ", but failed.";  // #25436
+      }
+    } else if (pick == 1) {
+      // 0x73f2e2a... the talk lane pushes ScenarioCoworkerTalkingTo with the
+      // subject the card makes up ('how {0} behavior can be construed as
+      // annoying' #60433 and its three siblings) and logs the row's own line.
+      // No stat moves, and the port has no scenario push (shortcut).
+      out.choice = "Have a talk with " + them;  // #22687
+    } else if (pick == 2) {
+      // The polite lane -- ignore, bother, laugh it off, pay no attention --
+      // moves the hero's own slot 0x408 with -2 (the impact the port reads as
+      // happiness) and ImpactDiscipline(hero, 2), and appends one sentence to
+      // the journal: '{0} I did my best to ignore {1} behavior.' (#69556),
+      // '... I didn't let {1} behavior bother me.' (#69559), '{0} I laughed it
+      // off.' (#69581) and '{0} I paid no attention to {1}.' (#69593).
+      out.happiness = pointsForImpact(-2);
+      out.discipline = pointsForImpact(2);
+      if (kind == 0) {
+        out.choice = "Ignore " + them;  // #26382
+        out.narrative = logLine + " I did my best to ignore " + them + " behavior.";
+      } else if (kind == 1) {
+        out.choice = "It doesn't bother me";  // #27502
+        out.narrative = logLine + " I didn't let " + them + " behavior bother me.";
+      } else if (kind == 2) {
+        out.choice = "Laugh it off";  // #28540
+        out.narrative = logLine + " I laughed it off.";
+      } else {
+        out.choice = "Pay no attention";  // #33482
+        out.narrative = logLine + " I paid no attention to " + them + ".";
+      }
+    } else if (kind == 3) {
+      // The rumor card's own fourth button: the hero's slot 0x408 with +3,
+      // ImpactDiscipline(hero, -3), and ScenarioCoworkerInstigateOutbound
+      // (a16_coworker-rumors-enc's Outbound Snippet) is pushed. The port has no
+      // scenario push (shortcut) and logs the row's own line.
+      out.choice = "Start a rumor about " + cwName;  // #39875
+      out.happiness = pointsForImpact(3);
+      out.discipline = pointsForImpact(-3);
+    } else {
+      // The report lane pushes a bare Scenario carrying the coworker and leaves
+      // the journal at the row's own line; no stat moves at all. The card's
+      // label names the supervisor or, when [_coworker+0x1f4] says the
+      // workplace's type is the military one, the commanding officer
+      // ('Report {0} to my supervisor' #35790 and '... commanding officer'
+      // #35789); the port uses the supervisor's wording.
+      out.choice = "Report " + them + " to my supervisor";  // #35790
+    }
+    ++*card.presented;
+    return true;
+  }
+  return false;
 }
 
 bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {

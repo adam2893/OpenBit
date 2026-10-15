@@ -739,6 +739,15 @@ struct Hero {
   std::string careerTrack;  // the raw Seniority Track cell
   int careerStep = 0;       // 0-based index into that track
   int careerYears = 0;
+
+  // The coworkers (REPORT.en.md 105). The office family of 83 is the hero as
+  // somebody's manager; this is the peer next to him, the one the four
+  // ScenarioCoworker* cards talk about. The game keeps a SimWorkplace roster
+  // (SimWorkplace.RefreshCoworkers, which GetCoworker() walks) and draws the
+  // card's person out of it; the port keeps one slot instead, drawn when the
+  // hero takes a job, and the four cards share it for the whole career.
+  std::string cwName;    // the coworker a card is about
+  bool cwFemale = false;
 };
 
 class GameState {

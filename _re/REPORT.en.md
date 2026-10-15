@@ -14895,3 +14895,488 @@ DELTAS : {"discipline": -50, "happiness": 16, "karma": -50, "looks": 0, "smarts"
 What the card adds to the port is not a new mechanic — the hero's year is already full of them — but the friend family's only one-shot and its only card that builds the person it is about. The lover's name, the relationship word and the friend's sex are the port's own draws, the row is the table's, and the one thing the card does that no sibling does — generate a partner to the hero's taste and hand them the friend's label — is the sentence the whole section has been about: `your friend, Ron Mendes's, girlfriend, Nikki Stonemason`, a person assembled from the hero's own preferences and introduced as somebody else's.
 
 The full regression after the section: 47 probes at residue 0 (the `partres.py` entry among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
+
+## 105. The coworker family: four workplace cards, one colleague the roster
+picks, and a journal that never capitalizes his name
+
+The fifth family of pushed cards is not about the hero's family, his school or his
+friends: a16_coworker-annoy-scenarios-enc, a16_coworker-behavior-scenarios-enc,
+a16_coworker-pranks-enc and a16_coworker-rumors-enc are four tables about the person
+sitting next to him at work, and ScenarioCoworkerAnnoying, ScenarioCoworkerInappropriate,
+ScenarioCoworkerPrankInbound and ScenarioCoworkerRumorInbound are their four classes. A
+fifth table of the same family, a16_coworker-hookup-scenarios-enc, was already carried
+by the port's relationship year before this section, and the family's outbound half --
+ScenarioCoworkerInstigateOutbound, ScenarioCoworkerInsult, ScenarioCoworkerSpendTime and
+ScenarioCoworkerReportedToHR -- is still unwired; this section is the inbound quarter.
+
+Three things separate these four cards from the friend cards that precede them in the
+yearly chain. The first is the person: the game keeps a SimWorkplace roster
+(SimWorkplace.RefreshCoworkers) and GetCoworker() picks the colleague a card is about
+out of it, so the card is about somebody the hero's career produced rather than somebody
+his school produced. The second is the cap: every one of the four classes reads
+PresentedCountForScenario in its own gate and stops after a different number of showings
+-- five for the annoyance, four for the inappropriate behaviour, three for the prank and
+the rumor -- where the friend cards carry no cap at all. The third is the journal: the
+card's own dictionary renames the coworker inside the row's prose, and the journal
+sentence is built from the lower-case half of that dictionary, so the entry begins 'my
+coworker, Robin, irked me' and never capitalizes the name.
+
+The family also carries the most lopsided ratio of code to draw in the whole yearly
+chain. The four .ctor methods are three-instruction thunks that do nothing but call
+Scenario::.ctor(false), so the title, the body, the narrative and the choices are all
+built inside RefreshScenario, whose four bodies run 299 to 469 instructions -- and none
+of them draws a random number, none of the four GetCoworker() methods does either, and
+neither does the base class. The single draw of the whole family happens inside the
+DataHub picker, which filters the table's rows and then draws one index out of what is
+left.
+
+What the port models is the four cards, one coworker drawn once and kept for the life,
+the dictionary, the four caps, the labels, the stat deltas and the journal lines, with
+two shortcuts the rest of this section names: the roster walk becomes a single slot, and
+the coin that decides whether a card is pushed at all is the port's own.
+
+### 105.1 The family
+
+The four classes are built the same way. Each is a Scenario subclass with exactly two
+fields: a SimCoworker at 0x170 and a String at 0x178, the narrative. Each carries the
+same five methods, and their sizes are the family's own signature -- the GetCoworker()
+walk is the same 286 instructions in all four, while the gates are 74 and the refreshes
+and handlers are what the card's own table makes them:
+
+| Class (il2cpp_dump.txt) | Table | .ctor | RefreshScenario | ChoiceSelectedAtIndex | GetCoworker | ScenarioIsEligibleForRandomPush |
+| --- | --- | --- | --- | --- | --- | --- |
+| ScenarioCoworkerAnnoying (55136) | a16_coworker-annoy-scenarios-enc | 0x73f2e2ced4, 3 | 0x73f2e2bb20, 453 | 0x73f2e2c6ac, 384 | 0x73f2e2c234, 286 | 0x73f2e2cdac, 74 |
+| ScenarioCoworkerInappropriate (55144) | a16_coworker-behavior-scenarios-enc | 0x73f2e2e120, 3 | 0x73f2e2cee0, 441 | 0x73f2e2da3c, 367 | 0x73f2e2d5c4, 286 | 0x73f2e2dff8, 74 |
+| ScenarioCoworkerPrankInbound (55152) | a16_coworker-pranks-enc | 0x73f2e2f8d0, 3 | 0x73f2e2e12c, 469 | 0x73f2e2ecf8, 684 | 0x73f2e2e880, 286 | 0x73f2e2f7a8, 74 |
+| ScenarioCoworkerRumorInbound (55164) | a16_coworker-rumors-enc | 0x73f2e31244, 3 | 0x73f2e301e8, 299 | 0x73f2e30b0c, 388 | 0x73f2e30694, 286 | 0x73f2e3111c, 74 |
+
+All four constructors are the same three instructions -- mov w1, wzr; mov x2, xzr; b
+0x73f2eb9db8 -- which is Scenario::.ctor(Boolean) with false. The base class does the
+rest of the setup a Scenario needs (its 50.0 float at 0x120, its 1 at 0x168, its false
+at 0x110), and the subclass adds nothing at all.
+
+The rows are five peer classes, one per table plus the already-wired hookup table. The
+four this section port carry the same two text columns the friend tables carry, under
+different names, and a gender column each:
+
+* DataCoworkerAnnoyScenario (il2cpp_dump.txt:7945): Scenario 0x10, LogVersion 0x18,
+  HeroGender 0x20, CoworkerGender 0x24.
+* DataCoworkerBehaviorScenario (7959): Scenario 0x10, LogVersion 0x18, SenderGender
+  0x20, RecipientGender 0x24 -- the sender is the coworker and the recipient the hero.
+* DataCoworkerPrank (7996): InboundScenario 0x10, InboundLogVersion 0x18, OutboundSnippet
+  0x20, VampireBoolean 0x28.
+* DataCoworkerRumor (8010): InboundScenarioSnippet 0x10, InboundLogVersionSnippet 0x18,
+  OutboundSnippet 0x20, VictimGender 0x28 -- the victim is the hero.
+* DataCoworkerHookupScenario (7973), already carried: InboundScenario 0x10,
+  InboundLogVersion 0x18, OutboundScenario 0x20, OutboundLogVersion 0x28, SenderGender
+  0x30, RecipientGender 0x34, SupervisorAppropriateBoolean 0x38.
+
+Five loaders read the five CSVs and five pickers draw from them. Each picker is a static
+DataHub method with the same shape: a guard flag, the class initialisation, a lazy cache
+field, and then a fresh ArrayList filled from the matching loader when the cache is empty
+or holds nothing -- after which every row is tested and the survivors are drawn from
+once. The behavior picker is the narrowest and the prank picker the widest:
+
+| Picker (DataHub) | Cache | Insns | Rows kept when |
+| --- | --- | --- | --- |
+| GetRandomCoworkerBehaviorScenarioForCoworkerGenderAndHeroGender at 0x73f2cc7398 | +0x530 | 289 | RecipientGender is 2 or the hero's, then SenderGender is 2 or the coworker's |
+| GetRandomCoworkerAnnoyScenarioForCoworkerGenderAndHeroGender at 0x73f2cc781c | +0x538 | 289 | HeroGender is 2 or the hero's, then CoworkerGender is 2 or the coworker's |
+| GetRandomCoworkerHookupScenarioForSenderGenderAndRecipientGenderAndIsSupervisorInbound at 0x73f2cc7ca0 | +0x540 | 297 | SenderGender then RecipientGender, then SupervisorAppropriate when the inbound half wants a supervisor |
+| GetRandomCoworkerPrank at 0x73f2cc8144 | +0x548 | 298 | VampireBoolean equals the hero's own IsVampire() |
+| GetRandomCoworkerRumorForVictimGender at 0x73f2cc85ec | +0x550 | 287 | VictimGender is 2 or the hero's |
+
+The loaders are LoadCoworkerBehaviorSet 0x73f2b8f0c0 (214 instructions),
+LoadCoworkerAnnoySet 0x73f2b8f418 (231), LoadCoworkerHookupSet 0x73f2b8f7b4 (257),
+LoadCoworkerPrankSet 0x73f2b8fbb8 (174) and LoadCoworkerRumorSet 0x73f2b8fe70 (196). Each
+loads assets data/a16_coworker-annoy-enc, -behavior-enc, -hookup-enc, -pranks-enc and
+-rumors-enc through Resources, decrypts the blob, splits it on 0x0a and then by the CSV
+regex, and decodes the gender columns the same way in every table: the string 'male'
+becomes 0, 'female' becomes 1, and anything else -- including the empty cell -- becomes
+2, the wildcard the pickers compare against.
+
+GetCoworker() is the one piece of the family every card shares, and it is the same
+instructions in all four. It walks to the hero the way the whole game does -- the static
+cell 0x5c30250 gives the GameManager class, +0xB8 its static fields, element zero the
+instance, +0x28 the SimHero -- and asks first CurrentlyHasAJob() and then
+CurrentlyInTheMilitary(); a hero with neither gets null. Then
+[hero+0x138] gives the occupation, get_Workplace() the workplace,
+SimWorkplace.RefreshCoworkers() rebuilds the list behind it, and the walk over
+[workplace+0x18] starts. A colleague is skipped when he is the hero's current lover, an
+ex-lover or a friend, or when his Type at 0x1F0 is 1. What is left is scored:
+((100 - Att_coolness at 0x23C) + (100 - Att_professionalism at 0x240)) * 0.5, and a
+colleague is accepted when his total relationship strength is under 25.0 and his score
+beats the best one seen so far and 70.0. The winner is stored at [this+0x170] and mirrored
+into the card's FocusPerson slot at 0x60; a hero whose whole roster is friends, lovers or
+well-adjusted professionals gets null and the card is not built at all.
+
+### 105.2 The card
+
+The four refreshes are the same program with one table and one title swapped, so the
+annoyance card's 453 instructions stand for three of them. It starts the way every
+refresh in this report starts -- the static chain to the hero -- and then calls
+GetCoworker() and stores the result twice: the SimCoworker at [this+0x170] and the same
+object as the card's FocusPerson at 0x60. The picker follows:
+
+* ScenarioCoworkerAnnoying: GetRandomCoworkerAnnoyScenarioForCoworkerGenderAndHeroGender
+  at 0x73f2cc781c with (coworker.Gender at +0x1c, hero.Gender at +0x1c).
+* ScenarioCoworkerInappropriate: GetRandomCoworkerBehaviorScenarioForCoworkerGenderAndHeroGender
+  at 0x73f2cc7398 with (coworker.Gender, hero.Gender) -- the coworker is the sender and the
+  hero the recipient.
+* ScenarioCoworkerPrankInbound: GetRandomCoworkerPrank at 0x73f2cc8144 with
+  hero.IsVampire() at 0x73f30e1058.
+* ScenarioCoworkerRumorInbound: GetRandomCoworkerRumorForVictimGender at 0x73f2cc85ec with
+  the hero's gender alone.
+
+The row the picker returns is read twice, and both reads go through the identity cell
+0x5C31470, the literal '{0}': the Scenario column (row+0x10) becomes K and the Log
+Version column (row+0x18) becomes L. Then the dictionary is built. Three of the four
+classes build two of them, one for the body and one for the journal, each a
+Dictionary<string,string> (ctor 0x73f49adbec, class cell 0x5C2ECA8) filled through the
+shared generic trampoline 0x73f42540f8 four times. The four entries map two tokens to two
+templates: the token '<coworker>' (#8833) to 'your {0}, {1},' (#68451) in the body's
+dictionary and to 'my {0}, {1},' (#62743) in the journal's, and the token
+'<coworker-possessive>' (#8832) to the same pair with the name's possessive instead of the
+plain name. The two arguments are the coworker's relationship status through
+RelationshipStatusStringAndCapitalize and his name, the second one passed through
+AddPossessionToNameString for the possessive entry.
+
+The parse itself is a BracketParser (ctor 0x73f337959c, class cell 0x5C30978) whose
+dictionary slots sit at +0x10 and +0x18 and whose +0x28 takes the coworker, which is how a
+token that survives into the reaction can still be resolved. The body is then built and
+stored first: [this+0x48] = String.Format(cell 0x5C35668, GetParsedBodyString(K)), where
+the cell is the family's wrapper '{0}\n\nWhat will you do?' (#68715 -- the literal holds
+real newlines, which is why a single-line lookup misses it and why this report writes it
+out). The narrative follows into [this+0x178] -- not 0x188, which is the friend-lover
+card's slot -- as String.Format(cell 0x5C31470, GetParsedNarrativeString(L)), so the
+journal entry is exactly the parsed row and nothing more.
+
+The rumor card is the exception to all of it: 299 instructions instead of 453, no
+dictionary, no BracketParser dictionary entries (its parser takes the coworker and a
+DoNotCapitalize flag at +0x30), and two three-slot Format calls instead. Its body is
+[this+0x48] = String.Format(wrapper, String.Format(cell 0x5C60ED8, status, name,
+GetParsedBodyString(snippet))), where 0x5C60ED8 is 'Your {0}, {1}, started a rumor that
+{2}.' (#50783), and its narrative is written directly as String.Format(cell 0x5C60EE8,
+status, name, GetParsedNarrativeString(snippet)) with 0x5C60EE8 = 'My {0}, {1}, started a
+rumor that {2}.' (#30998) -- no identity wrapper, which is why the rumor entry is the one
+journal line in the family that starts with a capital.
+
+The choices go into [this+0x108], each a ScenarioChoice with the labels below, and the
+card then sets [this+0x110] = true (the Scenario.RandomizeChoices flag), writes its title
+to [this+0x38] -- 'Workplace Annoyance' #47158, 'Workplace Behavior' #47159, 'Workplace
+Prank' #47161, 'Rumor' #36375 -- and stamps one SimCoworker field with the hero's age
+(0x22C for the annoyance, 0x220 for the behaviour, 0x224 for the prank, 0x228 for the
+rumor; the port has no reader for those). No refresh writes [this+0xb8]: the family has no
+ScenarioBarGraph at all, so these cards carry no bar under the prose. Two of the labels are
+conditional. The report button is added only when SimCoworker.GetSupervisor() finds a
+supervisor, and its wording follows [coworker+0x1f4]: a workplace whose type is the
+military one gets 'Report {0} to my commanding officer' (#35789) and every other gets
+'Report {0} to my supervisor' (#35790). The prank card's fourth button is 'Hypnotize {0}'
+(#23343) only for a vampire hero whose colleague is mortal, and 'Have a talk with {0}'
+otherwise.
+
+The handler is the same shape in all four classes and it is the family's clearest
+illustration of a pattern this report has met before: ChoiceSelectedAtIndex takes the
+index, fetches the label out of [this+0x108], lower-cases it, and then asks four
+String.Contains questions in a fixed order -- attack, report, talk, ignore or bother or
+laugh or hypnotize, and then the last lane's own token. The index only picks the choice;
+what the branch does is decided by the words in the label. A label that matches none of
+the tests falls through to the shared tail with the narrative unchanged, exactly as the
+friend cards do.
+
+The buttons, the words they dispatch on and what each lane leaves behind:
+
+| Card | Button | Token | Coworker | Hero | Journal | Pushed after the reply |
+| --- | --- | --- | --- | --- | --- | --- |
+| Annoying | Attack {0} #12347 | attack | impact slot 0x508/0x510 with -6 | none | the row's own line | ScenarioCustomAttack(coworker), and by a (0,150) draw against one of the hero's attributes either ScenarioWorkplaceDisciplineHR or ScenarioWorkplaceDisciplineSupervisor |
+| Annoying | Have a talk with {0} #22687 | talk | none | none | the row's own line | ScenarioCoworkerTalkingTo(coworker, 'how {0} behavior can be construed as annoying' #60433) |
+| Annoying | Ignore {0} #26382 | ignore | none | slot 0x408 with -2 and ImpactDiscipline(2) | the line plus ' I did my best to ignore {1} behavior.' #69556 | none |
+| Annoying | Report {0} to my supervisor #35790 | report | none | none | the row's own line | a bare Scenario carrying the coworker |
+| Inappropriate | Attack {0} #12347 | attack | -6 | none | the row's own line | ScenarioCustomAttack(coworker) and the HR or supervisor card, chosen by a (0,2) draw with no attribute test |
+| Inappropriate | Have a talk with {0} #22687 | talk | none | none | the row's own line | ScenarioCoworkerTalkingTo(coworker, 'how {0} behavior is not appropriate in the workplace' #60434) |
+| Inappropriate | It doesn't bother me #27502 | bother | none | slot 0x408 with -2 and ImpactDiscipline(2) | the line plus ' I didn't let {1} behavior bother me.' #69559 | none |
+| Inappropriate | Report {0} to my supervisor #35790 | report | none | none | the row's own line | a bare Scenario carrying the coworker |
+| Prank | Attack {0} #12347 | attack | -6 | none | the row's own line | ScenarioCustomAttack(coworker), the HR or supervisor card and the (0,150) attribute draw |
+| Prank | Hypnotize {0} #23343 | hypnotize | -2 on success and -3 on failure | ImpactNotoriety(-1) or ImpactNotoriety(2) | ' ' plus the row's line plus 'I hypnotized {0} to act like an animal because of the prank.' #24432, or 'I tried to hypnotize {0}, but failed.' #25436 | the animal card, and whatever get_Hypnotize() hands back |
+| Prank | Have a talk with {0} #22687 | talk | none | none | the row's own line | ScenarioCoworkerTalkingTo(coworker, 'why you don't appreciate {0} little prank' #68058) |
+| Prank | Laugh it off #28540 | laugh | none | slot 0x408 with -2 and ImpactDiscipline(2) | the line plus ' I laughed it off.' #69581 | none |
+| Prank | Report {0} to my supervisor #35790 | report | none | none | the row's own line | a bare Scenario carrying the coworker |
+| Rumor | Attack {0} #12347 | attack | -6 | none | the row's own line | ScenarioCustomAttack(coworker), the HR or supervisor card and the (0,150) attribute draw |
+| Rumor | Have a talk with {0} #22687 | talk | none | none | the row's own line | ScenarioCoworkerTalkingTo(coworker, 'why you don't appreciate false rumors being spread about you' #68056) |
+| Rumor | Pay no attention #33482 | attention | none | slot 0x408 with -2 and ImpactDiscipline(2) | the line plus ' I paid no attention to {1}.' #69593 | none |
+| Rumor | Start a rumor about {0} #39875 | rumor | none | slot 0x408 with +3 and ImpactDiscipline(-3) | the row's own line | ScenarioCoworkerInstigateOutbound(coworker) |
+
+Two of the lanes deserve a paragraph each. The attack lane is the family's only lane that
+touches nothing of the hero's own: the -6 goes to the colleague's relationship slot, and
+everything after that is either a code-side card or a draw. The annoyance, prank and rumor
+versions draw GetRandomNumber(0, 150) and compare it against one float of the hero's; the
+inappropriate behaviour version has no such test at all and goes straight to
+GetRandomNumber(0, 2). Either way the sub-branch is between the HR card and the supervisor
+card -- the supervisor lane looks for SimWorkplace.GetSupervisor(), falls back to the HR
+card when there is none or when the supervisor is the hero's current lover, and formats
+its own label from the relationship status and an indefinite article -- and
+ScenarioCustomAttack(coworker) is pushed on top of it, so an attack is always two cards
+deep.
+
+The hypnotize lane is the prank card's own and the family's largest: it builds a
+BracketParser over a nine-piece Concat of the hero's relationship status, the colleague's
+display name, the relationship word and two commas, registers the bare names for the
+'<coworker>' and '<coworker-possessive>' tokens, and then draws GetRandomNumber(0, 100)
+against the colleague's willpower float at +0xa8. Success parses 'I hypnotized
+<him/her> to act like an animal because of the prank.' (#24432), draws a one-element list
+holding 'Whatever you say' (#46497) as the reaction's title, builds the reaction's body out
+of six pieces (the gaze line, a blank line, a pronoun, an animal list, a pronoun again and
+' work station.' #4141), calls an unnamed corridor at 0x73f46b955c that hands back the
+extra scenario the action produced, pushes both, and moves ImpactNotoriety(-1) with the
+colleague's slot at -2. Failure parses 'I tried to hypnotize <him/her>, but failed.'
+(#25436), draws 'What are you doing?' (#46376) as the title, builds a four-piece body
+ending ' shook it off and laughed in your face.' (#3372), pushes the card and moves
+ImpactNotoriety(2) with the colleague's slot at -3.
+
+Every path ends in the same tail: the D singleton's log at [D+0x48] takes the journal
+string and LifeInterface.RefreshUI() is called on [D+0x10]. The four handlers draw only in
+the lanes described above -- the annoyance handler (0,150) then (0,2), the inappropriate
+one (0,2) alone, the prank (0,150), (0,2) and (0,100), the rumor (0,150) and (0,2) -- and
+none of them writes the title, the body, the choices or the wrapper.
+
+### 105.3 Who can ask: four tests, a colleague, and a picker one draw wide
+
+ScenarioIsEligibleForRandomPush is 74 instructions in each of the four classes and asks
+four questions, in this order:
+
+1. Is the hero 18 or older? The gate loads the hero through the same static chain and
+   compares [hero+0x20] against 0x12, branching to false below it.
+2. Does he have a job or the military? CurrentlyHasAJob() at 0x73f2f0e040 passing is enough;
+   if it fails, CurrentlyInTheMilitary() at 0x73f2f0e0b4 has to pass.
+3. Has this card been shown too often? PresentedCountForScenario at 0x73f3736430 is called
+   with the class's own type name and its result is compared with B.LE against the card's
+   own bound: 4 for the annoyance, 3 for the inappropriate behaviour, 2 for the prank and
+   2 for the rumor. A count above the bound drops the card, so the four are shown at most
+   five, four, three and three times in a life. Nothing here is a one-shot.
+4. Does GetCoworker() find a colleague? A hero whose roster walk comes back empty gets no
+   card of the family at all.
+
+The picker adds the table's own tests and then draws exactly once, on the filtered set:
+annoyance keeps a row whose HeroGender is the wildcard 2 or the hero's, then one whose
+CoworkerGender is the wildcard or the coworker's; inappropriate behaviour does the same
+with the recipient against the hero and the sender against the coworker; the rumor keeps a
+row whose VictimGender is the wildcard or the hero's; the prank ignores gender entirely and
+keeps a row when its Vampire flag equals the hero's own vampirism. The draw is
+GetRandomNumber(0, count) through GameReference at 0x73f32ab2a8, one call, with no retry
+loop -- if the filtered set is empty the card is simply not built.
+
+The port models four of the gate's four questions: the age floor, the job-or-military
+test, and the two limits it can see (its own counters and the slot it keeps for the
+coworker). It has no Sexuality field, so nothing else is missing here -- unlike the
+friend-lover card, this gate does not read one. What the port cannot do is the roster:
+there is no SimWorkplace and no SimCoworker in it, so the colleague is one slot drawn once
+and kept, and the score the game computes -- the relationship strength under 25.0 and the
+combined coolness and professionalism over 70.0 -- has no inputs at all.
+
+### 105.4 The rows
+
+The four tables are the family's content, and they are uneven in the way the friend tables
+were not: the annoyance table is a long list of small office crimes, the behaviour table is
+the shortest and the most gated, the prank table is the largest and half of it is vampire
+content, and the rumor table is entirely about what has been said behind the hero's back.
+
+| table | bytes | rows | what the row is | gated how |
+| --- | --- | --- | --- | --- |
+| a16_coworker-annoy-scenarios-enc | 12334 | 40 | a colleague doing something small and unbearable next to the hero, in the second person and in full sentences | 2 rows |
+| a16_coworker-behavior-scenarios-enc | 5758 | 20 | the colleague who crosses a line -- the slapped rear, the whiteboard pitch, the snickering at the monitor | 4 rows |
+| a16_coworker-pranks-enc | 22185 | 65 | the colleague's prank discovered by the hero, and the family's only vampire block | 31 rows, by the Vampire flag |
+| a16_coworker-rumors-enc | 12337 | 46 | a snippet of what the colleague is telling the office, wrapped by the rumor sentence | 5 rows, by the victim |
+
+The gender gating is thinner than the friend family's, and it is worth listing because each
+of the four gated pairs is one card seen from both sides. The annoyance table gates two rows
+out of forty, rows 4 and 5, and they are the same card: a men's room with one stall for a
+male hero and a male colleague, and its mirror for a female hero and a female colleague.
+The behaviour table gates four of its twenty rows in two pairs: rows 1 and 2 are the slapped
+rear (a male sender with a female recipient, and the mirror), and rows 11 and 12 are the
+colleague snickering at the hero's monitor (gated on the recipient alone). The rumor table
+gates five of its forty-six: row 19 (a male victim and a eunuch), row 33 (a male victim and
+a micropenis), row 34 (a female victim and a size queen), row 35 (a male victim and a
+cuckold) and row 44 (a female victim and a pregnancy). The prank table gates nothing by
+gender and instead splits its content in half: 31 of its 65 rows carry the Vampire flag and
+are only drawn for a vampire hero, and the remaining 34 are the mortal office pranks.
+
+The vocabulary is the friend tables' vocabulary with one substitution. The annoy table
+carries 80 '<coworker>' tokens and 38 '<he/she>', 30 '<his/her>', 12 '<rb>' and 3
+'<him/her>'; the behaviour table is dense in the same way -- 39 '<coworker>' and 12 '<rb>'
+across only 20 rows; the prank table carries 156 '<coworker>', 37 '<coworker-possessive>' and
+28 '<rb>'; the rumor table only 43 '<coworker>' and 20 '<rb>', because its prose puts the
+colleague's name outside the sentence rather than inside it. The alternative lists that make
+these cards funny are the largest in the report: a 26-item list of lunches a colleague can
+devour in the break room, a 16-item list of noises for one to make while doing it, a 20-item
+list of topics to talk about with one's mouth full, and a 25-item list for the rumour the
+colleague starts. The rumor table's own two specialty tokens are '<drug-illegal>' (6 uses)
+and '<country-other>' (6 uses), which resolve against tables the port already carries.
+
+### 105.5 Shortcuts
+
+1. The roster walk is a single slot. The game keeps a SimWorkplace with a refreshed
+   CoworkerArray and GetCoworker() scores every colleague on the list; the port has neither
+   the roster nor the coworker's own attributes (coolness at 0x23C and professionalism at
+   0x240, the relationship strength, the Type flag), so it draws one name and one sex once
+   and keeps them for the whole life. The game refreshes the roster on every job change.
+2. The coin is the port's. No class in the family carries a push rate -- the four gates ask
+   four questions and the game's own random-push queue is what decides -- so the 5 percent
+   this section's function spends per card, on its own stream, is a port decision, and it is
+   what keeps a long career from being nothing but coworker cards.
+3. The attack lane's attribute test is dropped. The (0,150) draw against one of the hero's
+   floats decides between the HR card and the supervisor card; the port has no such float
+   and pushes no card, so it logs the row's line and carries the -6 only as a comment.
+4. The talk lane's card is not pushed. ScenarioCoworkerTalkingTo takes the colleague and one
+   of four about-strings, and the port has no scenario push for any of them.
+5. The report lane always offers its button. In the game the choice exists only when
+   SimCoworker.GetSupervisor() finds somebody, and its wording depends on
+   [coworker+0x1f4]; the port has no supervisor and no workplace type, so it always writes
+   the supervisor's wording.
+6. The rumor lane's outbound card is not pushed either, and the port's own card is
+   identified by its table rather than its title: the game's rumor title cell is 'Rumor',
+   the same title the friend-rumor card of the section before uses, so a reader of the
+   port's events has to look at the table column.
+7. The hypnotize lane is unreachable in the port's model and its draw is a coin. The button
+   exists only for a vampire hero whose colleague is mortal, and a vampire life in the port
+   never reaches any coworker card: the yearly chain tries vampireYear first and it claims
+   the year, which is why the probe's vampire pass drew zero cards of the family and why
+   the branch never appears in the counts below. The (0,100) roll against the colleague's
+   willpower float at +0xa8 becomes a 50 percent coin, the same shortcut the friend-lover
+   card uses for its own hypnotize.
+8. ImpactNotoriety has no reader in the port's per-year deltas, so the hypnotize lane's -1
+   and +2 are carried only in the code's own comment.
+9. The four caps are the port's own counters, not the game's store. PresentedCountForScenario
+   is a dictionary on the game's life object keyed by type name; the port keeps four
+   integers on its own life struct instead, with the same bounds.
+10. The gender columns are compared as text. The loader decodes 'male' and 'female' into 0
+    and 1 and everything else into the wildcard 2, and the port's filter reads the cell's
+    string and treats the empty cell, 'both', 'all', 'any' and the literal '2' the same way.
+11. The stale-age stamps are ignored. Each refresh writes the hero's age into one
+    SimCoworker field (0x22C, 0x220, 0x224, 0x228 by card) for the outbound half of the
+    family to read later; the port has no outbound half.
+12. Three of the four bodies keep the game's lower-case journal: the dictionary's 'my' half
+    is written in lower case in the binary itself, so the port reproduces 'my coworker,
+    Robin, irked me' rather than capitalizing it. Only the rumor card's journal is
+    capitalized, and that is because its narrative is the one that is not wrapped by the
+    identity Format.
+13. The fifth table of the family stays where it was. a16_coworker-hookup-scenarios-enc is
+    already fired from the relationship year at 5 percent, and this section does not move
+    it: the same SupervisorAppropriate column the hookup picker reads is what the port's
+    earlier section already modelled as a plain pool.
+
+```
+lives 200
+cards 725
+cards per life {0: 46, 1: 10, 2: 20, 3: 22, 4: 22, 5: 30, 6: 17, 7: 13, 8: 8, 9: 8, 10: 2, 11: 2}
+branches {'attack': 168, 'polite': 162, 'report': 145, 'rumor': 39, 'talk': 211}
+branches by card {('annoy', 'attack'): 67, ('annoy', 'polite'): 33, ('annoy', 'report'): 52, ('annoy', 'talk'): 56, ('inapp', 'attack'): 52, ('inapp', 'polite'): 46, ('inapp', 'report'): 44, ('inapp', 'talk'): 42, ('prank', 'attack'): 22, ('prank', 'polite'): 42, ('prank', 'report'): 49, ('prank', 'talk'): 65, ('rumor', 'attack'): 27, ('rumor', 'polite'): 41, ('rumor', 'rumor'): 39, ('rumor', 'talk'): 48}
+annoy rows drawn 36 of 40 undrawn [4, 6, 13, 33]
+inapp rows drawn 20 of 20 undrawn []
+prank rows drawn 31 of 65 undrawn [2, 29, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+rumor rows drawn 39 of 46 undrawn [3, 7, 8, 11, 16, 26, 32]
+vampire-flagged rows drawn 0
+vampire pass lives 40 cards 0
+hero age at the card min 18 max 80
+runtime 46s
+failures 0
+```
+
+The probe drives two hundred lives -- seeds 1 through 40 in both genders at 80 years and
+at 50, then a vampire pass of seeds 1 through 20 in both genders at 80 -- and reads every
+event whose table is one of the four, since the rumor card's title is not unique. It counts
+725 coworker cards, and the cards per life curve shows the caps doing their work: 46 lives
+see none at all, the median life sees four to seven, and the longest career in the set sees
+eleven, against the ceiling of fifteen the four caps allow (five annoyance, four behaviour,
+three prank, three rumor). A separate pass of 120 lives run to a hundred years reaches
+every one of those four ceilings exactly -- five annoyances in a life, four inappropriate
+behaviours, three pranks, three rumors -- and never passes one. The branch split is attack 168, talk 211, polite 162, report 145
+and the rumor lane 39; no hypnotize card appears, because the vampire pass is the only place
+that branch could occur and a vampire life in this model never reaches a coworker card.
+
+The rows drawn are the other half of the census. The behaviour table is small enough that
+every one of its 20 rows turns up. The annoyance table shows 36 of 40 -- rows 4, 6, 13 and
+33 never came up in these 200 lives. The rumor table shows 39 of its 46, missing rows 3, 7,
+8, 11, 16, 26 and 32. The prank table shows 31 of 65, which is exactly its mortal half
+minus two rows: every one of its 31 vampire-flagged rows 35 through 65 is out of reach, as
+are rows 2 and 29 of the mortal half. Every card lands between ages 18 and 80, which is the
+gate's own floor and the oldest life the probe runs.
+
+The probe checks each card against its row: the row index is in range, the card's table is
+the one its title claims, the hero's age is over the gate's floor, the row's gender column
+-- Hero Gender, Recipient Gender or Victim Gender, whichever the card's picker reads -- is
+the wildcard or the hero's own gender, the prank card's Vampire flag equals the hero's
+vampirism, the body is the row's Scenario cell under the dictionary (each '<coworker>'
+rendered as 'your coworker, NAME,' and each '<coworker-possessive>' as 'your coworker,
+NAME's,', every alternative list drawn, every pronoun pair resolved), and for the rumor
+card the two three-slot templates around the two snippets. One coworker name has to hold for
+the whole card and for every card of the same life, and every pronoun pair has to agree on
+one sex for that name. The label is checked against the branch it dispatches on, including
+the pronoun after Attack, Hypnotize and Report and the name after Start a rumor about. The
+non-zero deltas are checked exactly: nothing at all for the attack, talk, report and
+hypnotize lanes, happiness -8 with discipline 8 for the four polite lanes, and happiness 16
+with discipline -16 for the rumor lane. The journal is checked against the row's Log Version
+cell plus the tail that branch appends, and finally nothing drawn is left behind: a token
+surviving into the body or the journal counts as residue.
+
+Six samples are printed below.
+
+```
+=== a1  (annoy)
+seed 1  male  United States  age 36  row 39  coworker Kravitz Shott (?)
+table cells : Hero Gender -  Coworker Gender -  Vampire -
+TITLE  : Workplace Annoyance
+BODY   : You're having a difficult time focusing on your work with your coworker, Kravitz Shott, incessantly vaping right next to you.
+CHOICE : Attack him
+LOG    : my coworker, Kravitz Shott, irked me when he kept vaping near me while I was trying to work.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a2  (inapp)
+seed 1  male  United States  age 20  row 18  coworker Kravitz Shott (?)
+table cells : Recipient Gender -  Sender Gender -  Vampire -
+TITLE  : Workplace Behavior
+BODY   : your coworker, Kravitz Shott, interrupts the team meeting, once again, to complain about the cleanliness of the bathroom facilities.
+CHOICE : Have a talk with him
+LOG    : my coworker, Kravitz Shott, interrupted the team meeting to complain about the cleanliness of the bathroom facilities.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a3  (rumor)
+seed 2  male  United States  age 56  row 43  coworker Kimmie Trovato (?)
+table cells : Victim Gender -  Vampire -
+TITLE  : Rumor
+BODY   : Your coworker, Kimmie Trovato, started a rumor that you performed sexual favors during your interview in order to secure the position.
+CHOICE : Pay no attention
+LOG    : My coworker, Kimmie Trovato, started a rumor that I performed sexual favors during my interview in order to secure the position. I paid no attention to her.
+DELTAS : {"discipline": 8, "happiness": -8, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a4  (inapp)
+seed 1  male  United States  age 55  row 3  coworker Kravitz Shott (male)
+table cells : Recipient Gender -  Sender Gender -  Vampire -
+TITLE  : Workplace Behavior
+BODY   : You enter the breakroom for what you thought was going to be a team-building lunch when your coworker, Kravitz Shott, rolls out a whiteboard and starts pitching you on his network marketing business opportunity.
+CHOICE : Report him to my supervisor
+LOG    : my coworker, Kravitz Shott, tried recruiting me into a network marketing scheme.
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== a5  (rumor)
+seed 2  male  United States  age 23  row 23  coworker Kimmie Trovato (?)
+table cells : Victim Gender -  Vampire -
+TITLE  : Rumor
+BODY   : Your coworker, Kimmie Trovato, started a rumor that you steal co-workers' food out of the refrigerator.
+CHOICE : Start a rumor about Kimmie Trovato
+LOG    : My coworker, Kimmie Trovato, started a rumor that I steal my co-workers' food out of the refrigerator.
+DELTAS : {"discipline": -16, "happiness": 16, "karma": 0, "looks": 0, "smarts": 0}
+
+=== b1  (rumor)
+seed 2  male  United States  age 59  row 1  coworker Kimmie Trovato (?)
+table cells : Victim Gender -  Vampire -
+TITLE  : Rumor
+BODY   : Your coworker, Kimmie Trovato, started a rumor that you have, not just one, but many venereal diseases.
+CHOICE : Start a rumor about Kimmie Trovato
+LOG    : My coworker, Kimmie Trovato, started a rumor that I have, not just one, but many venereal diseases.
+DELTAS : {"discipline": -16, "happiness": 16, "karma": 0, "looks": 0, "smarts": 0}
+```
+
+The four cards close the inbound side of the family. What is left of it is the outbound
+half -- the cards the colleague is the subject of rather than the author of -- and the two
+classes of the hookup table that the relationship year already fires but never narrates.
+
+The full regression after the section: 49 probes at residue 0 (the new `cwres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 90  recoverable: 89`, the port gap at `ENTRIES 90 rendered-by-port 89 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.

@@ -70,6 +70,14 @@ struct Life {
   // 104): its gate reads the count and pushes only at zero, so that card is the
   // family's one-shot.
   int loverPresented = 0;
+  // The four coworker cards' own PresentedCountForScenario counters (REPORT.en.md
+  // 105). Their gates read the count and withhold the card once it has been
+  // shown N+1 times, with N = 4 (annoyance), 3 (inappropriate behaviour),
+  // 2 (prank) and 2 (rumor).
+  int cwAnnoyPresented = 0;
+  int cwInappPresented = 0;
+  int cwPrankPresented = 0;
+  int cwRumorPresented = 0;
 };
 
 class Sim {
@@ -385,6 +393,14 @@ class Sim {
   // them to the friend, or (as a vampire) hypnotizes them. It is the family's
   // only one-shot card and it draws on its own stream (flRng_).
   bool friendLoverYear(Life& life, AgeUp& out, int forcedChoice);
+  // The coworker family (REPORT.en.md 105): four cards about the person the
+  // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
+  // a rumor -- out of a16_coworker-annoy-scenarios-enc,
+  // a16_coworker-behavior-scenarios-enc, a16_coworker-pranks-enc and
+  // a16_coworker-rumors-enc. Each carries its own presented cap and none of
+  // them draws a random number, so the coin is the port's; they share one
+  // coworker and draw on their own stream (cwRng_).
+  bool coworkerYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -525,6 +541,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng partyRng_;
   // The friend-lover card's own stream (REPORT.en.md 104).
   Rng flRng_;
+  // The coworker family's own stream (REPORT.en.md 105).
+  Rng cwRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
