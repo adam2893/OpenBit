@@ -15613,3 +15613,159 @@ cards the coworker section named, and the friend threesome and status cards that
 the yearly chain entirely.
 
 The full regression after the section: 50 probes at residue 0 (the new `fstres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, the persistent test at `friend spend-time cards: {'accept': 45, 'cards': 115, 'refuse': 70}` and the benchmark reaching age 34.
+
+## 107. The friend-rumor outbound card: nine reactions to the rumor the hero just spread
+
+Section 102 ported the card a friend opens when they start a rumor *about* the hero. That
+card's fourth choice -- "Start a rumor about him" -- does not only move stats: with
+ImpactDiscipline(-3) and ImpactKarma(-3) behind it, it builds
+`ScenarioFriendRumorOutbound(friend, retaliatory: true)` and pushes it as a child scenario
+at the link the card keeps at 0x128. Section 107 is that child card: the answer, in the
+friend's own words, drawn from the *other* half of the same table.
+
+### 107.1 The card
+
+`ScenarioFriendRumorOutbound` sits at `il2cpp_dump.txt:40906`. Its fields are `0x170
+SimPerson _friend`, `0x178 System.Boolean _isRetaliatory` and `0x180 System.String
+_narrative`; its whole method list is `.ctor(SimPerson, System.Boolean)` @0x73f3c52d58,
+`RefreshScenario()` @0x73f3c52e10 and `DismissSelected()` @0x73f3c53cd8. There is no
+`ChoiceSelectedAtIndex`, no `ScenarioIsEligibleForRandomPush` and no `GetNextScenario`:
+this is a card with no buttons, no gate of its own, and no stat call anywhere in its
+946-instruction body.
+
+`RefreshScenario` runs in this order:
+
+1. The title first. A nine-string ArrayList is built from cells 0x5cbc448, 0x5cbc450,
+   0x5cbc458, 0x5cbc460, 0x5cbc468, 0x5cbc470, 0x5cbc478, 0x5cbc480 and 0x5cbc490,
+   `PickRandomFromStringArray` @0x73f32b0608 picks one, and it lands at `[self+0x38]`
+   (@0x73f3c53210).
+2. Two null guards: the player chain (cell 0x5cbc0b8 through `[x8]` to `+0x28`) and
+   `_friend` at `[self+0x170]`. Either one failing leaves through 0x73f3c53cd4.
+3. The row. `ldp w21,w20,[hero+0x1c]` @0x73f3c53238 and `ldp w23,w22,[friend+0x1c]`
+   @0x73f3c53240 take both subjects' ages and genders, and the call at 0x73f3c53264 hands
+   the hero's pair and the friend's pair to
+   `DataFriendRumor.GetRandomRumorForSenderAgeSenderGenderReceiverAgeReceiverGender`
+   @0x73f2ccace4 -- the same picker the inbound card uses, with the roles swapped. A null
+   row exits at 0x73f3c53268 before anything is written.
+4. Both texts come out of one row cell. The body is 'You started a rumor that {0}.' (cell
+   0x5CB1A60, @0x73f3c53278) and the narrative is 'I started a rumor that {0}.' (cell
+   0x5CB1A58, @0x73f3c53288), each a one-argument Format over the row's **Outbound
+   Scenario** cell. Both then go through the dictionary parser (ctor 0x73f337959c,
+   `GetParsedBodyString` 0x73f337bb5c / `GetParsedNarrativeString` 0x73f337bb64), which
+   is what resolves the `<friend>` and `<he/she>` tokens the table is full of.
+
+`DismissSelected` is the spend-time card's dismiss again: it walks the same chain and
+tail-calls `Log(String)` @0x73f380158c with `[self+0x180]` -- the narrative line is the
+journal entry, and the button is what writes it.
+
+### 107.2 Who opens it
+
+Exactly one call site constructs the card: `blcall.py` on the constructor finds
+0x73f357b6a0 and nothing else, inside `LifeInterface.RelationshipItemArrayForFriend` --
+the same method that builds the inbound rumor card and the spend-time card for the
+Relationships tab. In the yearly chain the card arrives only as the child of the inbound
+card's fourth choice, which is why the port hangs it off that choice rather than off a
+coin of its own.
+
+A second route was closed early. The Frida fixture can build the card (it always sets the
+title) but `RefreshScenario` faults inside the game code after the title store, on any
+friend handed to it -- a generated person, the hero's own mother, even the hero. A
+`Process.setExceptionHandler` hook in `/tmp/qdir/fault.py` never fired, because Frida
+recovers the access violation inside its own invoke path. So the body is read from the
+binary and the table, not from a live card, and the nine title lines were confirmed live
+(six runs, all six drawn from the pool above).
+
+### 107.3 The carry
+
+The port has no scenario push -- that has been a documented shortcut since section 101 --
+so the child card is *queued* instead: the fourth choice stores the friend's name, the
+friend's sex and a `rumorOutPending` flag on the life, and `friendRumorOutYear` renders
+the answer on a later age-up. The flag is read and cleared before anything else in that
+function, which is what makes the card one-shot and what keeps a queued rumor from
+following the hero into the next life.
+
+Because the answer queues behind the cards that already own the year, it can wait several
+years: over 160 scripted lives the inbound card reached its fourth choice 46 times and 42
+of those were answered (38 lives answered once, 2 lives twice, 4 picked and died or aged
+out before the answer landed). The card carries no deltas and no buttons, so the queue has
+no effect on stats -- it only decides which year the line reaches the journal.
+
+### 107.4 The rows
+
+`a16_friend-rumors-enc` is 8869 bytes over 40 rows and nine columns:
+`Outbound Scenario,Inbound Scenario,Inbound Log Version,Sender Min Age,Sender Max Age,Sender
+Gender,Receiver Min Age,Receiver Max Age,Receiver Gender`. Section 102 took columns 2 and
+3; this card takes column 1, and every one of the 40 rows has an outbound cell (the inbound
+column is what section 102 skips over, and the two columns are written for opposite
+subjects: `<friend> has, not just one, but many venereal diseases` against `you have not
+just one, but many venereal diseases`).
+
+Twenty-five of the 40 rows carry a gate, which is far more than the inbound half's sample
+suggested. Five rows ask for a hero of eighteen or more, five ask for sixty or more
+(rows 36-40, the reminiscence lines), and the rest key on the *receiver's* age -- row 7
+(`<friend> is pregnant`, sender 14+, receiver 16, receiver female), row 9 (sender 18+,
+receiver 18+, receiver male), row 32 (sender 18+, receiver 25-40 female), row 14 (receiver
+25+) -- so the friend the port stands at the hero's own age is gated by the same numbers the
+inbound card would apply to the hero. The outbound cells use 23 distinct tokens across 18
+one-of groups, 35 `<friend>`, 9 `<his/her>`, 6 `<he/she>`, 5 `<friend-possessive>`, 4
+`<him/her>` and single-use `<drug-illegal>`; the longest is 247 characters. Over 160
+scripted lives the port drew 17 of the 40 rows, with the hero aged 24 to 74 at the card.
+
+### 107.5 Shortcuts
+
+1. The card is queued, not pushed. The game builds the child scenario inside the inbound
+   card's handler and renders it immediately; the port has no scenario push, so the choice
+   sets a flag and the next age-up renders the answer. 4 of 46 picks went unanswered
+   because the hero died or aged out of the script first.
+2. The sender is the hero and the receiver the friend. The port reads that from the
+   argument order of the picker call (hero's pair first, friend's second) and from the rows
+   themselves -- `<friend> is pregnant` is gated on the receiver being female -- but the
+   inbound card's own comment guessed the same order from the same evidence, so the
+   assignment is a reading, not a certainty.
+3. The friend is the one the inbound card named. The game passes the same `SimPerson` into
+   the child card; the port hands the drawn name and sex over in the flag, so the answer
+   names the friend the rumor was about rather than drawing a new one.
+4. No stat change is applied. Nothing between the title store and the narrative store calls
+   an impact, and the card's own button only logs, so the port moves nothing -- the -3
+   discipline and -3 karma the hero earned belong to the inbound card (section 102).
+5. The nine lines are read as titles. The class has no choices, so the nine reaction lines
+   cannot be buttons; the live fixture always found one of them in the Title field. They are
+   the card's headline, and the port treats them that way.
+6. The '`your {0}, {1},`' formatter at 0x73f3c53328 (relationship word plus friend name,
+   with `AddPossessionToNameString` @0x73f32af094 behind it) is not carried: what the game
+   does with that string has no field in the port's card, and the body and narrative are
+   already complete without it.
+7. The `_isRetaliatory` flag is not carried. Section 102 pushes the card with the flag set
+   and nothing in the card's body reads it; it distinguishes the push path, not the text.
+8. The row is redrawn for the answer. The inbound card's row is not reused -- the outbound
+   picker runs again -- so the answer is a second, independent draw against the same gates,
+   and the port draws it on its own stream (`rumOutRng_`), moving no earlier subsystem's
+   sequence.
+
+```
+=== seed 14  female  United States  age 50  row 17  friend Dustin Emberlake (male)
+table cell : <friend> has an unhealthy fascination with lost teeth
+TITLE  : This is hilarious
+BODY   : You started a rumor that Dustin Emberlake has an unhealthy fascination with lost teeth.
+LOG    : I started a rumor that Dustin Emberlake has an unhealthy fascination with lost teeth.
+CHOICE : None
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+
+=== seed 28  male  United States  age 61  row 37  friend Ned Shirin (female)
+table cell : <friend> still lives at <his/her> parent's house
+TITLE  : We joke, we joke
+BODY   : You started a rumor that Ned Shirin still lives at her parent's house.
+LOG    : I started a rumor that Ned Shirin still lives at her parent's house.
+CHOICE : None
+DELTAS : {"discipline": 0, "happiness": 0, "karma": 0, "looks": 0, "smarts": 0}
+```
+
+The friend family now has both halves of its rumor card: the inbound half a friend opens
+about the hero (section 102), and the outbound half the hero's own choice opens about the
+friend. What the family still sends rather than shows is the unfriend pair
+(`ScenarioFriendUnfriendInbound`, `ScenarioFriendUnfriendOutbound`), the status pair, the
+threesome card, and the four outbound coworker cards section 105 named.
+The full regression after the section: 51 probes at residue 0 (the new `frores.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, the persistent test at `friend rumor outbound cards: {'cards': 28, 'picks': 32}` and the benchmark reaching age 34.
+
+The section's own probe, `frores.py`, drives 160 lives and reports `lives 160 / inbound start-rumor picks 46 / outbound cards 42 / cards per life {1: 38, 2: 2} / titles ... / rows drawn 17 of 40 / hero age at the card min 24 max 74 / runtime 39s / failures 0 / RESIDUE 0 {}`.
+

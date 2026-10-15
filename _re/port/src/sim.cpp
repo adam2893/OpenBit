@@ -631,7 +631,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL),
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
-      fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL) {}
+      fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
+      rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3577,6 +3578,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
   // sequence moves.
   if (friendSpendTimeYear(life, out, forcedChoice)) return true;
+  // The friend-rumor outbound card (REPORT.en.md 107) is queued rather than
+  // pushed: it answers the inbound card's "Start a rumor about ..." choice from
+  // the previous age-up, so it is tried here and draws on its own stream
+  // (include/bl/sim.h rumOutRng_), moving no earlier subsystem's sequence.
+  if (friendRumorOutYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -24267,7 +24273,140 @@ bool Sim::friendRumorYear(Life& life, AgeUp& out, int forcedChoice) {
     out.discipline = pointsForImpact(-3);
     out.karma = pointsForImpact(-3);
     out.narrative = logLine;
+    // The pushed child card is the friend's answer (REPORT.en.md 107): the port
+    // carries it as a queued one-shot, so the choice hands the friend over here.
+    life.rumorOutPending = true;
+    life.rumorOutFriend = friendName;
+    life.rumorOutFemale = friendFemale;
   }
+  return true;
+}
+
+// The friend-rumor outbound card (REPORT.en.md 107): the answer to the inbound
+// card's "Start a rumor about ..." choice.
+// ScenarioFriendRumorOutbound (il2cpp_dump.txt:40906; .ctor(SimPerson,
+// Boolean) @0x73f3c52d58, RefreshScenario @0x73f3c52e10, DismissSelected
+// @0x73f3c53cd8) carries no ScenarioIsEligibleForRandomPush and no
+// ChoiceSelectedAtIndex of its own, and the only caller of its constructor is
+// LifeInterface.RelationshipItemArrayForFriend @0x73f357b6a0 -- the same method
+// that builds the inbound card and the spend-time card -- so the card has no
+// push rate to copy. The port opens it from the choice that pushes it, which is
+// the queue flag (shortcut).
+bool Sim::friendRumorOutYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (!life.rumorOutPending) return false;
+  if (forcedChoice >= 0) return false;
+  // One-shot: clearing it here is what makes the answer a single card, and what
+  // keeps a queued rumor from following the hero into the next life.
+  life.rumorOutPending = false;
+  Hero& h = life.hero;
+  // The card's own fields carry no gate; the inbound card that queues it already
+  // demanded eighteen and no prison, and the hero cannot lose an age.
+  if (h.age < 18 || h.inPrison) return false;
+  if (!ensureTable("a16_friend-rumors-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, handed over by the choice so the answer names
+  // the same friend the hero spread the rumor about.
+  const std::string friendName = life.rumorOutFriend.empty() ? resolve("<friend>") : life.rumorOutFriend;
+  if (friendName.empty()) return false;
+  const bool friendFemale = life.rumorOutFemale;
+  const int friendAge = h.age;  // the port's friend stands at the hero's own age
+
+  // DataFriendRumor
+  // .GetRandomRumorForSenderAgeSenderGenderReceiverAgeReceiverGender
+  // @0x73f2ccace4 runs the same six tests as the inbound card's picker, and
+  // RefreshScenario feeds it the hero's pair first and the friend's second
+  // (ldp w21,w20,[hero+0x1c] @0x73f3c53238 and ldp w23,w22,[friend+0x1c]
+  // @0x73f3c53240, then the call @0x73f3c53264) -- the mirror image of the
+  // inbound card, where the friend sends and the hero receives. So here the hero
+  // sends: the rumor is about the friend, and a row like '<friend> is pregnant'
+  // is gated on the RECEIVER being female, which is the friend. The row is a
+  // fresh draw, not the row the inbound card showed.
+  const Table& t = tbl("a16_friend-rumors-enc");
+  auto genderOk = [&](size_t r, const char* col, bool subjectFemale) {
+    if (!t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !subjectFemale;
+    if (v == "female") return subjectFemale;
+    return true;
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Outbound Scenario")).empty()) continue;
+    const int sMin = int(t.num(r, "Sender Min Age"));
+    const int sMax = int(t.num(r, "Sender Max Age"));
+    if (sMin > 0 && h.age < sMin) continue;
+    if (sMax > 0 && h.age > sMax) continue;
+    if (!genderOk(r, "Sender Gender", h.female)) continue;
+    const int rMin = int(t.num(r, "Receiver Min Age"));
+    const int rMax = int(t.num(r, "Receiver Max Age"));
+    if (rMin > 0 && friendAge < rMin) continue;
+    if (rMax > 0 && friendAge > rMax) continue;
+    if (!genderOk(r, "Receiver Gender", friendFemale)) continue;
+    pool.push_back(r);
+  }
+  // Every row of the table carries an outbound cell, so an empty pool means the
+  // table itself is wrong; the late 0x73f3c53268 cbz does the same on a null row.
+  if (pool.empty()) return false;
+  const size_t row = pool[rumOutRng_.below(uint32_t(pool.size()))];
+
+  std::string text = trim(t.at(row, "Outbound Scenario"));
+  substAll(text, "<friend-possessive>", friendName + "'s");
+  substAll(text, "<friend>", friendName);
+  // The one-of groups and the pronoun pairs are drawn exactly as the inbound
+  // card draws them, on this card's own stream. The outbound cells use <him/her>
+  // for the friend, so the pronoun pair keys on the friend's gender here too.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string s, bool keep) {
+    for (size_t i = s.find('<'); i != std::string::npos; i = s.find('<', i + 1)) {
+      const size_t close = s.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = s.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue)) continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[rumOutRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      s.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return s;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = friendFemale;
+  const std::string rumor = resolve(drawCardText(text, true));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  // RefreshScenario picks the title before it picks the row: a nine-string
+  // ArrayList built from cells 0x5cbc448, 0x5cbc450, 0x5cbc458, 0x5cbc460,
+  // 0x5cbc468, 0x5cbc470, 0x5cbc478, 0x5cbc480 and 0x5cbc490, run through
+  // PickRandomFromStringArray @0x73f32b0608 and stored at [self+0x38]
+  // @0x73f3c53210. The class has no choices, so the nine lines are the card's
+  // title rather than button labels (a reading: see REPORT.en.md 107.5).
+  static const char* kTitles[9] = {
+      "In good faith", "We joke, we joke", "This is hilarious",
+      "Didn't hear it from me", "It's a shame really", "Spread the word",
+      "No bad publicity", "It's probably true", "Don't believe me?"};
+  out = AgeUp();
+  out.table = "a16_friend-rumors-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = kTitles[rumOutRng_.below(9)];
+  // Both texts wrap the row in a one-argument Format, the body from
+  // 'You started a rumor that {0}.' (cell 0x5CB1A60 @0x73f3c53278) and the
+  // narrative from 'I started a rumor that {0}.' (cell 0x5CB1A58 @0x73f3c53288),
+  // both over the same row text. No stat call sits between them, so the card
+  // moves nothing, and DismissSelected @0x73f3c53cd8 only tail-calls Log(String)
+  // with the narrative -- so the card has no buttons and the port sets no cta.
+  out.body = "You started a rumor that " + rumor + ".";
+  out.narrative = "I started a rumor that " + rumor + ".";
   return true;
 }
 

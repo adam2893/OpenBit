@@ -78,6 +78,14 @@ struct Life {
   int cwInappPresented = 0;
   int cwPrankPresented = 0;
   int cwRumorPresented = 0;
+  // The friend-rumor outbound card's queued follow-up (REPORT.en.md 107): the
+  // inbound card's "Start a rumor about ..." choice hands the friend over and
+  // the next age-up renders the friend's answer, because the port models no
+  // scenario push. The card is dismiss-only, so the flag clears on the next
+  // age-up whether or not the card is shown.
+  bool rumorOutPending = false;
+  std::string rumorOutFriend;
+  bool rumorOutFemale = false;
 };
 
 class Sim {
@@ -382,6 +390,13 @@ class Sim {
   // reactions. It carries no presented cap either and draws on its own stream
   // (rumorRng_).
   bool friendRumorYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend-rumor outbound card (REPORT.en.md 107): the answer to the inbound
+  // card's "Start a rumor about ..." choice, drawn from the Outbound Scenario
+  // column of a16_friend-rumors-enc. It is queued by that choice and rendered on
+  // the next age-up -- the port has no scenario push -- and it is dismiss-only,
+  // so it applies no stat changes and carries no choices. It draws on its own
+  // stream (rumOutRng_).
+  bool friendRumorOutYear(Life& life, AgeUp& out, int forcedChoice);
   // The friend-party card (REPORT.en.md 103): a friend invites the hero out of
   // a16_friend-party-scenarios-enc and the hero accepts, declines or makes up
   // an excuse. Its floor is five rather than eighteen and it carries no
@@ -550,6 +565,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng cwRng_;
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
+  // The friend-rumor outbound card's own stream (REPORT.en.md 107).
+  Rng rumOutRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
