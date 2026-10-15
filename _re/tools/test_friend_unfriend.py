@@ -1,4 +1,4 @@
-"""Row, gate, and carry regression for the unfriend and prison cards (REPORT.en.md 108, 110)."""
+"""Row, gate, and carry regression for the three unfriend cards (REPORT.en.md 108, 110, 111)."""
 import collections
 import csv
 import json
@@ -22,6 +22,10 @@ BODY = re.compile(r"^Your friend, (.+?), has unfriended you\.$")
 WIN_NAR = re.compile(r"^You successfully salvaged your friendship with your friend, (.+?)\.$")
 LOST_NAR = re.compile(r"^You tried to salvage your friendship with (.+?) but were unsuccessful\.$")
 GONE_NAR = re.compile(r"^(.+?) unfriended me\.$")
+# ScenarioFriendUnfriendOutbound.RefreshScenario's five headlines (REPORT.en.md 111).
+OUT = ("Begone", "They're too toxic", "Blocked", "Weeding 'em out", "Left on read")
+OUT_BODY = re.compile(r"^You have unfriended your friend, (.+?)\.$")
+OUT_NAR = re.compile(r"^I unfriended (.+?)\.$")
 # AttributeAdjustmentPointsForImpactScore (src/sim.cpp pointsForImpact): -4 -> -30,
 # -3 -> -16, +3 -> +16, so the card's raw scores land on those points.
 SALVAGE = {"discipline": 16, "karma": 16}
@@ -35,7 +39,24 @@ for seed in range(1, 41):
         run = subprocess.run([str(PORT), "--script", "/dev/stdin"],
                              input=json.dumps(spec), text=True, capture_output=True,
                              check=True, cwd=ROOT / "port")
+        ended = []
         for event in json.loads(run.stdout)["events"]:
+            out_match = OUT_BODY.match(str(event.get("body") or ""))
+            if out_match:
+                # ScenarioFriendUnfriendOutbound (REPORT.en.md 111): the hero's own
+                # half, queued by the ending this life already showed.
+                seen["out"] += 1
+                name = out_match.group(1)
+                assert not event.get("table"), event
+                assert event["age"] >= 12, event
+                assert not event.get("choice"), event
+                assert event["title"] in OUT, event
+                narrative = event["logLines"][0]
+                assert OUT_NAR.match(narrative) and OUT_NAR.match(narrative).group(1) == name, event
+                deltas = {k: v for k, v in event["deltas"].items() if v}
+                assert deltas == {"discipline": 8, "happiness": -4}, event
+                assert any(age < event["age"] and friend == name for age, friend in ended), (event, ended)
+                continue
             match = BODY.match(str(event.get("body") or ""))
             if not match:
                 continue
@@ -69,11 +90,13 @@ for seed in range(1, 41):
                 assert deltas == {"happiness": -30}, event
             elif choice in ("Let him go", "Let her go"):
                 seen["let_go"] += 1
+                ended.append((event["age"], name))
                 assert not event["title"], event
                 assert GONE_NAR.match(narrative) and GONE_NAR.match(narrative).group(1) == name, event
                 assert deltas == {"happiness": -30}, event
             elif choice in ("Insult him one last time", "Insult her one last time"):
                 seen["insult"] += 1
+                ended.append((event["age"], name))
                 assert event["title"] in BAD, event
                 # The insult sentence names the friend, so its own name is the
                 # anchor: the friend's name can hold a space ('Seo Taji').

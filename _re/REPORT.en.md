@@ -16152,8 +16152,139 @@ Verification for the section: the port's own test `tools/test_friend_unfriend.py
 with the prison flavour, reads `unfriend cards: {'cards': 87, 'insult': 35, 'let_go': 30,
 'prison': 8, 'salvage_lost': 12, 'salvage_win': 2}`; the new probe `/tmp/qdir/fuprres.py`
 renders 12 prison cards over 160 lives and reports `failures 0` with `RESIDUE 0 {}`.
-The full regression after the section: 54 probes at residue 0 (the new `fuprres.py` among
-them), the residue census at `distinct residue tokens 0 total 0`, coverage at
+The full regression after the section: 54 probes with the new `fuprres.py` at
+`rc=0 residue=0 fails=0 events=12`, the residue census at
+`distinct residue tokens 0 total 0`, coverage at
 `captured scenarios: 109  recoverable: 107`, the port gap at
 `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and
-the benchmark reaching age 34.
+the benchmark reaching age 34. That pass also caught one stale probe: `/tmp/qdir/unfrres.py`
+matched the unfriend card by its body sentence, and this section's prison card wears the same
+sentence with no buttons, so the probe crashed on the empty choice. It now skips buttonless
+cards (they belong to this section) and reports `failures 0` again; the corrected probe count
+for the family is in section 111.
+## 111. The unfriend outbound card: the hero's own half of the ending
+
+Section 108 ported the unfriend push and section 110 its prison flavour, and both are cards
+the friend deals the hero. The family's third member runs the other way:
+`ScenarioFriendUnfriendOutbound` (`il2cpp_dump.txt:40952`) is what the hero sees after ending
+the friendship, and it is the last member of the unfriend set. It has no yearly push at all,
+which is why this section is as much about *when* the card can happen as about what it says.
+
+### 111.1 The card
+
+Fields `_friend` at `+0x170` (`SimPerson`) and `_narrative` at `+0x178` (`System.String`).
+`.ctor(SimPerson)` `@0x73f3c597bc` (11 instructions) calls `Scenario::.ctor(Boolean)` with
+`false` `@0x73f2eb9db8` and stores the friend; `RefreshScenario` `@0x73f3c597e8` is 162
+instructions; `DismissSelected` `@0x73f3c59a70` is 27 and tail-calls `Log(String)`
+`@0x73f380158c` with `[self+0x178]`. There is no `ChoiceSelectedAtIndex`: the card is
+dismiss-only, and the dismiss is what writes the journal line.
+
+`RefreshScenario` appends five literals to a fresh `ArrayList` through vtable slot `0x308` in
+this order:
+
+| cell | text |
+| --- | --- |
+| `0x5C32938` | `Begone` |
+| `0x5CBC800` (idx 43134) | `They're too toxic` |
+| `0x5C30980` (idx 13651) | `Blocked` |
+| `0x5CBC808` (idx 46249) | `Weeding 'em out` |
+| `0x5CA3AC8` (idx 28685) | `Left on read` |
+
+`PickRandomFromStringArray` `@0x73f32b0608` picks one into `[self+0x38]` (Title). The body is
+`Format(String,Object,Object)` `@0x73f52a71cc` with cell `0x5CBC7F8` (idx 48818)
+`You have unfriended your {0}, {1}.`, argument 1 the friend's
+`FriendRelationshipStatusString` `@0x73f30e169c` and argument 2 the friend's `Name`
+(`[friend+0x10]+0x18`); it lands in `[self+0x48]`. The narrative is `Format(String,Object)`
+`@0x73f52976b4` with cell `0x5CBC7F0` (idx 25538) `I unfriended {0}.` and the friend's name,
+landing in `[self+0x178]`.
+
+### 111.2 What it costs, and who opens it
+
+After the two formats the method moves the hero's happiness slot `0x408` by `w1 = -1`, calls
+`ImpactDiscipline(2)` `@0x73f30e4cdc`, and tail-branches to `SimPerson::Unfriend()`
+`@0x73f30e4240`. Through `pointsForImpact` that is `-4` happiness and `+8` discipline -- the
+mirror image of the inbound card, which costs happiness and pays karma.
+
+A BL census over the constructor, `python3 /tmp/qdir/blcall.py 0x73f3c597bc`, finds exactly one
+caller: `0x73f357ba58`, inside `LifeInterface.RelationshipItemArrayForFriend(SimPerson)`
+`(+0x183c)`. That is the same method that builds this family's inbound card and the friend
+spend-time card (section 106), i.e. the Relationships tab's friend list. The outbound card is
+*never* pushed by the year loop; the hero only sees it after choosing to end the friendship,
+and the game reaches it through the tab.
+
+### 111.3 How the port reaches it
+
+The port has no Relationships tab, so the ending queues its own follow-up. `Life` gained
+`unfriendOutPending`, `unfriendOutFriend` and `unfriendOutFemale` (`include/bl/sim.h:93-95`),
+and `friendUnfriendYear` sets all three in both of its ending branches -- the `Let {0} go`
+branch at `src/sim.cpp:25084` and the `Insult {0} one last time` branch at `src/sim.cpp:25120`
+-- so the follow-up carries the same drawn friend forward. `bool Sim::friendUnfriendOutYear`
+(`src/sim.cpp:25162`) runs from `ageUp` immediately after `friendUnfriendYear`
+(`src/sim.cpp:3598`), ahead of the friend-status card, and:
+
+1. returns `false` unless the flag is set,
+2. clears the flag in the same breath, so one ending produces exactly one card even when a
+   louder card eats the next age-up,
+3. keeps the family's floor (`h.age < 12`),
+4. takes the friend from the queue and falls back to a fresh `resolve("<friend>")` when the
+   queue is empty (a save loaded mid-life, or `forcedChoice` replays),
+5. draws `kGone[unrOutRng_.below(5)]` for the title, writes the two templates, and sets
+   `out.happiness = pointsForImpact(-1)` and `out.discipline = pointsForImpact(2)`.
+
+The title is drawn on a new stream, `unrOutRng_ = seed ^ 0x1d8e4e27c47d124f ^ 0x6a09e667f3bcc909`
+(`include/bl/sim.h:603`, initialized at `src/sim.cpp:638`), so no earlier subsystem's sequence
+moves for a given seed.
+
+### 111.4 Shortcuts
+
+1. The real trigger is the Relationships tab (`@0x73f357ba58`), which the port does not have.
+   The port queues the card from the inbound card's ending instead and renders it on a later
+   age-up of the same life, keeping the friend's name and gender. The card itself, its pool,
+   its templates and its cost are the game's.
+2. `SimPerson::Unfriend()` is dropped: the port's friend is a drawn slot rather than a
+   relationship object (the family's standing shortcut), so the same name can be unfriended
+   again later in the same life.
+3. The card binds no row and draws no dictionary token -- both templates are plain `Format`
+   calls with the friend's name -- so there is no table gate to port and nothing to resolve.
+4. The floor is the family's `12`, not a number the card itself carries: the real gate lives
+   in the year loop that builds the inbound card, and the outbound card inherits it by being
+   its follow-up.
+5. The pool is five fixed literals with no gender or age variants, so the port keeps them as
+   a static array rather than reading them through the metadata cells.
+
+An outbound card, as the port renders it:
+
+```
+AGE    : 33
+TITLE  : Begone
+BODY   : You have unfriended your friend, Arianna Venti.
+LOG    : I unfriended Arianna Venti.
+CHOICE : (none)
+DELTAS : {"discipline": 8, "happiness": -4}
+
+AGE    : 75
+TITLE  : Left on read
+BODY   : You have unfriended your friend, Ronno Two.
+LOG    : I unfriended Ronno Two.
+CHOICE : (none)
+DELTAS : {"discipline": 8, "happiness": -4}
+```
+
+The card is the last member of the unfriend set, and with it the family is closed on both
+sides: the push the friend deals the hero (sections 108 and 110) and the ending the hero deals
+the friend (this section).
+
+Verification for the section: the port’s own test `tools/test_friend_unfriend.py`, extended
+with the outbound flavour, reads `unfriend cards: {'cards': 93, 'insult': 38, 'let_go': 32,
+'out': 69, 'prison': 8, 'salvage_lost': 13, 'salvage_win': 2}`; the new probe
+`/tmp/qdir/fuoutres.py` renders 111 outbound cards over 160 lives (seeds 1..40, both genders,
+80- and 50-year runs) and reports `titles {'Begone': 25, 'Blocked': 24, 'Left on read': 28,
+"They’re too toxic": 24, "Weeding ’em out": 10}`, hero age at the card 14..78, `failures 0` and
+`RESIDUE 0 {}`. The full regression after the section: 55 probes, every one at `rc=0` and
+`residue=0`, with the three unfriend probes at `fuprres.py rc=0 residue=0 fails=0 events=12`,
+`fuoutres.py rc=0 residue=0 fails=0 events=111` and the corrected
+`unfrres.py rc=0 residue=0 fails=0 events=135`; the residue census at
+`distinct residue tokens 0 total 0`, coverage at
+`captured scenarios: 109  recoverable: 107`, the port gap at
+`ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and the
+benchmark reaching age 34 unchanged (age 33 happiness delta 17, age 34 karma delta 30).

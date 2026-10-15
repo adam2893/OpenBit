@@ -634,7 +634,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
-      fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL) {}
+      fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL),
+      unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3590,6 +3591,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // It is tried last of the friend cards and draws on its own stream
   // (include/bl/sim.h unfrRng_), so no earlier subsystem's sequence moves.
   if (friendUnfriendYear(life, out, forcedChoice)) return true;
+  // The unfriend outbound card (REPORT.en.md 111) is queued rather than pushed: it
+  // answers the inbound card's "Let ... go" and "Insult ... one last time" outcomes
+  // from the previous age-up, so it is tried here and draws on its own stream
+  // (include/bl/sim.h unrOutRng_), moving no earlier subsystem's sequence.
+  if (friendUnfriendOutYear(life, out, forcedChoice)) return true;
   // The friend-status card (REPORT.en.md 109) is the friend loop's third decision
   // and the family's eighth push: the best-friend request, or a friend who turns
   // into an enemy. It is tried after the unfriend card and draws on its own stream
@@ -25072,6 +25078,12 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "Let " + him + " go";
     out.happiness = pointsForImpact(-4);
     out.narrative = friendName + " unfriended me.";
+    // The hero's own half of the family is queued here (REPORT.en.md 111): the
+    // tab card ScenarioFriendUnfriendOutbound has no yearly push of its own, so the
+    // port renders it as the follow-up to this outcome (shortcut).
+    life.unfriendOutPending = true;
+    life.unfriendOutFriend = friendName;
+    life.unfriendOutFemale = friendFemale;
   } else {
     // 'Insult {0} one last time'. ImpactDiscipline(-4) and ImpactKarma(-3) on the
     // hero, then the friend's relationship (slot 0x508) by -6.
@@ -25102,6 +25114,13 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
     // You called {0} {1} as {2} was walking out the door. (template 0x5CBC768)
     out.narrative = "You called " + friendName + " " + insult + " as " + he +
                     " was walking out the door.";
+    // The hero's own half of the family is queued here (REPORT.en.md 111): the
+    // tab card ScenarioFriendUnfriendOutbound has no yearly push of its own, so the
+    // port renders it as the follow-up to this outcome (shortcut).
+    life.unfriendOutPending = true;
+    life.unfriendOutFriend = friendName;
+    life.unfriendOutFemale = friendFemale;
+
     // Two side effects the port drops: the 'fool' test on the drawn insult sets a
     // flag on the hero's assets ([hero+0x70]+0x290, an achievement), and the same
     // branch counts the insult ([hero+0x3a8] += 1) and hands the friend's full
@@ -25118,6 +25137,67 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+
+// The unfriend outbound card (REPORT.en.md 111): the hero's own half of the family.
+// ScenarioFriendUnfriendOutbound (il2cpp_dump.txt:40952; .ctor(SimPerson)
+// @0x73f3c597bc, RefreshScenario @0x73f3c597e8, DismissSelected @0x73f3c59a70)
+// carries _friend at 0x170 and _narrative at 0x178 and no ChoiceSelectedAtIndex: a
+// card with nothing to answer. RefreshScenario draws one of five headlines
+// (cells 0x5C32938 / 0x5CBC800 / 0x5C30980 / 0x5CBC808 / 0x5CA3AC8), stores the body
+// "You have unfriended your {0}, {1}." (cell 0x5CBC7F8, relationship + friend name)
+// at [self+0x48] and the journal line "I unfriended {0}." (cell 0x5CBC7F0, the
+// friend's full name) at [self+0x178], moves the hero's happiness by -1 (vtable slot
+// 0x408), adds ImpactDiscipline(2) @0x73f30e4cdc, and tail-calls SimPerson.Unfriend()
+// @0x73f30e4240. DismissSelected logs [self+0x178] through Log(String) @0x73f380158c,
+// so the card is dismiss-only.
+//
+// The only caller of its constructor is LifeInterface.RelationshipItemArrayForFriend
+// @0x73f357ba58 -- the Relationships tab, the same method that builds the inbound
+// unfriend card, the spend-time card and the rumor pair -- so the card has no yearly
+// push and no rate to copy, exactly like the rumor-outbound card. The port renders it
+// as the follow-up to the age-up in which the hero ended the friendship himself (the
+// inbound card's 'Let {0} go' and 'Insult {0} one last time' outcomes queue it), which
+// is the rumor card's pattern and a shortcut in the same sense: the game's trigger is
+// a tap the port has no UI for.
+bool Sim::friendUnfriendOutYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (!life.unfriendOutPending) return false;
+  if (forcedChoice >= 0) return false;
+  // One-shot, like the rumor answer: clearing it here is what makes the line a
+  // single card and what keeps a queued unfriending from following the hero into
+  // the next life.
+  life.unfriendOutPending = false;
+  Hero& h = life.hero;
+  // The card's own fields carry no gate; the inbound card that queues it already
+  // demanded twelve, and the hero cannot lose an age. Its tab is available in
+  // prison too, so the hero's prison state is not tested.
+  if (h.age < 12) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // One name for the whole card, handed over by the outcome so the line names the
+  // friend the hero actually let go of (the rumor card's own pattern).
+  const std::string friendName =
+      life.unfriendOutFriend.empty() ? resolve("<friend>") : life.unfriendOutFriend;
+  if (friendName.empty()) return false;
+  // FriendRelationshipStatusString, which the port's drawn slot does not carry, so
+  // the relationship word is always 'friend' (the family's standing shortcut).
+  const std::string rel = "friend";
+
+  // The headline pool, cells 0x5C32938, 0x5CBC800, 0x5C30980, 0x5CBC808, 0x5CA3AC8.
+  static const char* const kGone[5] = {"Begone", "They're too toxic", "Blocked",
+                                       "Weeding 'em out", "Left on read"};
+  out = AgeUp();
+  out.title = kGone[unrOutRng_.below(5)];
+  out.body = "You have unfriended your " + rel + ", " + friendName + ".";
+  // w1 = -1 into the hero's happiness slot, then ImpactDiscipline(2):
+  // pointsForImpact gives -4 and +8.
+  out.happiness = pointsForImpact(-1);
+  out.discipline = pointsForImpact(2);
+  out.narrative = "I unfriended " + friendName + ".";
+  // SimPerson.Unfriend() has no analogue: the port's friend is a drawn slot that
+  // survives every card (the family's standing shortcut).
+  return true;
+}
 // The friend-status card (REPORT.en.md 109): the yearly friend loop's own decision
 // about what the friendship is, in two flavours.
 // ScenarioFriendStatusInbound (il2cpp_dump.txt:40922; .ctor(SimPerson, Int32)

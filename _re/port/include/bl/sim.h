@@ -86,6 +86,13 @@ struct Life {
   bool rumorOutPending = false;
   std::string rumorOutFriend;
   bool rumorOutFemale = false;
+  // The hero's own half of the unfriend family (REPORT.en.md 111):
+  // ScenarioFriendUnfriendOutbound is opened from the Relationships tab and has no
+  // yearly push, so the port queues it when the hero ends the friendship in the
+  // inbound card and renders it on the next age-up, the rumor card's pattern.
+  bool unfriendOutPending = false;
+  std::string unfriendOutFriend;
+  bool unfriendOutFemale = false;
   // The best-friend request's own clock (REPORT.en.md 109): the game tests the
   // hero's age minus the friend's HeroAgeAtLastBestFriendRequest (>= 11) and
   // stamps that field with the hero's age when the card is pushed, so the port
@@ -424,6 +431,11 @@ class Sim {
   // the game pushes out of Life.IncrementAge's friend loop rather than a table;
   // it draws on its own stream (unfrRng_).
   bool friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice);
+  // The unfriend outbound card (REPORT.en.md 111): the hero's own half of the
+  // family, the line the game produces from the Relationships tab. It is queued by
+  // the inbound card's outcome rather than pushed, and draws on its own stream
+  // (unrOutRng_).
+  bool friendUnfriendOutYear(Life& life, AgeUp& out, int forcedChoice);
   // The friend-status card (REPORT.en.md 109): the yearly friend loop's own
   // decision about what the friendship is -- a best-friend request with two
   // buttons, or a friend who turns into an enemy. It carries an eleven-year clock
@@ -587,6 +599,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng unfrRng_;
   // The friend-status card's own stream (REPORT.en.md 109).
   Rng fsRng_;
+  // The unfriend outbound card's own stream (REPORT.en.md 111).
+  Rng unrOutRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card
