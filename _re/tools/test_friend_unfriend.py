@@ -1,6 +1,6 @@
 """Row, gate, and carry regression for the friend family: the three unfriend
-cards (REPORT.en.md 108, 110, 111), the weapon card (112) and the assault it
-links (113)."""
+cards (REPORT.en.md 108, 110, 111), the weapon card (112), the assault it links
+(113) and the threesome (114)."""
 import collections
 import csv
 import json
@@ -61,6 +61,18 @@ RUN_CAUGHT_NAR = re.compile(r"^You ran for your life but (he|she) caught you!$")
 WEAPON_VERBS = {row["Weapon"].strip(): row["Verb"].strip()
                 for row in csv.DictReader((ROOT / "gamedata_plain" / "a16_weapons-enc").open(newline=""))}
 ATTACK_BODY = re.compile(r"^Your friend, (.+?), (.+?) you with (.+)!$")
+# ScenarioFriendThreesome (REPORT.en.md 114): the family's one adult card and a
+# real random push. Its body names the hero's own partner (when it has one), then
+# the friend, then the third person the class generated for the pair.
+THREESOME_BODY = re.compile(
+    r"^(?:Even though you (.+?), you|You) and your friend, (.+?), have an opportunity to have "
+    r"a threesome with (a|an) (.+?) named (.+)[.]$")
+THIRD_FEMALE = ("little girl", "girl", "young woman", "woman")
+THIRD_MALE = ("little boy", "boy", "young man", "man")
+THREESOME_DECLINE = re.compile(
+    r"^I turned down an opportunity to have a threesome with my friend, (.+?), and (.+)[.]$")
+THREESOME_ACCEPT = re.compile(
+    r"^My friend, (.+?), and I had a threesome with (.+)[.]$")
 
 seen = collections.Counter()
 for seed in range(1, 41):
@@ -87,6 +99,49 @@ for seed in range(1, 41):
                 deltas = {k: v for k, v in event["deltas"].items() if v}
                 assert deltas == {"discipline": 8, "happiness": -4}, event
                 assert any(age < event["age"] and friend == name for age, friend in ended), (event, ended)
+                continue
+            tm = THREESOME_BODY.match(str(event.get("body") or ""))
+            if tm:
+                # ScenarioFriendThreesome (REPORT.en.md 114): the hero and a friend
+                # are offered a third person the class generates on the spot.
+                seen["threesome"] += 1
+                assert not event.get("table"), event
+                # The class's own gate: hero age >= 18, out of prison, a friend.
+                assert event["age"] >= 18, event
+                partner, name, article, term, third = tm.groups()
+                # {3} is GetGenericTermForPersonOfGenderAndAge over a person the
+                # card drew at eighteen plus 0..9, so the 18-29 bucket's words are
+                # the ones the port carries, behind the card's own article helper.
+                assert term in THIRD_FEMALE + THIRD_MALE, event
+                assert (article == "an") == (term[0] in "aeiou"), event
+                assert name and third and name != third, event
+                # PersonGenerator was handed the sex opposite the hero's own
+                # EffectiveGender, and the test knows the hero's from its spec.
+                assert (term in THIRD_FEMALE) == (gender == "male"), event
+                if partner:
+                    # The prefix half is the hero's own lover, read off
+                    # SimLover.RelationshipStatusString's three cells.
+                    assert re.fullmatch(r"(are (married|engaged) to .+|have a "
+                                        r"(girlfriend|boyfriend))", partner), event
+                choice = str(event.get("choice") or "")
+                narrative = event["logLines"][-1]
+                deltas = {k: v for k, v in event["deltas"].items() if v}
+                assert event["title"] == "Threesome", event
+                if choice == "No way!":
+                    seen["threesome_decline"] += 1
+                    said = THREESOME_DECLINE.match(narrative)
+                    assert said and said.groups() == (name, third), event
+                    # ImpactDiscipline(3) over the hero, on top of the friend's own
+                    # -2 relationship move, which the port does not model.
+                    assert deltas == {"discipline": 16}, event
+                elif choice == "I'm in":
+                    seen["threesome_accept"] += 1
+                    said = THREESOME_ACCEPT.match(narrative)
+                    assert said and said.groups() == (name, third), event
+                    # ImpactKarma(-4) and ImpactDiscipline(-4).
+                    assert deltas == {"karma": -30, "discipline": -30}, event
+                else:
+                    raise AssertionError(event)
                 continue
             wm = WSNEAK.match(str(event.get("body") or "")) or WSTAND.match(
                 str(event.get("body") or ""))
@@ -255,5 +310,5 @@ for seed in range(1, 41):
                 assert deltas == INSULT, event
             else:
                 raise AssertionError(event)
-assert seen["cards"] and seen["weapon"] and seen["attack"], seen
+assert seen["cards"] and seen["weapon"] and seen["attack"] and seen["threesome"], seen
 print("unfriend cards:", dict(sorted(seen.items())))

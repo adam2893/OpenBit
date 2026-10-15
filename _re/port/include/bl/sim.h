@@ -463,6 +463,9 @@ class Sim {
   // encounter calls, and it is queued rather than pushed. It draws on its own stream
   // (aiRng_).
   bool attackInboundYear(Life& life, AgeUp& out, int forcedChoice);
+  // The friend threesome (REPORT.en.md 114): ScenarioFriendThreesome, the
+  // family's one adult card.
+  bool friendThreesomeYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family (REPORT.en.md 105): four cards about the person the
   // hero works next to -- an annoyance, an inappropriate behaviour, a prank and
   // a rumor -- out of a16_coworker-annoy-scenarios-enc,
@@ -627,6 +630,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng fwRng_;
   // The assault card's own stream (REPORT.en.md 113).
   Rng aiRng_;
+  // The friend threesome's own stream (REPORT.en.md 114).
+  Rng ftRng_;
   std::map<std::string, std::string> racingCache_;  // one rival / mechanic / passenger per car card
   bool racingLive_ = false;
   std::map<std::string, std::string> actorCache_;  // one costar / production / role per screen card

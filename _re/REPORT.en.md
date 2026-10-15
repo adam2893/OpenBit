@@ -16672,3 +16672,218 @@ residue tokens 0 total 0`, coverage `captured scenarios: 109  recoverable: 107`,
 gap `ENTRIES 109 rendered-by-port 107 gap 0`, the push replay rc=0 with empty stderr, and
 tools/bench.sh still matches the game through age 34 (age 33 happiness delta 17, age 34
 karma delta 30).
+## 114. The threesome: the friend who will not be left out
+
+### 114.1 The card
+
+ScenarioFriendThreesome (il2cpp_dump.txt:40936) is the friend family's one adult
+card, and the only card in the family the game itself offers as a random push:
+obs_corpus/scenario_registry.json lists it under `candidates` with a limit of
+fourteen, the same list that carries FriendAdvice (70), FriendDrug (14) and
+FriendWeaponEncounter (7). The outbound half of the family (the status card, the
+unfriend outbound card) is absent from that list because the relationships UI
+pushes it, not the scenario chain.
+
+The card carries `_friend` at 0x170 and `_threesomeLover` at 0x178, wears the
+title 'Threesome' (cell 0x5C5DBF8), and its constructor takes no argument:
+`.ctor() @0x73f3c575c8` calls `GetFriend() @0x73f3c57630` and stores the result in
+both `_friend` and the generic scenario person slot at [0x60]. GetFriend walks
+`Life.FriendArray` @0x73f3722ebc and keeps a friend who
+`LivesInSamePlaceAsHero` @0x73f30e6b28 and whose
+`GetTotalHeroRelationshipStrength` @0x73f30d284c reaches 65.0f (the method's own
+`mov w24,#0x42820000`).
+
+`ScenarioIsEligibleForRandomPush @0x73f3c58a1c` asks, in its own order, for a
+hero, an age of eighteen or more, `!SimHero::CurrentlyInPrison()` @0x73f2f0e1d8,
+a Sexuality field at [hero+0x24] no greater than one, and a friend. There is no
+repeat or cooldown test inside the class: the registry's own limit of fourteen is
+what paces it.
+
+`RefreshScenario @0x73f3c579e4` then generates the third person rather than
+taking one: `PersonGenerator`
+.GenerateLoverCandidateOfGenderAndSexualityAndOverrideAgeToAndOverrideBirthplaceToAndMustBeSingleAndCanBeCustom
+@0x73f38101d8, handed the sex opposite the hero's own `EffectiveGender`
+@0x73f30dbc30, the hero's sexuality, and `GetRandomNumber(0, 10)` @0x73f32ab2a8
+as an age override off a floor of eighteen -- the friend-lover card's own reading
+of the same generator (src/sim.cpp 24666). The result lands in `_threesomeLover`.
+
+The body is assembled in two halves. The first names the hero's own partner: cell
+0x5CBC6F8 'Even though you {0}, ' over one of three cells -- 0x5CBC6D8 'are married
+to {0}', 0x5CBC6E8 'are engaged to {0}', 0x5CBC6E0 'have a {0}' -- picked by
+`SimLover::RelationshipStatusString` @0x73f30d35a0 lowered with
+`String::ToLower` @0x73f52aa938, whose {0} is `SimPersonName::FullName`
+@0x73f2fc62bc. A single hero leaves that half empty and the sentence opens on the
+template's own lower-case 'you', which `GameReference::CapitalizeFirstLetterOfSentenceString`
+@0x73f32afedc then capitalizes. The second half is the template itself, cell
+0x5CBC6F0 '{0}you and your {1}, {2}, have an opportunity to have a threesome with
+{3} named {4}.' through `String::Format(String, Object[])` @0x73f52a7254, written
+to [self+0x48]: {1} the word `FriendRelationshipStatusString` @0x73f30e169c
+returns ('friend'), {2} the friend GetFriend picked, {3} `DataHub`
+.GetGenericTermForPersonInPlace @0x73f2d0dd40 ->
+`GetGenericTermForPersonOfGenderAndAge` @0x73f2d0df00 behind
+`GameReference::AddIndefiniteArticleToString` @0x73f32aee9c, and {4} the third
+person's own full name. A `ScenarioBarGraph` @0x73f2ec31f8 labelled '{0} Looks'
+(cell 0x5CA29E0) goes to [self+0xb8], and the two buttons, 'No way!' (cell
+0x5C4B360) and "I'm in" (cell 0x5CA8F70), are appended as
+`ScenarioChoice(String, Boolean, Boolean)` @0x73f2eb9c50.
+
+### 114.2 The two replies dispatched by their own label text
+
+`ChoiceSelectedAtIndex @0x73f3c57fa4` first writes the card's first-person
+narrative through `LifeLog::Log(System.String)` @0x73f380158c, then lowers the
+selected label with `ToLower` @0x73f52aa938 and tests it with `Contains`
+@0x73f52aafdc: "i'm in" (cell 0x5CBC298) first, 'no way' (cell 0x5CBC080)
+second. A label that matches neither falls into the shared tail, which logs
+whatever message the dispatch left in its register.
+
+- **No way!** moves the friend's relationship slot, the vtable slot at 0x508,
+  by -2 (`mov w1,#-2` then `blr x9`) and runs `ImpactDiscipline(3)`
+  @0x73f30e4cdc on the hero, which is +16 attribute points through
+  AttributeAdjustmentPointsForImpactScore. The journal sentence is cell 0x5CBC708
+  'I turned down an opportunity to have a threesome with my {0}, {1}, and {2}.'
+  through `String::Format(String, Object, Object, Object)` @0x73f52a7210.
+- **I'm in** runs `ImpactKarma(-4)` @0x73f30e4bfc and then `ImpactDiscipline(-4)`,
+  -30 points each. It then rolls `GetRandomNumber(0, 150)` and may push a child
+  `ScenarioLoverArgues` @0x73f3da31b8 at [self+0x128] or, through
+  `SimPregnancy`
+  `.GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother` @0x73f2fd4438,
+  a `ScenarioPregnancy` -- the partner's own scene, drawn from the third person
+  the card generated. It ends with two `ScenarioBarGraph` draws (labels 'Your
+  Enjoyment' cell 0x5C34A68 and '{0} Enjoyment' cell 0x5C3DAE0), the child
+  `Scenario` @0x73f2ebf510 titled 'Kinky' (cell 0x5CBC720) carrying cell 0x5CBC718
+  'You and your {0}, {1}, had a threesome with {2}.', the obituary line 'Rumors
+  suggest {0} was wild in bed.' (cell 0x5CBC700) through
+  `ObituaryGenerator::AddColorString` @0x73f3803dc0, and the first-person
+  narrative cell 0x5CBC710 'My {0}, {1}, and I had a threesome with {2}.'
+
+### 114.3 How the port reaches it
+
+`bool Sim::friendThreesomeYear(Life& life, AgeUp& out, int forcedChoice)`
+(port/src/sim.cpp:25655) is the friend family's sixth card and the last one tried:
+
+1. `if (forcedChoice > 1) return false;` -- the card owns two buttons, so a forced
+   choice beyond them is not its turn. `out = AgeUp()` before any field is filled.
+2. The class's gate, in the class's order: `h.age < 18 || h.inPrison` closes the
+   card. The Sexuality test at [hero+0x24] has no counterpart in the port, exactly
+   as on the friend-lover card, and is documented as a shortcut.
+3. The push coin. The class carries no rate of its own -- the registry's candidate
+   list is what pushes it, at most fourteen times in a life -- so the port draws
+   `ftRng_.chance(0.05)` on the family's own stream, which moves no other
+   subsystem's sequence for a given seed.
+4. The friend: `resolve("<friend>")` for the name, a coin for the gender, and the
+   relationship word 'friend', as the family's other cards do.
+5. The third person: the sex opposite the hero's own, `18 + ftRng_.below(10)` for
+   the age, and a name out of the port's name pools. The term is the bucket word
+   for that age and gender -- 'little girl'/'little boy', 'girl'/'boy', 'young
+   woman'/'young man', 'woman'/'man' -- with `withArticle` writing the article.
+6. The hero's own partner, when the life has one: 'Even though you are married to
+   <name>, ' / 'Even though you are engaged to <name>, ' / 'Even though you have a
+   girlfriend, ', drawn from the hero's relationship fields.
+7. The body (with the capitalize step the class applies to the assembled
+   sentence), the title 'Threesome', and the two arms: 'No way!' with
+   `pointsForImpact(3)` of discipline, "I'm in" with `pointsForImpact(-4)` of
+   karma and of discipline, each arm writing its own journal sentence.
+
+### 114.4 Shortcuts
+
+1. The Sexuality test at [hero+0x24] is absent: the port's hero carries no
+   sexuality field, and the friend-lover card already skips the same test
+   (src/sim.cpp 24642).
+2. The push rate is the port's own. The class has none; the game's registry limit
+   of fourteen draws per life is what the 0.05 coin stands in for.
+3. `GetFriend`'s two filters are absent: the port's friend slot has no place of
+   residence and no 0-100 relationship score, so any drawn friend qualifies.
+4. The third person is drawn from the port's own name pools at eighteen plus 0..9
+   rather than through PersonGenerator, which also weighs birthplace, single
+   status and custom-name flags.
+5. The generic term is the age bucket's plain word. The game picks among bucket
+   alternatives with `GetRandomNumber(0, 4)` ('dude', 'chick', 'young lady'), and
+   the drawn age never leaves the 18-29 bucket in this port.
+6. The partner half of the body reads the hero's own fields. `RelationshipStatusString`
+   is asked for a full clause by the game and for a status word by the port, so the
+   three cells are matched on the status the port stores ('married', 'dating').
+7. The friend's relationship move of -2 (vtable slot 0x508) is not modelled: the
+   port's friend relationship is a table, not a number.
+8. The acceptance drops its children: no `ScenarioLoverArgues`, no
+   `ScenarioPregnancy` from the 0-150 roll, no child 'Kinky' scenario, no bar
+   graphs, and no obituary line. The stat move and the journal sentence are what
+   the section keeps.
+9. The card draws no bar graph at all, so the looks pairing the game shows beside
+   the body is absent.
+
+Two cards from the probe, the second and third with the lover subsystem switched on
+so the body carries its partner half:
+
+```
+=== seed 1 male age 66
+TITLE  : Threesome
+BODY   : You and your friend, Dustin Emberlake, have an opportunity to have a threesome with a young woman named Maria Dot.
+BUTTON : No way!
+LOG    : I turned down an opportunity to have a threesome with my friend, Dustin Emberlake, and Maria Dot.
+DELTAS : discipline +16
+
+=== seed 9 female age 42
+TITLE  : Threesome
+BODY   : Even though you are married to Kye, you and your friend, Slim Letras, have an opportunity to have a threesome with a young man named Kay YBY.
+BUTTON : I'm in
+LOG    : My friend, Slim Letras, and I had a threesome with Kay YBY.
+DELTAS : karma -30, discipline -30
+
+=== seed 4 male age 46
+TITLE  : Threesome
+BODY   : Even though you have a girlfriend, you and your friend, Kay Dot, have an opportunity to have a threesome with a young woman named Kiley Sea.
+BUTTON : No way!
+LOG    : I turned down an opportunity to have a threesome with my friend, Kay Dot, and Kiley Sea.
+DELTAS : discipline +16
+```
+
+The card closes the friend family. It is the only card in the family whose body is
+built from the hero's own household -- the lover clause, the friend the class
+picked for itself and a third person generated on the spot -- and the only one
+whose second button hands the year to a scene the port does not own. What the port
+keeps is the sentence, the two replies and their cost; the partner's own scene,
+the child card and the obituary line stay out, and are named in the shortcuts
+above.
+
+Verification for the section: the family regression
+(tools/test_friend_unfriend.py, `rc=0`) now covers the threesome beside the three
+unfriend cards, the weapon card and the assault: `unfriend cards: {'attack': 74,
+'attack_fight': 29, 'attack_police': 22, 'attack_run': 23, 'cards': 91, 'insult':
+39, 'let_go': 29, 'out': 63, 'prison': 6, 'salvage_lost': 15, 'salvage_win': 2,
+'threesome': 81, 'threesome_accept': 54, 'threesome_decline': 27, 'weapon': 83,
+'weapon_argue': 20, 'weapon_forgive': 15, 'weapon_reason': 13, 'weapon_run_away':
+19, 'weapon_run_caught': 16}`. Each of its 81 cards is checked for the title, the
+age gate, the third person's term against the sex opposite the hero's, the
+article that term takes, the two names the body carries, the branch's own journal
+sentence and its deltas.
+
+The section's own probe, /tmp/qdir/ftres.py, drives
+`port/build/blsim --script /dev/stdin` over seeds 1..40 x both genders x an
+80-year run, a 50-year run and an 80-year run with the script's lover subsystem
+on (script.cpp:710) -- 240 lives -- and checks every card: the title, the age
+gate, the term and its bucket, the article, the friend and the third person being
+two different names, the partner half of the body, the branch's own sentence and
+the exact deltas. It reports `lives 240 / threesome cards 203 / cards over a hero
+with a partner 73 / cards per life {0: 107, 1: 76, 2: 44, 3: 13} / branches
+{"I'm in": 134, 'No way!': 69} / titles {'Threesome': 203} / third-person terms
+{'young man': 100, 'young woman': 103} / hero age at the card min 20 max 80 /
+runtime 96s / failures 0 / events 203 / RESIDUE 0`.
+
+The probe needed two corrections on the way, both recorded here because both
+would have hidden the partner half. The sentence's opening template is lower case
+('{0}you and your ...') and the game capitalizes the assembled string, so the
+prefix variant reads 'Even though you have a boyfriend, you and your friend, ...'
+with a lower-case 'you' after the clause; the probe's body pattern, and the test's,
+both demanded a capital 'You' there and silently matched nothing. The partner
+pattern then kept a leading 'you ' although the clause is captured without it.
+With the lover subsystem off both bugs stay invisible, which is why they only
+showed up once the probe grew its third variant.
+
+The whole regression batch is green: 58 probes, every one at
+`rc=0 residue=0`, ftres.py among them at `events=203` (only idres.py prints its
+own `residue=? fails=- events=?`, and it never reports a failure). The residue
+census reads `distinct residue tokens 0 total 0`, tools/coverage.py reads
+`captured scenarios: 109  recoverable: 107`, the port gap reads
+`ENTRIES 109 rendered-by-port 107 gap 0`, the push check exits 0 with empty
+stderr, and tools/bench.sh still matches through age 34 (age 33 happiness delta
+17, age 34 karma delta 30, 2 game-only and 3 port-only log lines).

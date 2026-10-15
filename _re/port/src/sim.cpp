@@ -637,7 +637,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       fsRng_(seed ^ 0x94d049bb133111ebULL ^ 0xbf58476d1ce4e5b9ULL),
       unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL),
       fwRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0x6a09e667f3bcc909ULL),
-      aiRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x6a09e667f3bcc909ULL) {}
+      aiRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x6a09e667f3bcc909ULL),
+      ftRng_(seed ^ 0x94d049bb133111ebULL ^ 0x6a09e667f3bcc909ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -3622,6 +3623,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // encounter and draws on its own stream (include/bl/sim.h aiRng_), moving no earlier
   // subsystem's sequence.
   if (attackInboundYear(life, out, forcedChoice)) return true;
+  // The friend threesome (REPORT.en.md 114) is the family's one adult card and a
+  // real random push (the registry lists it with a limit of fourteen), so it is
+  // tried last of the friend cards and draws on its own stream
+  // (include/bl/sim.h ftRng_), moving no earlier subsystem's sequence.
+  if (friendThreesomeYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -25631,6 +25637,128 @@ bool Sim::attackInboundYear(Life& life, AgeUp& out, int forcedChoice) {
       // (cell 0x5CBF5B0)
       out.narrative = "I called the police on " + him + ". The police warned me for wasting their time.";
     }
+  }
+  return true;
+}
+
+// The friend threesome (REPORT.en.md 114): ScenarioFriendThreesome is the friend
+// family's one adult card and, unlike the outbound half of the family, a real
+// random push -- the scenario registry carries it as a candidate with a limit of
+// fourteen. il2cpp_dump.txt:40936; .ctor @0x73f3c575c8, GetFriend @0x73f3c57630,
+// RefreshScenario @0x73f3c579e4, ChoiceSelectedAtIndex @0x73f3c57fa4,
+// ScenarioIsEligibleForRandomPush @0x73f3c58a1c. Its .ctor takes no argument: it
+// draws its own friend, and RefreshScenario generates a third person as a lover
+// candidate. The card wears the title 'Threesome' (cell 0x5C5DBF8) over two
+// buttons, 'No way!' (cell 0x5C4B360) and "I'm in" (cell 0x5CA8F70), told apart by
+// their own label text: ChoiceSelectedAtIndex runs ToLower and Contains "i'm in"
+// first (cell 0x5CBC298) and 'no way' second (cell 0x5CBC080).
+bool Sim::friendThreesomeYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice > 1) return false;
+  Hero& h = life.hero;
+  // ScenarioIsEligibleForRandomPush @0x73f3c58a1c, in its own order: the hero
+  // exists, is eighteen or older, is not in prison, its Sexuality field (hero[0x24])
+  // is at most one, and GetFriend() returns somebody. shortcut: the port's hero
+  // carries no Sexuality, so that test is skipped, exactly as it is on the
+  // friend-lover card (src/sim.cpp 24642).
+  if (h.age < 18 || h.inPrison) return false;
+  // shortcut: the class carries no push rate -- the registry's candidate list is
+  // what pushes it, at most fourteen times in a life -- so the coin is the port's,
+  // on this card's own stream (include/bl/sim.h ftRng_), which moves no other
+  // family's sequence for a given seed.
+  if (!ftRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  // GetFriend @0x73f3c57630 walks Life.FriendArray and keeps a friend with
+  // LivesInSamePlaceAsHero @0x73f30e6b28 and a GetTotalHeroRelationshipStrength
+  // @0x73f30d284c of at least 65.0f (w24 = 0x42820000). shortcut: the port's friend
+  // is a drawn slot with neither a place nor a relationship score.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = ftRng_.chance(0.5);
+  // GetFriendRelationshipStatusForDisplay's word, always 'friend' in the port (the
+  // family's standing shortcut, src/sim.cpp 24897).
+  const std::string rel = "friend";
+  // RefreshScenario's third person: PersonGenerator
+  // .GenerateLoverCandidateOfGenderAndSexualityAndOverrideAgeToAndOverrideBirthplaceToAndMustBeSingleAndCanBeCustom
+  // @0x73f38101d8, handed the sex opposite the hero's own EffectiveGender
+  // @0x73f30dbc30, the hero's sexuality, and GetRandomNumber(0, 10) as its age
+  // override off a floor of eighteen -- the friend-lover card's own reading of the
+  // same generator (src/sim.cpp 24666), so the port draws the floor plus the roll.
+  const bool thirdFemale = !h.female;
+  const int thirdAge = 18 + int(ftRng_.below(10));
+  const std::string thirdName = drawFirstName(thirdFemale) + " " + drawSurname();
+  // The "Even though you {0}, " half of the body is the hero's own partner:
+  // SimLover.RelationshipStatusString @0x73f30d35a0 lowered into three cells --
+  // 0x5CBC6D8 'are married to {0}', 0x5CBC6E8 'are engaged to {0}' and 0x5CBC6E0
+  // 'have a {0}', whose {0} is SimPersonName.FullName. The gate does not ask for a
+  // partner, so a single hero opens the card with the half missing.
+  std::string prefix;
+  if (h.relationshipOn) {
+    if (h.loverStatus == "married") {
+      prefix = "Even though you are married to " + h.loverName + ", ";
+    } else if (h.loverStatus == "engaged") {
+      prefix = "Even though you are engaged to " + h.loverName + ", ";
+    } else {
+      prefix = "Even though you have a " +
+               std::string(h.loverFemale ? "girlfriend" : "boyfriend") + ", ";
+    }
+  }
+  // {3} is DataHub.GetGenericTermForPersonInPlace @0x73f2d0dd40 ->
+  // GetGenericTermForPersonOfGenderAndAge @0x73f2d0df00, which buckets the person by
+  // age (<= 6, <= 17, <= 29, <= 69, older) and gender and returns one of cells
+  // 0x5C56B98 'little girl', 0x5C38CC8 'girl' / 0x5C38CD8 'boy', 0x5C56B90 'young
+  // woman' / 0x5C56B88 'young man', 0x5C4CE38 'woman' / 0x5C4CE48 'man'. shortcut:
+  // the drawn age (eighteen plus 0..9) always lands in the 18-29 bucket, whose own
+  // GetRandomNumber(0, 4) alternatives ('dude', 'chick', 'young lady') and the older
+  // buckets are not drawn.
+  const std::string term = thirdAge <= 6 ? (thirdFemale ? "little girl" : "little boy")
+                         : thirdAge <= 17 ? (thirdFemale ? "girl" : "boy")
+                         : thirdAge <= 29 ? (thirdFemale ? "young woman" : "young man")
+                         : (thirdFemale ? "woman" : "man");
+  out = AgeUp();
+  // Threesome (cell 0x5C5DBF8).
+  out.title = "Threesome";
+  // {0}you and your {1}, {2}, have an opportunity to have a threesome with {3} named
+  // {4}. (cell 0x5CBC6F0, capitalized with
+  // GameReference.CapitalizeFirstLetterOfSentenceString @0x73f32afedc).
+  out.body = prefix + "you and your " + rel + ", " + friendName +
+             ", have an opportunity to have a threesome with " +
+             withArticle(term, true) + term + " named " + thirdName + ".";
+  // The template starts at the lower-case 'you' and the game capitalizes the assembled
+  // sentence (GameReference.CapitalizeFirstLetterOfSentenceString @0x73f32afedc); a
+  // single hero has an empty prefix, so the port does the same here.
+  if (!out.body.empty())
+    out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int pick = forcedChoice >= 0 ? forcedChoice : int(ftRng_.below(2));
+  if (pick == 0) {
+    // 'No way!' (cell 0x5C4B360). The refusal block @0x73f3c583f4 moves the friend's
+    // relationship slot 0x508 by -2 and runs ImpactDiscipline(3) on the hero.
+    // shortcut: the port has no friend relationship slot to move.
+    out.choice = "No way!";
+    out.discipline = pointsForImpact(3);
+    // I turned down an opportunity to have a threesome with my {0}, {1}, and {2}.
+    // (cell 0x5CBC708: {0} the relationship word, {1} the friend, {2} the third
+    // person)
+    out.narrative = "I turned down an opportunity to have a threesome with my " + rel +
+                    ", " + friendName + ", and " + thirdName + ".";
+  } else {
+    // "I'm in" (cell 0x5CA8F70). The acceptance block @0x73f3c584b4 runs
+    // ImpactKarma(-4) and ImpactDiscipline(-4) on the hero, then rolls
+    // GetRandomNumber(0, 150) for the partner's own scene and may push
+    // ScenarioLoverArgues @0x73f3da31b8 or, through
+    // SimPregnancy.GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother
+    // @0x73f2fd4438, a ScenarioPregnancy; it ends with a ScenarioBarGraph at
+    // [self+0xb8] ('{0} Enjoyment', cell 0x5C3DAE0), a child Scenario('Kinky', cell
+    // 0x5CBC720) and the obituary line 'Rumors suggest {0} was wild in bed.' (cell
+    // 0x5CBC700). shortcut: the port pushes no child scenario, draws no bar graph
+    // and writes no obituary line -- the stat move and the sentence are what this
+    // section keeps.
+    out.choice = "I'm in";
+    out.karma = pointsForImpact(-4);
+    out.discipline = pointsForImpact(-4);
+    // My {0}, {1}, and I had a threesome with {2}. (cell 0x5CBC710)
+    out.narrative = "My " + rel + ", " + friendName + ", and I had a threesome with " +
+                    thirdName + ".";
   }
   return true;
 }
