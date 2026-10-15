@@ -16047,3 +16047,113 @@ The friend family is now three quarters wired: meet, new, advice, prank, rumor (
 The full regression after the section: 53 probes at residue 0 (the new `fsstres.py` among them), the residue census at `distinct residue tokens 0 total 0`, coverage at `captured scenarios: 109  recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, the persistent tests at `friend status cards: {'cards': 77, 'request': 31, 'keep': 17, 'enemy': 46, 'dismiss': 46, 'agree': 14}` and (after the gate correction) `unfriend cards: {'cards': 73, 'insult': 28, 'let_go': 27, 'salvage_lost': 16, 'salvage_win': 2}`, and the benchmark reaching age 34.
 
 The section's own probe, `fsstres.py`, drives 160 lives and reports `lives 160 / cards 130 / cards per life {0: 68, 1: 60, 2: 26, 3: 6} / flavours {enemy: 77, request: 53} / request object pronouns {her: 33, him: 20} / hero age at the card min 12 max 78 / distinct friends 50 / runtime 23s / failures 0 / RESIDUE 0 {}`, with the eleven-year clock checked between two requests in one life and the object pronoun checked against the flavour's own narrative line.
+
+## 110. The prison unfriend card: the same friend, from behind bars
+
+The unfriend family has three members and section 108 ported one of them. This is the
+second: the flavour the yearly push picks when the hero is in prison. It shares the push
+block with the inbound card, so it is not a second roll -- it is the same roll with a
+different card.
+
+### 110.1 The card
+
+`ScenarioFriendUnfriendPrison` (il2cpp_dump.txt:40958) carries the same two fields as its
+sibling -- `_friend` at `0x170` (`SimPerson`) and `_narrative` at `0x178`
+(`System.String`) -- and three methods: `.ctor(SimPerson) @0x73f3c59adc`, `RefreshScenario`
+`@0x73f3c59b08` (158 instructions) and `DismissSelected @0x73f3c59d80` (27). It has no
+`ChoiceSelectedAtIndex`: there is nothing to choose.
+
+`RefreshScenario` stamps the usual card flags, then:
+
+- draws the headline from five literals appended to the shared list and picked by
+  `PickRandomFromStringArray @0x73f32b0608` into `[self+0x38]` -- 'Petty prison pal'
+  (cell `0x5CBC828`), 'Limited options here' (`0x5CBC838`), 'Squad: -1' (`0x5CBC810`),
+  'Lonely behind bars' (`0x5CBC820`) and 'See you later...' (`0x5CBC818`);
+- stores the body `Format(cell 0x5CBC830 = "Your {0}, {1}, has unfriended you.",
+  FriendRelationshipStatusString(), friend.Name)` at `[self+0x48]` -- byte for byte the
+  inbound card's sentence;
+- stores the journal line `Format(cell 0x5CBC7E8 = "{0} unfriended me.",
+  friend.Name.FullName())` at `[self+0x178]`;
+- moves the hero's happiness by `-4`, or `-5` once `[friend+0x188]` `YearsFriends` reaches
+  20 (`mov w9,#-5; cmp w10,#0x14; cinc w1,w9,lt` against the hero's slot `0x408`);
+- tail-calls `SimPerson.Unfriend() @0x73f30e4240`.
+
+`DismissSelected` is the family's usual one-liner: `Log([self+0x178]) @0x73f380158c`. The
+card binds no table row.
+
+### 110.2 Who opens it
+
+The prison card's constructor has exactly one caller in the whole binary: `0x73f2f03e34`,
+inside `Life.IncrementAge`'s friend loop -- the same block that builds
+`ScenarioFriendUnfriendInbound` at `0x73f2f03e74`. One test picks between them, at
+`0x73f2f03e08`:
+
+```
+bl 0x73f2f0e1d8                     ; SimHero.CurrentlyInPrison()
+tbz w0, #0, #0x73f2f03e58
+0x73f2f03e34  ScenarioFriendUnfriendPrison        ; the hero is in prison
+0x73f2f03e74  ScenarioFriendUnfriendInbound       ; the hero is not
+```
+
+Sections 108 and 110 are therefore one push, not two. Everything section 108 documented
+about that block -- the friend's twelve-year floor, the strength-versus-willpower test,
+`HeroDeservesToBeUnfriended`, the three-in-four escape for a hero in school -- gates this
+card too, at the same rate. Before this section the port refused the card outright for a
+hero in prison (`h.inPrison` sat in `friendUnfriendYear`'s gate), which is why it could
+not appear at all; the gate now runs and the branch answers it.
+
+### 110.3 The rate, and what it costs
+
+There is no table behind the card, so the headline is the whole draw. Because the roll is
+shared with the inbound card, a hero in prison simply gets the muted version of it: the
+same gate, the same `unfrRng_.chance(0.05)`, one headline from the five, and no buttons.
+Over seeds 1..40 x both genders x an 80-year and a 50-year run the port renders 12 prison
+cards against 87 unfriend cards -- 0 to 2 per life, hero ages 30 to 75 -- because the card
+only exists in the years the hero spends in prison.
+
+### 110.4 Shortcuts
+
+1. The hero's own `h.inPrison` stands in for `SimHero.CurrentlyInPrison()`; the port's
+   drawn friend has no status of its own.
+2. The step from `-4` to `-5` at `YearsFriends >= 20` is not modelled -- the drawn friend
+   carries no `[friend+0x188]` -- so the card always uses the `-4` impact,
+   `pointsForImpact(-4)` = `-30`.
+3. `SimPerson.Unfriend()` has no analogue: the port's friend is a drawn slot that survives
+   every card (the family's standing shortcut), so the same name can be unfriended twice.
+4. The card binds no row and draws no dictionary token, so there is nothing to resolve and
+   nothing to leak; the body is the inbound card's own sentence with the same drawn name.
+5. The headline is drawn on the unfriend stream (`unfrRng_`), so no earlier subsystem's
+   sequence moves for a given seed.
+
+A prison card, as the port renders it:
+
+```
+AGE    : 30
+TITLE  : Petty prison pal
+BODY   : Your friend, Ray Lee Carter, has unfriended you.
+LOG    : Ray Lee Carter unfriended me.
+CHOICE : (none)
+DELTAS : {"happiness": -30}
+
+AGE    : 69
+TITLE  : Lonely behind bars
+BODY   : Your friend, Ram Smith, has unfriended you.
+LOG    : Ram Smith unfriended me.
+CHOICE : (none)
+DELTAS : {"happiness": -30}
+```
+
+The card is small and the section is short on purpose: it is the second half of a push
+section 108 already ported, and the port answers it in the same method. The family's third
+member, `ScenarioFriendUnfriendOutbound` (`@0x73f3c597bc`), the hero's own unfriend opened
+from the Relationships tab, stays unwired.
+
+Verification for the section: the port's own test `tools/test_friend_unfriend.py`, extended
+with the prison flavour, reads `unfriend cards: {'cards': 87, 'insult': 35, 'let_go': 30,
+'prison': 8, 'salvage_lost': 12, 'salvage_win': 2}`; the new probe `/tmp/qdir/fuprres.py`
+renders 12 prison cards over 160 lives and reports `failures 0` with `RESIDUE 0 {}`.
+The full regression after the section: 54 probes at residue 0 (the new `fuprres.py` among
+them), the residue census at `distinct residue tokens 0 total 0`, coverage at
+`captured scenarios: 109  recoverable: 107`, the port gap at
+`ENTRIES 109 rendered-by-port 107 gap 0`, the push script at rc 0 with empty stderr, and
+the benchmark reaching age 34.

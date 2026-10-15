@@ -1,4 +1,4 @@
-"""Row, gate, and carry regression for the unfriend card (REPORT.en.md 108)."""
+"""Row, gate, and carry regression for the unfriend and prison cards (REPORT.en.md 108, 110)."""
 import collections
 import csv
 import json
@@ -15,6 +15,9 @@ WIN = ("Under the bridge", "Beef behind us", "Forgiven", "Can't shake me",
 LOST = ("Bye then", "Unfriended", "It's not me it's you", "Done for good",
         "Stale mate", "So long, partner")
 BAD = ("Nail in the coffin", "Done for good", "Irreparable", "No going back")
+# ScenarioFriendUnfriendPrison.RefreshScenario's five headlines (REPORT.en.md 110).
+PRISON = ("Petty prison pal", "Limited options here", "Squad: -1", "Lonely behind bars",
+          "See you later...")
 BODY = re.compile(r"^Your friend, (.+?), has unfriended you\.$")
 WIN_NAR = re.compile(r"^You successfully salvaged your friendship with your friend, (.+?)\.$")
 LOST_NAR = re.compile(r"^You tried to salvage your friendship with (.+?) but were unsuccessful\.$")
@@ -56,6 +59,14 @@ for seed in range(1, 41):
                     seen["salvage_lost"] += 1
                     assert LOST_NAR.match(narrative) and LOST_NAR.match(narrative).group(1) == name, event
                     assert deltas == LOSE, event
+            elif not choice:
+                # ScenarioFriendUnfriendPrison (REPORT.en.md 110): the same body,
+                # no buttons, one of five prison headlines, the default journal
+                # line, and the hero's -4 impact.
+                seen["prison"] += 1
+                assert event["title"] in PRISON, event
+                assert GONE_NAR.match(narrative) and GONE_NAR.match(narrative).group(1) == name, event
+                assert deltas == {"happiness": -30}, event
             elif choice in ("Let him go", "Let her go"):
                 seen["let_go"] += 1
                 assert not event["title"], event

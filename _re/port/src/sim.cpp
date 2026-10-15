@@ -24950,10 +24950,11 @@ bool Sim::friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice) {
 // 'Insult {0} one last time' (0x5CBC738); each chosen button pushes a child
 // scenario (ctor 0x73f2ebf510, linked at [self+0x128]) whose own headline comes
 // from the pool that answers it, and the port folds that child into this age-up
-// (shortcut). The two siblings -- ScenarioFriendUnfriendOutbound @0x73f3c597bc,
-// the hero's own unfriend opened from the Relationships tab, and
-// ScenarioFriendUnfriendPrison @0x73f3c59adc, the same card for a friend in
-// prison -- stay unwired.
+// (shortcut). The prison flavour is here too (REPORT.en.md 110): the same push
+// site picks ScenarioFriendUnfriendPrison @0x73f3c59adc instead of this card
+// whenever SimHero.CurrentlyInPrison() @0x73f2f0e1d8 is set. The other sibling --
+// ScenarioFriendUnfriendOutbound @0x73f3c597bc, the hero's own unfriend opened
+// from the Relationships tab -- stays unwired.
 bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;
@@ -24975,7 +24976,7 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   // coin stands in under the friend's own twelve-year floor, which becomes the
   // hero's. It draws on its own stream (unfrRng_), so no earlier subsystem's
   // sequence moves for a given seed.
-  if (h.age < 12 || h.inPrison) return false;
+  if (h.age < 12) return false;
   if (!unfrRng_.chance(0.05)) return false;
   hero_ = &life.hero;
   life_ = &life;
@@ -24993,6 +24994,32 @@ bool Sim::friendUnfriendYear(Life& life, AgeUp& out, int forcedChoice) {
   const std::string rel = "friend";
   const std::string he = friendFemale ? "she" : "he";
   const std::string him = friendFemale ? "her" : "him";
+
+  if (h.inPrison) {
+    // ScenarioFriendUnfriendPrison (il2cpp_dump.txt:40958; .ctor(SimPerson)
+    // @0x73f3c59adc, RefreshScenario @0x73f3c59b08, DismissSelected @0x73f3c59d80).
+    // The push site @0x73f2f03e08 asks SimHero.CurrentlyInPrison() @0x73f2f0e1d8 and
+    // builds this class at 0x73f2f03e34 instead of the three-button one; everything
+    // else about the block is shared. RefreshScenario sets no buttons: it draws one
+    // of five headlines (cells 0x5CBC828 / 0x5CBC838 / 0x5CBC810 / 0x5CBC820 /
+    // 0x5CBC818), stores the same body as the inbound card ("Your {0}, {1}, has
+    // unfriended you.", cell 0x5CBC830) and the journal line "{0} unfriended me."
+    // (cell 0x5CBC7E8) at [self+0x178], moves the hero's happiness by -4 -- the -5
+    // needs [friend+0x188] YearsFriends >= 20, which the drawn slot has no field for
+    // (shortcut) -- and tail-calls SimPerson.Unfriend() @0x73f30e4240. Dismissed
+    // lines are logged nowhere: only the badge body and the journal line exist.
+    // shortcut: the hero's own prison state stands in for the whole block, as in the
+    // inbound card above.
+    static const char* const kPrison[5] = {"Petty prison pal", "Limited options here",
+                                           "Squad: -1", "Lonely behind bars",
+                                           "See you later..."};
+    out = AgeUp();
+    out.title = kPrison[unfrRng_.below(5)];
+    out.body = "Your " + rel + ", " + friendName + ", has unfriended you.";
+    out.happiness = pointsForImpact(-4);
+    out.narrative = friendName + " unfriended me.";
+    return true;
+  }
 
   out = AgeUp();
   out.body = "Your " + rel + ", " + friendName + ", has unfriended you.";
