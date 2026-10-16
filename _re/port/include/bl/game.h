@@ -763,6 +763,12 @@ struct Hero {
   // employee byte 0x39 that decides which of the two sentences the card shows.
   int ahPresented = 0;
   bool ahFirst = true;
+  // The lightning strike (REPORT.en.md 119) is the first wired card that can
+  // kill the hero: its DismissSelected lane hands the death system a cause of
+  // its own, and the life byte 0x5e0 its refresh reads is a once-per-life flag
+  // the port keeps here (the game re-offers the card every eligible year).
+  bool lightDone = false;
+  bool lightWillDie = false;
 };
 
 class GameState {

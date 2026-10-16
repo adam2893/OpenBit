@@ -179,6 +179,7 @@ std::string eventJson(const AgeUp& ev, int age) {
   o << "      \"deltas\": {\"karma\":" << ev.karma
     << ",\"discipline\":" << ev.discipline
     << ",\"happiness\":" << ev.happiness
+    << ",\"health\":" << ev.health
     << ",\"smarts\":" << ev.smarts
     << ",\"looks\":" << ev.looks << "}\n";
   o << "    }";
@@ -763,9 +764,10 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     h.karma += ev.karma;
     h.discipline += ev.discipline;
     h.happiness += ev.happiness;
+    h.health += ev.health;
     h.smarts += ev.smarts;
     h.looks += ev.looks;
-    int* stats[] = {&h.karma, &h.discipline, &h.happiness, &h.smarts, &h.looks};
+    int* stats[] = {&h.karma, &h.discipline, &h.happiness, &h.health, &h.smarts, &h.looks};
     for (int* s : stats) {
       if (*s < 0) *s = 0;
       if (*s > 100) *s = 100;

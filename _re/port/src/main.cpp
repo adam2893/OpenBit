@@ -280,9 +280,10 @@ int main(int argc, char** argv) {
     hh.karma += ev.karma;
     hh.discipline += ev.discipline;
     hh.happiness += ev.happiness;
+    hh.health += ev.health;
     hh.smarts += ev.smarts;
     hh.looks += ev.looks;
-    int* stats[] = {&hh.karma, &hh.discipline, &hh.happiness, &hh.smarts, &hh.looks};
+    int* stats[] = {&hh.karma, &hh.discipline, &hh.happiness, &hh.health, &hh.smarts, &hh.looks};
     for (int* s : stats) {
       if (*s < 0) *s = 0;
       if (*s > 100) *s = 100;
@@ -300,6 +301,7 @@ int main(int argc, char** argv) {
       std::cout << "    karma" << (ev.karma >= 0 ? "+" : "") << ev.karma
                 << " discipline" << (ev.discipline >= 0 ? "+" : "") << ev.discipline
                 << " happiness" << (ev.happiness >= 0 ? "+" : "") << ev.happiness
+                << " health" << (ev.health >= 0 ? "+" : "") << ev.health
                 << " smarts" << (ev.smarts >= 0 ? "+" : "") << ev.smarts
                 << " looks" << (ev.looks >= 0 ? "+" : "") << ev.looks << "\n";
     } else if (!ev.narrative.empty()) {

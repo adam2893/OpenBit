@@ -38,6 +38,7 @@ struct AgeUp {
   int karma = 0;          // 'Karma Impact N'
   int discipline = 0;     // 'Discipline Impact N'
   int happiness = 0;      // 'Happiness Impact N'
+  int health = 0;         // 'Health Impact N' (the fourth stat float, hero+0x8c)
   int smarts = 0;         // 'Intelligence Impact N'
   int looks = 0;          // 'Appearance Impact N'
 };
@@ -482,6 +483,10 @@ class Sim {
   // and the only one the supervisor starts: he asks the hero out, and the answer
   // moves the hero's happiness or his discipline.
   bool afterHoursYear(Life& life, AgeUp& out, int forcedChoice);
+  // The lightning strike (REPORT.en.md 119) is the disaster family's first
+  // wired card, code-built like the two above, and the only one that can end
+  // the life: it hands its pending cause to checkDeath.
+  bool lightningYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -627,6 +632,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng supRng_;
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)
+  Rng lightRng_;  // ScenarioLightningStrike's own stream (REPORT.en.md 119)
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).

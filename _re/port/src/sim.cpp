@@ -634,6 +634,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
+      lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3607,6 +3608,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // team-building card and draws on its own stream (include/bl/sim.h ahRng_), so
   // no earlier subsystem's sequence moves.
   if (afterHoursYear(life, out, forcedChoice)) return true;
+  // The lightning strike (REPORT.en.md 119) is the disaster family's first
+  // wired card and the only one in the port that can kill the hero. It is
+  // tried right after the workplace cards and draws on its own stream
+  // (include/bl/sim.h lightRng_), so no earlier subsystem's sequence moves.
+  if (lightningYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -23305,6 +23311,21 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
   const Hero& h = life.hero;
   hero_ = &h;
   life_ = &life;
+  // A card can hand the death system a cause of its own (REPORT.en.md 119):
+  // ScenarioLightningStrike's DismissSelected lane calls
+  // DeathManager::UpdateWithLightningStrike @0x73f2fb19d4, whose sentence is
+  // the table's own 'Fluke' row ('<pronoun> died after being struck by
+  // lightning.'). A pending cause pre-empts the annual roll.
+  if (h.lightWillDie) {
+    const Table& dt = tbl("a16_death-types-enc");
+    for (size_t r = 0; r < dt.size(); ++r) {
+      if (dt.at(r, "Sentence").find("struck by lightning") != std::string::npos) {
+        type = dt.at(r, "Type");
+        sentence = resolve(dt.at(r, "Sentence"));
+        return true;
+      }
+    }
+  }
   // Port-side mortality rule (the real game spreads this over many systems, not
   // one table): a small annual risk that rises steeply after 55.
   const double annual = h.age < 55 ? 0.001 : 0.004 * double(h.age - 54);
@@ -26409,6 +26430,69 @@ bool Sim::afterHoursYear(Life& life, AgeUp& out, int forcedChoice) {
   // word differs from the hero's ([x0+0x1c] vs [x9+0x1c]) the game builds a
   // jealousy scenario over cell 0x5c60ad0 ('sexually harassing <you/me>') and
   // appends it to the day's result. The port pushes no chain of scenarios.
+  return true;
+}
+
+// The lightning strike (REPORT.en.md 119) is the disaster family's first card
+// the port reaches: it is code-built, reads no table at all, and it is the only
+// wired card that can kill the hero.
+// ScenarioLightningStrike (il2cpp_dump.txt:54901; fields _narrative 0x170 and
+// _willDie 0x178) has .ctor @0x73f2e07e28, RefreshScenario @0x73f2e07ea4,
+// DismissSelected @0x73f2e080dc and ScenarioIsEligibleForRandomPush @0x73f2e081e0.
+bool Sim::lightningYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule the other code-built cards keep.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // Gate @0x73f2e081e0: the hero exists, is eighteen or older, is not in
+  // prison, and one draw of GetRandomNumber(0,5) @0x73f32ab2a8 comes up zero --
+  // a one-in-five eligibility, re-offered every year it fits.
+  if (h.age < 18) return false;
+  if (h.inPrison) return false;
+  // shortcut: the game re-offers the card every eligible year (the life byte
+  // 0x5e0 is what its refresh reads); the port stops after one, because a
+  // second strike could only replay the same death.
+  if (h.lightDone) return false;
+  if (lightRng_.below(5) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  // Body: Format(cell 0x5c5fdb0 '{0}, you were struck by lightning!' #70595)
+  // over DataHub::GetRandomCircumstance() @0x73f2ce2d08 -- the 43-slot scene
+  // switch the port already keeps as kCircumstancePublicScenes (src/sim.cpp
+  // 1624). shortcut: the port draws that array with the card's own stream and
+  // leaves its two '<musician> concert' slots unreachable.
+  const size_t scenes = sizeof(kCircumstancePublicScenes) / sizeof(*kCircumstancePublicScenes);
+  const std::string scene = kCircumstancePublicScenes[lightRng_.below(uint32_t(scenes))];
+  out.title = "Lightning Strike";                // #28922, cell 0x5c5fda0
+  out.body = scene + ", you were struck by lightning!";
+  out.narrative = "I was struck by lightning!";  // #25720, cell 0x5c5fdb8
+  h.lightDone = true;
+  // The four stat floats at hero+0x88..0x98 (happiness, health, intelligence,
+  // appearance) are what the two branches move: GetRandomNumber(0,2) == 0 with
+  // the life byte 0x5e0 clear restores all four to 100.0f, anything else zeroes
+  // them and then rolls the death flag.
+  const int healthBefore = h.health;
+  if (lightRng_.below(2) == 0) {
+    out.health = 100 - h.health;
+    out.happiness = 100 - h.happiness;
+    out.smarts = 100 - h.smarts;
+    out.looks = 100 - h.looks;
+  } else {
+    out.health = -h.health;
+    out.happiness = -h.happiness;
+    out.smarts = -h.smarts;
+    out.looks = -h.looks;
+    // DismissSelected @0x73f2e080dc then hands the hero to the death system
+    // (DeathManager::UpdateWithLightningStrike @0x73f2fb19d4 and the hero's
+    // vtable slot 0x368). The flag is a GetRandomNumber(0,100) draw compared
+    // against the float at hero+0xac, which is not one of the four floats just
+    // zeroed; the port reads it as the health the strike found, so a
+    // full-health hero survives on its own.
+    h.lightWillDie = healthBefore < int(lightRng_.below(100));
+  }
+  // shortcut: the thunder sound at [self+0x140] ('a16_sndThunder.aiff' #53013),
+  // the 'Victim' label at [self+0x30] (#45629) and the 'acLightningStrike'
+  // achievement (AchievementManager @0x73f2817388) are UI-side; the port has no
+  // sound, no card category label and no achievements.
   return true;
 }
 

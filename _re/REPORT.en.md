@@ -17562,3 +17562,171 @@ The full batch, written by /tmp/qdir/reg118.sh and run as a background job, is g
 | tools/bench.sh /tmp/trace_c10.json | 167 lines, and `diff` against the 117 run is empty -- the ages 0..34 trace does not move |
 
 The trace not moving is the point of the separate stream. This card draws a pastime on every eligible year through `ahRng_` and none of those draws touch `rng_`, so the ages the benchmark compares against the game's own capture are unchanged -- the same result §117 recorded, and the first time in this stretch that a card could have moved the main stream and did not.
+
+## 119. The lightning strike: the first card that can end the life
+
+Every card since §105 has been a social one: a colleague, a supervisor, a friend, a lover, and in each case the worst outcome was a stat and a relationship moving. This one is from a different family altogether. It reads no table, its sentence is assembled out of a switch of forty-three scene strings, and its dismiss lane hands the hero to the death system. Porting it forced two things the port had never needed: a way for a card to move the fourth stat (health sat in neither `AgeUp` nor any card), and a way for a card to ask for a death -- `checkDeath` until now only ever answered its own annual roll.
+
+### 119.1 The class and its gate
+
+**ScenarioLightningStrike** sits at il2cpp_dump.txt:54901, and the class after it in the dump is ScenarioVictimRansom at il2cpp_dump.txt:54905. It carries two fields and -- unlike every social card -- no `ChoiceSelectedAtIndex` at all:
+
+- `field 0x170 System.String _narrative` -- the one line the journal gets
+- `field 0x178 System.Boolean _willDie` -- set during the refresh, read by the dismiss
+- `.ctor @0x73f2e07e28`, `RefreshScenario @0x73f2e07ea4`, `DismissSelected @0x73f2e080dc`, `ScenarioIsEligibleForRandomPush @0x73f2e081e0`
+
+The card has no buttons, so the missing choice method is the shape of the card rather than a gap in the dump: the player dismisses it the way a death notice is dismissed.
+
+The gate is short, and it is the only one in the port so far that is not a set of state tests:
+
+1. the singleton's hero object resolves (`[[cell 0x5c30250]+0xb8]` and then `[x8+0x28]`)
+2. the hero's age at `[x0+0x20]` is at least `0x12` -- eighteen
+3. `SimHero::CurrentlyInPrison() @0x73f2f0e1d8` is false (`eor w8, w0, #1`)
+4. `GetRandomNumber(0, 5) @0x73f32ab2a8` comes up zero (`cmp w0, #0; cset w0, eq`)
+
+That last one is the whole cost of the card: a one-in-five eligibility roll, re-offered every year the other three tests pass. There is no fame test, no `PresentedCountForScenario` cap, and no workplace or job test -- which is why the card can land on an eighteen-year-old (119.4's samples include one).
+
+### 119.2 The body: three strings and a sound, and no table at all
+
+`.ctor @0x73f2e07e28` stores two cells with one `stp`: cell `0x5c5f990`, literal #45629 `Victim` at `[self+0x30]`, and cell `0x5c5fda0`, literal #28922 `Lightning Strike` at `[self+0x38]`. `0x38` is the title slot every card in the port uses; `0x30` is the category label the UI files the card under, and `Victim` is this card's.
+
+`RefreshScenario` then builds exactly three strings:
+
+| slot | cell | literal | text |
+|---|---|---|---|
+| body | 0x5c5fdb0 | #70595 | `{0}, you were struck by lightning!` |
+| journal | 0x5c5fdb8 | #25720 | `I was struck by lightning!` |
+| sound | 0x5c5fda8 | #53013 | `a16_sndThunder.aiff` |
+
+The `{0}` comes from `DataHub::GetRandomCircumstance() @0x73f2ce2d08` -- the same call §38 decoded as a switch over `Random.Range(0, 43)` and the port already keeps as `kCircumstancePublicScenes` (port/src/sim.cpp:1624): forty-one fixed scenes ("While out jogging", "On your way to the airport") plus two slots that name a musician concert. The body is therefore always a scene and never a bare line, and the port's array holds the same strings.
+
+The two remaining stores are one flag and one field: `mov w8, #1; str w8, [self+0x134]` and the sound string at `[self+0x140]`. Nothing else in the class reads a table -- which is why the port's entry for the card carries an empty `table` and a null `row`.
+
+### 119.3 The two branches, and the first pending death
+
+After the sentence is stored, the refresh rolls `GetRandomNumber(0, 2)` and moves the four stat floats in one shot. The four are the ones §1 mapped: hero+0x88 happiness, +0x8c health, +0x90 intelligence, +0x94 appearance:
+
+- a draw of 0 **and** the life byte at `[life+0x20 -> +0x5e0]` equal to 0 take the unharmed lane: `mov w9, #0x42c80000; dup v0.4s; stur q0, [hero, #0x88]` writes 100.0f into all four
+- anything else zeroes all four with `stp xzr, xzr, [hero, #0x88]` and then rolls for death: `GetRandomNumber(0, 100) @0x73f32ab2a8`, `scvtf s0, w0`, `ldr s1, [x8, #0xac]`, `fcmp s1, s0; b.pl` -- the branch is skipped when `hero[0xac]` is not below the draw, and `_willDie` (`[self+0x178]`) is set only when it is
+
+Both lanes converge on `AchievementManager::get_SharedAchievementManager() @0x73f2817388` and `CompleteAchievement('acLightningStrike') @0x73f2817434` -- cell `0x5c326c0` holds the achievement id as a live string object, which is what `readlit3.py`'s second hop reads.
+
+`DismissSelected @0x73f2e080dc` is where the card pays out. It logs `_narrative`, and then, only when `_willDie` is set:
+
+1. the death manager at `[life+0x20]+0xa0` gets the hero's age written at its `[x0+0x60]`
+2. `DeathManager::UpdateWithLightningStrike() @0x73f2fb19d4`
+3. the hero's own vtable slot `0x368` is called with no arguments -- the kill
+4. a follow-up `Scenario` is built from cell `0x5c38f70` through `0x73f3b9afd0` and linked at `[self+0x128]`
+
+The cause this card writes into the death record is the table's own, not a new string: `a16_death-types-enc` row 68 is `Fluke`, commonness 1, sentence `<pronoun> died after being struck by lightning.` -- one of the 109 rows the port's `checkDeath` already draws from for an ordinary death.
+
+### 119.4 How the port reaches it
+
+**The gate.** `Sim::lightningYear` (port/src/sim.cpp:26442, declared port/include/bl/sim.h:489, wired at port/src/sim.cpp:3615 right after the after-hours card) tests the three states and then the coin:
+
+```cpp
+  if (h.age < 18) return false;
+  if (h.inPrison) return false;
+  if (h.lightDone) return false;
+  if (lightRng_.below(5) != 0) return false;
+```
+
+`lightRng_` (port/include/bl/sim.h:635, seeded at port/src/sim.cpp:637) is the card's own stream, so no earlier family's sequence moves and the ages 0..34 bench trace is untouched. The first seed pair chosen for it collided with `aiRng_` at port/src/sim.cpp:644, which the uniqueness check at the end of the patch caught; the shipped pair `0x9fb21c651e98df25 ^ 0xd6e8feb86659fd93` appears nowhere else in the constructor list.
+
+**The sentence.** `out.title = "Lightning Strike"`, `out.body = scene + ", you were struck by lightning!"` with the scene drawn from the port's own `kCircumstancePublicScenes` array (port/src/sim.cpp:1624) on `lightRng_`, and `out.narrative = "I was struck by lightning!"`. `table` and `row_id` stay empty, because there is no row.
+
+**The two lanes.** The port expresses both through the deltas the card computes off the hero's current values, which is what makes the branch visible in the harness at all:
+
+| lane | condition | deltas |
+|---|---|---|
+| unharmed | `lightRng_.below(2) == 0` | `health`, `happiness`, `smarts`, `looks` each `100 - value` |
+| damage | anything else | each `-value`, i.e. all four land on 0 |
+
+**The pending death.** `Hero::lightWillDie` (port/include/bl/game.h:771) is set on the damage lane when the health the strike found is below a `lightRng_.below(100)` draw, and `Sim::checkDeath` (port/src/sim.cpp:23319) now honours it before its own annual roll:
+
+```cpp
+  if (h.lightWillDie) {
+    const Table& dt = tbl("a16_death-types-enc");
+    for (size_t r = 0; r < dt.size(); ++r) {
+      if (dt.at(r, "Sentence").find("struck by lightning") != std::string::npos) {
+        type = dt.at(r, "Type");
+        sentence = resolve(dt.at(r, "Sentence"));
+        return true;
+      }
+    }
+  }
+```
+
+A card-driven death is a new shape for this port: the runner (port/src/script.cpp:776) already called `checkDeath` after every age-up and set `life.alive = false`, so the card needed only to hand the check a cause it could not have drawn itself. The harness reports it in the same block as any other death.
+
+Two support changes were needed to say any of this:
+
+- `AgeUp::health` (port/include/bl/sim.h:41) -- the fourth stat had no delta field, so no card could move it. port/src/script.cpp and port/src/main.cpp add it to the stat application and to their clamp lists, and `eventJson` (port/src/script.cpp:179) now reports it beside the other five, which is how the probes below can see the four floats land.
+- `Hero::lightDone` (port/include/bl/game.h:770) -- the once-per-life flag (see 119.5).
+
+Sampled cards, taken from a seeds-1..16 run:
+
+| seed | age | lane | body | deltas |
+|---|---|---|---|---|
+| 1 male | 33 | unharmed | `While sitting at the train station, you were struck by lightning!` | health +11, smarts +67, looks +35 (all to 100) |
+| 2 male | 18 | damage | `While sitting at the train station, you were struck by lightning!` | happiness -100, health -90, smarts -3, looks -45 |
+| 4 male | 21 | unharmed | `While at a cricket match, you were struck by lightning!` | happiness +2, health +13, smarts +100, looks +16 |
+| 8 male | 63 | damage | `On your way to the airport, you were struck by lightning!` | happiness -3, health -93, smarts -62, looks -56 |
+| 28 male | 61 | damage, death | `While riding a Segway, you were struck by lightning!` | all four to 0, then `{"type": "Fluke", "sentence": "he died after being struck by lightning."}` |
+| 36 male | 46 | damage, death | `While shopping at the sex toy store, you were struck by lightning!` | all four to 0, then `{"type": "Fluke", "sentence": "he died after being struck by lightning."}` |
+
+The seed-4 card shows the family lines the port writes before a card's own line (`My father is no longer suffering from ringworm.`), and the two death rows are the whole new path end to end: the strike zeroes the four stats, `checkDeath` reads the flag, and the death record carries the table's `Fluke` cause with its `<pronoun>` resolved to the hero's own.
+
+### 119.5 Shortcuts
+
+- **One strike per life.** The game re-offers the card every year it fits; its own brake is the life byte `0x5e0`, which the port does not carry. `Hero::lightDone` stands in for it, because a second strike could only replay a death that did not happen the first time.
+- **`hero[0xac]` read as the health the strike found.** The death roll compares a float at `0xac` against `GetRandomNumber(0, 100)`. `0xac` is not one of the four floats the lane just zeroed -- `0x88`..`0x98` are -- so it is some further state the port does not model, and the closest honest reading is the health value before the strike. A consequence worth stating: a hero at full health can never die of a strike in the port, because `100 < below(100)` is false whatever the draw.
+- **The two musician-concert slots** of the real switch are not reachable: the port draws its own array with `lightRng_` and does not call `referenceToken("musician")`, which would have moved the main stream.
+- **`Victim`, the thunder and the achievement** are UI-side: the category label at `[self+0x30]`, the sound at `[self+0x140]` and `acLightningStrike`. The port has no card categories, no sound and no achievements.
+- **The follow-up scenario** linked at `[self+0x128]` is not pushed.
+- **No `PresentedCountForScenario` cap** is needed: the game's gate has none either.
+
+### 119.6 Verification
+
+Three independent checks, plus the full batch every earlier section has had to survive.
+
+**The probe** (`/tmp/qdir/lsres.py`, 80 lives -- seeds 1..40 in both sexes, 80 years each). It differs from every probe before it in one way that matters: it rebuilds the hero's four stats from the newborn block and each event's deltas, because this card's whole effect is a set of absolute values rather than a fixed delta. Output:
+
+```
+lives 80
+lightning cards 77
+lanes {'unharmed': 28, 'damage': 49}
+scenes drawn 22 of 41
+cards per life {0: 3, 1: 77}
+hero age at the card min 18 max 64
+lightning deaths 4
+  death (28, 'male', 61, 'Fluke', 'he died after being struck by lightning.')
+  death (28, 'female', 61, 'Fluke', 'she died after being struck by lightning.')
+  death (36, 'male', 46, 'Fluke', 'he died after being struck by lightning.')
+  death (36, 'female', 46, 'Fluke', 'she died after being struck by lightning.')
+runtime 16s
+failures 0
+events 77
+RESIDUE 0 {}
+rc 0
+```
+
+Three things come out of it. The card is a once-per-life event even though the game's gate allows repeats -- `cards per life {0: 3, 1: 77}` is the flag at work, and the three zeroes are seeds whose lives ended before the one-in-five roll came up. Both lanes land: 49 damage to 28 unharmed is near the 2:1 `below(2)` predicts, and the unharmed lane is the rarer one because it needs the draw **and** the life byte the port does not model. And the card can kill: four deaths, at 61 and 46, both sexes in both cases, each type `Fluke` with the table's lightning sentence resolved to the hero's own pronoun -- the first deaths in this port that no annual roll produced. The age floor shows up exactly as written: the earliest card is at 18, the first year the gate allows.
+
+**The test** (`tools/test_lightning.py`, in the repo, asserting rather than printing):
+
+```
+lives 80
+lightning cards 77
+lanes {'damage': 49, 'unharmed': 28}
+lightning deaths 4
+cards per life {0: 3, 1: 77}
+ok
+```
+
+**The batch** (`/tmp/qdir/reg119.sh`): the build; `tools/coverage.py` gives `captured scenarios: 109  recoverable: 107` and `contentless entries: 2 -- ScenarioMiniPaywall x2`; `/tmp/qdir/portgap.py` gives `ENTRIES 109 rendered-by-port 107 gap 0`; the 109-age capture replay ends `covpush rc=0` with a zero-byte stderr; `/tmp/qdir/rescensus.py` gives `distinct residue tokens 0 total 0`; the sweep gives 62 probes on 62 lines, every one `rc=0 residue=0`, with `lsres.py events=77`; and `tools/bench.sh /tmp/trace_c10.json` gives 167 lines that diff **zero** lines against the §118 run (`diff /tmp/qdir/bench118.txt /tmp/qdir/bench119.txt`).
+
+Counters moved between §118 and §119, and this shift is larger than the previous two and easy to explain: the card zeroes or maxes four stats at once, so it changes what every age-gated family can draw for the rest of the life. `tools/test_coworker.py` on its own seeds: annoy 137 -> 148, behavior 119 -> 115, pranks 109 -> 108, rumors 92 -> 96, supervisor 114 -> 114, after hours 86 -> 81, team building 52 -> 52, `supervisors seen` 34 -> 40. The sweep: `ftres.py` 170 -> 163, `ahres.py` 86 -> 81, `giftres.py` 55 -> 47, `supres.py` 114 -> 114, `tbres.py` 52 -> 52. Earlier sections keep their quoted numbers, the §115 precedent.
+
+The zero-line bench diff is the interesting one. The bench runs ages 0..34, where this card cannot appear before 18, and it reports the harness's own age-by-age streams and stat deltas rather than card counters -- so the drift above is real but does not reach it. `lightRng_` is what makes that true: the card draws its scene, its coin and its death roll on its own stream, and the main `rng_` sequence is exactly where it was in §118.
+
