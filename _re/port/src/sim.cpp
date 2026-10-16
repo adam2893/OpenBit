@@ -635,6 +635,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
       lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
+      seducRng_(seed ^ 0xa4093822299f31d0ULL ^ 0x082efa98ec4e6c89ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3613,6 +3614,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // tried right after the workplace cards and draws on its own stream
   // (include/bl/sim.h lightRng_), so no earlier subsystem's sequence moves.
   if (lightningYear(life, out, forcedChoice)) return true;
+  // The supervisor hookup card (REPORT.en.md 120) is that family's fifth push
+  // and the only workplace card that runs in both directions. It is tried
+  // after the lightning strike and draws on its own stream (include/bl/sim.h
+  // seducRng_), so no earlier subsystem's sequence moves.
+  if (seduceYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26493,6 +26499,192 @@ bool Sim::lightningYear(Life& life, AgeUp& out, int forcedChoice) {
   // the 'Victim' label at [self+0x30] (#45629) and the 'acLightningStrike'
   // achievement (AchievementManager @0x73f2817388) are UI-side; the port has no
   // sound, no card category label and no achievements.
+  return true;
+}
+
+// The supervisor hookup card (REPORT.en.md 120) is the workplace family's fifth
+// push and the only one that runs in both directions: the boss propositions the
+// hero (the Inbound column pair) or the hero propositions the boss (the Outbound
+// pair). ScenarioSupervisorSeduce (il2cpp_dump.txt:55101) carries _supervisor
+// 0x170, _loverCandidate 0x178, _targeted 0x180, _gettingSeduced 0x181 and
+// _dataInboundLogVersion 0x188; its gate @0x73f2e273c4 asks for age >= 18, a job
+// or the military, PresentedCountForScenario < 5 and a workplace whose
+// GetSupervisor is not null. The port already keeps both objects it needs -- the
+// supervisor name the unprofessional card draws (supName / supFemale) and the
+// employer it tracks (ofcCompany) -- so the card costs one counter and its own
+// stream.
+bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 18) return false;  // the hero's age field [x0+0x20] >= 0x12
+  // CurrentlyHasAJob @0x73f2f0e040 or CurrentlyInTheMilitary @0x73f2f0e0b4.
+  if (!h.employed && !h.military) return false;
+  if (h.sedPresented >= 5) return false;  // the only presented cap in the gate
+  static const char* kTable = "a16_coworker-hookup-scenarios-enc";
+  if (!ensureTable(kTable)) return false;
+  // The game does not roll for this card; the workplace pushes it like any other
+  // random push. The port pushes by coin on its own stream, as every family here
+  // does.
+  if (!seducRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  // RefreshScenario @0x73f2e24b9c takes SimWorkplace::GetSupervisor @0x73f2fe8db8
+  // off the hero's workplace when it was not handed one, so one supervisor serves
+  // this card and the unprofessional one alike.
+  if (h.supName.empty()) {
+    h.supName = resolve("<supervisor>");
+    if (h.supName.empty()) return false;
+    h.supFemale = seducRng_.chance(0.5);
+  }
+  const std::string sup = h.supName;
+  // The direction is the game's _gettingSeduced byte (0x181): set, the supervisor
+  // is the one asking and the card reads the Inbound columns; clear, the hero is
+  // asking and it reads the Outbound ones. The game reaches the card both ways
+  // and hands the DataHub picker the flag
+  // (GetRandomCoworkerHookupScenarioForSenderGenderAndRecipientGenderAndIs-
+  // SupervisorInbound @0x73f2cc7ca0, called at 0x73f2e250f4 with
+  // (supervisor[0x1c], hero[0x1c], 1)); the port draws the direction.
+  const bool inbound = seducRng_.chance(0.5);
+  const Table& t = tbl(kTable);
+  const auto genderOk = [&](size_t r, const char* col, bool female) {
+    if (!col[0] || !t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !female;
+    if (v == "female") return female;
+    return true;
+  };
+  // The picker filters on the sender's and the recipient's gender column, and the
+  // Supervisor Appropriate marker is the game's own 'x' on the five rows a boss is
+  // allowed to use. The port applies that marker to the inbound direction it
+  // belongs to (the game hands the picker the flag, shortcut).
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Inbound Scenario")).empty()) continue;
+    if (inbound && trim(t.at(r, "Supervisor Appropriate")).empty()) continue;
+    if (!genderOk(r, "Sender Gender", inbound ? h.supFemale : h.female)) continue;
+    if (!genderOk(r, "Recipient Gender", inbound ? h.female : h.supFemale)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[seducRng_.below(uint32_t(pool.size()))];
+  std::string scenario = trim(t.at(row, inbound ? "Inbound Scenario" : "Outbound Scenario"));
+  std::string logCell = trim(t.at(row, inbound ? "Inbound Log Version" : "Outbound Log Version"));
+  // The two dictionary entries the coworker cards register (#8833 '<coworker>',
+  // #8832 '<coworker-possessive>'), with the same role word the after-hours card's
+  // decoded body proves the game writes for a boss: 'your supervisor, NAME,' in
+  // the hero's own sentence and 'my supervisor, NAME,' in the journal.
+  const std::string whoBody = inbound ? ("your supervisor, " + sup + ",") : sup;
+  const std::string whoLog = inbound ? ("my supervisor, " + sup + ",") : sup;
+  // The outgoing direction names the boss on his own, so the possessive is the
+  // plain name plus the apostrophe-s.
+  const std::string whoBodyPoss = inbound ? ("your supervisor, " + sup + "'s,") : (sup + "'s,");
+  const std::string whoLogPoss = inbound ? ("my supervisor, " + sup + "'s,") : (sup + "'s,");
+  substAll(scenario, "<coworker-possessive>", whoBodyPoss);
+  substAll(scenario, "<coworker>", whoBody);
+  substAll(logCell, "<coworker-possessive>", whoLogPoss);
+  substAll(logCell, "<coworker>", whoLog);
+  // The body's draws are read first and kept, because the journal's own '<rb>'
+  // points back at the alternative the body picked.
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[seducRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.supFemale;
+  const std::string body = resolve(drawCardText(scenario, true));
+  const std::string logLine = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+  // The title slot [self+0x38] is csel between 'Seducer' (#38395) and 'Seductress'
+  // (#38397) on the actor's EffectiveGender @0x73f30dbc30.
+  const bool actorFemale = inbound ? h.supFemale : h.female;
+  const bool targetFemale = inbound ? h.female : h.supFemale;
+  const std::string targetThem = targetFemale ? "her" : "him";
+  const std::string targetPoss = targetFemale ? "her" : "his";
+  ++h.sedPresented;
+  out = AgeUp();
+  out.table = kTable;
+  out.row_id = std::to_string(row + 1);
+  out.title = actorFemale ? "Seductress" : "Seducer";  // #38397 / #38395
+  out.body = body;
+  // The game capitalizes the assembled sentence, and several cells of this table
+  // open inside a quotation mark.
+  if (!out.body.empty())
+    out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  out.narrative = logLine;
+  // Three buttons, built at 0x73f2e25cec / 0x73f2e25d38 / 0x73f2e25d80: the
+  // advance button -- whose wording depends on the two people's sexes and on the
+  // direction -- then 'Reject {0} advances' (#35577), then the report button,
+  // 'Report {0} misconduct' (#35787) in the military and 'Report {0} to HR'
+  // (#35788) otherwise. ChoiceSelectedAtIndex @0x73f2e25de0 lowers the label and
+  // tests it in a fixed order -- 'reject' (#64467) first, 'report' (#64521)
+  // second, anything else in the third lane. The game lets the hero pick; the
+  // port draws the one that happens.
+  const int pick = int(seducRng_.below(3));
+  if (pick == 1) {
+    // The reject lane @0x73f2e26170: the supervisor's own slot 0x508 moves by -4
+    // and the hero's ImpactDiscipline(4) @0x73f30e4cdc is the whole of it -- no
+    // happiness and no karma move. The port's points table stops at 3, so 4 reads
+    // as its top step (shortcut).
+    out.choice = "Reject " + targetPoss + " advances";
+    out.discipline = pointsForImpact(3);
+  } else if (pick == 2) {
+    // The report lane @0x73f2e2641c does nothing but push a bare Scenario carrying
+    // cell 0x5c607f8 and link it at [self+0x128]; no hero stat moves.
+    out.choice = h.military ? ("Report " + targetThem + " misconduct")
+                            : ("Report " + targetThem + " to HR");
+  } else if (inbound) {
+    // The boss asked and the hero went along: the lane at 0x73f2e26488 gives the
+    // workplace ImpactWorkplacePerformance(5) @0x73f2fe99d8 and the supervisor +5
+    // on his own slot 0x508, at the cost of the hero's ImpactDiscipline(-3)
+    // @0x73f30e4cdc. The port models neither bar (shortcut), so only the
+    // discipline move lands, and the journal stays the row's own inbound log line
+    // -- the game shows it through Format('{0}', _dataInboundLogVersion).
+    out.discipline = pointsForImpact(-3);
+    if (h.female == h.supFemale) {
+      out.choice = seducRng_.chance(0.5) ? "Get at it" : "Let me get a piece of that";
+    } else {
+      out.choice = seducRng_.chance(0.5) ? ("Give it to " + targetThem) : "Hit that";
+    }
+  } else {
+    // The hero's own attempt. The wording set is the game's incoming one: 'Hook up
+    // with {0}' (#23093), 'Do {0}' (#17950) or 'Try to seduce {0}' (#44150).
+    out.choice = seducRng_.chance(0.5) ? ("Hook up with " + targetThem)
+                                       : ("Try to seduce " + targetThem);
+    // The game gates the attempt on WillSupervisorAcceptHeroAttemptToSeduce
+    // @0x73f2fe95cc plus the supervisor's interest float (0x244) against
+    // GetRandomNumber(0,100) @0x73f32ab2a8 and an EffectiveGender/Luck test; the
+    // port models no interest, so it draws the coin (shortcut). The failure lane
+    // @0x73f2e269e0 writes 'I attempted to seduce my {0}, {1}, but failed.'
+    // (#23581) and moves the hero's happiness by -4; the success lane
+    // @0x73f2e26974 writes 'I seduced my {0}, {1}!' (#25067) and pushes
+    // ScenarioWorkplaceDisciplineHR so HR deals with the fallout (not modelled).
+    if (seducRng_.chance(0.5)) {
+      out.narrative = "I seduced my supervisor, " + sup + "!";
+    } else {
+      out.happiness = pointsForImpact(-1);
+      out.narrative = "I attempted to seduce my supervisor, " + sup + ", but failed.";
+    }
+  }
   return true;
 }
 

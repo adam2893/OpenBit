@@ -769,6 +769,12 @@ struct Hero {
   // the port keeps here (the game re-offers the card every eligible year).
   bool lightDone = false;
   bool lightWillDie = false;
+  // The supervisor hookup card (REPORT.en.md 120) is the workplace family's
+  // fifth push: the boss propositions the hero or the hero propositions the
+  // boss, and the direction byte 0x181 is drawn per year rather than kept, so
+  // the game's own PresentedCount cap of five is the only counter the port
+  // needs.
+  int sedPresented = 0;
 };
 
 class GameState {

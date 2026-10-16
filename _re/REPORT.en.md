@@ -17730,3 +17730,336 @@ Counters moved between §118 and §119, and this shift is larger than the previo
 
 The zero-line bench diff is the interesting one. The bench runs ages 0..34, where this card cannot appear before 18, and it reports the harness's own age-by-age streams and stat deltas rather than card counters -- so the drift above is real but does not reach it. `lightRng_` is what makes that true: the card draws its scene, its coin and its death roll on its own stream, and the main `rng_` sequence is exactly where it was in §118.
 
+## 120. The supervisor who wants you: the hookup table read from both ends
+
+Section 116 to 118 built the three cards that a supervisor pushes *at* the hero -- the
+unprofessional remark, the team-building invitation, the after-hours invitation. This
+section is the fourth member of that family and the only one that can run in the other
+direction: sometimes the boss makes the move and the hero answers, and sometimes the hero
+makes the move and the boss answers.
+
+### 120.1 The class and the gate
+
+`ScenarioSupervisorSeduce` sits at `il2cpp_dump.txt:55101`, the class after it in the dump
+is `ScenarioSupervisorSeduceSuccess` at `il2cpp_dump.txt:55109` (the follow-up the card
+pushes when the attempt is answered), and both are plain `: Scenario` subclasses.
+
+```
+class ScenarioSupervisorSeduce : Scenario
+    field 0x170 SimCoworker _supervisor
+    field 0x178 SimLover    _loverCandidate
+    field 0x180 System.Boolean _targeted
+    field 0x181 System.Boolean _gettingSeduced
+    field 0x188 System.String _dataInboundLogVersion
+    .ctor(SimCoworker, Boolean) @0x73f2e24b5c
+    .ctor()                     @0x73f2e24b90
+    RefreshScenario             @0x73f2e24b9c
+    ChoiceSelectedAtIndex       @0x73f2e25de0
+    ScenarioIsEligibleForRandomPush @0x73f2e273c4
+```
+
+The gate `ScenarioIsEligibleForRandomPush @0x73f2e273c4` is the same shape section 116 read,
+with one extra counter:
+
+1. the hero must be at least eighteen (`age [x0+0x20] >= 0x12`);
+2. he must have a job or be in the military (`CurrentlyHasAJob @0x73f2f0e040` or
+   `CurrentlyInTheMilitary @0x73f2f0e0b4`);
+3. a dictionary lookup on the life object followed by
+   `Life::PresentedCountForScenario < 5` -- the card may show at most five times per life;
+4. the hero's workplace must resolve (`SimWorkplace::get_Workplace @0x73f3008584`), which is
+   also where the supervisor comes from.
+
+There is no fame test, no prison test and no lover test here. The bookkeeping is the
+loosest of the family, which is why the port can reach this card with no new state at all:
+the supervisor identity written by section 116 (`h.supName` / `h.supFemale`) and the lover
+slots the port already carries (`h.loverName` / `h.loverStatus`) are everything the class
+touches.
+
+### 120.2 One table, two column pairs, three button sets
+
+The wording is not built in code. It comes from
+`gamedata_plain/a16_coworker-hookup-scenarios-enc`, 24 lines -- a header and 23 rows -- with
+seven columns:
+
+```
+Inbound Scenario, Inbound Log Version, Outbound Scenario, Outbound Log Version,
+Sender Gender, Recipient Gender, Supervisor Appropriate
+```
+
+The card picks a column *pair*, not a row alone, and which pair depends on a direction byte
+(120.3). The inbound cells are the boss's opening line and carry the `<coworker>` token for
+him:
+
+```
+<coworker> just asked if you want to hook up in the <breakroom/bathroom stall/hall closet/supply room>.
+<coworker> just told you that <he/she> would really love to manspread you.
+<coworker> just informed you that <he/she> would be down for a late-night meeting, if you're game.
+<coworker> just flashed a suggestive smile your way and asked you if you want to get a workout in after work.
+```
+
+and their log columns mirror them in the first person with the same bracket list shortened to
+`<rb>`, so the journal has to repeat the body's pick:
+
+```
+<coworker> asked me to hook up in the <rb>.
+```
+
+The outbound cells are the hero's own line and never name a token, because the hero is
+speaking:
+
+```
+You asked <coworker> to hook up with you in the <breakroom/bathroom/hall closet>.
+You told <coworker> that there's a pretty package for her on the front desk, but there's an even prettier one inside your pants.
+```
+
+Three columns narrow the pool at pick time: `Sender Gender` and `Recipient Gender` are checked
+against the two people's `EffectiveGender @0x73f30dbc30`, and `Supervisor Appropriate` -- an
+`x` on 5 of the 23 rows -- marks the rows that may be delivered when the sender *is* the
+supervisor.
+
+The picker is
+`DataHub::GetRandomCoworkerHookupScenarioForSenderGenderAndRecipientGenderAndIsSupervisorInbound(System.Int32,System.Int32,System.Boolean) @0x73f2cc7ca0`,
+called at `0x73f2e250f4` with `(supervisor[0x1c], hero[0x1c], 1)`; the row's `Body` lives at
+`+0x10` and its `Narrative` at `+0x18`, and both go through
+`GetParsedBodyString @0x73f337bb5c` / `GetParsedNarrativeString @0x73f337bb64` before they are
+shown.
+
+Then there are three buttons, and the vocabulary is chosen from the two people's gender field
+`[x+0x1c]`, from the direction, and from the hero's service:
+
+```
+same sex, hero advancing:   'Get at it'                 #21371   cell 0x5c607e0
+                            'Let me get a piece of that' #28750   cell 0x5c607e8
+other sex, hero advancing:  'Give it to {0}'            #21690   cell 0x5c34900
+                            'Hit that'                   #22996   cell 0x5c607c0
+boss advancing, hero free:  'Do {0}'                    #17950   cell 0x5c607b8
+                            'Hook up with {0}'           #23093   cell 0x5c386f8
+                            'Try to seduce {0}'          #44150   cell 0x5c468e8
+always:                     'Reject {0} advances'        #35577   cell 0x5c46900
+military:                   'Report {0} misconduct'      #35787   cell 0x5c607f0
+civilian:                   'Report {0} to HR'           #35788   cell 0x5c607c8
+```
+
+`{0}` is the supervisor's object pronoun (`him` / `her`), so the port's case splits on
+`h.supFemale` exactly as sections 116 to 118 already do.
+
+### 120.3 The direction byte and the three lanes
+
+`RefreshScenario @0x73f2e24b9c` opens with a ~57-pair lazy static initialisation (the string
+literals above), then does three things: if `_supervisor` is null it fetches the supervisor
+off the hero's workplace (`SimWorkplace::GetSupervisor @0x73f2fe8db8`) and stores it at
+`0x170`; it calls `SimLover::GenerateLoverFromCoworker @0x73f3812d6c` and stores the lover
+candidate at `0x178`; and the two bytes `_targeted` (`0x180`) and `_gettingSeduced` (`0x181`)
+decide which direction this instance is running in. The title slot is a `csel` between
+`'Seducer' #38395` (cell `0x5c468d0`) and `'Seductress' #38397` (cell `0x5c468d8`) on the
+actor's gender, the who-string is assembled from
+`RelationshipStatusStringAndCapitalize @0x73f30c9ad0` and
+`NameStringAndIncludeFullName @0x73f30c999c` into the two role templates
+`'your {0}, {1},' #68451` (cell `0x5c39a68`) and `'my {0}, {1},' #62743` (cell `0x5c39aa0`),
+and a profile panel (Name / Title / Rank / Birthplace / Gender / Sexuality / Marital Status
+and the rest of the coworker sheet) is appended -- that panel is UI and the port does not
+model it.
+
+`ChoiceSelectedAtIndex @0x73f2e25de0` lowercases the chosen label and runs two substring
+tests in this order, `'reject' #64467` (cell `0x5c469b0`) then `'report' #64521` (cell
+`0x5c45690`); anything else is an advance.
+
+**Reject** (`0x73f2e26170`) moves the supervisor's relationship bar (slot `0x508`) by -4 and
+the hero's discipline by +4 impact, and nothing else. Its unlock strings are the office
+vocabulary: `'Not paying me enough' #32109`, `"I'm trying to work here" #26074`,
+`"Give me a raise then we'll talk" #21700`, `'Strictly business' #40208`, `"I'm not a piece of
+meat" #26017`. The journal is the row's own log column.
+
+**Report** (`0x73f2e2641c`) pushes a bare `Scenario` carrying cell `0x5c607f8` and links it at
+`[self+0x128]`; when the hero was the one being pursued it also calls
+`SimWorkplace::ImpactWorkplacePerformance @0x73f2fe99d8` with 5, moves the supervisor's bar by
++5, and moves the hero's discipline by -3 impact -- the boss is protected, the hero pays. It
+then pushes `ScenarioSupervisorSeduceSuccess` (`.ctor(Boolean) @0x73f2e27214`) with
+`w1 = (_gettingSeduced == 0)`.
+
+**Advance** first asks whether the boss would even accept:
+`SimWorkplace::WillSupervisorAcceptHeroAttemptToSeduce @0x73f2fe95cc` (called at
+`0x73f2e265f4`) plus the supervisor's interest float `[supervisor+0x244]`. The refusal branch
+(interest <= 20.0, `0x73f2e265fc`) does `ImpactWorkplacePerformance(-4)`, supervisor bar -5,
+hero happiness -4, then tests the supervisor's `[0x3e8]` vtable result against `0xe` (15).
+The attempt branch (`0x73f2e26920`) compares the same interest float with `10.0` and with
+`GetRandomNumber(0,100) @0x73f32ab2a8`. A win pushes
+`ScenarioWorkplaceDisciplineHR` -- the class section 116 also pushes -- so that HR disciplines
+the hero for it (`.ctor(String,Int32) @0x73f2e2734c`, wording
+`'trying to seduce <your/my> {0}' #67282`, cell `0x5c60ae0`). A loss writes
+`'Your attempt to seduce your {0}, {1}, was unsuccessful.' #50219` (cell `0x5c60b48`) and
+`'I attempted to seduce my {0}, {1}, but failed.' #23581` (cell `0x5c60b60`). The lane also
+carries the reaction strings `'I seduced my {0}, {1}!' #25067`, `'It was all a test. You
+passed.' #27599`, `"That's probably best" #41443`, the secret-keeping trio
+`'{0}{1} said that this will remain a secret just between the two of you.' #70848` /
+`'{0}{1} reminded you that snitches end up in ditches.' #70847` /
+`"{0}{1} told you that it's a standing offer." #70869`, the adjective pairs
+`'horny' #60382` / `'horny little' #60384` and `'nasty' #62777` / `'nasty little' #62778`,
+and the memory line `'Friends say {0} once dropped {1} pants in front of {2} {3}.' #20737`.
+
+Both lanes end on `Log(journal) @0x73f380158c` and a tail `RefreshUI @0x73f3580f5c`.
+
+### 120.4 How the port reaches it
+
+`Sim::seduceYear` (port/src/sim.cpp) is wired into the same year dispatch as the rest of the
+family, right after the lightning strike, and runs on its own stream `seducRng_` so the main
+`rng_` sequence -- and therefore every other card's timing -- is untouched.
+
+```cpp
+bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  if (h.age < 18) return false;              // gate step 1
+  if (!h.employed && !h.military) return false;  // gate step 2
+  if (h.sedPresented >= 5) return false;     // gate step 3
+  static const char* kTable = "a16_coworker-hookup-scenarios-enc";
+  if (!seducRng_.chance(0.05)) return false;
+  ...
+  const bool inbound = seducRng_.chance(0.5);   // the game's _gettingSeduced byte
+  ...
+  const int pick = int(seducRng_.below(3));     // the game lets the hero choose
+```
+
+The port keeps the same three lanes and the same direction split, but draws the answer instead
+of asking it: `pick == 1` is the reject lane (discipline +16 points, the game's +4 impact),
+`pick == 2` is the report lane (no stat move; the pushed discipline scenario, the workplace
+performance move and the supervisor bar are shortcut comments), and `pick == 0` is an advance
+whose wording comes from the direction and whose outcome is a coin -- success writes
+`'I seduced my supervisor, NAME!'` and moves nothing, failure writes
+`'I attempted to seduce my supervisor, NAME, but failed.'` and costs happiness (the game's -1
+impact, -4 points). While the boss is the one advancing the direct route costs discipline
+(the game's -3 impact, -16 points) because HR becomes involved.
+
+Four cards from a seeds 1 to 40 sweep, one per lane:
+
+```
+age 68, row 12, Seductress, reject
+  Your supervisor, Willie Eyelash, winks at you and tells you that her door is always open
+  for you, both literally and figuratively.
+  Reject his advances                              discipline +16
+  my supervisor, Willie Eyelash, suggestively told me that her door is always open for me.
+
+age 27, row 13, Seductress, report
+  Your supervisor, Willie Eyelash, tells you that she is happy that you're on the staff, but
+  tells you that she would love to be on your staff.
+  Report him to HR                                 no stat move
+
+age 60, row 13, Seductress, advance
+  Your supervisor, Willie Eyelash, tells you that she is happy that you're on the staff, but
+  tells you that she would love to be on your staff.
+  Hit that                                         discipline -16
+
+age 42, row 12, Seducer, hero advances and wins
+  You winked at Court Kurbain and told him your door is always open for him, both literally
+  and figuratively.
+  Hook up with him                                 no stat move
+  I seduced my supervisor, Court Kurbain!
+
+age 66, row 22, Seductress, hero advances and fails
+  You told Sugar Moon that there's a pretty package for her on the front desk, but there's an
+  even prettier one inside your pants.
+  Try to seduce her                                happiness -4
+  I attempted to seduce my supervisor, Sugar Moon, but failed.
+```
+
+The body opens in the second person in both directions, which is the table's own doing: the
+outbound cells are written as the hero's line (`'You told <coworker> ...'`) and the port
+substitutes the boss's name into the token, so the sentence names him twice over -- once as
+the speaker's audience and once through the replacement.
+
+### 120.5 Shortcuts
+
+* The profile panel (Name / Title / Rank / Birthplace / Gender / Sexuality / Marital Status /
+  Widow / Widower / Divorced / Married to / Straight / Gay) is not modelled; the port has no
+  coworker sheet.
+* The supervisor's relationship bar (slot `0x508`), the hero's happiness slot `0x408` on some
+  branches, `ImpactWorkplacePerformance` and `WillSupervisorAcceptHeroAttemptToSeduce` are
+  port-side comments: the port has no per-coworker bars and one workplace number, not a floor
+  of them.
+* The pushed scenarios -- the bare discipline report, `ScenarioWorkplaceDisciplineHR`, and
+  `ScenarioSupervisorSeduceSuccess` -- are not pushed. The success card exists only as the
+  journal sentence here.
+* The lover candidate (`SimLover::GenerateLoverFromCoworker`), the unlock strings, the
+  secret-keeping trio, the adjective pairs and the obituary memory line are not modelled.
+* The military branch of the third button (`'Report {0} misconduct'`) is modelled by service
+  branch because the port tracks `h.military`; the civilian wording is used otherwise.
+* The advance lane's win/loss coin is the port's own: the game compares the supervisor's
+  interest float against a 0-100 draw, and the port has no interest float, so it draws the
+  outcome directly.
+### 120.6 Verification
+
+The card has a probe of its own, `/tmp/qdir/sdres.py`: eighty lives (seeds 1 to 40, both
+sexes, eighty years each) that reconstruct the hero's stats from the newborn block plus each
+event's deltas and then check the card against the table row it claims to come from. It
+checks the title (`Seducer` / `Seductress`), the table name, the age floor, the direction read
+off the body, the row's own cell rebuilt as a pattern (the `<coworker>` token as a capture,
+every slash list as alternatives, gender tokens as wildcards, with the role wording the port
+adds stripped off first), the `Supervisor Appropriate` marker on inbound rows, the journal
+shape with `<rb>` tied to a value that is actually present in the body, the choice set allowed
+per direction, and the lane deltas.
+
+```
+lives 80
+hookup cards 100
+directions {'inbound': 58, 'outbound': 42}
+rows drawn 21 of 24
+choices {'Report him to HR': 11, 'Report her to HR': 16, 'Hit that': 11,
+         'Reject his advances': 16, 'Let me get a piece of that': 10,
+         'Reject her advances': 20, 'Hook up with him': 6, 'Try to seduce her': 4,
+         'Give it to him': 2, 'Get at it': 3, 'Give it to her': 1}
+supervisors seen 30
+cards per life {0: 29, 1: 21, 2: 14, 3: 13, 4: 3}
+hero age at the card min 20 max 78
+runtime 17s
+failures 0
+events 100
+RESIDUE 0 {}
+rc 0
+```
+
+`tools/test_coworker.py` grew a hookup block (cap five, age floor, table, direction, row cell,
+no leftover token, lane deltas, the two seduce journals, and the journal as the arbiter of the
+name the card really wrote) and its final assertion now demands the hookup table in the set of
+tables the run reached. Green:
+
+```
+coworker cards by table: {'a16_coworker-annoy-scenarios-enc': 151,
+  'a16_coworker-behavior-scenarios-enc': 120, 'a16_coworker-pranks-enc': 108,
+  'a16_coworker-rumors-enc': 92, 'a16_supervisor-unprofessional-scenarios-enc': 113,
+  'after hours': 83, 'hookup': 100, 'team building': 51}
+supervisors seen: 37
+team building cards: 51
+after hours cards: 83
+hookup cards: 100
+```
+
+The counters moved against section 119's run (annoy 148 to 151, behavior 115 to 120, rumors 96
+to 92, supervisor cards 114 to 113, after hours 81 to 83, team building 52 to 51) for the same
+reason every section since 116 has moved them: the card writes happiness and discipline, so the
+eligibility of the later years shifts. Section 119's quoted numbers stay as printed.
+
+One real defect came out of the test rather than the probe, and it was in the port: the
+possessive form was built by chopping the last character off the who-string and appending
+`'s`, which is correct for the inbound wording (`your supervisor, NAME,`) but wrong for the
+outbound one, where the who-string is the bare name -- the card read `You flashed a suggestive
+smile Ram Smit's, way and asked her ...`, one letter short of the boss's name. The two forms
+are now built explicitly (`whoBodyPoss` / `whoLogPoss`) for both directions. The probe's lazy
+name capture had happily accepted the truncated name, which is exactly why the test asserts the
+journal's own name is present in the body.
+
+The full batch for this change:
+
+```
+cmake --build port/build -j8                     green
+tools/coverage.py          captured scenarios: 109  recoverable: 107
+                           contentless entries: 2 -- ScenarioMiniPaywall x2
+portgap.py                 ENTRIES 109 rendered-by-port 107 gap 0
+rescensus.py               distinct residue tokens 0 total 0
+covpush (seed 12345, ages 109)   rc=0, empty stderr
+/tmp/qdir/allprobes.py     63 probes, every one rc=0, 62 with residue=0
+                           (idres.py prints residue=? by design)
+tools/bench.sh trace_c10   diff against section 119 is empty
+```
+
+The empty bench diff is the point of the separate stream: `seducRng_` keeps the card off the
+main `rng_` sequence, so the ages 0 to 34 trace that every section quotes is still byte for
+byte the same.

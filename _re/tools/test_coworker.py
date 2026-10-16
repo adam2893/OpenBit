@@ -1,6 +1,6 @@
 """Row, gate, and outcome regression for the coworker cards (REPORT.en.md 105),
 the unprofessional-supervisor card (REPORT.en.md 116), the team-building card
-(REPORT.en.md 117) and the after-hours invitation (REPORT.en.md 118)."""
+(REPORT.en.md 117) and the after-hours invitation (REPORT.en.md 118) and the supervisor hookup card (REPORT.en.md 120)."""
 import collections
 import csv
 import json
@@ -42,6 +42,43 @@ AH_LONG = re.compile(r"^Your supervisor at (.+?), (.+?), has taken a liking to y
                      r"will make your co-workers jealous\.$")
 AH_SHORT = re.compile(r"^Your supervisor, (.+?), invited you to go (.+?) with (him|her)\.$")
 AH_CHOICES = ("Do it", "Politely decline")
+
+# The supervisor hookup card: one table carrying an inbound and an outbound
+# column pair, a cap of five, three buttons whose wording depends on the
+# direction and the two people's sexes, and three lanes.
+HK = "a16_coworker-hookup-scenarios-enc"
+HK_ROWS = list(csv.DictReader((ROOT / "gamedata_plain" / HK).open(newline="")))
+HK_IN_ADVANCE = ("Get at it", "Let me get a piece of that", "Give it to him",
+                 "Give it to her", "Hit that")
+HK_OUT_ADVANCE = ("Hook up with him", "Hook up with her", "Try to seduce him",
+                  "Try to seduce her")
+HK_SUCCESS = re.compile(r"^I seduced my supervisor, (.+?)!$")
+HK_FAILURE = re.compile(r"^I attempted to seduce my supervisor, (.+?), but failed\.$")
+
+
+def hk_pattern(cell):
+    """A hookup cell with the coworker token left as a named capture and every
+    inline list turned into a pattern; the gender tokens become wildcards because
+    the port resolves them."""
+    out, i = [], 0
+    while True:
+        open_at = cell.find("<", i)
+        if open_at < 0:
+            out.append(re.escape(cell[i:]))
+            break
+        close_at = cell.find(">", open_at)
+        out.append(re.escape(cell[i:open_at]))
+        inner = cell[open_at + 1:close_at]
+        if inner.startswith("coworker"):
+            out.append(r"(?P<name>.+)")
+        elif "/" in inner and inner.split("/")[0].lower() not in (
+                "he", "she", "him", "her", "his", "hers", "he/she", "him/her", "his/her"):
+            out.append("(?:" + "|".join(re.escape(part) for part in inner.split("/")) + ")")
+        else:
+            out.append(".+?")
+        i = close_at + 1
+    return "".join(out)
+
 
 
 def cell_pattern(cell):
@@ -161,6 +198,56 @@ for seed in range(1, 41):
                         "I politely declined an opportunity to go " + activity
                         + " with my supervisor, " + supervisor + "."), event
                 continue
+            if event.get("title") in ("Seducer", "Seductress"):
+                counts["hookup"] += 1
+                seen["hookup"] += 1
+                assert counts["hookup"] <= 5, event
+                assert name == HK, event
+                assert event["age"] >= 18, event
+                body, journal = event["body"], event["logLines"][0]
+                assert not re.search(r"<[a-zA-Z][^<>]*>", body), event
+                inbound = "your supervisor, " in body.lower()
+                row = HK_ROWS[int(event["row"]) - 1]
+                if inbound:
+                    assert row["Supervisor Appropriate"].strip(), event
+                cell = (row["Inbound Scenario"] if inbound else row["Outbound Scenario"]).strip()
+                pattern = hk_pattern(cell)
+                match = (re.fullmatch(pattern, body)
+                         or re.fullmatch(pattern, body[:1].lower() + body[1:]))
+                assert match, (cell, body)
+                supervisor = (match.groupdict().get("name") or "").strip()
+                for lead in ("your supervisor, ", "my supervisor, "):
+                    if supervisor.lower().startswith(lead):
+                        supervisor = supervisor[len(lead):]
+                supervisor = supervisor.rstrip(",")
+                if supervisor.endswith("'s"): supervisor = supervisor[:-2]
+                choice = event["choice"]
+                deltas = {k: v for k, v in event["deltas"].items() if v}
+                if choice.startswith("Reject "):
+                    assert choice.endswith(" advances"), event
+                    assert deltas == {"discipline": 16}, event
+                elif choice.startswith("Report "):
+                    assert deltas == {}, event
+                elif choice in HK_IN_ADVANCE:
+                    assert inbound, event
+                    assert deltas == {"discipline": -16}, event
+                else:
+                    assert choice in HK_OUT_ADVANCE, event
+                    assert not inbound, event
+                    match = HK_SUCCESS.match(journal)
+                    if match:
+                        assert deltas == {}, event
+                    else:
+                        match = HK_FAILURE.match(journal)
+                        assert match, journal
+                        assert deltas == {"happiness": -4}, event
+                    assert match[1] in body, (journal, body)
+                # the body capture is lazy, so the journal is the arbiter of the
+                # name the card really wrote
+                named = re.search(r"(?:my supervisor|your supervisor), (.+?),", journal)
+                if named and supervisor:
+                    assert named[1] in body, (journal, body)
+                continue
             if name not in TABLES:
                 continue
             row = ROWS[name][int(event["row"]) - 1]
@@ -193,8 +280,9 @@ for seed in range(1, 41):
                     assert re.search(r"\b" + pronoun + r"\b", choice), event
             if choice.startswith("Start a rumor about "):
                 assert coworker and choice == "Start a rumor about " + coworker, event
-assert set(seen) == set(TABLES) | {SUP, "team building", "after hours"}, seen
+assert set(seen) == set(TABLES) | {SUP, "team building", "after hours", "hookup"}, seen
 print("coworker cards by table:", dict(sorted(seen.items())))
 print("supervisors seen:", len(names))
 print("team building cards:", seen["team building"])
 print("after hours cards:", seen["after hours"])
+print("hookup cards:", seen["hookup"])

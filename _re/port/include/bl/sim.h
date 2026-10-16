@@ -487,6 +487,11 @@ class Sim {
   // wired card, code-built like the two above, and the only one that can end
   // the life: it hands its pending cause to checkDeath.
   bool lightningYear(Life& life, AgeUp& out, int forcedChoice);
+  // The supervisor hookup card (REPORT.en.md 120) is that family's fifth card
+  // and the only one that runs in both directions: one table carries an
+  // inbound and an outbound column pair, so the boss either asks the hero or
+  // the hero asks the boss.
+  bool seduceYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -633,6 +638,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)
   Rng lightRng_;  // ScenarioLightningStrike's own stream (REPORT.en.md 119)
+  Rng seducRng_;  // ScenarioSupervisorSeduce's own stream (REPORT.en.md 120)
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).
