@@ -751,6 +751,12 @@ struct Hero {
   std::string supName;   // the workplace supervisor the unprofessional card is about
   bool supFemale = false;
   int supPresented = 0;  // ScenarioSupervisorUnprofessional's own presented cap
+  // ScenarioSupervisorTeamBuilding (REPORT.en.md 117) keeps a supervisor slot of
+  // its own, so its lazy name draw never moves the unprofessional card's stream,
+  // and the workplace flag both of its lanes set, which the port keeps per life
+  // (the game keeps it on the workplace object the port does not model).
+  std::string tbSupName;
+  bool tbDone = false;
 };
 
 class GameState {

@@ -17163,3 +17163,231 @@ supervisors over 80 lives -- and the journal's own draw of the body's bracket
 alternative is checked by comparing each card's `<rb>` substitute against the one
 the body picked.
 
+## 117. The team building invitation: the workplace's third card, and the one that spends a year of goodwill
+
+ScenarioSupervisorTeamBuilding is the third class this workplace block pushes and
+the plainest of the three: no table row, no tokens, no pronoun machinery -- one
+sentence the class composes out of four objects, and two buttons.
+
+### 117.1 The class and its gate
+
+il2cpp_dump.txt:55195 declares
+
+    class ScenarioSupervisorTeamBuilding : Scenario
+
+with two fields, `0x170 System.String _activity` and `0x178 SimCoworker _supervisor`,
+and four methods: `.ctor() @0x73f2e34388`, `RefreshScenario @0x73f2e343e4`,
+`ChoiceSelectedAtIndex @0x73f2e34720` and `ScenarioIsEligibleForRandomPush
+@0x73f2e34ad4`.
+
+The gate is one conjunction:
+
+- `SimHero::CurrentlyHasAJob() @0x73f2f0e040`, with the military fallback the 116
+  gate builds as well;
+- the hero's own age field compared with `0x14` (`cmp w10, #0x14` / `cset w10, gt`),
+  so a hero under 21 never sees the card even holding a job;
+- `SimOccupation::get_Workplace() @0x73f3008584` non-null and of the workplace type
+  (cell 0x5c38458);
+- `SimWorkplace::GetSupervisor() @0x73f2fe8db8` non-null;
+- the workplace's own byte at 0x38 still zero. Both lanes set it to one
+  (`strb w9, [workplace, #0x38]`), so the game shows this card once per workplace.
+
+No `Life::PresentedCountForScenario` call appears anywhere in the class, unlike the
+five-showing cap of 116: only the workplace flag stops the pattern repeating.
+
+### 117.2 The sentence and the two buttons
+
+`.ctor()` stores the literal `Team Building` (#41065, cell 0x5c610f0) into the base
+scenario's title slot and calls `Scenario::.ctor(bool)` with false, so the card
+carries no CTA and no follow-up. `RefreshScenario` resolves the supervisor, draws
+the activity from `DataHub::GetRandomPastime() @0x73f2d0ca3c` -- the same hub behind
+the part-time, celebrity and gross-taste pools, called with a null method info
+(`mov x0, xzr`) -- and formats four objects through cell 0x5c610f8:
+
+    {0}, your {1} at {2}, is sponsoring a team building activity by taking the team {3}.
+
+(#70597), the arguments being `SimPerson::NameStringAndIncludeFullName @0x73f30c999c`
+on the supervisor, `SimPerson::RelationshipStatusStringAndCapitalize @0x73f30c9ad0`
+on that same person, the workplace's own name (`[[workplace+0x28]+0x18]`, read
+through the hero's 0x40 field) and `_activity`.
+
+The activity is a row of `a16_pastimes-enc` (271 lines, `Pastime,Holiday`), not of
+`a16_business-team-building-activities-enc`: the 50-line business table is the
+strongest candidate obs_corpus/scen_source.json offers this class, and the class
+never reads it. The candidate map is a hint, not evidence.
+
+The buttons are cell 0x5c61100, `Sure, I'll go` (#40421), and cell 0x5c61108,
+`No, that sounds lame` (#31864). `ChoiceSelectedAtIndex` lowercases the chosen label
+and tests it with `String.Contains` against cell 0x5c61118, `sure` (#66382): a
+substring test, not an equality, so any label carrying the word takes the accept
+lane.
+
+### 117.3 The two lanes
+
+The accept lane (`@0x73f2e349cc`) moves the hero's own happiness slot 0x408 by +1,
+calls `SimPerson::ImpactDiscipline(3) @0x73f30e4cdc` and
+`SimPerson::ImpactKarma(2) @0x73f30e4bfc`, moves the supervisor's slot 0x508 bar by
++3, calls `SimWorkplace::ImpactRelationshipWithAllCoworkers(+2) @0x73f2fe9714`, sets
+the workplace flag, and writes cell 0x5c61120:
+
+    I went {0} with my company on a team building exercise.
+
+(#25798).
+
+The refusal lane leaves the hero's happiness slot untouched, calls
+`ImpactDiscipline(-3)` and `ImpactKarma(-2)`, moves the supervisor -3 and the
+coworker relationships -2, sets the same flag, and writes cell 0x5c61110:
+
+    I refused to go {0} with my company on a team building exercise.
+
+(#24946).
+
+Both lanes then compare `_activity` with `cliff diving` (cell 0x5c34bb8, #55815) and,
+when it matches, hand the activity to `AchievementManager::CompleteAchievement
+@0x73f2817434` through the singleton at `@0x73f2817388`: one of the 271 pastimes
+doubles as an achievement, and the refusal earns it as readily as the acceptance.
+Both end with `Log @0x73f380158c` and a tail `RefreshUI @0x73f3580f5c`.
+
+The card is a one-year goodwill trade: the supervision that 116 answers with an
+attack, a talk or a report is here answered with attendance, and refusing is the
+only way an action in this family costs discipline.
+
+### 117.4 How the port reaches it
+
+`Sim::teamBuildingYear` sits at port/src/sim.cpp:26192, declared at
+port/include/bl/sim.h:480 and wired at port/src/sim.cpp:3602 immediately after the
+supervisor card's call, so the year is still offered to the other friend cards when
+this one declines it. The card carries its own stream, `tbRng_` (port/include/bl/sim.h:624,
+seeded `seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL` at port/src/sim.cpp:635):
+
+no earlier subsystem's sequence moves. Two hero slots hold its state
+(port/include/bl/game.h:758-759): `tbSupName`, the name the card needs when 116 has
+not drawn one yet (it never writes 116's own slot), and `tbDone`, the port's
+stand-in for the workplace byte.
+
+The port's year is the gate, a 0.05 coin, then the two lanes: age 21 and up,
+employed or in the military, not yet shown this life. The push rate is the port's
+own, since the game decides by its random-push queue. The activity comes from
+`pickPastime` (port/src/sim.cpp:23598), which enforces the table's `Holiday` column
+the way the friend and mob cards already do, and the sentence is assembled from the
+name, the workplace and the pastime. Happiness, discipline and karma go through
+`pointsForImpact` (port/src/sim.cpp:3905), the conversion every other card uses for
+a raw impact: +1 / +3 / +2 for attendance, -3 / -2 for the refusal.
+
+Four cards, as the port draws them:
+
+```
+age 31  row 236  No, that sounds lame
+  Jam Roll, your supervisor at the company, is sponsoring a team building
+  activity by taking the team to attend a juggling class.
+  journal: I refused to go to attend a juggling class with my company on a
+  team building exercise.
+  deltas: discipline -16  karma -8
+
+age 65  row 91  Sure, I'll go
+  Ron Mendes, your supervisor at the company, is sponsoring a team building
+  activity by taking the team to play charades.
+  journal: I went to play charades with my company on a team building exercise.
+  deltas: happiness +4  discipline +16  karma +8
+
+age 42  row 49  Sure, I'll go
+  Dustin Emberlake, your supervisor at the company, is sponsoring a team
+  building activity by taking the team surfing.
+  journal: I went surfing with my company on a team building exercise.
+
+age 61  row 266  No, that sounds lame
+  Arianna Venti, your supervisor at the company, is sponsoring a team building
+  activity by taking the team horseback riding in the desert.
+  journal: I refused to go horseback riding in the desert with my company on a
+  team building exercise.
+```
+
+The last is row 266's own inline list, `horseback riding <along the river/in the
+country/in the desert/in the mountains/in the forest>`, resolved before the sentence
+is assembled, the way the port resolves every bracket list.
+
+### 117.5 Shortcuts
+
+- The workplace name in the {2} slot is `h.ofcCompany` (port/include/bl/game.h:120,
+  set from `companyName()` / `businessName()` at port/src/sim.cpp:20084-20086 when
+  the hero's job is an office job), with the token resolver's own `the company`
+  fallback (port/src/sim.cpp:20113). Calling `companyName()` here would draw from the
+  main `rng_` stream (port/src/sim.cpp:3017), which no card in this port does, so a
+  hero who works anywhere else reads `at the company`. Every card in the verification
+  probe took that fallback.
+- The {1} slot is the port's literal word `supervisor`, where the class fills it from
+  `SimPerson::RelationshipStatusStringAndCapitalize` on the drawn supervisor: the
+  port's drawn people carry no relationship status. It is the word the game's own
+  dictionary expands the `<supervisor>` token to (#68432, `your supervisor, {0},`,
+  REPORT.en.md 116), which is why the sentence still reads the way the game's does.
+- The supervisor's own relationship bar (slot 0x508),
+  `ImpactRelationshipWithAllCoworkers` and the cliff-diving achievement are read from
+  the class but not modelled: the port keeps no coworker relationships and no
+  achievements (REPORT.en.md 105, 116).
+- The workplace byte of the gate becomes `tbDone`, one card per life: in the game a
+  hero who changes jobs would be invited again at the new workplace.
+- The ten pastimes the card can name are whichever row the port's `pickPastime`
+  returns, with the same `Holiday` filter the other pastime cards use; the game draws
+  from the hub's own list.
+- The 50/50 lane split is the port's, since the game hands the choice to the player.
+
+### 117.6 Verification
+
+`tools/test_coworker.py` grew a team-building block inside its per-run event loop
+(the table, the age, the body shape carrying both the supervisor and the workplace,
+the pastime checked against its own row through a `cell_pattern()` helper that turns
+each `<a/b/c>` into a one-of, the exact journal sentence, and the per-lane deltas),
+plus a final assertion that the family appears at all. It reads:
+
+```
+coworker cards by table: {'a16_coworker-annoy-scenarios-enc': 136,
+  'a16_coworker-behavior-scenarios-enc': 114, 'a16_coworker-pranks-enc': 109,
+  'a16_coworker-rumors-enc': 95,
+  'a16_supervisor-unprofessional-scenarios-enc': 111, 'team building': 52}
+supervisors seen: 36
+team building cards: 52
+```
+
+The probe /tmp/qdir/tbres.py replays 80 lives (seeds 1..40 x both genders, 80 years
+each) and checks every card against the pastime row it named, including the bracket
+rows that no exact-match check could survive. It reads:
+
+```
+lives 80
+team building cards 52
+rows drawn 26 of 271
+choices {'No, that sounds lame': 34, "Sure, I'll go": 18}
+supervisors seen 28
+workplaces seen 1 ['the company']
+cards per life {0: 28, 1: 52}
+hero age at the card min 22 max 79
+holiday pastimes 0
+runtime 14s
+failures 0
+events 52
+RESIDUE 0 {}
+rc 0
+```
+
+The 52 cards over 80 lives are the 0.05 coin meeting the friend, coworker and
+supervisor families that claim the year first, the 26 of 271 rows are the `Holiday`
+column doing its work (0 holiday pastimes drawn), and no life draws the card twice.
+
+The batch after the change:
+
+- tools/coverage.py unchanged at `captured scenarios: 109  recoverable: 107` plus
+  `contentless entries: 2 -- ScenarioMiniPaywall x2`;
+- the port gap at `ENTRIES 109 rendered-by-port 107 gap 0`;
+- the 109-age push run `rc=0` with an empty stderr, and the residue census at
+  `distinct residue tokens 0 total 0`;
+- all 60 probes `rc=0 residue=0`, the new `tbres.py` among them (52 events) and
+  `supres.py` at 111, with no probe reporting a single residue token;
+- `tools/bench.sh` over /tmp/trace_c10.json byte-identical to the 116 run: the ages
+  0..34 trace never reaches this card, so the bench is untouched by it.
+
+The coworker and supervisor counters did move -- annoy 138 to 136, pranks 112 to
+109, the supervisor card 116 to 111, its probe 116 to 111, supervisors seen 41 to
+36 -- because the card moves discipline and karma, which changes what later ages are
+eligible for and therefore which cards the years after it can draw. The numbers
+quoted in the 116 section were true of that commit's tree and are left standing;
+these are the numbers of this one.

@@ -475,6 +475,9 @@ class Sim {
   // coworker and draw on their own stream (cwRng_).
   bool coworkerYear(Life& life, AgeUp& out, int forcedChoice);
   bool supervisorYear(Life& life, AgeUp& out, int forcedChoice);
+  // The team-building card (REPORT.en.md 117) is the workplace family's third
+  // card, code-built rather than table-driven, with a once-per-life gate.
+  bool teamBuildingYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -618,6 +621,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family's own stream (REPORT.en.md 105).
   Rng cwRng_;
   Rng supRng_;
+  Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).

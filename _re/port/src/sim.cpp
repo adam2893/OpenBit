@@ -632,6 +632,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
+      tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3593,6 +3594,12 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // shares their stream (include/bl/sim.h cwRng_), so no earlier subsystem
   // sequence moves.
   if (supervisorYear(life, out, forcedChoice)) return true;
+  // The team-building card (REPORT.en.md 117) is that family's third push: not a
+  // table but a sentence RefreshScenario composes out of four objects, with a
+  // once-per-life workplace flag. It is tried right after the unprofessional
+  // card and draws on its own stream (include/bl/sim.h tbRng_), so no earlier
+  // subsystem's sequence moves.
+  if (teamBuildingYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26170,6 +26177,110 @@ bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "It doesn't bother me";  // #27502
     out.narrative = logLine + " I didn't let it bother me.";
   }
+  return true;
+}
+
+// The team-building card (REPORT.en.md 117) is the workplace family's third card
+// and the first of them that no content table carries.
+// ScenarioSupervisorTeamBuilding (il2cpp_dump.txt:55187; fields _activity 0x170
+// and _supervisor 0x178) has .ctor() @0x73f2e34388, RefreshScenario
+// @0x73f2e343e4, ChoiceSelectedAtIndex @0x73f2e34720 and
+// ScenarioIsEligibleForRandomPush @0x73f2e34ad4. RefreshScenario composes the
+// sentence out of four objects -- the supervisor's full name, his relationship
+// label, the workplace's name and a pastime -- and the two buttons are il2cpp
+// literals, so the card is code-built.
+bool Sim::teamBuildingYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // The gate @0x73f2e34ad4 is one conjunction: SimHero::CurrentlyHasAJob
+  // @0x73f2f0e040 (true in the military too), the hero's own age field compared
+  // with 0x14 (cmp w10,#0x14; cset w10,gt), the workplace object the hero's 0x138
+  // field holds (type-checked against cell 0x5c38458, its own 0x38 flag read
+  // into w21), its GetSupervisor() @0x73f2fe8db8 non-null, and that 0x38 flag
+  // clear (eor w9,w21,#1). No presented cap appears, and both lanes below set the
+  // same flag to one, so the game shows this card at a workplace once.
+  if (h.age < 21) return false;
+  if (!h.employed && !h.military) return false;
+  // The flag lives on the workplace object, which the port does not model, so the
+  // port keeps its own once-per-life bit.
+  if (h.tbDone) return false;
+  // The class carries no push rate of its own -- the game's random-push queue
+  // decides -- so the coin is the port's, drawn on the card's own stream.
+  if (!tbRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // The sentence's {3} is DataHub::GetRandomPastime @0x73f2d0ca3c (called with a
+  // null method info, 'mov x0, xzr'), the same pool the friend spend-time and
+  // mob cards draw from.
+  std::string activity;
+  const int pastimeRow = pickPastime(tbRng_, activity);
+  if (pastimeRow < 0) return false;
+
+  // {0} is SimPerson::NameStringAndIncludeFullName @0x73f30c999c on the
+  // workplace's supervisor -- the same person the unprofessional card names.
+  // shortcut: when this card reaches a supervisor that card has not named yet,
+  // it keeps its own slot instead of filling that card's, so that card's own
+  // draws stay where they were; such a life can then carry two supervisor names.
+  std::string sup = h.supName;
+  if (sup.empty()) {
+    if (h.tbSupName.empty()) {
+      h.tbSupName = resolve("<supervisor>");
+      if (h.tbSupName.empty()) return false;
+    }
+    sup = h.tbSupName;
+  }
+  // {1} is RelationshipStatusStringAndCapitalize @0x73f30c9ad0 on that
+  // supervisor: the label his own relationship carries. The port's slot is a
+  // drawn person with no status, so it reads 'supervisor' -- the same word the
+  // unprofessional card's dictionary expansion bakes in (REPORT.en.md 116).
+  // {2} is the workplace's own name, which the port carries as the office
+  // employer, with the token resolver's own fallback.
+  const std::string place = h.ofcCompany.empty() ? std::string("the company") : h.ofcCompany;
+
+  out = AgeUp();
+  out.table = "a16_pastimes-enc";
+  out.row_id = std::to_string(pastimeRow);
+  // The title is an il2cpp literal (#41065) the ctor stores into the Scenario
+  // base at [x19+0x38].
+  out.title = "Team Building";
+  // Format(System.String, System.Object[]) @0x73f52a7254 over cell 0x5c610f8,
+  // literal #70597, stored at [self+0x48].
+  out.body = sup + ", your supervisor at " + place +
+             ", is sponsoring a team building activity by taking the team " + activity + ".";
+  // ChoiceSelectedAtIndex @0x73f2e34720 takes the chosen label out of the list at
+  // [self+0x108], lowers it and tests it with String.Contains against 'sure'
+  // (#66382, cell 0x5c61118): the first button is the accept lane, anything else
+  // the refusal. The game lets the hero pick; the port draws the one that
+  // happens.
+  h.tbDone = true;
+  if (tbRng_.chance(0.5)) {
+    // The accept lane @0x73f2e349cc moves the hero's own slot 0x408 by +1, calls
+    // ImpactDiscipline(3) @0x73f30e4cdc and ImpactKarma(2) @0x73f30e4bfc, then
+    // moves the supervisor's own 0x508 bar by +3 and
+    // SimWorkplace::ImpactRelationshipWithAllCoworkers @0x73f2fe9714 by +2. The
+    // port models neither bar (shortcut), so the two stay comments. It sets
+    // [workplace+0x38] and logs cell 0x5c61120, literal #25798.
+    out.choice = "Sure, I'll go";  // #40421, cell 0x5c61100
+    out.happiness = pointsForImpact(1);
+    out.discipline = pointsForImpact(3);
+    out.karma = pointsForImpact(2);
+    out.narrative = "I went " + activity + " with my company on a team building exercise.";
+  } else {
+    // The refusal lane @0x73f2e34a8c leaves slot 0x408 untouched and calls
+    // ImpactDiscipline(-3), ImpactKarma(-2), the supervisor bar -3 and the
+    // coworker relationship -2; it sets [workplace+0x38] and logs cell 0x5c61110,
+    // literal #24946.
+    out.choice = "No, that sounds lame";  // #31864, cell 0x5c61108
+    out.discipline = pointsForImpact(-3);
+    out.karma = pointsForImpact(-2);
+    out.narrative =
+        "I refused to go " + activity + " with my company on a team building exercise.";
+  }
+  // Both lanes end by testing _activity against 'cliff diving' (#55815, cell
+  // 0x5c34bb8) and completing an achievement when it matches
+  // (AchievementManager @0x73f2817388 / @0x73f2817434); the port keeps no
+  // achievements.
   return true;
 }
 
