@@ -59,7 +59,26 @@ def main():
         per[c] += 1
         p = push[i] if i < len(push) else None
         if p and (p.get("table") or p.get("scenario")): ok[c] += 1
+    def label(c):
+        # A choice may arrive as a ScenarioChoice dict or as a bare string, and the
+        # paywall marker ships one button whose label is the empty string.
+        if isinstance(c, dict):
+            c = c.get("label") or c.get("Label") or c.get("text") or ""
+        return str(c or "").strip()
+
+    def has_content(s):
+        if str(s["title"] or "").strip() or str(s["body"] or "").strip():
+            return True
+        return any(label(c) for c in (s["choices"] or []))
+
+    empty = [s for s in items if not has_content(s)]
     print("captured scenarios:", len(items), " recoverable:", sum(ok.values()))
+    if empty:
+        # A contentless entry is a marker object, not a card: the paywall trigger
+        # carries no title, no body and no choices, so there is nothing to render.
+        eper = collections.Counter(s["cls"] or "?" for s in empty)
+        print("contentless entries:", len(empty), "--",
+              ", ".join("%s x%d" % (c, n) for c, n in eper.most_common()))
     print("%-46s %5s %5s" % ("class", "seen", "push"))
     for c, n in per.most_common():
         print("%-46s %5d %5d" % (c, n, ok[c]))

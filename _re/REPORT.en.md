@@ -16887,3 +16887,70 @@ census reads `distinct residue tokens 0 total 0`, tools/coverage.py reads
 `ENTRIES 109 rendered-by-port 107 gap 0`, the push check exits 0 with empty
 stderr, and tools/bench.sh still matches through age 34 (age 33 happiness delta
 17, age 34 karma delta 30, 2 game-only and 3 port-only log lines).
+
+## 115. The paywall marker: the two captured entries the port does not render
+
+Every captured card that carries content is now replayed. Two entries were still
+counted as unrecovered, and this section closes them: they are not cards. Both are
+`ScenarioMiniPaywall` objects, and both are empty.
+
+### 115.1 What the captured objects carry
+
+The class (il2cpp_dump.txt:56559) is the game's shop trigger. Its fields are the
+offer, not a scene: `_gameData MiniGameDataMiniPaywall 0x170`, `_paywallType 0x178`,
+`_origin 0x17c`, `_isFeatured 0x180`, `_purchaseFollowUpScenario 0x188`,
+`webShopType 0x190` and `ThePregnancy 0x198`. Its methods are the two ctors
+(`.ctor(System.Int32,System.Int32,System.Boolean)` @0x73f2ebd27c and
+`.ctor(System.Int32,System.Int32,Scenario,System.Boolean)` @0x73f2ebd2d0),
+`RefreshScenario @0x73f2ebd32c`, `ChoiceSelectedAtIndex @0x73f2ebe95c` and
+`PurchaseWebShop @0x73f2ebf254`.
+
+The two rows the capture saw carry nothing for a port to render:
+
+```
+age 17   cls ScenarioMiniPaywall   title null   body null   choices [""]
+age 109  cls ScenarioMiniPaywall   title null   body null   choices []
+```
+
+The age-17 object ships a single button whose label is the empty string; the
+age-109 object ships no button at all. Neither wears a title or a body, and no
+`gamedata_plain` table backs them -- `ls gamedata_plain | grep -i paywall` is
+empty, because the text of a shop offer lives in the game's own UI-side
+`MiniGameData`, not in a scenario table.
+
+### 115.2 Why the port leaves them out
+
+A scenario row is rendered from its table: title, body, and the button labels a
+choice handler dispatches on. These two objects have none of the three, so there
+is no row to render and no branch to take -- the card is a marker the UI layer
+consumes, and the port has no shop surface for it to open. Rendering an invented
+paywall card would be less faithful than leaving the trigger alone.
+
+### 115.3 What changed in tools/coverage.py
+
+The tool counted such an entry as unrecovered, which made the headline read
+`109 captured / 107 recoverable` and left the last two looking like port gaps.
+It now classifies an entry as contentless when it has no title, no body and no
+non-empty button label, and prints them as their own line:
+
+```
+captured scenarios: 109  recoverable: 107
+contentless entries: 2 -- ScenarioMiniPaywall x2
+```
+
+The headline line is unchanged, so every earlier section's quoted count still
+reads the same; the second line accounts for the difference. A choice label is
+read from the `label`/`Label`/`text` key when a choice arrives as a dict and from
+the bare string otherwise, because one of the two captured objects ships its
+button as an empty string.
+
+Verification for the section: tools/coverage.py now prints
+`captured scenarios: 109  recoverable: 107` followed by
+`contentless entries: 2 -- ScenarioMiniPaywall x2`, which closes the accounting --
+109 captured = 107 replayed + 2 contentless, with no content-bearing entry left
+unrecovered. /tmp/qdir/portgap.py still reads
+`ENTRIES 109 rendered-by-port 107 gap 0`, because it walks the same push corpus
+and the two paywall rows produce no push entry at all. The batch, the family
+regression and the bench are untouched by the tool change: the changed file is
+`tools/coverage.py` alone, and the probe suite reads the same push corpus it
+already did.
