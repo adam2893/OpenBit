@@ -636,6 +636,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
       lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
       seducRng_(seed ^ 0xa4093822299f31d0ULL ^ 0x082efa98ec4e6c89ULL),
+      witRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x13198a2e03707344ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3619,6 +3620,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // after the lightning strike and draws on its own stream (include/bl/sim.h
   // seducRng_), so no earlier subsystem's sequence moves.
   if (seduceYear(life, out, forcedChoice)) return true;
+  // The witness card (REPORT.en.md 121) is the citizen family's first push and
+  // the only street card in the port. It is tried after the supervisor hookup
+  // and draws on its own stream (include/bl/sim.h witRng_), so no earlier
+  // subsystem's sequence moves.
+  if (witnessYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26684,6 +26690,132 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
       out.happiness = pointsForImpact(-1);
       out.narrative = "I attempted to seduce my supervisor, " + sup + ", but failed.";
     }
+  }
+  return true;
+}
+
+// The witness card (REPORT.en.md 121) is the citizen family's first card and the
+// only one that happens in the street: a passer-by commits a crime in front of
+// the hero, who can look away, call the police, or step in.
+// ScenarioEthicsWitnessCrime (il2cpp_dump.txt:38414) carries _happenedOnWalk
+// 0x16a, _streetPerson 0x170, _crimeString 0x178 and _crimeAndPerpetratorString
+// 0x180; its gate @0x73f3bcf6c0 asks for age >= 18, fewer than four
+// presentations in the life, not being in prison, and KeepItClean() @0x73f32aba1c
+// being false -- the game's own censorship switch, which normal play leaves off.
+bool Sim::witnessYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule the other code-built cards keep.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 18) return false;
+  if (h.inPrison) return false;
+  // Life::PresentedCountForScenario < 4 (cmp w0,#3; b.gt @0x73f3bcf6dc).
+  if (h.witPresented >= 4) return false;
+  static const char* kTable = "a16_street-persons-enc";
+  if (!ensureTable(kTable)) return false;
+  // The class carries no push rate of its own -- the game's random-push queue
+  // decides -- so the coin is the port's, drawn on the card's own stream
+  // (include/bl/sim.h witRng_), which moves no other family's sequence.
+  if (!witRng_.chance(0.05)) return false;
+  hero_ = &h;
+  life_ = &life;
+  // _streetPerson = DataHub::GetRandomStreetPersonAndMustBeInNeed(false)
+  // @0x73f2ca4c58 -- the argument is false, so any row of the table may be the
+  // perpetrator. The row's own Percent Male column gives the sex the port needs
+  // for the police line's pronoun.
+  const Table& t = tbl(kTable);
+  if (t.size() == 0) return false;
+  const size_t row = witRng_.below(uint32_t(t.size()));
+  const std::string who = t.at(row, "Description");  // the bare noun phrase
+  const bool female = int(witRng_.below(100)) >= int(t.num(row, "Percent Male"));
+  // DataHub::GetRandomCrimeToWitness @0x73f2ca31ac builds a 33-entry static
+  // string[] (cells 0x5c554f0..0x5c555f0, step 8); the loader keeps the same
+  // order here.
+  static const char* const kCrimes[] = {
+      "smoking in a prohibited area",  // 0
+      "driving on the sidewalk",
+      "having sex in public",
+      "spanking a child",
+      "keying a car",  // 4
+      "burning things in the street",
+      "filming porn in public",
+      "graffitiing a wall",
+      "drinking and driving",  // 8
+      "trying to burn down a church",
+      "robbing a bank",
+      "littering",
+      "stealing someone's mail",  // 12
+      "stealing a bike",
+      "trespassing",
+      "breaking into a car",
+      "jaywalking",  // 16
+      "fishing without a license",
+      "threatening an old lady",
+      "streaking naked",
+      "stealing a car",  // 20
+      "selling drugs",
+      "vandalizing a convenience store",
+      "throwing beer bottles into oncoming traffic",
+      "masturbating in public",  // 24
+      "drinking in public",
+      "being cruel to a dog",
+      "slanging drugs on the street",
+      "soliciting a prostitute",  // 28
+      "urinating in public",
+      "kidnapping a child",
+      "flying a drone",
+      "forging documents",  // 32
+  };
+  const size_t crimes = sizeof(kCrimes) / sizeof(*kCrimes);
+  const std::string crime = kCrimes[witRng_.below(uint32_t(crimes))];
+  // _crimeAndPerpetratorString = Format('{0} {1}', AddIndefiniteArticleToString
+  // (description, cell 0x5c2f928), crime) -- "a homeless man robbing a bank".
+  const std::string phrase = articleFor(who) + who + " " + crime;
+  // {0} of the body is 'While on your walk' (cell 0x5c3d5d8) when the walk pushed
+  // the card and DataHub::GetRandomCircumstance @0x73f2ce2d08 otherwise; the port
+  // has no walk, so it draws between the two on the card's own stream.
+  const size_t scenes = sizeof(kCircumstancePublicScenes) / sizeof(*kCircumstancePublicScenes);
+  const std::string scene = witRng_.chance(0.5)
+                                ? std::string("While on your walk")
+                                : kCircumstancePublicScenes[witRng_.below(uint32_t(scenes))];
+  out.table = kTable;
+  out.row_id = std::to_string(row + 1);
+  out.title = "Witness";  // #47077, cell 0x5cb87f8
+  // Format(cell 0x5cb8800 '{0}, you witness {1}!' #70596).
+  out.body = scene + ", you witness " + phrase + "!";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  ++h.witPresented;
+  // The three buttons (cells 0x5cac6e8 'Try to intervene' #44129, 0x5c3c1d0
+  // 'Call the police' #14600, 0x5c4c800 'Look the other way' #29196) are tested
+  // in ChoiceSelectedAtIndex @0x73f3bcebac; the port draws the one that happens.
+  const std::string witnessed = "I witnessed " + phrase + ".";
+  const int pick = int(witRng_.below(3));
+  if (pick == 0) {
+    // 'look': ImpactKarma(-2) then ImpactDiscipline(-1) -- the karma call comes
+    // first in this lane.
+    out.choice = "Look the other way";
+    out.karma = pointsForImpact(-2);
+    out.discipline = pointsForImpact(-1);
+    out.narrative = witnessed + " I looked the other way.";  // #69585
+  } else if (pick == 1) {
+    // 'police': ImpactDiscipline(+2), then SimPlace::ShouldGetCapturedWhen-
+    // InteractingWithPoliceInPlace @0x73f2f2782c decides whether the hero is
+    // swept up with the perpetrator.
+    // shortcut: that chain (GetCrimeScenarioForCrimeType @0x73f2f16ab4 and the
+    // two GetRandomNumber pick branches) needs the place's crime list, which the
+    // port does not model, so the lane keeps the stat move and its journal.
+    out.choice = "Call the police";
+    out.discipline = pointsForImpact(2);
+    out.narrative = witnessed + " I called the police on " + (female ? "her" : "him") + ".";
+  } else {
+    // 'intervene': ImpactKarma(+3) then ImpactDiscipline(+3).
+    // shortcut: the follow-up the game pushes next -- 'You successfully stopped
+    // the {0} from {1}.' on a 3-or-4 of GetRandomNumber(0,4), and the
+    // perpetrator-turns-on-the-hero scenario on 0-2 -- is a card the port has no
+    // gate for, so only the journal is kept.
+    out.choice = "Try to intervene";
+    out.karma = pointsForImpact(3);
+    out.discipline = pointsForImpact(3);
+    out.narrative = witnessed + " I stopped the " + who + "!";  // #69618
   }
   return true;
 }

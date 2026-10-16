@@ -18063,3 +18063,262 @@ tools/bench.sh trace_c10   diff against section 119 is empty
 The empty bench diff is the point of the separate stream: `seducRng_` keeps the card off the
 main `rng_` sequence, so the ages 0 to 34 trace that every section quotes is still byte for
 byte the same.
+
+## 121. The witness: the street's first card, and the only one that asks what a bystander does
+
+Section 119 put a card in the port that can end the life; section 120 put one in
+the office. This one puts a card in the street, and it is the first entry of the
+citizen family: a passer-by commits a crime in front of the hero and the hero
+decides what a witness does about it.
+
+`ScenarioEthicsWitnessCrime` sits at il2cpp_dump.txt:38414 and is the only class
+between the two street families the port has left. It reads one content table and
+one code-built string array, it has no follow-up of its own, and its gate asks
+for nothing the port does not already track -- which is why it is the first card
+after the supervisor hookup that can be ported without inventing a subsystem.
+
+### 121.1 The class and its gate
+
+The class carries four fields:
+
+| Offset | Type | Name |
+| --- | --- | --- |
+| 0x16a | System.Boolean | `_happenedOnWalk` |
+| 0x170 | DataStreetPerson | `_streetPerson` |
+| 0x178 | System.String | `_crimeString` |
+| 0x180 | System.String | `_crimeAndPerpetratorString` |
+
+Its methods are `.ctor @0x73f3bce8a0`, `RefreshScenario @0x73f3bce8c4` (186
+instructions), `ChoiceSelectedAtIndex @0x73f3bcebac` (709) and
+`ScenarioIsEligibleForRandomPush @0x73f3bcf6c0` (90). The constructor stores the
+card's category `Citizen` (#15649, cell 0x5cb81f8) at [self+0x30] and its title
+`Witness` (#47077, cell 0x5cb87f8) at [self+0x38].
+
+The gate is four tests and one setting:
+
+1. the hero's age at [x9+0x20] is at least 0x12 -- eighteen;
+2. `Life::PresentedCountForScenario` on the class name is below four
+   (`cmp w0,#3; b.gt` to the false return) -- so a life may see this card at most
+   four times, half the supervisor family's cap;
+3. `SimHero::CurrentlyInPrison @0x73f2f0e1d8` is false;
+4. `System.Boolean KeepItClean() @0x73f32aba1c` returns false, tested with
+   `eor w8,w0,#1`. This is the game's own censorship switch, and it is the first
+   gate in the port that reads a setting rather than a stat: `KeepItClean` walks
+   the life object down to `[life+0x48] -> [x8+0x14c]` and returns that
+   value < 2, which normal play leaves at zero.
+
+No income, no job, no place and no fame test appears anywhere in those ninety
+instructions, so the card is offered to every adult in the street.
+
+### 121.2 The sentence, and the two lists it comes out of
+
+`RefreshScenario` clears the base byte 0x28, then draws the perpetrator:
+
+```
+_streetPerson = DataHub::GetRandomStreetPersonAndMustBeInNeed(false) @0x73f2ca4c58
+_crimeString  = DataHub::GetRandomCrimeToWitness()                     @0x73f2ca31ac
+```
+
+The boolean argument to the first call is zero, so the picker is free to return
+any row of `a16_street-persons-enc` -- 201 lines, 200 people, from `tourist` and
+`magician` to `pimp`, `crackhead`, `frat bro`, `old geezer` and `milkmaid`. The
+row's `Description` column holds the bare noun phrase with no article, and the
+row's `Percent Male` column gives the sex the journal line needs.
+
+The sentence then goes through the game's article helper and its two-element
+format:
+
+```
+x20 = streetPerson[0x10]                       ; the row's Description, no article
+AddIndefiniteArticleToString(x20, cell 0x5c2f928) @0x73f32aee9c
+Format(cell 0x5c345b0 '{0} {1}', article + description, _crimeString) @0x73f52a71cc
+   -> _crimeAndPerpetratorString, e.g. 'a homeless man robbing a bank'
+```
+
+and the body's {0} is one of two strings: `While on your walk` (#46721, cell
+0x5c3d5d8) when the walk pushed the card, or `DataHub::GetRandomCircumstance`
+@0x73f2ce2d08 otherwise -- the same 43-slot switch section 119 already reads.
+The finished sentence is `Format(cell 0x5cb8800 '{0}, you witness {1}!' #70596)`
+stored at [self+0x48], and the card raises its own bit at [self+0x110].
+
+`GetRandomCrimeToWitness` builds its static array out of 33 consecutive cells,
+0x5c554f0 to 0x5c555f0 in steps of eight, and the order is the list the port
+now keeps:
+
+| # | Crime | # | Crime | # | Crime |
+| --- | --- | --- | --- | --- | --- |
+| 0 | smoking in a prohibited area | 11 | littering | 22 | vandalizing a convenience store |
+| 1 | driving on the sidewalk | 12 | stealing someone's mail | 23 | throwing beer bottles into oncoming traffic |
+| 2 | having sex in public | 13 | stealing a bike | 24 | masturbating in public |
+| 3 | spanking a child | 14 | trespassing | 25 | drinking in public |
+| 4 | keying a car | 15 | breaking into a car | 26 | being cruel to a dog |
+| 5 | burning things in the street | 16 | jaywalking | 27 | slanging drugs on the street |
+| 6 | filming porn in public | 17 | fishing without a license | 28 | soliciting a prostitute |
+| 7 | graffitiing a wall | 18 | threatening an old lady | 29 | urinating in public |
+| 8 | drinking and driving | 19 | streaking naked | 30 | kidnapping a child |
+| 9 | trying to burn down a church | 20 | stealing a car | 31 | flying a drone |
+| 10 | robbing a bank | 21 | selling drugs | 32 | forging documents |
+
+Three buttons are built with `Scenario::.ctor(String,bool,bool) @0x73f2eb9c50`:
+`Try to intervene` (#44129, cell 0x5cac6e8), `Call the police` (#14600, cell
+0x5c3c1d0) and `Look the other way` (#29196, cell 0x5c4c800).
+
+### 121.3 Three things a bystander can do
+
+`ChoiceSelectedAtIndex` lowercases the label and formats the journal's first
+clause once, `Format(cell 0x5cb8808 'I witnessed {0}.' #25813, _crimeAndPerpetratorString)`,
+then substring-tests the label against `look`, `police` and `intervene` in that
+order.
+
+**Look the other way.** `SimPerson::ImpactKarma(-2) @0x73f30e4bfc` and then
+`ImpactDiscipline(-1) @0x73f30e4cdc` -- the karma call comes first in this lane,
+the reverse of the intervene lane. The journal is
+`Format(cell 0x5cb84e8 '{0} I looked the other way.' #69585)`, and the lane also
+raises a byte at `[life+0x70] -> +0x399`, which is the game's own "hero saw
+something and said nothing" record. It is the cheapest of the three in
+discipline and the most expensive in karma.
+
+**Call the police.** `ImpactDiscipline(+2)`, then the interesting part:
+`get_PlaceOfResidence` and `SimPlace::ShouldGetCapturedWhenInteractingWithPoliceInPlace`
+@0x73f2f2782c decide whether the hero is swept up with the perpetrator. When that
+returns true the game pushes `SimPlace::GetCrimeScenarioForCrimeType(0)`
+@0x73f2f16ab4 into the follow-up slot at [self+0x128]; when it returns false it
+runs a five-draw and a ten-draw and branches twice more. Either way the journal
+is
+`Format(cell 0x5cb8838 '{0} I called the police on {1}.' #69535)`, with {1} the
+perpetrator's pronoun -- `him` (cell 0x5c35d08) or `her` (cell 0x5c35d00) chosen
+off `streetPerson[0x1c]`.
+
+**Try to intervene.** `ImpactKarma(+3)` and `ImpactDiscipline(+3)` -- the only
+lane that pays in both currencies. The journal is
+`Format(cell 0x5cb8848 '{0} I stopped the {1}!' #69618)` over the row's bare
+description, and then `GetRandomNumber(0,4)` picks what the intervention costs:
+on a three or four the game pushes a scenario built with
+`Format(cell 0x5cb8810 'You successfully stopped the {0} from {1}.' #49438)`, and
+on a zero, one or two (the branch at 0x73f3bcf0ec) it builds the perpetrator
+turning on the hero instead, with `The {0}` / `the {0}` (cells 0x5c3cb08,
+0x5c3cac8) over the description. So the brave choice is the only one with a
+chance of a second card.
+
+All three lanes converge on a dismiss journal assembled with the obituary tokens
+`<obit-he/she>` (#9301, cell 0x5c34a20), then `Log @0x73f380158c` and
+`RefreshUI @0x73f3580f5c`.
+
+### 121.4 How the port reaches it
+
+`Sim::witnessYear` (port/src/sim.cpp, wired in the year dispatch right after
+`seduceYear`) is the port's card for this class, and it is code-built in the same
+shape as the lightning strike:
+
+* the gate is `age >= 18`, `!h.inPrison`, `h.witPresented < 4` and a one-in-twenty
+  coin. The `KeepItClean` test is dropped, because the port has no content
+  setting to read and normal play leaves the game's own switch off;
+* the perpetrator is a uniform row pick over `a16_street-persons-enc`, with the
+  row's `Percent Male` column compared against a hundred-sided draw for the sex;
+* the crime comes out of the port's copy of the same 33-entry array (a static
+  `const char* const kCrimes[]` next to the other card pools), and the article is
+  the port's existing `articleFor` helper (port/src/sim.cpp:1732) -- the same
+  `a` / `an` split the game's `AddIndefiniteArticleToString` makes;
+* the body's scene is a coin between `While on your walk` and the port's own
+  `kCircumstancePublicScenes`, because the port has no walk to have happened on;
+* the three lanes are drawn with `witRng_.below(3)` and the port keeps the
+  discipline and karma moves (`pointsForImpact(-2)` -8, `pointsForImpact(-1)` -4,
+  `pointsForImpact(2)` 8, `pointsForImpact(3)` 16) and the exact journal of each;
+* the counter is `Hero::witPresented` (port/include/bl/game.h) and the stream is
+  `witRng_` (port/include/bl/sim.h), seeded from the same life seed with a constant
+  pair of its own -- the sixty-second stream the engine seeds -- so no other
+  family's draw sequence moves.
+
+Five cards the port drew, one per shape it can take:
+
+| Seed | Age | Row | Body | Choice | Journal |
+| --- | --- | --- | --- | --- | --- |
+| 1 male | 44 | 143 | While on your walk, you witness a frat bro vandalizing a convenience store! | Look the other way | I witnessed a frat bro vandalizing a convenience store. I looked the other way. (karma -8, discipline -4) |
+| 1 male | 63 | 68 | While on your walk, you witness a crackhead spanking a child! | Try to intervene | I witnessed a crackhead spanking a child. I stopped the crackhead! (karma +16, discipline +16) |
+| 9 male | 52 | 145 | While on your walk, you witness a milkmaid drinking in public! | Call the police | I witnessed a milkmaid drinking in public. I called the police on her. (discipline +8) |
+| 13 male | 44 | 43 | While on your walk, you witness a pervert masturbating in public! | Call the police | I witnessed a pervert masturbating in public. I called the police on him. (discipline +8) |
+| 3 male | 32 | 193 | While out fishing, you witness a dating coach keying a car! | Look the other way | I witnessed a dating coach keying a car. I looked the other way. (karma -8, discipline -4) |
+| 5 male | 34 | 41 | While taking out the trash, you witness an old geezer stealing a car! | Look the other way | I witnessed an old geezer stealing a car. I looked the other way. (karma -8, discipline -4) |
+
+The last two rows show the circumstance half of the scene draw -- `While out
+fishing` and `While taking out the trash` come out of the same 43-slot switch
+section 119 wired -- and the `an old geezer` row shows the article helper doing
+its job on a vowel.
+
+### 121.5 Shortcuts
+
+* `KeepItClean` @0x73f32aba1c is not read. The port has no censorship setting and
+  the switch is off in every capture, so the card is offered as if it were off.
+* `_happenedOnWalk` (0x16a) is drawn as a coin rather than carried: the port has
+  no walk, and the flag only chooses which of the two {0} strings opens the body.
+* The police lane's `ShouldGetCapturedWhenInteractingWithPoliceInPlace` chain --
+  `SimPlace::GetCrimeScenarioForCrimeType` and the two extra draws -- needs the
+  place's crime list, which the port does not model (the same gap that keeps
+  `ScenarioCrimeCapture` and `ScenarioCrimeFalseAccusation` unwired). The lane
+  keeps its discipline move and its journal.
+* The intervene lane's two follow-ups (`You successfully stopped the {0} from
+  {1}.` and the perpetrator-turns-on-the-hero card) are not pushed: the port has
+  no gate for either. The journal keeps the ``I stopped the ...!`` line.
+* The byte at `[life+0x70]+0x399` (the hero looked away) and the card's own bit at
+  [self+0x110] are not kept; nothing else in the port reads them.
+* The `Witness` category label at [self+0x30] is not carried -- the port's cards
+  have no category.
+
+### 121.6 Verification
+
+/tmp/qdir/witres.py -- 80 lives (seeds 1..40 x both sexes x 80 years), 21 s:
+
+```
+lives 80
+witness cards 88
+rows drawn 39 of 201
+choices {'Look the other way': 24, 'Try to intervene': 34, 'call the police': 30}
+scenes drawn 23 of 42
+cards per life {0: 21, 1: 35, 2: 19, 3: 5}
+hero age at the card min 19 max 73
+runtime 21s
+failures 0
+events 88
+RESIDUE 0 {}
+rc 0
+```
+
+The probe reconstructs the sentence from the row it names: the body must be one
+of the 42 scenes, the article-carrying description of the drawn row and one of the
+33 crimes, exactly. It then checks each lane's journal and its exact delta set,
+that no angle-bracket token survives, that the card never opens before 18 and
+never appears more than four times in a life. Its first run reported two failures,
+both in the probe: it had expected the karma move to be clipped when the hero had
+no karma left, but the port reports the card's own move, not the clamped result --
+the same reading every other card probe uses.
+
+`tools/test_witness.py` is the repo's regression, built on the same checks and
+run by the sweep:
+
+```
+lives 80 / witness cards 88 / lanes {'look': 24, 'intervene': 34, 'police': 30}
+rows drawn 39 of 201 / cards per life {0: 21, 1: 35, 2: 19, 3: 5} / ok
+```
+
+Its first run failed on the last line for an honest reason: no life drew four
+cards in this sweep, so the assertion that the cap is reachable was replaced by
+one that the multi-card path is exercised (a life with three). The cap of four is
+still checked in the other direction -- the sweep fails if any life draws five.
+
+The full batch was green: `captured scenarios: 109  recoverable: 107` with
+`contentless entries: 2 -- ScenarioMiniPaywall x2`; `ENTRIES 109 rendered-by-port
+107 gap 0`; the residue census `distinct residue tokens 0 total 0`; 64 probes,
+every one `rc=0` and all but the id probe at `residue=0`; and the ages 0..34 bench
+trace byte-identical to section 120's, because `witRng_` keeps the card off the
+main stream.
+
+The sibling tests are green with the card in place. The coworker family's counters
+are `annoy 149, behavior 119, pranks 109, rumors 94, unprofessional 110, after
+hours 83, hookup 94, team building 52` with `supervisors seen: 38`, against
+section 120's run of `151 / 120 / 108 / 92 / 113 / 83 / 100 / 51` and 37
+supervisors. The witness card moves karma and discipline, and because a card that
+fires owns the year, every family whose cards are tried after it in the dispatch
+loses the years this one takes -- the same drift sections 116 and 117 recorded.
+The lightning test still draws 76 cards and rolls 4 deaths, because the witness
+card never touches `lightRng_`. The earlier sections keep their quoted numbers;
+the fresh ones live here.

@@ -775,6 +775,11 @@ struct Hero {
   // the game's own PresentedCount cap of five is the only counter the port
   // needs.
   int sedPresented = 0;
+  // The witness card (REPORT.en.md 121) is the citizen family's first push
+  // and the only street card in the port. ScenarioEthicsWitnessCrime asks
+  // Life::PresentedCountForScenario < 4 (@0x73f3bcf6c0), so the cap is four
+  // and the life needs no other record of it.
+  int witPresented = 0;
 };
 
 class GameState {
