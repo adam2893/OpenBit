@@ -474,6 +474,7 @@ class Sim {
   // them draws a random number, so the coin is the port's; they share one
   // coworker and draw on their own stream (cwRng_).
   bool coworkerYear(Life& life, AgeUp& out, int forcedChoice);
+  bool supervisorYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -616,6 +617,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng flRng_;
   // The coworker family's own stream (REPORT.en.md 105).
   Rng cwRng_;
+  Rng supRng_;
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).

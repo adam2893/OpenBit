@@ -631,6 +631,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       partyRng_(seed ^ 0xc2b2ae3d27d4eb4fULL ^ 0xe7037ed1a0b428dbULL),
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
+      supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -1511,6 +1512,7 @@ std::string Sim::personName(const std::string& token) {
     key.resize(key.size() - suffix.size());
   }
   static const char* kPeople[] = {"friend", "teacher", "classmate", "coworker", "co-worker",
+                                  "supervisor",
                                   "parent", "lover", "employee", "boss", "spouse", "sibling",
                                   "neighbour", "neighbor", "stranger", "child", "bully",
                                   "crewmate", "colleague", "space-director", "commander",
@@ -3584,6 +3586,13 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // presented cap. They are tried after the friend cards and draw on their own
   // stream (include/bl/sim.h cwRng_), so no earlier subsystem's sequence moves.
   if (coworkerYear(life, out, forcedChoice)) return true;
+  // The unprofessional-supervisor card (REPORT.en.md 116) is the workplace
+  // family's second card: the same table-driven shape as the four above, but
+  // about the person above the hero instead of the one next to him, with its
+  // own presented cap and its report button. It is tried right after them and
+  // shares their stream (include/bl/sim.h cwRng_), so no earlier subsystem
+  // sequence moves.
+  if (supervisorYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26008,6 +26017,160 @@ bool Sim::coworkerYear(Life& life, AgeUp& out, int forcedChoice) {
     return true;
   }
   return false;
+}
+
+// The unprofessional-supervisor card (REPORT.en.md 116): ScenarioSupervisorUnprofessional
+// (il2cpp_dump.txt:55202) is the workplace card about the person above the hero
+// rather than the one next to him. Its gate @0x73f2e3583c asks for a job or the
+// military, a workplace supervisor who is not the hero's current lover, the hero
+// at 18 or older, and fewer than five presentations in the life. The table is
+// a16_supervisor-unprofessional-scenarios-enc: 55 rows of Scenario, Log Version,
+// Report For, Hero Gender and Supervisor Gender.
+bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 18) return false;
+  if (!h.employed && !h.military) return false;
+  // The class's own presented cap is five (cmp w0,#5; cset w8,lt @0x73f2e359dc),
+  // tested through Life::PresentedCountForScenario with the class name.
+  if (h.supPresented >= 5) return false;
+  // shortcut: the gate also reads the supervisor's own slot 0x240 and skips the
+  // card when it reaches 25.0 (fcmp s1,s0; b.pl @0x73f2e35938), and asks
+  // SimPerson::IsCurrentLover @0x73f2e35940 so a supervisor who is also the
+  // lover cannot be the card's subject. The port keeps no supervisor record and
+  // draws the card from the hero's own coworker slot.
+  static const char* kTable = "a16_supervisor-unprofessional-scenarios-enc";
+  if (!ensureTable(kTable)) return false;
+  // The class carries no push rate of its own -- the game's random-push queue
+  // decides -- so the coin is the port's, drawn on the workplace family's own
+  // stream (include/bl/sim.h supRng_), which moves no other family's sequence.
+  if (!supRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  if (h.supName.empty()) {
+    h.supName = resolve("<supervisor>");
+    if (h.supName.empty()) return false;
+    h.supFemale = supRng_.chance(0.5);
+  }
+  const std::string sup = h.supName;
+  const std::string them = h.supFemale ? "her" : "him";
+  const Table& t = tbl(kTable);
+  // The DataHub picker GetRandomSupervisorUnprofessionalScenarioForHeroGender-
+  // AndSupervisorGender @0x73f2cc6f14 tests both columns before its single draw;
+  // the loader decodes male as 0, female as 1 and anything else as 2, the
+  // wildcard, which is the same reading the coworker family uses.
+  const auto genderOk = [&](size_t r, const char* col, bool female) {
+    if (!col[0] || !t.has(col)) return true;
+    const std::string v = lower(trim(t.at(r, col)));
+    if (v.empty() || v == "both" || v == "all" || v == "any" || v == "2") return true;
+    if (v == "male") return !female;
+    if (v == "female") return female;
+    return true;
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    if (!genderOk(r, "Hero Gender", h.female)) continue;
+    if (!genderOk(r, "Supervisor Gender", h.supFemale)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[supRng_.below(uint32_t(pool.size()))];
+
+  std::string scenario = trim(t.at(row, "Scenario"));
+  std::string logCell = trim(t.at(row, "Log Version"));
+  // RefreshScenario registers the same two-entry dictionary the coworker cards
+  // use: '<supervisor>' (#9749) expands to 'your {0}, {1},' with the
+  // relationship word and the name, '<supervisor-possessive>' (#9748) to the
+  // same with the name's possessive, and the journal's own parse takes the 'my
+  // {0}, {1},' pair.
+  substAll(scenario, "<supervisor-possessive>", "your supervisor, " + sup + "'s,");
+  substAll(scenario, "<supervisor>", "your supervisor, " + sup + ",");
+  substAll(logCell, "<supervisor-possessive>", "my supervisor, " + sup + "'s,");
+  substAll(logCell, "<supervisor>", "my supervisor, " + sup + ",");
+  // The body's draws are read first and kept, because the journal's own '<rb>'
+  // points back at the alternative the body picked (the same rule the coworker
+  // cards follow).
+  rndCache_.clear();
+  rbLast_.clear();
+  const auto drawCardText = [&](std::string text, bool keep) {
+    for (size_t i = text.find('<'); i != std::string::npos; i = text.find('<', i + 1)) {
+      const size_t close = text.find('>', i);
+      if (close == std::string::npos) break;
+      const std::string inner = text.substr(i + 1, close - i - 1);
+      std::string genderValue;
+      if (inner.find('/') == std::string::npos || genderToken(inner, genderValue))
+        continue;
+      std::vector<std::string> parts;
+      splitOn(inner, '/', parts);
+      if (parts.empty()) continue;
+      const std::string drawn = parts[supRng_.below(uint32_t(parts.size()))];
+      if (keep && rndCache_.size() < 8) rndCache_.push_back(drawn);
+      text.replace(i, close - i + 1, drawn);
+      i += drawn.size() - 1;
+    }
+    return text;
+  };
+  const bool savedOtherSet = pronounOtherSet_;
+  const bool savedOtherFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.supFemale;
+  const std::string body = resolve(drawCardText(scenario, true));
+  const std::string logLine = resolve(drawCardText(logCell, false));
+  pronounOtherSet_ = savedOtherSet;
+  pronounOtherFemale_ = savedOtherFemale;
+
+  // Four buttons, in the order RefreshScenario adds them: 'Attack {0}' (#12347),
+  // 'Have a talk with {0}' (#22687), "It doesn't bother me" (#27502) and the
+  // report button -- 'Report {0} to HR' (#35787), or 'Report {0} misconduct'
+  // (#35788) when the supervisor's own 0x1f4 field is 1, a field the port does
+  // not carry (shortcut), so the port always uses the HR wording.
+  // ChoiceSelectedAtIndex @0x73f2e35338 lowers the chosen label and tests it
+  // with String.Contains in a fixed order -- attack #54542, report #64521, talk
+  // #66580, doesn't #57652 -- and a label matching none changes nothing at all.
+  // The game lets the hero pick; the port draws the one that happens.
+  ++h.supPresented;
+  const int pick = int(supRng_.below(4));
+  out = AgeUp();
+  out.table = kTable;
+  out.row_id = std::to_string(row + 1);
+  out.title = "Unprofessional Boss";  // #45024
+  out.body = body;
+  // The game capitalizes the assembled sentence (GameReference::
+  // CapitalizeFirstLetterOfSentenceString @0x73f32afedc), and a third of the
+  // table's Scenario cells open in lower case.
+  if (!out.body.empty())
+    out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  out.cta = "What will you do?";  // #46439
+  out.narrative = logLine;
+  if (pick == 0) {
+    // The attack lane @0x73f2e354ec: the supervisor's own slot 0x508 moves by -6,
+    // GetRandomNumber(0, 150) picks between ScenarioWorkplaceDisciplineHR and
+    // ScenarioCustomAttack (both pushed and both linked at [self+0x128]), and an
+    // obituary colour line is added ('Friends say the most pleasure {0} ever
+    // derived from life was from assaulting {1} {2}.' #20716). The port keeps no
+    // supervisor bar and pushes no card (shortcut), so the hero's own stats never
+    // move.
+    out.choice = "Attack " + them;  // #12347
+  } else if (pick == 1) {
+    // The report lane @0x73f2e35664: a bare Scenario carrying the row's own
+    // reason string is pushed and linked, and no hero stat moves.
+    out.choice = "Report " + them + " to HR";  // #35787
+  } else if (pick == 2) {
+    // The talk lane @0x73f2e356b8: ScenarioCoworkerTalkingTo is pushed with the
+    // reason the class makes up ('why you don't appreciate {0} behavior'
+    // #68057), and no hero stat moves.
+    out.choice = "Have a talk with " + them;  // #22687
+  } else {
+    // The ignore lane @0x73f2e35744 is the only one that moves the hero: his own
+    // slot 0x408 with -1 and ImpactDiscipline(2), and the journal gains
+    // '{0} I didn't let it bother me.' (#69558) after the row's own line.
+    out.happiness = pointsForImpact(-1);
+    out.discipline = pointsForImpact(2);
+    out.choice = "It doesn't bother me";  // #27502
+    out.narrative = logLine + " I didn't let it bother me.";
+  }
+  return true;
 }
 
 bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {

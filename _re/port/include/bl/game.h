@@ -748,6 +748,9 @@ struct Hero {
   // hero takes a job, and the four cards share it for the whole career.
   std::string cwName;    // the coworker a card is about
   bool cwFemale = false;
+  std::string supName;   // the workplace supervisor the unprofessional card is about
+  bool supFemale = false;
+  int supPresented = 0;  // ScenarioSupervisorUnprofessional's own presented cap
 };
 
 class GameState {

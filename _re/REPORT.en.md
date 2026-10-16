@@ -16954,3 +16954,212 @@ and the two paywall rows produce no push entry at all. The batch, the family
 regression and the bench are untouched by the tool change: the changed file is
 `tools/coverage.py` alone, and the probe suite reads the same push corpus it
 already did.
+## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague
+
+The workplace family is the largest connected block of cards in the game, and the
+coworker half of it is already replayed (section 105). The supervisor half is the
+other half of the same roster: same office, same colleagues, a different subject.
+`ScenarioSupervisorUnprofessional` (il2cpp_dump.txt:55202) is the only real class
+behind the three registry rows `ScenarioSupervisorSeduce`, `ScenarioSupervisorSocialize`
+and `ScenarioSupervisorUnprofessional` -- the registry lists the row names, the
+assembly has one class -- and this section wires it.
+
+### 116.1 The class and its gate
+
+The class extends `Scenario` and carries two fields: `_supervisor SimCoworker 0x170`
+and `_narrative 0x178`. Its methods are the two ctors (a bare `.ctor() @0x73f2e359f8`
+and one that takes the supervisor), `RefreshScenario @0x73f2e34c00`,
+`ChoiceSelectedAtIndex @0x73f2e35338` and
+`ScenarioIsEligibleForRandomPush @0x73f2e3583c`.
+
+The gate is that eligibility method, and it is the strictest one in the family --
+the card is about a boss, so the hero must actually have one:
+
+- `SimHero::CurrentlyHasAJob() @0x73f2f0e040` or
+  `SimHero::CurrentlyInTheMilitary() @0x73f2f0e0b4`;
+- `SimOccupation::get_Workplace() @0x73f3008584` must be non-null, then
+  `SimWorkplace::RefreshCoworkers() @0x73f2fe7178` and
+  `SimWorkplace::GetSupervisor() @0x73f2fe8db8` must produce a supervisor;
+- the supervisor's own slot 0x240 must read under 25.0 -- `fcmp s1,s0` followed by
+  `b.pl @0x73f2e35938`, which skips the card when the bar has filled;
+- `SimPerson::IsCurrentLover() @0x73f30e0f70` must be false, so a supervisor who is
+  also the hero's lover cannot be the subject;
+- the hero must be at least 18 (`cmp w9,#0x12`);
+- `Life::PresentedCountForScenario(System.String) @0x73f3736430` must read under five
+  (`cmp w0,#5; cset w8,lt @0x73f2e359dc`), the same five-card cap the coworker
+  family carries.
+
+### 116.2 The table, the tokens, the four buttons
+
+`a16_supervisor-unprofessional-scenarios-enc` holds 55 rows over five columns:
+`Scenario`, `Log Version`, `Report For`, `Hero Gender` and `Supervisor Gender`. The
+two gender columns are the interesting part, because all four cards the class can
+draw are filtered twice. Their values are '', 'both', 'male' and 'female' -- the
+hero column reads '' in 30 rows, 'both' in 21, 'female' in 3 and 'male' in 1, and
+the supervisor column '' in 23, 'both' in 21, 'male' in 7 and 'female' in 4. The
+DataHub picker behind the draw,
+`GetRandomSupervisorUnprofessionalScenarioForHeroGenderAndSupervisorGender @0x73f2cc6f14`,
+tests both columns before its single draw; the loader decodes male as 0, female as
+1 and anything else as 2, the wildcard -- the same reading section 105 documents.
+
+The text carries the same two-entry dictionary the coworker cards use.
+`<supervisor>` (#9749) and `<supervisor-possessive>` (#9748) are expanded by
+RefreshScenario against its own literals: #68432 `your supervisor, {0},` for the
+body and #62730 `my supervisor, {0},` for the journal, with the name in the single
+slot. The trailing comma is the game's own, which is why a Scenario cell that
+already writes its own punctuation after the token renders both: row 14 reads
+`...it's just you and <supervisor>. <He/She> smiles...` in the table and renders
+`...just you and your supervisor, Jam Roll,. She smiles...` in the game, and row 2
+(`with <supervisor>, you distinctly smell...`) renders a doubled comma the same way.
+The port keeps the literal exactly as decoded rather than repairing the table.
+
+The buttons come from RefreshScenario in a fixed order: `Attack {0}` (#12347),
+`Have a talk with {0}` (#22687), `It doesn't bother me` (#27502) and the report
+button -- `Report {0} to HR` (#35787), or `Report {0} misconduct` (#35788) when the
+supervisor's own 0x1f4 field reads 1 (`cmp w8,#1; csel x21,x9,x10,eq`).
+`ChoiceSelectedAtIndex @0x73f2e35338` then lowers the chosen label and tests it with
+`String.Contains` in a fixed order -- attack #54542, report #64521, talk #66580 and
+doesn't #57652 -- so a label matching none of the four changes nothing at all.
+
+### 116.3 The four lanes
+
+Each button is a different tail of the same method, and only one of them touches
+the hero's stats.
+
+- **Attack** @0x73f2e354ec moves the supervisor's own slot 0x508 by -6
+  (`mov w1,#-6`), draws `GetRandomNumber(0,150)`, and pushes two follow-up cards --
+  `ScenarioWorkplaceDisciplineHR` (`.ctor(String,Int32) @0x73f2e2734c`) and
+  `ScenarioCustomAttack` (`.ctor(SimCoworker,Boolean) @0x73f3cdaed0`) -- both linked
+  at `[self+0x128]`, then adds an obituary colour line
+  (`Friends say the most pleasure {0} ever derived from life was from assaulting {1} {2}.`
+  #20716).
+- **Report to HR** @0x73f2e35664 pushes and links a bare `Scenario`
+  (`.ctor(Boolean) @0x73f2eb9db8`) carrying a string. No hero stat moves.
+- **Have a talk** @0x73f2e356b8 pushes `ScenarioCoworkerTalkingTo`
+  (`.ctor(SimCoworker,String) @0x73f2e2cd34`) with a reason the class builds by
+  Format against the talk literal (`why you don't appreciate {0} behavior` #68057).
+  No hero stat moves.
+- **It doesn't bother me** @0x73f2e35744 is the only lane that moves the hero: his
+  own slot 0x408 with -1 (`mov w1,#-1; blr [x8+0x408]`) and
+  `SimPerson::ImpactDiscipline(int) @0x73f30e4cdc` with 2, and the journal gains
+  `{0} I didn't let it bother me.` (#69558) after the row's own line.
+
+### 116.4 How the port reaches it
+
+`Sim::supervisorYear(Life&, AgeUp&, int forcedChoice)` sits at port/src/sim.cpp:26027
+and is declared at port/include/bl/sim.h:477 next to `coworkerYear`. The wire is one
+call at port/src/sim.cpp:3593, right after the coworker card's own call, so the two
+share the workplace moment and keep their order. The card is built the way section
+105 builds its four: a table pick, the two-token substitution, the shared bracket
+drawer for `<A/B>` alternatives and for the pronoun tokens, `out.title = "Unprofessional
+Boss"` (#45024) and `out.cta = "What will you do?"` (#46439).
+
+Two details are the port's own reading of the class rather than a copy of it. The
+first is the random stream: the class carries no push rate of its own (the game's
+random-push queue decides), so the card draws its coin from a stream of its own,
+`supRng_`, seeded `seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL`. Section 105's
+coworker stream and every other family's sequence are therefore untouched, which
+matters because the supervisor name is resolved through the shared
+`resolve("<supervisor>")` path. The second is the capitalization: a third of the
+table's Scenario cells open in lower case, and the game capitalizes the assembled
+sentence (`GameReference::CapitalizeFirstLetterOfSentenceString @0x73f32afedc`), so
+the port uppercases the first character of the body after substitution.
+
+The name and sex are drawn once per life and kept (`supName`, `supFemale` in
+port/include/bl/game.h:751), so every supervisor card in a life names the same
+person, the way the game's workplace does. `"supervisor"` was added to the kPeople
+array at port/src/sim.cpp:1513ff so that `resolve("<supervisor>")` returns a name.
+
+Four cards, one per lane, as the port draws them:
+
+```
+age 26  row 19  Attack him
+  Your supervisor, Maylor Shift, made a big mistake on his project but then
+  told the big boss it was your fault.
+  journal: my supervisor, Maylor Shift, made a big mistake on his project and
+  blamed it on me.
+
+age 35  row 45  Report her to HR
+  Your supervisor, April Levine, just asked the entire staff why we can't all
+  be more like her.
+  journal: my supervisor, April Levine, asked the entire staff why we can't be
+  more like her.
+
+age 68  row 14  Have a talk with him
+  When you arrive at the office party, you quickly realize it's just you and
+  your supervisor, Maylor Shift,. He smiles and asks if you want to "play
+  doctor" with him.
+  journal: my supervisor, Maylor Shift, asked if I wanted to "play doctor"
+  with him.
+
+age 28  row 48  It doesn't bother me
+  Your supervisor, Maylor Shift, just told a co-worker that being her boss
+  makes him feel like he owns her.
+  journal: my supervisor, Maylor Shift, told a coworker that being her boss
+  makes him feel like he owns her. I didn't let it bother me.
+  deltas: happiness -4  discipline +8
+```
+
+The row 14 card is the table's own punctuation and the row 48 card is a table
+whose Supervisor Gender column reads 'male' over text that assumes a male
+supervisor either way; both render the way the game renders them.
+
+### 116.5 Shortcuts
+
+- The port keeps no supervisor record. The gate's slot 0x240 test, the attack
+  lane's 0x508 move, the 0x1f4 field that chooses between the two report wordings,
+  and the two pushed follow-up cards are all read from the class but not modelled:
+  the port draws the card from the hero's own coworker slot. The report button
+  therefore always wears the HR wording.
+- The push rate (0.05) is the port's own, since the game decides by queue.
+- `out.happiness` and `out.discipline` are `pointsForImpact(-1)` and
+  `pointsForImpact(2)`, the same conversion every other card in the port uses for a
+  raw impact and discipline move.
+
+### 116.6 Verification
+
+`tools/test_coworker.py` grew a supervisor block inside its per-run event loop (cap
+five, title, both gender columns, a capitalized body, no unresolved tokens, the name
+matching between body and journal, the pronoun matching the gendered rows, the
+deltas, and the ignore sentence), plus a final set assertion that every family table
+was seen. It reads:
+
+```
+coworker cards by table: {'a16_coworker-annoy-scenarios-enc': 138,
+  'a16_coworker-behavior-scenarios-enc': 114, 'a16_coworker-pranks-enc': 112,
+  'a16_coworker-rumors-enc': 95,
+  'a16_supervisor-unprofessional-scenarios-enc': 116}
+supervisors seen: 41
+```
+
+The probe /tmp/qdir/supres.py replays 80 lives (seeds 1..40 x both genders, 80
+years each) and checks every supervisor card against the table row it came from,
+including the strictest check available: a Scenario cell with no bracket
+alternatives must render exactly, once the two tokens are substituted and the
+sentence capitalized. It reads:
+
+```
+lives 80
+supervisor cards 116
+rows drawn 39 of 55
+choices {'Attack him': 17, "It doesn't bother me": 29, 'Report him to HR': 13,
+  'Attack her': 18, 'Report her to HR': 14, 'Have a talk with her': 7,
+  'Have a talk with him': 18}
+supervisors seen 41
+cards per life {0: 17, 1: 21, 2: 32, 3: 9, 4: 1}
+hero age at the card min 19 max 80
+runtime 21s
+failures 0
+events 116
+RESIDUE 0 {}
+rc 0
+```
+
+The 39 of 55 rows is the two gender columns doing their work: the hero and
+supervisor filters cut the pool exactly as the picker does, the four lanes split
+116 cards the way four uniform draws split, and the cap holds (no life draws more
+than five). The name is stable within a life and different across lives -- 41
+supervisors over 80 lives -- and the journal's own draw of the body's bracket
+alternative is checked by comparing each card's `<rb>` substitute against the one
+the body picked.
+
