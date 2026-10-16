@@ -17391,3 +17391,174 @@ The coworker and supervisor counters did move -- annoy 138 to 136, pranks 112 to
 eligible for and therefore which cards the years after it can draw. The numbers
 quoted in the 116 section were true of that commit's tree and are left standing;
 these are the numbers of this one.
+## 118. The after-hours invitation: the boss who asks, and the sentence he stops using
+
+The workplace family so far has shown two shapes. Four of its cards (§105) and the boss's own (§116) are rows of a table with the hero's and the colleague's sexes as columns; §117 is a sentence its own class assembles out of four objects and a pool of pastimes. The fourth card is the second shape again -- and the first one in the whole port where the supervisor is the one doing the asking. It is also the first card whose own words change the second time it is shown, which is what the byte at the top of 118.2 is about.
+
+### 118.1 The class and its gate
+
+**ScenarioSupervisorSocialize** sits at il2cpp_dump.txt:55187, wedged between the seduction card at il2cpp_dump.txt:55101 and the team-building card at il2cpp_dump.txt:55195 -- the three supervisor cards the game keeps as separate classes rather than as rows of a16_supervisor-unprofessional-scenarios-enc. It carries three fields:
+
+- `field 0x170 System.String _activity` -- the pastime the card names three times over
+- `field 0x178 SimCoworker _employee` -- the hero's own record in the workplace's staff list, which is where the workplace's name and the "asked before" byte are read from
+- `field 0x180 SimCoworker _supervisor` -- the boss
+
+and four methods: `.ctor() @0x73f2e33314`, `RefreshScenario @0x73f2e3341c`, `ChoiceSelectedAtIndex @0x73f2e33844` and `ScenarioIsEligibleForRandomPush @0x73f2e34228`.
+
+The gate is a chain of seven tests, and all seven have to pass before the card is even queued:
+
+1. `SimHero::CurrentlyHasAJob() @0x73f2f0e040` -- true in the military as well
+2. the hero's own `0x138` workplace field, through `SimWorkplace::Get_Workplace() @0x73f3008584`, is not null
+3. its `SimWorkplace::GetSupervisor() @0x73f2fe8db8` is not null
+4. the supervisor's value out of `0x73f30d284c` is above `30.0f` (`fmov s1, #30.0`; fcmp s0, s1; b.le`) -- he has to be senior enough
+5. the supervisor's own `0x240` bar is below `50.0f` (`fmov s1, #50.0f` is `0x42480000`; `fcmp; b.pl`)
+6. `SimPerson::IsCurrentLover() @0x73f30e0f70` is false -- the invitation is not a date with someone already at home
+7. `Life::PresentedCountForScenario() @0x73f3736430` against the scenario key in cell `0x5c610e8` is under five (`cmp w0, #5; cset w0, lt`)
+
+There is no hero age test anywhere in the gate, which makes this the first workplace card without one -- and the only reason the port has an age floor at all is that its supervisor is a drawn name rather than a full person (see 118.5).
+
+### 118.2 The two sentences and the two buttons
+
+`RefreshScenario` draws `_activity` from the same pool every other pastime card uses, `DataHub::GetRandomPastime() @0x73f2d0ca3c` (called with a null method info, `mov x0, xzr`), and then picks between two format cells by reading one byte off the employee record:
+
+- `ldrb w8, [x8, #0x39]` at the top of the method, `cbz w8, 0x73f2e33604` -- byte zero takes the long sentence, anything else the short one
+- `strb 1, [employee + 0x39]` at 0x73f2e33788 -- and then writes one back, so the long one is available exactly once per employee
+
+The two cells:
+
+| showing | cell | literal | sentence |
+|---|---|---|---|
+| first | 0x5c61098 | #50561 | `Your {0} at {1}, {2}, has taken a liking to you and has asked you to go {3} with {4}. You are worried that it will make your co-workers jealous.` |
+| later | 0x5c61090 | #50712 | `Your {0}, {1}, invited you to go {2} with {3}.` |
+
+The five objects of the long one are, in order, `SimPerson::RelationshipStatusStringAndCapitalize() @0x73f30c9ad0` on the supervisor, the workplace's name (read through the employee record: `[self+0x178]` then `+0x40` then `+0x28` then `+0x18`), `SimPerson::NameStringAndIncludeFullName() @0x73f30c999c` on the supervisor, `_activity`, and the pronoun helper `0x73f30e64d0(person, 2)` -- the object pronoun, `him` or `her`.
+
+That first slot is the same slot the team-building card fills with the literal word "supervisor" (REPORT.en.md 117.4, where the shortcut was taken on the strength of this card's decoded sentence). Here the game's own output settles it: the sentence reads `Your supervisor at the company, Jam Roll, has taken a liking to you...`, so for a supervisor the relationship label **is** the role word, not a status like "married".
+
+The title is the il2cpp literal #10909, `After Hours` (`0x5c61080`), stored at `[x19+0x38]` by the ctor, and the two buttons are literal #17913 `Do it` (`0x5c344c8`) and literal #34276 `Politely decline` (`0x5c61088`). `ChoiceSelectedAtIndex` resolves the answer the same way the two cards before it do: it takes the chosen label out of the list at `[self+0x108]` through the vtable slot `+0x2e8`, lowers it with `String::ToLower() @0x73f52aa938` and then substring-tests it, first against `'do it'` (#57642, cell `0x5c37ef0`) for the accept lane and then against `'decline'` (#57370, cell `0x5c610d8`) for the refusal. Anything else does nothing at all.
+
+### 118.3 The two lanes
+
+**Accept** (`0x73f2e33a80`) moves the hero's own `0x408` slot by `+3`, the supervisor's `0x508` bar by `+4`, and calls `SimWorkplace::ImpactRelationshipWithAllCoworkers() @0x73f2fe9714` with `-3` -- saying yes to the boss costs you at the water cooler, which is exactly what the long sentence warns about. Its journal is cell `0x5c60a98`, literal #25801:
+
+> I went {0} with my {1}, {2}.
+
+The lane then does four more things the port documents but does not model: it formats cell `0x5c610b8` (#49739, `You went {0} with your {1}, {2}.`) into a second scenario pushed as a follow-up and linked at `[self+0x128]`; it appends the achievement names of cells `0x5c610c0` (#14267 `Butter them up`), `0x5c610d0` (#23191 `How could I say no`), `0x5c610e0` (#15536 `Chillin' with the villain`) and `0x5c610c8` (#13923 `Bossy buddy`) to a builder; it draws a number with `GetRandomNumber(0, 100)` and formats the enjoyment pair `0x5c34a68` (#50126 `Your Enjoyment`) / `0x5c3dae0` (#69502 `{0} Enjoyment`) together with `0x73f30e64d0(supervisor, 6)`; and it completes the 'cliff diving' achievement (cell `0x5c334b8`, guarded by `_activity.Equals('cliff diving')` against cell `0x5c34bb8`) when the pastime was that one. Finally it pushes a memory line into the obituary pool -- cell `0x5c610a0`, literal #32835:
+
+> One of {0} bosses recalls fondly the time {1} went to go {2} with {3}.
+
+with the `<obit-his/her>` and `<obit-he/she>` tokens (cells `0x5c38f58` and `0x5c34a20`) for the first two slots, through `ObituaryGenerator::AddColorString() @0x73f3803dc0`. The accepted evening therefore outlives the card in the game's death text, which is a level of bookkeeping no earlier card in this port has.
+
+**Refuse** (`0x73f2e33fb8`) leaves `0x408` alone and calls `SimPerson::ImpactDiscipline(1) @0x73f30e4cdc` -- a **rise**, small but real, the only stat the refusal moves -- and drops the supervisor's `0x508` bar by `-4`. Its journal is cell `0x5c610b0`, literal #24817:
+
+> I politely declined an opportunity to go {0} with my {1}, {2}.
+
+Both lanes then run a common tail at `0x73f2e34070`: if the supervisor's id word at `[+0x1c]` differs from the hero's, the game assembles a third scenario over cell `0x5c60ad0` (literal #65500, `sexually harassing <you/me>`), stores the supervisor at `[x22+0x58]` and appends it to the day's result, and then logs the journal line with `Log() @0x73f380158c` and tails into `RefreshUI() @0x73f3580f5c`.
+
+### 118.4 How the port reaches it
+
+`Sim::afterHoursYear` is at port/src/sim.cpp:26300, declared at port/include/bl/sim.h:484 and called at port/src/sim.cpp:3609, right after the team-building card, so no family before it moves. It keeps its own stream, `ahRng_` (port/include/bl/sim.h:629, seeded at port/src/sim.cpp:636 with `seed ^ 0x2545f4914f6cdd1d ^ 0xd6e8feb86659fd93`, a pair no other stream uses), and two hero slots, `ahPresented` and `ahFirst` (port/include/bl/game.h:764-765).
+
+The port's mapping of the gate is the readable half of it: `age >= 21`, employed or military, `ahPresented < 5`, and a 0.05 coin on `ahRng_` -- the game's queue decides when the card is offered, so every push rate in this port is its own. The supervisor's name comes from `h.supName` when the unprofessional card has already named him and otherwise from the same lazy slot that card uses (`h.tbSupName`), so this card draws no name of its own and no other card's sequence moves; the workplace is `h.ofcCompany` with the token resolver's own `the company` fallback; the pronoun comes from `h.supFemale`.
+
+Four cards, as the port draws them (seeds 1..14, both sexes, ninety years):
+
+`age 58, row 34, the first showing, accept`
+
+> Your supervisor at the company, Ron Mendes, has taken a liking to you and has asked you to go skydiving with her. You are worried that it will make your co-workers jealous.
+>
+> **Do it** -> happiness +16
+>
+> I went skydiving with my supervisor, Ron Mendes.
+
+`age 29, row 81, the first showing, decline`
+
+> Your supervisor at the company, Arianna Venti, has taken a liking to you and has asked you to go to make hand-painted T-shirts with her. You are worried that it will make your co-workers jealous.
+>
+> **Politely decline** -> discipline +4
+>
+> I politely declined an opportunity to go to make hand-painted T-shirts with my supervisor, Arianna Venti.
+
+`age 34, row 4, the same supervisor asking a second time`
+
+> Your supervisor, Beyawnce Gnolls, invited you to go bowling with him.
+>
+> **Do it** -> happiness +16
+>
+> I went bowling with my supervisor, Beyawnce Gnolls.
+
+`age 75, row 195, a pastime with its own one-of list, third showing`
+
+> Your supervisor, Megan Mare, invited you to go for a tandem bike ride in the forest with him.
+
+Three of these four are worth pausing on. The Ron Mendes card reads `with her` although the name is a man's: the supervisor in this port is a name and a drawn sex, and the pronoun follows the sex, exactly as REPORT.en.md 116.6 recorded for the unprofessional card. The pair of age-29 and age-78 cards on seed 2 female is the employee byte at work -- `Montero X` asks with the long sentence at 29 and with the short one at 78, the same person, the same life. And row 195's cell is `for a tandem bike ride in the <mountains/forest/country/city/hills>`, drawn as `in the forest`: the port resolves the alternatives before the sentence is assembled, so the probe has to rebuild the cell as a pattern to check it (118.6).
+
+One more pair from the same sweep, both the first showing:
+
+`seed 31, row 270` -- cell `to sing <musician> songs at karaoke night`:
+
+> Your supervisor at the company, Walid Robinson, has taken a liking to you and has asked you to go to sing Chris Stapleton songs at karaoke night with her.
+
+`seed 36, row 121` -- cell `to do <musician> karaoke`:
+
+> Your supervisor at the company, Willie Eyelash, has taken a liking to you and has asked you to go to do Pentatonix karaoke with him.
+
+Those two rows carry a bracket with no alternatives in it at all -- `<musician>` is a person the game resolves, not a choice list -- which is a case the two pastime cards' own checkers had to learn (118.6).
+
+### 118.5 Shortcuts
+
+- **The three tests about the supervisor himself are not modelled.** The port's supervisor is a name, a sex and a presented counter, so the `30.0f` seniority floor, the `0x240` bar below `50.0f` and the `IsCurrentLover()` test have nothing to read. The `age >= 21` floor stands in for the first of them -- the game will not offer the card to a teenager either, since the hero has to hold a job for it to fire at all -- and the other two are dropped. A ported life can therefore be invited out by a boss the game would have filtered.
+- **The supervisor's relationship bar (`0x508`) and the co-worker relationship bar** (`ImpactRelationshipWithAllCoworkers`) are the two things the accept lane spends and the refusal lane saves. The port carries neither, so they stay comments in the code; in a ported life, saying yes to the boss costs nothing but the jealousy of a bar nobody can see.
+- **The line the accepted evening leaves in the obituary pool**, the four achievement names, the enjoyment number, the pushed follow-up scenario and the jealousy scenario of the common tail are all skipped. The port pushes one card per age-up and keeps no achievements, no obituaries and no scenario chain.
+- **The employee byte is kept per life, not per employee.** The game keeps `0x39` on the hero's staff record; the port has no staff list, so `ahFirst` is one bit for the whole life. A ported life that changes employer keeps the "has asked before" state across both jobs, where the game would start fresh.
+- **The presented cap is the game's own five** (`ahPresented`), and like every other cap in this port it is counted per life.
+
+### 118.6 Verification
+
+The probe for this card is /tmp/qdir/ahres.py -- eighty lives (seeds 1..40, both sexes, eighty years each), eleven seconds, rc 0:
+
+    lives 80
+    after hours cards 86
+    long sentences 48 short sentences 38
+    rows drawn 45 of 271
+    choices {'Politely decline': 45, 'Do it': 41}
+    supervisors seen 34
+    workplaces seen 1 ['the company']
+    pronouns {'her': 26, 'him': 60}
+    cards per life {0: 32, 1: 23, 2: 15, 3: 8, 4: 1, 5: 1}
+    hero age at the card min 21 max 79
+    runtime 11s
+    failures 0
+    events 86
+    RESIDUE 0 {}
+    rc 0
+
+It checks the table, the age floor, the body against both sentences, that the first card of a life is the long one and every later card the short one, the pastime text against its row's cell rebuilt as a pattern, that no `<token>` survives into the sentence, the choice against the two buttons, the deltas of each lane (happiness 16 for **Do it**, discipline 4 for **Politely decline**), the exact journal line of each lane with the activity and the supervisor's name substituted back in, and the cap of five cards per life. It is the first probe of the family that has to read two sentences: the long one carries the workplace in its second slot and the short one does not, so the workplace, the name and the pronoun are taken from different groups depending on which shape matched.
+
+Two of the probe's own checks were wrong before they were right, and both are worth recording:
+
+- The short-sentence check read `if n != 1` where it meant `if n == 1`, so every one of the thirty-eight short cards was reported as arriving before the long one. The port was right; the probe was inverted.
+- The pastime-cell check escaped a bracket with no alternatives in it, so rows 121 (`to do <musician> karaoke`) and 270 (`to sing <musician> songs at karaoke night`) failed. `<musician>` is not a one-of list at all -- it is a person the game resolves, exactly like `<supervisor>` in the two cards above -- so both the probe's helper and tools/test_coworker.py's `cell_pattern()` now treat a slashless bracket as `.+?` instead of a fixed word. The team-building card (REPORT.en.md 117.6) drew no such row in its own sweep, which is why the same latent bug sat in the test until now.
+
+The regression test is tools/test_coworker.py, which now covers this card as well:
+
+    coworker cards by table: {'a16_coworker-annoy-scenarios-enc': 137, 'a16_coworker-behavior-scenarios-enc': 119, 'a16_coworker-pranks-enc': 109, 'a16_coworker-rumors-enc': 92, 'a16_supervisor-unprofessional-scenarios-enc': 114, 'after hours': 86, 'team building': 52}
+    supervisors seen: 34
+    team building cards: 52
+    after hours cards: 86
+
+The workplace counters have moved again, for the third section running: the unprofessional card drew 111 in the 117 run and draws 114 here, the behave table 114 and now 119, annoy 136 and now 137, rumors 95 and now 92. The cause is the one recorded in REPORT.en.md 117.6 -- this card moves the hero's happiness or his discipline, so the years after it differ and so does every later family's eligibility. The numbers quoted in the 116 and 117 sections were true of their own commits' trees and are left standing.
+
+The full batch, written by /tmp/qdir/reg118.sh and run as a background job, is green:
+
+| check | result |
+|---|---|
+| build | `cmake --build port/build -j8`, no warnings |
+| tools/coverage.py | `captured scenarios: 109  recoverable: 107` and `contentless entries: 2 -- ScenarioMiniPaywall x2` |
+| tools/portgap.py | `ENTRIES 109 rendered-by-port 107 gap 0` |
+| coverage replay | rc 0 with a zero-byte stderr, 31748 bytes of events |
+| residue census | `distinct residue tokens 0 total 0` |
+| all probes | 61 lines, every probe `rc=0 residue=0` (`ahres.py` events 86, `supres.py` 114, `tbres.py` 52, `ftres.py` 170; only `idres.py` prints its own per-run counters) |
+| tools/bench.sh /tmp/trace_c10.json | 167 lines, and `diff` against the 117 run is empty -- the ages 0..34 trace does not move |
+
+The trace not moving is the point of the separate stream. This card draws a pastime on every eligible year through `ahRng_` and none of those draws touch `rng_`, so the ages the benchmark compares against the game's own capture are unchanged -- the same result §117 recorded, and the first time in this stretch that a card could have moved the main stream and did not.

@@ -1,6 +1,6 @@
 """Row, gate, and outcome regression for the coworker cards (REPORT.en.md 105),
-the unprofessional-supervisor card (REPORT.en.md 116) and the team-building card
-(REPORT.en.md 117)."""
+the unprofessional-supervisor card (REPORT.en.md 116), the team-building card
+(REPORT.en.md 117) and the after-hours invitation (REPORT.en.md 118)."""
 import collections
 import csv
 import json
@@ -33,6 +33,15 @@ TB_ROWS = list(csv.DictReader((ROOT / "gamedata_plain" / TB).open(newline="")))
 TB_BODY = re.compile(r"^(.+?), your supervisor at (.+?), is sponsoring a team building "
                      r"activity by taking the team (.+?)\.$")
 TB_CHOICES = ("Sure, I'll go", "No, that sounds lame")
+# The after-hours invitation: the same pastime pool, two sentences -- the first
+# showing promises co-worker jealousy, later ones only invite -- a cap of five,
+# two buttons, and only the hero's own stat moving in either lane.
+AH = "a16_pastimes-enc"
+AH_LONG = re.compile(r"^Your supervisor at (.+?), (.+?), has taken a liking to you and "
+                     r"has asked you to go (.+?) with (him|her)\. You are worried that it "
+                     r"will make your co-workers jealous\.$")
+AH_SHORT = re.compile(r"^Your supervisor, (.+?), invited you to go (.+?) with (him|her)\.$")
+AH_CHOICES = ("Do it", "Politely decline")
 
 
 def cell_pattern(cell):
@@ -46,7 +55,11 @@ def cell_pattern(cell):
             break
         close_at = cell.find(">", open_at)
         out.append(re.escape(cell[i:open_at]))
-        out.append("(?:" + "|".join(re.escape(x) for x in cell[open_at + 1:close_at].split("/")) + ")")
+        inner = cell[open_at + 1:close_at]
+        # A slashless bracket is a person or thing the game itself resolves
+        # ('<musician>', '<supervisor>'), not a fixed list of alternatives.
+        out.append(("(?:" + "|".join(re.escape(x) for x in inner.split("/")) + ")")
+                   if "/" in inner else ".+?")
         i = close_at + 1
     return "".join(out)
 seen = collections.Counter()
@@ -116,6 +129,38 @@ for seed in range(1, 41):
                         "I refused to go " + activity
                         + " with my company on a team building exercise."), event
                 continue
+            if event.get("title") == "After Hours":
+                counts["after hours"] += 1
+                seen["after hours"] += 1
+                assert counts["after hours"] <= 5, event
+                assert name == AH, event
+                assert event["age"] >= 21, event
+                match = AH_LONG.match(event["body"])
+                if match:
+                    assert counts["after hours"] == 1, event
+                    supervisor, activity, pronoun = match[2], match[3], match[4]
+                    assert match[1] == "the company", event
+                else:
+                    match = AH_SHORT.match(event["body"])
+                    assert match, event
+                    supervisor, activity, pronoun = match[1], match[2], match[3]
+                row = TB_ROWS[int(event["row"]) - 1]
+                assert re.fullmatch(cell_pattern(row["Pastime"].strip()), activity), event
+                assert not re.search(r"<[a-zA-Z][^<>]*>", event["body"]), event
+                assert pronoun in ("him", "her"), event
+                choice = event["choice"]
+                assert choice in AH_CHOICES, event
+                deltas = {k: v for k, v in event["deltas"].items() if v}
+                if choice == "Do it":
+                    assert deltas == {"happiness": 16}, event
+                    assert event["logLines"][0] == (
+                        "I went " + activity + " with my supervisor, " + supervisor + "."), event
+                else:
+                    assert deltas == {"discipline": 4}, event
+                    assert event["logLines"][0] == (
+                        "I politely declined an opportunity to go " + activity
+                        + " with my supervisor, " + supervisor + "."), event
+                continue
             if name not in TABLES:
                 continue
             row = ROWS[name][int(event["row"]) - 1]
@@ -148,7 +193,8 @@ for seed in range(1, 41):
                     assert re.search(r"\b" + pronoun + r"\b", choice), event
             if choice.startswith("Start a rumor about "):
                 assert coworker and choice == "Start a rumor about " + coworker, event
-assert set(seen) == set(TABLES) | {SUP, "team building"}, seen
+assert set(seen) == set(TABLES) | {SUP, "team building", "after hours"}, seen
 print("coworker cards by table:", dict(sorted(seen.items())))
 print("supervisors seen:", len(names))
 print("team building cards:", seen["team building"])
+print("after hours cards:", seen["after hours"])

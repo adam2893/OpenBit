@@ -633,6 +633,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
+      ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3600,6 +3601,12 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // card and draws on its own stream (include/bl/sim.h tbRng_), so no earlier
   // subsystem's sequence moves.
   if (teamBuildingYear(life, out, forcedChoice)) return true;
+  // The after-hours invitation (REPORT.en.md 118) is that family's fourth push:
+  // the supervisor asks the hero out, and the card shows one of two sentences
+  // depending on whether he has asked before. It is tried right after the
+  // team-building card and draws on its own stream (include/bl/sim.h ahRng_), so
+  // no earlier subsystem's sequence moves.
+  if (afterHoursYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26281,6 +26288,127 @@ bool Sim::teamBuildingYear(Life& life, AgeUp& out, int forcedChoice) {
   // 0x5c34bb8) and completing an achievement when it matches
   // (AchievementManager @0x73f2817388 / @0x73f2817434); the port keeps no
   // achievements.
+  return true;
+}
+
+// The after-hours invitation (REPORT.en.md 118) is the workplace family's fourth
+// card and the only one the supervisor starts himself.
+// ScenarioSupervisorSocialize (il2cpp_dump.txt:55169; fields _activity 0x170,
+// _employee 0x178 and _supervisor 0x180) has .ctor() @0x73f2e33314,
+// RefreshScenario @0x73f2e3341c, ChoiceSelectedAtIndex @0x73f2e33844 and
+// ScenarioIsEligibleForRandomPush @0x73f2e34228.
+bool Sim::afterHoursYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // The gate @0x73f2e34228: SimHero::CurrentlyHasAJob @0x73f2f0e040, the
+  // workplace the hero's 0x138 field holds via Get_Workplace() @0x73f3008584,
+  // its GetSupervisor() @0x73f2fe8db8 non-null, that supervisor's value from
+  // 0x73f30d284c above 30.0f, his own 0x240 bar below 50.0f
+  // (fmov s1,#50.0f; fcmp; b.pl), SimPerson::IsCurrentLover @0x73f30e0f70 false,
+  // and Life::PresentedCountForScenario @0x73f3736430 under five. No hero age
+  // threshold appears in the gate at all.
+  // shortcut: the supervisor the port draws is a name with no age, no 0x240 bar
+  // and no lover link, so the three tests about him are not modelled; the age
+  // floor below is the port's usual adulthood line, the same one the
+  // unprofessional card and the team-building card use.
+  if (h.age < 21) return false;
+  if (!h.employed && !h.military) return false;
+  // The presented cap is the game's own (#0x5c610e8, the two constants compared
+  // with #5 at 0x73f2e34378).
+  if (h.ahPresented >= 5) return false;
+  // The class carries no push rate; the game's random-push queue decides, so the
+  // coin is the port's and is drawn on the card's own stream.
+  if (!ahRng_.chance(0.05)) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+
+  // {3} of the long sentence and {2} of the short one are
+  // DataHub::GetRandomPastime @0x73f2d0ca3c, the same pool the friend
+  // spend-time, mob and team-building cards draw from.
+  std::string activity;
+  const int pastimeRow = pickPastime(ahRng_, activity);
+  if (pastimeRow < 0) return false;
+
+  // {2} of the long sentence is SimPerson::NameStringAndIncludeFullName
+  // @0x73f30c999c on the workplace's supervisor -- the same person the
+  // unprofessional and team-building cards name, so the port reuses their slots
+  // rather than drawing a third name.
+  std::string sup = h.supName;
+  if (sup.empty()) {
+    if (h.tbSupName.empty()) {
+      h.tbSupName = resolve("<supervisor>");
+      if (h.tbSupName.empty()) return false;
+    }
+    sup = h.tbSupName;
+  }
+  // {1} of the long sentence is the workplace's own name, read off the employee
+  // record ([x19+0x178] -> +0x40 -> +0x28 -> +0x18); the port carries it as the
+  // office employer, the same fallback the team-building card uses.
+  const std::string place = h.ofcCompany.empty() ? std::string("the company") : h.ofcCompany;
+  // {4} of the long sentence and {3} of the short one are the possessive helper
+  // @0x73f30e64d0(supervisor, 2) -- the object pronoun, 'him' or 'her'.
+  const std::string them = h.supFemale ? "her" : "him";
+
+  out = AgeUp();
+  out.table = "a16_pastimes-enc";
+  out.row_id = std::to_string(pastimeRow);
+  // The title is an il2cpp literal (#10909) the ctor stores at [x19+0x38].
+  out.title = "After Hours";
+  // RefreshScenario picks one of two sentences off the employee byte 0x39
+  // (ldrb w8,[x8,#0x39]; cbz w8, ...): zero -- he has never invited the hero --
+  // takes the five-object sentence of cell 0x5c61098 (literal #50561), and any
+  // other value the four-object one of cell 0x5c61090 (literal #50712). It then
+  // writes one back into that byte at 0x73f2e33788, which is why the port keeps
+  // the flag per life (the game keeps it on the employee record).
+  if (h.ahFirst) {
+    out.body = "Your supervisor at " + place + ", " + sup +
+               ", has taken a liking to you and has asked you to go " + activity + " with " +
+               them + ". You are worried that it will make your co-workers jealous.";
+  } else {
+    out.body = "Your supervisor, " + sup + ", invited you to go " + activity + " with " + them + ".";
+  }
+  h.ahFirst = false;
+  ++h.ahPresented;
+
+  // ChoiceSelectedAtIndex @0x73f2e33844 lowers the chosen label and tests it
+  // with String.Contains: 'do it' (#57642, cell 0x5c37ef0) is the first button
+  // and 'decline' (#57370, cell 0x5c610d8) the second, so anything but the first
+  // is the refusal. The game lets the hero pick; the port draws the one that
+  // happens.
+  if (ahRng_.chance(0.5)) {
+    // The accept lane @0x73f2e33a80 moves the hero's own slot 0x408 by +3, the
+    // supervisor's 0x508 bar by +4 and calls
+    // SimWorkplace::ImpactRelationshipWithAllCoworkers @0x73f2fe9714 with -3. The
+    // port models no supervisor bar and no coworker relationships (shortcut), so
+    // only the hero's own move survives. The lane also formats cell 0x5c610b8
+    // ('You went {0} with your {1}, {2}.') into a second, pushed follow-up
+    // scenario linked at [self+0x128], appends the unlock strings of cells
+    // 0x5c610c0/0x5c610d0/0x5c610e0/0x5c610c8 ('Butter them up', 'How could I say
+    // no', "Chillin' with the villain", 'Bossy buddy'), draws an enjoyment number
+    // with GetRandomNumber(0,100) against cells 0x5c34a68 'Your Enjoyment' and
+    // 0x5c3dae0 '{0} Enjoyment', completes the 'cliff diving' achievement
+    // (cell 0x5c334b8) when the pastime is that one, and pushes an obituary
+    // memory line (cell 0x5c610a0, literal #32835) through
+    // ObituaryGenerator::AddColorString @0x73f3803dc0. None of that is modelled.
+    out.choice = "Do it";  // #17913, cell 0x5c344c8
+    out.happiness = pointsForImpact(3);
+    // The journal is Format(String,Object,Object,Object) @0x73f52a7210 over cell
+    // 0x5c60a98, literal #25801.
+    out.narrative = "I went " + activity + " with my supervisor, " + sup + ".";
+  } else {
+    // The refusal lane @0x73f2e33fb8 leaves slot 0x408 untouched and calls
+    // ImpactDiscipline(1) @0x73f30e4cdc -- an increase -- and moves the
+    // supervisor's own 0x508 bar by -4. Its journal is cell 0x5c610b0, literal
+    // #24817.
+    out.choice = "Politely decline";  // #34276, cell 0x5c61088
+    out.discipline = pointsForImpact(1);
+    out.narrative = "I politely declined an opportunity to go " + activity +
+                    " with my supervisor, " + sup + ".";
+  }
+  // Both lanes end with a common tail @0x73f2e34070: when the supervisor's id
+  // word differs from the hero's ([x0+0x1c] vs [x9+0x1c]) the game builds a
+  // jealousy scenario over cell 0x5c60ad0 ('sexually harassing <you/me>') and
+  // appends it to the day's result. The port pushes no chain of scenarios.
   return true;
 }
 

@@ -757,6 +757,12 @@ struct Hero {
   // (the game keeps it on the workplace object the port does not model).
   std::string tbSupName;
   bool tbDone = false;
+  // The after-hours invitation (REPORT.en.md 118) brings the workplace family's
+  // second supervisor card: it reuses the same lazy supervisor slot above and
+  // keeps both of the game's own counters -- its presented cap of five and the
+  // employee byte 0x39 that decides which of the two sentences the card shows.
+  int ahPresented = 0;
+  bool ahFirst = true;
 };
 
 class GameState {
