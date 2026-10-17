@@ -22698,6 +22698,47 @@ test_paranormal: ok
 
 No buttons, a capitalised journal on every card, no card before 16.
 
+## 188. The hero walks in on a parent
+
+```
+a16_parent-cheat-scenarios-enc, 36 rows
+  Scenario, Log Version, Parent Gender, Parent Might Notice, Hero Min Age, Hero Max Age
+```
+
+The first card this session whose text needs the **alternative** machinery:
+
+```
+body   'You come home to discover your father <having intercourse/fornicating/copulating>
+        with the neighbor's wife.'
+log    'I came home to find my father <rb> with the neighbor's wife.'
+```
+
+`<rb>` is the port's existing *refer back* token — it points at whichever alternative
+the body chose — so the card picks once and uses it twice:
+
+```
+B: While playing BitLife on your father's phone, you stumble upon a video ...
+J: I discovered a video of my father having sex with a neighbor.
+```
+
+### 188.1 Verification, and an assertion that had to lose a direction
+
+`tools/test_parent_cheat.py`:
+
+```
+cards: 10
+ok
+NaN
+
+The first version required the journal to *always* reuse the body's word, and failed on
+seed 6 — that row's log says **'having sex'** outright and carries no `<rb>` at all. The
+check is now one-way: when a journal does carry the word, the body must have chosen it,
+and a left-over `<rb>` is caught independently. 10 cards across 60 short lives.
+
+Bench 0 lines: the card draws from `ambientRng_` (§187), so a rare card perturbs nothing
+else — the idiom is paying for itself.
+
+
 
 
 

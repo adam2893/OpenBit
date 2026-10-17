@@ -722,4 +722,63 @@ bool Sim::stalkerYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness -= 2;
   return true;
 }
+// ScenarioParentCheat (REPORT.en.md 188): the hero walks in on a parent.
+//
+// a16_parent-cheat-scenarios-enc, 36 rows: Scenario, Log Version, Parent Gender,
+// Parent Might Notice, Hero Min/Max Age. The body carries an alternative
+// '<a/b/c>' and the journal refers back to whichever the body chose ('<rb>'), so the
+// card picks once and uses it twice.
+bool Sim::parentCheatYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_parent-cheat-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  const Person* parent = nullptr;
+  for (const Person& p : life.family) {
+    if (p.relation != "mother" && p.relation != "father") continue;
+    if (!p.alive) continue;
+    parent = &p;
+    break;
+  }
+  if (parent == nullptr) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_parent-cheat-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Parent Gender"));
+    if (!g.empty() && g != "both" && g != (parent->female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Hero Min Age");
+    const double mx = t.num(r, "Hero Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  std::string body = trim(t.at(row, "Scenario"));
+  std::string chosen;
+  const size_t open = body.find('<');
+  const size_t close = body.find('>', open == std::string::npos ? 0 : open);
+  if (open != std::string::npos && close != std::string::npos) {
+    const std::string group = body.substr(open + 1, close - open - 1);
+    if (group.find('/') != std::string::npos) {
+      std::vector<std::string> alts;
+      splitOn(group, '/', alts);
+      chosen = alts[ambientRng_.below(uint32_t(alts.size()))];
+      body.replace(open, close - open + 1, chosen);
+    }
+  }
+  std::string log = trim(t.at(row, "Log Version"));
+  for (size_t at = log.find("<rb>"); at != std::string::npos && !chosen.empty();
+       at = log.find("<rb>", at)) {
+    log.replace(at, 4, chosen);
+    at += chosen.size();
+  }
+  out.table = "a16_parent-cheat-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(body);
+  out.narrative = spyUpperFirst(log);
+  out.happiness -= 3;
+  return true;
+}
 }  // namespace bl

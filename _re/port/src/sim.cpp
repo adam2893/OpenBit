@@ -1315,6 +1315,8 @@ bool Sim::load(std::string* error) {
       "a16_paranormal-encounters-enc",
       // Somebody is following the hero: Scenario, Log Version, gender filters (187).
       "a16_stalker-scenarios-enc",
+      // The hero walks in on a parent: Scenario, Log Version, age and gender filters.
+      "a16_parent-cheat-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3882,6 +3884,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (childDemandsYear(life, out, forcedChoice)) return true;
   if (paranormalEncounterYear(life, out, forcedChoice)) return true;
   if (stalkerYear(life, out, forcedChoice)) return true;
+  if (parentCheatYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
