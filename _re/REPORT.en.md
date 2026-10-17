@@ -22311,6 +22311,52 @@ already had, with no disassembly beyond the buttons' literals. The 103 untouched
 are now a worklist rather than a list: each one is a card, and the child/custody group
 of seven is the natural next batch.
 
+## 180. The grounded lane, and the risk that a card renders without doing anything
+
+§179 shipped the discipline card with four lanes that differed only in their journal.
+That is exactly the risk §179.3 named — faces faster than behaviour — so the handler was
+read for the one lane it details:
+
+```
+73f3a86710  mov  w1, #0x1e                    ; GetRandomNumber(0, 30)
+73f3a86718  bl   GameReference::GetRandomNumber
+73f3a86748  bl   System.String::Contains      ; the label dispatch
+73f3a8679c  bl   SimPerson::ImpactDiscipline
+73f3a867b0  bl   SimPerson::ImpactDiscipline
+```
+
+`Contains('ground')` (slot `0x5caeb90`) selects the grounded lane, and that lane has the
+class's own sentence:
+
+```
+journal   '{0} I grounded {1} for {2} days.'   #69569
+button    'You're grounded'                    #49968 (the child's reply)
+```
+
+so the port now rolls **1–30 days**, writes the sentence with the number, and moves
+`discipline` by `pointsForImpact(+1)` = 4.
+
+### 180.1 What was left alone, and why
+
+Two `ImpactDiscipline` calls sit in the dispatcher and only one lane could be tied to a
+literal with confidence; the other assignment is *not* guessed. Yell, Talk and Do-nothing
+still carry no stat move, which is recorded rather than filled in.
+
+### 180.2 Verification
+
+`tools/test_child_discipline_lanes.py`:
+
+```
+grounded lanes: 3
+ok
+```
+
+The test only asserts on the lane it can: the grounded journal ends `for N days.` with
+`1 <= N <= 30`, `discipline` moves by exactly 4, and no other lane's journal claims it
+grounded anybody — the negative half is what keeps a lazy `log + sentence` from hiding
+a wrong lane. Bench 0 lines.
+
+
 
 ## 178. Correction: "decrypts" is not a discriminator
 

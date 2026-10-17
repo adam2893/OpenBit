@@ -575,8 +575,14 @@ bool Sim::childDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "Yell at " + name;
     out.narrative = log;
   } else if (lane == 1) {
+    // The grounded lane is the one the handler details: a roll of 1..30 days
+    // (GetRandomNumber(0, 0x1e) at 0x73f3a86718), ImpactDiscipline(+1) and the class's
+    // own sentence #69569.
+    const int days = 1 + int(loverRng_.below(30));
     out.choice = "Ground " + name;
-    out.narrative = log;
+    out.narrative = log + " I grounded " + (kid->female ? "her" : "him") + " for " +
+                    std::to_string(days) + " days.";
+    out.discipline = pointsForImpact(1);
   } else if (lane == 2) {
     out.choice = "Have a talk with " + name;
     out.narrative = log;
