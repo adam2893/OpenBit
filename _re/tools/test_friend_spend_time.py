@@ -49,7 +49,7 @@ for seed in range(1, 41):
             for seg in re.split(r"<[^<>]*>", row["Pastime"]):
                 if seg.strip():
                     assert seg.strip() in pastime, (row["Pastime"], pastime)
-            narrative = event["logLines"][0]
+            narrative = event["logLines"][-1]
             if accept:
                 seen["accept"] += 1
                 assert N_ACCEPT.match(narrative) and N_ACCEPT.match(narrative).group(1) == pastime, event

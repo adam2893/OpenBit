@@ -16,7 +16,7 @@ PORT = ROOT / "port" / "build" / "blsim"
 
 def run(seed, **extra):
     spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 60,
-            "relationship": True, "office": True}
+            "relationship": True}
     spec.update(extra)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
         json.dump(spec, fh)

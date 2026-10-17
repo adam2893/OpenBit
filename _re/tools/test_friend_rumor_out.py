@@ -45,7 +45,7 @@ for seed in range(1, 41):
             row = ROWS[int(event["row"]) - 1]
             assert event["title"] in TITLES, event
             text = match.group(1)
-            narrative = NAR.match(event["logLines"][0])
+            narrative = NAR.match(event["logLines"][-1])
             assert narrative and narrative.group(1) == text, event
             assert not event["choice"], event
             assert {k: v for k, v in event["deltas"].items() if v} == {}, event
