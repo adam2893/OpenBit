@@ -22256,6 +22256,62 @@ decided.
 Step 4 is a decision point rather than a dead end, and the numbers for it exist: 928
 loaders, of which the sampled four all decrypt.
 
+## 179. A child misbehaves, ported from an untouched table
+
+The routine from §178 was applied by searching for tables nothing in `port/src` names:
+
+```
+tables in gamedata_plain: 939, of which 103 are untouched
+  a16_secret 9   a16_child 4   a16_custody 3   a16_adoption 2   a16_pray 3 ...
+```
+
+`a16_child-discipline-enc` was one of them — **107 rows** of `Condition, Scenario, Log
+Version, Min Age, Max Age, Student, Child Gender, Hero Gender, Clean` — and the family it
+belongs to has existed since §146/§149/§163, so it went straight in:
+
+```
+body     the row's Scenario, <child> and <child-possessive> substituted
+journal  the row's Log Version, same substitution
+buttons  'Yell at {0}' (#47498)  'Ground {0}' (#22277)
+         'Have a talk with {0}' (#22687)  'Do nothing' (#17927)
+gate     a child at home, aged 2-17, in the same city, not moved out
+```
+
+Two rows as they render:
+
+```
+You glance out the window and see Kye pretending to shoot other children with your dildo.
+Kye pretended to shoot other children with my dildo.
+```
+
+### 179.1 The shortcut
+
+The handler's stat moves were not read, so the four lanes differ only in their journal —
+the card is about the exchange, not about a number. That is stated at the code, not
+implied.
+
+### 179.2 Verification
+
+`tools/test_child_discipline.py`:
+
+```
+lanes: {'Have': 5, 'Ground': 3, 'Do': 3, 'Yell': 1}
+distinct bodies: 12
+ok
+```
+
+Twelve distinct bodies across 30 lives is the check that the row is really drawn; no
+`<child>` token survives into a line, body or journal; all four lanes occur. Bench 0
+lines.
+
+### 179.3 What the round proves about the routine
+
+§178's rule — *find the table, port the card* — worked first time on a family the port
+already had, with no disassembly beyond the buttons' literals. The 103 untouched tables
+are now a worklist rather than a list: each one is a card, and the child/custody group
+of seven is the natural next batch.
+
+
 ## 178. Correction: "decrypts" is not a discriminator
 
 §177 gave the routine a stop condition — *if the loader decrypts, stop*. Sampling ten

@@ -211,6 +211,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // A child misbehaves, REPORT.en.md 179.
+  bool childDisciplineYear(Life& life, AgeUp& out, int forcedChoice);
   // The ex has married someone else, REPORT.en.md 174.
   bool exLoverMarriedNowYear(Life& life, AgeUp& out, int forcedChoice);
   // The ex sends a picture, REPORT.en.md 173.

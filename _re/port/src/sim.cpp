@@ -1305,6 +1305,9 @@ bool Sim::load(std::string* error) {
       "a16_dealer-breakup-scenarios-enc",
       // The ex's picture pool: Item, Gender, Clean (REPORT.en.md 173).
       "a16_sexy-text-items-enc",
+      // The child's misbehaviour pool: Scenario, Log Version, age and gender filters
+      // (REPORT.en.md 179).
+      "a16_child-discipline-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3862,6 +3865,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (loverLeavesYear(life, out, forcedChoice)) return true;
   if (exLoverSextYear(life, out, forcedChoice)) return true;
   if (exLoverMarriedNowYear(life, out, forcedChoice)) return true;
+  if (childDisciplineYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

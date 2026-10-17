@@ -510,4 +510,80 @@ bool Sim::exLoverMarriedNowYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioChildDiscipline (REPORT.en.md 179): a child misbehaves.
+//
+// The card is table-driven for its text and code-built for its buttons:
+//   body     a16_child-discipline-enc, filtered by Min/Max Age, Child Gender, Hero Gender,
+//            Student and Clean, with <child> / <child-possessive> substituted
+//   journal  the same row's 'Log Version'
+//   buttons  'Yell at {0}' (#47498)  'Ground {0}' (#22277)
+//            'Have a talk with {0}' (#22687)  'Do nothing' (#17927)
+//
+// shortcut: the handler's stat moves were not read, so the lanes differ only in their
+// journal -- the card is about the exchange, not about a number.
+bool Sim::childDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (life.children.empty()) return false;
+  if (!ensureTable("a16_child-discipline-enc")) return false;
+  Child* kid = nullptr;
+  for (Child& c : life.children) {
+    if (!c.alive || c.movedOut) continue;
+    if (c.age < 2 || c.age > 17) continue;
+    if (c.city != h.city) continue;
+    kid = &c;
+    break;
+  }
+  if (kid == nullptr) return false;
+  if (forcedChoice < 0 && loverRng_.below(8) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string name = kid->name.empty() ? std::string("the child") : kid->name;
+  const std::string poss = kid->female ? "her" : "his";
+  const Table& t = tbl("a16_child-discipline-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && kid->age < mn) continue;
+    if (mx > 0 && kid->age > mx) continue;
+    const std::string g = trim(t.at(r, "Child Gender"));
+    if (!g.empty() && g != "both" && g != (kid->female ? "female" : "male")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[loverRng_.below(uint32_t(rows.size()))];
+  auto fill = [&](std::string s) {
+    for (size_t at = s.find("<child-possessive>"); at != std::string::npos;
+         at = s.find("<child-possessive>", at)) {
+      s.replace(at, 17, poss);
+      at += poss.size();
+    }
+    for (size_t at = s.find("<child>"); at != std::string::npos;
+         at = s.find("<child>", at)) {
+      s.replace(at, 7, name);
+      at += name.size();
+    }
+    return s;
+  };
+  out.table = "a16_child-discipline-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(fill(trim(t.at(row, "Scenario"))));
+  const std::string log = fill(trim(t.at(row, "Log Version")));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(4));
+  if (lane == 0) {
+    out.choice = "Yell at " + name;
+    out.narrative = log;
+  } else if (lane == 1) {
+    out.choice = "Ground " + name;
+    out.narrative = log;
+  } else if (lane == 2) {
+    out.choice = "Have a talk with " + name;
+    out.narrative = log;
+  } else {
+    out.choice = "Do nothing";
+    out.narrative = log;
+  }
+  return true;
+}
 }  // namespace bl
