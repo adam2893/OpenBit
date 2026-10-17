@@ -3855,6 +3855,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (loverCallOffEngagementYear(life, out, forcedChoice)) return true;
   if (loverElopeYear(life, out, forcedChoice)) return true;
   if (loverWeddingYear(life, out, forcedChoice)) return true;
+  if (loverLeavesYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

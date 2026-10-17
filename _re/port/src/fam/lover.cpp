@@ -327,4 +327,72 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioLoverLeaves (REPORT.en.md 164): the partner ends it, with buttons.
+//
+//   body     '{0} wants to break up with you.'  #70377
+//            '{0} wants a divorce.'             #70376   (when married)
+//   buttons  'Beg {0} to stay' (#13308)  'Wish {0} well' (#47041)
+//            'Hypnotize {0} to stay' (#23344) -- the vampire lane
+//
+// The port already has the break-up announcement and the ex-lover record (REPORT
+// 125/134), so both leaving lanes hand off to that machinery instead of writing a
+// second exit path.
+//
+// shortcut: the game's success roll for begging is not read; the port keeps the
+// couple together when the relationship is still above 40 and lets them go otherwise.
+bool Sim::loverLeavesYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty()) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(12) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const bool married = h.loverStatus == "married";
+  out.table = "relationship";
+  out.row_id = "0";
+  out.body = h.loverName + (married ? " wants a divorce." : " wants to break up with you.");
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(h.vampire ? 3 : 2));
+  if (lane == 0) {
+    out.choice = "Beg " + h.loverName + " to stay";
+    if (h.relationship >= 40) {
+      out.narrative = "I begged " + h.loverName + " to stay, and " +
+                      (h.loverFemale ? "she" : "he") + " did.";
+      h.relationship = std::min(100, h.relationship + 10);
+      return true;
+    }
+    out.narrative = "I begged " + h.loverName + " to stay, but " +
+                    (h.loverFemale ? "she" : "he") + " left anyway.";
+  } else if (lane == 2) {
+    out.choice = "Hypnotize " + h.loverName + " to stay";
+    out.narrative = "I hypnotized " + h.loverName + " to stay.";
+    h.relationship = std::min(100, h.relationship + 20);
+    return true;
+  } else {
+    out.choice = "Wish " + h.loverName + " well";
+    out.narrative = "I wished " + h.loverName + " well.";
+  }
+  // Both leaving lanes record the ex and clear the pairing, exactly as the port's own
+  // break-up block does, then push the announcement for the journal (REPORT 125/134).
+  Hero::ExLover ended;
+  ended.name = h.loverName;
+  ended.female = h.loverFemale;
+  ended.age = h.loverAge;
+  ended.status = h.loverStatus;
+  ended.relationship = h.relationship;
+  ended.year = h.age;
+  ended.city = h.city;
+  h.exLovers.push_back(ended);
+  ++h.exes;
+  h.breakUpPending = true;
+  h.breakUpWord = h.loverStatus;
+  h.breakUpName = h.loverName;
+  h.breakUpFull = h.loverName;
+  h.loverName.clear();
+  h.loverStatus.clear();
+  h.relationship = 0;
+  life.pendingCards.push_back(kPendingBreakUpAnnouncement);
+  return true;
+}
 }  // namespace bl

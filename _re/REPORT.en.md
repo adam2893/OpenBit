@@ -21583,6 +21583,50 @@ additive and nothing reads a place it did not ask for.
   custody families all ask this question in the game.
 * A future move-house card: `city` is the thing it would change.
 
+## 164. The partner ends it, with buttons
+
+`ScenarioLoverLeaves` is the code-built counterpart of the table-driven break-up the
+port already had:
+
+```
+body     '{0} wants to break up with you.'  #70377
+         '{0} wants a divorce.'             #70376   (married)
+buttons  'Beg {0} to stay' (#13308)   'Wish {0} well' (#47041)
+         'Hypnotize {0} to stay' (#23344) -- the vampire lane
+```
+
+### 164.1 One exit path, not two
+
+Both leaving lanes do what the port's own break-up block does — record the ex, clear
+the pairing — and then push `kPendingBreakUpAnnouncement`, so the journal comes from
+the announcement card (§125) rather than from a second copy of the text. `Hypnotize`
+is offered only when `h.vampire` and keeps the couple together with +20.
+
+`shortcut:` the game's success roll for begging is not read. The port keeps the couple
+when `relationship >= 40` and lets them go otherwise.
+
+### 164.2 Verification
+
+`tools/test_lover_leaves.py`:
+
+```
+lanes: {'Beg': 5, 'Wish': 3}
+ok
+```
+
+Both lanes occur; every card's body opens with a capital and ends with one of the two
+class sentences; the button always names the partner; a life that wished the partner
+well has an ex-lover on record.
+
+### 164.3 The battery, and a reminder about `rc`
+
+Ran mid-round: `probes 68 rc0 66 residue0 63 fails0 68` — two probes reported a
+non-zero exit, and **both pass when run on their own** (`ctyres.py`, `fsstres.py`:
+`RESIDUE 0`, `failures 0`). The parallel runner's exit code is not a result;
+`fails0 68` and a re-run of the two are. That is written down because a red number in a
+summary is exactly the kind of thing this session has twice mistaken for a finding.
+
+
 
 
 
