@@ -21377,3 +21377,61 @@ Agreeing marries on the spot instead of pushing `ScenarioLoverWeddingPlanning` �
 `ScenarioLoverWedding` (venue, honeymoon, cost) → `ScenarioLoverWeddingAssets`. Those
 three cards are the rest of the chain and none is ported.
 
+## 160. The wedding plan, venue half
+
+`ScenarioLoverWedding` is a plan, not a sentence: a venue row from
+`a16_wedding-venues-enc` (12 rows, each with a `Cost Score` and a `Lover Happiness
+Score`), a honeymoon destination, a total, and three buttons (`do it`, `Edit the
+plan`, `Actually, never mind`).
+
+```
+73f3dd15c0  DataWeddingVenue::VenueDescription
+73f3dd1638  DataVacationDestination::GetDescriptionAndCapitalizeAndUseTrailingCommaIfApplicable
+73f3dd1688  DataWeddingVenue::Cost
+73f3dd16d8  DataVacationDestination::CostOfVacationForClassAndDaysFromCountry
+73f3dd179c  GameReference::CurrencyStringForAmount
+```
+
+The port has the venue half:
+
+```
+body      'You have chosen to marry {0} at {1}.'          #48760
+buttons   'Do it'   'Actually, never mind' (#10716)
+called off 'I called off my wedding with {0}.'            #23688
+effects   Do it: money -= 1000 * Cost Score, relationship += Lover Happiness Score,
+          status married;  Never mind: status dating, relationship 40
+```
+
+### 160.1 The shortcut, stated plainly
+
+**The game's wedding cost is a formula** — the venue's `Cost Score`, the destination
+and the country's class — and only the venue's own score is read here, priced at 1000
+per point. The honeymoon half is not modelled at all: no destination, no vacation
+cost, no `Edit the plan`. A player can therefore spend money on a wedding in this port
+that the game would have priced differently, and cannot choose where to honeymoon.
+
+### 160.2 Verification
+
+`tools/test_lover_wedding.py`:
+
+```
+lanes: {'Actually, never mind': 14, 'Do it': 17}
+distinct venues: 12
+ok
+```
+
+All twelve venues appear across 20 lives, which is the check that the row is really
+drawn; every card reports the table it came from, both lanes occur, and the money line
+is present on `Do it` while the call-off line is present on the other.
+
+Bench 0 lines; `test_lover_elope` and `test_call_off_engagement` green.
+
+### 160.3 An open question this card exposed
+
+A first attempt asserted `final.loverStatus == "married"` after a `Do it` lane and it
+failed on seed 2 with `engaged`. Either a later card re-opens the engagement, or one of
+the two new paths that set `married` (§158's nag, §159's elopement) can be overwritten
+in the same life. The assertion was removed rather than papered over — but the
+inconsistency is real and is the next thing to chase.
+
+

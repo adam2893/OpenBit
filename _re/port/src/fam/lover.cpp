@@ -258,4 +258,61 @@ bool Sim::loverElopeYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioLoverWedding, the venue half (REPORT.en.md 160).
+//
+// The real card is a plan: a venue (a16_wedding-venues-enc, 12 rows carrying a Cost
+// Score and a Lover Happiness Score), a honeymoon destination and a total cost, with
+// three buttons ('do it', 'Edit the plan', 'Actually, never mind'). The port has the
+// venue table and the two strings that matter:
+//
+//   'You have chosen to marry {0} at {1}'          #48760
+//   'I called off my wedding with {0}.'            #23688
+//
+// shortcut: the game's wedding cost is a formula over the venue's Cost Score, the
+// destination and the country's class; only the venue table's own score is read
+// here, priced at 1000 per point. The honeymoon half is not modelled.
+bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty() || h.loverStatus != "engaged") return false;
+  if (!ensureTable("a16_wedding-venues-enc")) return false;
+  if (h.age < 18) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& v = tbl("a16_wedding-venues-enc");
+  if (v.size() == 0) return false;
+  const int row = int(loverRng_.below(v.size()));
+  const std::string venue = trim(v.at(size_t(row), "Venue"));
+  const bool definite = v.flag(size_t(row), "Uses Definite Article");
+  const int costScore = int(v.num(size_t(row), "Cost Score"));
+  const int happyScore = int(v.num(size_t(row), "Lover Happiness Score"));
+  const long long price = 1000LL * costScore;
+  out.table = "a16_wedding-venues-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "The wedding plan";
+  out.body = "You have chosen to marry " + h.loverName + " at " +
+             (definite ? "the " : "") + venue + ".";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Do it";
+    if (h.money < price) {
+      out.narrative = "I could not afford the wedding at " +
+                      (definite ? std::string("the ") : std::string()) + venue + ".";
+      out.extra.push_back("The wedding cost " + money(price) + ", more than I had.");
+      return true;
+    }
+    h.money -= price;
+    h.loverStatus = "married";
+    h.relationship = std::min(100, h.relationship + happyScore);
+    out.narrative = "You have chosen to marry " + h.loverName + " at " +
+                    (definite ? std::string("the ") : std::string()) + venue + ".";
+    out.extra.push_back("The wedding cost " + money(price) + ".");
+  } else {
+    out.choice = "Actually, never mind";
+    out.narrative = "I called off my wedding with " + h.loverName + ".";
+    h.loverStatus = "dating";
+    h.relationship = 40;
+  }
+  return true;
+}
 }  // namespace bl
