@@ -21149,6 +21149,55 @@ is 0 lines.
 wrong, or its place in the chain starves it — both are checkable, and both matter more
 than one more argue flavour. That is the next thing worth a round.
 
+## 155. Correction: §154 was wrong about which card never fires
+
+§154 claimed `giftYear` never produces a card. It does. Forty lives, counting events
+by the table they came from rather than by their titles:
+
+```
+a16_gifts-enc          31 events   ('ShamWow set', 'Nintendo Switch', 'Book', ...)
+a16_anniversary-gift-enc  3 events
+```
+
+The mistake was in the measurement, not the code: §154 searched **titles** for the
+word 'gift', and a gift card's title is the *gift's own name* ('NutriBullet
+blender'), not the word 'gift'. Counting `table` instead shows the card firing 34
+times across 40 lives.
+
+### 155.1 What is actually unreachable, and why
+
+The refusal lane, and the reason is structural rather than statistical: **the refusal
+pools are only consulted for property gifts.**
+
+```cpp
+if (!kind.empty() && p.has("Descriptive Name Override")) ...   // the property branch
+  std::vector<size_t> refusals;
+  for (size_t r = 0; r < pool.size(); ++r) {
+    const bool rowPride = pool.flag(r, "Prideful");
+    const bool rowCrazy = pool.flag(r, "Crazy");
+    if (rowPride == rowCrazy) continue;      // a row names one of the two traits
+    ...
+  }
+```
+
+A shop gift (`a16_gifts-enc`, 31 of the 34 events) has no refusal pool at all: the
+hero offers it, the partner takes it, the relationship score moves. A refusal needs a
+**house or a vehicle** to be offered — `a16_gift-rejections-house-enc`,
+`a16_gift-rejections-vehicle-enc` — which needs the hero to own one and to give it
+away.
+
+So `reason 0` of the argue card (`'{0} is arguing with you because you gave {1}
+{2}.'`) stays unwired for a precise reason: **the port has no shop-gift refusal**, and
+the property-gift refusal it does have is a different sentence. §154's revert was
+right; its explanation was not.
+
+### 155.2 The lesson, since two rounds have now paid for it
+
+Counting by **title** is how §154 measured, and titles in this port are content
+(gift names, scenario titles), not card names. `table` + `row` is the identity;
+`title` is what the player reads. Every future "does card X fire" question should
+count `table`.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 
