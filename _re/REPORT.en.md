@@ -22059,6 +22059,52 @@ card — *"Hannah dal Vie just sent you a sex video she made with another man wh
 been in prison."* Filtering cards by a phrase in their body is the same class of mistake
 as §154's title filter; the filter is now the ex-lover wording itself.
 
+## 174. The ex has married someone else
+
+Second card of the ex-lover family, and the first that needed no new table:
+
+```
+body     'Your {0}, {1}, said {2} can't {3} you because {4} is married{5}.'
+{3}      'start dating' (#66066)   'get back together with' (#59507)
+journal  the same sentence in the first person (#30996)
+buttons  'Respect that' (#36054)
+         'Ask {0} to come over anyway' (#12217)
+         'Convince {0} to divorce {1}' (#16351)
+```
+
+### 174.1 The two verbs, and the one placeholder left empty
+
+`{3}` is one of two literals the class carries, and the port picks by what the pair
+*were*: a pair who dated can get back together, anything else can only start dating.
+
+`{5}` is left empty on purpose. The sentence ends `... is married` and the game appends
+something there; no literal in the bank reads as a completion of it, and a wrong choice
+would change the meaning of the sentence rather than its punctuation. That is the same
+call as §147's `{3}`/`{5}`, made the same way: an empty tail is visible, a wrong tail is
+not.
+
+### 174.2 Lanes
+
+* **Respect that** — nothing but the journal.
+* **Ask … to come over anyway** — `karma -8` (impact −2), and the journal says what was
+  asked.
+* **Convince … to divorce …** — `karma -12` (impact −3); the lane the game opens the
+  court chain from, which is still unported (§172), so the port records the attempt and
+  stops there.
+
+### 174.3 Verification
+
+`tools/test_ex_lover_married_now.py`:
+
+```
+lanes: {'Ask': 4, 'Respect': 5, 'Convince': 2}
+ok
+```
+
+All three lanes occur in 25 lives; the body carries one of the two verbs and the
+journal opens in the first person. Bench 0 lines.
+
+
 
 
 

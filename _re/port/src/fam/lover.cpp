@@ -455,4 +455,59 @@ bool Sim::exLoverSextYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioExLoverMarriedNow (REPORT.en.md 174): the ex has married someone else.
+//
+//   body     'Your {0}, {1}, said {2} can't {3} you because {4} is married{5}.'
+//   {3}      'start dating' (#66066) or 'get back together with' (#59507)
+//   journal  the same sentence in the first person (#30996)
+//   buttons  'Respect that' (#36054)  'Ask {0} to come over anyway' (#12217)
+//            'Convince {0} to divorce {1}' (#16351)
+//
+// {5} is a tail the port leaves empty: the literal table has no candidate that reads as
+// a completion of 'is married', and a wrong one would change the sentence's meaning.
+bool Sim::exLoverMarriedNowYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  const Hero::ExLover* ex = h.latestEx();
+  if (ex == nullptr) return false;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(12) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string exWord = lower(trim(ex->status == "married"
+                                        ? (ex->female ? "Ex-Wife" : "Ex-Husband")
+                                        : (ex->female ? "Ex-Girlfriend" : "Ex-Boyfriend")));
+  const std::string subj = ex->female ? "she" : "he";
+  // The verb the card offers the hero: getting back together if there was a romance,
+  // starting to date if the pair never were (the two literals the class carries).
+  const std::string verb = (ex->status == "dating" || ex->status == "engaged" ||
+                            ex->status == "married")
+                               ? "get back together with"
+                               : "start dating";
+  out.table = "relationship";
+  out.row_id = "0";
+  out.body = "Your " + exWord + ", " + ex->name + ", said " + subj + " can't " +
+             verb + " you because " + subj + " is married.";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const std::string journalHead = "My " + exWord + ", " + ex->name + ", said " + subj +
+                                 " can't " + verb + " me because " + subj +
+                                 " is married.";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(3));
+  if (lane == 0) {
+    out.choice = "Respect that";
+    out.narrative = journalHead;
+  } else if (lane == 1) {
+    out.choice = "Ask " + ex->name + " to come over anyway";
+    out.narrative = journalHead + " I asked " + (ex->female ? "her" : "him") +
+                    " to come over anyway.";
+    out.karma = pointsForImpact(-2);
+  } else {
+    // The divorce lane opens the court chain, which is not ported (REPORT 172).
+    out.choice = "Convince " + ex->name + " to divorce " + (ex->female ? "him" : "her");
+    out.narrative = journalHead + " I tried to talk " + (ex->female ? "her" : "him") +
+                    " into a divorce.";
+    out.karma = pointsForImpact(-3);
+  }
+  return true;
+}
 }  // namespace bl
