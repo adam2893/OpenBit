@@ -20618,6 +20618,54 @@ The demand asks only a partner who is **not** on birth control (§142); this car
 only one who **is**. A hero who starts on birth control is asked to stop; a hero who
 is not is never asked. Both directions are asserted.
 
+## 145. What the sprint is actually blocked on, measured
+
+Three cards in a row reached the same wall from different directions, so this round
+stops adding cards and records the wall. Every claim below is from the §140 view.
+
+### 145.1 The blockers
+
+| card | needs | evidence |
+|---|---|---|
+| `ScenarioLoverArgues` | a reason switch over ~10 ctors | 10 `.ctor` overloads; Refresh 0x73f3dac5a0 formats `SimDisease`, `SimPet`, `SimJewel`, `SimRichSocialMedia`, `SimMagazineOpportunity`, `SimChild`, `DataCelebrity`, `SimHouse` variants |
+| `ScenarioLoverCounselingPush` | children | handler calls `Life::get_ChildArray` and `SimChild::IsLivingWithHero` before it formats |
+| `ScenarioExLoverPaternityTestCourtOrder` | children | fields are `_exLover` **and** `_child` |
+| `ScenarioFameMagazine` | the place's fame-opportunity list | handler calls `SimPlace::RefreshAvailableFameOpportunities`; Refresh leans on `SimMagazineOpportunity` |
+| `ScenarioLoverElopePush` | the wedding chain | handler constructs `ScenarioLoverWeddingPlanning` |
+
+Four of the five need **children**. That is the single largest hole left, and it is
+the same gap §135 recorded from the other side: siblings became actors, children
+never existed.
+
+### 145.2 Why no card shipped this round
+
+Each of the five can be faked in ten minutes and none can be faked honestly: a
+counseling card that never mentions the child it is about, an argue card that picks
+a reason the game did not pick, a magazine card with a fabricated opportunity. The
+probes would then defend the fabrication — which is exactly the failure mode §135
+found in eleven probes that had encoded an older bug.
+
+### 145.3 The checkpoint
+
+The whole battery, after the last four cards and the birth-control work:
+
+```
+probes 68   rc0 68   residue0 65   fails0 68
+portgap: ENTRIES 109 rendered-by-port 107 gap 0
+rescensus: distinct residue tokens 0 total 0
+```
+
+Every probe exits zero, no residue, no failures, and the push stream is fully
+accounted for. The two entries `portgap` does not render are the `ScenarioMiniPaywall`
+pair, unchanged since §124.
+
+### 145.4 The order this implies
+
+1. **A child model.** One field set on the live `Life`, born from a partner, aged
+   with the family, named and gendered — the same shape §135 gave siblings.
+2. Then the three child-dependent cards.
+3. Then `ScenarioLoverArgues`, whose reason switch is a decoding job of its own.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This
