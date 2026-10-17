@@ -21960,6 +21960,58 @@ Black   1 of 24   needs a category -> item mapping
 The ratios did not move, which is the point: §169's numbers were honest, and this round
 made their explanation checkable rather than tidier.
 
+## 172. Two cards decoded, neither ported, and why
+
+The round went back to cards and came back with two decodes and one refusal.
+
+### 172.1 `ScenarioLoverMakeLoveNag` — already covered, by a table
+
+```
+body      'Your {0}, {1}, is nagging you to make love.'   #50731
+narrative '{0} nagged me to make love.'                  #70169
+buttons   'Make Love' (#29545)   'Hypnotize ' (#23341, vampire)
+          '<name> to stop asking' (#3780)
+gate      ScenarioIsEligibleForRandomPush: age 18 check, a count == 3, and an fcmp
+```
+
+`relationshipYear` already fires `a16_lover-make-love-nags-enc` at 0.07 — the ported
+table card for the same beat. Writing the code-built twin beside it would double the
+rate, so it was **not** ported. That is a decision, not an omission: the table version
+carries the game's own rows and this one carries one sentence.
+
+### 172.2 `ScenarioExLoverInboundSext` — decoded to a hole
+
+```
+body      'Your {0}, {1}, just sent you {2}.'            #50742
+narrative 'My {0}, {1}, sent me {2}.'                    #30997
+buttons   'Send {0} a txxxt back' (#38590)
+          'Forward it to my friends' (#20572)
+          'Do these save to the cloud?' (#17931)
+          'File a restraining order' (#20129)
+journal   '{0} I sent {1} back {2}.'  (#69612)
+          '{0} I forwarded it to all of my friends.' (#69567)
+fields    _exLover, _narrative;  GetTheExLover() picks the ex
+```
+
+Everything is known except `{2}` — *what was sent* — and no string table carries it: a
+scan of the literal bank for sext/nude/booty content returns the card's own name and a
+booty-call line, nothing describing the picture. `{2}` comes from a `DataHub` method, not
+from a table, and the port has no such method yet.
+
+### 172.3 Why that stopped the port
+
+A body of `Your ex-girlfriend, Dana, just sent you .` is the failure §147 refused:
+the sentence's object is the whole point of the card. Four buttons and two journals are
+recorded here so the next attempt starts from them.
+
+### 172.4 What the round produced instead of a card
+
+Nothing shipped, and that is recorded rather than papered over: one card was declined
+because it would double a rate, one stopped at a hole. Both decisions are written down
+with their evidence so the next round does not spend itself reaching the same two
+conclusions.
+
+
 
 
 
