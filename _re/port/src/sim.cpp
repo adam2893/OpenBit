@@ -690,6 +690,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       insultRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbb67ae8584caa73bULL),
       fameRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x3c6ef372fe94f82bULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
+      ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -1312,6 +1313,8 @@ bool Sim::load(std::string* error) {
       "a16_child-demands-enc",
       // A paranormal encounter: Scenario, Log Version, Gender, Entity, Danger Score.
       "a16_paranormal-encounters-enc",
+      // Somebody is following the hero: Scenario, Log Version, gender filters (187).
+      "a16_stalker-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3878,6 +3881,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (childDisciplineYear(life, out, forcedChoice)) return true;
   if (childDemandsYear(life, out, forcedChoice)) return true;
   if (paranormalEncounterYear(life, out, forcedChoice)) return true;
+  if (stalkerYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

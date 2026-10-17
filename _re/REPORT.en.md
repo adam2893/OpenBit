@@ -22649,6 +22649,56 @@ that draws from a shared stream *does* move it. Here it moved toward the game: o
 port-only line and one fewer shifted stat. Six diff lines, all in the age-26 block, none
 of them a regression — which is the check that a moving bench needs.
 
+## 187. Somebody is following you, and why the bench moved 61 lines
+
+```
+a16_stalker-scenarios-enc, 37 rows
+  Scenario, Log Version, Can Assault, Stalker Gender, Hero Gender
+```
+
+A report card, filtered by the hero's gender, drawn rare from 16 up:
+
+```
+A weirdo just confronted you at the store to ...
+While relaxing at home, you spot a fan peeping ...
+```
+
+`shortcut:` `Can Assault` is not acted on — the assault card is a different class and is
+not ported.
+
+### 187.1 The bench moved 61 lines, and the fix was the port's own idiom
+
+Added naively (drawing from `loverRng_`), the card shifted **every later draw in that
+stream** and the bench diff grew to 61 lines — content reshuffled, not degraded, but
+unreadable.
+
+The port's documented idiom is a **dedicated stream per card family** so earlier draws
+never move. Both ambient cards now draw from `ambientRng_`:
+
+```cpp
+// A stream for the one-off ambient cards, so adding one cannot shift every later draw
+// in loverRng_ -- the port's own idiom for a new card.
+Rng ambientRng_;
+```
+
+```
+drawing from loverRng_:   61 diff lines
+drawing from ambientRng_:  6 diff lines
+```
+
+The remaining six are the card's own appearances. That is the difference between a diff
+that can be read and one that has to be trusted.
+
+### 187.2 Verification
+
+```
+test_stalker:    distinct stalker cards: 20   ok
+test_paranormal: ok
+```
+
+No buttons, a capitalised journal on every card, no card before 16.
+
+
 
 
 

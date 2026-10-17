@@ -222,6 +222,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // Somebody is following the hero, REPORT.en.md 187.
+  bool stalkerYear(Life& life, AgeUp& out, int forcedChoice);
   // A paranormal encounter, REPORT.en.md 186.
   bool paranormalEncounterYear(Life& life, AgeUp& out, int forcedChoice);
   // A child asks for money, REPORT.en.md 181.
@@ -786,6 +788,10 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng fameRng_;
   // The lover family's new cards draw here (REPORT.en.md 142).
   Rng loverRng_;
+  // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
+  // them), so adding one cannot shift every later draw in loverRng_ -- the port's own
+  // idiom for a new card (REPORT.en.md 187).
+  Rng ambientRng_;
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).

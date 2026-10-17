@@ -674,7 +674,7 @@ bool Sim::childDemandsYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::paranormalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!ensureTable("a16_paranormal-encounters-enc")) return false;
-  if (forcedChoice < 0 && loverRng_.below(22) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(22) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_paranormal-encounters-enc");
@@ -685,11 +685,41 @@ bool Sim::paranormalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
     rows.push_back(r);
   }
   if (rows.empty()) return false;
-  const size_t row = rows[loverRng_.below(uint32_t(rows.size()))];
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = "a16_paranormal-encounters-enc";
   out.row_id = std::to_string(row + 1);
   out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
   out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  return true;
+}
+// ScenarioStalker (REPORT.en.md 187): somebody is following the hero.
+//
+// a16_stalker-scenarios-enc, 37 rows: Scenario, Log Version, Can Assault, Stalker
+// Gender, Hero Gender. A report card, filtered by both genders, drawn rarely.
+//
+// shortcut: Can Assault is not acted on -- the assault card is a different class and
+// is not ported, so this card reports being watched and stops there.
+bool Sim::stalkerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_stalker-scenarios-enc")) return false;
+  if (h.age < 16) return false;
+  if (forcedChoice < 0 && ambientRng_.below(20) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_stalker-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string hero = trim(t.at(r, "Hero Gender"));
+    if (!hero.empty() && hero != "both" && hero != (h.female ? "female" : "male")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_stalker-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  out.happiness -= 2;
   return true;
 }
 }  // namespace bl
