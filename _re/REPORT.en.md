@@ -20721,6 +20721,59 @@ model is additive, and nothing draws from a stream it should not.
 * The whole child family (custody, discipline, paternity results), which the port
   had no state for at all.
 
+## 147. The court-order card, decoded to the last literal
+
+`ScenarioExLoverPaternityTestCourtOrder` needs an ex-lover (§134) and that ex's
+child (§146); both now exist. The card itself reads:
+
+```
+body      'Your {0}, {1}, has obtained a court order requiring you to take a
+           paternity test. {2} believes you are the father of {3} {4}, {5}.'
+           #50705, cell 0x5cc5bb0
+narrative 'My {0}, {1}, obtained a court order requiring me to take a paternity
+           test over {2} {3}, {4}.'      #30991, cell 0x5cc5bb8
+confirm   'Are you sure you want to refuse to take the court-ordered paternity
+           test?'                        #11906, cell 0x5cc5bc0
+buttons   'Take the test' (#40919, 0x5cc2270)
+          'Refuse to take the test' (#35534, 0x5cc5bc8)
+```
+
+### 147.1 The lane rule, proved
+
+The handler classifies the chosen label, as §144 established for this family:
+
+```
+73f3deec40  ldr  x8, [.., #0x10]     ; slot 0x5c35010
+73f3deec54  bl   System.String::Contains
+73f3deec58  tbz  w0, #0, #0x73f3deed40
+```
+
+and slot `0x5c35010` holds the literal **`'refuse'`**. So:
+
+* **Refuse to take the test** → `ImpactKarma(-2)`, `ImpactDiscipline(-2)`, then
+  `SimHero::GetCrimeScenarioForCrimeType(0x26)` = crime type **38**, a
+  `Scenario` is constructed from it and linked at `[self+0x128]`, and the journal is
+  logged. Refusing a court order is a crime the game already has a name for.
+* **Take the test** → the other branch builds a card, links it the same way at
+  `[self+0x128]`, and writes `[new+0x132]` and `[new+0x170]`: it pushes the
+  **results** card.
+
+### 147.2 Why the card is not ported yet
+
+Five of the six placeholders are decided: `{0}` the ex's relationship word
+(`ExRelationshipStatusString`), `{1}` the ex's name, `{2}` the ex's pronoun
+capitalised, and the narrative's `{4}` mirrored. The three that are not are `{3}`
+`{4}` `{5}` of the body — the child's relation word, name and age — and the port's
+children have **no name** (§146). A card that prints `...the father of your son ,`
+with a hole in it is worse than the card not firing.
+
+### 147.3 The next micro-task, stated exactly
+
+Give the child fixture a name and the three body placeholders follow: `{3}` is the
+child's relation word, `{4}` its name, `{5}` its age in the family's own phrasing.
+The decode above is complete enough that this is now a data question, not a
+disassembly question.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This
