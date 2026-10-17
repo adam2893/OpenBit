@@ -22200,6 +22200,63 @@ and let the port's existing pick do the rest** — which is a routine, not a wal
 `tools/datahub_census.py` records the classification so the next round starts from the
 numbers rather than from the worry.
 
+## 177. The loaders decrypt, and that is a different job
+
+§176 said the remaining work was "find the `Load*Set` the getter names, read its table".
+Testing that on four loaders says otherwise:
+
+```
+LoadSexyTextItemSet                       DecodeAndDecryptString
+LoadExLoverBootyCallScenarioSet           DecodeAndDecryptString
+LoadCultRecruitmentMessageSet             DecodeAndDecryptString
+LoadAstronautInboundMessageSet            DecodeAndDecryptString
+```
+
+and the routine behind it is a three-stage cipher:
+
+```
+73f2802fac  EncryptionManager::DecodeBase64String
+73f28030b4  EncryptionManager::ObfuscateString
+73f28030c0  EncryptionManager::XORCipherString
+73f28030fc  EncryptionManager::EncryptString
+```
+
+### 177.1 Why §173 still worked
+
+`a16_sexy-text-items-enc` sits in `gamedata_plain` as plain rows, and the card read them
+directly — the game *also* decrypts a handful of strings in that loader, but the item
+pool the card formats is the table. So a card ported through the table is right about
+its items and silent about whatever the decrypted strings carry.
+
+That distinction is the useful finding: **`gamedata_plain` is not encrypted; the loaders'
+extra strings are.** A card whose content lives entirely in tables is portable today; a
+card whose content lives in the decrypted strings is not.
+
+### 177.2 What decryption would take, and why it was not started
+
+The chain is Base64 → a fixed obfuscation → an XOR with a key that `XORCipherString`
+receives rather than defines, so the key comes from the caller (or a constant beside it).
+Reading it is a job of its own: key extraction, a reimplementation in the port, and a
+verification path against a string the game renders — three steps, none of them a card.
+
+**Not started.** Recording it is the honest end of this round: the port's remaining
+content splits into *table-backed* (portable by the §173 routine) and *cipher-backed*
+(blocked on this chain), and only the first kind should be attempted until the second is
+decided.
+
+### 177.3 The corrected routine
+
+```
+1. read the card's getter name
+2. read its Load*Set
+3. if the loader reads a table  -> port it (§173)
+4. if the loader decrypts       -> stop; it needs the cipher chain (§177)
+```
+
+Step 4 is a decision point rather than a dead end, and the numbers for it exist: 928
+loaders, of which the sampled four all decrypt.
+
+
 
 
 
