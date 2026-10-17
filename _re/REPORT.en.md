@@ -21911,6 +21911,56 @@ which is the check that the normal pool still drives non-dealer lives.
 `Secret 9`, `Casino 2`, `Black 1` — all cards, not data. They are the honest remainder
 of this census and they belong to the one-off list, not to a wiring round.
 
+## 171. Every one of the twelve names the card it belongs to
+
+§170 ended with a warning about its own explanation: *"belongs to an unported card" is
+now doing a lot of work.* So each of the twelve was mapped to the class that owns it:
+
+| table | owning class | state |
+|---|---|---|
+| `secret-agent-honeypot-*` x3 | `ScenarioSecretAgentHoneypotMissionBriefing`, `...MissionDate`, `...MissionIntimateMoment`, `...MissionMeetDecisions` | not ported |
+| `secret-agent-stealth-alarm-color` | `ScenarioSecretAgentStealthMissionBriefing`, `...Cover`, `...DisableSecurity`, `...FailureFeedback` | not ported |
+| `secret-agent-hack-mission-*` x2 | no `Scenario*HackMission*` class exists; the strings are consumed by the stealth/briefing chain | not ported |
+| `secret-agent-agency-front-color` | consumed by the agency briefing chain | not ported |
+| `secret-agent-client-mission-terminated-color` | consumed by the mission-termination chain | not ported |
+| `secret-agent-potential-agent-background-check-color` | the only `*BackgroundCheck*` classes are the landlord's and the zoo's -- this belongs to neither, so its consumer is `ScenarioSecretAgent*` | not ported |
+| `casino-game-room-complaint` | `ScenarioCasinoGameRoom*` -- **ported** family | blocked on state |
+| `casino-ledger-feedback` | the casino ledger chain | not ported |
+| `black-market-auction-categories` | `ScenarioBlackMarketAuctionHouse*` -- **ported** family | blocked on data |
+
+### 171.1 The two that belong to ported cards
+
+Both are blocked on something the port does not have, and both are one row deep:
+
+* **`casino-game-room-complaint`** is a single line gated on `Min/Max Gambler
+  Happiness` -- the port has no per-gambler happiness state, so the line has no
+  condition to fire under.
+* **`black-market-auction-categories`** is seven categories with a commonness score.
+  The port's auction house picks an item type from its own tables; wiring the category
+  would need the mapping from category to the item pool, which no table carries.
+
+Neither is a naming exercise, and neither was wired to make a ratio look better.
+
+### 171.2 What the mapping proves
+
+Ten of twelve are owned by classes the port does not have -- the explanation §170 gave
+is now backed by a class name per row rather than asserted. The other two are owned by
+cards that exist and are short of *state*, which is a different kind of gap and is
+recorded as such.
+
+### 171.3 The measurement, after the mapping
+
+```
+Secret  9 of 60   8 flavour tables, 1 consumer unidentifiable by name
+Casino  2 of 39   1 needs gambler happiness, 1 belongs to an unported ledger card
+Dealer  1 of 38   wired (§170)
+Black   1 of 24   needs a category -> item mapping
+```
+
+The ratios did not move, which is the point: §169's numbers were honest, and this round
+made their explanation checkable rather than tidier.
+
+
 
 
 
