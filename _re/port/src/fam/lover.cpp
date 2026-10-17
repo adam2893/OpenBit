@@ -965,4 +965,33 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioJobTermination (REPORT.en.md 201): the hero is let go.
+bool Sim::jobTerminationYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.job.empty()) return false;
+  if (!ensureTable("a16_termination-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(28) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_termination-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string cond = trim(t.at(r, "Condition"));
+    if (!cond.empty() && !(cond == "Age" && h.age >= 55)) continue;
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_termination-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.narrative = "I was let go from my job as " + h.job + ".";
+  h.employed = false;
+  h.job.clear();
+  out.happiness -= 6;
+  return true;
+}
 }  // namespace bl

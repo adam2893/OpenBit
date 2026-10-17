@@ -3899,6 +3899,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (paranormalPhenomenaYear(life, out, forcedChoice)) return true;
   if (adoptionScenarioYear(life, out, forcedChoice)) return true;
   if (boostYear(life, out, forcedChoice)) return true;
+  if (jobTerminationYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

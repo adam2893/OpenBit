@@ -23237,6 +23237,56 @@ one-line question.
 Bench **0 lines**: the switch is inert unless the variable is set, which is what makes it
 safe to leave in.
 
+## 201. The termination card, second attempt: it was the gate all along
+
+§199's card is ported, and `BL_TABLE_DEBUG` printed **nothing** — the table loads fine.
+The gate was the whole problem:
+
+```cpp
+// 'employed' is the retirement flag, not "has a job": a retired hero keeps the job string
+// and 'employed' is false, so a gate on it blocks the card for most of a life.
+if (h.job.empty()) return false;
+```
+
+```
+cards: 18  of 30 lives      bench 0 lines
+```
+
+### 201.1 What §199 got wrong, precisely
+
+§199 fixed the gate to `h.job.empty()` and still measured zero. The fix was right; the
+measurement ran against a build where the function had already been pulled out of the
+dispatch, so the card could not fire whatever its gate said. Two rounds were spent on a
+line that had already been corrected — the second round's revert was the thing hiding it.
+
+That is a new failure mode for this session's list: **a revert hid a fix**, which is why
+the re-add was the right next step and the debug switch was not the answer (it printed
+nothing because nothing was wrong with the load).
+
+### 201.2 Verification
+
+`tools/test_termination.py`:
+
+```
+cards: 18
+ok
+```
+
+18 firings across 30 lives, each with a capitalised body, no buttons, and the journal line
+naming the job. Bench **0 lines**.
+
+### 201.3 The sprint's list, after eight
+
+```
+28 card-shaped tables:
+  ported      paranormal encounters, stalker, parent-cheat, gender, paranormal
+              phenomena, adoption, boosts, job termination      8
+  portable    money-request-rejections, arrest (needs an Attitude stat),
+              termination done -- so 1 clean candidate left
+  blocked     surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
+```
+
+
 work — and the registry entry existing is *not* the same as the table loading.
 
 
