@@ -54,10 +54,19 @@ def main():
                 k = key_of(event)
                 if k:
                     counts[k] += 1
-    print("lives:", lives, "distinct cards:", len(counts))
+    by_table = collections.Counter()
+    for k, v in counts.items():
+        by_table[k.split(" | ")[0]] += v
+    print("lives:", lives, "distinct faces:", len(counts))
     print()
-    print("per 100 lives   count  card")
-    for k, v in counts.most_common(30):
+    # A FACE is one title's sentence; a CARD is the pool. The table is the card, so the
+    # table summary is the rate that means anything (REPORT.en.md 167).
+    print("per 100 lives   count  table (the card)")
+    for k, v in by_table.most_common(20):
+        print("%13.1f %7d  %s" % (100.0 * v / lives, v, k))
+    print()
+    print("per 100 lives   count  face (one rendering of a card)")
+    for k, v in counts.most_common(12):
         print("%13.1f %7d  %s" % (100.0 * v / lives, v, k))
     return 0
 

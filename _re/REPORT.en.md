@@ -21713,6 +21713,47 @@ exists to show the size of that gap rather than to close it. Closing it needs th
 game's own push weights, which the card classes do not carry — they are decided by
 whatever constructs them.
 
+## 167. Correction: §166 counted faces, not cards
+
+§166's headline — *"the movie card fires in three of four lives"* — was wrong in the same
+way §154 was. A **face** is one title's sentence; a **card** is the pool. The top row,
+`a16_movies-enc | The movie theater is showing The` (76.7 per 100 lives), is one film
+being drawn often, not the card firing often.
+
+`cardrate.py` now reports both, table first:
+
+```
+per 100 lives   count  table (the card)
+        742.5     891  a16_dumb-scenarios-universal-enc
+        640.8     769  a16_movies-enc
+        587.5     705  -                                  (code-built cards)
+        445.0     534  a16_pastimes-enc
+        438.3     526  a16_dumb-scenarios-political-campaign-enc
+        366.7     440  relationship                       (the sprint's cards)
+        307.5     369  a16_conversations-enc
+```
+
+### 167.1 What the card-level numbers actually say
+
+* `a16_movies-enc` is **6.4 cards per life**, not 77 per 100. Its coin is 0.12 per year
+  over ~23 eligible years, so the arithmetic was always consistent — the summary was
+  not.
+* The busiest card in the port is the universal dumb-scenario pool at **7.4 per life**,
+  followed by movies. Both are high-frequency-by-design pools, so neither is the
+  anomaly §166 claimed.
+* `relationship` — the table every sprint card reports — is **3.7 cards per life**,
+  which is the first real measurement of the family this session has been building.
+
+### 167.2 The lesson, third time
+
+§155: count `table`, not `title`. §167: count `table`, not `table | face`. A title is
+content, a face is one rendering, and only the pool is the card. The tool now prints
+both so the mistake is visible rather than available.
+
+Nothing was tuned on the back of the wrong number — the movies coin was never touched,
+which is the one good consequence of §166 having been a summary rather than a fix.
+
+
 
 
 
