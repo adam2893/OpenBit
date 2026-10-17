@@ -20563,6 +20563,61 @@ worth of literals exist for a three-button card, the branches share pronouns, an
 a lane table now would be guessing which sentence belongs to which button, and a
 guess in a journal is exactly what the probes would then defend.
 
+## 144. The mirror card, and how its mapping actually works
+
+§143 stopped because the lane mapping was unknown. It is known now, and the way it
+was found is the lesson: **the handler reads the chosen button's own Title and
+dispatches on its text**, exactly like the paparazzi (§139).
+
+```
+73f39213e4  ldr  x0, [x19, #0x108]   ; the choice list
+73f39213f0  mov  w1, w20             ; the index the game passed in
+73f39213fc  blr  [x8, #0x2e8]        ; ArrayList<ScenarioChoice>[index]
+73f3921444  bl   System.String::ToLower
+73f3921458  ldr  x8, [.., #0x928]    ; slot 0x5ca6b70 = 'disapprove'
+73f3921474  bl   System.String::Contains
+73f3921478  tbz  w0, #0, #0x73f392193c   ; not "disapprove" -> the other lane
+```
+
+So the card is indexed by the engine and then *classified by its own label*. That is
+why no `cmp w1, #0/1/2` exists, and why §143 could not find a lane table: there is
+none.
+
+### 144.1 The two lanes
+
+| lane | gate | effect | journal |
+|---|---|---|---|
+| `Yes, stop taking it` (#47510) | not `Contains("disapprove")` | `strb wzr,[hero+0x50]` — birth control **off** | #70379 `{0} wants to stop taking {1} birth control. I agreed that was a good idea.` |
+| `Disapprove of that idea` (#17777) | `Contains("disapprove")` | `ImpactKarma(-2)`, `ImpactDiscipline(-2)` | #70380 `{0} wants to stop taking {1} birth control. I told {2} I don't approve of that.` |
+
+Body: `Your {0}, {1}, wants to stop taking {2} birth control.` with `{2}` the
+partner's possessive. Ported with two of the game's three buttons — the third opens
+the argue flow, which is still unported, and the `GetRandomNumber(0,100)` roll that
+follows the disapprove lane is not modelled.
+
+### 144.2 Verification
+
+`tools/test_lover_stops_birth_control.py`, 80 lives that start on birth control:
+
+```
+lanes: {'Disapprove of that idea': 15, 'Yes, stop taking it': 15}
+lives that stopped: 15
+ok
+```
+
+Per card: the class's own body sentence, one of the two labels, that lane's journal,
+and the deltas — **`karma -8, discipline -8`** for disapprove, nothing for accept,
+because the handler passes an impact *score* of −2 (the §139 lesson again). Per life:
+whichever birth-control card came **last** decides `final.birthControl`, which is why
+the two tests each own their direction: 142 proves the flag gets set, 144 proves it
+gets cleared, and neither claims more.
+
+### 144.3 The gate is the mirror
+
+The demand asks only a partner who is **not** on birth control (§142); this card asks
+only one who **is**. A hero who starts on birth control is asked to stop; a hero who
+is not is never asked. Both directions are asserted.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This

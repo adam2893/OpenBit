@@ -52,4 +52,54 @@ bool Sim::loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioLoverStopsBirthControl (REPORT.en.md 144): the mirror of the demand card.
+//
+// ChoiceSelectedAtIndex @0x73f3921280 reads the chosen button's own Title, lowers it
+// and dispatches on Contains('disapprove'): that lane moves karma and discipline by
+// -2 and rolls the argue follow-up; the other lane clears the person's
+// OnBirthControl flag (strb wzr, [hero+0x50]).
+bool Sim::loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty()) return false;
+  // The mirror of the demand: only a partner who IS on birth control can want off.
+  if (!h.onBirthControl) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(20) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string word = h.loverStatus == "married"
+                               ? (h.loverFemale ? "wife" : "husband")
+                               : (h.loverFemale ? "girlfriend" : "boyfriend");
+  const std::string who = "My " + word + ", " + h.loverName + ",";
+  const std::string poss = h.loverFemale ? "her" : "his";
+  out.table = "relationship";
+  out.row_id = "0";
+  // Body: Format(cell 0x5ca6b38) -- 'Your {0}, {1}, wants to stop taking {2} birth
+  // control.', the {2} being the partner's own possessive pronoun.
+  out.body = "Your " + word + ", " + h.loverName + ", wants to stop taking " + poss +
+             " birth control.";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(2));
+  if (lane == 0) {
+    // 'Yes, stop taking it' (#47510): the flag is cleared and the journal is
+    // #70379 -- '{0} wants to stop taking {1} birth control. I agreed that was a
+    // good idea.'
+    out.choice = "Yes, stop taking it";
+    out.narrative = who + " wants to stop taking " + poss +
+                    " birth control. I agreed that was a good idea.";
+    h.onBirthControl = false;
+    h.ageWentOffBirthControl = h.age;
+  } else {
+    // 'Disapprove of that idea' (#17777): karma -2, discipline -2, journal
+    // #70380 -- '{0} wants to stop taking {1} birth control. I told {2} I don't
+    // approve of that.' The argue roll that follows is not ported.
+    out.choice = "Disapprove of that idea";
+    out.narrative = who + " wants to stop taking " + poss +
+                    " birth control. I told " + poss + " I don't approve of that.";
+    out.karma = pointsForImpact(-2);
+    out.discipline = pointsForImpact(-2);
+  }
+  return true;
+}
 }  // namespace bl

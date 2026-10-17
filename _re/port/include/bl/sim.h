@@ -170,6 +170,8 @@ class Sim {
   bool paparazziYear(Life& life, AgeUp& out, int forcedChoice);
   // The birth-control demand (REPORT.en.md 142).
   bool loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
+  // The mirror card, REPORT.en.md 144.
+  bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);
