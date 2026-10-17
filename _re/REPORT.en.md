@@ -22961,6 +22961,48 @@ Nothing: the two causes it named are both closed — the floor (§192) and the d
 (here). The third item on its table, `school-classmate-flirt`'s age gate, is the game's own
 condition and needs no port change.
 
+## 194. The hero's sense of self
+
+```
+a16_gender-scenarios-enc, 28 rows
+  Scenario, Log Version, Gender, Min Age, Max Age,
+  Transgender Identity, Other Identity, Student, Both Parents Alive
+```
+
+A report card, filtered by the hero's gender and age. `Student` is checked against the
+port's own `schooling` flag, which is the field that means the same thing:
+
+```
+Most of your friends are having sex already, ...
+You feel uncomfortable when someone refers to you ...
+```
+
+`shortcut:` the identity the row names is **reported, not stored** — the port's `Hero` has
+no identity field, and adding one is a structural change this card does not need to be
+correct about the exchange.
+
+### 194.1 Verification
+
+`tools/test_gender_identity.py`:
+
+```
+cards: 19 distinct: 11
+ok
+```
+
+19 cards across 40 lives, 11 distinct rows, no buttons, a capitalised journal on each.
+Bench **0 lines** — the card draws from `ambientRng_`, so a rare card perturbs nothing
+else.
+
+### 194.2 The 28-list, after two
+
+```
+ported:   a16_paranormal-encounters-enc (§186)   a16_stalker-scenarios-enc (§187)
+          a16_parent-cheat-scenarios-enc (§188)  a16_gender-scenarios-enc  (§194)
+remaining: 24
+```
+
+
 
 
 

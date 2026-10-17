@@ -799,4 +799,39 @@ bool Sim::ambientYear(Life& life, AgeUp& out, int forcedChoice) {
   if (roll < 90) return stalkerYear(life, out, 0);
   return parentCheatYear(life, out, 0);
 }
+// ScenarioGenderIdentity (REPORT.en.md 194): the hero's sense of self.
+//
+// a16_gender-scenarios-enc, 28 rows: Scenario, Log Version, Gender, Min Age, Max Age,
+// Transgender Identity, Other Identity, Student, Both Parents Alive. A report card,
+// filtered by the hero's gender and age, with the row's 'Other Identity' naming the
+// identity the hero takes up.
+//
+// shortcut: the identity is reported, not stored -- the port's Hero has no identity
+// field, and adding one is a structural change this card does not need.
+bool Sim::genderIdentityYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_gender-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(40) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_gender-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (t.flag(r, "Student") && !h.schooling) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_gender-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  return true;
+}
 }  // namespace bl

@@ -1317,6 +1317,8 @@ bool Sim::load(std::string* error) {
       "a16_stalker-scenarios-enc",
       // The hero walks in on a parent: Scenario, Log Version, age and gender filters.
       "a16_parent-cheat-scenarios-enc",
+      // The hero's sense of self: Scenario, Log Version, gender and age filters (194).
+      "a16_gender-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3884,6 +3886,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (childDemandsYear(life, out, forcedChoice)) return true;
   // One ambient card a year at most, chosen by weight (REPORT.en.md 190).
   if (ambientYear(life, out, forcedChoice)) return true;
+  if (genderIdentityYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
