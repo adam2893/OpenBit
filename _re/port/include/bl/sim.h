@@ -121,7 +121,18 @@ struct Life {
   std::vector<Child> children;
   // Cards the current year still owes the player, oldest first. ageUp drains one
   // per call and does not advance the age while the queue is not empty.
-  std::vector<int> pendingCards;
+  // A card pushed for later this year (REPORT.en.md 133). It carries a payload since
+  // REPORT.en.md 184: a multi-stage card (the custody fight) has to tell the next stage
+  // which child and which row it is about, and a bare enum cannot.
+  struct PendingCard {
+    int kind = 0;
+    int a = -1;   // child index, or -1
+    int b = -1;   // row index, or -1
+    PendingCard() = default;
+    // Implicit from the kind, so every existing push still reads the same.
+    PendingCard(int k, int inA = -1, int inB = -1) : kind(k), a(inA), b(inB) {}
+  };
+  std::vector<PendingCard> pendingCards;
   // The friend-advice card's PresentedCountForScenario counter (REPORT.en.md
   // 100): the game shows that card at most twice in one life.
   int advicePresented = 0;

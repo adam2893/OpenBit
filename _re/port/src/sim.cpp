@@ -3613,8 +3613,9 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // A year can owe more than one card (REPORT.en.md 133): the extras are built by
   // the same functions that used to run a year late, and none of them draws.
   if (!life.pendingCards.empty()) {
-    const int kind = life.pendingCards.front();
+    const Life::PendingCard pending = life.pendingCards.front();
     life.pendingCards.erase(life.pendingCards.begin());
+    const int kind = pending.kind;
     if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);

@@ -73,15 +73,19 @@ print("ok")
 trajectories = 0
 for seed in range(1, 121):
     doc = run(seed, cash=120000, engaged=True)
-    ages = {}
+    weddings = []
+    divorces = []
     for event in doc["events"]:
         body = event.get("body") or ""
         if body.startswith("You have chosen to marry") and event.get("choice") == "Do it":
-            ages.setdefault("wedding", event["age"])
+            weddings.append(event["age"])
         if body.endswith(" wants a divorce.") and (event.get("choice") or "").startswith("Wish "):
-            ages.setdefault("divorce", event["age"])
-    if "wedding" in ages and "divorce" in ages:
-        assert ages["wedding"] <= ages["divorce"], (seed, ages)
+            divorces.append(event["age"])
+    # A life can marry twice, so the arc is "some wedding before some divorce", not
+    # "the first of each" -- seed 101 marries again at 79 after a divorce at 65.
+    arcs = [(w, d) for w in weddings for d in divorces if w <= d]
+    if arcs:
+        ages = {"wedding": arcs[0][0], "divorce": arcs[0][1]}
         married_exes = [e for e in doc["final"]["exLovers"] if e["status"] == "married"]
         assert married_exes, (seed, "divorced but no married ex recorded")
         trajectories += 1

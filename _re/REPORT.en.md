@@ -22505,6 +22505,56 @@ counseling, argues and sext cards have not disturbed a single one.
 2. `ScenarioChildSupportCustody` ports as three pushes that read the payload.
 3. The three custody tables become usable at once.
 
+## 184. The queue carries a payload
+
+§183 said the custody card needs a pending card that knows *which child and which row*
+it is about. That is now the shape of the queue:
+
+```cpp
+struct PendingCard {
+  int kind = 0;
+  int a = -1;   // child index, or -1
+  int b = -1;   // row index, or -1
+  PendingCard() = default;
+  // Implicit from the kind, so every existing push still reads the same.
+  PendingCard(int k, int inA = -1, int inB = -1) : kind(k), a(inA), b(inB) {}
+};
+std::vector<PendingCard> pendingCards;
+```
+
+The implicit constructor is the whole point: **no call site changed**. The seven existing
+pushes (`kPendingMorningAfter`, `kPendingLoverArgues`, `kPendingBreakUpAnnouncement`,
+`kPendingPaternityResults`) still read `push_back(kPendingX)`, and only the drain reads
+`.kind`.
+
+### 184.1 Verification
+
+Bench **0 lines** — the refactor is invisible to the trace, which is the check that the
+queue behaves exactly as before. `test_paternity_court_order` (the one card that
+already relies on the queue end to end) passes.
+
+### 184.2 A test that was wrong about its own arc
+
+`test_relationship_lifecycle` failed on seed 101 with `{'divorce': 65, 'wedding': 79}`:
+a divorce at 65 and a **remarriage** at 79. The test had used `setdefault` to keep the
+*first* of each, then asserted `wedding <= divorce` — which is false for a life that
+marries twice, and the failure had nothing to do with this round's change.
+
+It now builds both lists and asks the question the arc actually makes: *is there some
+wedding at or before some divorce*.
+
+```
+full arcs: 9
+all invariants hold
+```
+
+### 184.3 What the payload unblocks
+
+* `ScenarioChildSupportCustody`: three pushes that read `a` (child) and `b` (case row).
+* Any argue chain: the reason index rides in `a`.
+* The wedding chain: venue and destination indices ride in `a`/`b`.
+
+
 
 
 
