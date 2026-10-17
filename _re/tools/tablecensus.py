@@ -29,12 +29,22 @@ PORT = ROOT / "port" / "build" / "blsim"
 SOURCES = [ROOT / "port" / "src"]
 
 
+# A table the source merely *mentions* is not a card: some are token dictionaries, some
+# are name pools a card reads to build a sentence. The ones worth asking about are the
+# ones a card *draws a row from*, so the reference set is built from the draw sites.
+# Only the sites that *present a card*: fire() draws one row and returns it as the
+# year's card, renderRow() renders a row as a card. pickRow/weightedPick fetch data for
+# a sentence, and their table is never an event's table -- counting them was the second
+# wrong measurement of this tool (REPORT.en.md 157).
+DRAW = re.compile('(?:fire|renderRow)[(]"(a16_[a-z0-9-]+)"', re.S)
+
+
 def referenced_tables():
     names = set()
     for base in SOURCES:
         for path in base.rglob("*.cpp"):
             text = path.read_text(encoding="utf-8", errors="replace")
-            names.update(re.findall(r"a16_[a-z0-9-]+", text))
+            names.update(DRAW.findall(text))
     return names
 
 

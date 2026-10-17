@@ -21243,6 +21243,47 @@ Each is either an unreachable gate or a two-stage card whose first half never fi
 exactly the shape §154 mis-diagnosed. That is the next question worth a round, and it
 now has a tool that asks it per family.
 
+## 157. The census measures the wrong thing three times
+
+§156 shipped `tools/tablecensus.py` with the prison result as its demonstration. Running
+it across every family showed the instrument is weaker than that one number suggested,
+and the three attempts say something useful about how this port draws its cards.
+
+| reference set | what it counts | silent, all families |
+|---|---|---|
+| every `a16_*` in the sources | 857 names, including token dictionaries and name pools | **438**, then **799** on a wider batch |
+| `fire(` / `pickRow(` / `renderRow(` sites | tables a card or a sentence draws from | **70** |
+| `fire("…")` / `renderRow("…")` only | tables presented directly as a card | **0** |
+
+Each number is true and none of them answers the question:
+
+* the first counts tables the port *mentions*, and most mentions are tokens (`<insult>`,
+  `<vehicle>`) or name pools that never become an event's `table`;
+* the second counts tables a card *reads data from*, and those are never an event's
+  `table` either;
+* the third counts only the families that name their table at the call site — the
+  prison cards do, and cult, hustler, dealer and vampire do not: they fetch a table
+  into a variable first and pass it to `renderRow`.
+
+So `silent 0` for cult is not a clean bill of health, it is the tool not seeing the
+draw at all. The only family where the instrument is trustworthy is one whose cards
+are written as `fire("table", chance)` — the relationship and friend pools, which is
+exactly where §155's mis-diagnosis happened.
+
+### 157.1 What the tool is good for, stated narrowly
+
+For a family whose pools are literal `fire("…")` calls, `--only PREFIX` gives a
+short, real list of card tables that never fired in a batch: the prison run reported
+**11 referenced, 8 touched, 3 silent** under the old reference set and **4 / 7 / 0**
+under the draw-site set, which is the difference between "never mentioned in an event"
+and "never drawn as a card".
+
+### 157.2 The check this round actually produced
+
+`fire("…")` sites: **16** in `src/sim.cpp` and **0** in every `src/fam/*.cpp`. The
+family files ported in §130-132 draw rows through variables, so a future census has to
+follow the variable, not the literal — that is a small static analysis, not a grep.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 
