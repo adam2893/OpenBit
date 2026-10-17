@@ -24,6 +24,7 @@ add_library(blport STATIC
   src/fam/casino.cpp
   src/fam/outdoor.cpp
   src/fam/vampire.cpp
+  src/fam/cult.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 
