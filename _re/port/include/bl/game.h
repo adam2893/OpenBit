@@ -583,6 +583,10 @@ struct Hero {
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether
   // the gate or the score is at fault.
   int relationshipLow = 100;
+  // The hero has questioned or changed their identity (REPORT.en.md 195). The table's
+  // 'Transgender Identity' and 'Other Identity' columns are **flags**, not names, so the
+  // port stores the fact rather than a string it would have had to invent.
+  bool identityQuestioned = false;
   int loverCraziness = 0;
   // The gift (REPORT.en.md 89) needs the partner's pride as well as her
   // craziness: every refusal row in the two property pools is flagged one or

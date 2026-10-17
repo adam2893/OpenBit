@@ -22992,6 +22992,47 @@ ok
 
 19 cards across 40 lives, 11 distinct rows, no buttons, a capitalised journal on each.
 Bench **0 lines** — the card draws from `ambientRng_`, so a rare card perturbs nothing
+
+## 195. The identity is a flag, not a name
+
+§194 reported the gender card's identity and stored nothing, calling it a shortcut. Trying
+to close that shortcut found a wrong assumption in the process:
+
+```
+rows: 28
+  'Transgender Identity' non-empty: 18
+  'Other Identity' non-empty:       10
+  first row's 'Transgender Identity': 'x'
+```
+
+Both columns are **flags**, not names. There is no string in the table to store — every
+value is 'x' marking which rows belong to which kind of beat. A field holding a name would
+have been empty in 28 rows out of 28 and looked like a bug for a week.
+
+### 195.1 What is stored
+
+```cpp
+// The hero has questioned or changed their identity. The table's two identity columns are
+// flags, not names, so the port stores the fact rather than a string it would have had to
+// invent.
+bool identityQuestioned = false;
+```
+
+and the card sets it whenever the chosen row flags either column, with
+`final.identityQuestioned` reporting it:
+
+```
+lives with identityQuestioned: 16 of 40
+```
+
+### 195.2 Why the first attempt was wrong
+
+The first version read `trim(t.at(row, "Other Identity"))` into a string, stored it, and
+printed `I identify as .` — an empty tail. The card still rendered, the test still passed,
+and nothing failed until the identity was *read back* and found absent in forty lives. A
+column that looks like a name and holds a flag is §191's lesson one level down: check the
+value, not the header.
+
 else.
 
 ### 194.2 The 28-list, after two

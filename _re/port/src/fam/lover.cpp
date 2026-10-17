@@ -832,6 +832,11 @@ bool Sim::genderIdentityYear(Life& life, AgeUp& out, int forcedChoice) {
   out.row_id = std::to_string(row + 1);
   out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
   out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  // The row flags one of the two identity columns; the port keeps the fact
+  // (REPORT.en.md 195). No string is stored because the columns hold 'x', not a name.
+  if (t.flag(row, "Transgender Identity") || t.flag(row, "Other Identity")) {
+    h.identityQuestioned = true;
+  }
   return true;
 }
 }  // namespace bl
