@@ -168,6 +168,8 @@ bool Sim::loverArguesYear(Life& life, AgeUp& out, int forcedChoice) {
                                : (h.loverFemale ? "girlfriend" : "boyfriend");
   out.table = "relationship";
   out.row_id = "0";
+  // reason 1 (#70077). reason 0 -- the refused gift (#70089) -- is not wired: the
+  // gift card's refusal pool never fires in the port (REPORT.en.md 154).
   out.body = subj + " is arguing with you because you cheated on your " + word +
              ", " + h.loverName + ".";
   out.narrative = subj + " is arguing with me because I cheated on " +

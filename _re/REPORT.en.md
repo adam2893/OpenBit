@@ -21108,6 +21108,47 @@ handler — the shape is now known, so they are content work rather than discove
 The gift flavour (`reason 0`) is the cheapest of them and needs a gift name the port
 already has tables for.
 
+## 154. The gift flavour is not reachable, and that is the finding
+
+§153 called `reason 0` — `'{0} is arguing with you because you gave {1} {2}.'` —
+the cheapest of the nine remaining variants, because the port already has the gift
+tables. It was wired: the gift card's refusal lane set the gift's own description and
+pushed the argue report through the queue.
+
+It never fired. Forty lives, no argue report from a gift — and the reason is one
+level down:
+
+```
+titles containing 'gift', 40 lives:
+  'The worst Christmas gift we ever received'   2   (dumb-scenario pool)
+  'Visa gift card'                              1   (dumb-scenario pool)
+  'The best gift we ever received'              1   (dumb-scenario pool)
+  'Whether or not it is okay to regift a gift'  1   (dumb-scenario pool)
+  'A gift refused'                              0   <-- giftYear's own card
+```
+
+**`giftYear` (§89) never produces a card in a played life.** Its refusal pool needs a
+partner whose pride or craziness is at least 50, and its 30% coin is spent inside
+`relationshipYear`, after every earlier pool in that chain has had its own chance to
+claim the year. Whatever the exact cause, the effect is measurable: none of the 40
+lives spent a year on a gift.
+
+### 154.1 What was done instead of shipping dead code
+
+The flavour was reverted. `loverArguesYear` handles `reason 1` only, and the code says
+why: *reason 0 — the refused gift — is not wired: the gift card's refusal pool never
+fires in the port.* A branch nobody can reach is not a ported feature; it is a claim
+the probes would eventually have to defend.
+
+`test_lover_argues` still passes (the cheating report and its same-age chain), bench
+is 0 lines.
+
+### 154.2 The open question this leaves
+
+`giftYear` is a *ported* card (§89) that never appears in play. Either its gate is
+wrong, or its place in the chain starves it — both are checkable, and both matter more
+than one more argue flavour. That is the next thing worth a round.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 
