@@ -18860,3 +18860,265 @@ still have room for.
 | witness cards | 86 | 84 |
 | lightning cards | 75 | 75 |
 | lightning deaths | 6 | 6 |
+
+## 124. The job referral: the one card a friend has to hand over
+
+### 124.1 A card for a hero with nothing
+
+The Citizen family so far has been the street's family -- a witness, a bag of
+drugs. This one is the family's first career card, and its gate is the shape of
+the whole thing:
+
+```
+class ScenarioJobReferral : Scenario               il2cpp_dump.txt:42204
+  _job          SimJob   0x170
+  _narrative    System.String 0x178
+  .ctor()                  @0x73f3d12f48   ( 92 B)
+  RefreshScenario()        @0x73f3d12fa4   (3120 B)
+  ChoiceSelectedAtIndex()  @0x73f3d13fe4   (2356 B)
+  GetReferralJob()         @0x73f3d13bd4   (1040 B)
+  IsAvailable()            @0x73f3d14918    (556 B)
+  EmojiString()            @0x73f3d14b44     (36 B)
+```
+
+The availability check @0x73f3d14918 asks for a hero with no work of any kind:
+`CurrentlyHasAJob @0x73f2f0e040`, `CurrentlyHasASpecialJob @0x73f2f0b820`,
+`CurrentlyInTheMilitary @0x73f2f0e0b4`, `CurrentlyInSchool @0x73f2f0ccf4` and
+`CurrentlyInPrison @0x73f2f0e1d8` must all be false, a property at
+`[hero+0x140]+0x298` must be false, and `IsARoyal @0x73f2f0e128` must be false
+too. Then the age band, in three instructions:
+
+```
+ldr w9, [hero+0x20]        ; age
+sub w9, w9, #0x42          ; age - 66
+cmn w9, #0x2c              ; (age - 66) + 44 == 0  <=>  age == 110
+b.lo  -> false             ; so 66 <= age < 110
+```
+
+`cmn` is the giveaway: the compiler folded "less than 110" into "not equal to
+110" because the value is already known non-negative. What the card is for is
+therefore a retired hero -- past sixty-six, out of school, out of the services,
+with no job -- and the friend is the only way back in.
+
+Two more tests close the gate. `NetWorth() @0x73f2f08a60` is compared against a
+double and the branch that continues is the **negative** one (`fcmp d0,d1; b.mi`),
+so the card fires only for a hero whose net worth is *below* the constant; and
+`PresentedCountForScenario` must be under three, the same cap sections 121 and 122
+carry.
+
+### 124.2 Who is offering, and what is on offer
+
+`RefreshScenario` draws one referrer variant of eight
+(`GetRandomNumber(0,7) @0x73f32ab2a8`) and every variant hunts a *living related
+person* it can name -- the checks are `LivesInSamePlaceAsHero @0x73f30e6b28`,
+`GetTotalHeroRelationshipStrength @0x73f30d284c > 10.0f`, and, per variant, one
+field of its own (a sibling comes out of `get_SiblingArray @0x73f3722db0`). The
+person is stored at `[self+0x60]`, and two phrases are built from him: the form
+of address `your {0}, {1},` (#68451) or `my {0}, {1},` (#62743) over his
+relationship word and his name, and his bare name. If no relative matches, the
+form of address stays null and the card abandons itself -- there is no referral
+without somebody to make it.
+
+The job itself comes from `GetReferralJob @0x73f3d13bd4`, and that is the card's
+one structural surprise: it reads no referral table at all. It calls
+`RefreshAvailableJobs(true) @0x73f2ec952c` (or
+`RefreshAvailableGoldenDiplomaJobs(true) @0x73f2ecb2bc` when
+`DoesUserHaveAccessToGoldenResume @0x73f369d580` says the hero has one) on the
+hero's `PlaceOfResidence @0x73f30d6494`, shuffles that array with
+`RandomizeOrderOfArray @0x73f32a8470`, and hands back the first entry its
+predicate accepts. A referral is therefore not a special job: it is whatever the
+hero's own town is hiring, delivered by somebody who knows somebody.
+
+```
+{0} has a friend who works at {1} and can get you a job there as {2}.   #69985  0x5cc0918
+A friend of {0} offered to set me up with a job as {1} for {2}.          #10054  0x5cc0910
+```
+
+The first line is the body (`[self+0x48]`, run through
+`CapitalizeFirstLetterOfSentenceString @0x73f32afedc`) and takes the phrase, the
+employer and the title; the second is `_narrative`, the sentence every journal
+line of the card opens with, and it takes the bare name instead. The title slot
+`[self+0x38]` is set once, in the constructor, to `'Job Referral'` (#27915,
+cell 0x5cc0908) -- the only card in this report whose title is written before any
+refresh runs.
+
+An info panel at `[self+0xa0]` carries four rows -- `Title` (#43646),
+`Career` (#15198), `Employer` (#18693) and `Salary` (#36642, formatted by
+`CurrencyStringForAmount` over `SimJob::Salary @0x73f2fbeaf8`) -- and two
+buttons sit at `[self+0xa8]`: `Take the job` (#40908) and
+`That's not for me` (#41424).
+
+### 124.3 Two lanes, and what the hero logs
+
+`ChoiceSelectedAtIndex @0x73f3d13fe4` lowercases the label and runs a single
+`Contains('take')` test, so the split is a prefix: anything starting with the
+word takes the job.
+
+| | take | refuse |
+|---|---|---|
+| Discipline | +2 | -4 |
+| Karma | +2 | -2 |
+| Happiness | +4 | -3 |
+| job | `StartJob(SimJob) @0x73f2f1c2a4` | -- |
+| journal | `<narrative>` | `<narrative> I turned down the opportunity.` (#69634) |
+
+The happiness slot is `[hero+0x408]`, the float sections 116-123 already read as
+happiness. The refusal line is a `Format` over the pre-formatted narrative, which
+is why the log reads as one sentence with two halves: *A friend of Dana Wilkens
+offered to set me up with a job as Cupid for Jacksonville Public Schools. I turned
+down the opportunity.*
+
+Accepting pushes a second card behind it: a title from
+`PickRandomFromStringArray @0x73f32b0608` over `Welcome aboard` (#46260),
+`When can you start?` (#46505), `Bringing home the bacon` (#14039) and
+`Perfect fit` (#33566), with the body `Welcome to {0}!` (#46278) over the
+employer and its own info panel; `WillOfferNewHouse @0x73f2a12868` may push a
+house offer after that. A hero who owns the Hollywood star also gets one appended
+line (#13283) about wishing on it before the first day of work -- the same easter
+egg section 96 catalogues elsewhere.
+
+### 124.4 The port had to give the hero a retirement
+
+This is the section where the port found a hole in itself. The hero is employed
+from the year he turns eighteen, unconditionally: `src/sim.cpp:3485` writes
+`h.employed = !student` on every age-up and nothing in the port ever clears it.
+The game's own pool is free because a hero *retires*; the port had no retirement,
+so a card whose entire gate is "this hero has no job" could never have fired. The
+smallest fix that keeps every earlier gate honest is a workforce exit at 66, right
+after the job draw:
+
+```cpp
+// shortcut: the port has no retirement system and line 3485 leaves every hero
+// employed from 18, so the cards that want a hero without work -- the job
+// referral (REPORT.en.md 124) is the first of them -- could never fire. The
+// hero leaves the workforce at 66; the career track survives, so careerYear's
+// promotion lane still reads it and no earlier gate moves before that age.
+if (h.age >= 66 && h.employed && !h.military && !h.militaryPending) h.employed = false;
+```
+
+`careerYear` gained the matching guard (`h.age < 18 || h.age >= 66` in its
+empty-track branch), because otherwise the retired hero would have taken a fresh
+career the very next year and the two rules would undo each other annually.
+
+| where | what |
+|---|---|
+| `port/include/bl/game.h:790` | `int referralPresented;` -- the card's `PresentedCountForScenario` cap of three |
+| `port/include/bl/sim.h:505` | `bool jobReferralYear(...)` |
+| `port/include/bl/sim.h:656` | `Rng jrRng_;` -- the card's own stream |
+| `port/src/sim.cpp:642` | the seed, `seed ^ 0x243f6a8885a308d3 ^ 0xbe5466cf34e90c6c` |
+| `port/src/sim.cpp:3513` | the retirement rule in `ageUp` |
+| `port/src/sim.cpp:3650` | the wire, after the morning after |
+| `port/src/sim.cpp:27078` | `bool Sim::jobReferralYear` |
+
+The port's referrer is the drawn friend slot rather than one of the eight
+relationship variants, because the port's relatives carry no relationship
+strength to compare against 10; the friend is the one person the card's own
+variants always have. The job is drawn from `a16_careers-enc` with the same two
+columns `careerYear` reads -- the first step of the Seniority Track, falling back
+to the `Career` column when the track has no comma in it, and the employer from
+`Company Type` through `companyName`.
+
+### 124.5 Verification
+
+`/tmp/qdir/jrres.py`, eighty lives (seeds 1..40, both sexes, played to ninety-five):
+
+```
+lives 80
+referral cards 10
+lanes {"That's not for me": 7, 'Take the job': 3}
+rows drawn 8
+ages {67: 2, 68: 2, 70: 1, 73: 1, 76: 1, 81: 1, 86: 1, 90: 1}
+cards per life {0: 70, 1: 10}
+jobs {'Cupid': 2, 'History Teacher': 2, 'Exotic Dancer': 1, 'Operations Analyst': 1,
+      'Line Cook': 1, 'Elf': 1}
+failures 0
+```
+
+Four sampled cards:
+
+```
+seed 2  female age 73  That's not for me  Exotic Dancer at The Atlantis Club
+        A friend of Beyawnce Gnolls offered to set me up with a job as Exotic
+        Dancer for The Atlantis Club. I turned down the opportunity.
+seed 3  male   age 67  Take the job       Cupid at Jacksonville Public Schools
+        A friend of Micky Mirage offered to set me up with a job as Cupid for
+        Jacksonville Public Schools.
+seed 3  female age 67  Take the job       Cupid at Jacksonville Public Schools
+        A friend of Larry Wyles offered to set me up with a job as Cupid for
+        Jacksonville Public Schools.
+seed 10 female age 90  That's not for me  Operations Analyst at Eternal
+        A friend of Adele Radkins offered to set me up with a job as Operations
+        Analyst for Eternal. I turned down the opportunity.
+```
+
+Ten cards in eighty lives is what the gate asks for: seventy of the lives either
+hold a job through retirement age, or are worth more than the card's threshold, or
+simply never roll the one-in-twenty. Every card sits at 67 or older and none of
+them sits above 90, which is the age band the gate encodes.
+
+`tools/test_job_referral.py` is the repo's copy: the table and the row, the age
+band, the two templates and their placeholders, the employer being non-empty, the
+title matching the row's own Seniority Track (read with `csv`, because the column
+holds quoted commas), both lanes' stat triples, both journals, and the cap of
+three.
+
+```
+referral cards: 14
+rows drawn: 11 of 168
+lanes: {'decline': 10, 'take': 4}
+cards per life: {0: 107, 1: 12, 2: 1}
+ok
+```
+
+The batch is green and the census is unchanged:
+
+```
+captured scenarios: 109  recoverable: 107
+contentless entries: 2 -- ScenarioMiniPaywall x2
+ENTRIES 109 rendered-by-port 107 gap 0
+distinct residue tokens 0 total 0
+```
+
+### 124.6 The retirement rule shows up in the workplace counters
+
+The card itself draws on `jrRng_` and perturbs nothing, but the retirement rule
+does: a hero of sixty-six and over is no longer employed, so the workplace family
+stops offering at that age. That is the correct behaviour -- a retiree has no
+supervisor -- and it is the whole of the drift below.
+
+| test | after 123 | after 124 |
+|---|---|---|
+| hookup cards | 89 | 73 |
+| supervisor cards | 101 | 88 |
+| after hours cards | 68 | 57 |
+| team building cards | 49 | 46 |
+| mornings after | 28 | 23 |
+| drug cards | 82 | 83 |
+| witness cards | 84 | 84 |
+| lightning cards | 75 | 75 |
+| lightning deaths | 6 | 6 |
+
+A cheap cross-check that the cause is the retirement rule and not the new card's
+year consumption: of the supervisor-family cards in the sweep, twenty-two sit
+below sixty-six and exactly one above it, with sixty-seven the oldest. Before the
+rule the family ran to the end of every life.
+
+### 124.7 Shortcuts
+
+
+* The net-worth constant is unreadable offline: the `adrp` page is printed
+  digit-clipped by the local tooling and the cell it points at holds unrelated
+  floats. The port uses $100,000, documented at the branch.
+* The eight referrer variants collapse to the drawn friend, because the port has
+  no relationship-strength float for a relative.
+* `RefreshAvailableJobs` / `RefreshAvailableGoldenDiplomaJobs` and the golden
+  resume are not modelled; the port draws a career row instead, with the
+  same eligibility blindness `careerYear` already carries.
+* The accept's second card (the four follow-up titles and `Welcome to {0}!`), the
+  house offer behind `WillOfferNewHouse`, the Hollywood-star wish line, the info
+  panels and the salary formatter all stay unported: the port shows one card a
+  year and formats no currency in this family.
+* The retirement rule is the port's own invention, not the game's: the game's own
+  retirement condition was not read. It is deliberately silent -- no event, no
+  journal line -- so it changes only which cards the late years can offer.
+

@@ -639,6 +639,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       witRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x13198a2e03707344ULL),
       findRng_(seed ^ 0x452821e638d01377ULL ^ 0xbe5466cf34e90c6cULL),
       mornRng_(seed ^ 0x3f84d5b5b5470917ULL ^ 0x9216d5d98979fb1bULL),
+      jrRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbe5466cf34e90c6cULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3506,6 +3507,12 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
     h.job = row == size_t(-1) ? "Worker" : trim(t.at(row, "Career"));
   }
+  // shortcut: the port has no retirement system and line 3485 leaves every hero
+  // employed from 18, so the cards that want a hero without work -- the job
+  // referral (REPORT.en.md 124) is the first of them -- could never fire. The
+  // hero leaves the workforce at 66; the career track survives, so careerYear's
+  // promotion lane still reads it and no earlier gate moves before that age.
+  if (h.age >= 66 && h.employed && !h.military && !h.militaryPending) h.employed = false;
 
   // (0) A forced scenario class (the Phase 1 bench replaying a scripted event
   //     the game presented) wins over every draw below and consumes no RNG
@@ -3636,6 +3643,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // The hookup's follow-up (REPORT.en.md 123) never rolls for itself: it reports a
   // choice that already happened, so it is offered before the year's own cards.
   if (morningYear(life, out, forcedChoice)) return true;
+
+  // The job referral (REPORT.en.md 124) is the citizen family's career card and
+  // the only one a friend hands over. It draws on its own stream so the cards
+  // above it draw exactly as they did.
+  if (jobReferralYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -5066,7 +5078,10 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
   // the school state at 18 (line 1762 of this file), so the career is keyed on
   // the empty track instead.
   if (h.careerTrack.empty()) {
-    if (h.age < 18) return false;
+    // A retired hero (ageUp's 66 rule, REPORT.en.md 124) does not start a new
+    // career: the referral card and the retirement rule would otherwise undo
+    // each other every year.
+    if (h.age < 18 || h.age >= 66) return false;
     if (!careerRng_.chance(0.6)) return false;
     if (!ensureTable("a16_careers-enc")) return false;
     const Table& t = tbl("a16_careers-enc");
@@ -27052,6 +27067,111 @@ bool Sim::morningYear(Life& life, AgeUp& out, int forcedChoice) {
   // and the lover cards see him.
   h.loverName = sup;
   h.loverStatus = "dating";
+  return true;
+}
+
+// The job referral (REPORT.en.md 124) is the citizen family's career card and
+// the only one a friend hands to the hero.
+// ScenarioJobReferral (il2cpp_dump.txt:42204) carries _job SimJob 0x170 and
+// _narrative 0x178; the .ctor @0x73f3d12f48 writes the title slot [self+0x38]
+// with 'Job Referral' (#27915, cell 0x5cc0908) and clears [self+0x28].
+bool Sim::jobReferralYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the rule every code-built card keeps.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // Gate @0x73f3d14918 asks for a hero with no work at all -- CurrentlyHasAJob
+  // @0x73f2f0e040, CurrentlyHasASpecialJob @0x73f2f0b820,
+  // CurrentlyInTheMilitary @0x73f2f0e0b4, CurrentlyInSchool @0x73f2f0ccf4,
+  // CurrentlyInPrison @0x73f2f0e1d8 and IsARoyal @0x73f2f0e128 all false -- and
+  // an age in [66,110): ldr w9,[hero+0x20]; sub w9,w9,#0x42; cmn w9,#0x2c.
+  if (h.age < 66 || h.age >= 110) return false;
+  if (h.employed || h.military || h.militaryPending) return false;
+  if (h.schooling || h.inPrison || h.royal) return false;
+  if (h.referralPresented >= 3) return false;
+  // shortcut: the gate then compares NetWorth() @0x73f2f08a60 with a double the
+  // offline dump cannot show -- the adrp page is printed digit-clipped (it reads
+  // 0x73f145000 for the real 0x73f1454000) and that page's cell holds unrelated
+  // floats -- so the constant is the port's own: the card fires below $100,000 of
+  // net worth, which the port reads as hero.money.
+  if (h.money >= 100000) return false;
+  // The gate draws nothing; the offer is this family's one-in-twenty, on a stream
+  // of this card's own.
+  if (jrRng_.below(20) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  // RefreshScenario @0x73f3d12fa4 draws one referrer variant of eight
+  // (GetRandomNumber(0,7) @0x73f32ab2a8) and every variant hunts a living
+  // related person it can name; when none matches the card abandons itself.
+  // shortcut: the port's relatives carry no relationship strength, so the
+  // referrer is the drawn friend slot instead.
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  // GetReferralJob @0x73f3d13bd4 returns the first job the hero's residence
+  // offers once its array is shuffled and its predicate has run; no referral
+  // table exists, so the port draws a career row and reads the same two columns
+  // careerYear does (src/sim.cpp careerYear).
+  static const char* kTable = "a16_careers-enc";
+  if (!ensureTable(kTable)) return false;
+  const Table& t = tbl(kTable);
+  if (!t.size()) return false;
+  const size_t row = jrRng_.below(uint32_t(t.size()));
+  const std::string track = trim(t.at(row, "Seniority Track"));
+  std::vector<std::string> steps;
+  if (track.find(',') != std::string::npos) splitOn(track, ',', steps);
+  for (std::string& st : steps) st = trim(st);
+  const std::string title = steps.empty() ? trim(t.at(row, "Career")) : steps[0];
+  if (title.empty()) return false;
+  const std::string company = companyName(t.at(row, "Company Type"), life);
+  // Both templates name the employer, so a row whose company type yields no name
+  // is not a job the friend could offer.
+  if (company.empty()) return false;
+
+  ++h.referralPresented;
+  out = AgeUp();
+  out.table = kTable;
+  out.row_id = std::to_string(row + 1);
+  out.title = "Job Referral";  // #27915, cell 0x5cc0908 (the .ctor's title)
+  // '{0} has a friend who works at {1} and can get you a job there as {2}.'
+  // (#69985, cell 0x5cc0918), where {0} is the phrase 'your {0}, {1},' over the
+  // relationship status and the referrer's name; the game capitalizes it with
+  // CapitalizeFirstLetterOfSentenceString @0x73f32afedc.
+  out.body = "Your friend, " + friendName + ", has a friend who works at " + company +
+             " and can get you a job there as " + title + ".";
+  // 'A friend of {0} offered to set me up with a job as {1} for {2}.' (#10054,
+  // cell 0x5cc0910), the _narrative every journal line of this card opens with.
+  const std::string line = "A friend of " + friendName + " offered to set me up with a job as " +
+                           title + (company.empty() ? "." : " for " + company + ".");
+  // ChoiceSelectedAtIndex @0x73f3d13fe4 lowercases the label and tests a single
+  // Contains('take', cell 0x5c34238); the game lets the hero pick, the port draws.
+  if (jrRng_.below(2) == 0) {
+    out.choice = "Take the job";  // #40908, cell 0x5c34ea8
+    out.discipline = pointsForImpact(2);  // ImpactDiscipline(+2) @0x73f30e4cdc
+    out.karma = pointsForImpact(2);       // ImpactKarma(+2) @0x73f30e4bfc
+    out.happiness = pointsForImpact(4);   // happiness, hero+0x408
+    // StartJob(SimJob) @0x73f2f1c2a4: the track is the one the row carries, so the
+    // hero can climb it the way careerYear's own promotions do.
+    h.job = title;
+    h.employed = true;
+    h.careerTrack = track;
+    h.careerStep = 0;
+    h.careerYears = 0;
+    out.narrative = line;
+    // shortcut: the accept then pushes a second card -- PickRandomFromStringArray
+    // @0x73f32b0608 over 'Welcome aboard' (#46260), 'When can you start?' (#46505),
+    // 'Bringing home the bacon' (#14039) and 'Perfect fit' (#33566), with the body
+    // 'Welcome to {0}!' (#46278) over the employer, its own info panel, and
+    // WillOfferNewHouse @0x73f2a12868 after it -- and a Hollywood-star wish line
+    // (#13283) when the hero owns that star. The port has no second-card push, so
+    // only this card's own journal is kept.
+  } else {
+    out.choice = "That's not for me";  // #41424, cell 0x5c3f7e0
+    out.discipline = pointsForImpact(-4);  // ImpactDiscipline(-4)
+    out.karma = pointsForImpact(-2);       // ImpactKarma(-2)
+    out.happiness = pointsForImpact(-3);   // happiness, hero+0x408
+    // The decline lane Logs Format('{0} I turned down the opportunity.' #69634,
+    // cell 0x5cc0920) over the pre-formatted narrative.
+    out.narrative = line + " I turned down the opportunity.";
+  }
   return true;
 }
 

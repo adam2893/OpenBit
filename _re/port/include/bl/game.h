@@ -785,6 +785,9 @@ struct Hero {
   // system a drug name of its own, which checkDeath honours.
   int findPresented = 0;
   std::string drugDeath;  // the drug that kills the hero, when one does
+  // REPORT.en.md 124: ScenarioJobReferral counts its own showings the same way
+  // (the gate wants PresentedCountForScenario < 3).
+  int referralPresented = 0;
 
   // ScenarioSupervisorSeduceSuccess (REPORT.en.md 123) is not a card the year can
   // roll: the game pushes it the moment a hookup choice resolves, so it waits here
