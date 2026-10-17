@@ -19556,3 +19556,45 @@ Sample, the §125 card re-read through the new tool:
 
 That is the same decode §125 did by hand, in one command, with no attach.
 
+## 129. The split audit: what moves, and what stays
+
+Before cutting `sim.cpp` into per-family translation units, a measurement of what
+is actually in it:
+
+```
+Sim methods: 225        lines: 28,876
+by name bucket: other 44, money 39, infra 36, fame 28, body 24, crime 16,
+                work 13, friend 12, school 7, relationship 6
+largest methods: load 45,846 B, racingYear 32,264 B, outdoorYear 30,279 B,
+                 vampireYear 30,022 B, casinoYear 29,665 B, modelYear 29,123 B,
+                 cultYear 28,883 B, tradeYear 28,873 B, sportsSeason 28,450 B,
+                 spyYear 27,733 B
+```
+
+The name buckets are misleading on their own — the lover family reads as six
+methods because it lives inside one `relationshipYear` dispatch rather than one
+function per card — but the size list is not: **the mass is a dozen
+`*Year`/`*Season` functions, each 27-32 KB, each already self-contained.**
+
+That is the split's boundary, and it is a good one:
+
+* **moves**: `racingYear`, `outdoorYear`, `vampireYear`, `casinoYear`,
+  `modelYear`, `cultYear`, `tradeYear`, `sportsSeason`, `spyYear`, and the
+  rest of that shape — one file per family, each holding its own `*Year`
+  function plus its private helpers and caches.
+* **stays** in `sim.cpp`: `load` (45.8 KB, the table/data bootstrap), the shared
+  card plumbing every family calls (`renderRow`, `ensureTable`/`tbl`,
+  `fire`, `pointsForImpact`, `drawFirstName`, `personName`, `companyName`,
+  `resolve`), the RNG streams, and the yearly dispatch that calls the families in
+  order.
+
+The dependency test is the practical one: a family function calls only `Sim`
+members, so it moves to another .cpp without touching a declaration. What it must
+not do is call a `static` file-local helper in `sim.cpp`; each move therefore
+needs a compile, and the bench is the regression.
+
+Order of work, cheapest first and one commit each: `racingYear`, `modelYear`,
+`tradeYear`, `casinoYear` (small, self-contained), then the rest, with
+`bash tools/bench.sh /tmp/trace_c10.json` diffed after every move — the bench has
+to stay byte-identical, because a pure split changes no behaviour.
+
