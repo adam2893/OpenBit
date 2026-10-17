@@ -3197,7 +3197,12 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
   // and inventing a line now would be text the game does not have.
   for (Child& child : life.children) {
     if (child.alive && life.hero.age >= child.bornAtHeroAge) ++child.age;
-    if (child.age >= 18 && !child.movedOut && sibRng_.chance(0.05)) child.movedOut = true;
+    // An adult child leaves home (REPORT.en.md 182). The game's own
+    // SimChild::ThirdPersonMovesOutAndShouldAnnounce generates a spouse and a household
+    // at that point; the port carries the state change only, because the announcement's
+    // text is not in any table -- and a child who never leaves makes the whole child
+    // family a set of prompts with no arc.
+    if (child.age >= 18 && !child.movedOut) child.movedOut = true;
   }
   std::vector<Person> newborns;
   for (size_t i = 0; i < life.family.size(); ++i) {

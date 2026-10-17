@@ -28,7 +28,9 @@ def run(seed, **extra):
 
 
 grounded = 0
-for seed in range(1, 31):
+# A child leaves home at 18 (REPORT.en.md 182), so the eligible years are fewer than
+# they were when this test was written: the sample is wider rather than the bar lower.
+for seed in range(1, 61):
     for event in run(seed)["events"]:
         if event.get("table") != "a16_child-discipline-enc":
             continue

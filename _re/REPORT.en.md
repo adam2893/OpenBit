@@ -22406,6 +22406,56 @@ reappear in the journal, and the journal must be **exactly one** of the two — 
 `!=` between `gave my` and `refused to give` is what stops a lane from claiming both.
 Bench 0 lines.
 
+## 182. The child's arc: an adult leaves home
+
+§181's risk was that the child family had become a set of prompts with no arc: three
+cards that all gate on *a child at home*, and nothing that ever ended that state except a
+5% coin at 18.
+
+The game's own method for that moment is
+`SimChild::ThirdPersonMovesOutAndShouldAnnounce` — it checks `IsLivingWithHero`, calls
+`PersonGenerator::GenerateSpouseForThirdPerson`, writes the surname, and (for a royal)
+`SimThirdPersonScript::JoinRoyalFamilyWithRankAndSeat`. Its announcement text is in no
+table the port has.
+
+### 182.1 What the port does
+
+The **state** change only:
+
+```cpp
+if (child.age >= 18 && !child.movedOut) child.movedOut = true;
+```
+
+no line, no spouse, no royal seat — because inventing the announcement would be the
+failure §147 and §151 both refused. What it buys is real: a child now leaves at 18 in
+every life, so `movedOut` is a fact rather than a coin, and the three cards that read it
+stop being able to fire on a 40-year-old who still lives at home.
+
+```
+seed 3  [(31, True), (27, True), (3, False)]
+seed 5  [(9, False), (5, False)]
+```
+
+### 182.2 Verification, and a test that had to grow rather than weaken
+
+`test_child_discipline_lanes` failed on this change — `grounded lanes: 1`, because the
+eligible years shrank once children leave. The fix was to **widen the sample** (30 → 60
+lives), not to lower the bar: `grounded lanes: 5`, `ok`. Every child test passes:
+
+```
+test_child_demands: ok   test_child_discipline: ok   test_child_discipline_lanes: ok
+test_children: ok        test_places: ok
+```
+
+Bench 0 lines.
+
+### 182.3 What is still missing from the arc
+
+An adult child has no marriage, no spouse, no grandchildren, and no announcement. Those
+are three more `SimChild` methods whose content is elsewhere — the same shape as §177's
+loaders — and they are recorded here rather than approximated.
+
+
 
 
 
