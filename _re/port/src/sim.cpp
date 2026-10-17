@@ -1321,6 +1321,8 @@ bool Sim::load(std::string* error) {
       "a16_gender-scenarios-enc",
       // Two plain Scenario/Log Version tables (REPORT.en.md 196).
       "a16_paranormal-phenomena-enc",
+      // The adoption beat: Scenario, Log Version, adoptee gender and age (197).
+      "a16_adoption-scenarios-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3891,6 +3893,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (ambientYear(life, out, forcedChoice)) return true;
   if (genderIdentityYear(life, out, forcedChoice)) return true;
   if (paranormalPhenomenaYear(life, out, forcedChoice)) return true;
+  if (adoptionScenarioYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

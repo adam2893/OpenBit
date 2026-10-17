@@ -23077,6 +23077,53 @@ the candidates just checked were blocked on missing actors instead. So the reali
 completion claim for this goal is *the sprint's rate raised and the remaining list honest*,
 not *the 28 finished*.
 
+## 197. The adoption beat, and a correction to §196's gloom
+
+§196 counted 23 tables left and called most of them blocked on tokens. Checking what the
+tokens actually *are* changes that: the port's resolver already handles the generic
+alternative form `<a/b/c>` — it draws one, caches it and answers `<rb>` with it — so a
+table whose only tokens are alternatives is portable **today**.
+
+```
+a16_adoption-scenarios-enc        <a car/a plane/a helicopter/...>   alternatives only
+a16_boosts-enc                    <a homeless shelter/an animal rescue/...>
+a16_money-request-rejections-enc  <a bank/a loan shark/a lender/...>
+```
+
+versus the ones that need an actor:
+
+```
+a16_surrogate-run-off-scenarios-enc   <surrogate>
+a16_pray-asset-scenarios-enc          <asset> <city>
+a16_aircraft-danger-scenarios-enc     <aircraft>
+```
+
+### 197.1 Ported: the adoption beat
+
+```
+Scenario, Log Version, Adoptee Gender, Adoptee Min Age, Adoptee Max Age
+A family friend just received a life sentence ...
+Your next-door neighbor, a single mom, passed away ...
+```
+
+`cards: 5 distinct: 4` in 40 lives; bench **0 lines**; `test_table_reports` still ok.
+
+### 197.2 The corrected list
+
+```
+28 card-shaped tables
+  6 ported: paranormal encounters, stalker, parent-cheat, gender, paranormal
+            phenomena, adoption
+  3 confirmed portable (alternatives only): boosts, money-request-rejections,
+            arrest-scenarios
+  19 need an actor or entity the port lacks, or need checking one at a time
+```
+
+So the sprint's arithmetic is better than §196 said by three or four cards, and the
+remaining work splits the same way §185 split it: a portable group that goes fast, and an
+actor-blocked group that does not.
+
+
 
 else.
 

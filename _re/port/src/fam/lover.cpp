@@ -877,4 +877,36 @@ bool Sim::paranormalPhenomenaYear(Life& life, AgeUp& out, int forcedChoice) {
 // '<surrogate> just texted you ... she is keeping the baby.', and the token needs a
 // surrogate actor the port does not have (REPORT.en.md 196). The table stays untouched
 // until one exists -- the same shape as the custody card (REPORT 183).
+// a16_adoption-scenarios-enc (REPORT.en.md 197): the hero's own adoption beat.
+//
+// Scenario, Log Version, Adoptee Gender, Adoptee Min/Max Age -- and nothing but
+// alternative tokens in the text, which the shared resolver already draws and caches
+// for '<rb>'. So the card is a tableReport with a gender filter.
+bool Sim::adoptionScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && ambientRng_.below(45) != 0) return false;
+  if (!ensureTable("a16_adoption-scenarios-enc")) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_adoption-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Adoptee Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Adoptee Min Age");
+    const double mx = t.num(r, "Adoptee Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_adoption-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty()) out.narrative = spyUpperFirst(log);
+  return true;
+}
 }  // namespace bl
