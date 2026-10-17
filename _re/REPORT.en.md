@@ -20177,3 +20177,67 @@ see the hero's own state without inferring it from cards.
 * The retirement is still silent — no `JobRetire` card, no pension line. §124's
   note stands: it changes which cards the late years can offer, nothing else.
 
+## 138. The content sprint opens with a token, not a card
+
+The first card of the sprint was going to be `ScenarioFamePaparazzi`, whose gate and
+fame move landed in §136. Decoding it stopped on a missing token: its body is
+`"<circumstance-public>, a paparazzo calls you <insult> in an attempt to wind you
+up."` (`a16_paparazzi-scenarios-enc`), and **`<insult>` had exactly one source in
+the port** — `a16_hustler-insults-enc`, reachable only while a *hustler* card was
+rendering. The paparazzi, racer and vampire cards all write the same token and got
+an empty string.
+
+### 138.1 The general pool
+
+`a16_insults-enc`, 205 rows: `Insult, Plural, Gender, Clean, Vampire`.
+
+* `Gender` is `male` / `female` / `both`. Every card that says `<insult>` is
+  addressing the hero, so the pool is filtered on **his** gender.
+* `Vampire` marks the 64 rows the vampire family draws for itself; they are
+  excluded from the general pool.
+* `Clean` marks the safe-for-clean-mode rows. The port has no such setting, so the
+  column is recorded and not used — that is a shortcut, written at the code.
+
+`Sim::insultToken()` draws from the filtered pool on a stream of its own
+(`insultRng_`), so no existing family's sequence moves.
+
+### 138.2 Order matters, and the first cut got it wrong
+
+The general branch has to sit **after** `hustlerIsToken`, not before: the hustler
+family keeps its own pool, and putting the general one first silently replaced it.
+`hustres` proves it — 928 events before and after the reorder, i.e. the family's own
+cards are untouched.
+
+### 138.3 Verification
+
+`tools/test_insult.py`, 80 lives: no card is allowed to leave `<insult>` verbatim,
+at least one table row must actually be read, and the portable pool is checked at
+the data level (141 portable rows, 64 vampire-only, no overlap):
+
+```
+distinct insults seen: 58
+portable rows: 141  vampire-only rows: 64
+ok
+```
+
+The first version of this test asserted that no *vampire-only wording* appeared in
+any card, and failed on `a mosquito`. That assertion was wrong, not the code: the
+hustler family's own pool shares wording with this one, so the presence of a word
+in a card says nothing about which table produced it. The check moved to where it
+can be true — the pools themselves — and the card-level assertion kept to what is
+observable: nothing left unresolved.
+
+Bench: 0 lines.
+
+### 138.4 Where the paparazzi stands
+
+Decoded so far, for the next round: gate `fame >= 75.0f` (§136); body and narrative
+from a `DataHub::GetRandomPaparazziScenario` row through `BracketParser`; three
+buttons built in this order — `Pose for his photo` (#34352), `Pretend he's not
+there` (#34511), `Cover my face` (#16565); lane journals `{0} I smiled for his
+picture.` (#69613), `{0} I pretended not to notice him.` (#69597), `{0} I covered my
+face to make it hard for him to take my picture.` (#69547); and a row containing
+`paparazzo` pushes a `ScenarioCustomAttack` with `ImpactDiscipline(3)` +
+`ImpactKarma(3)`. Not yet read: which lane owns which impact pair, and the shared
+tail's virtual call at `[hero+0x458]`.
+

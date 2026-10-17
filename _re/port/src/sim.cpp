@@ -687,6 +687,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       mornRng_(seed ^ 0x3f84d5b5b5470917ULL ^ 0x9216d5d98979fb1bULL),
       jrRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbe5466cf34e90c6cULL),
       sibRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x6a09e667f3bcc909ULL),
+      insultRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbb67ae8584caa73bULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -2518,8 +2519,16 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (hustlerIsToken(token, hustlerLive_)) {
+      // The hustler family has its own insult pool (a16_hustler-insults-enc), and
+      // while one of its cards renders that pool answers first (REPORT.en.md 138).
       const std::string v = hustlerToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);  // unresolved: verbatim
+      else { out += v; rbLast_ = v; }
+    } else if (trim(token) == "insult") {
+      // '<insult>' everywhere else: the paparazzi, the racer and the vampire cards
+      // write it, and they had no source for it before (REPORT.en.md 138).
+      const std::string v = insultToken();
+      if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
     } else if (astroIsToken(token)) {
       const std::string v = astroToken(token);
@@ -3122,6 +3131,27 @@ bool isSibling(const Person& p) {
 // and GetRetirementAgeForGender picks by the hero's gender; the country is pinned
 // at birth, so this is a lookup and not a draw.
 int Sim::retirementAge(const Hero& h) const { return h.retirementAge; }
+
+// '<insult>' from a16_insults-enc (REPORT.en.md 138). The table's Gender column
+// is male / female / both, and every card that says it is addressing the hero, so
+// the pool is filtered on his gender. The Vampire column marks the rows the
+// vampire family draws for itself, and those are skipped here.
+std::string Sim::insultToken() {
+  if (!ensureTable("a16_insults-enc")) return std::string();
+  const Table& t = tbl("a16_insults-enc");
+  if (!t.has("Insult")) return std::string();
+  const std::string want = (hero_ != nullptr && hero_->female) ? "female" : "male";
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Insult")).empty()) continue;
+    if (t.has("Vampire") && t.flag(r, "Vampire")) continue;
+    const std::string g = lower(trim(t.has("Gender") ? t.at(r, "Gender") : std::string()));
+    if (!g.empty() && g != "both" && g != "all" && g != want) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return std::string();
+  return trim(t.at(pool[insultRng_.below(uint32_t(pool.size()))], "Insult"));
+}
 
 // The fame impact (REPORT.en.md 136). SimPerson::ImpactFame @0x73f30e4d88 is four
 // instructions of arithmetic after the call:

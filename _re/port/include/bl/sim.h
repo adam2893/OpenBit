@@ -164,6 +164,8 @@ class Sim {
   // RNG pick one; out of range falls back to the RNG. -1 is the plain age-up.
   // The hero's retirement age, from his own country (REPORT.en.md 137).
   int retirementAge(const Hero& h) const;
+  // '<insult>' out of a16_insults-enc (REPORT.en.md 138).
+  std::string insultToken();
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);
@@ -696,6 +698,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The siblings' own stream (REPORT.en.md 135): moving out and marrying are new
   // draws, and they must not shift the family lines' existing sequence.
   Rng sibRng_;
+  // The general insult pool's own stream (REPORT.en.md 138).
+  Rng insultRng_;
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).
