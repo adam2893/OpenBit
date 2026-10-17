@@ -22872,6 +22872,47 @@ Four measurement corrections have now come from believing a number one step too 
 the interpretation overshoots** -- and the guard that has worked each time is looking at
 the specific case instead of the aggregate.
 
+## 192. The relationship floor: the gate is reachable, and two cards get there first
+
+§191 left one question: `breakup` fires at 0.02 per life against a coin of 0.30, because
+its gate is `relationship < 30`. Is the gate reachable at all?
+
+`Hero::relationshipLow` now tracks the lowest the score ever reached, and `final` reports
+it:
+
+```
+lives 30   min 0   median 48   max 100
+below 30: 7 lives      below 40: 12 lives
+```
+
+So the score **does** fall below 30 — in 7 of 30 lives — and the gate is not the problem.
+
+### 192.1 Then why does the table barely fire
+
+Because two other paths reach the same moment first:
+
+* **counseling rescues it.** `relationship < 35 && fire(counseling, 0.10)` restores +12,
+  so the years spent under 30 are few;
+* **`loverLeavesYear` (§164) ends it.** It fires on a 1-in-12 coin and, when its
+  `Wish … well` lane comes up, records the ex and clears the pairing — which means the
+  break-up table's 0.30 is concentrated in the handful of years both of those miss.
+
+```
+breakup table   0.02 / life
+loverLeaves     0.04 / life   (1/12 coin, half the lanes leave)
+```
+
+### 192.2 What this means
+
+No defect: the pair ends, the ex is recorded, the announcement rides the same year. The
+table pool is simply the *third* way to the same end, and its low rate is the measure of
+how often the first two miss.
+
+The one thing worth noting is that this ordering was accidental — §164's card was added
+without knowing it would take work from §125's pool. The measurement now says so, and the
+next card added to this family can be weighed against it rather than discovered later.
+
+
 
 ### 190.3 Verification
 

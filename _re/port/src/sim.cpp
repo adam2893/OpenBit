@@ -20992,6 +20992,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     h.relationship += delta;
     if (h.relationship < 0) h.relationship = 0;
     if (h.relationship > 100) h.relationship = 100;
+    // The lowest the score ever reached, for the break-up gate's own measurement
+    // (REPORT.en.md 192).
+    if (h.relationship < h.relationshipLow) h.relationshipLow = h.relationship;
   };
   // Each row moves the score the way the game's own relationship meter does:
   // betrayal and suspicion erode it, affection restores it, and a score that

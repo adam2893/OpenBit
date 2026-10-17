@@ -297,6 +297,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"loverStatus\": " << jsonOrNull(h.loverStatus)
     << ", \"loverName\": " << jsonOrNull(h.loverName)
     << ", \"relationship\": " << h.relationship
+    << ", \"relationshipLow\": " << h.relationshipLow
     << ", \"fame\": " << h.fame
     << ", \"exLovers\": " << exLoversJson(h)
     << ", \"children\": " << childrenJson(life)

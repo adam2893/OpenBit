@@ -579,6 +579,10 @@ struct Hero {
   int loverAge = 0;
   std::string loverStatus;       // "", "dating", "married"
   int relationship = 60;         // the game's own relationship score, 0-100
+  // The lowest the score ever got (REPORT.en.md 192): the break-up gate is
+  // 'relationship < 30' and §191 found it almost never fires, so the question is whether
+  // the gate or the score is at fault.
+  int relationshipLow = 100;
   int loverCraziness = 0;
   // The gift (REPORT.en.md 89) needs the partner's pride as well as her
   // craziness: every refusal row in the two property pools is flagged one or
@@ -623,7 +627,11 @@ struct Hero {
     bool female = false;
     int age = 0;
     std::string status;    // what the pair were when it ended: dating / engaged / married
-    int relationship = 0;  // the score at the break-up
+    int relationship = 0;
+  // The lowest the score ever got (REPORT.en.md 192). The break-up gate is
+  // 'relationship < 30', and §191 found it almost never fires; this is the measurement
+  // that says whether the gate or the score is the problem.
+
     int year = 0;          // the year it ended, counted from the hero's birth
     // Where the ex lives (REPORT.en.md 163). The game's ex cards ask
     // SimPerson::LivesInSamePlaceAsHero before they push, and the port had no place
