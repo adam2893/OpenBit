@@ -16753,7 +16753,7 @@ std::string Sim::relationshipToken(const std::string& key) {
     return shape(h.loverName);
   }
   if (base == "ex" || base == "ex-lover")
-                             return h.exName.empty() ? std::string() : shape(h.exName);
+                             return h.latestEx() == nullptr ? std::string() : shape(h.latestEx()->name);
   if (base == "gender")      return h.loverFemale ? "woman" : "man";
   if (base == "house") {
     // shortcut: the port keeps no property list yet, so '<house>' is one house
@@ -16805,7 +16805,7 @@ bool Sim::relEligible(const Table& t, size_t row, const Life& life) const {
   };
   if (!genderOk("Hero Gender", h.female)) return false;
   if (!genderOk("Lover Gender", h.loverFemale)) return false;
-  if (!genderOk("Ex Gender", h.exFemale)) return false;
+  if (!genderOk("Ex Gender", h.latestEx() != nullptr && h.latestEx()->female)) return false;
   if (!genderOk("Gender", h.loverFemale)) return false;         // the partner column
   if (!genderOk("Partner Gender", h.loverFemale)) return false;
   if (!genderOk("Friend Gender", !h.loverFemale)) return false;
@@ -20751,7 +20751,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     // The row writes about the partner, so the pronoun brackets follow the ex
     // when the relationship is over and the current partner otherwise.
     pronounOtherSet_ = true;
-    pronounOtherFemale_ = h.loverName.empty() ? h.exFemale : h.loverFemale;
+    pronounOtherFemale_ = h.loverName.empty()
+                              ? (h.latestEx() != nullptr && h.latestEx()->female)
+                              : h.loverFemale;
     const bool ok = renderRow(t, row, life, out, forcedChoice);
     pronounOtherSet_ = false;
     return ok;
@@ -20784,12 +20786,15 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
       // code-built string, which is not in the tables, so the port writes it.
       return narrate("I am now dating " + h.loverName + ".", "relationship");
     }
-    // (2) The ex pools, once there is an ex to remember.
-    if (h.exName.empty()) return false;
+    // (2) The ex pools, once there is an ex to remember. The row is built with the
+    // most recent entry of the array, which is what the game's own ExLover cards
+    // are constructed with (REPORT.en.md 134).
+    const Hero::ExLover* ex = h.latestEx();
+    if (ex == nullptr) return false;
     if (fire("a16_ex-lover-booty-call-scenarios-enc", 0.10)) return true;
     if (fire("a16_ex-lover-rekindle-scenarios-enc", 0.10)) {
-      h.loverName = h.exName;
-      h.loverFemale = h.exFemale;
+      h.loverName = ex->name;
+      h.loverFemale = ex->female;
       h.loverStatus = "dating";
       h.relationship = 45;
       return true;
@@ -20845,8 +20850,16 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     // FullName, so the two come off the same stored name.
     h.breakUpName = h.loverName.substr(0, h.loverName.find(' '));
     h.breakUpFull = h.loverName;
-    h.exName = h.loverName;
-    h.exFemale = h.loverFemale;
+    // The end of a relationship is one entry in the ex-lover array: who, what the
+    // pair were, the score it ended on, and the year (REPORT.en.md 134).
+    Hero::ExLover ended;
+    ended.name = h.loverName;
+    ended.female = h.loverFemale;
+    ended.age = h.loverAge;
+    ended.status = h.loverStatus;
+    ended.relationship = h.relationship;
+    ended.year = h.age;
+    h.exLovers.push_back(ended);
     ++h.exes;
     h.loverName.clear();
     h.loverStatus.clear();

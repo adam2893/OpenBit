@@ -589,8 +589,21 @@ struct Hero {
   std::string movieCity;      // the city the four slots were drawn for
   int moviesWatched = 0;      // the game's own 'MoviesWatched' stat (#30523)
   bool virgin = true;
-  std::string exName;            // the most recent ex, kept after a breakup
-  bool exFemale = false;
+  // The ex-lovers (REPORT.en.md 134). The game keeps them as a SimLover array
+  // (`Life.ExLoverArray`), and the eighteen ExLover* cards read the entry they were
+  // constructed with: who it is, when it ended, and what the pair had been. The
+  // port used to carry only the most recent ex; the vector is what the family
+  // needs, and `exName`/`exFemale` are now views of its last entry.
+  struct ExLover {
+    std::string name;
+    bool female = false;
+    int age = 0;
+    std::string status;    // what the pair were when it ended: dating / engaged / married
+    int relationship = 0;  // the score at the break-up
+    int year = 0;          // the year it ended, counted from the hero's birth
+  };
+  std::vector<ExLover> exLovers;  // oldest first; the most recent is back()
+  const ExLover* latestEx() const { return exLovers.empty() ? nullptr : &exLovers.back(); }
   int exes = 0;
   bool musician = false;
   std::string musicGenre;  // a16_music-genres-enc 'Genre'

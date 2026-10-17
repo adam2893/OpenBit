@@ -19871,3 +19871,68 @@ the dump — the assault card after the weapon encounter, the follow-up after th
 job referral's accept, and the whole `*Push`/`*Complete` family of two-stage
 cards. Each is one enum value and one push.
 
+## 134. Structural 2: the ex-lover array
+
+The port kept the most recent ex as two fields, `exName` and `exFemale`, because the
+coarse `relationshipYear` pools only ever needed one name to print. The game keeps
+an array (`Life.ExLoverArray`) and constructs every `ExLover*` card with one entry
+of it, so eighteen classes were unreachable no matter how well they were decoded.
+
+### 134.1 The shape
+
+```cpp
+struct ExLover {
+  std::string name;
+  bool female = false;
+  int age = 0;
+  std::string status;    // what the pair were when it ended: dating / engaged / married
+  int relationship = 0;  // the score at the break-up
+  int year = 0;          // the year it ended
+};
+std::vector<ExLover> exLovers;  // oldest first; the most recent is back()
+const ExLover* latestEx() const { return exLovers.empty() ? nullptr : &exLovers.back(); }
+```
+
+The five fields are not guesses: the announcements' own nouns come from the status
+(§125's `RelationshipStatusString` switch), and the ex pools already asked the
+score and the year through their gates.
+
+### 134.2 The eight sites
+
+Only eight places in the port touched the old fields, and every one of them wanted
+*the most recent* ex: the token resolver's `<ex>`, the `"Ex Gender"` column check,
+the pronoun bracket the ex pools render with, the ex-pool gate, the rekindle lane,
+and the two writes at the break-up. They now go through `latestEx()`, so the
+array's extra entries cost nothing until a card asks for one.
+
+### 134.3 Verification
+
+Two things had to be true, and only one of them was visible before:
+
+* **nothing changed** -- bench 0 lines, and the card tests (`love_breakup`,
+  `job_referral`, `play`, `seduce_after`) all still pass.
+* **the array is the record of break-ups** -- `tools/test_ex_lovers.py` drives 120
+  lives and requires the entry count to equal the number of `See ya` cards in that
+  life, plus `status` in {dating, engaged, married}, `0 <= relationship <= 100`, and
+  the entry's year to be one of the ages a `See ya` card appeared.
+
+```
+lives with an ex: 23 of 120
+ex entries: 25
+statuses: {'dating': 24}
+ok
+```
+
+The one legal exception is asserted rather than tolerated: a run can stop between
+the break-up and its announcement (the announcement rides the same year's queue,
+§133, and the loop stops at `ages`), so at most **one** trailing entry may lack a
+card -- and it must be the final year.
+
+The array is printed in the script JSON (`final.exLovers`) for exactly this reason:
+before it, the port had no view of a hero's own relationship history that a test
+could read.
+
+Twenty-four of twenty-five entries are `dating` because the port's married branch
+almost never falls back to the break-up score; that is the same gap §125 recorded,
+now measured.
+

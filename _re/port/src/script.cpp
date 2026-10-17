@@ -202,6 +202,22 @@ std::string heroJson(const Hero& h) {
   return o.str();
 }
 
+// The ex-lover array (REPORT.en.md 134). The scripted run is the only view a test
+// has of the hero's own state, so what the family stores is printed here.
+std::string exLoversJson(const Hero& h) {
+  std::ostringstream o;
+  o << "[";
+  for (size_t i = 0; i < h.exLovers.size(); ++i) {
+    const Hero::ExLover& ex = h.exLovers[i];
+    o << (i ? ",\n      " : "\n      ") << "{\"name\": " << jsonStr(ex.name)
+      << ", \"female\": " << (ex.female ? "true" : "false") << ", \"age\": " << ex.age
+      << ", \"status\": " << jsonOrNull(ex.status) << ", \"relationship\": "
+      << ex.relationship << ", \"year\": " << ex.year << "}";
+  }
+  o << (h.exLovers.empty() ? "]" : "\n    ]");
+  return o.str();
+}
+
 std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
                      const std::string& newbornAtSetup, const Life& life,
                      const std::vector<std::string>& birth,
@@ -228,7 +244,8 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
   o << "  \"final\": {\"age\": " << h.age
     << ", \"alive\": " << (life.alive ? "true" : "false")
     << ", \"stats\": " << statsJson(h)
-    << ", \"money\": " << h.money;
+    << ", \"money\": " << h.money
+    << ", \"exLovers\": " << exLoversJson(h);
   // The death sentence is a real table row (a16_death-types-enc) and carries
   // <pronoun> / <body part>: it is resolved where it was drawn, so it must be
   // reported here to be comparable at all.
