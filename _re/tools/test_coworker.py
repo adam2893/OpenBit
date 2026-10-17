@@ -126,7 +126,7 @@ for seed in range(1, 41):
                 assert not re.search(r"<[a-zA-Z][^<>]*>", " ".join(event["logLines"])), event
                 match = re.search(r"[Yy]our supervisor, (.+?)(?:'s)?,", event["body"])
                 assert match, event
-                assert re.search(r"my supervisor, " + re.escape(match[1]) + r"(?:'s)?,", event["logLines"][0]), event
+                assert re.search(r"my supervisor, " + re.escape(match[1]) + r"(?:'s)?,", event["logLines"][-1]), event
                 choice = event["choice"]
                 assert choice in SUP_CHOICES, event
                 sex = row["Supervisor Gender"].strip().lower()
@@ -136,9 +136,9 @@ for seed in range(1, 41):
                 expected = ({"happiness": -4, "discipline": 8}
                             if choice == "It doesn't bother me" else {})
                 assert {k: v for k, v in event["deltas"].items() if v} == expected, event
-                assert choice == "It doesn't bother me" or event["logLines"][0].endswith("."), event
+                assert choice == "It doesn't bother me" or event["logLines"][-1].endswith("."), event
                 if choice == "It doesn't bother me":
-                    assert event["logLines"][0].endswith(" I didn't let it bother me."), event
+                    assert event["logLines"][-1].endswith(" I didn't let it bother me."), event
                 names[match[1]] += 1
                 continue
             if event.get("title") == "Team Building":
@@ -158,11 +158,11 @@ for seed in range(1, 41):
                 deltas = {k: v for k, v in event["deltas"].items() if v}
                 if choice == "Sure, I'll go":
                     assert deltas == {"happiness": 4, "discipline": 16, "karma": 8}, event
-                    assert event["logLines"][0] == (
+                    assert event["logLines"][-1] == (
                         "I went " + activity + " with my company on a team building exercise."), event
                 else:
                     assert deltas == {"discipline": -16, "karma": -8}, event
-                    assert event["logLines"][0] == (
+                    assert event["logLines"][-1] == (
                         "I refused to go " + activity
                         + " with my company on a team building exercise."), event
                 continue
@@ -190,11 +190,11 @@ for seed in range(1, 41):
                 deltas = {k: v for k, v in event["deltas"].items() if v}
                 if choice == "Do it":
                     assert deltas == {"happiness": 16}, event
-                    assert event["logLines"][0] == (
+                    assert event["logLines"][-1] == (
                         "I went " + activity + " with my supervisor, " + supervisor + "."), event
                 else:
                     assert deltas == {"discipline": 4}, event
-                    assert event["logLines"][0] == (
+                    assert event["logLines"][-1] == (
                         "I politely declined an opportunity to go " + activity
                         + " with my supervisor, " + supervisor + "."), event
                 continue
@@ -204,7 +204,7 @@ for seed in range(1, 41):
                 assert counts["hookup"] <= 5, event
                 assert name == HK, event
                 assert event["age"] >= 18, event
-                body, journal = event["body"], event["logLines"][0]
+                body, journal = event["body"], event["logLines"][-1]
                 assert not re.search(r"<[a-zA-Z][^<>]*>", body), event
                 inbound = "your supervisor, " in body.lower()
                 row = HK_ROWS[int(event["row"]) - 1]

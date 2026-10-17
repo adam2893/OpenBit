@@ -30,7 +30,7 @@ def run(seed, **extra):
 
 
 cards = 0
-for seed in range(1, 25):
+for seed in range(1, 61):
     doc = run(seed, engaged=True)
     left = False
     for event in doc["events"]:
