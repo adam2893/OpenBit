@@ -22148,6 +22148,59 @@ whether a `DataHub` layer can be built from what is already extracted — the st
 the symbol table and the tables — or whether each method has to be read individually.
 **That question is worth a round of its own, and this one ends with it stated.**
 
+## 176. The layer's shape, measured
+
+§175 asked whether a `DataHub` layer can be built from what is already extracted. The
+name census answers the shape question before any disassembly:
+
+```
+DataHub methods: 2344
+  Load*Set  :  928   (build a pool)
+  Get*      : 1348   (pick from one)
+  other     :   68
+
+  getter unfiltered   731
+  getter ...For...     399
+  getter ...Gender...  124
+  getter ...Age...      94
+```
+
+### 176.1 Two halves, and only one of them is work
+
+The layer is **928 loaders and 1,348 pickers**. Three methods sampled from different
+families all have the same two-line shape:
+
+```
+GetRandomSexyTextItemForGender          -> LoadSexyTextItemSet            -> pick
+GetRandomExLoverBootyCallScenario...    -> LoadExLoverBootyCallScenarioSet -> pick
+GetRandomAstronautInboundMessage        -> LoadAstronautInboundMessageSet  -> pick
+```
+
+* the **picker** is `pick(filtered by gender/age)` — one implementation the port already
+  has in `pickRow`/`weightedPick`, and 1,348 methods collapse into it;
+* the **loader** is the content: 928 methods that assemble a set from tables, literals or
+  both, and those are as varied as their families.
+
+### 176.2 The answer to §175's question
+
+**Partly buildable.** A generic layer covers the picking half entirely — that is where
+the 1,348 methods live — and reduces each family to its `Load*Set` counterpart. `§173`
+already proved the pattern end to end: `GetRandomSexyTextItemForGender` became one table
+read with a gender filter, in ten lines.
+
+What remains per family is the loader, and loaders are the *smaller* half: 928 against
+1,348, and most of them name a table the port already opens.
+
+### 176.3 What that changes about "finish tier 3"
+
+The remaining ex-lover, cult, astronaut and zoo cards stop being fifteen-plus decoding
+jobs. They become: **find the `Load*Set` the card's getter names, read that set's table,
+and let the port's existing pick do the rest** — which is a routine, not a wall.
+
+`tools/datahub_census.py` records the classification so the next round starts from the
+numbers rather than from the worry.
+
+
 
 
 
