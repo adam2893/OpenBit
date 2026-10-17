@@ -22,6 +22,12 @@ LITS = os.path.join(ROOT, "tools", "lit_cells.json")
 STATIC_BASE = 0x73F049A000
 FILE_DELTA = 0x73F049E000
 
+# Label dispatch is done by comparing the choice's text, and those comparisons are
+# String methods -- i.e. framework, i.e. dropped by the rule below. They are the one
+# framework family that IS the card, so they are kept (REPORT.en.md 143).
+KEEP_ALWAYS = ("System.String::Contains", "System.String::StartsWith",
+               "System.String::EndsWith", "System.String::Equals")
+
 # A call into one of these is codegen, not the card.
 NOISE = ("System.", "Amazon.", "UnityEngine.", "Newtonsoft.", "<>c", "<", "Microsoft.",
          "Mono.", "Firebase.", "Google.", "Meta.", "Apollo16")
@@ -76,8 +82,11 @@ def main(argv):
         elif insn.mnemonic == "bl":
             m = re.search(r"#(0x[0-9a-f]+)", insn.op_str)
             name = syms.get(hex(int(m.group(1), 16) - STATIC_BASE)) if m else None
-            if name and not any(name.startswith(n) or n in name for n in NOISE):
-                note = "  ; " + name
+            keep_always = bool(name) and any(name.endswith(k.split("::")[-1]) and
+                                             k.split("::")[0] in name for k in KEEP_ALWAYS)
+            if name and (keep_always or not any(name.startswith(n) or n in name for n in NOISE)):
+                note = "  ; " + name + ("   <== label dispatch" if keep_always else "")
+                keep = True
                 keep = True
         elif insn.mnemonic in ("mov", "fmov") and re.search(r"w1, #", insn.op_str):
             keep = True

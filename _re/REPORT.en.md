@@ -20506,6 +20506,70 @@ who started on birth control is never asked.
 Bench: 0 lines. `test_play` and `test_love_breakup` unchanged (`test_love_breakup`'s
 status words moved 15/9 → 12/9 because a partner on birth control leaves one more
 year free for the family's own draws — the same kind of shift §133 documented).
+
+## 143. The view's blind spot, and the mirror card's decode
+
+§140's filter drops framework calls, and that included `String::Contains` — which is
+how several cards dispatch on the **choice's text**. The paparazzi decode in §139
+had to find those comparisons by hand, and the mirror card below is written the same
+way, so the rule is fixed before it costs another hour.
+
+`cardview` now keeps `System.String::Contains` / `StartsWith` / `EndsWith` / `Equals`
+and marks them:
+
+```
+73f3bd7f88  bl  System.String::Contains   <== label dispatch
+73f3bd8018  bl  System.String::Contains   <== label dispatch
+73f3bd80bc  bl  System.String::Contains   <== label dispatch
+73f3bd8140  bl  System.String::Contains   <== label dispatch
+```
+
+Four comparisons in the paparazzi handler, which is exactly its dispatch. The test
+(`tools/test_cardview_dispatch.py`) requires them to stay visible *and* the card's
+own calls (`ImpactDiscipline`, `ScenarioCustomAttack::.ctor`) to stay beside them.
+
+### 143.1 `ScenarioLoverStopsBirthControl`, decoded as far as it goes
+
+The mirror of §142: the partner wants **off** the contraception. Refresh 636 B,
+handler 2,820 B. Through the fixed view:
+
+```
+RelationshipStatusString          ; the {0} of the body
+PronounStringForType(1)           ; the {2} of the body
+str x0, [x19, #0x48]              ; Body
+ScenarioChoice::.ctor  x3         ; three buttons
+--- handler ---
+ImpactKarma(-2), ImpactDiscipline(-2)
+GetRandomNumber(0, 100)           ; the argue roll
+PickRandomFromStringArray
+PronounStringForType(4 / 5 / 1)
+```
+
+and its literals:
+
+```
+body      'Your {0}, {1}, wants to stop taking {2} birth control.'
+button    'Yes, stop taking it'          'Disapprove of that idea'
+button    'Convincing contraceptive'     'Objection!'   'Why stop?'
+journal   "{0} wants to stop taking {1} birth control. I told {2} I don't approve of that."
+journal   '{0} said {1} will continue taking {2} birth control to satisfy you.'
+journal   '{0} said something about stopping {1} birth control.'
+journal   '{0} {1} agreed to keep taking it.'
+```
+
+**The lane mapping is not read**, and that is where this round stops. Five buttons'
+worth of literals exist for a three-button card, the branches share pronouns, and
+`GetRandomNumber(0,100)` plus `PickRandomFromStringArray` sit between them. Writing
+a lane table now would be guessing which sentence belongs to which button, and a
+guess in a journal is exactly what the probes would then defend.
+
+### 143.2 Why that is the right place to stop
+
+§142 offered two of three buttons because the third opened an unported flow. This
+card's three buttons all resolve to journals the port cannot yet attribute. The
+honest state is: body, buttons and journals are known; the mapping is not. That is
+recorded here so the next attempt starts from the literals rather than from the
+disassembly.
  The block now skips horizontal whitespace
 first. The older `"relationship"` parser only ever worked because its value sits at
 a fixed offset in the specs the tests generate — the same latent bug, waiting for a
