@@ -503,6 +503,9 @@ class Sim {
   // The job referral (REPORT.en.md 124) is the citizen family's career card: a
   // friend of a friend hands the hero a job once the hero has none.
   bool jobReferralYear(Life& life, AgeUp& out, int forcedChoice);
+  // The breakup announcement (REPORT.en.md 125): LoverBreakUp is a report, not a
+  // roll -- the partner has already left, so the card only says so.
+  bool loverBreakUpYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);

@@ -3547,6 +3547,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   //      The conviction draw runs on its own stream (Sim::prisonRng_), so the
   //      main stream -- and therefore every earlier subsystem's draws for a
   //      given seed -- is untouched (REPORT.en.md 45).
+  // The breakup announcement (REPORT.en.md 125) reports a breakup that already
+  // happened, so like the hookup's morning after it is offered before the year's
+  // own cards and rolls nothing at all -- no stream moves.
+  if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
   if (careerYear(life, out, forcedChoice)) return true;
@@ -27065,6 +27069,20 @@ bool Sim::morningYear(Life& life, AgeUp& out, int forcedChoice) {
   // GenerateLoverFromCoworker @0x73f3812d6c turns the boss into the hero's lover, so
   // the port keeps him as one: this is what makes the next hookup's cheating check
   // and the lover cards see him.
+  // The gender has to come with the name: RelationshipStatusString (the word the
+  // breakup card and the anniversary prefix print) and the 'Straight Only' row
+  // gate both read it, and the celebrity name table is the only place his first
+  // name is written down with one.
+  h.loverFemale = false;
+  if (ensureTable("a16_casino-casino-celebrity-name-enc")) {
+    const Table& nt = tbl("a16_casino-casino-celebrity-name-enc");
+    const std::string first = sup.substr(0, sup.find(' '));
+    for (size_t r = 0; r < nt.size(); ++r) {
+      if (trim(nt.at(r, "First Name")) != first) continue;
+      h.loverFemale = lower(trim(nt.at(r, "Gender"))) == "female";
+      break;
+    }
+  }
   h.loverName = sup;
   h.loverStatus = "dating";
   return true;
@@ -27348,6 +27366,41 @@ bool Sim::celebAppYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The breakup announcement (REPORT.en.md 125). LoverBreakUp is the card the game
+// pushes once a partner has already walked: its RefreshScenario @0x73f3daf658
+// builds the whole card out of the pair it was constructed with, its
+// ChoiceSelectedAtIndex does not exist, and its DismissSelected @0x73f3daf7b4
+// only writes the narrative to the sim's journal. So the port keeps it as a
+// report: it rolls nothing, it draws on no stream, and it is offered at the head
+// of the age-up after the breakup card that set the flag.
+bool Sim::loverBreakUpYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (forcedChoice >= 0) return false;
+  if (!h.breakUpPending) return false;
+  h.breakUpPending = false;
+  out = AgeUp();
+  out.table = "relationship";
+  out.row_id = "0";
+  // [self+0x38] = cell 0x5c3d8f8, literal #38413 'See ya'.
+  out.title = "See ya";
+  // [self+0x48] = Format(cell 0x5c46bd8 'You broke up with your {0}, {1}.',
+  // SimLover.RelationshipStatusString @0x73f30d35a0 lowered, and the partner's
+  // name at [lover+0x10]+0x18). The status word is the gender/state switch that
+  // method runs: Husband/Wife/Spouse for status 3, Fiance/Fiancee for 2,
+  // Boyfriend/Girlfriend for 1, each of the ex statuses its own 'Ex-' word.
+  // shortcut: the port only ever breaks up a dating, engaged or married pair, so
+  // the ex and neutral-gender arms of that switch are not reachable here.
+  out.body = "You broke up with your " + h.breakUpWord + ", " + h.breakUpName + ".";
+  // [self+0x178] = Format(cell 0x5c31470 '{0}', Format(cell 0x5c46bf0
+  // 'I broke up with {0}.', partner FullName @0x73f2fc62bc)).
+  // shortcut: the port's partner carries a first name and no surname, so the
+  // FullName it formats is that given name.
+  out.narrative = "I broke up with " + h.breakUpFull + ".";
+  return true;
+}
+
 bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
@@ -27454,6 +27507,19 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   if (giftYear(life, out, forcedChoice)) return true;
   if (h.relationship < 35 && fire("a16_relationship-counseling-scenarios-enc", 0.10)) { bump(12); return true; }
   if (h.relationship < 30 && fire("a16_breakup-scenarios-enc", 0.30)) {
+    // The partner who is leaving is the one LoverBreakUp is built with, so the
+    // three strings its RefreshScenario formats are pinned here, before the
+    // relationship is cleared (REPORT.en.md 125).
+    h.breakUpPending = true;
+    h.breakUpWord = h.loverStatus == "married"
+                        ? (h.loverFemale ? "wife" : "husband")
+                        : h.loverStatus == "engaged"
+                              ? (h.loverFemale ? "fianc\xC3\xA9" "e" : "fianc\xC3\xA9")
+                              : (h.loverFemale ? "girlfriend" : "boyfriend");
+    // [lover+0x10]+0x18 is the person's first name and the narrative formats the
+    // FullName, so the two come off the same stored name.
+    h.breakUpName = h.loverName.substr(0, h.loverName.find(' '));
+    h.breakUpFull = h.loverName;
     h.exName = h.loverName;
     h.exFemale = h.loverFemale;
     ++h.exes;

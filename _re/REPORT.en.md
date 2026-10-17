@@ -19122,3 +19122,191 @@ rule the family ran to the end of every life.
   retirement condition was not read. It is deliberately silent -- no event, no
   journal line -- so it changes only which cards the late years can offer.
 
+## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking
+
+The lover family is the largest block the port had not touched: forty-nine
+`ScenarioLover*` / `ScenarioExLover*` classes behind the one coarse
+`relationshipYear` approximation (src/sim.cpp:27390), which fires the family's
+tables on fixed coins instead of reading them. This section starts the block with
+its cheapest and most structural card -- the one the game pushes *after* a
+relationship has already ended, and the only one in the family with no
+`ChoiceSelectedAtIndex` at all.
+
+### 125.1 The card
+
+```
+class ScenarioLoverBreakUp : Scenario              il2cpp_dump.txt:43156
+  _lover        SimLover      0x170
+  _narrative    System.String 0x178
+  .ctor(SimLover)          @0x73f3daf62c   ( 44 B)
+  RefreshScenario()        @0x73f3daf658   (348 B)
+  DismissSelected()        @0x73f3daf7b4   (108 B)
+```
+
+No eligibility method, no choice handler, no fields beyond the pair and the
+sentence. The constructor is the base call plus one store:
+
+```
+73f3daf638  mov w1, wzr            ; base .ctor(false) -- the card takes no forced
+73f3daf644  bl  #0x73f2eb9db8      ;   choice and shows no portrait slot
+73f3daf648  str x19, [x20, #0x170] ; _lover = the partner passed in
+```
+
+### 125.2 RefreshScenario: three formats, two flags, one lowered noun
+
+```
+73f3daf6b8  ldr x8, [x19, #0x170]   ; _lover
+73f3daf6bc  mov w9, #0x101
+73f3daf6c0  strh w9, [x19, #0x132]  ; two adjacent one-byte flags, both 1
+73f3daf6c4  cbz x8, throw           ; and a null check on every step below
+```
+
+The narrative is built first, out of the partner's full name:
+
+```
+73f3daf6d0..6e4   [0x5c46bf0]       ; literal #23656 'I broke up with {0}.'
+73f3daf6e4  bl #0x73f2fc62bc       ; SimPersonName.FullName on [_lover+0x10]
+73f3daf6f8  bl #0x73f52976b4       ; String.Format(that, FullName)
+```
+
+and the title and body follow:
+
+```
+73f3daf700  ldr x8, [x21]           ; cell 0x5c3d8f8, literal #38413 'See ya'
+73f3daf708  str x8, [x19, #0x38]   ; Scenario.Title
+73f3daf714  bl #0x73f30d35a0       ; SimLover.RelationshipStatusString
+73f3daf720  bl #0x73f52aa938       ; .ToLower()
+73f3daf750  ldr x2, [x8, #0x18]    ; the partner's first name, [_lover+0x10]+0x18
+73f3daf75c  bl #0x73f52a71cc       ; String.Format(cell 0x5c46bd8, status, name)
+73f3daf764  str x0, [x19, #0x48]   ; Scenario.Body
+73f3daf774  bl #0x73f52976b4       ; String.Format(cell 0x5c31470 '{0}', title)
+73f3daf77c  str x0, [x19, #0x178]  ; _narrative
+```
+
+so the card reads
+
+```
+Title      'See ya'                              (#38413, cell 0x5c3d8f8)
+Body       'You broke up with your {0}, {1}.'    (#47912, cell 0x5c46bd8)
+Narrative  'I broke up with {FullName}.'         (#23656, cell 0x5c31470)
+```
+
+The `{0}` is not a literal word: `SimLover.RelationshipStatusString`
+@0x73f30d35a0 is a switch on the lover's status at `+0x224` crossed with two
+gender bytes, and the cells it can return are the whole noun table the family
+uses:
+
+| status `+0x224` | partner male | partner female | other |
+|---|---|---|---|
+| 1 (dating) | #13953 `Boyfriend` | #21646 `Girlfriend` | #33399 `Partner` |
+| 2 (engaged) | #20033 `Fiancé` | #20034 `Fiancée` | #33399 `Partner` |
+| 3 (married) | #23321 `Husband` | #46941 `Wife` | #39735 `Spouse` |
+| 4 | #19195 `Ex-Husband` | #19199 `Ex-Wife` | #19196 `Ex-Partner` |
+| 5, 6 | #19193 `Ex-Fling` / #19194 `Ex-Girlfriend` | | |
+
+The byte pair `+0x1c` / `+0x44` picks the column: the two are compared, and
+equal bytes take the male arm while unequal take the female one. The card then
+lowers the word, so the sentence the player reads is
+`You broke up with your girlfriend, Alex.`
+
+### 125.3 DismissSelected: one journal line, no state
+
+```
+73f3daf800  ldr x0, [x8, #0x48]     ; [[GameReference+0xb8]+0]+0x20 -> the sim
+73f3daf808  ldr x1, [x19, #0x178]   ; _narrative
+73f3daf818  b #0x73f380158c         ; the sim journal's Log(string)
+```
+
+That is the whole method. The card does not remove the partner, reset the score,
+or move him into an ex array: by the time it is constructed the relationship is
+already over, and the game shows it as a report. The port therefore keeps the
+three strings and nothing else.
+
+### 125.4 What the port wires
+
+* `Hero::breakUpPending`, `breakUpWord`, `breakUpName`, `breakUpFull`
+  (include/bl/game.h) carry the partner across the year boundary.
+* `relationshipYear`'s breakup branch (src/sim.cpp) fills them from the partner
+  it is about to clear: the status word from `loverStatus` and `loverFemale`,
+  the body's `{1}` from the first token of the name, the narrative's `{0}`
+  from the whole stored name.
+* `Sim::loverBreakUpYear` (src/sim.cpp) is the card: it rolls nothing, draws on
+  no stream, sets `table = "relationship"`, and writes the three strings.
+* It is offered at the head of the yearly dispatch, next to the other queued
+  report card (`morningYear`), because the game pushes it the moment the breakup
+  card resolves and the port shows one card a year.
+
+```
+RELATIONSHIP YEAR  breakup row fires  ->  flags set, relation cleared
+NEXT AGE-UP        loverBreakUpYear   ->  'See ya'
+```
+
+### 125.5 Verification
+
+`tools/test_love_breakup.py` drives 120 lives with `"relationship": true` and
+checks every card the port titles `See ya`: the body template against the eight
+status words, that no choice and no stat move ever rides along, the
+`logLines` entry against the body's own name, and the absence of unresolved
+`<brackets>`.
+
+```
+breakup cards: 24
+status words: {'boyfriend': 15, 'girlfriend': 9}
+ok
+```
+
+Only the two dating words appear because the port's breakup gate sits at a score
+the married branch almost never falls back to; the married and engaged arms stay
+in the switch and the test accepts them.
+
+### 125.6 The stale gender the card exposed
+
+The first sweep printed `You broke up with your girlfriend, John.` -- a female
+word over a male partner. The pairing behind it is the supervisor hookup
+(REPORT.en.md 120), which stores `h.loverName = sup` and never sets
+`h.loverFemale`, so every later reader of the partner's gender --
+`RelationshipStatusString` here, and the `Straight Only` row gate at
+src/sim.cpp:23548 -- saw the previous pairing's value. The hookup now carries the
+gender with the name, resolved once from the celebrity name table's `Gender`
+column, which is where the first name was drawn from in the first place. The
+sweep after the fix prints the male words over male names.
+
+### 125.7 Shortcuts
+
+* The port's partner carries one stored name; the game formats the body's `{1}`
+  from the first name and the narrative's `{0}` from `FullName`, so the port
+  splits the single string on its first space.
+* The ex and neutral-gender arms of the status switch are not reachable in the
+  port, because `relationshipYear` only ends dating, engaged and married pairs.
+* The game pushes the card immediately; the port shows one card a year, so the
+  announcement lands on the following age-up. It consumes no row and draws
+  nothing, so no other card's sequence moves.
+* `RelationshipStatusString`'s ex sub-flags (`+0x228`, `+0x22c`, `+0x234`,
+  `+0x23c`) are recorded above and not modelled: the port has one `exName`
+  slot and no ex-lover array yet.
+
+### 125.8 What moved
+
+The card consumes a year and the hookup now writes a gender, so nine of the
+sixty-seven probes shift by one or two events. No probe changed its residue
+(0 everywhere), none failed, and the bench is byte-identical -- the bench's lives
+stop at thirty-four, before any pair forms.
+
+| probe | after 124 | after 125 |
+|---|---|---|
+| dlres | 731 | 732 |
+| fstres | 141 | 139 |
+| ftres | 132 | 134 |
+| fwres | 86 | 87 |
+| ltres | 918 | 916 |
+| mafiares | 745 | 743 |
+| partres | 279 | 278 |
+| polres | 1682 | 1681 |
+| prankres | 247 | 248 |
+
+The batch around it stays green: `coverage.py` reports the same two contentless
+entries (`ScenarioMiniPaywall` x2), `portgap.py` reports
+`ENTRIES 109 rendered-by-port 107 gap 0`, `rescensus.py` reports
+`distinct residue tokens 0 total 0`, and all sixty-seven probes exit zero with
+zero failures.
+

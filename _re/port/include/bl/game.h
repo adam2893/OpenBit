@@ -571,6 +571,13 @@ struct Hero {
   int loverRetirementAge = 0;  // the career row's Retirement Age
   long long loverSalary = 0;   // drawn between Minimum Salary and Maximum Salary
   int celebDates = 0;          // how many times the app has paired the hero
+  // The breakup announcement (REPORT.en.md 125). LoverBreakUp is built with the
+  // partner who has just walked, so the card is a report and the three strings it
+  // needs are carried until the port offers it at the head of the next age-up.
+  bool breakUpPending = false;
+  std::string breakUpWord;     // RelationshipStatusString lowered: girlfriend / wife / ...
+  std::string breakUpName;     // the body's {1}, the partner's first name
+  std::string breakUpFull;     // the narrative's {0}, the partner's FullName
   // The movie theater (REPORT.en.md 96). The game caches four movies on the
   // hero's own SimPlace -- AvailableMovie, AvailableChildrensMovie,
   // AvailableComedyMovie, AvailableDocumentaryMovie -- and RefreshAvailableMovies()
