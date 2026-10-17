@@ -1329,6 +1329,8 @@ bool Sim::load(std::string* error) {
       "a16_termination-scenarios-enc",
       // A relative refuses a money request; the row flags which kin (202).
       "a16_money-request-rejections-enc",
+      // The hero trolls back; the text's '<insult>' is the §138 pool (203).
+      "a16_social-media-troll-outbounds-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3903,6 +3905,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (boostYear(life, out, forcedChoice)) return true;
   if (jobTerminationYear(life, out, forcedChoice)) return true;
   if (moneyRequestRejectionYear(life, out, forcedChoice)) return true;
+  if (trollOutboundYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

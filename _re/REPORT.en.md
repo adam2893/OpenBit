@@ -23331,6 +23331,51 @@ named, and `" said he "` never follows a female relation. Bench **0 lines**.
 28 card-shaped tables:  9 ported
   blocked: surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
   left to check: the rest
+
+## 203. The triage: which token blocks the most tables
+
+Nineteen tables were left and all looked "actor-blocked". Counting the **entity tokens**
+across them says which actor actually matters:
+
+```
+<insult>                5 tables   arrest, child-pressure, notification-bait, troll-outbounds
+<circumstance-public>   4 tables   alcohol, drug, pray-asset, pray-wealth
+<lover>                 4 tables   alcohol, notification-bait, spouse-house, spouse-vehicle
+<musician-indefinite>   2         <city> 2   <friend> 2   <aircraft> 1
+```
+
+And `<insult>` is **already resolved** — §138's pool is wired into the shared resolver at
+`sim.cpp:2558`. So the biggest blocked group was never blocked.
+
+### 203.1 Ported: trolling back
+
+```
+a16_social-media-troll-outbounds-enc
+You posted a mortifying photo of Bruno Shirin on h...
+```
+
+`<insult>` fills from the pool; two kinds of row are skipped rather than rendered with a
+hole — `Twitch Only` (needs a streaming career) and rows naming `<channel>` (needs the
+platform the hero posts to, which this card does not carry).
+
+```
+cards: 8      tokens left: 0      bench 0 lines
+```
+
+### 203.2 The corrected blocker list
+
+```
+<insult>       resolved already                  -> 4 more tables reachable
+<lover>        the port has lover state           -> likely 4 more, needs a token
+<circumstance-public>   a public setting the port has no model for  -> blocked
+<musician-indefinite>   a career the port lacks   -> blocked
+<city> <friend> <aircraft>  partial or blocked
+```
+
+So the honest count is not "19 blocked" but **"8 blocked on a token the port could add,
+11 blocked on an actor"** — and the next round can take the cheapest of the first group
+(`<lover>`) to see whether it unlocks four at once.
+
 ```
 
 ```

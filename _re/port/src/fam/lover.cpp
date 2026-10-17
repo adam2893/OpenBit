@@ -1074,4 +1074,36 @@ bool Sim::moneyRequestRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
   pronounOtherFemale_ = savedFemale;
   return true;
 }
+// a16_social-media-troll-outbounds-enc (REPORT.en.md 203): the hero trolls back.
+//
+// Scenario, Log Version, Is BitLifeApp, Twitch Exempt, Twitch Only. The text carries
+// '<insult>', which the shared resolver already answers out of the insult pool
+// (REPORT.en.md 138), so the card is a filtered report.
+bool Sim::trollOutboundYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_social-media-troll-outbounds-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(26) != 0) return false;
+  if (h.age < 13) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_social-media-troll-outbounds-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    // 'Twitch Only' rows need a streaming career the port does not model, and a row whose
+    // text names a '<channel>' needs the platform the hero posts to, which this card does
+    // not carry (REPORT.en.md 203).
+    if (t.flag(r, "Twitch Only")) continue;
+    if (t.at(r, "Scenario").find("<channel>") != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_social-media-troll-outbounds-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Log Version"))));
+  out.karma = pointsForImpact(-1);
+  return true;
+}
 }  // namespace bl
