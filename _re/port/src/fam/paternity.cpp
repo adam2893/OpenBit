@@ -32,10 +32,13 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
     if (!c.alive) continue;
     if (!c.otherParent.empty() && c.otherParent != ex->name) continue;
     if (c.paternityAsked > 0) continue;
-    // shortcut: the game's own gate was not read. A court-ordered paternity test is
-    // about a baby, so the port only offers it while the child is an infant; without
-    // this the card fires over a grown man, which is plainly wrong.
-    if (c.age > 2) continue;
+    // The real gate is ScenarioExLoverPaternityTest::ScenarioIsEligibleForRandomPush:
+    // the ex must live in the same place as the hero
+    // (SimPerson::LivesInSamePlaceAsHero @0x73f3ded080) and must have an eligible child
+    // (GetEligibleChildFromExLover, which also consults SimLover::StepchildArray). The
+    // port has no place for an ex, so it stands in with the one thing it can know: a
+    // child whose father is not recorded as the hero is the child a test is asked over.
+    if (c.isHeroes) continue;
     kid = &c;
     break;
   }

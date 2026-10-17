@@ -21481,5 +21481,57 @@ a random life to end inside one.
 
 Bench 0 lines; `test_lover_elope` and `test_birth` green.
 
+## 162. Auditing the report's own open questions
+
+Two of the last four rounds ended by discovering that a recorded finding was a
+measurement error (§154's title count, §160.3's status "overwrite"). That base rate is
+high enough to walk the rest, so every note the report carries as *not read* or *open*
+was checked against the code.
+
+| note | claim | verdict |
+|---|---|---|
+| §154.2 | `giftYear` never fires | **wrong**, corrected in §155 — it fires 34 times in 40 lives; only the property-gift refusal pool is unreachable |
+| §160.3 | a card overwrites `married` with `engaged` | **wrong**, corrected in §161 — the wedding was unaffordable |
+| §147.2 | five of six court-order placeholders known, `{3}`/`{5}` unknown | **resolved** in §149 by reading the argument array |
+| §149.4 | the court order's own gate is inferred | **partly resolved** this round, see below |
+| §143.1 | the birth-control lane mapping is not readable | **resolved** in §144 (label dispatch) |
+
+### 162.1 The gate that could be read after all
+
+§149 wrote: *the card's own gate is inferred from the fields; the infancy limit is the
+port's.* Both halves were placeholders, and the real gate exists — a different class,
+which the symbol table had all along:
+
+```
+ScenarioExLoverPaternityTest::ScenarioIsEligibleForRandomPush
+  SimHero::CurrentlyInPrison                       -- not while locked up
+  ScenarioExLoverPaternityTest::GetEligibleExLover  -- SimPast::ExLoverArray,
+      SimPerson::LivesInSamePlaceAsHero @0x73f3ded080, then a child
+  ScenarioExLoverPaternityTest::GetEligibleChildFromExLover
+      -- also consults SimLover::StepchildArray
+  Life::PresentedCountForScenario                  -- the presented cap
+```
+
+The infancy limit is gone. The port keeps the one condition it can actually know: a
+child whose father is **not** recorded as the hero is the child a test is asked over.
+That is a stand-in for `LivesInSamePlaceAsHero`, which the port cannot express — an ex
+in this port has a name, a gender and a year, and no place.
+
+### 162.2 Verification
+
+`tools/test_paternity_court_order.py` after the change:
+
+```
+cards: 4
+lanes: {'Take the test': 1, 'Refuse to take the test': 3}
+results: {'positive': 0, 'negative': 1} chained after the court order: 1
+ok
+```
+
+Twice the cards, because a grown child now qualifies. The remaining notes in the report
+(`KeepItClean` at 0x73f32aba1c, the retirement condition) are still genuinely unread and
+are recorded as such rather than as facts.
+
+
 
 
