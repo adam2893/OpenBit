@@ -21198,6 +21198,51 @@ Counting by **title** is how §154 measured, and titles in this port are content
 `title` is what the player reads. Every future "does card X fire" question should
 count `table`.
 
+## 156. A census of the tables a life actually touches
+
+§155 ended with a question: how many other "ported" cards never fire? The check is
+mechanical — count the `table` of every event across a batch of lives and diff it
+against the `a16_*` names the sources mention.
+
+`tools/tablecensus.py`:
+
+```
+python3 tools/tablecensus.py --seeds 20 --ages 70 --only a16_prison \
+  --switches '{"prison": true}'
+
+lives: 40
+tables referenced in src/: 11
+tables a life touched: 8
+referenced but never touched: 3
+  a16_prison-bully-outbound
+  a16_prison-jobs-enc
+  a16_prisoner-juvenile-crimes-enc
+```
+
+### 156.1 The two numbers that made it honest
+
+The first version diffed the **whole** source against 60 lives and reported **799 of
+857** tables untouched — which is true and useless, because the reference set includes
+tables named only by a *token* (`resolve()` handles dozens of names it may never see),
+and because a single life cannot enable thirty families at once. A whole-source census
+measures the batch, not the port.
+
+`--only PREFIX` is the fix: one family at a time, with only that family's switches on.
+Then the number means something — 11 referenced, 8 touched, 3 questions.
+
+### 156.2 What the three prison tables are
+
+* `a16_prisoner-juvenile-crimes-enc` — the crime list a juvenile prisoner is drawn
+  from; the port's prison cards may never reach a juvenile.
+* `a16_prison-jobs-enc` — prison work assignments; if the port has no prison job
+  lane, this is a card that was written and never wired.
+* `a16_prison-bully-outbound` — the *outbound* half of a bully exchange, which needs
+  an inbound bully card to answer.
+
+Each is either an unreachable gate or a two-stage card whose first half never fires —
+exactly the shape §154 mis-diagnosed. That is the next question worth a round, and it
+now has a tool that asks it per family.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 
