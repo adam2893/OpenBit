@@ -19704,3 +19704,29 @@ python3 /tmp/qdir/modres.py               model events 123, residue 0, failures 
 Remaining, in the same order: `tradeYear`, `casinoYear`, `outdoorYear`,
 `vampireYear`, `cultYear`, `spyYear`, `sportsSeason`.
 
+### 131.4 trade, and the one thing the tool cannot do
+
+`tools/split_family.py trade` moved 749 lines in five functions. The build then
+named seven helpers, and one of them exposed the split's only real trap:
+
+* six were `static` at file scope — `nameTakesSubject`, `heroToFirstPerson`,
+  `musicGenreColumn`, `musicGenreFits`, `musicSideFits`, `spySentence`,
+  `spyLowerFirst`. Dropping `static` is the whole fix, plus the declaration.
+* `spySentence` and `spyLowerFirst` sat **inside** the file-local
+  `namespace { }` opened near the top of `sim.cpp`. Dropping `static` there
+  changes nothing: an anonymous namespace has internal linkage whatever the
+  storage class says. They had to be cut out and re-inserted after the namespace
+  closes.
+
+That is the rule worth remembering for the rest of the split: `static` is a
+keyword you can delete, an anonymous namespace is a scope you have to leave.
+
+```
+bash tools/bench.sh /tmp/trace_c10.json   diff vs §125: 0 lines
+python3 /tmp/qdir/traderes.py             music events 1231, residue 0, failures 0
+```
+
+1231 is the pre-move count. Split so far: **racing 1,005 + model 761 + trade 749
+= 2,515 lines** in three files, `sim.cpp` down to 26,364, bench and probes
+unchanged after every move.
+

@@ -43,4 +43,15 @@ bool llInList(const std::string& list, const std::string& value);
 std::string articleFor(const std::string& word);
 std::string withArticle(const std::string& text, bool wantsArticle);
 
+// Sentence and case hygiene for a resolved cell: one capital, one full stop.
+std::string spySentence(std::string text);
+std::string spyLowerFirst(std::string text);
+std::string heroToFirstPerson(const std::string& s);
+std::string nameTakesSubject(std::string row, const std::string& name);
+
+// A row's genre columns, as the music and trade families both read them.
+std::string musicGenreColumn(const std::string& genre);
+bool musicGenreFits(const std::string& cell, const std::string& genre);
+bool musicSideFits(const Table& t, size_t r, bool solo);
+
 }  // namespace bl
