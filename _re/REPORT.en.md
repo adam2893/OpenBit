@@ -21626,6 +21626,52 @@ non-zero exit, and **both pass when run on their own** (`ctyres.py`, `fsstres.py
 `fails0 68` and a re-run of the two are. That is written down because a red number in a
 summary is exactly the kind of thing this session has twice mistaken for a finding.
 
+## 165. The relationship lifecycle, checked across cards
+
+Eleven cards now write `loverName`, `loverStatus`, `relationship`, `exLovers` or
+`breakUpPending`. Each has its own test and none of them looks at a whole life, which is
+where those writes meet. `tools/test_relationship_lifecycle.py` states the invariants
+instead:
+
+```
+status is one of dating / engaged / married, or empty
+a status implies a name, and a name implies a status
+0 <= relationship <= 100, and a married hero has a positive one
+every ex-lover has a name, a known status, and a year that is not in the future
+```
+
+### 165.1 The trajectory, not just the invariant
+
+Invariants survive a card that never fires, so the test also walks a whole arc:
+
+```
+full arcs: 9
+```
+
+Nine lives out of 120 ran engagement → wedding → divorce proposal, and each one asserts
+the order (`wedding age <= divorce age`) and that the marriage that ended is on record
+as a **married** ex-lover, not as a dating one.
+
+### 165.2 A mistake the trajectory caught immediately
+
+The first version counted *every* divorce proposal as an exit and then demanded a
+married ex. Seed 2 failed because the hero **begged and stayed** — the proposal is not
+the outcome. The trajectory now only counts a proposal whose lane was `Wish … well`,
+which is the lane that actually leaves.
+
+### 165.3 Verification
+
+```
+lives: 120 weddings: 87 divorce proposals: 22
+ok
+full arcs: 9
+all invariants hold
+```
+
+Two fixtures per seed — a plain life and one that starts engaged with cash — so both the
+free-running and the scripted routes are covered.
+
+
 
 
 
