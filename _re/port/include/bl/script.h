@@ -106,6 +106,9 @@ struct ScriptSpec {
   // through the baby scenarios; the port needs the array to exist for the cards
   // that read it, and a fixture is the honest way to reach it.
   int children = 0;
+  // An ex-lover at the start of the life (REPORT.en.md 149). The court-order card
+  // needs one, and a break-up inside two years of a birth is too rare to test on.
+  bool ex = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

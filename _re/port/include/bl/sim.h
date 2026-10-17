@@ -97,6 +97,10 @@ struct Child {
   std::string otherParent; // the partner who is not the hero, when there is one
   bool withCurrentLover = false;  // SimChild.IsChildWithCurrentLover
   int paternityAsked = 0;  // SimChild.NumTimesHeroAskedToTakePaternityTest
+  // The hero's age when this child was born. A child cannot be older than the parent,
+  // and the fixture creates them at birth, so the array needs to know when each one
+  // starts (REPORT.en.md 149).
+  int bornAtHeroAge = 0;
 };
 
 struct Life {
@@ -195,6 +199,8 @@ class Sim {
   bool loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The mirror card, REPORT.en.md 144.
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
+  // The court-ordered paternity test, REPORT.en.md 149.
+  bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);

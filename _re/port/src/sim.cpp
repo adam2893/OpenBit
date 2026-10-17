@@ -3187,7 +3187,7 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
   // for them yet: the child-family cards and their birth lines are the next step,
   // and inventing a line now would be text the game does not have.
   for (Child& child : life.children) {
-    if (child.alive) ++child.age;
+    if (child.alive && life.hero.age >= child.bornAtHeroAge) ++child.age;
     if (child.age >= 18 && !child.movedOut && sibRng_.chance(0.05)) child.movedOut = true;
   }
   std::vector<Person> newborns;
@@ -3847,6 +3847,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (paparazziYear(life, out, forcedChoice)) return true;
   if (loverBirthControlYear(life, out, forcedChoice)) return true;
   if (loverStopsBirthControlYear(life, out, forcedChoice)) return true;
+  if (paternityCourtOrderYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

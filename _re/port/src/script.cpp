@@ -230,7 +230,8 @@ std::string childrenJson(const Life& life) {
       << ", \"movedOut\": " << (c.movedOut ? "true" : "false")
       << ", \"otherParent\": " << jsonOrNull(c.otherParent)
       << ", \"withCurrentLover\": " << (c.withCurrentLover ? "true" : "false")
-      << ", \"paternityAsked\": " << c.paternityAsked << "}";
+      << ", \"paternityAsked\": " << c.paternityAsked
+      << ", \"bornAtHeroAge\": " << c.bornAtHeroAge << "}";
   }
   o << (life.children.empty() ? "]" : "\n    ]");
   return o.str();
@@ -648,6 +649,12 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.date)) return fail("date is not a string");
   }
 
+  p = findValue(json, "ex");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    if (json.compare(p, 4, "true") == 0) spec.ex = true;
+    else if (json.compare(p, 5, "false") != 0) return fail("ex is not a boolean");
+  }
   p = findValue(json, "children");
   if (p != std::string::npos) {
     while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
@@ -830,6 +837,16 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.birthControl) life.hero.onBirthControl = true;
   // The children fixture (REPORT.en.md 146): the array exists before any card that
   // reads it. Each one is a person of the hero's own surname, born before the run.
+  if (spec.ex) {
+    bl::Hero::ExLover ended;
+    ended.name = "Robin Averill";
+    ended.female = true;
+    ended.age = life.hero.age + 2;
+    ended.status = "dating";
+    ended.relationship = 12;
+    ended.year = life.hero.age;
+    life.hero.exLovers.push_back(ended);
+  }
   for (int c = 0; c < spec.children; ++c) {
     bl::Child child;
     child.female = (c % 2) == 1;
@@ -838,7 +855,11 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     // no card.
     child.name = sim.firstNameFor(child.female);
     child.lastName = life.hero.lastName;
-    child.age = 1 + c;
+    // Born before the run, and young: a child older than the hero would be absurd,
+    // and the court-order card prints its age in the body.
+    child.age = 0;
+    child.bornAtHeroAge = 20 + 4 * c;  // staggered, so a life has children of two ages
+    if (spec.ex) child.otherParent = "Robin Averill";  // the seeded ex is the parent
     life.children.push_back(child);
   }
   *heroAtBirth = heroJson(life.hero);

@@ -20820,6 +20820,71 @@ Two ways out, in order of cheapness:
 Option 1 is one harness session; option 2 is another hour of disassembly for the
 same answer. The round records the choice rather than spending it.
 
+## 149. The court-order card, and the six arguments it took
+
+§148 left one placeholder open. Reading the argument array settled all six, and the
+body turns out to name the child twice — once by age-and-relation, once by name:
+
+```
+args[0] [x21+0x20]  ExRelationshipStatusString(6).ToLower()   'ex-girlfriend'
+args[1] [x21+0x28]  [ex+0x10]+0x18                            the ex's first name
+args[2] [x21+0x30]  PronounStringForType(5) on the ex          she / he
+args[3] [x21+0x38]  PronounStringForType(1) on the ex          her / his
+args[4] [x21+0x40]  Format('{0}-year old {1}', age, son/daughter)
+args[5] [x21+0x48]  [child+0x10]+0x18                         the child's first name
+```
+
+so the card reads *"Your ex-girlfriend, Robin Averill, has obtained a court order
+requiring you to take a paternity test. She believes you are the father of her
+0-year old son, Kye."* — and the lane rule is `Contains("refuse")`, proved in §147.
+
+### 149.1 Two fixture bugs the card exposed
+
+1. **Children were older than the hero.** The fixture created them at age `1 + c` and
+   aged them with him, so a hero of 83 had a "72-year old son". `Child` now carries
+   `bornAtHeroAge` (§146's array gained one field) and a child only ages once the
+   hero passes it: born at 20, four-year staggered, so a life has children of
+   different ages.
+2. **A paternity test over a grown man.** Once the ages were right the card still
+   fired over a 64-year-old. The game's own gate was not read, so the port now
+   refuses to offer it once the child is past infancy — written at the code as a
+   shortcut, not disguised as knowledge.
+
+### 149.2 Reaching it on purpose
+
+A court order needs an ex **and** a small child, and a break-up inside two years of
+a birth is too rare to test against. The script gained `"ex": true`, which seeds one
+named ex-lover and makes the fixture children hers — the same kind of fixture as
+`fame`, `birthControl` and `children`.
+
+### 149.3 Verification
+
+`tools/test_paternity_court_order.py`, 30 lives:
+
+```
+cards: 2
+lanes: {'Take the test': 1, 'Refuse to take the test': 1}
+ok
+```
+
+The body is matched against the full six-placeholder pattern (ex word, ex name,
+pronoun, possessive, child age, son/daughter, child name), the pronoun and possessive
+must agree, the journal must open with the ex named the same way, and the lanes move
+what the handler moves: **karma −8, discipline −8** on refuse, nothing on take. The
+counter `paternityAsked` is what stops the card repeating.
+
+### 149.4 What is still a shortcut
+
+* `Take the test` pushes the results card in the game; the port only moves the
+  counter.
+* `Refuse to take the test` pushes a crime scenario for crime type **38**; the port
+  only moves the stats.
+* The card's own gate (`_exLover` + `_child` + not-yet-asked) is inferred from the
+  fields; the infancy limit is the port's.
+
+Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
+fixture change.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This

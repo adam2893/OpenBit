@@ -39,7 +39,14 @@ for seed in range(1, 6):
     assert len(kids) == 2, (seed, kids)
     grew = doc["final"]["age"]
     for i, kid in enumerate(kids):
-        assert kid["age"] >= grew, (seed, kid, grew)   # born before the run, so older
+        # A child is born during the life, not before it (REPORT.en.md 149): its age is
+        # counted from its own bornAtHeroAge, so it is never older than the hero.
+        assert kid["age"] <= grew, (seed, kid, grew)
+        # Before its birth age the child is simply not born yet (age 0).
+        if grew < kid["bornAtHeroAge"]:
+            assert kid["age"] == 0, (seed, kid, grew)
+        else:
+            assert kid["age"] <= grew - kid["bornAtHeroAge"] + 1, (seed, kid, grew)
         assert kid["female"] is (i % 2 == 1), (seed, kid)
         assert kid["alive"] is True, (seed, kid)
         # SimChild.MovedOut: only an adult can have left home.
