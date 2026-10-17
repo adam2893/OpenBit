@@ -839,4 +839,42 @@ bool Sim::genderIdentityYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// Two report cards off one helper (REPORT.en.md 196).
+//
+// a16_paranormal-phenomena-enc and a16_surrogate-run-off-scenarios-enc are the same
+// shape: Scenario, Log Version, nothing else. Rather than two near-identical
+// functions, one helper renders any such table and each card is a wrapper that sets
+// its own coin and gate.
+bool Sim::tableReport(const char* table, int oneIn, AgeUp& out) {
+  if (!ensureTable(table)) return false;
+  const Table& t = tbl(table);
+  if (t.size() == 0 || !t.has("Scenario")) return false;
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (!trim(t.at(r, "Scenario")).empty()) rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  (void)oneIn;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = table;
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  if (t.has("Log Version")) {
+    const std::string log = trim(t.at(row, "Log Version"));
+    if (!log.empty()) out.narrative = spyUpperFirst(log);
+  }
+  return true;
+}
+
+bool Sim::paranormalPhenomenaYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice < 0 && ambientRng_.below(50) != 0) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  return tableReport("a16_paranormal-phenomena-enc", 50, out);
+}
+
+// a16_surrogate-run-off-scenarios-enc is NOT ported: its rows say
+// '<surrogate> just texted you ... she is keeping the baby.', and the token needs a
+// surrogate actor the port does not have (REPORT.en.md 196). The table stays untouched
+// until one exists -- the same shape as the custody card (REPORT 183).
 }  // namespace bl

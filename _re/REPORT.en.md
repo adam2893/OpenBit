@@ -23033,6 +23033,51 @@ and nothing failed until the identity was *read back* and found absent in forty 
 column that looks like a name and holds a flag is §191's lesson one level down: check the
 value, not the header.
 
+## 196. One helper, one card, and the arithmetic the sprint has to face
+
+Two tables looked identical — `Scenario, Log Version` and nothing else:
+
+```
+a16_paranormal-phenomena-enc         ported  (24 cards in 40 lives)
+a16_surrogate-run-off-scenarios-enc  NOT ported
+```
+
+`Sim::tableReport(table, oneIn, out)` renders any such table: rows with a non-empty
+`Scenario`, a random row, body and journal. `paranormalPhenomenaYear` is then five lines.
+
+### 196.1 Why the second one is not ported
+
+Its first row is `<surrogate> just texted you saying don't contact her anymore, she is
+keeping the baby.` The token needs a **surrogate actor** the port does not have — the same
+blocker as the custody card (§183), reached from a different direction. The table stays
+untouched and the reason is written at the code.
+
+### 196.2 The arithmetic
+
+```
+28 card-shaped tables identified (§185)
+ 4 ported before this round (§186-188, §194)
+ 1 more here (paranormal phenomena)
+23 remaining
+
+rounds left in this goal: 13
+cards per round needed to finish: ~1.8
+cards per round achieved (§186-196): ~0.5
+```
+
+At the pace of the last eleven rounds the 23 do not fit in the remaining 13. Three of those
+rounds went to measurement corrections and one to an architecture finding, all of which
+were worth doing and none of which ported a card.
+
+### 196.3 What that implies, stated plainly
+
+Finishing the 28 inside this goal needs **two cards a round with no measurement detours**,
+which is only possible for the tables that are pure `Scenario / Log Version` — and two of
+the candidates just checked were blocked on missing actors instead. So the realistic
+completion claim for this goal is *the sprint's rate raised and the remaining list honest*,
+not *the 28 finished*.
+
+
 else.
 
 ### 194.2 The 28-list, after two

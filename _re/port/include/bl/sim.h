@@ -222,6 +222,10 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // A shared renderer for the plain "Scenario, Log Version" tables (REPORT 196).
+  bool tableReport(const char* table, int oneIn, AgeUp& out);
+  // Two cards that are nothing but such a table, REPORT.en.md 196.
+  bool paranormalPhenomenaYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero's sense of self, REPORT.en.md 194.
   bool genderIdentityYear(Life& life, AgeUp& out, int forcedChoice);
   // The ambient year: one coin for the three ambient tables, REPORT.en.md 190.
