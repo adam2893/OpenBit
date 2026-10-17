@@ -1106,4 +1106,70 @@ bool Sim::trollOutboundYear(Life& life, AgeUp& out, int forcedChoice) {
   out.karma = pointsForImpact(-1);
   return true;
 }
+// ScenarioAlcohol (REPORT.en.md 204): a drink is offered.
+//
+// a16_alcohol-scenarios-enc: Condition, Scenario, CTA, Yes Choice, No Choice. The
+// Condition picks who is offering -- a job, a club, a lover, or nobody in particular --
+// and '<singular>' is answered out of a16_alcohol-enc's own Singular column, which is
+// the table that exists for exactly that token.
+bool Sim::alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_alcohol-scenarios-enc") || !ensureTable("a16_alcohol-enc")) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && ambientRng_.below(18) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_alcohol-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string cond = trim(t.at(r, "Condition"));
+    if (cond == "Job" && h.job.empty()) continue;
+    if (cond == "Lover" && h.loverName.empty()) continue;
+    if (cond == "Club" && h.loverName.empty() && h.job.empty()) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const Table& a = tbl("a16_alcohol-enc");
+  if (a.size() == 0) return false;
+  const size_t drink = ambientRng_.below(uint32_t(a.size()));
+  const std::string singular = trim(a.at(drink, "Singular"));
+  const std::string plural = trim(a.at(drink, "Plural"));
+  const std::string indefinite = trim(a.at(drink, "Indefinite"));
+  // The three forms the drink table carries, each answered from its own column
+  // (REPORT.en.md 204): '<singular>' the glass, '<plural>' the bottles, '<indefinite>'
+  // the bare name for a sentence that already supplies its own article.
+  auto fill = [&](std::string s) {
+    const std::pair<const char*, std::string> forms[] = {
+        {"<singular>", singular.empty() ? std::string("a drink") : singular},
+        {"<plural>", plural.empty() ? std::string("drinks") : plural},
+        {"<indefinite>", indefinite.empty() ? std::string("a drink") : indefinite},
+    };
+    for (const auto& form : forms) {
+      const size_t len = std::strlen(form.first);
+      for (size_t at = s.find(form.first); at != std::string::npos;
+           at = s.find(form.first, at)) {
+        s.replace(at, len, form.second);
+        at += form.second.size();
+      }
+    }
+    return s;
+  };
+  out.table = "a16_alcohol-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(fill(trim(t.at(row, "Scenario")))));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = spyUpperFirst(resolve(fill(trim(t.at(row, "Yes Choice")))));
+    out.narrative = "I went for " + (singular.empty() ? std::string("a drink") : singular) + ".";
+    out.health -= 2;
+    out.happiness += 2;
+  } else {
+    out.choice = spyUpperFirst(resolve(fill(trim(t.at(row, "No Choice")))));
+    out.narrative = "I turned " + singular + " down.";
+    out.discipline = pointsForImpact(1);
+  }
+  return true;
+}
 }  // namespace bl

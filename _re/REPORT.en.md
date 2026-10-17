@@ -23376,6 +23376,43 @@ So the honest count is not "19 blocked" but **"8 blocked on a token the port cou
 11 blocked on an actor"** — and the next round can take the cheapest of the first group
 (`<lover>`) to see whether it unlocks four at once.
 
+## 204. A drink is offered: three token forms, three columns
+
+```
+a16_alcohol-scenarios-enc   Condition, Scenario, CTA, Yes Choice, No Choice
+a16_alcohol-enc             Name, Emoji, Indefinite, Singular, Plural, Club, Bar
+```
+
+The condition picks who is offering (`Job`, `Club`, `Lover`, `None`) and the card states
+the scene; the drink table answers **three different token spellings** in the same table:
+`<singular>` ("a glass of gin"), `<plural>` ("gin"), `<indefinite>` ("gin").
+
+```
+One day after work, your co-workers invite you out for a glass of gin.
+  [For sure]  [Nah, not with them]
+```
+
+### 204.1 The first version answered one of the three
+
+It filled `<singular>` and left `<plural>` and `<indefinite>` in the text — four of five
+cards rendered with a hole. The test's assertion is exactly `"<" not in body`, which is
+what caught it: the card *looked* right in the two cases that happened to draw the singular
+form.
+
+```
+cards: 5      leftovers: 0      bench 0 lines
+```
+
+### 204.2 The token triage, updated
+
+```
+<insult>   resolved (§138)        troll-outbounds ported (§203)
+<lover>    resolved (relIsToken)  alcohol ported here; the spouse-* pair still needs a house
+<circumstance-public>            blocked (no public-setting model)
+<musician-indefinite>            blocked (no music career in this card's path)
+```
+
+
 ```
 
 ```
