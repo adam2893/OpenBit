@@ -22,6 +22,7 @@ add_library(blport STATIC
   src/fam/model.cpp
   src/fam/trade.cpp
   src/fam/casino.cpp
+  src/fam/outdoor.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 
