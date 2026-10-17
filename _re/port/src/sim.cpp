@@ -1323,6 +1323,8 @@ bool Sim::load(std::string* error) {
       "a16_paranormal-phenomena-enc",
       // The adoption beat: Scenario, Log Version, adoptee gender and age (197).
       "a16_adoption-scenarios-enc",
+      // A chance to improve one attribute: 125 rows carrying body and buttons (198).
+      "a16_boosts-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3894,6 +3896,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (genderIdentityYear(life, out, forcedChoice)) return true;
   if (paranormalPhenomenaYear(life, out, forcedChoice)) return true;
   if (adoptionScenarioYear(life, out, forcedChoice)) return true;
+  if (boostYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

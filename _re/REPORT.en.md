@@ -23123,6 +23123,49 @@ So the sprint's arithmetic is better than §196 said by three or four cards, and
 remaining work splits the same way §185 split it: a portable group that goes fast, and an
 actor-blocked group that does not.
 
+## 198. The boost card: 125 rows that carry their own buttons
+
+```
+a16_boosts-enc, 125 rows
+  Attribute, Scenario, Conclusion, Accept Choice, Reject Choice,
+  Accept Feedback, Log Version, Gender, Min Age, Max Age
+```
+
+This is the richest table ported this sprint: the row carries the **body, both buttons,
+the accept feedback and the journal**, and `Attribute` names the stat the accept lane
+moves.
+
+```
+There is a warehouse rave being held downtown. You are feeling a strong urge to go to it.
+  [Go to it]  [Skip it]
+```
+
+`shortcut:` the **size** of the boost is not in the table. The port moves the attribute by
+`pointsForImpact(+1)` = 4 — the smallest step in its own scale — and says so at the code.
+
+### 198.1 Verification
+
+`tools/test_boosts.py`:
+
+```
+cards: 43
+ok
+```
+
+43 cards across 30 lives, every button capitalised, and the stat assertion is the
+interesting one: **when a card moves something, it moves exactly one attribute by exactly
+4** — which is what catches a lane that fires the wrong stat or double-applies.
+
+Bench **0 lines**; the card draws from `ambientRng_`.
+
+### 198.2 Why this one matters more than its section count
+
+Six of the sprint's cards are reports — they tell the hero something happened. This one
+**changes a stat and offers a choice**, and it is the first card ported from the 28 with
+both. If the remaining portable tables look like this one (buttons in the row), the sprint
+is porting behaviour, not narration.
+
+
 
 
 else.

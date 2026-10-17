@@ -222,6 +222,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // A chance to improve an attribute, REPORT.en.md 198.
+  bool boostYear(Life& life, AgeUp& out, int forcedChoice);
   // The adoption beat, REPORT.en.md 197.
   bool adoptionScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   // A shared renderer for the plain "Scenario, Log Version" tables (REPORT 196).

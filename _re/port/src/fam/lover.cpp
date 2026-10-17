@@ -909,4 +909,60 @@ bool Sim::adoptionScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!log.empty()) out.narrative = spyUpperFirst(log);
   return true;
 }
+// ScenarioBoost (REPORT.en.md 198): a chance to improve one attribute.
+//
+// a16_boosts-enc, 125 rows: Attribute, Scenario, Conclusion, Accept Choice, Reject
+// Choice, Accept Feedback, Log Version, Gender, Min/Max Age. The row carries the whole
+// card -- body, both buttons and both journals -- and the Attribute names the stat the
+// accept lane moves.
+//
+// shortcut: the size of the boost is not in the table. The port moves the attribute by
+// pointsForImpact(+1) = 4, the smallest step in its own scale, and says so here.
+bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_boosts-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(14) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_boosts-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    if (trim(t.at(r, "Accept Choice")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string attribute = trim(t.at(row, "Attribute"));
+  out.table = "a16_boosts-enc";
+  out.row_id = std::to_string(row + 1);
+  // The body is the scenario and its conclusion, which is how the table reads: the
+  // situation, then the urge it creates.
+  std::string body = trim(t.at(row, "Scenario"));
+  const std::string conclusion = trim(t.at(row, "Conclusion"));
+  if (!conclusion.empty()) body += body.empty() ? conclusion : " " + conclusion;
+  out.body = spyUpperFirst(body);
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = spyUpperFirst(trim(t.at(row, "Accept Choice")));
+    out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+    const int gain = pointsForImpact(1);
+    if (attribute == "Happiness") out.happiness += gain;
+    else if (attribute == "Health") out.health += gain;
+    else if (attribute == "Smarts") out.smarts += gain;
+    else if (attribute == "Looks") out.looks += gain;
+    const std::string feedback = trim(t.at(row, "Accept Feedback"));
+    if (!feedback.empty()) out.extra.push_back(spyUpperFirst(feedback));
+  } else {
+    out.choice = spyUpperFirst(trim(t.at(row, "Reject Choice")));
+    out.narrative = "I turned it down.";
+  }
+  return true;
+}
 }  // namespace bl
