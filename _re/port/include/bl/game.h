@@ -101,6 +101,9 @@ struct Hero {
   // the port keeps the two facts its own birth card needs.
   bool loverPregnant = false;
   bool loverPregnantByHero = false;
+  // The partner is owed an argue card (REPORT.en.md 153): set when the hero cheats
+  // and the partner finds out, drained by the next age-up.
+  bool loverArguesCheating = false;
   int ageWentOnBirthControl = 0;
   int ageWentOffBirthControl = 0;
   bool employed = false;

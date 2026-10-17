@@ -80,6 +80,7 @@ enum PendingCard {
   kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
   kPendingPaternityResults = 3,     // the court order's result, right after the test
+  kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
 };
 
 // The hero's own children (REPORT.en.md 146). The game keeps a SimChild array on the
@@ -205,6 +206,8 @@ class Sim {
   bool loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The mirror card, REPORT.en.md 144.
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
+  // The partner's argue report, REPORT.en.md 153.
+  bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
   // The counseling demand, REPORT.en.md 152.
   bool loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice);
   // The court-ordered paternity test, REPORT.en.md 149.

@@ -21052,6 +21052,62 @@ always about the relationship itself, which is what the body says anyway. The
 `GetRandomNumber(0,100)` roll the handler makes after the refusal is not modelled
 either.
 
+## 153. The partner argues: one reason out of ten
+
+`ScenarioLoverArgues` is the class both birth-control cards' third button opens, and
+§145 listed it as a blocker because it is **one class with ten constructors** and a
+Refresh that switches on which object it was built with (pet, jewel, disease,
+magazine, gift, child, celebrity, house, string pair, int reason).
+
+The int reason is the one the port can feed, and it is small:
+
+```
+73f3dac9ac  ldr  w8, [x19, #0x16c]     ; _reason
+73f3dac9b8  cmp  w8, #1
+73f3dac9c0  b.eq #0x73f3daca00
+73f3dac9e0  slot 0x5cc3fd8             ; '{0} is arguing with you because you cheated on {1}.'
+73f3daca28  slot 0x5c42d50             ; '{0} is arguing with you because you gave {1} {2}.'
+```
+
+Two flavours: cheating, or a bad gift. The port implements the first.
+
+### 153.1 A report, not a dialogue
+
+The card's buttons are not ported — the handler is as variant-rich as the Refresh —
+so it arrives as a **report**, the same shape as the break-up announcement (§125):
+
+```
+She is arguing with you because you cheated on your girlfriend, Adele Radkins.
+journal: She is arguing with me because I cheated on her.
+```
+
+and it rides the same age-up as the hookup that caused it, through §133's queue:
+`seduceYear`'s cheating branch pushes `kPendingLoverArgues` where it already applied
+the karma and discipline penalty.
+
+### 153.2 Verification
+
+`tools/test_lover_argues.py`, 40 lives:
+
+```
+argue reports: 1 same-age as the hookup: 1
+ok
+NaN
+
+Per report: the subject pronoun opens it, the partner's word is in it, it carries
+**no buttons**, and the journal is the first-person form. Per chain: it sits at the
+same age as the hookup in the event before it.
+
+Bench 0 lines; `test_play` and `test_lover_counseling` green.
+
+### 153.3 What is left of the class
+
+Nine constructors: pet, jewel, disease, magazine, gift, child, celebrity, house and
+the string pair. Each is a branch of the same Refresh and a branch of the same
+handler — the shape is now known, so they are content work rather than discovery.
+The gift flavour (`reason 0`) is the cheapest of them and needs a gift name the port
+already has tables for.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 

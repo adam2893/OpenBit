@@ -3604,6 +3604,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
+    if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
     return false;
   }
   ++life.year;
@@ -20531,6 +20532,12 @@ bool Sim::morningYear(Life& life, AgeUp& out, int forcedChoice) {
   if (prevLover) {
     out.karma = pointsForImpact(-4);
     out.discipline = pointsForImpact(-4);
+    // The partner left behind finds out: the argue card rides the same age-up
+    // (REPORT.en.md 153).
+    if (!h.loverArguesCheating) {
+      h.loverArguesCheating = true;
+      life.pendingCards.push_back(kPendingLoverArgues);
+    }
   }
   // GenerateLoverFromCoworker @0x73f3812d6c turns the boss into the hero's lover, so
   // the port keeps him as one: this is what makes the next hookup's cheating check

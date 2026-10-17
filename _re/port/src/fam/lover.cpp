@@ -145,4 +145,33 @@ bool Sim::loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioLoverArgues, reason 1 (REPORT.en.md 153): the partner is arguing because
+// the hero cheated. The class has ten constructors and a Refresh that switches on
+// which object it was built with; the int reason is the simplest of them and the
+// only one the port can feed yet:
+//
+//   reason 1  '{0} is arguing with you because you cheated on {1}.'   #70077
+//   reason 0  '{0} is arguing with you because you gave {1} {2}.'    #70089
+//
+// The card's buttons are not ported, so it arrives as a report -- the same shape as
+// the break-up announcement (REPORT.en.md 125).
+bool Sim::loverArguesYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.loverName.empty()) return false;
+  if (!h.loverArguesCheating) return false;
+  h.loverArguesCheating = false;
+  const std::string subj = h.loverFemale ? "She" : "He";
+  const std::string word = h.loverStatus == "married"
+                               ? (h.loverFemale ? "wife" : "husband")
+                               : (h.loverFemale ? "girlfriend" : "boyfriend");
+  out.table = "relationship";
+  out.row_id = "0";
+  out.body = subj + " is arguing with you because you cheated on your " + word +
+             ", " + h.loverName + ".";
+  out.narrative = subj + " is arguing with me because I cheated on " +
+                  (h.loverFemale ? "her" : "him") + ".";
+  return true;
+}
 }  // namespace bl
