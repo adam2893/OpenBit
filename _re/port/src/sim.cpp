@@ -3103,6 +3103,23 @@ bool isSibling(const Person& p) {
          p.relation.find("sister") != std::string::npos;
 }
 
+// The fame impact (REPORT.en.md 136). SimPerson::ImpactFame @0x73f30e4d88 is four
+// instructions of arithmetic after the call:
+//
+//   s8 = [this+0xb4]
+//   w0 = AttributeAdjustmentPointsForImpactScore(impact)   // the port's pointsForImpact
+//   s1 = s8 + (float)w0
+//   100.0f >= s1, else s1 = 100.0f        ; fcmp s1, #100.0 ; b.ge
+//   s1 > 0.0f,   else s1 = 0.0f           ; fcmp s1, #0.0   ; b.hi
+//   [this+0xb4] = s1
+//
+// Note the clamp is inclusive at the top (>= 100 becomes 100) and exclusive at the
+// bottom (<= 0 becomes 0), exactly as written.
+void Sim::impactFame(Hero& h, int impact) {
+  const float moved = h.fame + float(pointsForImpact(impact));
+  h.fame = moved >= 100.0f ? 100.0f : (moved > 0.0f ? moved : 0.0f);
+}
+
 std::vector<std::string> Sim::lifecycleLines(Life& life) {
   hero_ = &life.hero;
   life_ = &life;

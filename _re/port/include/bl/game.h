@@ -82,7 +82,12 @@ struct Hero {
   int looks = 100;
   int karma = 0;
   int discipline = 0;
-  int fame = 0;
+  // Fame is a float 0..100 at hero+0xb4 (REPORT.en.md 136):
+  // SimPerson::ImpactFame @0x73f30e4d88 adds
+  // AttributeAdjustmentPointsForImpactScore(impact) and clamps to [0, 100]. The
+  // Fame family's gates read it as a float -- ScenarioFamePaparazzi's is
+  // `fame >= 75.0f` -- so it is kept as one.
+  float fame = 0.0f;
   bool employed = false;
   std::string job;  // port-side only: drives which scenario pools apply
   // Prison state. The real game reaches it through the interactive Crime menu

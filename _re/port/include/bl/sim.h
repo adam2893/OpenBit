@@ -157,6 +157,12 @@ class Sim {
   // false when no real row matched. forcedChoice >= 0 takes that 0-based index
   // out of the choices the drawn scenario row fills in instead of letting the
   // RNG pick one; out of range falls back to the RNG. -1 is the plain age-up.
+  // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
+  // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
+  void impactFame(Hero& h, int impact);
+  // The Fame family's own gate, read off ScenarioFamePaparazzi's eligibility:
+  // fame >= 75.0f (0x42960000) or the developer's testing flag.
+  bool isFamous(const Hero& h) const { return h.fame >= 75.0f; }
   bool ageUp(Life& life, AgeUp& out, int forcedChoice = -1);
   // The year's own dispatch, without the counters, the family lines or the pending
   // queue: ageUp owns those and calls this (REPORT.en.md 135).

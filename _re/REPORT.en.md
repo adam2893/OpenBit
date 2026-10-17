@@ -20042,3 +20042,72 @@ a check that encodes yesterday's bug will call today's fix a failure. They were
 relaxed in the one dimension the fix changed and in no other — every count, range,
 gender and token assertion they make is untouched.
 
+## 136. Structural 4: fame is a float, and the gate is the game's
+
+The port carried `int fame`, written nowhere but the newborn draw, and read by one
+cult gate. The Fame family's gates read a **float at `hero+0xb4`**, and the trio
+that was blocked on it (`FamePaparazzi`, `FameBook`, `FameCommercial`) could not be
+wired to an integer that only ever held 0 or 30.
+
+### 136.1 The arithmetic, read out of `SimPerson::ImpactFame`
+
+`@0x73f30e4d88`, four instructions of arithmetic after one call:
+
+```
+s8 = [this+0xb4]
+w0 = AttributeAdjustmentPointsForImpactScore(impact)   ; the port's pointsForImpact
+s1 = s8 + (float)w0
+fcmp s1, #100.0 ; b.ge  -> s1 = 100.0f
+fcmp s1, #0.0   ; b.hi  -> s1 = 0.0f
+[this+0xb4] = s1
+```
+
+Two details worth keeping: the top clamp is **inclusive** (a value landing exactly
+on 100 stays 100) and the bottom clamp is **exclusive** (`<= 0` becomes 0), which is
+what `b.ge` / `b.hi` mean and what the port now writes.
+
+### 136.2 The gate
+
+`ScenarioFamePaparazzi.ScenarioIsEligibleForRandomPush` `@0x73f3bd81f8`:
+
+```
+73f3bd825c  ldr  s0, [x9, #0xb4]     ; the hero's fame
+73f3bd8260  mov  w9, #0x42960000     ; 75.0f
+73f3bd8268  fcmp s0, s1
+73f3bd826c  b.ge #0x73f3bd82a4       ; famous enough
+73f3bd828c  bl   #0x73f32abacc       ; GameReference::DevTestingFame
+```
+
+So: `fame >= 75.0f`, or the developer flag. `Sim::isFamous` is exactly that
+comparison, and the dev flag is not a thing a shipped build has.
+
+### 136.3 Verification
+
+The port already has the habit of a mode that asserts rather than prints
+(`--deckcheck`, `--bagscheck`, `--rngcheck`); `--famecheck` joins them:
+
+```
+$ ./build/blsim --famecheck
+  famecheck: SimPerson::ImpactFame arithmetic and the Fame gate
+    fame 0 impact 0 -> 0
+    fame 50 impact -6 -> 0          ; -100 lands exactly on the floor
+    fame 50 impact 6 -> 100         ; +100 lands exactly on the ceiling
+    fame 90 impact 6 -> 100         ; and holds above it
+    fame 99 impact 4 -> 100         ; +30 from 99 clamps
+    fame 10 impact -4 -> 0
+    fame 50 impact 2 -> 58
+    fame 50 impact -2 -> 42
+    isFamous 74.9 -> 0   75.0 -> 1
+  famecheck failures=0
+```
+
+Nine clamp cases and both sides of the gate, exit code 0. `bench` is unchanged and
+the card tests are unchanged, which is the point: `fame` moved from `int` to
+`float` without a single behavioural draw moving.
+
+### 136.4 What this unlocks
+
+`ScenarioFamePaparazzi`, `ScenarioFameBook` and `ScenarioFameCommercial` can now be
+gated with one predicate instead of a guess, and `Sim::impactFame` is the one place
+a card has to call to move fame — every later fame card uses it.
+

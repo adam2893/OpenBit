@@ -219,11 +219,50 @@ int runBagCheck(const std::string& reDir) {
 
 }  // namespace
 
+// --famecheck: the fame impact must reproduce SimPerson::ImpactFame's arithmetic
+// (REPORT.en.md 136). The cases are the clamp boundaries and the two extremes of
+// the impact mapping, asserted rather than printed.
+int runFameCheck(bl::Sim& sim) {
+  struct Case { float start; int impact; float want; };
+  const Case cases[] = {
+      {0.0f, 0, 0.0f},        // a zero impact moves nothing
+      {0.0f, -6, 0.0f},       // the floor swallows the largest negative
+      {50.0f, -6, 0.0f},      // -100 lands exactly on 0, which is still 0
+      {50.0f, 6, 100.0f},     // +100 lands exactly on 100
+      {90.0f, 6, 100.0f},     // and the top clamp holds above it
+      {99.0f, 4, 100.0f},     // +30 from 99 is over the ceiling
+      {10.0f, -4, 0.0f},      // -30 from 10 is under the floor
+      {50.0f, 2, 58.0f},      // +8 in the middle, no clamp
+      {50.0f, -2, 42.0f},     // -8 in the middle, no clamp
+  };
+  int failures = 0;
+  for (const Case& c : cases) {
+    bl::Hero h;
+    h.fame = c.start;
+    sim.impactFame(h, c.impact);
+    const bool ok = h.fame == c.want;
+    if (!ok) ++failures;
+    std::cout << "    fame " << c.start << " impact " << c.impact << " -> " << h.fame
+              << (ok ? "" : "  want ") << (ok ? "" : std::to_string(c.want).c_str()) << "\n";
+  }
+  // The Fame family's own gate, off ScenarioFamePaparazzi's eligibility.
+  bl::Hero h;
+  h.fame = 74.9f;
+  const bool under = sim.isFamous(h);
+  h.fame = 75.0f;
+  const bool at = sim.isFamous(h);
+  if (under) ++failures;
+  if (!at) ++failures;
+  std::cout << "    isFamous 74.9 -> " << under << "   75.0 -> " << at << "\n";
+  std::cout << "  famecheck failures=" << failures << "\n";
+  return failures ? 8 : 0;
+}
 int main(int argc, char** argv) {
   std::string reDir = "/Users/Adam/Documents/bitlife/_re";
   std::string scriptPath;
   bool deckCheck = false, templates = false, rngCheck = false, bagCheck = false;
   bool play = false;
+  bool fameCheck = false;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--script" && i + 1 < argc) scriptPath = argv[++i];
@@ -232,6 +271,7 @@ int main(int argc, char** argv) {
     else if (arg == "--rngcheck") rngCheck = true;
     else if (arg == "--bagcheck") bagCheck = true;
     else if (arg == "--play") play = true;
+    else if (arg == "--famecheck") fameCheck = true;
     else if (arg == "--data" && i + 1 < argc) reDir = argv[++i];
     else reDir = arg;  // the original blsim [RE_DIR] form
   }
@@ -258,6 +298,16 @@ int main(int argc, char** argv) {
   }
   if (!scriptPath.empty()) return bl::runScriptMode(reDir, scriptPath);
   if (deckCheck) return runDeckCheck();
+  if (fameCheck) {
+    bl::Sim sim(reDir, 0xB17C0DEULL);
+    std::string fameError;
+    if (!sim.load(&fameError)) {
+      std::cerr << "load failed: " << fameError << "\n";
+      return 1;
+    }
+    std::cout << "  famecheck: SimPerson::ImpactFame arithmetic and the Fame gate\n";
+    return runFameCheck(sim);
+  }
   if (templates) return runTemplates(reDir);
   if (rngCheck) return runRngCheck(reDir);
   if (bagCheck) return runBagCheck(reDir);
