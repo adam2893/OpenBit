@@ -1325,6 +1325,8 @@ bool Sim::load(std::string* error) {
       "a16_adoption-scenarios-enc",
       // A chance to improve one attribute: 125 rows carrying body and buttons (198).
       "a16_boosts-enc",
+      // The hero is let go: Condition, Scenario, Gender, Clean (199).
+      "a16_termination-scenarios-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender

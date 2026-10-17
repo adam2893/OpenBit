@@ -23165,6 +23165,48 @@ Six of the sprint's cards are reports — they tell the hero something happened.
 both. If the remaining portable tables look like this one (buttons in the row), the sprint
 is porting behaviour, not narration.
 
+## 199. The termination card: decoded, wired, silent, reverted
+
+`a16_termination-scenarios-enc` — 109 rows, `Condition, Scenario, Gender, Clean` — is the
+hero being let go. The rows are readable, the reasons are a column (`Age`, `Addiction`,
+`Disease`, `Overwork`, or blank), and the port can express the blank and `Age` cases.
+
+It was ported, wired and then **removed**: it never fired.
+
+```
+cards: 0  of 30 lives
+```
+
+### 199.1 What the round established, in order
+
+1. the gate looked wrong — `h.employed` is the **retirement** flag, and a retired hero
+   keeps a job string (`employed False, job 'Receptionist'`), so the first version
+   blocked itself; that was found and fixed;
+2. it still did not fire; the port's own table registry contains the name (line 1329),
+   the file is in `gamedata_plain`, and 60 of its rows pass the filter **when the CSV is
+   read in Python**;
+3. so the failure is between the port's CSV reader and this particular table — and that
+   was not found in the round's remaining time.
+
+### 199.2 Why it was reverted rather than left wired
+
+A card that is registered, dispatched and never renders is exactly what §154 and §183
+caught in other families. Leaving it in place would have made the next round's
+"does it fire?" question start from a false yes. The function, its declaration and the
+dispatch line are gone; the decode above is what survives.
+
+Bench back to **0 lines**, which is the check that the revert was complete.
+
+### 199.3 The one-line diagnostic for next time
+
+```
+./build/blsim --script <spec> --templates   # lists the tables it loaded
+```
+
+Comparing that list against the registry answers "did the table load" before any card
+work — and the registry entry existing is *not* the same as the table loading.
+
+
 
 
 
