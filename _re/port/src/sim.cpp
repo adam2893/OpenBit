@@ -4183,7 +4183,10 @@ bool Sim::ensureTable(const std::string& name) {
     Table t = Table::load(reDir_ + "/gamedata_plain/" + name);
     loaded_.push_back(name);
     tables_.emplace_back(name, std::move(t));
-  } catch (const std::exception&) {
+  } catch (const std::exception& e) {
+    // The reason used to be swallowed, which is how §199's card ended up silently dead;
+    // BL_TABLE_DEBUG surfaces it.
+    if (std::getenv("BL_TABLE_DEBUG")) std::fprintf(stderr, "table load failed: %s (%s)\n", name.c_str(), e.what());
     return false;  // unreadable or missing: the caller falls back to the draw
   }
   return true;

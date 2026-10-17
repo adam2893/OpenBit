@@ -23204,6 +23204,39 @@ Bench back to **0 lines**, which is the check that the revert was complete.
 ```
 
 Comparing that list against the registry answers "did the table load" before any card
+
+## 200. A silent failure gets a voice
+
+§199 could not explain why `a16_termination-scenarios-enc` never fired, and the reason it
+could not is worth fixing on its own: `ensureTable` swallowed the exception.
+
+```cpp
+} catch (const std::exception& e) {
+  // The reason used to be swallowed, which is how §199's card ended up silently dead;
+  // BL_TABLE_DEBUG surfaces it.
+  if (std::getenv("BL_TABLE_DEBUG"))
+    std::fprintf(stderr, "table load failed: %s (%s)\n", name.c_str(), e.what());
+  return false;
+}
+```
+
+### 200.1 What the switch immediately showed, and did not
+
+With the card reverted (§199), nothing loads that table, so nothing printed -- correct and
+unhelpful at once. It means the switch has to be used **while the card is wired**, and that
+ordering is now written down: re-add the card, run with `BL_TABLE_DEBUG=1`, read the
+exception, remove the card again if it still cannot be explained.
+
+### 200.2 Why this is progress rather than another measurement round
+
+Every silent card this session has had the same shape: something returned false and
+nothing said so. §154's `giftYear`, §183's custody chain and §199's termination card were
+all found by *counting events*, which is slow and indirect. The switch makes the next one a
+one-line question.
+
+Bench **0 lines**: the switch is inert unless the variable is set, which is what makes it
+safe to leave in.
+
 work — and the registry entry existing is *not* the same as the table loading.
 
 
