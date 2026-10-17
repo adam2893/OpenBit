@@ -1310,6 +1310,8 @@ bool Sim::load(std::string* error) {
       "a16_child-discipline-enc",
       // The child's asks: Age, Amount, and the Boy/Girl option lists (REPORT 181).
       "a16_child-demands-enc",
+      // A paranormal encounter: Scenario, Log Version, Gender, Entity, Danger Score.
+      "a16_paranormal-encounters-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3875,6 +3877,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (exLoverMarriedNowYear(life, out, forcedChoice)) return true;
   if (childDisciplineYear(life, out, forcedChoice)) return true;
   if (childDemandsYear(life, out, forcedChoice)) return true;
+  if (paranormalEncounterYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

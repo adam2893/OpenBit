@@ -22607,6 +22607,49 @@ in the port or do not exist yet, and they are not work in themselves.
 The plan's content sprint is therefore closer to finished than the table count suggested:
 28 single-stage cards, not 103 items.
 
+## 186. A paranormal encounter, and the first card ported from the 28
+
+```
+a16_paranormal-encounters-enc, 19 rows
+  Scenario, Log Version, Gender, Entity, Danger Score
+```
+
+A report card — the row *is* the exchange — drawn rare (1 in 22 years) and filtered by the
+hero's gender:
+
+```
+An unknown voice emits a sinister giggle. In front of you, a ...
+A very tall and gangly spectral figure of a man ...
+A ghoulish dismembered head appears out of thin air ...
+```
+
+`shortcut:` `Danger Score` is **not** turned into damage. The game's own use of it was
+not read, and a health hit on a random encounter would be a rule the port invented.
+
+### 186.1 Verification
+
+`tools/test_paranormal.py`:
+
+```
+encounters: 47 distinct: 14
+ok
+```
+
+47 encounters across 40 lives, 14 distinct rows, no buttons, a journal on every one.
+
+### 186.2 The bench moved, and moved the right way
+
+```
+age 26 logs   port_only 3 -> 2
+age 26 stats  worst health -> worst happiness; port_shifted.health -1 -> 0
+```
+
+Bench compares the port against a captured game trace line by line, so adding a card
+that draws from a shared stream *does* move it. Here it moved toward the game: one fewer
+port-only line and one fewer shifted stat. Six diff lines, all in the age-26 block, none
+of them a regression — which is the check that a moving bench needs.
+
+
 
 
 

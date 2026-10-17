@@ -663,4 +663,33 @@ bool Sim::childDemandsYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioParanormalEncounter (REPORT.en.md 186): something is there.
+//
+// a16_paranormal-encounters-enc, 19 rows: Scenario, Log Version, Gender, Entity,
+// Danger Score. A report card -- the row is the whole exchange -- drawn rarely and
+// filtered by the hero's gender.
+//
+// shortcut: Danger Score is not turned into damage. The game's own use of it was not
+// read, and a health hit on a random encounter would be a rule the port invented.
+bool Sim::paranormalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_paranormal-encounters-enc")) return false;
+  if (forcedChoice < 0 && loverRng_.below(22) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_paranormal-encounters-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[loverRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_paranormal-encounters-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  return true;
+}
 }  // namespace bl
