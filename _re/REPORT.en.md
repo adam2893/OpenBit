@@ -21334,18 +21334,46 @@ also gained `"engaged": true`, the same fixture shape as `ex` (§149), because a
 
 Bench 0 lines.
 
-Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
-fixture change.
+## 159. The elopement offer
 
-### 143.2 Why that is the right place to stop
+The wedding chain §145 called blocked on the engagement status has its first card:
 
-§142 offered two of three buttons because the third opened an unported flow. This
-card's three buttons all resolve to journals the port cannot yet attribute. The
-honest state is: body, buttons and journals are known; the mapping is not. That is
-recorded here so the next attempt starts from the literals rather than from the
-disassembly.
- The block now skips horizontal whitespace
-first. The older `"relationship"` parser only ever worked because its value sits at
-a fixed offset in the specs the tests generate — the same latent bug, waiting for a
-spec with different spacing.
+```
+body     'Your {0}, {1}, has asked you to run off and get eloped.'   #50691
+buttons  'Agree to elope' (#11010)   'Plan a wedding instead' (#34055)
+handler  Contains('agree') -> pushes ScenarioLoverWeddingPlanning, logs
+         Contains('plan')  -> the counter-offer, logs
+gate     ScenarioIsEligibleForRandomPush: not royal, not in prison,
+         Life::PresentedCountForScenario, SimLover::WillAgreeToGetEloped
+```
+
+### 159.1 Two lanes the port can honour
+
+The planning card is not ported, so the lanes land on the two states the port has:
+
+* **Agree to elope** → `loverStatus = "married"`, relationship 80 — the elopement *is*
+  the marriage, which is what eloping means;
+* **Plan a wedding instead** → `loverStatus = "engaged"`, relationship 75.
+
+Both journals are the class's own strings, including the second's odd shape
+(`'{0} I suggested we plan a normal wedding instead.'` — the partner's name tacked on
+with no verb), reproduced as written.
+
+### 159.2 Verification
+
+`tools/test_lover_elope.py`:
+
+```
+lanes: {'Plan a wedding instead': 3, 'Agree to elope': 3}
+ok
+```
+
+Both lanes occur in 20 lives; each one's body, journal ending and age gate are
+asserted.
+
+### 159.3 The shortcut, stated
+
+Agreeing marries on the spot instead of pushing `ScenarioLoverWeddingPlanning` →
+`ScenarioLoverWedding` (venue, honeymoon, cost) → `ScenarioLoverWeddingAssets`. Those
+three cards are the rest of the chain and none is ported.
 

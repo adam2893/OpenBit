@@ -212,4 +212,50 @@ bool Sim::loverCallOffEngagementYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.relationship < 0) h.relationship = 0;
   return true;
 }
+// ScenarioLoverElopePush (REPORT.en.md 159): the partner asks to run off and elope.
+//
+//   body     'Your {0}, {1}, has asked you to run off and get eloped.'   #50691
+//   buttons  'Agree to elope' (#11010)   'Plan a wedding instead' (#34055)
+//   journals '{0} asked me to get eloped.' (#69853)
+//            '{0} I suggested we plan a normal wedding instead.' (#69619)
+//
+// The handler classifies the label: Contains('agree') pushes
+// ScenarioLoverWeddingPlanning and logs; Contains('plan') is the counter-offer.
+// ScenarioIsEligibleForRandomPush refuses royals and prisoners and asks the partner
+// (SimLover::WillAgreeToGetEloped).
+//
+// The planning card is not ported, so eloping marries on the spot and the
+// counter-offer leaves the couple engaged -- the two states the port does have.
+bool Sim::loverElopeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty()) return false;
+  if (h.loverStatus != "dating" && h.loverStatus != "engaged") return false;
+  if (h.royal || h.inPrison) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(10) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string word = h.loverFemale ? "girlfriend" : "boyfriend";
+  const std::string who = "My " + word + ", " + h.loverName + ",";
+  out.table = "relationship";
+  out.row_id = "0";
+  out.body = "Your " + word + ", " + h.loverName +
+             ", has asked you to run off and get eloped.";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Agree to elope";
+    out.narrative = h.loverName + " asked me to get eloped.";
+    // The planning card is not ported: eloping is the marriage.
+    h.loverStatus = "married";
+    h.relationship = 80;
+  } else {
+    out.choice = "Plan a wedding instead";
+    out.narrative = h.loverName + " I suggested we plan a normal wedding instead.";
+    h.loverStatus = "engaged";
+    h.relationship = 75;
+  }
+  return true;
+}
 }  // namespace bl
