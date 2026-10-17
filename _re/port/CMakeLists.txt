@@ -27,6 +27,7 @@ add_library(blport STATIC
   src/fam/cult.cpp
   src/fam/spy.cpp
   src/fam/sports.cpp
+  src/fam/fame.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 

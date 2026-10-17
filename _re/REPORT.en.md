@@ -20241,3 +20241,66 @@ face to make it hard for him to take my picture.` (#69547); and a row containing
 `ImpactKarma(3)`. Not yet read: which lane owns which impact pair, and the shared
 tail's virtual call at `[hero+0x458]`.
 
+## 139. The paparazzi card, and the virtual call that turned out to be fame
+
+§138 stopped on the shared tail's virtual call at `[hero+0x458]`. It is settled, at
+runtime rather than by inference: an object of `SimHero` was allocated on the device,
+its vtable read, and slot `0x458` resolved to a module-relative `0x2a87f60` —
+`SimHero::ImpactFame`, the interface wrapper §136 documented.
+
+```
+slot458  0x77aa517f60   - module base  ->  0x2a87f60
+static   0x73F049A000 + 0x2a87f60     =   0x73f2f21f60   SimHero::ImpactFame
+```
+
+### 139.1 The card
+
+`ScenarioFamePaparazzi` draws one row of `a16_paparazzi-scenarios-enc`
+(`Scenario`, `Log Version`), resolves both through the port's bracket parser, and
+offers three buttons. `ChoiceSelectedAtIndex @0x73f3bd7e28` dispatches on the
+**label text**, not the index:
+
+| lane | gate | journal | impacts |
+|---|---|---|---|
+| `Pose for his photo` | `Contains(choice,"pose")` | `{0} I smiled for his picture.` #69613 | Discipline 3, Karma 3, **Fame 2** |
+| `Pretend he's not there` | fall-through | `{0} I pretended not to notice him.` #69597 | Discipline 2, Karma 2 |
+| `Cover my face` | `Contains(choice,"cover")` | `{0} I covered my face…` #69547 | **Fame −1** |
+
+`{0}` is the row's own `Log Version`, resolved. A row whose text contains `attack`
+pushes a `ScenarioCustomAttack` with `ImpactFame(4)`; that follow-up card is not
+ported, so the port skips it (shortcut at the code).
+
+### 139.2 An arithmetic lesson worth keeping
+
+`ImpactFame` takes an **impact score**, not points: it applies
+`pointsForImpact` internally. So `ImpactFame(2)` is **+8 fame**, `ImpactFame(-1)` is
+**−4**, and `ImpactFame(4)` is +16. The first version of the test assumed `+2 / -1`
+and failed with `final fame 84, want 81` on a life with one pose and one cover —
+which is exactly `80 + 8 - 4`. The card was right and the test's model was wrong;
+the model was corrected, not the code.
+
+### 139.3 Verification
+
+`tools/test_paparazzi.py`, 40 famous lives:
+
+```
+paparazzi cards: 69
+lanes: {'Pose for his photo': 31, 'Cover my face': 20, "Pretend he's not there": 18}
+lives at fame 75 with a card: 9 of 10
+ok
+```
+
+Per card: age ≥ 18, the label is one of the three, the journal ends with that lane's
+tail, no unresolved `<token>` in body or journal, and the stat deltas equal
+`pointsForImpact` of the lane's scores. Per life: `final.fame` equals
+`80 + 8·poses − 4·covers`, clamped — the fame wiring checked end to end, not just
+the card. Plus the gate: fame 0 and 74 never produce the card, fame 75 does (the
+comparison is inclusive, as `b.ge` says).
+
+### 139.4 A spec switch the gate needed
+
+Nothing in the port moves fame except this card, so a famous hero was unreachable in
+a scripted life at all. `"fame": 80` is now a spec key, next to `royal`, `vampire`
+and the rest: the game earns fame through a career, and the port needs a way to
+stand at the gate before the career that feeds it exists.
+

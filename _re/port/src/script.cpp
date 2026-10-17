@@ -628,6 +628,13 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.date)) return fail("date is not a string");
   }
 
+  p = findValue(json, "fame");
+  if (p != std::string::npos) {
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("fame is not a number");
+    if (v < 0 || v > 100) return fail("fame must be between 0 and 100");
+    spec.fame = int(v);
+  }
   p = findValue(json, "ages");
   if (p != std::string::npos) {
     long long v = 0;
@@ -784,6 +791,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
       sim.setDate(std::atoi(spec.date.substr(0, dash).c_str()),
                   std::atoi(spec.date.substr(dash + 1).c_str()));
   }
+  if (spec.fame > 0) life.hero.fame = float(spec.fame);
   *heroAtBirth = heroJson(life.hero);
   // The age-0 lines belong to the same stream as the age-ups, so they are drawn
   // here, once, before the loop.

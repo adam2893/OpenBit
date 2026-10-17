@@ -95,6 +95,10 @@ struct ScriptSpec {
   bool composer = false;
   bool club_takeover = false;
   bool instrument = false;
+  // A life that starts famous (REPORT.en.md 139). The game reaches it through a
+  // career and its own fame impacts; the port takes it from the spec so the Fame
+  // family's gate can be exercised at all.
+  int fame = 0;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

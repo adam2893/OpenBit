@@ -166,6 +166,8 @@ class Sim {
   int retirementAge(const Hero& h) const;
   // '<insult>' out of a16_insults-enc (REPORT.en.md 138).
   std::string insultToken();
+  // The paparazzi (REPORT.en.md 139): the Fame family's first card.
+  bool paparazziYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);
@@ -700,6 +702,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng sibRng_;
   // The general insult pool's own stream (REPORT.en.md 138).
   Rng insultRng_;
+  // The Fame family's own stream (REPORT.en.md 139).
+  Rng fameRng_;
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).
