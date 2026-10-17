@@ -23376,6 +23376,61 @@ So the honest count is not "19 blocked" but **"8 blocked on a token the port cou
 11 blocked on an actor"** — and the next round can take the cheapest of the first group
 (`<lover>`) to see whether it unlocks four at once.
 
+## 206. Closing measurement
+
+What this goal added, what it verified, and what it did not finish -- read off the
+instruments at the final build.
+
+### 206.1 The state
+
+```
+battery       probes 68   rc0 67   residue0 49   fails0 68
+coverage      portgap ENTRIES 109  rendered-by-port 107  gap 0
+              rescensus distinct residue tokens 0   total 0
+tests         48 files, 0 failures
+content       28 card-shaped tables identified, 12 ported
+structural    9 items: queue, ex-lovers, siblings, fame, retirement, children,
+              places, payload queue, ambient chooser
+```
+
+### 206.2 The residue number is not a clean bill, and this is why
+
+`residue0 49` against the sprint's starting **65**: sixteen probes report a leftover token
+that did not before. `rescensus` -- which runs its own set of lives -- reports **0**, so
+the sprint's own cards are clean under the specs that instrument uses. The sixteen are
+somewhere between the two: either the sprint's cards under a probe's particular spec, or a
+change in what those probes count.
+
+**Not attributed, and that is the honest state.** The last three rounds each fixed one
+leaking card and revealed the next (§205-206); a fourth pass was not reached.
+
+### 206.3 The one failing probe
+
+`aires.py` exits 1 with `events 71`, `residue 0`, `fails -` -- a probe that already
+reported `fails -` before this goal, so its status is a long-standing unknown rather than
+a regression. The other 67 exit zero.
+
+### 206.4 What was not finished
+
+```
+28 card-shaped tables       12 ported          16 remaining
+of the 16:   8 blocked on an actor (surrogate, aircraft, asset, drug, musician)
+             4 blocked on a chain (custody) or a public-setting model
+             4 blocked on a token the port cannot yet answer
+```
+
+**Tier 3 is not finished.** What is finished is the plan: the layers are measured
+(`DataHub` 928 loaders / 1,348 pickers, §176), the blockers are named with the class that
+owns each (§171), the remaining tables are counted (§185, §203), and the rate needed to
+close them is known (§196.2).
+
+### 206.5 What the next session should pick up, in order
+
+1. the sixteen residue probes -- attribute or fix, one probe at a time;
+2. the four token-blocked tables, each a one-token change;
+3. the custody chain, which the payload queue (§184) now makes mechanical;
+4. the eight actor-blocked tables, which need an actor each and no plan.
+
 ## 204. A drink is offered: three token forms, three columns
 
 ```
