@@ -20996,6 +20996,62 @@ Bench 0 lines; `test_children`, `test_paternity_court_order` and `test_play` gre
 * Custody, child discipline, the child's own lifecycle lines: all of it has state to
   stand on now.
 
+## 152. The counseling demand
+
+The card §145 called blocked on children — its handler reads `Life::get_ChildArray`
+and `SimChild::IsLivingWithHero` before it formats — is in, and it needed neither:
+the child read turns out to be for the *subject* of the session, not a requirement to
+hold one.
+
+```
+RefreshScenario @0x73f3db367c   Format(cell 0x5cc4418, status lowered, name, pronoun)
+  body  'Your {0}, {1}, is demanding that you visit a relationship counselor
+         with {2}.\n\nWhat will you do?'
+  buttons  'Agree to go' (0x5ca2ae0)   'Refuse to go' (0x5c39c00)
+```
+
+### 152.1 The lane rule, and the two extra comparisons
+
+`ChoiceSelectedAtIndex @0x73f3db38c4` compares the label against four literals:
+
+```
+0x5c35048  'agree'      -> the session happens
+0x5c35010  'refuse'     -> the refusal
+0x5c35678  '<disease>'  \  the subject the session is about
+0x5c62aa0  '<addiction>' /
+```
+
+| lane | effect | journal |
+|---|---|---|
+| `Agree to go` | `ImpactDiscipline(2)` → +8 | #23416 `I agreed to attend relationship counseling with {0}.` |
+| `Refuse to go` | none read | #70366 `{0} tried to make me attend relationship counseling with {1} but I refused.` |
+
+The two `{0}` forms are the partner named twice: capitalised at the start of the
+refusal, lower-case mid-sentence in the agreement.
+
+### 152.2 Verification
+
+`tools/test_lover_counseling.py`, 30 lives:
+
+```
+lanes: {'Agree to go': 6, 'Refuse to go': 7}
+ok
+```
+
+Per card: the body matches the class's sentence with the pronoun agreeing with the
+partner's own gender, the age is at least 18, the label is one of the two, and the
+journal is that lane's sentence — with `discipline +8` on agree and nothing on
+refuse. No partner, no card.
+
+Bench 0 lines; `test_birth` and `test_play` green.
+
+### 152.3 Still a shortcut
+
+The `<disease>` and `<addiction>` subjects are not modelled: the port's session is
+always about the relationship itself, which is what the body says anyway. The
+`GetRandomNumber(0,100)` roll the handler makes after the refusal is not modelled
+either.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 

@@ -102,4 +102,47 @@ bool Sim::loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioLoverCounselingPush (REPORT.en.md 152): the partner demands counseling.
+//
+// ChoiceSelectedAtIndex @0x73f3db38c4 classifies the chosen label by text:
+// Contains('agree') -> the session happens (ImpactDiscipline(2) and journal #23416),
+// Contains('refuse') -> journal #70366. The other two comparisons the handler makes
+// ('<disease>', '<addiction>') pick the subject the session is about.
+bool Sim::loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty()) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(16) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string word = h.loverStatus == "married"
+                               ? (h.loverFemale ? "wife" : "husband")
+                               : (h.loverFemale ? "girlfriend" : "boyfriend");
+  const std::string who = "My " + word + ", " + h.loverName + ",";
+  const std::string whoLower = "my " + word + ", " + h.loverName + ",";
+  const std::string them = h.loverFemale ? "her" : "him";
+  out.table = "relationship";
+  out.row_id = "0";
+  // RefreshScenario @0x73f3db367c: Format(cell 0x5cc4418, status lowered, name,
+  // pronoun) -- 'Your {0}, {1}, is demanding that you visit a relationship
+  // counselor with {2}.\n\nWhat will you do?'
+  out.body = "Your " + word + ", " + h.loverName +
+             ", is demanding that you visit a relationship counselor with " + them +
+             ".\n\nWhat will you do?";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(2));
+  if (lane == 0) {
+    // 'Agree to go' (cell 0x5ca2ae0): ImpactDiscipline(+2), journal #23416.
+    out.choice = "Agree to go";
+    out.narrative = "I agreed to attend relationship counseling with " + whoLower;
+    out.discipline = pointsForImpact(2);
+  } else {
+    // 'Refuse to go' (cell 0x5c39c00): journal #70366, no stat move read.
+    out.choice = "Refuse to go";
+    out.narrative = who + " tried to make me attend relationship counseling with " +
+                    them + " but I refused.";
+  }
+  return true;
+}
 }  // namespace bl

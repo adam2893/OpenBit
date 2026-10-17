@@ -205,6 +205,8 @@ class Sim {
   bool loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The mirror card, REPORT.en.md 144.
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
+  // The counseling demand, REPORT.en.md 152.
+  bool loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice);
   // The court-ordered paternity test, REPORT.en.md 149.
   bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
