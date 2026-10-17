@@ -19936,3 +19936,109 @@ Twenty-four of twenty-five entries are `dating` because the port's married branc
 almost never falls back to the break-up score; that is the same gap §125 recorded,
 now measured.
 
+## 135. Structural 3: a sibling is an actor, not a row
+
+The family list carried a relation, a name, an age, a disease and a job. That is
+enough for the "your mother has been promoted" lines and nothing else: every
+sibling/child card in the dump needs the relative to *have* state — are they still
+at home, who did they marry, when — and the port had no such field.
+
+### 135.1 What the game keeps, read out of its own symbols
+
+`tools/symbols.json` names the whole family surface, which is how the fields were
+chosen rather than invented:
+
+```
+Life::get_SiblingArray / Life::get_ChildArray         the two arrays
+SimSibling::get_MovedOut              +0x1fd  bool
+SimSibling::get_Spouse                +0x210  SimPerson
+SimSibling::get_AgeAtCurrentSpouseMarriage +0x218 int
+SimSibling::ThirdPersonMovesOutAndShouldAnnounce @0x73f30fed68
+SimSibling::ThirdPersonMarries                   @0x73f30fed7c
+SimSibling::ThirdPersonTriesForBaby              @0x73f30ff0c0
+PersonGenerator::GenerateSpouseForThirdPerson    @0x73f3819114
+```
+
+And the two lines those flags drive are literals in the metadata:
+
+```
+#9396  '<person> married <spouse-description>.'
+#9397  '<person> moved out.'
+```
+
+`ThirdPersonMovesOutAndShouldAnnounce` is three instructions — `[this+0x1fd] = 1;
+return true;` — so the flag is the whole state and the announcement is the caller's
+job. `ThirdPersonMarries` generates the spouse, stores it at `+0x210`, and records
+the age at `+0x218`.
+
+### 135.2 What the port now has
+
+`Person` gained `movedOut`, `spouse` and `ageAtMarriage`, and `lifecycleLines`
+emits both events for siblings (a relation containing "brother"/"sister"), on
+their own stream (`Sim::sibRng_`) so every existing family line draws exactly as
+before.
+
+### 135.3 A real bug the work exposed
+
+The first version of the test failed for a reason worth keeping: **family lines
+were being thrown away on any year a code-built card fired**, because forty-five
+card builders start with `out = AgeUp()`, which clears the `extra` vector the
+family lines had just been written into.
+
+`ageUp` is now a wrapper around a new `dispatchYear`:
+
+```
+ageUp        year/age counters, newborn setup, family lines, pending queue
+dispatchYear the card dispatch (the old body, unchanged)
+ageUp        family lines go in front of whatever the card wrote
+```
+
+That is the order the game logs them in (trace_game9 age 7), and it is now true on
+every year rather than only the table-driven ones.
+
+### 135.4 Verification
+
+`tools/test_family.py`, 120 lives:
+
+```
+lives: 120
+siblings: 120   moved out: 96   married: 87
+ok
+```
+
+For every sibling it requires the line to be present when the flag is set and
+absent when it is not, the marriage line to name the stored spouse, `ageAtMarriage`
+to be in `(0, age]`, and a married sibling to have moved out first — the order the
+game's own two methods imply.
+
+The script JSON now carries `final.family`, so this is checkable at all.
+
+### 135.5 Drift, and the probes that had to change with it
+
+The bench moved by **4 lines in one record**: at age 24 the port now logs one more
+line than the game's trace — a family line that used to be dropped on a
+code-built-card year. That is the fix, not a regression.
+
+The battery then caught the other half of the same truth: **eleven probes failed**,
+and every one of them had encoded the old behaviour. They asserted
+`len(logLines) == 1` and then read `logLines[0]` as the card's own line. Under the
+fix a card's log is *the year's family lines, then the card's own line*, so:
+
+* `len(logLines) != 1` became `len(logLines) < 1`;
+* `logLines[0]` became `logLines[-1]`;
+* `flres.py` matched the joined text with `fullmatch`, so it now tries the tail
+  starting at each line until the row's own log version matches.
+
+```
+patched probes: fw, fro, fsst, sd, fupr, ai, fst, tb, sup, fuout, ah, unfr, fl
+battery after:  probes 68   rc0 67   residue0 65   fails0 68
+```
+
+(`rc0 67` of 68 is the MiniPaywall probe that reports its own non-zero status; it
+did the same before this round.)
+
+Why this is worth writing down: the probes are the project's independent check, and
+a check that encodes yesterday's bug will call today's fix a failure. They were
+relaxed in the one dimension the fix changed and in no other — every count, range,
+gender and token assertion they make is untouched.
+

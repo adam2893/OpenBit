@@ -218,6 +218,27 @@ std::string exLoversJson(const Hero& h) {
   return o.str();
 }
 
+// The hero's relatives (REPORT.en.md 135). A sibling carries the game's own
+// SimSibling state: whether it has moved out, who it married and at what age.
+std::string familyJson(const Life& life) {
+  std::ostringstream o;
+  o << "[";
+  for (size_t i = 0; i < life.family.size(); ++i) {
+    const Person& p = life.family[i];
+    o << (i ? ",\n      " : "\n      ") << "{\"relation\": " << jsonStr(p.relation)
+      << ", \"name\": " << jsonOrNull(p.name) << ", \"female\": "
+      << (p.female ? "true" : "false") << ", \"age\": " << p.age
+      << ", \"alive\": " << (p.alive ? "true" : "false")
+      << ", \"disease\": " << jsonOrNull(p.disease)
+      << ", \"job\": " << jsonOrNull(p.job)
+      << ", \"movedOut\": " << (p.movedOut ? "true" : "false")
+      << ", \"spouse\": " << jsonOrNull(p.spouse)
+      << ", \"ageAtMarriage\": " << p.ageAtMarriage << "}";
+  }
+  o << (life.family.empty() ? "]" : "\n    ]");
+  return o.str();
+}
+
 std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
                      const std::string& newbornAtSetup, const Life& life,
                      const std::vector<std::string>& birth,
@@ -245,7 +266,8 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"alive\": " << (life.alive ? "true" : "false")
     << ", \"stats\": " << statsJson(h)
     << ", \"money\": " << h.money
-    << ", \"exLovers\": " << exLoversJson(h);
+    << ", \"exLovers\": " << exLoversJson(h)
+    << ", \"family\": " << familyJson(life);
   // The death sentence is a real table row (a16_death-types-enc) and carries
   // <pronoun> / <body part>: it is resolved where it was drawn, so it must be
   // reported here to be comparable at all.

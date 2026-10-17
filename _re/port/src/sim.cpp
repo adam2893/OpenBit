@@ -671,6 +671,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       findRng_(seed ^ 0x452821e638d01377ULL ^ 0xbe5466cf34e90c6cULL),
       mornRng_(seed ^ 0x3f84d5b5b5470917ULL ^ 0x9216d5d98979fb1bULL),
       jrRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbe5466cf34e90c6cULL),
+      sibRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x6a09e667f3bcc909ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3095,6 +3096,13 @@ std::string Sim::companyName(const std::string& companyType, const Life& life) {
 // the log ("My little brother, Jimbo, has been diagnosed with mad cow
 // disease."). This emits the log form; the hero's own sentences are separate.
 // Ages the family, so it runs once per year.
+// A sibling, in the sense the game's SimSibling uses: a brother or sister of the
+// hero, half or step included. Parents and children are not siblings.
+bool isSibling(const Person& p) {
+  return p.relation.find("brother") != std::string::npos ||
+         p.relation.find("sister") != std::string::npos;
+}
+
 std::vector<std::string> Sim::lifecycleLines(Life& life) {
   hero_ = &life.hero;
   life_ = &life;
@@ -3155,6 +3163,30 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
       nb.female = sister;
       newborns.push_back(nb);
       continue;
+    }
+
+    if (isSibling(p)) {
+      // The sibling's own two events, on their own stream so nothing above moves
+      // (REPORT.en.md 135). The lines are the game's own tokens:
+      // #9396 '<person> married <spouse-description>.' and #9397 '<person> moved
+      // out.'; SimSibling.ThirdPersonMarries @0x73f30fed7c generates the spouse
+      // (PersonGenerator::GenerateSpouseForThirdPerson @0x73f3819114) and records
+      // the age at +0x218, and ThirdPersonMovesOutAndShouldAnnounce @0x73f30fed68
+      // only sets the flag at +0x1fd and answers "announce".
+      // shortcut: the game's own chances for both are not read; the port uses a
+      // per-year coin on the sibling's own stream.
+      if (!p.movedOut && p.age >= 18 && sibRng_.chance(0.06)) {
+        p.movedOut = true;
+        out.push_back(who + " moved out.");
+        continue;
+      }
+      if (p.movedOut && p.spouse.empty() && p.age >= 18 && sibRng_.chance(0.10)) {
+        const std::string mate = drawFirstName(!p.female) + " " + drawSurname();
+        p.spouse = mate;
+        p.ageAtMarriage = p.age;
+        out.push_back(who + " married " + mate + ".");
+        continue;
+      }
     }
 
     // School milestones first: they are pinned to one age, so a chance-based
@@ -3474,14 +3506,19 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
   return false;
 }
 
+// The age-up the rest of the port calls (REPORT.en.md 135). It owns everything
+// that happens once per year -- the year and age counters, the newborn setup, the
+// family lifecycle lines and the pending-card queue -- and hands the rest to
+// dispatchYear. The split exists because a card builder resets `out` with
+// `out = AgeUp()` (45 of them do), which used to throw the family lines away on
+// exactly the years a code-built card fired.
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
   rndCache_.clear(); rbLast_.clear();  // one scenario per year: the '<rbN>' cache starts empty
-  // A year can owe more than one card (REPORT.en.md 133). The extras are built by
-  // the same functions that used to run a year late, and none of them draws: the
-  // trigger already fixed every string they print. Draining before the age-up also
-  // means no family line, no job draw and no dispatch runs twice for one year.
+  Hero& h = life.hero;
+  // A year can owe more than one card (REPORT.en.md 133): the extras are built by
+  // the same functions that used to run a year late, and none of them draws.
   if (!life.pendingCards.empty()) {
     const int kind = life.pendingCards.front();
     life.pendingCards.erase(life.pendingCards.begin());
@@ -3490,12 +3527,22 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     return false;
   }
   ++life.year;
-  Hero& h = life.hero;
   ++h.age;
   if (h.age == 1) applyNewbornSetup(h);
   // The family's own lines for the year, written before the scenario's
   // (trace_game9 age 7: the mother's diagnosis, then the scenario line).
-  out.extra = lifecycleLines(life);
+  const std::vector<std::string> familyLines = lifecycleLines(life);
+  AgeUp ev;
+  const bool got = dispatchYear(life, ev, forcedChoice);
+  // The family lines go in front of whatever the card wrote, which is the order
+  // the game logs them in.
+  ev.extra.insert(ev.extra.begin(), familyLines.begin(), familyLines.end());
+  out = ev;
+  return got;
+}
+
+bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
   if (getenv("BL_DBG")) fprintf(stderr, "[dbg] age %d family %zu extra %zu\n", h.age, life.family.size(), out.extra.size());
   const bool student = h.age < 18;
   h.employed = !student;
