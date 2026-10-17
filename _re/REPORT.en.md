@@ -21671,6 +21671,49 @@ all invariants hold
 Two fixtures per seed — a plain life and one that starts engaged with cash — so both the
 free-running and the scripted routes are covered.
 
+## 166. Card rates, measured for the first time
+
+Nothing in the suite measured *how often* anything fires: the probes check that a card
+can fire, the tests check what it does when it does. `tools/cardrate.py` counts cards
+per 100 lives, keyed by table plus the first six words of the body so two lanes of one
+card are one card:
+
+```
+lives: 120 distinct cards: 2831
+
+per 100 lives   count  card
+         76.7      92  a16_movies-enc | The movie theater is showing The
+         55.0      66  a16_movies-enc | Your mother is taking you to
+         51.7      62  a16_street-persons-enc | While on your walk, you witness
+         49.2      59  a16_drugs-enc | While on your walk, you come
+         36.7      44  - | Even though you have a boyfriend,
+         30.8      37  a16_coworker-pranks-enc | You just realized that your coworker,
+         27.5      33  relationship | You broke up with your dating,
+         24.2      29  celebrity-dating-app | Date the celebrity of your dreams
+```
+
+### 166.1 What the numbers say
+
+* **2,831 distinct card faces** fire across 120 lives, which is the real measure of the
+  port's content breadth — far more than the ~380 sections suggest.
+* **The movie card fires in three of four lives.** That is the port's own yearly coin,
+  not the game's schedule; no rate in the port is verified against the game's push
+  probabilities, and this one is visibly too high.
+* **A break-up in one life in four** (`You broke up with your dating,`), and 0.72
+  weddings per life from §165 — the relationship family is the port's most active one.
+* A card whose `table` is `-` (`Even though you have a boyfriend,`) is one of the
+  code-built cards that reports no table; those are invisible to `tablecensus.py`
+  (§157) and are why that tool cannot see the sprint's cards.
+
+### 166.2 The honest state of tuning
+
+This is a **baseline, not a verification**. Every probability in the port was chosen by
+reading a pool's shape, not by reading the game's schedule, and the measurement now
+exists to show the size of that gap rather than to close it. Closing it needs the
+game's own push weights, which the card classes do not carry — they are decided by
+whatever constructs them.
+
+
 
 
 
