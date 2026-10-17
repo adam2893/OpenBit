@@ -38,4 +38,9 @@ std::string llPossessive(const std::string& name);
 // Membership in one of the comma list cells ('Dog, Cat, Horse').
 bool llInList(const std::string& list, const std::string& value);
 
+// 'a'/'an' for a word, and a quantifier-safe article for a resolved cell that may
+// already carry its own ('a pack of cigarettes').
+std::string articleFor(const std::string& word);
+std::string withArticle(const std::string& text, bool wantsArticle);
+
 }  // namespace bl

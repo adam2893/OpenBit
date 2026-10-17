@@ -19647,3 +19647,60 @@ lists exactly the helpers to export, and each one is a one-line move. What must 
 happen is a second copy of a rule in the new file; that is why `spyUpperFirst`
 went to `text.cpp` instead of being duplicated.
 
+## 131. The split becomes a tool: model follows racing
+
+`tools/split_family.py` cuts functions out of `sim.cpp` verbatim (brace-matched),
+writes them into `src/fam/<family>.cpp` behind a fixed include block, and reports
+what it took:
+
+```
+python3 tools/split_family.py model \
+  'bool Sim::modelYear(Life& life, AgeUp& out, int forcedChoice) {' \
+  'void Sim::makeModel(Life& life) {' \
+  'std::string Sim::modelToken(const std::string& token) {' \
+  'std::string Sim::modelName(const char* table) {' \
+  'int Sim::modelRankIndex() const {' --dry-run
+
+bool Sim::modelYear(...)          564 lines
+void Sim::makeModel(Life& life) {  82 lines
+std::string Sim::modelToken(...)   36 lines
+std::string Sim::modelName(...)    75 lines
+int Sim::modelRankIndex() const {   4 lines
+```
+
+`--dry-run` first is the habit: it prints the sizes and moves nothing, so a wrong
+marker costs nothing.
+
+### 131.1 What model needed that racing did not
+
+One export, found by the compiler in a single pass:
+
+```
+model.cpp:189: use of undeclared identifier 'withArticle'
+```
+
+`articleFor` and `withArticle` were `static` at file scope in `sim.cpp`.
+Both are now declared in `bl/text.h` and their `static` dropped. This is the
+pattern the linker enforces: a family that fills an `<article>` token needs the
+article rules, and there is exactly one copy of them.
+
+### 131.2 Verification
+
+```
+bash tools/bench.sh /tmp/trace_c10.json   diff vs §125: 0 lines
+python3 /tmp/qdir/modres.py               model events 123, residue 0, failures 0
+```
+
+123 is the pre-move count from the §125 battery, so the family behaves identically.
+`sim.cpp` is down to 27,113 lines.
+
+### 131.3 The state of the split
+
+| family | file | lines moved | bench | probe |
+|---|---|---|---|---|
+| racing | src/fam/racing.cpp | 1,005 | 0 diff | 180 = 180 |
+| model | src/fam/model.cpp | 761 | 0 diff | 123 = 123 |
+
+Remaining, in the same order: `tradeYear`, `casinoYear`, `outdoorYear`,
+`vampireYear`, `cultYear`, `spyYear`, `sportsSeason`.
+
