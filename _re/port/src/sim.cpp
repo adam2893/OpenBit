@@ -638,6 +638,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       seducRng_(seed ^ 0xa4093822299f31d0ULL ^ 0x082efa98ec4e6c89ULL),
       witRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x13198a2e03707344ULL),
       findRng_(seed ^ 0x452821e638d01377ULL ^ 0xbe5466cf34e90c6cULL),
+      mornRng_(seed ^ 0x3f84d5b5b5470917ULL ^ 0x9216d5d98979fb1bULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3631,6 +3632,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // card that can end the life. It has its own stream so the cards before it
   // draw exactly as they did.
   if (findDrugsYear(life, out, forcedChoice)) return true;
+
+  // The hookup's follow-up (REPORT.en.md 123) never rolls for itself: it reports a
+  // choice that already happened, so it is offered before the year's own cards.
+  if (morningYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -26692,6 +26697,12 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
     // discipline move lands, and the journal stays the row's own inbound log line
     // -- the game shows it through Format('{0}', _dataInboundLogVersion).
     out.discipline = pointsForImpact(-3);
+    // The same lane pushes ScenarioSupervisorSeduceSuccess (see morningYear), so a
+    // hero who went along with the boss gets the report card even though he never
+    // asked.
+    h.morningWith = sup;
+    h.morningByHero = false;
+    h.morningPrevLover = !h.loverStatus.empty();
     if (h.female == h.supFemale) {
       out.choice = seducRng_.chance(0.5) ? "Get at it" : "Let me get a piece of that";
     } else {
@@ -26712,6 +26723,11 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
     // ScenarioWorkplaceDisciplineHR so HR deals with the fallout (not modelled).
     if (seducRng_.chance(0.5)) {
       out.narrative = "I seduced my supervisor, " + sup + "!";
+      // The success lane at 0x73f2e26974 pushes ScenarioSupervisorSeduceSuccess with
+      // _initiatedByHero set, and that card is the one that tells the year after.
+      h.morningWith = sup;
+      h.morningByHero = true;
+      h.morningPrevLover = !h.loverStatus.empty();
     } else {
       out.happiness = pointsForImpact(-1);
       out.narrative = "I attempted to seduce my supervisor, " + sup + ", but failed.";
@@ -26976,6 +26992,66 @@ bool Sim::findDrugsYear(Life& life, AgeUp& out, int forcedChoice) {
   // {1} of {2}.' #36386) and the addiction model (ShouldBecomeAddictedToDrug
   // @0x73f2f1d674, BecomeAddictedToDrug @0x73f2f1dcdc, which the port does not
   // carry) are out of the port's reach.
+  return true;
+}
+
+// The morning after the hookup (REPORT.en.md 123). ScenarioSupervisorSeduceSuccess
+// (il2cpp_dump.txt:55109) carries _initiatedByHero 0x16a, _supervisor 0x170 and
+// _loverCandidate 0x178, and it has no ChoiceSelectedAtIndex at all: the card only
+// reports what the choice in the hookup card already resolved. So it never rolls
+// for itself -- the port holds the name of the boss a hookup happened with and
+// presents the card the following year, the one thing the single-card year can do.
+bool Sim::morningYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.morningWith.empty()) return false;
+  const std::string sup = h.morningWith;
+  const bool byHero = h.morningByHero;
+  const bool prevLover = h.morningPrevLover;
+  h.morningWith.clear();
+  h.morningByHero = false;
+  h.morningPrevLover = false;
+  hero_ = &h;
+  life_ = &life;
+  // The title slot [self+0x38] comes from PickRandomFromStringArray
+  // @0x73f32b0608 over a list the branch assembles: the hero's own attempt adds
+  // 'Chasing my bag' (#15446, cell 0x5c60bb8), "I'm the captain now" (#26059,
+  // 0x5c60bd8), 'And about my pay...' (#11401, 0x5c60b88) and "Let's play
+  // favorites" (#28820, 0x5c60b80); the boss's own move adds 'Nobody can know'
+  // (#31896, 0x5c60bd0), "If we're on company time" (#26346, 0x5c60ba0), "Let's
+  // shoot for a promotion soon" (#28825, 0x5c60bc8), 'Securing my position here'
+  // (#38375, 0x5c60bb0) and 'I need lots of supervision' (#24702, 0x5c60b90).
+  static const char* const kHeroTitles[] = {
+      "Chasing my bag", "I'm the captain now", "And about my pay...", "Let's play favorites"};
+  static const char* const kOtherTitles[] = {
+      "Nobody can know", "If we're on company time", "Let's shoot for a promotion soon",
+      "Securing my position here", "I need lots of supervision"};
+  out.title = byHero ? kHeroTitles[mornRng_.below(4)] : kOtherTitles[mornRng_.below(5)];
+  // The sentence pair at 0x73f2e27c48 / 0x73f2e27d6c, Format('You seduced your
+  // {0}, {1}!' #49284 / 'You let your {0}, {1}, seduce you!' #48933) over the
+  // supervisor's RelationshipStatusStringAndCapitalize and his full name -- the
+  // same role word the hookup card's own body uses.
+  out.body = byHero ? ("You seduced your supervisor, " + sup + "!")
+                    : ("You let your supervisor, " + sup + ", seduce you!");
+  // The card writes no journal line: it has no ChoiceSelectedAtIndex and no Log
+  // call, so nothing of the two sentences above ever reaches the log.
+  // Cheating costs the hero only when a lover already existed: the lane at
+  // 0x73f2e27874 reads hero[0xd8], and when it is set moves ImpactKarma(-4)
+  // @0x73f30e4bfc and ImpactDiscipline(-4) @0x73f30e4cdc. Everything else the card
+  // does -- moving the old lover into the ex-lover array, the catch-a-cheater card
+  // (cell 0x5c34a00), the pregnancy roll
+  // GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother @0x73f2fd4438,
+  // the enjoyment panels, the obituary line #70396, the collectibles -- needs
+  // subsystems the port does not carry (shortcut comments).
+  if (prevLover) {
+    out.karma = pointsForImpact(-4);
+    out.discipline = pointsForImpact(-4);
+  }
+  // GenerateLoverFromCoworker @0x73f3812d6c turns the boss into the hero's lover, so
+  // the port keeps him as one: this is what makes the next hookup's cheating check
+  // and the lover cards see him.
+  h.loverName = sup;
+  h.loverStatus = "dating";
   return true;
 }
 

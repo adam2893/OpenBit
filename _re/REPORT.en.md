@@ -18614,3 +18614,249 @@ different cards. Quoted here once, then left standing:
 | hookup cards | 94 | 90 |
 | team building cards | 52 | 49 |
 | supervisors seen | 38 | 34 |
+
+## 123. The morning after: the one card in the family the hero never chooses
+
+### 123.1 A card that is pushed, not offered
+
+Every card so far has answered a question the game asks the hero. This one is the
+family's exception, and it is worth a section precisely because of it: whenever a
+hookup choice resolves the way the hero wanted, the game pushes a second scenario
+behind the first one, and that scenario has nothing to ask.
+
+```
+class ScenarioSupervisorSeduceSuccess : Scenario          il2cpp_dump.txt:55109
+  _initiatedByHero    System.Boolean 0x16a
+  _supervisor         SimCoworker    0x170
+  _loverCandidate     SimLover       0x178
+  .ctor(System.Boolean)   @0x73f2e27214
+  RefreshScenario()       @0x73f2e27514
+```
+
+Two methods and no others. There is no `ChoiceSelectedAtIndex`, which is the real
+finding: a scenario with no choice handler cannot move a stat when it is dismissed,
+cannot write a journal line, and cannot open a second door. The class listing is
+the whole proof that the card only reports.
+
+The constructor does three things. It stores the flag, it takes the boss off the
+hero's workplace (`SimWorkplace::GetSupervisor @0x73f2fe8db8`, the same call the
+hookup card makes), and then it decides who the lover object is: if the boss
+already carries a `SimLover` at `[supervisor+0x1d0]` whose age matches his own, that
+object is reused; otherwise `SimLover::GenerateLoverFromCoworker @0x73f3812d6c`
+makes a new one. That is the whole point of the follow-up: the hookup card is the
+question, this card is the game committing the answer.
+
+### 123.2 Nine titles and two sentences
+
+`RefreshScenario` opens with the usual lazy static initialisation -- twenty-nine
+string cells this time -- and then picks its title from a list the branch
+assembles, through `PickRandomFromStringArray @0x73f32b0608`:
+
+```
+hero made the move (4)          the boss made the move (5)
+  Chasing my bag       #15446     Nobody can know                #31896
+  I'm the captain now  #26059     If we're on company time       #26346
+  And about my pay...  #11401     Let's shoot for a promotion... #28825
+  Let's play favorites #28820     Securing my position here      #38375
+                                  I need lots of supervision     #24702
+```
+
+and the sentence underneath is one of two, both `Format` calls over the boss's
+relationship word and his full name:
+
+```
+You seduced your {0}, {1}!          #49284   cell 0x5c60ba8
+You let your {0}, {1}, seduce you!  #48933   cell 0x5c60b98
+```
+
+The relationship word is the same one section 118 proved is the role word for a
+supervisor, so the two sentences read "You seduced your supervisor, Court Kurbain!"
+and "You let your supervisor, Beyawnce Gnolls, seduce you!". Both are titles in
+the interface and neither reaches the log: with no choice handler there is no
+`Log` call behind them, and the port keeps that -- the port's card writes no
+journal line at all, which makes it the only card in the corpus with an empty
+narrative.
+
+Three more panels are built into the same card. Two enjoyment bars are formatted
+from two rolls (`{0} Enjoyment` #69502 with a 0..100 draw and a 0..21 draw offset
+by 80), an obituary line is added as a colour string --
+
+```
+{0} was never able to shake the rumor that {1} once romped with {2} {3}.   #70396
+```
+
+-- and when the two sexes can make a baby, a pregnancy is created outright through
+`GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother @0x73f2fd4438`
+and pushed as its own scenario. The card is, in other words, the game's one-stop
+place to bury the consequences of the hookup: lover bookkeeping, a possible baby,
+an obituary that a future death screen may quote.
+
+### 123.3 What it does to the hero's love life
+
+The bookkeeping is the part a port has to get right, because everything the game
+says about the boss afterwards depends on it. `RefreshScenario` marks the scenario
+as consumed (`strb 1,[self+0x132]`), and then, if the boss is not already an
+ex-lover (`SimPerson::IsExLover @0x73f30d3d78`), it bumps a counter on the hero and
+appends the lover candidate to `SimHero::get_ExLoverArray @0x73f2f22a70`. The old
+lover becomes an ex -- with the workplace written into `[workplace+0x2c]` as the
+hero's age at the time, the lover's `[0x224]` set to 5 and `[0x238]` to the hero's
+age.
+
+Then the bill. If the hero still had a lover when the card ran, the lane at
+`0x73f2e27874` moves `ImpactKarma(-4)` and `ImpactDiscipline(-4)` and bumps the
+hero's counter at `[0x208]`. That is the only stat change in the whole card, and it
+is a cheating penalty, not a hookup reward: the boss was worth nothing to the
+hero's numbers, and the partner he had was worth minus four of two of them.
+
+Two pushes hang off the same state. `SimLover::IsExLoverHookup` and
+`SimLover::IsCheating` (`@0x73f34779ec`, `@0x73f3477a20`) both feed
+`CollectSetNext`, and there is a separate catch: if the hero had a lover, and a
+`GetRandomNumber(0,150)` draw beats `100 - lover[0xc0]`, and the lover is not
+`IsProbablyTheSameAsPerson` as the boss, a "caught cheating" scenario is pushed
+(`.ctor(System.Int32) @0x73f3da31b8` with 0). A hero with a spotless reputation
+`[0xc0]` is safe; a hero with a bad one gets walked in on.
+
+### 123.4 How the port reaches it
+
+The port cannot push a card. A year is one event, and the family dispatch returns
+at the first card that fits, so a follow-up has to wait. The port therefore keeps
+the name of the boss a hookup happened with and presents the morning after in the
+next year that no earlier family claims:
+
+| where | what |
+|---|---|
+| `port/include/bl/game.h:792` | `std::string morningWith;` -- the boss the card is about |
+| `port/include/bl/game.h:793` | `bool morningByHero;` -- the `_initiatedByHero` byte, and so the title pool |
+| `port/include/bl/game.h:794` | `bool morningPrevLover;` -- whether the hero already had a lover |
+| `port/include/bl/sim.h:652` | `Rng mornRng_;` -- the card's own stream |
+| `port/src/sim.cpp:641` | the seed, `seed ^ 0x3f84d5b5b5470917 ^ 0x9216d5d98979fb1b` |
+| `port/src/sim.cpp:3638` | the wire, right after the hookup card's own |
+| `port/src/sim.cpp:27004` | `bool Sim::morningYear` |
+| `port/src/sim.cpp:26704` | the inbound lane records the boss (the hero went along) |
+| `port/src/sim.cpp:26729` | the outbound success lane records him (the hero asked) |
+
+The card itself is short. No gate beyond the pending name, the title from the
+branch's pool, the sentence, and the cheating pair when a lover was already there.
+It also does the one thing the game does that the port can honour cheaply: it
+writes the boss into the hero's lover fields, which is what
+`GenerateLoverFromCoworker` does in the game and what makes the next hookup's
+cheating check and the existing lover cards see him.
+
+Four sampled cards, drawn by `/tmp/qdir/succsample.py`:
+
+```
+seed 7  male   age 43   I'm the captain now
+        You seduced your supervisor, Court Kurbain!
+        (hookup at 42, outbound "Hook up with him", no lover, no stat move)
+seed 12 female age 42   Securing my position here
+        You let your supervisor, Harley YBY, seduce you!
+        (hookup at 41, inbound "Hit that", no stat move)
+seed 11 female age 73   Chasing my bag
+        You seduced your supervisor, Ram Smith!
+        karma -30, discipline -30   <- she already had a lover
+        (hookup at 72, outbound, and the card is the cheating bill)
+seed 24 male   age 56   Nobody can know
+        You let your supervisor, Selene Gnomez, seduce you!
+        (hookup at 51 -- five years earlier, because four years of other cards
+         claimed the year first)
+```
+
+### 123.5 Shortcuts
+
+* The game shows the card the moment the hookup resolves. The port shows it in the
+  next year nothing else takes, which is why the observed delay is one year in
+  sixteen of twenty-eight cards and up to seven in the tail. A card that waits is
+  still a card; the alternative was a second event per year the loader has no
+  shape for.
+* `IsExLover`, `CollectSetNext`, the ex-lover array, the enjoyment panels, the
+  obituary colour line (#70396), the collectible chain behind
+  `IsScavengerHuntAvailable` / `IsDeadlySins2024` / `HasUserFoundCollectible`, and
+  the pregnancy push all stay unported: the port carries no ex-lovers, no
+  collectibles, no pregnancy and no obituary generator.
+* The caught-cheating card (the `0..150` draw against `100 - lover[0xc0]`) is a
+  comment. The port has no lover reputation float, and the card it would push is
+  another scenario the port does not carry.
+* The hero's `[0x70]+0x2c5` byte, set at the end of `RefreshScenario` when the hero
+  made the move on a male boss, has no reader in the port.
+* The sound at `[self+0x140]` (`csel` between two cells on the hero's gender) is not
+  modelled, as in every other card.
+
+### 123.6 Verification
+
+The probe (`/tmp/qdir/succres.py`, eighty lives: seeds 1..40 in both sexes, each
+played to eighty) reproduces the card and the hookup that owes it. The check that
+matters most is the orphan count -- a morning after with no hookup behind it is the
+one way this card can be wrong:
+
+```
+lives 80
+morning cards 28
+who {'boss': 22, 'hero': 6}
+titles {'And about my pay...': 4, 'Chasing my bag': 1, 'I need lots of supervision': 2,
+        "I'm the captain now": 1, "If we're on company time": 6,
+        "Let's shoot for a promotion soon": 2, 'Nobody can know': 10,
+        'Securing my position here': 2}
+deltas {'()': 26, "(('discipline', -30), ('karma', -30))": 2}
+delay in years (capped at 9) {1: 16, 2: 5, 3: 2, 4: 1, 5: 2, 7: 2}
+cards per life {0: 54, 1: 24, 2: 2}
+orphan mornings 0
+runtime 21s
+failures 0
+events 28
+RESIDUE 0 {}
+rc 0
+```
+
+Sixty-nine of the eighty lives never see the card, which is what a follow-up should
+look like: the hookup card itself was fifty-two cards in the same sweep before this
+section added its own draw, and only the hookups that resolved the hero's way owe a
+morning. Two of the twenty-eight collected the cheating bill, and both of them had
+a lover from an earlier hookup -- the port wrote that lover into the hero's fields,
+which is exactly the state the game's `ImpactKarma(-4)` lane reads.
+
+`tools/test_seduce_after.py` is the repo's copy of those assertions: the pool
+matching the branch, the sentence, the empty table and choice slots, the empty
+journal, the cheating pair, and every card having a hookup behind it.
+
+```
+morning cards: 28
+who: {'boss': 22, 'hero': 6}
+deltas: {'()': 26, "(('discipline', -30), ('karma', -30))": 2}
+delay in years: {1: 16, 2: 5, 3: 2, 4: 1, 5: 2, 7: 2}
+cards per life: {0: 54, 1: 24, 2: 2}
+ok
+```
+
+The batch is green and the census is unchanged:
+
+```
+captured scenarios: 109  recoverable: 107
+contentless entries: 2 -- ScenarioMiniPaywall x2
+ENTRIES 109 rendered-by-port 107 gap 0
+distinct residue tokens 0 total 0
+```
+
+The sweep is sixty-six probes, every one clean, and the ages 0..34 bench trace
+still does not move a line from section 122 -- the card draws everything on
+`mornRng_`, and it is only reached in lives that already rolled a hookup.
+
+```
+succres.py     rc=0 residue=0 fails=0 events=28
+```
+
+The sibling counters move again, for the reason they always move: a card that
+writes lover fields changes which lover and friend cards the following years can
+offer, and a card that takes a year changes what the rest of that life's years
+still have room for.
+
+| test | after 122 | after 123 |
+|---|---|---|
+| hookup cards | 90 | 89 |
+| supervisor cards | 105 | 101 |
+| after hours cards | 70 | 68 |
+| team building cards | 49 | 49 |
+| supervisors seen | 34 | 34 |
+| drug cards | 85 | 82 |
+| witness cards | 86 | 84 |
+| lightning cards | 75 | 75 |
+| lightning deaths | 6 | 6 |
