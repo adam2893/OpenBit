@@ -19479,3 +19479,80 @@ cells against a running game, but the two tools above remove the *repeat* half o
 that cost — a card captured once is never asked for twice, and every literal the
 game has already loaded is cached.
 
+## 128. Tooling: the whole symbol table, and an annotated disassembler that uses it
+
+### 128.1 `tools/symbols_dump.py` — 140,207 methods in four seconds
+
+il2cpp already holds the map. Walking `il2cpp_domain_get_assemblies` ->
+`il2cpp_assembly_get_image` -> `il2cpp_image_get_class` ->
+`il2cpp_class_get_methods` and taking each `MethodInfo`'s own entry point gives
+`addr -> Namespace.Class::Method` for **every** managed method, not just the
+scenario classes `il2cpp_dump.txt` lists:
+
+```
+methods 140207 in 4.0s -> tools/symbols.json
+```
+
+Keys are module-relative (`ptr - module.base`), so the table does not change when
+the loader picks a different base; a static address from the .so maps to
+`static - 0x73F049A000`.
+
+### 128.2 What it settled on the first lookup
+
+```
+0x73f32ab2a8 -> GameReference::GetRandomNumber
+0x73f30d35a0 -> SimLover::RelationshipStatusString
+0x73f2fc62bc -> SimPersonName::FullName
+0x73f52976b4 -> System.String::Format
+0x73f30d284c -> SimPerson::GetTotalHeroRelationshipStrength
+0x73f2eb9db8 -> Scenario::.ctor
+0x73f380158c -> LifeLog::Log
+0x73f30c4db0 -> SimChild::IsChildWithLover
+0x73f37228d4 -> Life::get_ChildArray
+0x73f32a2f10 -> GameManager::get_DevMode
+```
+
+Two of those are corrections, not confirmations:
+
+* `0x73f32a2f10` is `GameManager::get_DevMode`, and its body is `mov w0, wzr` --
+  a build-time constant, not a stub. The `orr w19, w0, w19` in
+  `ScenarioLoverMakeLoveNag`'s eligibility is therefore `devMode || ...`, which
+  in a production build is a no-op clause, and the gate is the rest of it.
+* `Life::get_ChildArray` + `SimChild::IsChildWithLover` mean the LINQ block in
+  that same eligibility is walking **the hero's children**, not a partner list,
+  and tracking the youngest. The `minAge > 4` test at the end is a child-age
+  test. §125 recorded that block as an unidentified collection walk; it is now
+  identified.
+
+### 128.3 `tools/disasm.py` — the decode loop's new front end
+
+```
+python3 tools/disasm.py 0x73f3daf658 90            # BreakUp.RefreshScenario
+python3 tools/disasm.py 0x73f3daf658 90 --lits     # resolve slots already seen
+python3 tools/disasm.py --method ScenarioFriendMeet::RefreshScenario
+```
+
+Every `bl` is named exactly, every `adrp`+`ldr` pair is resolved to its slot
+offset, and `--lits` prints the literal text for slots `tools/lit_cells.json`
+has already seen load. Two deliberate limitations:
+
+* **exact hits only.** The managed table has no entry for the runtime helpers the
+  codegen emits (`0x73f26d4860`, the class-init call in every card), and a
+  nearest-below guess labelled all of them `Amazon.Util...FillDictionary` before
+  the rule was tightened. `--near` opts into a bounded guess and marks it with
+  `~`.
+* **the immediate is required** on a load: `ldr x8, [x20]` dereferences a pointer
+  the code already holds and is not a slot read, which the first cut of the tool
+  mislabelled.
+
+Sample, the §125 card re-read through the new tool:
+
+```
+73f3daf6e4  bl  #0x73f2fc62bc   ; SimPersonName::FullName
+73f3daf6f8  bl  #0x73f52976b4   ; System.String::Format
+73f3daf714  bl  #0x73f30d35a0   ; SimLover::RelationshipStatusString
+73f3daf720  bl  #0x73f52aa938   ; System.String::ToLower
+```
+
+That is the same decode §125 did by hand, in one command, with no attach.
+
