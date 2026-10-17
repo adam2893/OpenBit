@@ -30,6 +30,7 @@ add_library(blport STATIC
   src/fam/fame.cpp
   src/fam/lover.cpp
   src/fam/paternity.cpp
+  src/fam/birth.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 

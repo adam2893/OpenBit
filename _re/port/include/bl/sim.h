@@ -209,6 +209,8 @@ class Sim {
   bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
+  // A child is born, REPORT.en.md 151.
+  bool birthYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);

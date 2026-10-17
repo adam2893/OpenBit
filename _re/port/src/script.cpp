@@ -231,7 +231,8 @@ std::string childrenJson(const Life& life) {
       << ", \"otherParent\": " << jsonOrNull(c.otherParent)
       << ", \"withCurrentLover\": " << (c.withCurrentLover ? "true" : "false")
       << ", \"paternityAsked\": " << c.paternityAsked
-      << ", \"bornAtHeroAge\": " << c.bornAtHeroAge << "}";
+      << ", \"bornAtHeroAge\": " << c.bornAtHeroAge
+      << ", \"isHeroes\": " << (c.isHeroes ? "true" : "false") << "}";
   }
   o << (life.children.empty() ? "]" : "\n    ]");
   return o.str();

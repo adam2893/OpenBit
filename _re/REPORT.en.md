@@ -20942,6 +20942,60 @@ Bench 0 lines; `test_play` and `test_children` green.
 * a positive result does not yet start child support (`SimChild.ChildSupport`), which
   the game's dismiss handler applies.
 
+## 151. A child is born
+
+§146 said the array existed but nothing filled it. It fills itself now.
+
+The game runs birth through `SimPregnancy` and two cards: `ScenarioPregnancy` asks the
+hero about the pregnancy and `ScenarioBirth` reports the arrival —
+`'{0} just gave birth to a baby {1}{2}!\n\nWhat will you name {3}?'` (#70148).
+
+The port carries the pregnancy as two flags on the hero (`loverPregnant`,
+`loverPregnantByHero`) and reports the arrival as a report card:
+
+```
+Your wife, Layla, just gave birth to a baby boy!
+I named him Minji.
+My wife, Layla gave birth to a baby boy named Minji.
+```
+
+### 151.1 What the port does differently, on the record
+
+* **the naming question is cut.** There is no text entry in the port, so the body
+  stops before `What will you name {3}?` and the child is named from the game's own
+  pool instead. The line's two halves are the class's sentence; the question is the
+  only part removed.
+* **the conception roll is a port coin** (one in twelve per year, partner 18-45).
+  The game's own roll lives behind `SimPregnancy` and the hookup cards.
+* **`OtherParent` and `isHeroes` are set from the pairing**, so a born child
+  belongs to the partner it was born to — which is what the paternity family
+  (§149) needed to stop being a fixture.
+
+### 151.2 Verification
+
+`tools/test_birth.py`, 30 lives with partners:
+
+```
+births: 6 lives with children: 4
+ok
+```
+
+Per birth: the body matches the class's sentence (partner word, partner name, boy or
+girl), the journal names the child, **that child is on the life** with the partner as
+`otherParent`, the right gender, `isHeroes: true`, and an age equal to the hero's age
+minus the year of the birth. Per life: no partner, no children.
+
+Bench 0 lines; `test_children`, `test_paternity_court_order` and `test_play` green.
+
+### 151.3 What this unblocks
+
+* `ScenarioLoverCounselingPush` — its handler reads `get_ChildArray` and
+  `IsLivingWithHero`, and children now arrive without a fixture.
+* The paternity family's `isHeroes` divergence (§150) can finally produce a
+  **positive** result, because a born child is the hero's.
+* Custody, child discipline, the child's own lifecycle lines: all of it has state to
+  stand on now.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 

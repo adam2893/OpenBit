@@ -97,6 +97,10 @@ struct Hero {
   // are written around it: LoverDemandsBirthControl, LoverStopsBirthControl and
   // ScenarioBirthControlHero.
   bool onBirthControl = false;
+  // The partner's pregnancy (REPORT.en.md 151). The game keeps a SimPregnancy object;
+  // the port keeps the two facts its own birth card needs.
+  bool loverPregnant = false;
+  bool loverPregnantByHero = false;
   int ageWentOnBirthControl = 0;
   int ageWentOffBirthControl = 0;
   bool employed = false;
