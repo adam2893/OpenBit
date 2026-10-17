@@ -28,6 +28,36 @@ Verified with Apple clang 17.0.0 (clang-1700.0.13.5, arm64-apple-darwin24.4.0) a
 cmake 4.4.3. blsim exits 0. The data root defaults to the parent directory of the
 build tree; pass another root as argv[1], or as `--data` in the scripted form below.
 
+## Played run mode (`--play`) — tier 2, one life at the terminal
+
+    ./build/blsim --script script.json --play      # a spec'd life
+    ./build/blsim --play                           # a random country and gender
+
+Same engine, same tables, same spec keys as `--script`: the year is shown, its
+buttons are offered, and the branch pressed is the branch the port executes. Keys
+are the setup switches as usual; `ages` caps the session (0 = until death).
+
+    --- age 23 ------------------------------------
+      $4210   happiness 71   health 92   smarts 55   looks 64   karma 40   discipline 51
+
+      Job Offer
+      A local shop wants you behind the counter.
+      [1] Take the job   (the game's own pick)
+      [2] Turn it down
+      >
+      -> Turn it down
+      I passed on the shop job.
+
+`[enter]` takes lane 1, a number takes that lane, `q` ends the session. A card
+with no buttons is a report: it prints `[enter] continue`.
+
+The driver never copies engine state. Each year it asks the engine for the card
+**inside a forked child** — the child's state changes die with it — prints that,
+reads the answer, and only then runs the same year in the parent with the pressed
+index, which is `Sim::ageUp`'s own forced-choice argument. No RNG stream is
+cloned or replayed, so a played life is byte-identical to a scripted one given the
+same answers (`tools/test_play.py` asserts exactly that).
+
 ## Scripted run mode (`--script`) — the Phase 1 harness, port side
 
     ./build/blsim --script script.json [--data /path/to/_re]

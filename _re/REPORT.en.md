@@ -19310,3 +19310,95 @@ entries (`ScenarioMiniPaywall` x2), `portgap.py` reports
 `distinct residue tokens 0 total 0`, and all sixty-seven probes exit zero with
 zero failures.
 
+## 126. The terminal driver: the engine played instead of scripted
+
+Tier 2 of the plan is not a scenario. It is the driver that turns the same engine
+`blsim --script` batches into something a person can sit in front of, and the
+whole of its design is one observation about the port's own API:
+
+```
+bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice = -1);
+```
+
+The engine already knows how to run the branch the player picked: every card
+honours a 0-based `forcedChoice` index. What it cannot do is *show* the card
+before that index is known. So the driver asks for the year twice.
+
+### 126.1 Two passes, one of them in a child
+
+```
+year N:  fork -> child      sim.ageUp(life, ev, -1)   print the card, discard the state
+         parent waits, prints the buttons, reads the answer
+         parent             sim.ageUp(life, ev, K)    for real, K = the pressed lane
+```
+
+The preview cannot be folded into the commit, because a card bakes its stat move
+at build time — `out.karma` *is* the chosen lane's move. And it cannot be a
+snapshot either: `Sim` owns sixty-odd `Rng` streams plus twenty-five per-card
+caches plus the loaded table cache, so copying it to rewind costs a full table
+copy per year, and copying only part of it diverges from a single-pass run the
+first time a cache entry is reused. `fork()` sidesteps both: the child inherits
+everything copy-on-write, mutates it, prints one line and `_exit`s. The parent's
+streams, caches and tables are never touched, so no state is cloned, replayed or
+rewound.
+
+Measured: a ninety-one-year life with relationships on, every card answered, runs
+in **1.5 s wall** including the six lane probes and the commit for every year.
+
+### 126.2 Finding a card's buttons
+
+The preview returns the lane the port's own draw took, not the menu. The driver
+gets the menu by probing the same year in further children, one per index 0..5,
+and keeping the probes that land on the same `(table, row)` as the preview:
+
+```
+--- age 23 ------------------------------------
+  $4210   happiness 71   health 92   smarts 55   looks 64   karma 40   discipline 51
+
+  Job Offer
+  A local shop wants you behind the counter.
+  [1] Take the job   (the game's own pick)
+  [2] Turn it down
+  >
+```
+
+A card whose `out.choice` is empty has no `ChoiceSelectedAtIndex` at all — the
+report cards (`See ya`, the morning after, the witness journal) — and prints
+`[enter] continue`.
+
+### 126.3 What the driver reuses
+
+`runScript`'s setup block moved to `bl::setupLife` (src/script.cpp) so a played
+life is built by the same `createLife` + country pin + twenty-two `make*`
+switches + birth-line draws as a scripted one, in the same order. The stat
+clamping in `applyStats` is copied from the same loop for the same reason. Nothing
+else moved: `--script` output is byte-identical, which the whole probe battery
+depends on.
+
+### 126.4 Verification
+
+`tools/test_play.py` plays a whole life with every card answered by the game's own
+lane and asserts the shape (`=== ` banner, ages strictly increasing from 1, a
+death or a final age, no unresolved `<token>`), then replays with the first
+two-button card answered `2` and asserts the executed narrative is *that* card's
+label — the half a scripted run can never check. Finally it replays the identical
+answers and asserts the output is byte-identical, which is the claim that the
+forked preview leaves nothing behind.
+
+```
+played ages: 91 -> 91
+lanes answered: 56
+ok
+```
+
+### 126.5 Shortcuts
+
+* The menu probe caps at index 5. No ported card has more lanes; the cap is the
+  shortcut, not a measured maximum of the game's own cards.
+* The preview runs the real `ageUp`, so a card that writes to the filesystem or
+  a socket would run twice. Nothing in the port does.
+* A `--play` session with no `--script` uses `{}`: seed 0, a seed-picked
+  country, male. Age cap is `ages` or 120.
+* Windows has no `fork`; the driver is POSIX-only and the port's other modes are
+  not.
+

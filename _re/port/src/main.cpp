@@ -11,6 +11,7 @@
 #include "bl/dotnet_rng.h"
 #include "bl/game.h"
 #include "bl/mod.h"
+#include "bl/play.h"
 #include "bl/script.h"
 #include "bl/sim.h"
 #include "bl/table.h"
@@ -222,6 +223,7 @@ int main(int argc, char** argv) {
   std::string reDir = "/Users/Adam/Documents/bitlife/_re";
   std::string scriptPath;
   bool deckCheck = false, templates = false, rngCheck = false, bagCheck = false;
+  bool play = false;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--script" && i + 1 < argc) scriptPath = argv[++i];
@@ -229,8 +231,30 @@ int main(int argc, char** argv) {
     else if (arg == "--templates") templates = true;
     else if (arg == "--rngcheck") rngCheck = true;
     else if (arg == "--bagcheck") bagCheck = true;
+    else if (arg == "--play") play = true;
     else if (arg == "--data" && i + 1 < argc) reDir = argv[++i];
     else reDir = arg;  // the original blsim [RE_DIR] form
+  }
+  // --play: the same script spec, driven interactively instead of batched.
+  if (play) {
+    bl::ScriptSpec spec;
+    std::string scriptError;
+    std::string text;
+    if (!scriptPath.empty()) {
+      std::ifstream in(scriptPath);
+      if (!in) {
+        std::cerr << "play: cannot open " << scriptPath << "\n";
+        return 2;
+      }
+      text.assign((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    } else {
+      text = "{}";  // a seed-only life: a random country and a random gender roll
+    }
+    if (!bl::parseScript(text, spec, &scriptError)) {
+      std::cerr << "play: " << scriptError << "\n";
+      return 2;
+    }
+    return bl::runPlayMode(reDir, spec);
   }
   if (!scriptPath.empty()) return bl::runScriptMode(reDir, scriptPath);
   if (deckCheck) return runDeckCheck();

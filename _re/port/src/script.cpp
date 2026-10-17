@@ -674,8 +674,13 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
   return true;
 }
 
-bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string* error) {
-  Life life = sim.createLife(spec.female);
+// The life every scripted run and every played run starts from: the setup switches
+// (REPORT.en.md 47, 48, 82-85 and the trade families) applied in the order runScript
+// has always applied them, then the two draws the loop below depends on.
+bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAtBirth,
+               std::vector<std::string>* birth, std::string* error) {
+
+  life = sim.createLife(spec.female);
   if (!spec.country.empty() && !sim.pinCountry(life, spec.country)) {
     if (error) *error = "no country named \"" + spec.country + "\" in a16_countries-enc.json";
     return false;
@@ -736,10 +741,18 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
       sim.setDate(std::atoi(spec.date.substr(0, dash).c_str()),
                   std::atoi(spec.date.substr(dash + 1).c_str()));
   }
-  const std::string heroAtBirth = heroJson(life.hero);
+  *heroAtBirth = heroJson(life.hero);
   // The age-0 lines belong to the same stream as the age-ups, so they are drawn
   // here, once, before the loop.
-  const std::vector<std::string> birth = sim.birthLines(life);
+  *birth = sim.birthLines(life);
+  return true;
+}
+
+bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string* error) {
+  Life life;
+  std::string heroAtBirth;
+  std::vector<std::string> birth;
+  if (!setupLife(sim, spec, life, &heroAtBirth, &birth, error)) return false;
 
   std::vector<std::string> events;
   std::string newbornAtSetup;

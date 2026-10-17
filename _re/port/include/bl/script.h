@@ -108,6 +108,13 @@ struct ScriptSpec {
 // value has the wrong type, or when gender is neither "male" nor "female".
 bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error);
 
+// Builds the life the spec describes: createLife, the country pin and every setup
+// switch, then the two draws (the hero snapshot and the age-0 lines) that share
+// the age-up stream. Both the scripted run and the played run start here.
+// False when the script names a country a16_countries-enc.json does not have.
+bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAtBirth,
+               std::vector<std::string>* birth, std::string* error);
+
 // Runs the life spec describes and returns the JSON object the port prints for
 // it. False when the script names a country a16_countries-enc.json does not have.
 bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string* error);
