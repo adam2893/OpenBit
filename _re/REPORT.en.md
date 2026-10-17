@@ -21802,6 +21802,68 @@ that. What can be said is narrower and true: everything the port renders is expl
 nothing is left as a token, and the one row that could not be recovered belongs to a
 card that has not been written.
 
+## 169. The class census, and why the class count is not the measure
+
+§168 ended by naming the missing instrument: the game's scenario classes against the
+port's. It exists now — and it says something other than what was expected.
+
+```
+scenario classes in the game:        2719
+named somewhere in port/src:           89    (3%)
+not named at all:                    2630
+```
+
+Read alone, that is damning. It is also the wrong measure, and the second half of the
+tool shows why: **the port renders cards from tables, not from classes**. Counting how
+many of each family's data tables `port/src` touches:
+
+```
+family      tables touched
+Zoo           35 /  35
+Astronaut     35 /  35
+Vampire       44 /  44
+Outdoor       42 /  42
+Cult          45 /  45
+Racing        31 /  31
+Fight         38 /  38
+Music         58 /  58
+Casino        37 /  39
+Secret        51 /  60
+Dealer        37 /  38
+Black         23 /  24
+```
+
+### 169.1 What the two numbers actually mean
+
+The game has one **class per card shape** — `ScenarioZooAgeUpAnimalBirth`,
+`ScenarioZooAgeUpAnimalBirthFailure`, `ScenarioZooAgeUpAnimalBirthGoldenPacifier` are
+three classes for one family's three outcomes. The port has one **table** for that
+family and builds each face from a row. So:
+
+* `2,719` is the game's *granularity*, not its content;
+* `89` is how much of that granularity the port reproduces as code;
+* the table ratios are how much of the **content** the port can render.
+
+Which makes the class count a measure of nothing on its own — the honest statement is
+that the port covers its families' data almost completely (Zoo, Vampire, Music, Cult,
+Outdoor, Racing, Fight at 100%) and reproduces their *behaviour* case by case.
+
+### 169.2 What is genuinely missing, stated as such
+
+Tables touched is not behaviour implemented. `Secret 51/60`, `Casino 37/39`,
+`Dealer 37/38`, `Black 23/24` are real gaps in the data layer; and for every family at
+100%, the gap the instruments cannot see is the **gate and the chain** — which cards
+follow which, and under what condition they push. That is what §145 listed as blockers
+and what §133's queue began to solve.
+
+### 169.3 The instrument's own caveat
+
+"Touched" means the table's name appears in `port/src`; a table can be named and its
+rows never drawn. `cardrate.py` (§167) is the instrument that answers *drawn*, and the
+two together — named and drawn — are the closest this project can get to a coverage
+claim without the game's own push weights.
+
+
 
 
 
