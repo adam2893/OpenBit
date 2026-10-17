@@ -3183,6 +3183,13 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
   // The stage the hero's own country starts children in: trace_fresh (US) has
   // "started elementary school", trace_game3 (Finland) "started primary school".
   const bool usa = lower(trim(life.hero.country)) == "united states";
+  // The hero's own children age with him (REPORT.en.md 146). Nothing is announced
+  // for them yet: the child-family cards and their birth lines are the next step,
+  // and inventing a line now would be text the game does not have.
+  for (Child& child : life.children) {
+    if (child.alive) ++child.age;
+    if (child.age >= 18 && !child.movedOut && sibRng_.chance(0.05)) child.movedOut = true;
+  }
   std::vector<Person> newborns;
   for (size_t i = 0; i < life.family.size(); ++i) {
     Person& p = life.family[i];

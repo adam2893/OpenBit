@@ -20666,6 +20666,61 @@ pair, unchanged since §124.
 2. Then the three child-dependent cards.
 3. Then `ScenarioLoverArgues`, whose reason switch is a decoding job of its own.
 
+## 146. The child model
+
+The game keeps a `SimChild` array on the life. `SimChild` has 86 methods and 30
+getters, so the model was scoped to what the blocked cards actually read rather than
+to everything the class can do:
+
+```
+SimChild.ChildType / RelationshipStatus      who the child is to the hero
+SimChild.MovedOut                            has it left home
+SimChild.IsChildWithCurrentLover             which partner it belongs to
+SimChild.NumTimesHeroAskedToTakePaternityTest the court-order card's own counter
+SimChild.Spouse / ExSpouseArray / GrandchildArray      not modelled yet
+```
+
+`Life::children` now holds `{name, lastName, female, age, alive, movedOut,
+otherParent, withCurrentLover, paternityAsked}`, each child ages with the hero, and
+`final.children` prints the array.
+
+### 146.1 What it deliberately does not do
+
+**No birth.** The game gets a child through its baby scenarios; the port has none,
+and a lifecycle line invented for it would be text the game does not have — the
+exact thing §145 refused. The array is reachable through a script key instead
+(`"children": 2`), the same way `fame` (§139) and `birthControl` (§141) were
+reachable before the cards that move them existed.
+
+**No name.** The fixture leaves `name` empty rather than drawing one: the cards that
+read a child name it from the parent it belongs to, and a name drawn at setup would
+not be the one the game would have drawn.
+
+### 146.2 Verification
+
+`tools/test_children.py`:
+
+```
+child model: ok
+```
+
+No children unless the script asks; the fixture puts them on the life with the right
+genders, aging with the hero (`kid.age >= final.age`, since they are born before the
+run); `MovedOut` implies an adult; the count is bounded and a bad value is a parse
+error with its own message.
+
+Bench: 0 lines. `test_play`, `test_family`, `test_birth_control` unchanged — the
+model is additive, and nothing draws from a stream it should not.
+
+### 146.3 What it unblocks
+
+* `ScenarioExLoverPaternityTestCourtOrder` (§143's decode): `_exLover` + `_child`,
+  and its `paternityAsked` counter is now a field.
+* `ScenarioLoverCounselingPush`: `Life::get_ChildArray` + `IsLivingWithHero` are
+  `Life::children` and a per-child flag.
+* The whole child family (custody, discipline, paternity results), which the port
+  had no state for at all.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This

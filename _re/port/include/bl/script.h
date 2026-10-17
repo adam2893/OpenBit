@@ -102,6 +102,10 @@ struct ScriptSpec {
   // The hero starts on birth control (REPORT.en.md 141); the game gets there
   // through the lover family's own cards, which need the flag to exist first.
   bool birthControl = false;
+  // Children at the start of the life (REPORT.en.md 146). The game gets there
+  // through the baby scenarios; the port needs the array to exist for the cards
+  // that read it, and a fixture is the honest way to reach it.
+  int children = 0;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

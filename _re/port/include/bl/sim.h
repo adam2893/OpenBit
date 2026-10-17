@@ -81,11 +81,30 @@ enum PendingCard {
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
 };
 
+// The hero's own children (REPORT.en.md 146). The game keeps a SimChild array on the
+// life with its own state -- ChildType, MovedOut, Spouse, ExSpouseArray,
+// GrandchildArray, RelationshipStatus, ChildSupport, Twins and a dozen
+// HeroAgeAtLastAsked* stamps. The port starts with what the three child-dependent
+// cards read: who the child is, how old, who the other parent is, whether it lives
+// with the hero, and how often the hero has been asked for a paternity test.
+struct Child {
+  std::string name;        // first name
+  std::string lastName;
+  bool female = false;
+  int age = 0;
+  bool alive = true;
+  bool movedOut = false;   // SimChild.MovedOut
+  std::string otherParent; // the partner who is not the hero, when there is one
+  bool withCurrentLover = false;  // SimChild.IsChildWithCurrentLover
+  int paternityAsked = 0;  // SimChild.NumTimesHeroAskedToTakePaternityTest
+};
+
 struct Life {
   Hero hero;
   int year = 0;
   bool alive = true;
   std::vector<Person> family;
+  std::vector<Child> children;
   // Cards the current year still owes the player, oldest first. ageUp drains one
   // per call and does not advance the age while the queue is not empty.
   std::vector<int> pendingCards;
@@ -166,6 +185,7 @@ class Sim {
   int retirementAge(const Hero& h) const;
   // '<insult>' out of a16_insults-enc (REPORT.en.md 138).
   std::string insultToken();
+
   // The paparazzi (REPORT.en.md 139): the Fame family's first card.
   bool paparazziYear(Life& life, AgeUp& out, int forcedChoice);
   // The birth-control demand (REPORT.en.md 142).

@@ -218,6 +218,24 @@ std::string exLoversJson(const Hero& h) {
   return o.str();
 }
 
+// The hero's own children (REPORT.en.md 146): the SimChild fields the port models.
+std::string childrenJson(const Life& life) {
+  std::ostringstream o;
+  o << "[";
+  for (size_t i = 0; i < life.children.size(); ++i) {
+    const Child& c = life.children[i];
+    o << (i ? ",\n      " : "\n      ") << "{\"name\": " << jsonOrNull(c.name)
+      << ", \"female\": " << (c.female ? "true" : "false") << ", \"age\": " << c.age
+      << ", \"alive\": " << (c.alive ? "true" : "false")
+      << ", \"movedOut\": " << (c.movedOut ? "true" : "false")
+      << ", \"otherParent\": " << jsonOrNull(c.otherParent)
+      << ", \"withCurrentLover\": " << (c.withCurrentLover ? "true" : "false")
+      << ", \"paternityAsked\": " << c.paternityAsked << "}";
+  }
+  o << (life.children.empty() ? "]" : "\n    ]");
+  return o.str();
+}
+
 // The hero's relatives (REPORT.en.md 135). A sibling carries the game's own
 // SimSibling state: whether it has moved out, who it married and at what age.
 std::string familyJson(const Life& life) {
@@ -272,6 +290,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"job\": " << jsonOrNull(h.job)
     << ", \"fame\": " << h.fame
     << ", \"exLovers\": " << exLoversJson(h)
+    << ", \"children\": " << childrenJson(life)
     << ", \"family\": " << familyJson(life);
   // The death sentence is a real table row (a16_death-types-enc) and carries
   // <pronoun> / <body part>: it is resolved where it was drawn, so it must be
@@ -629,6 +648,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.date)) return fail("date is not a string");
   }
 
+  p = findValue(json, "children");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("children is not a number");
+    if (v < 0 || v > 12) return fail("children must be between 0 and 12");
+    spec.children = int(v);
+  }
   p = findValue(json, "birthControl");
   if (p != std::string::npos) {
     while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;  // findValue stops after ':'
@@ -801,6 +828,19 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   }
   if (spec.fame > 0) life.hero.fame = float(spec.fame);
   if (spec.birthControl) life.hero.onBirthControl = true;
+  // The children fixture (REPORT.en.md 146): the array exists before any card that
+  // reads it. Each one is a person of the hero's own surname, born before the run.
+  for (int c = 0; c < spec.children; ++c) {
+    bl::Child child;
+    child.female = (c % 2) == 1;
+    // A first name is not needed for the array to be honest: the cards that read a
+    // child name it from the parent it belongs to, and the fixture leaves it empty
+    // rather than drawing one the game would not have drawn here.
+    child.name.clear();
+    child.lastName = life.hero.lastName;
+    child.age = 1 + c;
+    life.children.push_back(child);
+  }
   *heroAtBirth = heroJson(life.hero);
   // The age-0 lines belong to the same stream as the age-ups, so they are drawn
   // here, once, before the loop.
