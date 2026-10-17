@@ -20304,3 +20304,86 @@ a scripted life at all. `"fame": 80` is now a spec key, next to `royal`, `vampir
 and the rest: the game earns fame through a career, and the port needs a way to
 stand at the gate before the career that feeds it exists.
 
+## 140. A card-shaped view: the decode tool the sprint needed
+
+Two cards in a row ate a whole round each, and neither time was the card the
+problem. `ScenarioLoverCounselingPush.ChoiceSelectedAtIndex` is **1,111
+instructions**; `ScenarioExLoverPaternityTestCourtOrder`'s pair is 1,500. Almost all
+of that is compiler output: `List<T>.Add` closures, LINQ enumerators,
+`String::Format` wrappers, il2cpp runtime helpers, vtable stubs. The card itself —
+the game methods it calls, the immediate arguments, the fields it writes — is a few
+dozen lines buried inside.
+
+`tools/cardview.py` prints those few dozen lines and collapses the rest:
+
+```
+python3 tools/cardview.py 0x73f3dee5c4 240
+python3 tools/cardview.py --method ScenarioExLoverPaternityTestCourtOrder::ChoiceSelectedAtIndex 200
+```
+
+Four rules decide what survives:
+
+* a `bl` to a **managed** method whose name is not framework (`System.`, `<>c`, and
+  the SDK namespaces are dropped) — the card's own vocabulary;
+* `mov w1, #imm` — the argument the next such call takes, which is how an impact
+  value is read;
+* `str` into a slot the scenario owns (`0x38` Title, `0x48` Body, `0x108`/`0xb8`
+  choice lists, `0x110` and `0x132` flags, `0x170`/`0x178`/`0x180` the class's own
+  fields);
+* a slot load whose literal is already cached in `tools/lit_cells.json`, printed
+  with its text.
+
+Everything else becomes `... N`.
+
+### 140.1 What it turns a card into
+
+`ScenarioExLoverPaternityTestCourtOrder`, both methods, 530 instructions:
+
+```
+73f3dee748  mov  w1, #6                ; the argument that follows
+73f3dee76c  bl   SimLover::ExRelationshipStatusString
+73f3dee7ec  mov  w1, #5
+73f3dee7f4  bl   SimPerson::PronounStringForType
+73f3dee828  mov  w1, #1
+73f3dee834  bl   SimPerson::PronounStringForType
+73f3dee8e4  str  x0, [x19, #0x48]     ; Body
+73f3deea50  str  x0, [x19, #0x180]    ; _narrative
+73f3deea70  bl   ScenarioChoice::.ctor
+73f3deeac8  bl   ScenarioChoice::.ctor  ; two buttons
+73f3deeb00  str  x21, [x19, #0x108]   ; the choice list
+--- handler ---
+73f3deec74  mov  w1, #-2
+73f3deec7c  bl   SimPerson::ImpactKarma
+73f3deec98  mov  w1, #-2
+73f3deeca0  bl   SimPerson::ImpactDiscipline
+73f3deed20  mov  w1, #0x26            ; crime type 38
+73f3deed28  bl   SimHero::GetCrimeScenarioForCrimeType
+73f3deed84  bl   Scenario::.ctor       ; the pushed card
+73f3deedcc  bl   LifeLog::Log
+```
+
+That is the card: two ex-status nouns, two pronouns, a Body and a narrative, two
+buttons, one lane that moves karma and discipline by −2 and one that **pushes a
+crime scenario for crime type 38** — a court order the ex took out, and breaking it
+is a crime the game already models.
+
+### 140.2 Verification
+
+`tools/test_cardview.py` runs the tool on two cards whose calls the report already
+knows — `LoverBreakUp` (§125) and the court-order card — and asserts the expected
+calls and field writes survive while the kept-line count stays under twenty. A
+filter change that hides the logic fails there rather than quietly costing the next
+decode an hour.
+
+```
+cardview keeps the card and drops the codegen: ok
+```
+
+### 140.3 What this changes about the sprint
+
+Every remaining card starts from a 20-40 line view of itself instead of a
+1,000-instruction dump. The two cards this round could not finish are now ~20 lines
+each, and the third one (`LoverCounselingPush`) shows its skeleton the same way:
+`RelationshipStatusString().ToLower()`, two `PronounStringForType`, one Body write,
+three `ScenarioChoice` ctors.
+
