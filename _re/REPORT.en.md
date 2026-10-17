@@ -22455,6 +22455,57 @@ An adult child has no marriage, no spouse, no grandchildren, and no announcement
 are three more `SimChild` methods whose content is elsewhere — the same shape as §177's
 loaders — and they are recorded here rather than approximated.
 
+## 183. The custody family is one card with three stages
+
+The three `a16_custody-*` tables are not three cards. They belong to a single class with
+a push chain:
+
+```
+class ScenarioChildSupportCustody
+    field 0x170 SimLover _exLover
+    field 0x178 List<SimChild> _children
+    field 0x180 System.String _narrative
+    methods  .ctor(SimLover), RefreshScenario, ChoiceSelectedAtIndex,
+             PushNextScenario
+```
+
+and its three tables are the stages:
+
+```
+a16_custody-case-enc            139 rows  Reason, Plural, defendant craziness/money,
+                                          unemployed, Case Impact Score, commonness
+a16_custody-ex-argument-enc      35 rows  the ex's line, hero/ex gender, ex craziness
+a16_custody-child-argument-enc   54 rows  the child's line, gender, age, relationship
+```
+
+### 183.1 Why it was not ported this round
+
+`PushNextScenario` is the tell: the card is **interactive over several pushes** — pick
+which children are in dispute (`'All of them'` #11108, `'Pick your child'` #33847), then
+a case from the 139-row pool, then each side's arguments, then an outcome. That is a
+`pendingCards` chain of three or four cards with state held between them, and §133's
+queue only carries a kind, not a payload.
+
+Porting it needs one structural step first: **a pending card that carries data** (which
+child, which case row) rather than a bare enum. That is a small change to §133's queue
+and it is the honest prerequisite, not another card.
+
+### 183.2 The battery, after eleven cards and nine structural changes
+
+```
+probes 68   rc0 68   residue0 65   fails0 68
+```
+
+Every probe exits zero, no residue, no failures — the child, wedding, paternity,
+counseling, argues and sext cards have not disturbed a single one.
+
+### 183.3 The prerequisite, stated as the next step
+
+1. `PendingCard` gains a payload: the kind plus two ints (child index, row index).
+2. `ScenarioChildSupportCustody` ports as three pushes that read the payload.
+3. The three custody tables become usable at once.
+
+
 
 
 
