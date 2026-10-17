@@ -3478,6 +3478,17 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
   rndCache_.clear(); rbLast_.clear();  // one scenario per year: the '<rbN>' cache starts empty
+  // A year can owe more than one card (REPORT.en.md 133). The extras are built by
+  // the same functions that used to run a year late, and none of them draws: the
+  // trigger already fixed every string they print. Draining before the age-up also
+  // means no family line, no job draw and no dispatch runs twice for one year.
+  if (!life.pendingCards.empty()) {
+    const int kind = life.pendingCards.front();
+    life.pendingCards.erase(life.pendingCards.begin());
+    if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
+    if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
+    return false;
+  }
   ++life.year;
   Hero& h = life.hero;
   ++h.age;
@@ -20030,6 +20041,8 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
     h.morningWith = sup;
     h.morningByHero = false;
     h.morningPrevLover = !h.loverStatus.empty();
+    // The game pushes the report card in the same age-up (REPORT.en.md 133).
+    life.pendingCards.push_back(kPendingMorningAfter);
     if (h.female == h.supFemale) {
       out.choice = seducRng_.chance(0.5) ? "Get at it" : "Let me get a piece of that";
     } else {
@@ -20055,6 +20068,7 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
       h.morningWith = sup;
       h.morningByHero = true;
       h.morningPrevLover = !h.loverStatus.empty();
+      life.pendingCards.push_back(kPendingMorningAfter);
     } else {
       out.happiness = pointsForImpact(-1);
       out.narrative = "I attempted to seduce my supervisor, " + sup + ", but failed.";
@@ -20819,6 +20833,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     // three strings its RefreshScenario formats are pinned here, before the
     // relationship is cleared (REPORT.en.md 125).
     h.breakUpPending = true;
+    // The announcement is pushed the moment the break-up card resolves
+    // (REPORT.en.md 133), so it rides the same age-up instead of the next one.
+    life.pendingCards.push_back(kPendingBreakUpAnnouncement);
     h.breakUpWord = h.loverStatus == "married"
                         ? (h.loverFemale ? "wife" : "husband")
                         : h.loverStatus == "engaged"

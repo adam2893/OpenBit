@@ -54,6 +54,12 @@ for seed in range(1, 61):
             assert not re.search(r"<[a-zA-Z][^<>]*>", event["body"]), (seed, event["body"])
             # DismissSelected logs Format('I broke up with {0}.', FullName), whose
             # first token is the body's own name.
+            # The announcement belongs to the same age-up as the break-up card
+            # (REPORT.en.md 133), so the card immediately before it has to be the
+            # break-up row of that same age.
+            prev = doc["events"][doc["events"].index(event) - 1] if doc["events"].index(event) else None
+            assert prev and prev.get("table") == "a16_breakup-scenarios-enc", (seed, prev)
+            assert prev.get("age") == event.get("age"), (seed, prev.get("age"), event.get("age"))
             hits = [entry for entry in event.get("logLines") or []
                     if entry.startswith("I broke up with ")]
             assert hits, (seed, event.get("logLines", [])[-3:])

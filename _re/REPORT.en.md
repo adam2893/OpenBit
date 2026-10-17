@@ -19781,3 +19781,93 @@ zero, zero failures, and every event count equals the §125 baseline.
 `sim.cpp` still holds the bootstrap (`load`, 45.8 KB), the shared card plumbing,
 the RNG streams and the yearly dispatch — the part that is genuinely shared.
 
+## 133. Structural 1: a year can owe more than one card
+
+The port's age-up returns exactly one card. The game does not: it can put several
+scenarios in front of the player in one year, and the port had been paying for
+that by deferring two of them a whole year — the break-up announcement (§125) and
+the hookup's morning after (§123).
+
+### 133.1 The change
+
+`Life` gains a queue, and `ageUp` drains it **before** it advances anything:
+
+```cpp
+enum PendingCard {
+  kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
+  kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
+};
+
+if (!life.pendingCards.empty()) {
+  const int kind = life.pendingCards.front();
+  life.pendingCards.erase(life.pendingCards.begin());
+  if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
+  if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
+  return false;
+}
+++life.year;
+```
+
+Three properties made this the cheap version:
+
+* **the builders already existed.** `loverBreakUpYear` and `morningYear` were
+  written to run a year late; draining the queue calls them unchanged, and they
+  clear their own flags, so the old path becomes dead code rather than a second
+  implementation.
+* **draining rolls nothing.** Both builders read state the trigger already fixed
+  (`breakUpWord`/`breakUpName`, `morningWith`/`morningByHero`), so no RNG stream
+  moves when a card arrives early.
+* **the age does not advance while the queue is not empty**, so one year stays one
+  year: no second job draw, no second family line, no second dispatch.
+
+The triggers push the kind where they used to only raise a flag: both success
+lanes of `seduceYear` and the break-up branch of `relationshipYear`.
+
+### 133.2 Verification
+
+```
+same-age delivery   17 of 17 break-up announcements, one per life that has one
+                    ages: (1,m) 74, (1,f) 71, (7,f) 64, (12,m) 55 ... all equal
+morning after       delay in years: {0: 24}   was {1: 24} before the change
+bench               0 lines diff vs §125
+```
+
+Both behaviours are now asserted where they belong, not just observed:
+`tools/test_love_breakup.py` requires the card to follow the break-up row **at the
+same age**, and `tools/test_seduce_after.py` requires `set(delays) == {0}`.
+
+### 133.3 What moved in the counters, and why that is correct
+
+The extra cards are *additional* events in the same year rather than replacements,
+so a probe that counts events sees more of them. That is the game's own shape and
+the reason the change was made; the bump is the measurement, not a regression.
+
+**39 of 67 probes moved**, all of them exit 0 with zero failures:
+
+```
+racing 180 -> 189    lightning 916 -> 926    prism 330 -> 336    zoo 753 -> 747
+mafia  743 -> 750    pet      804 -> 814    casino 748 -> 754   cult 212 -> 217
+spy    113 -> 120    deal     732 -> 739    fight  208 -> 220   biz 3484 -> 3488
+```
+
+Mostly up, because the extra card is a real event that used to be counted a year
+later or absorbed into another year's slot. The few that fall (zoo 753 -> 747,
+act 143 -> 142, friend-out 85 -> 84) fall for the same reason from the other side:
+a card delivered early applies its stat move early, and a later gate in the same
+life then reads a different score.
+
+One wrinkle had to be fixed with it: `--script`'s `ages` used to mean "ageUp
+calls", and a pending card would have silently eaten one. The loop now counts
+**years lived** (`life.hero.age` changed) while `i` stays the card index, so
+`choices[]`/`push[]` keep their one-entry-per-card alignment with the bench's
+traces. `tools/test_play.py` shows the effect plainly: 94 cards now reach age 92
+instead of 91 for the same `ages` budget, because two of those iterations were
+extra cards inside a year.
+
+### 133.4 What this unlocks
+
+The queue is now the mechanism for every "this card pushes that card" chain in
+the dump — the assault card after the weapon encounter, the follow-up after the
+job referral's accept, and the whole `*Push`/`*Complete` family of two-stage
+cards. Each is one enum value and one push.
+

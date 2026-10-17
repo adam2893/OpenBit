@@ -757,7 +757,12 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   std::vector<std::string> events;
   std::string newbornAtSetup;
   std::string deathType, deathSentence;
-  for (int i = 0; i < spec.ages && life.alive; ++i) {
+  // `ages` counts years lived, not cards shown (REPORT.en.md 133): a year that owes
+  // a second card drains it on its own ageUp call, which does not advance the age.
+  // `i` stays the card index, so choices[]/push[] keep their one-entry-per-card
+  // alignment with the bench's traces.
+  int lived = 0;
+  for (int i = 0; lived < spec.ages && life.alive; ++i) {
     const int forced = i < int(spec.choices.size()) ? spec.choices[i] : -1;
     // push[i] (when present and non-empty) replays one exact real row; a clear
     // call keeps the override from leaking into later years.
@@ -768,7 +773,9 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     }
     else sim.forceScenario(std::string(), 0);
     AgeUp ev;
+    const int ageBefore = life.hero.age;
     if (!sim.ageUp(life, ev, forced)) break;  // no real row matched this year
+    if (life.hero.age != ageBefore) ++lived;  // a pending card leaves the age alone
     // The first age-up also runs SimHero.SetupEverythingElseForNewHero, a real
     // state change that belongs to no scenario. It is reported once as the
     // 'newborn' block; folding it into the deltas too would double-count it.

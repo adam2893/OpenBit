@@ -81,5 +81,9 @@ print("who:", dict(who))
 print("titles:", dict(sorted(titles.items())))
 print("deltas:", {str(k): v for k, v in sorted(deltas.items())})
 print("delay in years:", dict(sorted(delays.items())))
+# The game pushes the report card in the same age-up as the hookup (REPORT.en.md
+# 133): the port's pending queue drains it before the year advances, so every card
+# has to arrive at the hookup's own age, never one year later.
+assert set(delays) == {0}, dict(delays)
 print("cards per life:", dict(sorted(per_life.items())))
 print("ok")

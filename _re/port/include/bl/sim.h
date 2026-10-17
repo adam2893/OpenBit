@@ -59,11 +59,24 @@ struct Person {
   std::string company;
 };
 
+// The cards a year pushes in addition to the one it draws (REPORT.en.md 133).
+// The game can put more than one scenario in front of the player per age-up; the
+// port's age-up returns one card, so the extras wait here and are drained before
+// the year advances.
+enum PendingCard {
+  kPendingNone = 0,
+  kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
+  kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
+};
+
 struct Life {
   Hero hero;
   int year = 0;
   bool alive = true;
   std::vector<Person> family;
+  // Cards the current year still owes the player, oldest first. ageUp drains one
+  // per call and does not advance the age while the queue is not empty.
+  std::vector<int> pendingCards;
   // The friend-advice card's PresentedCountForScenario counter (REPORT.en.md
   // 100): the game shows that card at most twice in one life.
   int advicePresented = 0;
