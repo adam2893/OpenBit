@@ -75,4 +75,32 @@ for seed in range(1, 31):
 
 print("cards:", cards)
 print("lanes:", lanes)
+
+# ---- the result card the "take" lane pushes (REPORT.en.md 150)
+results = {"positive": 0, "negative": 0}
+chained = 0
+for seed in range(1, 31):
+    doc = run(seed, ex=True, children=1)
+    events = doc["events"]
+    for i, event in enumerate(events):
+        body = event.get("body") or ""
+        if "came back" not in body:
+            continue
+        assert body.startswith("The paternity test for your "), (seed, body)
+        assert body.endswith(" positive!") or body.endswith(" negative!"), (seed, body)
+        kind = "positive" if body.endswith(" positive!") else "negative"
+        results[kind] += 1
+        assert event.get("title"), (seed, "a result with no title")
+        assert event["choice"] in ("I had no doubt", "Get outta here!"), (seed, event["choice"])
+        journal = (event.get("logLines") or [""])[-1]
+        assert journal.startswith("The paternity test for my "), (seed, journal)
+        assert journal.endswith(body[len("The paternity test for your "):]), (seed, journal, body)
+        # It rides the same age-up as the court order (REPORT.en.md 133).
+        if i and "court order" in (events[i - 1].get("body") or ""):
+            chained += 1
+            assert events[i - 1]["age"] == event["age"], (seed, event["age"])
+
+assert results["negative"], results
+assert chained, "the result never followed its court order in the same age-up"
+print("results:", results, "chained after the court order:", chained)
 print("ok")

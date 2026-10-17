@@ -67,6 +67,8 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
                     ", obtained a court order requiring me to take a paternity "
                     "test over " + poss + " " + kidPhrase + ", " + kid->name + ".";
     ++kid->paternityAsked;
+    // The game pushes the results card in the same age-up (REPORT.en.md 133).
+    life.pendingCards.push_back(kPendingPaternityResults);
   } else {
     // 'Refuse to take the test' (#35534): karma -2, discipline -2, and the game
     // pushes a crime scenario for crime type 38 -- refusing a court order.
@@ -84,4 +86,54 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioExLoverPaternityTestResults (REPORT.en.md 150): the answer to the court
+// order. Two outcomes, each with its own title pool, body and journal:
+//
+//   positive  title  'New responsibilities' / 'Proof is in the pudding' /
+//                    'The DNA matches'
+//             body   'The paternity test for your {0}, {1}, {2} came back positive!'
+//             journal mirrors it in first person
+//   negative  title  'One less stress' / 'Positively negative' / 'Get outta here!'
+//             body   '... came back negative!'
+//
+// The game decides which by rolling GetRandomNumber(0, 1000) against a field on the
+// hero; the port keeps the answer on the child (Child::isHeroes) instead, so a
+// fixture child that belongs to the ex stays hers (REPORT.en.md 150's shortcut).
+bool Sim::paternityResultsYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  const Hero::ExLover* ex = h.latestEx();
+  if (ex == nullptr) return false;
+  Child* kid = nullptr;
+  for (Child& c : life.children) {
+    if (!c.alive || c.age > 3) continue;
+    if (!c.otherParent.empty() && c.otherParent != ex->name) continue;
+    kid = &c;
+    break;
+  }
+  if (kid == nullptr) return false;
+  const std::string who = "your " + (kid->female ? std::string("daughter") : "son") +
+                          ", " + kid->name;
+  const std::string mine = "my " + (kid->female ? std::string("daughter") : "son") +
+                           ", " + kid->name;
+  out.table = "relationship";
+  out.row_id = "0";
+  if (kid->isHeroes) {
+    static const char* const kTitles[] = {"New responsibilities",
+                                           "Proof is in the pudding", "The DNA matches"};
+    out.title = kTitles[loverRng_.below(3)];
+    out.body = "The paternity test for " + who + " came back positive!";
+    out.narrative = "The paternity test for " + mine + " came back positive!";
+    out.choice = "I had no doubt";
+  } else {
+    static const char* const kTitles[] = {"One less stress", "Positively negative",
+                                           "Get outta here!"};
+    out.title = kTitles[loverRng_.below(3)];
+    out.body = "The paternity test for " + who + " came back negative!";
+    out.narrative = "The paternity test for " + mine + " came back negative!";
+    out.choice = "Get outta here!";
+  }
+  return true;
+}
 }  // namespace bl

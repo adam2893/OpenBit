@@ -79,6 +79,7 @@ enum PendingCard {
   kPendingNone = 0,
   kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
+  kPendingPaternityResults = 3,     // the court order's result, right after the test
 };
 
 // The hero's own children (REPORT.en.md 146). The game keeps a SimChild array on the
@@ -101,6 +102,11 @@ struct Child {
   // and the fixture creates them at birth, so the array needs to know when each one
   // starts (REPORT.en.md 149).
   int bornAtHeroAge = 0;
+  // Whether the hero is the child's father (REPORT.en.md 150). The game does not
+  // store this: the paternity results card rolls GetRandomNumber(0,1000) and decides
+  // there. The port keeps the answer instead, so a fixture child that belongs to the
+  // ex stays hers and the roll's outcome is reproducible.
+  bool isHeroes = false;
 };
 
 struct Life {
@@ -201,6 +207,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The court-ordered paternity test, REPORT.en.md 149.
   bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
+  // Its result, REPORT.en.md 150.
+  bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);

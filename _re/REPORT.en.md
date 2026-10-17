@@ -20882,6 +20882,66 @@ counter `paternityAsked` is what stops the card repeating.
 * The card's own gate (`_exLover` + `_child` + not-yet-asked) is inferred from the
   fields; the infancy limit is the port's.
 
+## 150. The result of the test, and a decision the game makes by rolling
+
+`ScenarioExLoverPaternityTestResults` is what the court order's *take* lane pushes,
+and it closes the gap §149 left open — a hero who complies now sees an answer.
+
+```
+positive  titles  'New responsibilities' / 'Proof is in the pudding' / 'The DNA matches'
+          body    'The paternity test for your {0}, {1}, {2} came back positive!'
+negative  titles  'One less stress' / 'Positively negative' / 'Get outta here!'
+          body    'The paternity test for your {0}, {1}, {2} came back negative!'
+          journal both, mirrored in the first person ('for my …')
+```
+
+### 150.1 The game rolls; the port stores
+
+The card does not read a fact — it decides one: `GetRandomNumber(0, 1000)` against a
+hero field, then a second roll for the branch. Paternity in this game is a coin, not
+a record.
+
+The port keeps the answer instead, on the child (`Child::isHeroes`), and says so at
+the code. The reason is testability rather than taste: a fixture child that belongs
+to the ex must stay hers across runs, or every assertion downstream becomes a coin
+flip. It is a **documented divergence**, not a reproduction — the first such one in
+this family.
+
+### 150.2 The chain, end to end
+
+```
+court order, take lane  ->  life.pendingCards.push_back(kPendingPaternityResults)
+same age-up, drained    ->  paternityResultsYear builds the answer
+```
+
+That is §133's queue doing the job it was built for, and the first two-card chain in
+the port that both cards are real.
+
+### 150.3 Verification
+
+`tools/test_paternity_court_order.py`, extended:
+
+```
+cards: 2
+lanes: {'Take the test': 1, 'Refuse to take the test': 1}
+results: {'positive': 0, 'negative': 1} chained after the court order: 1
+ok
+```
+
+Per result card: the body is the class's sentence with one of the two endings, a
+title is always set, the button is one of the two, the journal is the same sentence
+in the first person, and it rides **the same age** as the court order that pushed it.
+Bench 0 lines; `test_play` and `test_children` green.
+
+### 150.4 Shortcuts
+
+* the roll is replaced by `Child::isHeroes`, as above;
+* the body's three placeholders are filled as *relation-word, child-noun, name* —
+  the argument split was not read, and the sentence is correct in English either
+  way;
+* a positive result does not yet start child support (`SimChild.ChildSupport`), which
+  the game's dismiss handler applies.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 

@@ -3603,6 +3603,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     life.pendingCards.erase(life.pendingCards.begin());
     if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
+    if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
     return false;
   }
   ++life.year;
