@@ -1301,6 +1301,8 @@ bool Sim::load(std::string* error) {
       "a16_backtoschool-sleepover-activitie-enc",      // Activity,invite + age-up string
       "a16_backtoschool-sleepover-invitation-rejection-color-enc",  // String - Hero,String - NPC
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
+      // The dealer's own 199-row break-up pool, same columns (REPORT.en.md 170).
+      "a16_dealer-breakup-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -20996,7 +20998,11 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   // (REPORT.en.md 89).
   if (giftYear(life, out, forcedChoice)) return true;
   if (h.relationship < 35 && fire("a16_relationship-counseling-scenarios-enc", 0.10)) { bump(12); return true; }
-  if (h.relationship < 30 && fire("a16_breakup-scenarios-enc", 0.30)) {
+  // A dealer's partner leaves with the dealer pool's own 199 lines when the hero is in
+  // the trade (REPORT.en.md 170): same columns, a different voice.
+  const char* const breakUpPool = h.dealer ? "a16_dealer-breakup-scenarios-enc"
+                                           : "a16_breakup-scenarios-enc";
+  if (h.relationship < 30 && fire(breakUpPool, 0.30)) {
     // The partner who is leaving is the one LoverBreakUp is built with, so the
     // three strings its RefreshScenario formats are pinned here, before the
     // relationship is cleared (REPORT.en.md 125).

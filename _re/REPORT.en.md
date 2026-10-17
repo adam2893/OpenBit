@@ -21863,6 +21863,55 @@ rows never drawn. `cardrate.py` (§167) is the instrument that answers *drawn*, 
 two together — named and drawn — are the closest this project can get to a coverage
 claim without the game's own push weights.
 
+## 170. One of the four gaps closed, and the other twelve explained
+
+§169 named four families short of their full table set. Listing the missing tables
+turned 13 names into a classification:
+
+```
+Secret  9 of 60   eight '*-color-enc' flavour tables + one background check
+Casino  2 of 39   game-room-complaint, ledger-feedback
+Dealer  1 of 38   dealer-breakup-scenarios-enc
+Black   1 of 24   black-market-auction-categories-enc
+```
+
+Twelve of the thirteen are **flavour tables for cards that are not ported** — the
+`secret-agent-honeypot-*` and `hack-mission-*` colour strings belong to schemes the port
+does not run, and naming them without those cards would be the fake coverage §169.3
+warns about.
+
+### 170.1 The one that belonged to a ported card
+
+`a16_dealer-breakup-scenarios-enc` is the dealer's own break-up pool: **199 rows**, the
+same `Condition, Crazy, Scenario, Gender, Straight Only` columns as the pool the port
+already uses. It belongs to a card that exists — the break-up — so it was wired rather
+than named:
+
+```cpp
+const char* const breakUpPool = h.dealer ? "a16_dealer-breakup-scenarios-enc"
+                                         : "a16_breakup-scenarios-enc";
+if (h.relationship < 30 && fire(breakUpPool, 0.30)) { ... }
+```
+
+### 170.2 Verification
+
+Sixty dealer lives, counting the break-up table actually drawn:
+
+```
+{'a16_dealer-breakup-scenarios-enc': 1}
+```
+
+Once in 60 lives — thin, and *checked* rather than assumed: the first run of 24 lives
+produced none at all, which is why the scan was widened instead of the claim made.
+Bench 0 lines; `test_relationship_lifecycle` unchanged (9 full arcs, invariants hold),
+which is the check that the normal pool still drives non-dealer lives.
+
+### 170.3 What remains of the four
+
+`Secret 9`, `Casino 2`, `Black 1` — all cards, not data. They are the honest remainder
+of this census and they belong to the one-off list, not to a wiring round.
+
+
 
 
 
