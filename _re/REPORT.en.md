@@ -22554,6 +22554,60 @@ all invariants hold
 * Any argue chain: the reason index rides in `a`.
 * The wedding chain: venue and destination indices ride in `a`/`b`.
 
+## 185. The 103-table worklist is 28 cards and 73 fragments
+
+§179 called the untouched tables a worklist, one card each. Classifying them by their
+own headers says otherwise:
+
+```
+untouched tables: 101
+  card-shaped (Scenario / Log Version / gendered string columns): 28
+  everything else:                                                73
+```
+
+### 185.1 What the 73 are
+
+```
+a16_accessories-headwear-enc    Index, Category, Name
+a16_accessories-masks-enc       Index, Name, Commonness Score
+a16_accessories-sunglasses-enc  Index, Name, Color
+a16_adoption-reasons-enc        Reason, Abbreviated Reason, Snippet
+a16_aircraft-parts-enc          Part, Only One Per Aircraft, Part Cost Score
+a16_alcohol-enc                 Name, Emoji, Indefinite
+```
+
+They are **ingredient tables**: an accessory the hero can own, a part for an aircraft, a
+name for a drink, a snippet inside a larger card. None of them is a card, and porting one
+alone would produce nothing a player could see — exactly the fake coverage §169.3 warned
+about, in the other direction.
+
+### 185.2 What this says about the custody card, and about the plan
+
+The custody tables that started this thread are in the fragment group, and §183's reason
+stands: the *card* is `ScenarioChildSupportCustody`, and its body is assembled from
+fragments (`'I took '` #25282, `', to court for custody of our children.'` #5910,
+`', for custody of your child, '` #5553) around a case row and a net-worth comparison.
+
+```
+Your Net Worth            #50145
+ Net Worth                #905
+All of them               #11108
+Pick your child           #33847
+```
+
+Reproducing that sentence needs the *rendering* the class does, not the fragments in
+order — which is the same conclusion §172 and §177 reached from two other directions.
+
+### 185.3 The corrected worklist
+
+**28 card-shaped tables remain**, each with its rows and its own literals, and each a
+card the port can render this way. The 73 fragments belong to cards that already exist
+in the port or do not exist yet, and they are not work in themselves.
+
+The plan's content sprint is therefore closer to finished than the table count suggested:
+28 single-stage cards, not 103 items.
+
+
 
 
 
