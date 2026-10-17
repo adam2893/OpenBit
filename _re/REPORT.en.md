@@ -22356,6 +22356,57 @@ The test only asserts on the lane it can: the grounded journal ends `for N days.
 grounded anybody — the negative half is what keeps a lazy `log + sentence` from hiding
 a wrong lane. Bench 0 lines.
 
+## 181. A child asks for money, and the row is the card
+
+`a16_child-demands-enc` is a different shape from the last two: the **row contains the
+choices**. Age, Amount, and two comma-separated lists — `Boy` and `Girl` — of things the
+child might want.
+
+```
+4,5,"buy some candy, buy a new app, buy some water balloons, ...","buy a coloring book, ..."
+6,10,"buy a toy car, buy an action figure, buy a hamster, ...","buy a figurine, ..."
+```
+
+and the class supplies the sentences around it:
+
+```
+body     'Your {0}, {1}, is asking you for {2} to {3}.'     #50717
+buttons  'Yes, give {0} {1}' (#47505)   'No, {0} has enough' (#31869)
+journals 'I gave my {0}, {1}, {2} to {3}.'                  #24224
+         'I refused to give my {0}, {1}, {2} to {3}.'       #24941
+```
+
+Rendered:
+
+```
+Your son, Sugar, is asking you for $5 to get some ice cream.
+I refused to give my son, Sugar, $5 to get some ice cream.
+```
+
+### 181.1 Two decisions in the port
+
+* the row is the **nearest at or below** the child's age, which is how the table is
+  built (4, 5, 6, ...) and what makes a 9-year-old ask a 9-year-old's question;
+* the card needs **no partner**, only a child. The first version inherited the
+  `relationshipOn` gate from its neighbours and produced one card in 25 lives; a child
+  can ask a single parent, so the gate was wrong rather than the rate.
+
+### 181.2 Verification
+
+`tools/test_child_demands.py`:
+
+```
+lanes: {'No': 2, 'Yes': 1}
+distinct asks: 3
+ok
+```
+
+The body is matched against a full pattern (relation, name, amount, ask), the ask must
+reappear in the journal, and the journal must be **exactly one** of the two — the
+`!=` between `gave my` and `refused to give` is what stops a lane from claiming both.
+Bench 0 lines.
+
+
 
 
 ## 178. Correction: "decrypts" is not a discriminator

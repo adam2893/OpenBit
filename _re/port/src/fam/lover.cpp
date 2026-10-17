@@ -592,4 +592,75 @@ bool Sim::childDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioChildDemands (REPORT.en.md 181): a child asks for money.
+//
+// The row is the card: a16_child-demands-enc carries Age, Amount, and two
+// comma-separated option lists (Boy, Girl). The class supplies the sentences:
+//
+//   body     'Your {0}, {1}, is asking you for {2} to {3}.'        #50717
+//   buttons  'Yes, give {0} {1}' (#47505)  'No, {0} has enough' (#31869)
+//   journals 'I gave my {0}, {1}, {2} to {3}.'                    #24224
+//            'I refused to give my {0}, {1}, {2} to {3}.'         #24941
+bool Sim::childDemandsYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  // A single parent is asked too, so this card does not need a partner -- only a child.
+  if (life.children.empty()) return false;
+  if (!ensureTable("a16_child-demands-enc")) return false;
+  Child* kid = nullptr;
+  for (Child& c : life.children) {
+    if (!c.alive || c.movedOut || c.city != h.city) continue;
+    if (c.age < 4 || c.age > 17) continue;
+    kid = &c;
+    break;
+  }
+  if (kid == nullptr) return false;
+  if (forcedChoice < 0 && loverRng_.below(9) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_child-demands-enc");
+  const size_t row = [&] {
+    size_t best = 0;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (t.num(r, "Age") <= kid->age) best = r;
+    }
+    return best;
+  }();
+  const long long amount = static_cast<long long>(t.num(row, "Amount"));
+  std::vector<std::string> options;
+  for (const char* col : {"Boy", "Girl"}) {
+    const std::string list = trim(t.at(row, col));
+    if (list.empty()) continue;
+    size_t at = 0;
+    while (at <= list.size()) {
+      const size_t comma = list.find(',', at);
+      const std::string opt = trim(list.substr(at, comma == std::string::npos
+                                                        ? std::string::npos
+                                                        : comma - at));
+      if (!opt.empty()) options.push_back(opt);
+      if (comma == std::string::npos) break;
+      at = comma + 1;
+    }
+  }
+  if (options.empty()) return false;
+  const std::string demand = options[loverRng_.below(uint32_t(options.size()))];
+  const std::string word = kid->female ? "daughter" : "son";
+  const std::string name = kid->name.empty() ? std::string("the child") : kid->name;
+  out.table = "a16_child-demands-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = "Your " + word + ", " + name + ", is asking you for " + money(amount) +
+             " to " + demand + ".";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Yes, give " + name + " " + money(amount);
+    h.money -= amount;
+    out.narrative = "I gave my " + word + ", " + name + ", " + money(amount) +
+                    " to " + demand + ".";
+  } else {
+    out.choice = "No, " + name + " has enough";
+    out.narrative = "I refused to give my " + word + ", " + name + ", " +
+                    money(amount) + " to " + demand + ".";
+  }
+  return true;
+}
 }  // namespace bl
