@@ -637,6 +637,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
       seducRng_(seed ^ 0xa4093822299f31d0ULL ^ 0x082efa98ec4e6c89ULL),
       witRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x13198a2e03707344ULL),
+      findRng_(seed ^ 0x452821e638d01377ULL ^ 0xbe5466cf34e90c6cULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3625,6 +3626,11 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // and draws on its own stream (include/bl/sim.h witRng_), so no earlier
   // subsystem's sequence moves.
   if (witnessYear(life, out, forcedChoice)) return true;
+
+  // The drug find (REPORT.en.md 122) is the same Citizen family and the second
+  // card that can end the life. It has its own stream so the cards before it
+  // draw exactly as they did.
+  if (findDrugsYear(life, out, forcedChoice)) return true;
   // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
   // its only buttonless one. It is tried last of the friend cards and draws on
   // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
@@ -23328,6 +23334,26 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
   // DeathManager::UpdateWithLightningStrike @0x73f2fb19d4, whose sentence is
   // the table's own 'Fluke' row ('<pronoun> died after being struck by
   // lightning.'). A pending cause pre-empts the annual roll.
+  // The drug find's consume lane (REPORT.en.md 122) hands DeathManager a drug
+  // and UpdateDeathType(4); the table's own row names the drug in the sentence.
+  if (!h.drugDeath.empty()) {
+    const Table& dt = tbl("a16_death-types-enc");
+    const std::string want = h.drugDeath + " overdose";
+    for (size_t r = 0; r < dt.size(); ++r) {
+      if (dt.at(r, "Sentence").find(want) != std::string::npos) {
+        type = dt.at(r, "Type");
+        sentence = resolve(dt.at(r, "Sentence"));
+        return true;
+      }
+    }
+    for (size_t r = 0; r < dt.size(); ++r) {
+      if (dt.at(r, "Sentence").find("overdose") != std::string::npos) {
+        type = dt.at(r, "Type");
+        sentence = resolve(dt.at(r, "Sentence"));
+        return true;
+      }
+    }
+  }
   if (h.lightWillDie) {
     const Table& dt = tbl("a16_death-types-enc");
     for (size_t r = 0; r < dt.size(); ++r) {
@@ -26817,6 +26843,139 @@ bool Sim::witnessYear(Life& life, AgeUp& out, int forcedChoice) {
     out.discipline = pointsForImpact(3);
     out.narrative = witnessed + " I stopped the " + who + "!";  // #69618
   }
+  return true;
+}
+
+// The drug find (REPORT.en.md 122) is the witness card's sibling in the same
+// Citizen family, the second card that can kill the hero, and the first one
+// whose lane pays money.
+// ScenarioEthicsFindDrugs (il2cpp_dump.txt:38372) carries _happenedOnWalk 0x16a,
+// _narrative 0x170, _containerString 0x178, DataDrug _drug 0x180 and _value
+// 0x188; its gate @0x73f3bc9c00 asks for age >= 21, at most two earlier
+// showings, a hero who is not in prison and a game that is not in clean mode.
+bool Sim::findDrugsYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A pushed card owns the year, the same rule every code-built card keeps.
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // Gate @0x73f3bc9c00: hero age [x9+0x20] >= 0x15, PresentedCountForScenario
+  // < 3 (cmp w0,#2 / b.gt @0x73f3bc9cc8), CurrentlyInPrison false, KeepItClean
+  // false (0x73f32aba1c, the same censorship switch 121 reads).
+  if (h.age < 21) return false;
+  if (h.inPrison) return false;
+  if (h.findPresented >= 3) return false;
+  // The gate itself draws nothing; the offer is the family's one-in-twenty, the
+  // same shape 116-121 use, on this card's own stream.
+  if (findRng_.below(20) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  static const char* kTable = "a16_drugs-enc";
+  if (!ensureTable(kTable)) return false;
+  const Table& t = tbl(kTable);
+  if (t.size() == 0) return false;
+  // DataHub::GetRandomIllegalDrug @0x73f2ca6dc8 answers a row of the table whose
+  // Illegal column is marked; the port pools exactly those rows and draws one.
+  std::vector<size_t> pool;
+  for (size_t i = 0; i < t.size(); ++i) {
+    if (!t.at(i, "Illegal").empty()) pool.push_back(i);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[findRng_.below(uint32_t(pool.size()))];
+  const std::string drug = t.at(row, "Drug");
+  // The overdose arm compares GetRandomNumber(0,5) against the row's Overdose
+  // Likeliness Score ([drug+0x24] in RefreshScenario @0x73f3bc8b58).
+  const int odScore = int(t.num(row, "Overdose Likeliness Score"));
+  // RefreshScenario: GetRandomNumber(0,6) @0x73f32ab2a8 picks one of six
+  // containers and each arm carries its own band, drawn as
+  // GetRandomNumber(0, hi) + lo -- 0x1388/0x4e20 for the first three,
+  // 0x9c4/0x30d4 for the shopping bag and the briefcase, and 0xc350/0x3d090 for
+  // the grocery cart.
+  struct Box { const char* name; long long lo; unsigned hi; };
+  static const Box kBoxes[] = {
+      {"duffle bag", 5000, 20000},   {"satchel", 5000, 20000},
+      {"backpack", 5000, 20000},     {"shopping bag", 2500, 12500},
+      {"grocery cart", 50000, 250000}, {"briefcase", 2500, 12500}};
+  const Box& box = kBoxes[findRng_.below(6)];
+  const long long value = box.lo + static_cast<long long>(findRng_.below(box.hi));
+  // shortcut: _happenedOnWalk (0x16a) is written only by the walk ctor at
+  // 0x73f3bc8b34, which the walk feature pushes; the port has no walk, so the
+  // scene is drawn the way 121 draws its own -- between the walk wording and the
+  // shared 41-slot scene switch (src/sim.cpp 1624).
+  const size_t scenes = sizeof(kCircumstancePublicScenes) / sizeof(*kCircumstancePublicScenes);
+  const std::string scene = findRng_.below(2) == 0
+                                ? std::string("While on your walk")
+                                : kCircumstancePublicScenes[findRng_.below(uint32_t(scenes))];
+  out.table = kTable;
+  out.row_id = std::to_string(row + 1);
+  out.title = "Drugs";  // #18270, cell 0x5c6fc30
+  // Format(cell 0x5cb8228 #70588 '{0}, you come across a {1} filled with what
+  // appears to be {2}.') over the scene, the container and the drug.
+  out.body = scene + ", you come across a " + box.name + " filled with what appears to be " + drug + ".";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  ++h.findPresented;
+  // The narrative cell 0x5cb8218 (#24192 'I found a {0} full of {1}.') is also
+  // the '{0}' every journal line opens with (ChoiceSelectedAtIndex builds it
+  // once with Format(cell 0x5c31470 '{0}', _narrative) before the three
+  // Contains tests).
+  out.narrative = std::string("I found a ") + box.name + " full of " + drug + ".";
+  const std::string head = out.narrative;
+  // Four buttons, tested with Contains on the lowered label in this order:
+  // 'turn' (cell 0x5c3f410), 'sell' (0x5c35db0), 'pretend' (0x5c46ca8) and
+  // 'consume' (0x5cb82b0). The game lets the hero pick; the port draws one.
+  const int pick = int(findRng_.below(4));
+  if (pick == 0) {
+    out.choice = "Turn it in to authorities";  // #44250, cell 0x5cb8220
+    out.discipline = pointsForImpact(5);
+    out.karma = pointsForImpact(5);
+    // The busted branch: a GetRandomNumber(0,1000) draw against 100 minus the
+    // health float at hero+0x9c, so only a battered hero is arrested.
+    if (100 - h.health > int(findRng_.below(1000))) {
+      out.happiness = pointsForImpact(-6);
+      out.narrative = head + " I tried to turn it into authorities but they arrested me!";
+    } else {
+      out.narrative = head + " I turned it in.";
+    }
+  } else if (pick == 1) {
+    out.choice = "Sell it";  // #38533, cell 0x5c3b0c8
+    out.discipline = pointsForImpact(-3);
+    out.karma = pointsForImpact(-5);
+    // The sell branch rolls the health float at hero+0x9c against a 0..100 draw:
+    // a healthy hero sells, a battered one is caught. The money arm moves the
+    // bank balance by _value (AdjustBankBalanceByAmount @0x73f2f0cd68).
+    if (h.health >= int(findRng_.below(100))) {
+      h.money += value;
+      out.happiness = pointsForImpact(4);
+      out.narrative = head + " I earned " + money(value) + " by selling it.";
+    } else {
+      out.happiness = pointsForImpact(-6);
+      out.narrative = head + " I was caught trying to sell it!";
+    }
+  } else if (pick == 2) {
+    out.choice = "Pretend like I didn't see it";  // #34512, cell 0x5cb8238
+    out.discipline = pointsForImpact(2);
+    out.karma = pointsForImpact(2);
+    out.narrative = head + " I left it alone.";
+  } else {
+    out.choice = "Consume all of it";  // #16228, cell 0x5cb8210
+    out.discipline = pointsForImpact(-5);
+    out.karma = pointsForImpact(-4);
+    out.happiness = pointsForImpact(-5);
+    out.health = pointsForImpact(-5);
+    out.narrative = head + " I consumed it.";
+    // DeathManager::UpdateDeathType(4) @0x73f2fb077c and the hero's vtable slot
+    // 0x368 follow only when GetRandomNumber(0,5) lands under the row's overdose
+    // score; SimPerson::IsVampire @0x73f30e1058 skips the roll entirely.
+    if (!h.vampire && int(findRng_.below(5)) < odScore) h.drugDeath = drug;
+  }
+  // shortcut: the pushed follow-ups (GetCrimeScenarioForCrimeType(7) for the
+  // arrest and (3) for the caught sale, ScenarioWorkplaceDisciplineHR-style
+  // chains), the unlock strings ('Model citizen' #30321, 'Busted' #14236, 'Come
+  // up' #15975, "I'll leave happily" #25924, 'Never again' #31241, 'You must be
+  // joking' #49015), the obituary memory lines ('Friends describe {0} as
+  // someone of strong moral fabric.' #20679, 'Friends say {0} harbored a
+  // lifelong hatred of {1}.' #20731, 'Rumors suggest {0} once consumed an entire
+  // {1} of {2}.' #36386) and the addiction model (ShouldBecomeAddictedToDrug
+  // @0x73f2f1d674, BecomeAddictedToDrug @0x73f2f1dcdc, which the port does not
+  // carry) are out of the port's reach.
   return true;
 }
 

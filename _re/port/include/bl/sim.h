@@ -497,6 +497,8 @@ class Sim {
   // call the police or intervene. It is code-built like the two above and
   // reads only the street-person table.
   bool witnessYear(Life& life, AgeUp& out, int forcedChoice);
+  // REPORT.en.md 122: the drug find, the witness card's sibling.
+  bool findDrugsYear(Life& life, AgeUp& out, int forcedChoice);
   // The row draw and the one-of pick come out of the caller's stream, so every
   // feature keeps its own draw sequence (REPORT.en.md 97, 98).
   int pickPastime(Rng& rng, std::string& tail);
@@ -645,6 +647,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng lightRng_;  // ScenarioLightningStrike's own stream (REPORT.en.md 119)
   Rng seducRng_;  // ScenarioSupervisorSeduce's own stream (REPORT.en.md 120)
   Rng witRng_;    // ScenarioEthicsWitnessCrime's own stream (REPORT.en.md 121)
+  Rng findRng_;   // ScenarioEthicsFindDrugs' own stream (REPORT.en.md 122)
   // The friend spend-time card's own stream (REPORT.en.md 106).
   Rng fstRng_;
   // The friend-rumor outbound card's own stream (REPORT.en.md 107).

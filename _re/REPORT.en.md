@@ -18322,3 +18322,295 @@ loses the years this one takes -- the same drift sections 116 and 117 recorded.
 The lightning test still draws 76 cards and rolls 4 deaths, because the witness
 card never touches `lightRng_`. The earlier sections keep their quoted numbers;
 the fresh ones live here.
+
+## 122. The drug find: the second card that can end the life, and the first one that pays
+
+Section 121 followed a bystander who watches a stranger commit a crime. This card
+is the same family read from the other side: the hero is walking somewhere, sees
+a bag on the ground, opens it, and finds a drug he can hand in, sell, ignore, or
+swallow. It is the port's second card with a death in it, the first whose death
+sentence names the thing that killed the hero, and the first card the port ever
+wired that pays money.
+
+### 122.1 The class, and a gate that counts showings
+
+```
+class ScenarioEthicsFindDrugs : Scenario          il2cpp_dump.txt:38372
+    field 0x16a System.Boolean _happenedOnWalk
+    field 0x170 System.String  _narrative
+    field 0x178 System.String  _containerString
+    field 0x180 DataDrug        _drug
+    field 0x188 System.Single   _value
+    method @0x73f3bc8b34 .ctor()
+    method @0x73f3bc8b58 RefreshScenario()
+    method @0x73f3bc8ff8 ChoiceSelectedAtIndex(System.Int32)
+    method @0x73f3bc9c00 ScenarioIsEligibleForRandomPush()
+```
+
+The gate at `0x73f3bc9c00` is ninety instructions and four tests, and three of
+them are the witness card's own:
+
+1. the hero resolves through the singleton at `0x5c30250`, and his age at
+   `[x9+0x20]` must clear `0x15` -- twenty-one, three years older than the
+   witness card asks;
+2. `Life::PresentedCountForScenario @0x73f3736430` must be at most two
+   (`cmp w0,#2` then `b.gt` to the false return), so a life sees this card at
+   most three times;
+3. `SimHero::CurrentlyInPrison @0x73f2f0e1d8` must be false;
+4. `System.Boolean KeepItClean() @0x73f32aba1c` must be false -- the same
+   censorship switch section 121 reads, which is off in normal play.
+
+The gate draws nothing. Unlike the witness card, whose eligibility is a plain
+older-than test, this one is offered behind the same one-in-twenty wall every
+card since section 116 has used.
+
+```
+73f3bc9c60 ldr w9, [x9, #0x20]     ; hero age
+73f3bc9c64 cmp w9, #0x15
+73f3bc9c68 b.lt #0x73f3bc9cf4      ; younger than 21 -> false
+73f3bc9cc8 cmp w0, #2              ; PresentedCountForScenario
+73f3bc9ccc b.gt #0x73f3bc9cf4      ; three showings -> false
+73f3bc9cf0 tbz w0, #0, #0x73f3bc9d08   ; not in prison -> keep going
+73f3bc9d24 bl #0x73f32aba1c        ; KeepItClean()
+73f3bc9d28 eor w8, w0, #1          ; the card needs it false
+```
+
+### 122.2 Six containers, fourteen drugs, four buttons
+
+`RefreshScenario` opens with a twenty-eight cell lazy static init and then does
+three things, in this order.
+
+**A container.** `GetRandomNumber(0,6) @0x73f32ab2a8` picks one of six, and each
+arm carries its own money band, drawn as `GetRandomNumber(0, hi) + lo`:
+
+| roll | container | cell | value band |
+|---|---|---|---|
+| 0 | duffle bag | `0x5c554d8` #57755 | 5000 + 0..20000 |
+| 1 | satchel | `0x5cb8208` #64903 | 5000 + 0..20000 |
+| 2 | backpack | `0x5c567c8` #54735 | 5000 + 0..20000 |
+| 3 | shopping bag | `0x5cb8230` #65575 | 2500 + 0..12500 |
+| 4 | grocery cart | `0x5cb8200` #59990 | 50000 + 0..250000 |
+| 5 | briefcase | `0x5c3bd48` #55238 | 2500 + 0..12500 |
+
+The bands are literal immediates in the switch: `mov w24, #0x1388` and
+`mov w20, #0x4e20` for the first three, `mov w24, #0x9c4` and
+`mov w20, #0x30d4` for the shopping bag and the briefcase, and
+`mov w24, #0xc350` with `mov w20, #0xd090` / `movk w20, #3, lsl #16` for
+the grocery cart -- `0x3d090`, a quarter of a million, which is why the cart is
+the only container worth the risk.
+
+**A drug.** `DataHub::GetRandomIllegalDrug @0x73f2ca6dc8` answers a row of
+`a16_drugs-enc`. The table is 27 lines wide-columned, and only the rows whose
+`Illegal` column is marked are eligible: fourteen of the twenty-six.
+
+**A sentence.** Two formats, both cells the loader keeps:
+
+```
+0x5cb8228 #70588  '{0}, you come across a {1} filled with what appears to be {2}.'
+0x5cb8218 #24192  'I found a {0} full of {1}.'
+```
+
+The `{0}` of the first is `_happenedOnWalk ? 'While on your walk' : DataHub::GetRandomCircumstance() @0x73f2ce2d08`
+-- the walk byte `0x16a` is only ever set by the small ctor at
+`0x73f3bc8b34`, which the walk feature pushes. The second is the narrative, and
+it is also the prefix every journal line opens with: `ChoiceSelectedAtIndex`
+builds it once with `Format(cell 0x5c31470 '{0}', _narrative)` before it tests a
+single button.
+
+Four buttons, each built with `Scenario::.ctor(String,bool,bool) @0x73f2eb9c50`:
+`Turn it in to authorities` #44250, `Sell it` #38533,
+`Pretend like I didn't see it` #34512 and `Consume all of it` #16228. The
+dispatch lowers the label and runs `Contains @0x73f52aafdc` four times, in this
+order: `turn` (cell `0x5c3f410`), `sell` (`0x5c35db0`), `pretend`
+(`0x5c46ca8`), `consume` (`0x5cb82b0`).
+
+### 122.3 The four lanes, and the one that kills
+
+**Turn it in.** `ImpactDiscipline(5)` and `ImpactKarma(5)`, then one roll decides
+whether the police believe him: `GetRandomNumber(0,1000)` against `100` minus the
+health float at `hero+0x9c`. A healthy hero is never arrested; a battered one
+sometimes is.
+
+* clean: journal `'{0} I turned it in.'` #69635, the push
+  `'You turned the {0} of {1} into authoritites.'` #49677 (the table's spelling,
+  kept), the unlock `Model citizen`, and the obituary memory line
+  `'Friends describe {0} as someone of strong moral fabric.'` #20679;
+* busted: `happiness -6`, journal
+  `'{0} I tried to turn it into authorities but they arrested me!'` #69633, one
+  unlock drawn from four, the push
+  `'The authorities arrested you as soon as they saw you carrying a {0} full of {1}!'`
+  #41735 and `SimPlace::GetCrimeScenarioForCrimeType(7)` at `[self+0x128]`.
+
+**Sell it.** `ImpactDiscipline(-3)` and `ImpactKarma(-5)`, then
+`GetRandomNumber(0,100)` against the same health float, and this time health has
+to *beat* the roll:
+
+* sold: `happiness +4`, `AdjustBankBalanceByAmount @0x73f2f0cd68` by `_value`,
+  journal `'{0} I earned {1} by selling it.'` #69562 with a currency string, the
+  push `'You earned {0} by selling the {1} full of {2}.'` #48420 and the unlock
+  `Come up`;
+* caught: `happiness -6`, journal `'{0} I was caught trying to sell it!'` #69641,
+  the push `'You were caught trying to sell the {0} full of {1}!'` #49759,
+  `GetCrimeScenarioForCrimeType(3)` and the unlock `Busted`.
+
+**Pretend.** `ImpactDiscipline(2)`, `ImpactKarma(2)`, journal
+`'{0} I left it alone.'` #69582, the unlock `I'll leave happily`. Nothing else
+happens, which makes it the only lane with no roll in it at all.
+
+**Consume.** `ImpactDiscipline(-5)`, `ImpactKarma(-4)`, `happiness -5` and the
+fifth stat slot `0x418` also `-5`, journal `'{0} I consumed it.'` #69544 -- and
+then the death roll. `GetRandomNumber(0,5)` is compared against the row's
+`Overdose Likeliness Score` at `[drug+0x24]`; if the draw lands under it, and
+`SimPerson::IsVampire @0x73f30e1058` says the hero is not one, the card fills the
+`DeathManager` at `[life+0x20]+0xa0` with the drug object and the hero's age,
+calls `UpdateDeathType(4) @0x73f2fb077c`, invokes the kill at vtable `0x368`,
+and pushes a follow-up scenario. Survivors get the push
+`'You consumed the {0} full of {1}.'` #48210, the unlock `Never again`, the
+addiction branch (`ShouldBecomeAddictedToDrug @0x73f2f1d674` then
+`BecomeAddictedToDrug @0x73f2f1dcdc`) and the obituary line
+`'Rumors suggest {0} once consumed an entire {1} of {2}.'` #36386.
+
+The table's overdose rows are `Fluke` with a minimum age of 16, and the sentence
+names the drug: `'<pronoun> died from a crack overdose.'` (row 16),
+`cocaine` (17), `methamphetamine` (18) and a generic `pain pill` (19).
+
+### 122.4 How the port reaches it
+
+```
+port/include/bl/game.h:786   int findPresented = 0;
+port/include/bl/game.h:787   std::string drugDeath;   // the drug that kills the hero, when one does
+port/include/bl/sim.h:501    bool findDrugsYear(Life& life, AgeUp& out, int forcedChoice);
+port/include/bl/sim.h:650    Rng findRng_;   // ScenarioEthicsFindDrugs' own stream (REPORT.en.md 122)
+port/src/sim.cpp:640         findRng_(seed ^ 0x452821e638d01377ULL ^ 0xbe5466cf34e90c6cULL),
+port/src/sim.cpp:3633        if (findDrugsYear(life, out, forcedChoice)) return true;
+port/src/sim.cpp:26856       bool Sim::findDrugsYear
+```
+
+The card is wired immediately after the witness card and draws on its own stream,
+so every card before it behaves exactly as it did -- the ages 0..34 bench trace
+does not move a line. The gate is age twenty-one, no prison, `findPresented < 3`
+and `findRng_.below(20) != 0` to refuse. The container, its band, the drug pool
+(fourteen rows whose `Illegal` column is marked) and the four lanes are the
+switch and the lanes above, with `pointsForImpact` doing the stat mapping the
+game does through `AttributeAdjustmentPointsForImpactScore @0x73f32b140c`:
+`+5` is 50, `-4` is -30, `-5` is -50 and `-6` is -100, which is why the busted
+lane can take a whole hundred happiness in one go.
+
+The scene is drawn the way section 121 draws its own -- a coin between the walk
+wording and the shared forty-one-slot scene switch -- because the port has no
+walk feature to set `_happenedOnWalk`.
+
+Six sampled cards, one per lane and per container class:
+
+| seed / sex | age | row | card | lane |
+|---|---|---|---|---|
+| 2 / male | 52 | 12 | While strolling through the park, you come across a backpack filled with what appears to be PCP. | pretend |
+| 2 / male | 62 | 3 | During a baseball game, you come across a satchel filled with what appears to be methamphetamine. | sell, caught |
+| 4 / male | 32 | 24 | While out for a walk, you come across a grocery cart filled with what appears to be crack cocaine. | consume |
+| 4 / female | 41 | 15 | While returning a book to the library, you come across a grocery cart filled with what appears to be nitrous oxide. | turn in, clean |
+
+The consume lane on the third card moved `karma -30`, `discipline -50`,
+`happiness -50` and `health -50` and left the hero alive; the same lane on seed 6
+and seed 10 killed him, and the death record names the drug the card drew:
+
+```
+{"type": "Fluke", "sentence": "he died from a crack overdose."}
+{"type": "Fluke", "sentence": "she died from a cocaine overdose."}
+```
+
+`Sim::checkDeath` at `port/src/sim.cpp:23324` therefore grew a second pre-empt
+beside the lightning one: when `drugDeath` is set it looks for the overdose row
+whose sentence contains that drug's name, falls back to any overdose row, and
+answers with the table's own `Type` and `resolve(Sentence)`.
+
+### 122.5 Shortcuts
+
+* **The walk byte.** `_happenedOnWalk` (`0x16a`) is written only by the ctor at
+  `0x73f3bc8b34`, which a walk feature the port does not model pushes. The scene
+  is a coin between `While on your walk` and the shared scene switch, the same
+  compromise section 121 made.
+* **The two `GetRandomNumber(0,1)` guards.** `RefreshScenario` rolls one draw and
+  skips the whole sentence pair when it is nonzero, which can never happen with
+  the engine's own `Range(0,1)`; the port builds the sentence unconditionally.
+* **The pushes and unlocks.** The four pushed follow-ups (the two crime
+  scenarios, the consume follow-up, the arrest line), the seven unlock strings,
+  the three obituary memory lines and the achievement are UI-side and unmodelled.
+* **Addiction.** `ShouldBecomeAddictedToDrug` and `BecomeAddictedToDrug` want a
+  `SimAddiction` list the port does not carry, so the consume lane's addiction
+  branch is a comment.
+* **The money arm** moves `h.money` directly, the way the port's other money
+  cards do, and formats it with the loader's own `money()`.
+
+### 122.6 Verification
+
+The probe (`/tmp/qdir/fdres.py`, eighty lives: seeds 1..40 in both sexes, each
+played to eighty) reproduces the card from the loader's own data and checks every
+lane:
+
+```
+lives 80
+drug cards 85
+rows drawn 14 of 14
+choices {"Pretend like I didn't see it": 20, 'Sell it': 23, 'Consume all of it': 19, 'Turn it in to authorities': 23}
+lanes {'pretend': 20, 'sell_caught': 10, 'consume': 19, 'turn_clean': 21, 'sell_ok': 13, 'turn_busted': 2}
+cards per life {0: 26, 1: 28, 2: 21, 3: 5}
+overdose deaths 9 [(6, 'male', 'he died from a crack overdose.'), (6, 'female', 'she died from a crack overdose.'), (10, 'female', 'she died from a crack overdose.'), (23, 'male', 'he died from a cocaine overdose.')]
+runtime 14s
+failures 0
+events 85
+RESIDUE 0 {}
+rc 0
+```
+
+Every one of the fourteen illegal drugs was drawn at least once; the two rare
+lanes are the interesting ones: the arrested hand-in needs a hero whose health is
+below the thousand-sided roll (`2` cards in eighty lives) and the caught sale
+needs health below a hundred-sided one (`10`). The cap held: no life saw four.
+
+`tools/test_drugs.py` is the repo's own copy of those assertions -- the row, the
+sentence rebuilt from the row and the container, the no-leftover-token check,
+all four lanes' stat moves, both roll-dependent journals, the money format, and
+the presentation cap:
+
+```
+drug cards: 85
+rows drawn: 14 of 14
+lanes: {'pretend': 20, 'sell_caught': 10, 'consume': 19, 'turn_clean': 21, 'sell_ok': 13, 'turn_busted': 2}
+choices: {"Pretend like I didn't see it": 20, 'Sell it': 23, 'Consume all of it': 19, 'Turn it in to authorities': 23}
+cards per life: {0: 26, 1: 28, 2: 21, 3: 5}
+ok
+```
+
+The full batch is green, including the coverage census, which still finds the
+same one hundred and nine captured scenarios and the two empty paywall markers:
+
+```
+captured scenarios: 109  recoverable: 107
+contentless entries: 2 -- ScenarioMiniPaywall x2
+ENTRIES 109 rendered-by-port 107 gap 0
+distinct residue tokens 0 total 0
+```
+
+The probe sweep is sixty-five probes and every one is clean:
+
+```
+fdres.py       rc=0 residue=0 fails=0 events=85
+```
+
+and the ages 0..34 bench trace does not move a line from section 121, because the
+card draws on its own stream.
+
+Earlier sections' counters shift, as they have since section 116: this card moves
+discipline, karma, happiness and health, so later years are eligible for
+different cards. Quoted here once, then left standing:
+
+| test | after 121 | after 122 |
+|---|---|---|
+| witness cards | 88 | 86 |
+| lightning cards | 76 | 75 |
+| lightning deaths | 4 | 6 |
+| supervisor cards | 110 | 105 |
+| after hours cards | 83 | 70 |
+| hookup cards | 94 | 90 |
+| team building cards | 52 | 49 |
+| supervisors seen | 38 | 34 |

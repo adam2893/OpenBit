@@ -780,6 +780,11 @@ struct Hero {
   // Life::PresentedCountForScenario < 4 (@0x73f3bcf6c0), so the cap is four
   // and the life needs no other record of it.
   int witPresented = 0;
+  // REPORT.en.md 122: ScenarioEthicsFindDrugs counts its own showings (the gate
+  // wants PresentedCountForScenario < 3) and its consume lane can hand the death
+  // system a drug name of its own, which checkDeath honours.
+  int findPresented = 0;
+  std::string drugDeath;  // the drug that kills the hero, when one does
 };
 
 class GameState {
