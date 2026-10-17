@@ -689,6 +689,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sibRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x6a09e667f3bcc909ULL),
       insultRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbb67ae8584caa73bULL),
       fameRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x3c6ef372fe94f82bULL),
+      loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
       unfrRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0xc2b2ae3d27d4eb4fULL),
@@ -3837,6 +3838,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // one whose gate is fame alone, so it is tried last: a life that is not famous
   // never sees it, and no earlier draw moves.
   if (paparazziYear(life, out, forcedChoice)) return true;
+  if (loverBirthControlYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

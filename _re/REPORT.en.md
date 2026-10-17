@@ -20455,7 +20455,58 @@ birth control state: ok
 
 The first cut read `"birthControl": true` as *not a boolean*: `findValue` returns
 the position right after the colon, which is a **space** in every JSON this project
-writes, and the comparison started there. The block now skips horizontal whitespace
+writes, and the comparison started there.
+## 142. The birth-control demand, and the first lover card of the sprint
+
+`ScenarioLoverDemandsBirthControl` is the first card built on §141's flag. Its three
+literals came out of the class's own slots — body `Your {0}, {1}, wants you to go on
+birth control.\n\nWhat will you do?`, buttons `Agree to go on birth control` /
+`Refuse to go on birth control` / `Argue with {0}`, journals
+`I agreed to go on birth control following {0} suggestion.` (#23417) and
+`{0} tried to get me to go on birth control but I refused.` (#70365) — and the agree
+lane writes the flag on the person (`strb w10, [hero+0x50]`).
+
+### 142.1 What the port implements, and what it declines to
+
+The card offers **two** buttons, not three. The third — `Argue with {0}` — opens the
+`ScenarioLoverArgues` flow through `DataHub::GetRandomArguerAction` and
+`PickRandomFromStringArray`, and that flow is not ported; offering a button whose
+consequence the port cannot produce would be worse than not offering it. The
+omission is written at the code, next to the lanes that do exist.
+
+```
+agree   'I agreed to go on birth control following his/her suggestion.'
+        hero.onBirthControl = true, hero.ageWentOnBirthControl = hero.age
+refuse  'My girlfriend, Alex, tried to get me on birth control but I refused.'
+        no stat move, no state change
+```
+
+The card is gated on a partner who exists and is not already satisfied
+(`!h.onBirthControl`), which is what the class's own gate reads before it draws.
+
+### 142.2 Verification
+
+`tools/test_lover_birth_control.py`, 80 lives:
+
+```
+lanes: {'Refuse to go on birth control': 18, 'Agree to go on birth control': 16}
+lives that agreed: 16
+ok
+```
+
+Per card: the body is the class's own sentence, the age is at least 18, the label is
+one of the two, the journal is that lane's sentence with the right possessive, and
+**neither lane moves a stat** (the game's own handler moves none in these two lanes;
+the −3 discipline belongs to the argue branch the port does not offer). Per life: a
+life that agreed reports `final.birthControl: true` — the flag survives. And a hero
+who started on birth control is never asked.
+
+### 142.3 Numbers
+
+Bench: 0 lines. `test_play` and `test_love_breakup` unchanged (`test_love_breakup`'s
+status words moved 15/9 → 12/9 because a partner on birth control leaves one more
+year free for the family's own draws — the same kind of shift §133 documented).
+ The block now skips horizontal whitespace
 first. The older `"relationship"` parser only ever worked because its value sits at
 a fixed offset in the specs the tests generate — the same latent bug, waiting for a
 spec with different spacing.
