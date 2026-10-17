@@ -781,4 +781,22 @@ bool Sim::parentCheatYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness -= 3;
   return true;
 }
+// The ambient year (REPORT.en.md 190): one coin, one card, three tables.
+//
+// The three ambient cards used to be dispatched separately, which made them compete
+// for the year: dispatchYear returns at the first card that fires, so each one's
+// rate was its share of the years the others left (REPORT 189.1). One entry point
+// fixes the total rate and divides it by weight instead.
+bool Sim::ambientYear(Life& life, AgeUp& out, int forcedChoice) {
+  // 1 in 12 years attempts an ambient card. The sub-cards can still decline (no parent,
+  // no rows for the hero's gender, no child), which is why the measured rate is well
+  // under that (REPORT.en.md 190).
+  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  // The weights are the proportions §189.1 measured, kept so the merge changes the
+  // split rather than inventing one.
+  const int roll = int(ambientRng_.below(100));
+  if (roll < 55) return paranormalEncounterYear(life, out, 0);
+  if (roll < 90) return stalkerYear(life, out, 0);
+  return parentCheatYear(life, out, 0);
+}
 }  // namespace bl

@@ -22778,6 +22778,53 @@ functions into one chooser plus a shared picker — and it changes every measure
 
 Recorded with the numbers so the next round can measure the change against them.
 
+## 190. One ambient card a year, chosen by weight
+
+§189's fix landed: the three functions are one entry point.
+
+```cpp
+bool Sim::ambientYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  const int roll = int(ambientRng_.below(100));
+  if (roll < 55) return paranormalEncounterYear(life, out, 0);
+  if (roll < 90) return stalkerYear(life, out, 0);
+  return parentCheatYear(life, out, 0);
+}
+```
+
+The sub-cards are called with a non-negative `forcedChoice`, which is how they skip their
+own coins — no signature changed, and no card had to learn a new flag.
+
+### 190.1 Measured, against §189.1
+
+```
+                     before (§189.1)      after
+a16_paranormal       1.22 / life          1.25 / life
+a16_stalker          0.87 / life          0.32 / life
+a16_parent-cheat     0.23 / life          0.07 / life
+total                2.32 / life          1.63 / life
+```
+
+The competition is gone: the total is now set by one coin, and each table gets a share of
+it rather than fighting for the year.
+
+### 190.2 The split is gate-limited, not weight-limited
+
+The weights are 55/35/10 but the outcomes are 77/20/4, because a chosen sub-card can still
+**decline** — no living parent for the parent-cheat rows, no stalker rows for the hero's
+gender, no eligible child. Those declines cost the year, which is the one place the merge
+did not improve on the old behaviour.
+
+That is stated rather than tuned away: making the weights compensate would be fitting a
+distribution the game does not publish.
+
+### 190.3 Verification
+
+`test_paranormal`, `test_stalker`, `test_parent_cheat` all `ok`; bench **0 lines** — the
+bench trace is a childhood life where no ambient card fires, so the restructure is
+invisible to it, which is the check that nothing else moved.
+
+
 
 
 

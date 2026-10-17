@@ -3882,9 +3882,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (exLoverMarriedNowYear(life, out, forcedChoice)) return true;
   if (childDisciplineYear(life, out, forcedChoice)) return true;
   if (childDemandsYear(life, out, forcedChoice)) return true;
-  if (paranormalEncounterYear(life, out, forcedChoice)) return true;
-  if (stalkerYear(life, out, forcedChoice)) return true;
-  if (parentCheatYear(life, out, forcedChoice)) return true;
+  // One ambient card a year at most, chosen by weight (REPORT.en.md 190).
+  if (ambientYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

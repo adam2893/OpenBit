@@ -222,6 +222,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // The ambient year: one coin for the three ambient tables, REPORT.en.md 190.
+  bool ambientYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero walks in on a parent, REPORT.en.md 188.
   bool parentCheatYear(Life& life, AgeUp& out, int forcedChoice);
   // Somebody is following the hero, REPORT.en.md 187.
