@@ -22104,6 +22104,51 @@ ok
 All three lanes occur in 25 lives; the body carries one of the two verbs and the
 journal opens in the first person. Bench 0 lines.
 
+## 175. The wall behind the ex-lover family is a layer, not a card
+
+§174 ported `ExLoverMarriedNow` from literals alone. The next two cards would not go that
+way, and the reason is the same for both:
+
+* `ScenarioExLoverSextMisdirect` builds its body from **fragments** — `'your {0}, {1},'`
+  (#68451) is one of them, then `String::Format` three times over names it resolves from
+  its five person fields;
+* `ScenarioExLoverMessage` offers `'Send your {0}, {1}, a text today!'` (#38586) and
+  `'Txxxt {0}'` (#44298), and its body comes from a `DataHub` method like the sext's did
+  — that one happened to read a table (§173), which is why it was portable at all.
+
+### 175.1 The number
+
+```
+DataHub methods in the binary: 2344
+
+DataHub::GetRandomExLoverBootyCallScenarioForHeroGenderAndExGenderAndAge
+DataHub::GetRandomExLoverHateScenarioForHeroGenderAndExGender
+DataHub::GetCustodyExLoverArgument
+DataHub::GetRandomAstronautInboundMessage
+DataHub::GetRandomCultRecruitmentMessageSet
+DataHub::GetRandomSexyTextItemForGender          <-- the one that was a table
+```
+
+`DataHub` is the game's **content layer**: 2,344 methods that pick, template and gender-
+and-age-filter strings, and the port has no equivalent. Its cards borrow tables where a
+table happens to exist (`a16_sexy-text-items-enc`) and stop where the content is code.
+
+### 175.2 What that means for the remaining 15 ex-lover classes
+
+They are not fifteen decoding jobs; they are **one layer** the port lacks. Writing a
+`DataHub`-shaped module — pool selection by gender and age, fragment assembly, and the
+`<ex>`, `<ex-possessive>`, `<pronoun>` substitutions the cards expect — would make the
+whole family port at once, and would pay again in cult, astronaut and zoo, whose inbound
+messages come from the same place.
+
+### 175.3 Recorded rather than started
+
+The round decoded two cards and shipped none. The next step is not another card: it is
+whether a `DataHub` layer can be built from what is already extracted — the string bank,
+the symbol table and the tables — or whether each method has to be read individually.
+**That question is worth a round of its own, and this one ends with it stated.**
+
+
 
 
 
