@@ -45,6 +45,10 @@ for seed in range(1, 6):
         # SimChild.MovedOut: only an adult can have left home.
         assert kid["movedOut"] is False or kid["age"] >= 18, (seed, kid)
         assert kid["paternityAsked"] == 0, (seed, kid)
+        # Named from the game's own pool (REPORT.en.md 148): the court-order card
+        # prints the child's name in its body.
+        assert kid["name"] and kid["name"][0].isupper(), (seed, kid)
+        assert " " not in kid["name"], (seed, kid)   # a first name, not a full name
         assert kid["withCurrentLover"] is False, (seed, kid)
 
 # The count is bounded, and a bad value is an error rather than a silent zero.

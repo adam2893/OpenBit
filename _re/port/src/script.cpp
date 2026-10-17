@@ -833,10 +833,10 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   for (int c = 0; c < spec.children; ++c) {
     bl::Child child;
     child.female = (c % 2) == 1;
-    // A first name is not needed for the array to be honest: the cards that read a
-    // child name it from the parent it belongs to, and the fixture leaves it empty
-    // rather than drawing one the game would not have drawn here.
-    child.name.clear();
+    // The child is named from the game's own pool (REPORT.en.md 148): the court-order
+    // card prints the name in its body, and a card with a hole in it is worse than
+    // no card.
+    child.name = sim.firstNameFor(child.female);
     child.lastName = life.hero.lastName;
     child.age = 1 + c;
     life.children.push_back(child);

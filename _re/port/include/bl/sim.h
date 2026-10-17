@@ -185,6 +185,9 @@ class Sim {
   int retirementAge(const Hero& h) const;
   // '<insult>' out of a16_insults-enc (REPORT.en.md 138).
   std::string insultToken();
+  // A first name from the game's own pool, for callers outside the class that have
+  // to name somebody the game would have named (REPORT.en.md 148).
+  std::string firstNameFor(bool female) { return drawFirstName(female); }
 
   // The paparazzi (REPORT.en.md 139): the Fame family's first card.
   bool paparazziYear(Life& life, AgeUp& out, int forcedChoice);

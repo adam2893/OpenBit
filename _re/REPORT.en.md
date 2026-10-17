@@ -20774,6 +20774,52 @@ child's relation word, `{4}` its name, `{5}` its age in the family's own phrasin
 The decode above is complete enough that this is now a data question, not a
 disassembly question.
 
+## 148. Children are named, and the last placeholder is still open
+
+§147 said the court-order card needed one thing: a named child. That half is done.
+`Sim::firstNameFor(bool)` is the public way to the game's own name pool (the one
+`drawFirstName` already drew partners and siblings from), and the children fixture
+uses it, so `Life::children` now carries real names:
+
+```
+[('Kye', False, 6), ('Dula', True, 7)]
+```
+
+`tools/test_children.py` requires every child to be named, capitalised and to carry a
+first name only. Bench 0 lines.
+
+### 148.1 Where the card still stops
+
+Reading the Refresh's `String::Format` argument array settles four of the five
+arguments and not the fifth:
+
+```
+73f3dee76c  SimLover::ExRelationshipStatusString(6)   {0} the ex's own word
+            [ex+0x10]+0x18                            {1} the ex's name
+73f3dee7f4  PronounStringForType(5)                   {2} He / She
+73f3dee834  PronounStringForType(1)                   ...
+73f3dee860  str  x22, [x21, #0x38]                    the args array, 6 slots
+73f3dee8dc  Format(cell 0x5cc5bb0, args)              the body
+```
+
+The body reads `...believes you are the father of {3} {4}, {5}.` — `{3}` is a
+relation word, `{4}` the child's name and `{5}` still unknown, and the argument array
+is built by stores into `[x21, #0x20..0x40]` whose sources are loaded far above the
+`Format`. Guessing `{5}` would put a wrong clause in the most legally explicit
+sentence in the family.
+
+### 148.2 What that means for the next attempt
+
+Two ways out, in order of cheapness:
+
+1. **Watch it print.** The card only fires for a hero with an ex and a child, which
+   the harness can be talked into (`children` fixture + an ex), and one capture of
+   the real body answers `{3}`/`{5}` in a single read.
+2. **Resolve the argument array backwards** from the six stores to their sources.
+
+Option 1 is one harness session; option 2 is another hour of disassembly for the
+same answer. The round records the choice rather than spending it.
+
 ### 143.2 Why that is the right place to stop
 
 §142 offered two of three buttons because the third opened an unported flow. This
