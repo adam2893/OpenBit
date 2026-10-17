@@ -23284,6 +23284,55 @@ naming the job. Bench **0 lines**.
   portable    money-request-rejections, arrest (needs an Attitude stat),
               termination done -- so 1 clean candidate left
   blocked     surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
+
+## 202. A relative refuses a money request
+
+```
+a16_money-request-rejections-enc, 34 rows
+  Scenario, Log Version, Multiple Request, Hero Min/Max Age, Person Gender,
+  Person Min/Max Money, Hero Needs Money, Hero Doesn't Need Money,
+  Parent, Sibling, Lover, Child
+```
+
+The row **flags which relatives it can be about**, which is how `<person>` is answered:
+the flag picks the relation, the relation picks an actor the port already has, and that
+actor's gender sets the pronoun pair so `<him/her>` agrees.
+
+```
+My girlfriend, Nikki, wants to know if you'll ever stop asking ...
+My mother said she is tired of your begging.
+```
+
+### 202.1 Three defects the first version had, all caught by looking at text
+
+1. `My father, , jokingly told you to get a job.` — a parent with no name produced an
+   empty slot; the phrase now drops the comma group when the name is empty.
+2. `... asking <him/her> for money` — the card filled `<person>` but never ran the shared
+   resolver, so every other token leaked. It now resolves with the pronoun pair set.
+3. `My mother said he is tired of your begging.` — the pronoun pair was set from the
+   **lover's** gender rather than the asked relative's, which is a sentence a reader
+   notices instantly and a test only notices if it looks.
+
+### 202.2 Verification
+
+`tools/test_money_rejection.py`:
+
+```
+cards: 14
+ok
+```
+
+The test asserts on **both** strings: no token survives, no empty name slot, a relative is
+named, and `" said he "` never follows a female relation. Bench **0 lines**.
+
+### 202.3 The list, after nine
+
+```
+28 card-shaped tables:  9 ported
+  blocked: surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
+  left to check: the rest
+```
+
 ```
 
 

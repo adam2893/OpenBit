@@ -994,4 +994,84 @@ bool Sim::jobTerminationYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness -= 6;
   return true;
 }
+// ScenarioMoneyRequestRejection (REPORT.en.md 202): the hero asks a relative for money
+// and is turned down.
+//
+// a16_money-request-rejections-enc, 34 rows: Scenario, Log Version, Multiple Request,
+// Hero Min/Max Age, Person Gender, Person Min/Max Money, Hero Needs Money, Hero Doesn't
+// Need Money, Parent, Sibling, Lover, Child. A row flags which relatives it can be
+// about, which is how '<person>' is answered: the flag picks the relation, the
+// relation picks the actor the port already has.
+bool Sim::moneyRequestRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_money-request-rejections-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(24) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_money-request-rejections-enc");
+  // The relatives the hero can ask, in the order the row's flags are checked.
+  struct Who { const char* flag; std::string phrase; bool female; };
+  std::vector<Who> roster;
+  for (const Person& p : life.family) {
+    if (!p.alive) continue;
+    const char* flag = p.relation == "mother" || p.relation == "father" ? "Parent"
+                       : p.relation == "sister" || p.relation == "brother" ? "Sibling"
+                       : nullptr;
+    if (flag == nullptr) continue;
+    roster.push_back(Who{flag, p.name.empty() ? "my " + p.relation
+                                                        : "my " + p.relation + ", " + p.name + ",",
+                         p.female});
+  }
+  if (!h.loverName.empty()) {
+    roster.push_back(Who{"Lover", "my " + (h.loverFemale ? std::string("girlfriend")
+                                             : std::string("boyfriend")) +
+                                   ", " + h.loverName + ",", h.loverFemale});
+  }
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const double mn = t.num(r, "Hero Min Age");
+    const double mx = t.num(r, "Hero Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    bool any = false;
+    for (const Who& w : roster) if (t.flag(r, w.flag)) any = true;
+    if (!any) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  std::vector<std::string> asked;
+  std::vector<bool> askedFemale;
+  for (const Who& w : roster) {
+    if (!t.flag(row, w.flag)) continue;
+    asked.push_back(w.phrase);
+    askedFemale.push_back(w.female);
+  }
+  if (asked.empty()) return false;
+  const size_t pickAsked = ambientRng_.below(uint32_t(asked.size()));
+  const std::string who = asked[pickAsked];
+  auto fill = [&](std::string s) {
+    for (size_t at = s.find("<person>"); at != std::string::npos;
+         at = s.find("<person>", at)) {
+      s.replace(at, 8, who);
+      at += who.size();
+    }
+    return s;
+  };
+  out.table = "a16_money-request-rejections-enc";
+  out.row_id = std::to_string(row + 1);
+  // The row's other tokens ('<him/her>' and friends) are answered by the shared
+  // resolver with the partner's gender set, the same way the gift card does it
+  // (REPORT.en.md 202).
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = askedFemale[pickAsked];
+  out.body = spyUpperFirst(resolve(fill(trim(t.at(row, "Scenario")))));
+  out.narrative = spyUpperFirst(resolve(fill(trim(t.at(row, "Log Version")))));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
 }  // namespace bl
