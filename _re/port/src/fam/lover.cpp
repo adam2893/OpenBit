@@ -176,4 +176,40 @@ bool Sim::loverArguesYear(Life& life, AgeUp& out, int forcedChoice) {
                   (h.loverFemale ? "her" : "him") + ".";
   return true;
 }
+// ScenarioLoverCallOffEngagement (REPORT.en.md 158): the hero ends an engagement.
+//
+// A report card -- the class has RefreshScenario and DismissSelected and no
+// ChoiceSelectedAtIndex, so nothing is asked. RefreshScenario builds:
+//   title      PickRandomFromStringArray over 'Let's wait a little longer',
+//              'Just not sure anymore', 'Just kidding'
+//   body       'You called off your engagement with your {0}, {1}.'   #47929
+//   narrative  'I called off my engagement with {0}.'                #23687
+//   extra      '{0} still wants the commitment.'                     #3450
+//   impacts    ImpactKarma(-5), ImpactDiscipline(-3)
+bool Sim::loverCallOffEngagementYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty() || h.loverStatus != "engaged") return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && loverRng_.below(9) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  static const char* const kTitles[] = {"Let's wait a little longer",
+                                        "Just not sure anymore", "Just kidding"};
+  const std::string word = (h.loverFemale ? "girlfriend" : "boyfriend");
+  out.table = "relationship";
+  out.row_id = "0";
+  out.title = kTitles[loverRng_.below(3)];
+  out.body = "You called off your engagement with your " + word + ", " +
+             h.loverName + ".";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  out.narrative = "I called off my engagement with " + h.loverName + ".";
+  out.extra.push_back(h.loverName + " still wants the commitment.");
+  out.karma = pointsForImpact(-5);
+  out.discipline = pointsForImpact(-3);
+  h.loverStatus = "dating";
+  h.relationship -= 15;
+  if (h.relationship < 0) h.relationship = 0;
+  return true;
+}
 }  // namespace bl

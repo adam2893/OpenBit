@@ -109,6 +109,9 @@ struct ScriptSpec {
   // An ex-lover at the start of the life (REPORT.en.md 149). The court-order card
   // needs one, and a break-up inside two years of a birth is too rare to test on.
   bool ex = false;
+  // Start the life engaged (REPORT.en.md 158): the engagement is a status the port
+  // used to skip, so a test needs a way to begin inside it.
+  bool engaged = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

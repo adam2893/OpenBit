@@ -21284,6 +21284,56 @@ and "never drawn as a card".
 family files ported in §130-132 draw rows through variables, so a future census has to
 follow the variable, not the literal — that is a small static analysis, not a grep.
 
+## 158. The engagement, which the port used to skip
+
+`ScenarioLoverCallOffEngagement` is a report card — `RefreshScenario` and
+`DismissSelected`, no choices:
+
+```
+title      one of 'Let's wait a little longer', 'Just not sure anymore', 'Just kidding'
+body       'You called off your engagement with your {0}, {1}.'   #47929
+narrative  'I called off my engagement with {0}.'                #23687
+extra      '{0} still wants the commitment.'                     #3450
+impacts    ImpactKarma(-5) = -50, ImpactDiscipline(-3) = -16
+```
+
+Ported as written — and it exposed a hole underneath it.
+
+### 158.1 The status it reads did not exist
+
+The card needs `loverStatus == "engaged"`, and **nothing in the port ever set that
+string.** `relationshipYear` jumped straight from `dating` to `married` on the
+marriage-nag pool, so every card that reads an engagement — this one, and the wedding
+cards after it — was ported against a status the sim never entered.
+
+The nag is now two steps, which is what a proposal is:
+
+```
+dating  --fire(marriage-nags, 0.10), relationship >= 55-->  engaged  (relationship 75)
+engaged --fire(marriage-nags, 0.14), relationship >= 60-->  married  (relationship 75)
+```
+
+and `final.loverStatus` / `final.loverName` / `final.relationship` are in the JSON, so
+the status can be observed instead of inferred.
+
+### 158.2 Verification
+
+`tools/test_call_off_engagement.py`:
+
+```
+cards: 2
+statuses in free play: ['dating', 'engaged', 'married']
+ok
+```
+
+Per card: the body, the title from the three-item pool, **no buttons**, the journal,
+the commitment line, and `karma -50, discipline -16`. Per life: after a call-off the
+status is back to `dating` — and in free play all three statuses now occur. The script
+also gained `"engaged": true`, the same fixture shape as `ex` (§149), because a
+25-year life rarely rolls an engagement on its own.
+
+Bench 0 lines.
+
 Bench: 0 lines; `test_children` and `test_lover_birth_control` green after the
 fixture change.
 

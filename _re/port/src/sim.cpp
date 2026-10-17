@@ -3852,6 +3852,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (paternityCourtOrderYear(life, out, forcedChoice)) return true;
   if (birthYear(life, out, forcedChoice)) return true;
   if (loverCounselingPushYear(life, out, forcedChoice)) return true;
+  if (loverCallOffEngagementYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
@@ -20972,8 +20973,16 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   if (fire("a16_parent-lover-disapprovals-enc", 0.06)) { bump(-3); return true; }
   if (!h.orphan && h.age <= 25 && fire("a16_school-classmate-flirt-scenarios-enc", 0.05)) return true;
   if (h.employed && fire("a16_coworker-hookup-scenarios-enc", 0.05)) return true;
-  if (h.loverStatus == "dating" && h.relationship >= 55 && fire("a16_lover-marriage-nags-enc", 0.10)) {
+  // The nag pool is the proposal, and a proposal is an engagement before it is a
+  // marriage (REPORT.en.md 158): the port used to jump straight to "married", which
+  // left the engaged status -- and every card that reads it -- unreachable.
+  if (h.loverStatus == "engaged" && h.relationship >= 60 && fire("a16_lover-marriage-nags-enc", 0.14)) {
     h.loverStatus = "married";
+    h.relationship = 75;
+    return true;
+  }
+  if (h.loverStatus == "dating" && h.relationship >= 55 && fire("a16_lover-marriage-nags-enc", 0.10)) {
+    h.loverStatus = "engaged";
     h.relationship = 75;
     return true;
   }
