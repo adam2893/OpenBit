@@ -22738,6 +22738,47 @@ and a left-over `<rb>` is caught independently. 10 cards across 60 short lives.
 Bench 0 lines: the card draws from `ambientRng_` (§187), so a rare card perturbs nothing
 else — the idiom is paying for itself.
 
+## 189. Three ambient cards do not add up, and the model is why
+
+§188's risk said a third card in `ambientRng_` would thin the other two. Measuring it:
+
+```
+lives: 60
+  1.22 per life  a16_paranormal-encounters-enc   (coin 1 in 22 per year)
+  0.87 per life  a16_stalker-scenarios-enc       (coin 1 in 20 per year)
+  0.23 per life  a16_parent-cheat-scenarios-enc  (coin 1 in 30 per year)
+```
+
+and the arithmetic that makes them strange: 85 years at 1-in-22 is **3.9** paranormal
+encounters per life if the coin were per year, and 1.22 if it were per life. The truth is
+neither, and the reason is the port's own model.
+
+### 189.1 One card per year, so ambient cards exclude each other
+
+`dispatchYear` returns as soon as a card fires. Three ambient cards therefore **compete for
+the same year**, in dispatch order, and each one's effective rate is its share of the
+years the earlier ones left.
+
+```
+paranormal  0.037 per year  (1/22 minus the years lost to nothing before it)
+stalker     0.012 per year
+parent-cheat 0.004 per year
+```
+
+That is not a bug in any one card — it is a property of the queue-less model, and it is
+the same property that makes the table-driven families thin: every pool in
+`relationshipYear` competes with every other pool in it.
+
+### 189.2 The fix, and why it is not in this round
+
+The ambient cards should be **one entry point that picks among the three by weight**, so
+the total rate is set once and the tables divide it. That is a small restructure of three
+functions into one chooser plus a shared picker — and it changes every measured rate in
+§189.1, so it wants a round of its own rather than the tail of this one.
+
+Recorded with the numbers so the next round can measure the change against them.
+
+
 
 
 
