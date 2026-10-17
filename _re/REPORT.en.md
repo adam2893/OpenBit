@@ -22818,6 +22818,61 @@ did not improve on the old behaviour.
 That is stated rather than tuned away: making the weights compensate would be fitting a
 distribution the game does not publish.
 
+## 191. Correction: the pools do not compete the way §189 said
+
+§189 generalised from the ambient cards: *every pool inside `relationshipYear` competes
+with every other pool in it.* Measuring the eleven pools says that is not the story.
+
+```
+pool                                        per life   coin
+a16_hookup-scenarios-enc                        0.43    0.06
+a16_lover-cheat-scenarios-enc                   0.62    0.08
+a16_lover-suspicious-scenarios-enc              0.67    0.08
+a16_make-love-rejections-enc                    0.58    0.10
+a16_lover-make-love-nags-enc                    0.50    0.07
+a16_parent-lover-disapprovals-enc               0.07    0.06
+a16_school-classmate-flirt-scenarios-enc        0.00    0.05
+a16_coworker-hookup-scenarios-enc               0.97    0.05
+a16_lover-marriage-nags-enc                     0.18    0.10
+a16_relationship-counseling-scenarios-enc       0.05    0.10
+a16_breakup-scenarios-enc                       0.02    0.30
+```
+
+### 191.1 What the numbers actually show
+
+* **`coworker-hookup` fires at about twenty times its coin** (0.97 per life against 0.05
+  per year). It has a second site: `kTable` at `sim.cpp:20075`, a card of its own, so the
+  same table is drawn by two different cards and the coin describes only one of them.
+* **`breakup` fires at one-fifteenth of its coin** (0.02 against 0.30). Its gate is
+  `relationship < 30`, which the port rarely reaches, so the coin is almost never
+  consulted -- a **gate** effect, not an ordering one.
+* **`school-classmate-flirt` never fires**: it needs `!h.orphan && h.age <= 25`, and the
+  lives that reach it are already past that band when a partner exists.
+* The middle of the table looks orderly precisely because those pools are *first* in the
+  chain and their gates are broad.
+
+So the ordering effect is real but small; **gates and duplicate sites dominate**. §189's
+generalisation was one step too broad, and it matters: the fix it implies -- restructuring
+`relationshipYear` into one weighted chooser -- would not move `breakup` (gate) or
+`coworker-hookup` (two sites) by a single event.
+
+### 191.2 What would move them
+
+| pool | cause | fix |
+|---|---|---|
+| `coworker-hookup` | two sites, one table | merge the two cards, or give each its own table |
+| `breakup` | gate `relationship < 30` never reached | check whether the score decays at all |
+| `school-classmate-flirt` | age gate versus when a partner exists | nothing -- the gate is the game's |
+| the middle four | broad gates, first in the chain | the weighted chooser would apply here |
+
+### 191.3 The honest state
+
+Four measurement corrections have now come from believing a number one step too broadly:
+§155, §161, §167 and this one. The pattern is consistent -- **the instrument is right and
+the interpretation overshoots** -- and the guard that has worked each time is looking at
+the specific case instead of the aggregate.
+
+
 ### 190.3 Verification
 
 `test_paranormal`, `test_stalker`, `test_parent_cheat` all `ok`; bench **0 lines** — the
