@@ -691,8 +691,8 @@ bool Sim::paranormalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = "a16_paranormal-encounters-enc";
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
-  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Log Version"))));
   return true;
 }
 // ScenarioStalker (REPORT.en.md 187): somebody is following the hero.
@@ -720,8 +720,8 @@ bool Sim::stalkerYear(Life& life, AgeUp& out, int forcedChoice) {
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = "a16_stalker-scenarios-enc";
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
-  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Log Version"))));
   out.happiness -= 2;
   return true;
 }
@@ -833,8 +833,8 @@ bool Sim::genderIdentityYear(Life& life, AgeUp& out, int forcedChoice) {
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = "a16_gender-scenarios-enc";
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
-  out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Log Version"))));
   // The row flags one of the two identity columns; the port keeps the fact
   // (REPORT.en.md 195). No string is stored because the columns hold 'x', not a name.
   if (t.flag(row, "Transgender Identity") || t.flag(row, "Other Identity")) {
@@ -907,9 +907,12 @@ bool Sim::adoptionScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   if (rows.empty()) return false;
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  // '<age>' and '<adoptee>' need the adoptee this card does not name; the card declines
+  // rather than printing the token (REPORT.en.md 206).
+  if (resolve(trim(t.at(row, "Scenario"))).find('<') != std::string::npos) return false;
   out.table = "a16_adoption-scenarios-enc";
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   const std::string log = trim(t.at(row, "Log Version"));
   if (!log.empty()) out.narrative = spyUpperFirst(log);
   return true;
@@ -945,6 +948,10 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
   if (rows.empty()) return false;
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   const std::string attribute = trim(t.at(row, "Attribute"));
+  // A row whose text still holds a token after resolution is skipped rather than
+  // rendered with a hole (REPORT.en.md 206): '<random-person-indefinite>' needs an
+  // actor this card does not have.
+  if (resolve(trim(t.at(row, "Scenario"))).find('<') != std::string::npos) return false;
   out.table = "a16_boosts-enc";
   out.row_id = std::to_string(row + 1);
   // The body is the scenario and its conclusion, which is how the table reads: the
@@ -955,8 +962,8 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body = spyUpperFirst(body);
   const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
   if (lane == 0) {
-    out.choice = spyUpperFirst(trim(t.at(row, "Accept Choice")));
-    out.narrative = spyUpperFirst(trim(t.at(row, "Log Version")));
+    out.choice = spyUpperFirst(resolve(trim(t.at(row, "Accept Choice"))));
+    out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Log Version"))));
     const int gain = pointsForImpact(1);
     if (attribute == "Happiness") out.happiness += gain;
     else if (attribute == "Health") out.health += gain;
@@ -965,8 +972,13 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
     const std::string feedback = trim(t.at(row, "Accept Feedback"));
     if (!feedback.empty()) out.extra.push_back(spyUpperFirst(feedback));
   } else {
-    out.choice = spyUpperFirst(trim(t.at(row, "Reject Choice")));
+    out.choice = spyUpperFirst(resolve(trim(t.at(row, "Reject Choice"))));
     out.narrative = "I turned it down.";
+  }
+  // A field that still holds a token after resolution means the row needs an actor this
+  // card does not have; the card declines rather than printing the token (REPORT 206).
+  for (const std::string* field : {&out.body, &out.choice, &out.narrative}) {
+    if (field->find('<') != std::string::npos) return false;
   }
   return true;
 }
