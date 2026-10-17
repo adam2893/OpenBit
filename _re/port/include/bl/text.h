@@ -43,6 +43,9 @@ bool llInList(const std::string& list, const std::string& value);
 std::string articleFor(const std::string& word);
 std::string withArticle(const std::string& text, bool wantsArticle);
 
+// Literal swap of one phrase for another, used by the first-person rewrites.
+std::string spySwap(std::string text, const std::string& from, const std::string& to);
+
 // Sentence and case hygiene for a resolved cell: one capital, one full stop.
 std::string spySentence(std::string text);
 std::string spyLowerFirst(std::string text);

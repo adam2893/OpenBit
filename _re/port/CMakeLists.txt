@@ -21,6 +21,7 @@ add_library(blport STATIC
   src/fam/racing.cpp
   src/fam/model.cpp
   src/fam/trade.cpp
+  src/fam/casino.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 
