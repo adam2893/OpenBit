@@ -1303,6 +1303,8 @@ bool Sim::load(std::string* error) {
       "a16_breakup-scenarios-enc",                   // Condition,Crazy,Scenario,Gender,Straight Only
       // The dealer's own 199-row break-up pool, same columns (REPORT.en.md 170).
       "a16_dealer-breakup-scenarios-enc",
+      // The ex's picture pool: Item, Gender, Clean (REPORT.en.md 173).
+      "a16_sexy-text-items-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
       "a16_ex-lover-booty-call-scenarios-enc",       // Scenario,..,Min/Max Age,Clean
@@ -3858,6 +3860,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (loverElopeYear(life, out, forcedChoice)) return true;
   if (loverWeddingYear(life, out, forcedChoice)) return true;
   if (loverLeavesYear(life, out, forcedChoice)) return true;
+  if (exLoverSextYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

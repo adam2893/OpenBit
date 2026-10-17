@@ -22011,6 +22011,55 @@ because it would double a rate, one stopped at a hole. Both decisions are writte
 with their evidence so the next round does not spend itself reaching the same two
 conclusions.
 
+## 173. The hole was a table the port had never read
+
+§172 stopped the ex-lover sext card at `{2}`. Following the call chain from the
+Refresh's body (after its static-init block) found it in two instructions:
+
+```
+73f3de551c  bl  DataHub::GetRandomSexyTextItemForGender   ; {2}
+73f3de5558  bl  System.String::Replace                     ; '<pronoun>' -> his/her
+```
+
+and `GetRandomSexyTextItemForGender` reads **`a16_sexy-text-items-enc`** — 43 rows of
+`Item, Gender, Clean`, a table the port had never referenced. The card is ported now:
+
+```
+body      'Your {0}, {1}, just sent you {2}.'            #50742
+journal   'My {0}, {1} sent me {2}.'                      #30997
+buttons   'Send {0} a txxxt back'  'Forward it to my friends'
+          'Do these save to the cloud?'  'File a restraining order'
+```
+
+* `{2}` is drawn from the pool filtered by the ex's gender, with `<pronoun>` replaced by
+  the ex's own possessive — the same substitution the game does, and the reason a
+  "wilted celery" row reads "picture of her willy" rather than "picture of <pronoun>
+  willy".
+* Three of the four buttons are wired; **`File a restraining order`** is not, because it
+  opens the court card, which is the one ex-lover chain still unported.
+
+### 173.1 Verification
+
+`tools/test_ex_lover_sext.py`:
+
+```
+lanes: {'Forward it to my friends': 2, 'Send Robin Averill': 4, 'Do these save to the cloud?': 6}
+distinct items: 10
+ok
+```
+
+Ten distinct items across 30 lives is the check that the pool is really drawn; no
+`<pronoun>` survives into a line; the card reports `a16_sexy-text-items-enc` as its
+table. Bench 0 lines.
+
+### 173.2 A filter bug this round produced
+
+The test's first version keyed on the phrase `just sent you` and caught a **prison**
+card — *"Hannah dal Vie just sent you a sex video she made with another man while you've
+been in prison."* Filtering cards by a phrase in their body is the same class of mistake
+as §154's title filter; the filter is now the ex-lover wording itself.
+
+
 
 
 

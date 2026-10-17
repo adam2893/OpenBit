@@ -395,4 +395,64 @@ bool Sim::loverLeavesYear(Life& life, AgeUp& out, int forcedChoice) {
   life.pendingCards.push_back(kPendingBreakUpAnnouncement);
   return true;
 }
+// ScenarioExLoverInboundSext (REPORT.en.md 173): the ex sends a picture.
+//
+// RefreshScenario @0x73f3de5450:
+//   DataHub::GetRandomSexyTextItemForGender(ex gender)   -> {2}
+//   String::Replace(<pronoun> in it, the ex's pronoun)    -> the item reads right
+//   body     'Your {0}, {1}, just sent you {2}.'   #50742
+//   journal  'My {0}, {1}, sent me {2}.'            #30997
+//   buttons  'Send {0} a txxxt back' (#38590)  'Forward it to my friends' (#20572)
+//            'Do these save to the cloud?' (#17931)  'File a restraining order' (#20129)
+//
+// The item pool is a16_sexy-text-items-enc (Item, Gender, Clean) -- the port had never
+// read it, which is why this card stopped at a hole in REPORT.en.md 172.
+bool Sim::exLoverSextYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  const Hero::ExLover* ex = h.latestEx();
+  if (ex == nullptr) return false;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.age < 18) return false;
+  if (!ensureTable("a16_sexy-text-items-enc")) return false;
+  if (forcedChoice < 0 && loverRng_.below(14) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_sexy-text-items-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (ex->female ? "female" : "male")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[loverRng_.below(uint32_t(rows.size()))];
+  std::string item = trim(t.at(row, "Item"));
+  const std::string poss = ex->female ? "her" : "his";
+  for (size_t at = item.find("<pronoun>"); at != std::string::npos;
+       at = item.find("<pronoun>", at)) {
+    item.replace(at, 9, poss);
+    at += poss.size();
+  }
+  const std::string exWord = lower(trim(ex->status == "married"
+                                        ? (ex->female ? "Ex-Wife" : "Ex-Husband")
+                                        : (ex->female ? "Ex-Girlfriend" : "Ex-Boyfriend")));
+  out.table = "a16_sexy-text-items-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = "Your " + exWord + ", " + ex->name + ", just sent you " + item + ".";
+  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(loverRng_.below(3));
+  if (lane == 0) {
+    out.choice = "Send " + ex->name + " a txxxt back";
+    out.narrative = "My " + exWord + ", " + ex->name + ", sent me " + item +
+                    ". I sent " + (ex->female ? "her" : "him") + " one back.";
+  } else if (lane == 1) {
+    out.choice = "Forward it to my friends";
+    out.narrative = "My " + exWord + ", " + ex->name + ", sent me " + item +
+                    ". I forwarded it to all of my friends.";
+  } else {
+    out.choice = "Do these save to the cloud?";
+    out.narrative = "My " + exWord + ", " + ex->name + ", sent me " + item + ".";
+  }
+  return true;
+}
 }  // namespace bl
