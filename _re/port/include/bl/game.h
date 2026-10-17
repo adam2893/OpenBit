@@ -88,6 +88,9 @@ struct Hero {
   // Fame family's gates read it as a float -- ScenarioFamePaparazzi's is
   // `fame >= 75.0f` -- so it is kept as one.
   float fame = 0.0f;
+  // The country's retirement age for the hero's gender (REPORT.en.md 137), pinned
+  // with the country at birth: 50-67 depending on both.
+  int retirementAge = 65;
   bool employed = false;
   std::string job;  // port-side only: drives which scenario pools apply
   // Prison state. The real game reaches it through the interactive Crime menu

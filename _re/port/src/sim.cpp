@@ -111,6 +111,17 @@ std::string stringField(const std::string& s, const std::string& key, size_t fro
   return readString(s, i, end);
 }
 
+// A bare number field ("<RetirementAgeMale>k__BackingField": 60). The country
+// objects carry no nested value under these keys, so the digits after the colon
+// are the whole value.
+int intField(const std::string& s, const std::string& key, size_t from, size_t end) {
+  const size_t i = findValue(s, key, from, end);
+  if (i == std::string::npos) return 0;
+  size_t p = i;
+  while (p < end && (s[p] == ' ' || s[p] == '-')) ++p;
+  return std::atoi(s.c_str() + p);
+}
+
 std::vector<std::string> stringArrayField(const std::string& s, const std::string& key,
                                           size_t from, size_t end) {
   std::vector<std::string> out;
@@ -138,6 +149,10 @@ std::vector<Country> loadCountries(const std::string& path) {
     c.language = stringField(text, "<Language>k__BackingField", obj.first, obj.second);
     c.demonym = stringField(text, "<Demonym>k__BackingField", obj.first, obj.second);
     c.cities = stringArrayField(text, "Cities", obj.first, obj.second);
+    // The retirement ages the country sets (REPORT.en.md 137):
+    // DataCountry.GetRetirementAgeForGender reads these two columns.
+    c.retirementAgeMale = intField(text, "<RetirementAgeMale>k__BackingField", obj.first, obj.second);
+    c.retirementAgeFemale = intField(text, "<RetirementAgeFemale>k__BackingField", obj.first, obj.second);
     if (!c.name.empty()) out.push_back(std::move(c));
   }
   return out;
@@ -3103,6 +3118,11 @@ bool isSibling(const Person& p) {
          p.relation.find("sister") != std::string::npos;
 }
 
+// The hero's own retirement age (REPORT.en.md 137). DataCountry keeps two columns
+// and GetRetirementAgeForGender picks by the hero's gender; the country is pinned
+// at birth, so this is a lookup and not a draw.
+int Sim::retirementAge(const Hero& h) const { return h.retirementAge; }
+
 // The fame impact (REPORT.en.md 136). SimPerson::ImpactFame @0x73f30e4d88 is four
 // instructions of arithmetic after the call:
 //
@@ -3357,6 +3377,9 @@ bool Sim::pinCountry(Life& life, const std::string& countryName) {
   h.city = found->cities.empty() ? std::string()
                                  : found->cities[rng_.below(uint32_t(found->cities.size()))];
   h.region = regionForCity(found->code, h.city);
+  // The country's own retirement age for the hero's gender (REPORT.en.md 137).
+  const int retire = h.female ? found->retirementAgeFemale : found->retirementAgeMale;
+  if (retire > 0) h.retirementAge = retire;
   return true;
 }
 
@@ -3587,12 +3610,15 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
     h.job = row == size_t(-1) ? "Worker" : trim(t.at(row, "Career"));
   }
-  // shortcut: the port has no retirement system and line 3485 leaves every hero
-  // employed from 18, so the cards that want a hero without work -- the job
-  // referral (REPORT.en.md 124) is the first of them -- could never fire. The
-  // hero leaves the workforce at 66; the career track survives, so careerYear's
-  // promotion lane still reads it and no earlier gate moves before that age.
-  if (h.age >= 66 && h.employed && !h.military && !h.militaryPending) h.employed = false;
+  // The hero leaves the workforce at the age his own country sets for his gender
+  // (REPORT.en.md 137): DataCountry.GetRetirementAgeForGender reads the
+  // RetirementAgeMale/Female columns, which run from 50 to 67, so the single 66
+  // the port used before was wrong for most of the 102 countries. The career track
+  // survives, so careerYear's promotion lane still reads it.
+  // shortcut: Occupation.Pension and Occupation.AgeAtRetirement are not modelled;
+  // the port reads only the country's age.
+  if (h.age >= retirementAge(h) && h.employed && !h.military && !h.militaryPending)
+    h.employed = false;
 
   // (0) A forced scenario class (the Phase 1 bench replaying a scripted event
   //     the game presented) wins over every draw below and consumes no RNG
@@ -5085,6 +5111,11 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &h;
   life_ = &life;
 
+  // A hero past his country's retirement age has left the workforce entirely
+  // (REPORT.en.md 137): no new career, and no further rung either. The second half
+  // matters -- the promotion lane reads the track, and the track survives
+  // retirement on purpose.
+  if (h.age >= retirementAge(h)) return false;
   // The hero has no career row until one is drawn: 'employed' alone is set by
   // the school state at 18 (line 1762 of this file), so the career is keyed on
   // the empty track instead.
@@ -5092,7 +5123,7 @@ bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
     // A retired hero (ageUp's 66 rule, REPORT.en.md 124) does not start a new
     // career: the referral card and the retirement rule would otherwise undo
     // each other every year.
-    if (h.age < 18 || h.age >= 66) return false;
+    if (h.age < 18 || h.age >= retirementAge(h)) return false;
     if (!careerRng_.chance(0.6)) return false;
     if (!ensureTable("a16_careers-enc")) return false;
     const Table& t = tbl("a16_careers-enc");

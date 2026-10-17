@@ -266,6 +266,10 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"alive\": " << (life.alive ? "true" : "false")
     << ", \"stats\": " << statsJson(h)
     << ", \"money\": " << h.money
+    << ", \"retirementAge\": " << h.retirementAge
+    << ", \"employed\": " << (h.employed ? "true" : "false")
+    << ", \"job\": " << jsonOrNull(h.job)
+    << ", \"fame\": " << h.fame
     << ", \"exLovers\": " << exLoversJson(h)
     << ", \"family\": " << familyJson(life);
   // The death sentence is a real table row (a16_death-types-enc) and carries

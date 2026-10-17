@@ -20111,3 +20111,69 @@ the card tests are unchanged, which is the point: `fame` moved from `int` to
 gated with one predicate instead of a guess, and `Sim::impactFame` is the one place
 a card has to call to move fame — every later fame card uses it.
 
+## 137. Structural 5: retirement is the country's, not the port's
+
+§124 invented a retirement age because the job-referral card could never fire while
+the port kept every hero employed from 18. The invention was `age >= 66`, and the
+game has the number in its data:
+
+```
+DataCountry::GetRetirementAgeForGender        the accessor
+DataCountry::get_RetirementAgeMale            country column
+DataCountry::get_RetirementAgeFemale          country column
+```
+
+`gamedata_json/a16_countries-enc.json` carries `<RetirementAgeMale>k__BackingField`
+and `<RetirementAgeFemale>k__BackingField` for all 102 countries, and they are not
+one number:
+
+```
+male ages   55, 58, 59, 60, 62, 63, 64, 65, 66, 67
+female ages 50, 55, 57, 58, 59, 60, 61, 62, 63, 64
+Afghanistan 60/55   Norway 67/67   Japan 62/62   Brazil 65/60   USA 66/66
+```
+
+So the port's 66 was wrong for most of the world, in both directions.
+
+### 137.1 The change
+
+`Country` gained the two columns (parsed by a new `intField`, since these values are
+bare numbers rather than strings), `Hero` gained `retirementAge` set at the same
+moment the country is pinned, and the two `>= 66` sites now read it.
+
+The second site needed a real fix, not a substitution: the promotion lane reads
+`careerTrack`, and the track survives retirement on purpose, so a retired hero was
+still being promoted. `careerYear` now returns before both the new-career draw and
+the promotion rung once the hero is past his country's age.
+
+### 137.2 Verification
+
+`tools/test_retirement.py` — five country/gender pairs, fifteen lives each:
+
+```
+Afghanistan  female retired in 14 lives
+Afghanistan  male   retired in 12 lives
+Brazil       female retired in 13 lives
+Japan        male   retired in 12 lives
+Norway       male   retired in  6 lives
+ok
+```
+
+Per life it asserts three things: `final.retirementAge` equals the country row for
+that gender (the data path, end to end), a hero past that age is `employed: false`,
+and **no** `I started a new position as …` or `I have been promoted to …` line
+appears at or after it. The first version of this test failed at exactly that second
+clause — Norway, age 73, `promoted to St. Valentine` — which is how the promotion
+bug was found rather than assumed away.
+
+`final` also carries `retirementAge`, `employed`, `job` and `fame` now, so a test can
+see the hero's own state without inferring it from cards.
+
+### 137.3 What is still missing
+
+* `Occupation::AgeAtRetirement` and `Occupation::Pension` are not modelled: the
+  country decides *when*, and nothing pays anything when it happens. The pension
+  needs the occupation's own row, which the port does not keep yet.
+* The retirement is still silent — no `JobRetire` card, no pension line. §124's
+  note stands: it changes which cards the late years can offer, nothing else.
+

@@ -21,6 +21,11 @@ struct Country {
   std::string language;
   std::string demonym;
   std::vector<std::string> cities;
+  // DataCountry.GetRetirementAgeForGender @ the two columns of
+  // gamedata_json/a16_countries-enc.json (REPORT.en.md 137). They run from 50 to
+  // 67, which is why one retirement age for the whole port was wrong.
+  int retirementAgeMale = 65;
+  int retirementAgeFemale = 65;
 };
 
 // One resolved age-up event, taken from a real table row.
@@ -157,6 +162,8 @@ class Sim {
   // false when no real row matched. forcedChoice >= 0 takes that 0-based index
   // out of the choices the drawn scenario row fills in instead of letting the
   // RNG pick one; out of range falls back to the RNG. -1 is the plain age-up.
+  // The hero's retirement age, from his own country (REPORT.en.md 137).
+  int retirementAge(const Hero& h) const;
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);
