@@ -858,10 +858,12 @@ bool Sim::tableReport(const char* table, int oneIn, AgeUp& out) {
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = table;
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  // The rows carry tokens ('<musician>' and friends); the shared resolver answers what it
+  // can and leaves the rest, which the residue probe then reports (REPORT.en.md 205).
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   if (t.has("Log Version")) {
     const std::string log = trim(t.at(row, "Log Version"));
-    if (!log.empty()) out.narrative = spyUpperFirst(log);
+    if (!log.empty()) out.narrative = spyUpperFirst(resolve(log));
   }
   return true;
 }
