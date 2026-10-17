@@ -91,6 +91,14 @@ struct Hero {
   // The country's retirement age for the hero's gender (REPORT.en.md 137), pinned
   // with the country at birth: 50-67 depending on both.
   int retirementAge = 65;
+  // Birth control (REPORT.en.md 141). The game keeps it on the person
+  // (Person.OnBirthControl) with two stamps on the life
+  // (Life.AgeAtLastWentOnBirthControl / ...Off). Three cards of the lover family
+  // are written around it: LoverDemandsBirthControl, LoverStopsBirthControl and
+  // ScenarioBirthControlHero.
+  bool onBirthControl = false;
+  int ageWentOnBirthControl = 0;
+  int ageWentOffBirthControl = 0;
   bool employed = false;
   std::string job;  // port-side only: drives which scenario pools apply
   // Prison state. The real game reaches it through the interactive Crime menu

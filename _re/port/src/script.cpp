@@ -267,6 +267,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"stats\": " << statsJson(h)
     << ", \"money\": " << h.money
     << ", \"retirementAge\": " << h.retirementAge
+    << ", \"birthControl\": " << (h.onBirthControl ? "true" : "false")
     << ", \"employed\": " << (h.employed ? "true" : "false")
     << ", \"job\": " << jsonOrNull(h.job)
     << ", \"fame\": " << h.fame
@@ -628,6 +629,13 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.date)) return fail("date is not a string");
   }
 
+  p = findValue(json, "birthControl");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;  // findValue stops after ':'
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.birthControl = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.birthControl = false;
+    else return fail("birthControl is not a boolean");
+  }
   p = findValue(json, "fame");
   if (p != std::string::npos) {
     long long v = 0;
@@ -792,6 +800,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
                   std::atoi(spec.date.substr(dash + 1).c_str()));
   }
   if (spec.fame > 0) life.hero.fame = float(spec.fame);
+  if (spec.birthControl) life.hero.onBirthControl = true;
   *heroAtBirth = heroJson(life.hero);
   // The age-0 lines belong to the same stream as the age-ups, so they are drawn
   // here, once, before the loop.

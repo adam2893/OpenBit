@@ -20387,3 +20387,76 @@ each, and the third one (`LoverCounselingPush`) shows its skeleton the same way:
 `RelationshipStatusString().ToLower()`, two `PronounStringForType`, one Body write,
 three `ScenarioChoice` ctors.
 
+## 141. Birth control: the state three lover cards need
+
+The sprint's next three cards are all written around one flag the port does not
+have. The game keeps it on the person and stamps two ages on the life:
+
+```
+Person::get_OnBirthControl / set_OnBirthControl
+Life::get_AgeAtLastWentOnBirthControl / set_AgeAtLastWentOnBirthControl
+Life::get_AgeAtLastWentOffBirthControl / set_AgeAtLastWentOffBirthControl
+```
+
+`Hero` now carries `onBirthControl` plus the two ages, the script accepts
+`"birthControl": true`, and `final` reports it.
+
+### 141.1 What the cards look like, through the §140 view
+
+`ScenarioLoverDemandsBirthControl` (refresh 600 B, handler 1,704 B), decoded far
+enough to know its shape:
+
+```
+73f3920718  SimLover::RelationshipStatusString        ; {0} of the body
+73f392078c  str x0, [x19, #0x48]                      ; Body
+73f39207c4  ScenarioChoice::.ctor                     ; buttons 1 and 2
+73f3920808  ScenarioChoice::.ctor
+73f3920848  mov w1, #2
+73f3920854  SimPerson::PronounStringForType           ; {0} of the third label
+73f3920890  ScenarioChoice::.ctor                     ; button 3
+--- handler ---
+73f3920be4  GameReference::GetRandomNumber(0, 100)    ; the argue roll
+73f3920c34  ScenarioLoverArgues::.ctor                ; it pushes an argue card
+73f3920cb4  SimPerson::ImpactDiscipline(-3)
+73f3920d34  DataHub::GetRandomArguerAction
+73f3920e48  GameReference::PickRandomFromStringArray
+73f3920e74  SimLover::RelationshipStatusString
+73f3920f2c  LifeLog::Log
+```
+
+and its three literals, read out of the slots:
+
+```
+body      'Your {0}, {1}, wants you to go on birth control.\n\nWhat will you do?'
+button 1  'Agree to go on birth control'
+button 2  'Refuse to go on birth control'
+button 3  'Argue with {0}'        ({0} = PronounStringForType(2))
+```
+
+`ScenarioLoverStopsBirthControl` is the mirror (2,820 B handler) and
+`ScenarioBirthControlHero` is the hero's own.
+
+### 141.2 Why the state landed without a card
+
+All three need the flag to be meaningful, and the flag needs a writer. Porting a
+card first would have meant a card whose effect is invisible — accept, and nothing
+changes. The order here is deliberate: the state, its spec switch and its JSON view
+land first, the card that flips it lands next.
+
+`tools/test_birth_control.py` pins what a state with no card can be pinned on: off
+by default in every life, on when the spec says so (both spellings), and a
+non-boolean value is a parse error with its own message rather than a silent false.
+
+```
+birth control state: ok
+```
+
+### 141.3 A parser bug this found
+
+The first cut read `"birthControl": true` as *not a boolean*: `findValue` returns
+the position right after the colon, which is a **space** in every JSON this project
+writes, and the comparison started there. The block now skips horizontal whitespace
+first. The older `"relationship"` parser only ever worked because its value sits at
+a fixed offset in the specs the tests generate — the same latent bug, waiting for a
+spec with different spacing.
+

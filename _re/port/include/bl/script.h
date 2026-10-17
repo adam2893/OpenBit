@@ -99,6 +99,9 @@ struct ScriptSpec {
   // career and its own fame impacts; the port takes it from the spec so the Fame
   // family's gate can be exercised at all.
   int fame = 0;
+  // The hero starts on birth control (REPORT.en.md 141); the game gets there
+  // through the lover family's own cards, which need the flag to exist first.
+  bool birthControl = false;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;
