@@ -13,8 +13,9 @@ offline by every later decode.
 
 The harness is blh_hold.py (Frida, MuMu at 127.0.0.1:16384); it must be running:
   cd /Users/Adam/Documents/bitlife/_re && python3 blh_hold.py &
-Classes whose .ctor takes an argument are skipped with a note -- probeCard only
-knows how to fill _friend, and those cards need their own pointer.
+Only cards whose .ctor() takes no argument are captured: the export builds the
+object and calls RefreshScenario with no person, which is exactly enough for them
+and not enough for the ones that need a SimLover or SimPerson handed in.
 """
 import json
 import os
@@ -101,22 +102,9 @@ def main(argv):
     for cls in argv:
         if not cls.startswith("Scenario"):
             cls = "Scenario" + cls
-        # fc = friendCard(cls, gender, minAge, maxAge, null): queue the build on the
-        # game's main thread, then fcres collects it. A ctor() card needs no person.
-        queued = call("x_fc", [cls, 1, 18, 40])
-        if queued.get("error"):
-            cache[cls] = {"err": queued["error"]}
-            print(summarise(cls, cache[cls]))
-            got += 1
-            continue
-        rec = {}
-        for _ in range(60):
-            time.sleep(0.5)
-            res = call("x_fcres", [])
-            card = (res or {}).get("card")
-            if card:
-                rec = card
-                break
+        # card(cls) = probeCard(cls, null): build the object and run its own
+        # RefreshScenario, with no person minted. ctor() cards need none.
+        rec = call("x_card", [cls])
         if "strings" not in rec and "choices" not in rec:
             # A failed capture is not evidence: show it, do not cache it, so a
             # later run with a live life overwrites nothing real.

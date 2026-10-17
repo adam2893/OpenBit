@@ -1654,6 +1654,10 @@ function attProbe(mode, friendStr, weaponStr){
         return {total:total, nullCount:nulls.length, nulls:nulls.slice(0,40), distinctOutbound:Object.keys(seen).length};
       },
       ping:function(){ return 'pong'; },
+      // card(cls): build one scenario object and run its own RefreshScenario, with
+      // no person minted. ctor() cards need none, and genPerson cannot be used on
+      // a hero that has no place chain yet.
+      card:function(cls){ try{ return probeCard(String(cls), null); }catch(e){ return {err:String(e)}; } },
       attprobe:function(a,c,d){
         var s=(c===undefined||c===null||c==='')? null : String(c);
         var w=(d===undefined||d===null||d==='')? null : String(d);

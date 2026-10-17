@@ -19402,3 +19402,80 @@ ok
 * Windows has no `fork`; the driver is POSIX-only and the port's other modes are
   not.
 
+## 127. Tooling: what the game can be asked for, and what it cannot
+
+Three tools, one measurement each. All three exist so that later sections stop
+repeating work; none of them changes the port's behaviour.
+
+### 127.1 `tools/literals_dump.py` — the slot table
+
+Every card string is loaded through a slot: the code does `adrp`/`ldr` to a cell
+that holds an `Il2CppString*`, filled from the metadata literal table. Reading one
+cell needs a Frida attach, so the tool reads the whole slot range at once and keeps
+`tools/lit_cells.json`.
+
+Measured, and this is the finding: **the range holds 420 resolved slots at the
+menu and 420 after three age-ups.** The slots are not filled at start-up for every
+literal the module references; they fill when the code path that loads them first
+runs. The consequences are:
+
+* a literal whose card has never fired in the game is not in the cache, so the
+  cache cannot replace the per-card read for a card being decoded *first*;
+* it is worth keeping anyway, because it is a growing record of every literal the
+  game has already handed over — a play session captures the set of cards that
+  fired in it, and those rows never need the harness again.
+
+### 127.2 `tools/cards_capture.py` — asking the game for a card
+
+`probeCard` (blh.js) builds a scenario object, runs its own `RefreshScenario` and
+reads the `System.String` fields and the `ScenarioChoice` list back. The tool
+batches that per class and caches into `tools/cards.json`, so a card captured once
+is readable offline forever.
+
+Two hard limits, both measured:
+
+1. `friendCard`/`genPerson` fails with `access violation accessing 0x0` on the
+   life loaded *before* its hero chain is captured — `pointers` reports
+   `life`/`hero` only after a scenario has fired.
+2. A card whose `RefreshScenario` reads state it does not have throws inside the
+   call. `LoverPrude` aborted the process; `LoverCounselingPush`,
+   `LoverElopePush` and `LoverDemandsBirthControl` threw *after* writing their
+   title, which is still a real capture:
+
+```
+ScenarioLoverCounselingPush  (RefreshScenario threw)
+  Title          'Counseling'
+ScenarioLoverElopePush       (RefreshScenario threw)
+  Title          'Elope'
+ScenarioLoverDemandsBirthControl (RefreshScenario threw)
+  Title          'Birth Control'
+```
+
+So the tool is a **title oracle with zero setup** and a **full-card oracle only for
+cards that need no partner**. Bodies and buttons for state-dependent cards still
+come from the binary plus the literal table.
+
+### 127.3 The offline literal table, and where it stops
+
+`tools/metadata_strings.py` already reads the literal table out of
+`global-metadata.dat` (71,223 entries; layout documented in
+`METADATA_STRINGS.en.md`, which corrected the earlier 8-byte-entry reader). That
+half is solved offline: literal index -> text.
+
+The missing half is cell -> literal index. In il2cpp that mapping is the
+`metadataUsagePairs` array, and this build's header does not lay it out where the
+documented order says. A scan of the whole 18.8 MB file for the two shapes that
+array can take —
+
+* 8-byte `(type 1..6, index)` pairs, and
+* 8-byte `(start, count)` lists with strictly increasing starts —
+
+finds no region larger than 5,665 entries, and the largest hits are at 17.68 MB
+inside a different structure. So the mapping is not reachable offline with what is
+on disk today.
+
+**What this means for throughput**, stated plainly: the decode loop keeps reading
+cells against a running game, but the two tools above remove the *repeat* half of
+that cost — a card captured once is never asked for twice, and every literal the
+game has already loaded is cached.
+
