@@ -210,6 +210,7 @@ std::string exLoversJson(const Hero& h) {
   for (size_t i = 0; i < h.exLovers.size(); ++i) {
     const Hero::ExLover& ex = h.exLovers[i];
     o << (i ? ",\n      " : "\n      ") << "{\"name\": " << jsonStr(ex.name)
+      << ", \"city\": " << jsonOrNull(ex.city)
       << ", \"female\": " << (ex.female ? "true" : "false") << ", \"age\": " << ex.age
       << ", \"status\": " << jsonOrNull(ex.status) << ", \"relationship\": "
       << ex.relationship << ", \"year\": " << ex.year << "}";
@@ -232,7 +233,9 @@ std::string childrenJson(const Life& life) {
       << ", \"withCurrentLover\": " << (c.withCurrentLover ? "true" : "false")
       << ", \"paternityAsked\": " << c.paternityAsked
       << ", \"bornAtHeroAge\": " << c.bornAtHeroAge
-      << ", \"isHeroes\": " << (c.isHeroes ? "true" : "false") << "}";
+      << ", \"isHeroes\": " << (c.isHeroes ? "true" : "false")
+      << ", \"city\": " << jsonOrNull(c.city)
+      << ", \"city\": " << jsonOrNull(c.city) << "}";
   }
   o << (life.children.empty() ? "]" : "\n    ]");
   return o.str();
@@ -290,6 +293,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"birthControl\": " << (h.onBirthControl ? "true" : "false")
     << ", \"employed\": " << (h.employed ? "true" : "false")
     << ", \"job\": " << jsonOrNull(h.job)
+    << ", \"city\": " << jsonOrNull(h.city)
     << ", \"loverStatus\": " << jsonOrNull(h.loverStatus)
     << ", \"loverName\": " << jsonOrNull(h.loverName)
     << ", \"relationship\": " << h.relationship
@@ -871,6 +875,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     ended.status = "dating";
     ended.relationship = 12;
     ended.year = life.hero.age;
+    ended.city = life.hero.city;
     life.hero.exLovers.push_back(ended);
   }
   for (int c = 0; c < spec.children; ++c) {
@@ -886,6 +891,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     child.age = 0;
     child.bornAtHeroAge = 20 + 4 * c;  // staggered, so a life has children of two ages
     if (spec.ex) child.otherParent = "Robin Averill";  // the seeded ex is the parent
+    child.city = life.hero.city;
     life.children.push_back(child);
   }
   *heroAtBirth = heroJson(life.hero);

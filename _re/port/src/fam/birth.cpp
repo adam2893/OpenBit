@@ -42,6 +42,7 @@ bool Sim::birthYear(Life& life, AgeUp& out, int forcedChoice) {
   born.otherParent = h.loverName;
   born.isHeroes = h.loverPregnantByHero;
   born.withCurrentLover = true;
+  born.city = h.city;
   out.table = "relationship";
   out.row_id = "0";
   // Body: the class's own sentence (#70148), cut before the naming question the

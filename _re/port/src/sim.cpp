@@ -21021,6 +21021,7 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
     ended.status = h.loverStatus;
     ended.relationship = h.relationship;
     ended.year = h.age;
+    ended.city = h.city;   // where the pair were living when it ended (REPORT 163)
     h.exLovers.push_back(ended);
     ++h.exes;
     h.loverName.clear();

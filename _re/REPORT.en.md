@@ -21532,6 +21532,58 @@ Twice the cards, because a grown child now qualifies. The remaining notes in the
 (`KeepItClean` at 0x73f32aba1c, the retirement condition) are still genuinely unread and
 are recorded as such rather than as facts.
 
+## 163. People get a place
+
+§162 ended with the gap that keeps reappearing: *an ex in this port has a name, a
+gender and a year, and no place* — while the game asks
+`SimPerson::LivesInSamePlaceAsHero` before several ex and child cards. Three structures
+had the same hole, so it was closed once:
+
+```
+Hero::ExLover.city   where the ex was living when the pair ended
+Child.city           where the child lives
+final.city           the hero's own city, now in the JSON
+```
+
+Every creation site fills it: the break-up records `h.city` on the ex it pushes, the
+birth card records the partner's city on the child, and both fixtures do the same.
+
+### 163.1 The gate it was blocking
+
+`paternityCourtOrderYear` now asks the place question the game asks, instead of only
+the stand-in:
+
+```
+if (c.isHeroes) continue;                                  // whose child it is
+if (!ex->city.empty() && !h.city.empty() && ex->city != h.city) continue;  // nearby
+```
+
+An **empty** city means the record predates the field or a fixture did not set it, and
+is not evidence of distance — that is deliberate, so old saves and the fixtures behave
+as they did.
+
+### 163.2 Verification
+
+`tools/test_places.py`:
+
+```
+children and ex-lovers carry a place
+ok
+```
+
+Every child and every ex-lover in five lives carries a `city`, and each ex's is the
+hero's own. Bench 0 lines; `test_birth`, `test_paternity_court_order`,
+`test_lover_wedding` and `test_call_off_engagement` all still pass — the change is
+additive and nothing reads a place it did not ask for.
+
+### 163.3 What this unblocks
+
+* `SimChild::IsLivingWithHero` — the flag `MovedOut` and `city` now support it.
+* Every ex card that only fires when the ex is *nearby*: the stalking, booty-call and
+  custody families all ask this question in the game.
+* A future move-house card: `city` is the thing it would change.
+
+
 
 
 

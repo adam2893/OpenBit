@@ -39,6 +39,10 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
     // port has no place for an ex, so it stands in with the one thing it can know: a
     // child whose father is not recorded as the hero is the child a test is asked over.
     if (c.isHeroes) continue;
+    // The place half of the gate, now that an ex has one (REPORT.en.md 163):
+    // SimPerson::LivesInSamePlaceAsHero. An empty city means the record predates the
+    // field or the fixture did not set it, and is not evidence of distance.
+    if (!ex->city.empty() && !h.city.empty() && ex->city != h.city) continue;
     kid = &c;
     break;
   }

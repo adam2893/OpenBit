@@ -625,6 +625,10 @@ struct Hero {
     std::string status;    // what the pair were when it ended: dating / engaged / married
     int relationship = 0;  // the score at the break-up
     int year = 0;          // the year it ended, counted from the hero's birth
+    // Where the ex lives (REPORT.en.md 163). The game's ex cards ask
+    // SimPerson::LivesInSamePlaceAsHero before they push, and the port had no place
+    // for anybody but the hero. Empty means "same place as the hero was then".
+    std::string city;
   };
   std::vector<ExLover> exLovers;  // oldest first; the most recent is back()
   const ExLover* latestEx() const { return exLovers.empty() ? nullptr : &exLovers.back(); }

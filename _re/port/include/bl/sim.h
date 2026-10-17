@@ -96,6 +96,9 @@ struct Child {
   int age = 0;
   bool alive = true;
   bool movedOut = false;   // SimChild.MovedOut
+  // Where this child lives (REPORT.en.md 163), for the same reason ExLover has one:
+  // SimChild.IsLivingWithHero and the ex cards' place checks need a place to compare.
+  std::string city;
   std::string otherParent; // the partner who is not the hero, when there is one
   bool withCurrentLover = false;  // SimChild.IsChildWithCurrentLover
   int paternityAsked = 0;  // SimChild.NumTimesHeroAskedToTakePaternityTest
