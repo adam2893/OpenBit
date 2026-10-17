@@ -19598,3 +19598,52 @@ Order of work, cheapest first and one commit each: `racingYear`, `modelYear`,
 `bash tools/bench.sh /tmp/trace_c10.json` diffed after every move — the bench has
 to stay byte-identical, because a pure split changes no behaviour.
 
+## 130. The first family moves out: racing
+
+`racingYear`, `racingCardRow`, `racingToken`, `racingBuyCar`, `makeRacing`
+and their private helpers are now `port/src/fam/racing.cpp`. `sim.cpp` went from
+28,876 to 27,874 lines.
+
+### 130.1 What the move needed
+
+The extraction was mechanical — 1,005 contiguous lines, from the family's banner to
+the last brace of `racingYear` — but four kinds of symbol had to be dealt with,
+and every later family will hit the same four:
+
+1. **helpers in the file-local namespace.** `lower`, `trim`, `splitOn`,
+   `weightedPickOf` were defined inside `namespace { }` at the top of
+   `sim.cpp`, so they had internal linkage and could not be referenced from
+   another translation unit. They moved out of the anonymous namespace, and
+   `bl/text.h` now declares them.
+2. **`static` free functions.** `toFirstPerson`, `llPossessive`, `llInList`
+   were `static`; dropping the keyword gives them external linkage. Their own
+   dependencies (`spySwap`, `substAll`) stay internal, which is legal because
+   they are used inside the same translation unit.
+3. **one function that had to leave the file entirely.** `spyUpperFirst` sat
+   inside the anonymous namespace and had no external callers, so the cheapest
+   correct home was a new `port/src/text.cpp` holding the body of
+   `bl/text.h`'s promises.
+4. **the family's private constants** (`kRacStreetTypes`, `kRanks`) came along
+   with the block, no changes.
+
+### 130.2 Verification
+
+A pure split changes no behaviour, so both checks are equality checks:
+
+```
+bash tools/bench.sh /tmp/trace_c10.json   diff vs §125: 0 lines
+python3 /tmp/qdir/racres.py               racing events 180, residue 0, failures 0
+```
+
+180 is exactly the count the same probe produced before the move, and the bench is
+byte-identical. `blsim --play` still builds and runs (it goes through
+`script.cpp`, untouched).
+
+### 130.3 The rule this established
+
+For every later family: move the block, compile, and let the linker name the
+symbols that need external linkage. There is no need to guess — `undefined symbol`
+lists exactly the helpers to export, and each one is a one-line move. What must not
+happen is a second copy of a rule in the new file; that is why `spyUpperFirst`
+went to `text.cpp` instead of being duplicated.
+

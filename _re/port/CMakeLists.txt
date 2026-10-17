@@ -17,6 +17,8 @@ add_library(blport STATIC
   src/sim.cpp
   src/script.cpp
   src/play.cpp
+  src/text.cpp
+  src/fam/racing.cpp
   src/mod.cpp)
 target_include_directories(blport PUBLIC include)
 
