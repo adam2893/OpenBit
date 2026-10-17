@@ -20926,7 +20926,20 @@ bool Sim::loverBreakUpYear(Life& life, AgeUp& out, int forcedChoice) {
   // Boyfriend/Girlfriend for 1, each of the ex statuses its own 'Ex-' word.
   // shortcut: the port only ever breaks up a dating, engaged or married pair, so
   // the ex and neutral-gender arms of that switch are not reachable here.
-  out.body = "You broke up with your " + h.breakUpWord + ", " + h.breakUpName + ".";
+  // 'breakUpWord' carries the status the pair were in ('dating'), and the sentence wants
+  // the word the game's RelationshipStatusString returns for it -- a dating pair breaks
+  // up with a girlfriend or boyfriend, not with a 'dating' (REPORT.en.md 205).
+  const std::string breakWord = h.breakUpWord == "dating"
+                                    ? (h.loverFemale ? std::string("girlfriend")
+                                                     : std::string("boyfriend"))
+                                    : (h.breakUpWord == "engaged"
+                                           ? (h.loverFemale ? std::string("fiancee")
+                                                            : std::string("fiance"))
+                                           : (h.breakUpWord == "married"
+                                                  ? (h.loverFemale ? std::string("wife")
+                                                                   : std::string("husband"))
+                                                  : h.breakUpWord));
+  out.body = "You broke up with your " + breakWord + ", " + h.breakUpName + ".";
   // [self+0x178] = Format(cell 0x5c31470 '{0}', Format(cell 0x5c46bf0
   // 'I broke up with {0}.', partner FullName @0x73f2fc62bc)).
   // shortcut: the port's partner carries a first name and no surname, so the

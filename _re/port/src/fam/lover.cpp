@@ -18,6 +18,9 @@ bool Sim::loverBirthControlYear(Life& life, AgeUp& out, int forcedChoice) {
   // the person's own OnBirthControl flag before it draws.
   if (h.onBirthControl) return false;
   if (h.age < 18) return false;
+  // A partner does not demand contraception at 66 (REPORT.en.md 205): the card's own
+  // upper bound was missing, and the life that produced it had a 66-year-old hero.
+  if (h.age > 50) return false;
   if (forcedChoice < 0 && loverRng_.below(14) != 0) return false;
   hero_ = &h;
   life_ = &life;
@@ -989,7 +992,7 @@ bool Sim::jobTerminationYear(Life& life, AgeUp& out, int forcedChoice) {
   const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
   out.table = "a16_termination-scenarios-enc";
   out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(trim(t.at(row, "Scenario")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   out.narrative = "I was let go from my job as " + h.job + ".";
   h.employed = false;
   h.job.clear();

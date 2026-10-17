@@ -47,9 +47,17 @@ for seed in range(1, 41):
         assert journal.endswith("because I cheated on her.") or \
                journal.endswith("because I cheated on him."), (seed, journal)
         # It rides the same age-up as the hookup that caused it (REPORT 133).
-        if i and "seduced" in ((events[i - 1].get("body") or "") + str(events[i - 1].get("logLines"))).lower():
+        # The report rides the queue (§133) and is drained at the top of the next
+        # dispatch, so the hookup it answers can be one year earlier now that more cards
+        # compete for the year (REPORT.en.md 205).
+        # The report is drained from the queue at the top of a later dispatch, so the hookup
+        # it answers is at the same age or one earlier -- not necessarily the event before it
+        # (REPORT.en.md 205).
+        near = [e for e in events[:i]
+                if "seduced" in ((e.get("body") or "") + str(e.get("logLines"))).lower()
+                and 0 <= event["age"] - e["age"] <= 1]
+        if near:
             chained += 1
-            assert events[i - 1]["age"] == event["age"], (seed, event["age"])
 
 assert reports, "no argue report in 40 lives"
 assert chained, "the report never rode the same age as its hookup"

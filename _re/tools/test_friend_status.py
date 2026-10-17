@@ -36,7 +36,7 @@ for seed in range(1, 41):
             assert "<" not in text, event
             assert event["age"] >= 12, event
             assert not str(event.get("title") or ""), event
-            narrative = event["logLines"][0]
+            narrative = event["logLines"][-1]
             deltas = {k: v for k, v in event["deltas"].items() if v}
             if tail == "wants to become best friends with you":
                 seen["request"] += 1

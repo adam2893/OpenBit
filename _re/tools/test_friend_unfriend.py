@@ -94,7 +94,7 @@ for seed in range(1, 41):
                 assert event["age"] >= 12, event
                 assert not event.get("choice"), event
                 assert event["title"] in OUT, event
-                narrative = event["logLines"][0]
+                narrative = event["logLines"][-1]
                 assert OUT_NAR.match(narrative) and OUT_NAR.match(narrative).group(1) == name, event
                 deltas = {k: v for k, v in event["deltas"].items() if v}
                 assert deltas == {"discipline": 8, "happiness": -4}, event
@@ -162,7 +162,7 @@ for seed in range(1, 41):
                 assert not WEAPONS[weapon_name], event
                 assert (article == "an") == (weapon_name[0] in "aeiouAEIOU"), event
                 choice = str(event.get("choice") or "")
-                narrative = event["logLines"][0]
+                narrative = event["logLines"][-1]
                 deltas = {k: v for k, v in event["deltas"].items() if v}
                 # The two labels that name the friend carry the friend's pronoun;
                 # the other two leave it to the log line, so the line is read for it.
@@ -219,7 +219,7 @@ for seed in range(1, 41):
                 # friend and the hero, with 'attacked' the class's own fallback.
                 assert verb in (WEAPON_VERBS.get(weapon_name, ""), "attacked"), event
                 choice = str(event.get("choice") or "")
-                narrative = event["logLines"][0]
+                narrative = event["logLines"][-1]
                 if choice.startswith("Run away from "):
                     seen["attack_run"] += 1
                     ran = re.match(r"^I ran away from (him|her)[.]$", narrative)
@@ -260,7 +260,7 @@ for seed in range(1, 41):
             # (REPORT.en.md 108, corrected in 109).
             assert event["age"] >= 12, event
             choice = str(event.get("choice") or "")
-            narrative = event["logLines"][0]
+            narrative = event["logLines"][-1]
             deltas = {k: v for k, v in event["deltas"].items() if v}
             if choice == "Try to salvage our friendship":
                 assert event["title"] in WIN + LOST, event

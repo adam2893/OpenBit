@@ -37,7 +37,9 @@ for seed in range(1, 61):
         doc = run(seed, gender)
         pending = None
         for event in doc["events"]:
-            if event.get("title") != TITLE:
+            # Another card also has no title and speaks of breaking up ('<name> wants to
+            # break up with you.', REPORT 164), so the filter is the body itself.
+            if not (event.get("body") or "").startswith("You broke up with your "):
                 continue
             cards += 1
             assert event["table"] == "relationship", (seed, event.get("table"))
@@ -58,7 +60,8 @@ for seed in range(1, 61):
             # (REPORT.en.md 133), so the card immediately before it has to be the
             # break-up row of that same age.
             prev = doc["events"][doc["events"].index(event) - 1] if doc["events"].index(event) else None
-            assert prev and prev.get("table") == "a16_breakup-scenarios-enc", (seed, prev)
+            # Two cards end a pair now: the break-up pool and the partner-leaves card (§164).
+            assert prev and prev.get("table") in ("a16_breakup-scenarios-enc", "relationship"), (seed, prev)
             assert prev.get("age") == event.get("age"), (seed, prev.get("age"), event.get("age"))
             hits = [entry for entry in event.get("logLines") or []
                     if entry.startswith("I broke up with ")]
