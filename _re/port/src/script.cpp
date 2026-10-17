@@ -653,6 +653,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.date)) return fail("date is not a string");
   }
 
+  p = findValue(json, "cash");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("cash is not a number");
+    if (v < 0) return fail("cash must not be negative");
+    spec.cash = v;
+  }
   p = findValue(json, "engaged");
   if (p != std::string::npos) {
     while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
@@ -847,6 +855,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.birthControl) life.hero.onBirthControl = true;
   // The children fixture (REPORT.en.md 146): the array exists before any card that
   // reads it. Each one is a person of the hero's own surname, born before the run.
+  if (spec.cash >= 0) life.hero.money = spec.cash;
   if (spec.engaged) {
     life.hero.loverName = "Sam Ellery";
     life.hero.loverFemale = true;

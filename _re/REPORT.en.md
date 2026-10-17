@@ -21434,4 +21434,52 @@ the two new paths that set `married` (§158's nag, §159's elopement) can be ove
 in the same life. The assertion was removed rather than papered over — but the
 inconsistency is real and is the next thing to chase.
 
+## 161. Correction: there was no status overwrite, and the wedding had no money
+
+§160.3 recorded an "open question": a life that chose `Do it` ended `engaged` instead of
+`married`, and it was read as one card overwriting another. It was not. The trace:
+
+```
+24 | a16_wedding-venues-enc | You have chosen to marry Sam Ellery at the Church.
+   | ['The wedding cost $3,000, more than I had.',
+      'I could not afford the wedding at the Church.']
+```
+
+The card fired, the hero **could not pay**, and it left the engagement exactly where it
+was. The behaviour was right; the test's expectation was wrong; and the assertion had
+been removed instead of being explained.
+
+### 161.1 Two things that were wrong underneath it
+
+1. **The card offered venues the hero could not afford.** It drew from all twelve rows
+   and only discovered the problem after the choice. It now draws only from the rows at
+   or below the hero's money, and falls back to the cheapest row when none is — so the
+   plan is always the plan the hero could actually make.
+2. **There was no way to give a life money.** `"money"` in a spec did nothing (the key
+   never existed), so every wedding in every test was unaffordable and the venue table
+   looked like it only had one row. The script gained `"cash": N`, the same fixture
+   shape as `fame`, `children`, `ex` and `engaged`.
+
+### 161.2 Verification
+
+`tools/test_lover_wedding.py`:
+
+```
+lanes: {'Actually, never mind': 8, 'Do it': 8}
+distinct venues: 10
+ok
+```
+
+and the assertion that was removed last round is back, with a paid wedding behind it:
+`paid[0]["choice"] == "Do it"` and `final.loverStatus == "married"` on the same seed that
+failed before.
+
+`test_call_off_engagement` needed one change of its own: since §159 and §160 landed, an
+engagement is usually resolved in the same year, so a life no longer *ends* engaged.
+That test now asserts the status is reachable through its fixture instead of waiting for
+a random life to end inside one.
+
+Bench 0 lines; `test_lover_elope` and `test_birth` green.
+
+
 

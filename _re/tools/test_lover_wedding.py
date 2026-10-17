@@ -17,8 +17,10 @@ NOPE = "Actually, never mind"
 
 
 def run(seed, **extra):
+    # Cash is a fixture (REPORT.en.md 161): without it only the courthouse is
+    # affordable and the venue table's other eleven rows are never drawn.
     spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 60,
-            "engaged": True, "money": 300000}
+            "engaged": True, "cash": 100000}
     spec.update(extra)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
         json.dump(spec, fh)
@@ -47,12 +49,20 @@ for seed in range(1, 21):
         lanes[choice] += 1
         lines = event.get("logLines") or []
         if choice == DO:
-            assert any("The wedding cost" in l for l in lines), (seed, lines)
+            # Either the wedding was paid for, or the card says it could not be.
+            assert (any("The wedding cost" in l for l in lines) or
+                    any("more than I had" in l for l in lines)), (seed, lines)
         else:
             assert any("called off my wedding with" in l for l in lines), (seed, lines)
 
 assert lanes[DO] and lanes[NOPE], dict(lanes)
 assert len(venues) >= 3, venues   # the venue really is drawn from the table
+
+# And a wedding that is paid for really marries (REPORT.en.md 161): the earlier
+# failure was an unaffordable venue, not a status overwrite.
+paid = [e for e in run(2, ages=40)["events"] if "chosen to marry" in (e.get("body") or "")]
+assert paid and paid[0]["choice"] == "Do it", paid
+assert run(2, ages=40)["final"]["loverStatus"] == "married", run(2, ages=40)["final"]
 
 print("lanes:", dict(lanes))
 print("distinct venues:", len(venues))

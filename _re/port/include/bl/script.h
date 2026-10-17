@@ -112,6 +112,10 @@ struct ScriptSpec {
   // Start the life engaged (REPORT.en.md 158): the engagement is a status the port
   // used to skip, so a test needs a way to begin inside it.
   bool engaged = false;
+  // Starting cash (REPORT.en.md 161). The wedding card prices its venues, and a life
+  // that begins with nothing can only ever afford the courthouse -- a fixture is how
+  // the other eleven get exercised.
+  long long cash = -1;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

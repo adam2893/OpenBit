@@ -281,14 +281,26 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
   life_ = &life;
   const Table& v = tbl("a16_wedding-venues-enc");
   if (v.size() == 0) return false;
-  const int row = int(loverRng_.below(v.size()));
-  const std::string venue = trim(v.at(size_t(row), "Venue"));
-  const bool definite = v.flag(size_t(row), "Uses Definite Article");
-  const int costScore = int(v.num(size_t(row), "Cost Score"));
-  const int happyScore = int(v.num(size_t(row), "Lover Happiness Score"));
+  // Only a venue the hero can pay for is offered: the game's card prices the plan and
+  // refuses the ones the hero cannot afford, and offering an unaffordable wedding is
+  // what left a life engaged with a wedding it never had (REPORT.en.md 161).
+  std::vector<size_t> affordable;
+  for (size_t r = 0; r < v.size(); ++r) {
+    if (1000LL * int(v.num(r, "Cost Score")) <= h.money) affordable.push_back(r);
+  }
+  // With nothing affordable the card still appears at the cheapest venue, and its
+  // 'Do it' lane reports that the hero cannot pay -- the game does not hide the plan.
+  const size_t row = affordable.empty()
+                         ? size_t(0)
+                         : affordable[loverRng_.below(uint32_t(affordable.size()))];
+  const int rowIdx = int(row);
+  const std::string venue = trim(v.at(row, "Venue"));
+  const bool definite = v.flag(row, "Uses Definite Article");
+  const int costScore = int(v.num(row, "Cost Score"));
+  const int happyScore = int(v.num(row, "Lover Happiness Score"));
   const long long price = 1000LL * costScore;
   out.table = "a16_wedding-venues-enc";
-  out.row_id = std::to_string(row + 1);
+  out.row_id = std::to_string(rowIdx + 1);
   out.title = "The wedding plan";
   out.body = "You have chosen to marry " + h.loverName + " at " +
              (definite ? "the " : "") + venue + ".";
