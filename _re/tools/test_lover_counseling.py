@@ -39,7 +39,9 @@ for seed in range(1, 31):
     doc = run(seed)
     for event in doc["events"]:
         body = event.get("body") or ""
-        if "relationship counselor" not in body:
+        # Another card also mentions a relationship counselor ("The relationship counselor
+        # says that ..."), so the filter is the demand's own wording (REPORT 193).
+        if "is demanding that you visit a relationship counselor" not in body:
             continue
         match = BODY.match(body)
         assert match, (seed, body)

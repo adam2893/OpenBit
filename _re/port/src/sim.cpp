@@ -21006,7 +21006,9 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   if (fire("a16_lover-make-love-nags-enc", 0.07)) { bump(-4); return true; }
   if (fire("a16_parent-lover-disapprovals-enc", 0.06)) { bump(-3); return true; }
   if (!h.orphan && h.age <= 25 && fire("a16_school-classmate-flirt-scenarios-enc", 0.05)) return true;
-  if (h.employed && fire("a16_coworker-hookup-scenarios-enc", 0.05)) return true;
+  // The coworker hookup is NOT fired here: seduceYear owns that table and pushes it with
+  // its own presented cap and stream (REPORT.en.md 193). Drawing it in both places made
+  // the observable rate the sum of two coins chosen separately (§191).
   // The nag pool is the proposal, and a proposal is an engagement before it is a
   // marriage (REPORT.en.md 158): the port used to jump straight to "married", which
   // left the engaged status -- and every card that reads it -- unreachable.

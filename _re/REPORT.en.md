@@ -22912,6 +22912,56 @@ The one thing worth noting is that this ordering was accidental — §164's card
 without knowing it would take work from §125's pool. The measurement now says so, and the
 next card added to this family can be weighed against it rather than discovered later.
 
+## 193. The duplicate site was real in the code and empty in practice
+
+§191 named `a16_coworker-hookup-scenarios-enc` as drawn by two cards: `seduceYear`
+(`kTable` at `sim.cpp:20075`) and the `relationshipYear` pool. One table, two owners, two
+coins chosen separately — a real defect in the code.
+
+The pool line is gone:
+
+```cpp
+// The coworker hookup is NOT fired here: seduceYear owns that table and pushes it with
+// its own presented cap and stream (REPORT.en.md 193).
+```
+
+### 193.1 And the rate did not move
+
+```
+coworker-hookup per life:  0.97 before  ->  0.97 after
+```
+
+Every one of those cards was already coming from `seduceYear`. The pool's own 0.05 never
+produced an event — it sits behind `fire()`, which renders a row and can decline, and in
+practice it always declined.
+
+So the defect was **real in the code and empty in the observations**: correct to remove,
+worth nothing to measure. That is a third kind of finding to go with the two already in
+this session's record (a right number read too broadly, and a wrong number read as a
+fact), and it is the one that would be easiest to overstate — *"I fixed a duplicate"*
+would be true and would imply a change nobody can see.
+
+### 193.2 A test filter, wrong in the same way as §173's
+
+`test_lover_counseling` failed on this change with a body that mentions a relationship
+counselor but is a **different card** — *"The relationship counselor says that if you want
+to make it work with …, then you will need to start making the bed more often."* The
+filter was `"relationship counselor" in body`; it is now the demand's own wording.
+
+```
+lanes: {'Agree to go': 6, 'Refuse to go': 5}
+ok
+```
+
+Bench 0 lines; `test_relationship_lifecycle` still holds its 9 arcs.
+
+### 193.3 What is left of §191
+
+Nothing: the two causes it named are both closed — the floor (§192) and the duplicate site
+(here). The third item on its table, `school-classmate-flirt`'s age gate, is the game's own
+condition and needs no port change.
+
+
 
 
 ### 190.3 Verification
