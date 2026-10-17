@@ -19730,3 +19730,54 @@ python3 /tmp/qdir/traderes.py             music events 1231, residue 0, failures
 = 2,515 lines** in three files, `sim.cpp` down to 26,364, bench and probes
 unchanged after every move.
 
+## 132. The split finishes: nine families, 6,692 lines out of `sim.cpp`
+
+Five more moves, same tool, same two checks each. `sim.cpp`: 28,876 -> **22,184**
+lines.
+
+| family | file | lines | bench vs §125 | probe |
+|---|---|---|---|---|
+| casino | src/fam/casino.cpp | 653 | 0 diff | 748 = 748 |
+| outdoor | src/fam/outdoor.cpp | 695 | 0 diff | 271 = 271 |
+| vampire | src/fam/vampire.cpp | 669 | 0 diff | 3288 = 3288 |
+| cult | src/fam/cult.cpp | 688 | 0 diff | 212 = 212 |
+| spy | src/fam/spy.cpp | 732 | 0 diff | 113 = 113 |
+| sports | src/fam/sports.cpp | 678 | 0 diff | 601 = 601 |
+
+### 132.1 Two linkage shapes the tool cannot fix, and both appeared again
+
+* **`spySwap`** (casino) was `static` at file scope: drop the keyword, declare in
+  `bl/text.h`, done.
+* **`cultGenderFits`** (cult) sat in an *anonymous namespace* together with
+  `kCultPhilosophyFlags` / `kCultPhilosophyNames`. Nothing to export — the whole
+  block belongs to the family, so the block moved into `cult.cpp`.
+* **`ensureCultFields`** was left behind by the first pass because its name does
+  not start with `cult`. The build named it, and it moved too. Worth stating
+  plainly: **grep by family prefix is not the family** — `makeX`, `ensureXFields`
+  and `xToken` are all part of it.
+
+### 132.2 The whole battery, after nine moves
+
+```
+python3 /tmp/qdir/allprobes.py   67 probes
+```
+
+The battery is the gate that matters here: a family probe catches a count change in
+that family, and the bench catches a shared-path change, but only the battery says
+the nine moves together left every other family alone. It is green: 67 of 67 exit
+zero, zero failures, and every event count equals the §125 baseline.
+
+### 132.3 What the split bought
+
+* **Nine files that can be edited without touching each other** — the throughput
+  ceiling the plan identified was "one file, one writer", and that is now nine
+  writers.
+* **A one-command move** for the rest: `tools/split_family.py <family> '<signature>' ...`,
+  with `--dry-run` first.
+* **A shared helper surface** in `bl/text.h` that is the single copy of each rule
+  (article, first person, sentence hygiene, genre columns, weighted pick). A new
+  family that needs one of them gets it by include, not by copy.
+
+`sim.cpp` still holds the bootstrap (`load`, 45.8 KB), the shared card plumbing,
+the RNG streams and the yearly dispatch — the part that is genuinely shared.
+
