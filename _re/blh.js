@@ -761,6 +761,7 @@ function setup(){
       il2cpp_class_get_methods: N('il2cpp_class_get_methods','pointer',['pointer','pointer']),
       il2cpp_method_get_name: N('il2cpp_method_get_name','pointer',['pointer']),
       il2cpp_method_get_param_count: N('il2cpp_method_get_param_count','uint32',['pointer']),
+      il2cpp_method_get_param: N('il2cpp_method_get_param','pointer',['pointer','uint32']),
       il2cpp_field_get_name: N('il2cpp_field_get_name','pointer',['pointer']),
       il2cpp_field_get_type: N('il2cpp_field_get_type','pointer',['pointer']),
       il2cpp_field_get_flags: N('il2cpp_field_get_flags','uint32',['pointer']),
@@ -1260,6 +1261,83 @@ function readMetaSlots(offs){
   }
   return {base:mb.toString(), n:out.length, out:out};
 }
+// readMetaSlots2: same as readMetaSlots but follows the second indirection
+// (code does 'ldr x9,[page+off]; ldr x0,[x9]'), so the string lives at *(slot value).
+function readMetaSlots2(offs){
+  var mb=modBase(); if(!mb) return {err:'no bias'};
+  var out=[];
+  for(var i=0;i<offs.length;i++){
+    var off=(typeof offs[i]==='number')? offs[i] : parseInt(String(offs[i]),0);
+    var rec={off:'0x'+(off>>>0).toString(16)};
+    try{
+      var p=mb.add(off);
+      var v=p.readPointer();
+      rec.val=v.toString();
+      if(!v.isNull()){
+        var s2=v.readPointer();
+        rec.val2=s2.toString();
+        if(!s2.isNull()) rec.s=toJS(s2);
+      }
+    }catch(e){ rec.err=String(e); }
+    out.push(rec);
+  }
+  return {base:mb.toString(), n:out.length, out:out};
+}
+// probeCard: build a scenario object, run its RefreshScenario on the calling thread,
+// and read back every String field plus the ScenarioChoice list, so card text and
+// button labels come from the game itself instead of a static guess.
+function probeCard(clsName, friendPtr){
+  var out={cls:clsName};
+  try{
+    var k=findClass('',clsName); if(!k){ out.err='no class '+clsName; return out; }
+    var obj=nf.il2cpp_object_new(k); out.obj=obj.toString();
+    var fs=fieldsWithParents(k);
+    out.fields={}; fs.forEach(function(f){ out.fields[f.name]=f.off; });
+    var foff=null; for(var i=0;i<fs.length;i++) if(fs[i].name==='_friend') foff=fs[i].off;
+    if(friendPtr && foff!==null) obj.add(foff).writePointer(friendPtr);
+    var ctor1=findMethod(k,'.ctor',1), ctor0=findMethod(k,'.ctor',0), cexc=null;
+    out.ctor1=ctor1? ctor1.toString():null; out.ctor0=ctor0? ctor0.toString():null;
+    try{
+      if(friendPtr && ctor1){ var ab=Memory.alloc(Process.pointerSize); ab.writePointer(friendPtr);
+        var cc=invoke0(ctor1,obj,1,[ab]); cexc=cc.exc; out.ctorUsed='ctor(SimPerson)'; }
+      else if(ctor0){ var c0=invoke0(ctor0,obj,0,[]); cexc=c0.exc; out.ctorUsed='ctor()'; }
+      else { out.err='no ctor'; return out; }
+    }catch(eC){ out.stage='ctor'; out.err=String(eC); return out; }
+    out.ctorExc=cexc;
+    if(friendPtr && foff!==null){ obj.add(foff).writePointer(friendPtr); out.wroteAfterCtor=true; }
+    try{ out.friendAfter = foff===null? 'no field' : obj.add(foff).readPointer().toString(); }catch(eF){}
+    try{ var gf=findMethod(k,'GetFriend',0);
+      if(gf){ var gr=invoke0(gf,obj,0,[]); out.getFriend = gr.exc? ('exc '+gr.exc) : gr.r.toString(); } }catch(eG){ out.getFriendErr=String(eG); }
+    var rf=findMethod(k,'RefreshScenario',0); out.rf=rf? rf.toString():null;
+    out.miPtr = rf? rf.readPointer().toString() : null;
+    if(rf){ try{ var r1=invoke0(rf,obj,0,[]); out.refreshExc=r1.exc; }
+      catch(eR){ out.refreshErr=String(eR); } }
+    out.stage='strings';
+    out.strings={};
+    for(var i2=0;i2<fs.length;i2++){ var f2=fs[i2];
+      if(f2.type!=='System.String') continue;
+      try{ out.strings[f2.name]=toJS(obj.add(f2.off).readPointer()); }catch(e){ out.strings[f2.name]='err '+e; } }
+    var coff=null; for(var i3=0;i3<fs.length;i3++) if(fs[i3].name==='_choices') coff=fs[i3].off;
+    out.choiceOff=coff;
+    if(coff!==null){
+      var a=obj.add(coff).readPointer();
+      out.arrCls=a.isNull()?null:className(a);
+      if(!a.isNull()){
+        var sk=findClass('','ScenarioChoice'); var sfs=sk?fieldsOf(sk):[];
+        out.choiceFields=sfs.map(function(f){ return f.name+':'+f.type+'@0x'+f.off.toString(16); });
+        var n=a.add(0x18).readU32(); out.choiceCount=n; out.choices=[];
+        for(var i4=0;i4<n && i4<12;i4++){
+          var cp=a.add(0x20+i4*Process.pointerSize).readPointer(); var one={ptr:cp.toString()};
+          for(var i5=0;i5<sfs.length;i5++){ var sf=sfs[i5];
+            if(sf.type!=='System.String') continue;
+            try{ one[sf.name]=toJS(cp.add(sf.off).readPointer()); }catch(e){ one[sf.name]='err'; } }
+          out.choices.push(one);
+        }
+      }
+    }
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
 function invokeAt(dumpAddr, arg){
   var b=biasOf(); if(!b) return {err:'no bias'};
   var p=b.add(ptr(dumpAddr));
@@ -1293,8 +1371,351 @@ function invokeN(dumpAddr, n, arg){
   return {addr:dumpAddr, n:n, errors:errors, distinct:order.length, first:sample,
           rows:order.map(function(k){ return [k, tally[k]]; })};
 }
+// §103: walk the Sim singleton chain to the hero without needing the ctor hooks
+// (a life restored from a save never runs SimHero..ctor, so st.hero stays null).
+function objName(p){ try{ if(!p || p.isNull()) return null; var k=nf.il2cpp_object_get_class(p); if(k.isNull()) return null; return nf.il2cpp_class_get_name(k).readUtf8String(); }catch(e){ return '!'+String(e); } }
+function simChain(){
+  var out={};
+  try{
+    var mb=modBase(); if(!mb) return {err:'no bias'};
+    var a=mb.add(0x5c30250).readPointer(); out.cell=a.toString();
+    var b=a.isNull()? ptr(0) : a.readPointer();        out.a_deref=b.toString(); out.a_cls=objName(b);
+    var c=b.isNull()? ptr(0) : b.add(0xb8).readPointer(); out.b_plusB8=c.toString(); out.b_cls=objName(b);
+    var d=c.isNull()? ptr(0) : c.readPointer();        out.c_deref=d.toString(); out.c_cls=objName(c);
+    var hero=d.isNull()? ptr(0) : d.add(0x28).readPointer(); out.hero=hero.toString(); out.hero_cls=objName(hero);
+    var alt=b.isNull()? ptr(0) : b.add(0xb8).readPointer();
+    var alt2=alt.isNull()? ptr(0) : alt.add(0x28).readPointer(); out.alt_hero=alt2.toString(); out.alt_cls=objName(alt2);
+    out.d_cls=objName(d);
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
+// §103: call the party row picker and read the returned row's own cells.
+function partyPicker(a,b,c,d,e,f){
+  var mb=modBase(); if(!mb) return {err:'no bias'};
+  try{
+    var fn2=new NativeFunction(mb.add(ptr('0x73f2ccb1e4')),'pointer',['int','int','int','int','int','int','pointer']);
+    var r=fn2(a,b,c,d,e,f,ptr(0));
+    var out={row:r.toString(), isNull:r.isNull()};
+    if(!r.isNull()){
+      var k=findClass('','DataFriendPartyScenario');
+      if(k){ var fs=fieldsOf(k); out.fields={};
+        for(var i=0;i<fs.length;i++){ var f2=fs[i], o2=f2.off, ty=f2.type;
+          try{
+            if(ty==='System.String') out.fields[f2.name]=toJS(r.add(o2).readPointer());
+            else if(ty==='System.Int32') out.fields[f2.name]=r.add(o2).readS32();
+            else if(ty==='System.Boolean') out.fields[f2.name]=r.add(o2).readU8()!==0;
+            else out.fields[f2.name]=ty;
+          }catch(e3){ out.fields[f2.name]='!err'; }
+        }
+      } else out.err2='no DataFriendPartyScenario class';
+    }
+    return out;
+  }catch(e){ return {err:String(e)}; }
+}
+// §106: build a real SimPerson with the game's own factory, so a card that needs a
+// friend can be constructed on a fresh life (which otherwise has no friends at all).
+function genPerson(gender, minAge, maxAge){
+  var out={};
+  try{
+    var mb=modBase(); if(!mb) return {err:'no bias'};
+    var ch=simChain(); out.hero=ch.hero; out.hero_cls=ch.hero_cls;
+    var hero=ptr(ch.hero);
+    var fk=findClass('',ch.hero_cls||'SimHero'), place=null;
+    if(fk){ var fs=fieldsWithParents(fk);
+      for(var i=0;i<fs.length;i++){ if(fs[i].name==='_PlaceOfResidence'||fs[i].name==='PlaceOfResidence'){
+        place=hero.add(fs[i].off).readPointer(); out.placeField=fs[i].name; break; } } }
+    out.place=place? place.toString():null;
+    if(!place||place.isNull()) return {err:'no place'};
+    var fn=new NativeFunction(mb.add(ptr('0x73f3817c34').sub(META_BASE)),'pointer',['int','pointer','int','int','int']);
+    var p=fn(gender|0, place, minAge|0, maxAge|0, 0);
+    out.person=p.toString(); out.person_cls=objName(p);
+    var pk=findClass('','SimPerson');
+    if(pk){ var ps=fieldsWithParents(pk), o={};
+      for(var j=0;j<ps.length;j++){ var f=ps[j];
+        try{ if(f.type==='System.String') o[f.name]=toJS(p.add(f.off).readPointer());
+             else if(f.type==='System.Int32') o[f.name]=p.add(f.off).readS32();
+             else if(f.type==='System.Boolean') o[f.name]=p.add(f.off).readU8()!==0;
+             else o[f.name]=f.type; }catch(e2){ o[f.name]='!err'; } }
+      out.personFields=o; }
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
+function friendCard(cls, gender, minAge, maxAge, friendStr){
+  var g=null;
+  try{ g = friendStr? {person:String(friendStr)} : genPerson(gender,minAge,maxAge); }catch(e){ return {genErr:String(e)}; }
+  if(!g||g.err||!g.person) return {gen:g};
+  var res=null; try{ res=probeCard(cls, ptr(g.person)); }catch(e){ res={err:String(e)}; }
+  return {gen:g, card:res};
+}
+function rumorOutCard(friendStr, retal){
+  var out={cls:'ScenarioFriendRumorOutbound', retal:retal?1:0};
+  try{
+    var b=biasOf(); if(!b){ out.err='no bias'; return out; }
+    var mb=b.add(META_BASE);
+    var k=findClass('','ScenarioFriendRumorOutbound'); if(!k){ out.err='no class'; return out; }
+    var fs=fieldsWithParents(k); out.fields={}; fs.forEach(function(f){ out.fields[f.name]=f.off; });
+    var obj=nf.il2cpp_object_new(k); out.obj=obj.toString();
+    var ctor2=findMethod(k,'.ctor',2); out.ctor2=ctor2? ctor2.toString():null;
+    if(!ctor2){ out.err='no 2-arg ctor'; return out; }
+    var fn=new NativeFunction(mb.add(ptr('0x73f3c52d58').sub(META_BASE)),'void',['pointer','pointer','int']);
+    try{ fn(obj, ptr(String(friendStr)), retal?1:0); }catch(eC){ out.ctorErr=String(eC); }
+    try{ out.narrativeAfterCtor=toJS(obj.add(0x180).readPointer()); }catch(e){}
+    var rf=findMethod(k,'RefreshScenario',0); out.rf=rf? rf.toString():null;
+    if(rf){
+      try{ var r1=invoke0(rf,obj,0,[]); out.refreshExc=r1.exc; }
+      catch(eR){ out.refreshErr=String(eR); }
+    }
+    out.strings={};
+    for(var i2=0;i2<fs.length;i2++){ var f2=fs[i2];
+      if(f2.type!=='System.String') continue;
+      try{ out.strings[f2.name]=toJS(obj.add(f2.off).readPointer()); }catch(e){ out.strings[f2.name]='err '+e; } }
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
+function friendSpendProbeX(){ return null; }
+function rumorRowProbe(a,b,c,d){
+  var out={args:[a,b,c,d]};
+  try{
+    var bo=biasOf(); if(!bo){ out.err='no bias'; return out; }
+    var mb=bo.add(META_BASE);
+    var f=new NativeFunction(mb.add(ptr('0x73f2ccace4').sub(META_BASE)),'pointer',['int','int','int','int']);
+    var r=f(a|0,b|0,c|0,d|0);
+    if(r.isNull()){ out.row=null; return out; }
+    out.row=r.toString();
+    try{ out.OutboundScenario=toJS(r.add(0x10).readPointer()); }catch(e){ out.e1=String(e); }
+    try{ out.InboundScenario=toJS(r.add(0x18).readPointer()); }catch(e){ out.e2=String(e); }
+    try{ out.InboundLogVersion=toJS(r.add(0x20).readPointer()); }catch(e){ out.e3=String(e); }
+    out.SenderMinAge=r.add(0x28).readS32(); out.SenderMaxAge=r.add(0x2c).readS32(); out.SenderGender=r.add(0x30).readS32();
+    out.ReceiverMinAge=r.add(0x34).readS32(); out.ReceiverMaxAge=r.add(0x38).readS32(); out.ReceiverGender=r.add(0x3c).readS32();
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
+// §113: ScenarioAttackInbound driven end to end. The card has nine ctors and a
+// 1240+1150 line pair of methods, so instead of reading every branch we build the
+// card with its real (SimPerson,DataWeapon) ctor and press each button, then read
+// the impact calls, stat slots, log lines and child card the game itself produced.
+function attStat(p){
+  try{ var o=readObj(p,null); var r={};
+    for(var k in o){ if(k.indexOf('<Att_')===0){ r[k.replace('<Att_','').replace('>k__BackingField','')]=o[k]; } }
+    return r;
+  }catch(e){ return {err:String(e)}; }
+}
+function attFields(obj,k){
+  var out={strings:{},choices:[]};
+  var fs=fieldsWithParents(k);
+  for(var i=0;i<fs.length;i++){ var f=fs[i];
+    if(f.type!=='System.String') continue;
+    try{ out.strings[f.name]=toJS(obj.add(f.off).readPointer()); }catch(e){ out.strings[f.name]='err'; } }
+  var coff=null; for(var j=0;j<fs.length;j++) if(fs[j].name==='_choices') coff=fs[j].off;
+  if(coff!==null){
+    var a=obj.add(coff).readPointer();
+    if(!a.isNull()){
+      var sk=findClass('','ScenarioChoice'); var sfs=sk?fieldsOf(sk):[];
+      var n=a.add(0x18).readU32(); out.choiceCount=n;
+      for(var i2=0;i2<n && i2<12;i2++){
+        var cp=a.add(0x20+i2*Process.pointerSize).readPointer(); var one={};
+        for(var i3=0;i3<sfs.length;i3++){ var sf=sfs[i3];
+          if(sf.type!=='System.String') continue;
+          try{ one[sf.name]=toJS(cp.add(sf.off).readPointer()); }catch(e3){} }
+        out.choices.push(one);
+      }
+    }
+  }
+  return out;
+}
+function attBuild(person, wp, k){
+  var b=biasOf(); if(!b) return {err:'no bias'};
+  var mb=b.add(META_BASE);
+  var obj=nf.il2cpp_object_new(k);
+  var out={obj:obj.toString()};
+  try{
+    var mi=null, g=0, m=null;
+    var it=Memory.alloc(Process.pointerSize); it.writePointer(ptr(0));
+    while(!(m=nf.il2cpp_class_get_methods(k,it)).isNull() && g++<4000){
+      if(nf.il2cpp_method_get_name(m).readUtf8String()!=='.ctor') continue;
+      if(nf.il2cpp_method_get_param_count(m)!==2) continue;
+      var t0=tname(nf.il2cpp_method_get_param(m,0)), t1=tname(nf.il2cpp_method_get_param(m,1));
+      out.ctors=(out.ctors||[]).concat([t0+'|'+t1]);
+      if(t0==='SimPerson' && t1==='DataWeapon'){ mi=m; break; }
+    }
+    if(!mi){ out.ctorErr='no (SimPerson,DataWeapon) ctor'; return out; }
+    out.ctorMI=mi.toString();
+    var c1=Memory.alloc(8); c1.writePointer(person);
+    var c2=Memory.alloc(8); c2.writePointer(wp);
+    var rc=invoke0(mi, obj, 2, [c1,c2]);
+    out.ctorExc=rc.exc;
+    if(rc.exc) return out;
+  }catch(eC){ out.ctorErr=String(eC); return out; }
+  var rf=findMethod(k,'RefreshScenario',0);
+  out.rf=rf? rf.toString():null;
+  if(rf){ try{ var r1=invoke0(rf,obj,0,[]); out.refreshExc=r1.exc; }catch(eR){ out.refreshErr=String(eR); } }
+  return out;
+}
+function attWeaponFields(w){
+  try{
+    var k=findClass('','DataWeapon'); if(!k) return null;
+    var fs=fieldsWithParents(k), o={};
+    for(var i=0;i<fs.length;i++){ var f=fs[i];
+      try{
+        if(f.type==='System.String') o[f.name]=toJS(w.add(f.off).readPointer());
+        else if(f.type==='System.Int32') o[f.name]=w.add(f.off).readS32();
+        else if(f.type==='System.Boolean') o[f.name]=w.add(f.off).readU8()!==0;
+      }catch(e2){}
+    }
+    return o;
+  }catch(e){ return {err:String(e)}; }
+}
+function attProbe(mode, friendStr, weaponStr){
+  var out={mode:String(mode||'refresh')};
+  try{
+    var b=biasOf(); if(!b){ out.err='no bias'; return out; }
+    var mb=b.add(META_BASE);
+    var ch=simChain();
+    var hero = st.hero? st.hero : (ch.hero? ptr(ch.hero) : null);
+    out.hero=hero? hero.toString():null; out.hero_cls=objName(hero);
+    if(!hero){ out.err='no hero'; return out; }
+    out.heroBefore=attStat(hero);
+    var person=null;
+    if(friendStr){ person=ptr(String(friendStr)); out.personSource='given'; }
+    else { var g=genPerson(0,20,45); out.gen=(g&&g.err)?('err '+g.err):'ok';
+           if(g&&g.person){ person=ptr(g.person); out.personSource='generated'; } }
+    out.person=person? person.toString():null; out.person_cls=objName(person);
+    if(!person){ out.err='no person'; return out; }
+    var wp=null;
+    if(weaponStr && weaponStr!=='0'){ wp=ptr(String(weaponStr)); out.weaponSource='given'; }
+    else {
+      try{
+        var dk=findClass('','DataHub');
+        var wm=dk? findMethod(dk,'GetRandomAssaultWeaponAndIsInPrison',1) : null;
+        if(wm){ var ab0=Memory.alloc(8); ab0.writeS32(0);
+          var wr=invoke0(wm, ptr(0), 1, [ab0]); out.weaponInvokeExc=wr.exc; wp=wr.r; out.weaponSource='invoke'; }
+      }catch(eW){ out.weaponErr=String(eW); }
+      if(!wp || wp.isNull()){
+        try{ var wf=new NativeFunction(mb.add(ptr('0x73f2ca1ac0').sub(META_BASE)),'pointer',['int']); wp=wf(0); out.weaponSource='native'; }
+        catch(eW2){ out.weaponErr2=String(eW2); }
+      }
+    }
+    out.weapon=wp? wp.toString():null;
+    if(wp && !wp.isNull()) out.weaponFields=attWeaponFields(wp);
+    if(!wp || wp.isNull()){ out.err='no weapon'; return out; }
+    var k=findClass('','ScenarioAttackInbound'); if(!k){ out.err='no class'; return out; }
+    var bb=attBuild(person, wp, k);
+    if(bb.err||bb.ctorErr){ for(var kk in bb) out[kk]=bb[kk]; return out; }
+    out.ctorOk=true;
+    var fr=attFields(bb.obj? ptr(bb.obj): null, k);
+    out.strings=fr.strings; out.choiceCount=fr.choiceCount; out.choices=fr.choices;
+    out.beforeChild=null;
+    try{ out.childClass=objName(ptr(bb.obj).add(0x128).readPointer()); }catch(e){}
+    if(out.mode!=='press'){ return out; }
+    var cm=findMethod(k,'ChoiceSelectedAtIndex',1);
+    out.cm=cm? cm.toString():null;
+    out.presses=[];
+    var n=fr.choiceCount||0;
+    for(var ci=0; ci<n && ci<6; ci++){
+      var b2=attBuild(person, wp, k);
+      if(b2.ctorErr){ out.presses.push({i:ci,ctorErr:b2.ctorErr}); continue; }
+      var o2=ptr(b2.obj);
+      var lbl=null; try{ var lk=findClass('','ScenarioChoice'); }catch(e){}
+      var pre=attFields(o2,k);
+      var before=attStat(hero);
+      var sw=(st.statW||[]).length, lg=(st.logs||[]).length;
+      var exc=null, perr=null;
+      try{ var ab=Memory.alloc(8); ab.writeS32(ci); var rr=invoke0(cm,o2,1,[ab]); exc=rr.exc; }
+      catch(eP){ perr=String(eP); }
+      var rec={i:ci, label:(pre.choices[ci]&&pre.choices[ci]._Choice)?pre.choices[ci]._Choice:null,
+               exc:exc, pressErr:perr, after:attStat(hero)};
+      var tt={}; for(var q in before){ if(before[q]!==rec.after[q]) tt[q]=[before[q],rec.after[q]]; }
+      rec.diff=tt;
+      rec.impacts=(st.statW||[]).slice(sw).map(function(w){ var r={f:w.f,v:w.v};
+        try{ r.dump='0x'+ptr(w.ret).sub(biasOf()).toString(16); }catch(e){}
+        return r; });
+      rec.logs=(st.logs||[]).slice(lg).map(function(w){ return w.text; });
+      try{ rec.child=objName(o2.add(0x128).readPointer()); }catch(e){}
+      try{ rec.titleAfter=toJS(o2.add(0x38).readPointer()); }catch(e){}
+      out.presses.push(rec);
+    }
+    out.heroAfter=attStat(hero);
+    return out;
+  }catch(e){ out.err=String(e); return out; }
+}
     rpc.exports={
+      rumorrow:function(){ var a=Array.prototype.slice.call(arguments); return rumorRowProbe(a[0]|0,a[1]|0,a[2]|0,a[3]|0); },
+      rumorscan:function(){
+        var bo=biasOf(); if(!bo) return {err:'no bias'};
+        var mb=bo.add(META_BASE);
+        var f=new NativeFunction(mb.add(ptr('0x73f2ccace4').sub(META_BASE)),'pointer',['int','int','int','int']);
+        var nulls=[], total=0, seen={};
+        for(var sa=0;sa<=20;sa+=5){ for(var sg=0;sg<=2;sg++){ for(var ra=0;ra<=20;ra+=5){ for(var rg=0;rg<=2;rg++){
+          total++;
+          var r=null; try{ r=f(sa,sg,ra,rg); }catch(e){ nulls.push([sa,sg,ra,rg,'ERR '+e]); continue; }
+          if(r.isNull()) nulls.push([sa,sg,ra,rg]);
+          else { var o=toJS(r.add(0x10).readPointer()); if(o) seen[o]=1; }
+        }}}}
+        return {total:total, nullCount:nulls.length, nulls:nulls.slice(0,40), distinctOutbound:Object.keys(seen).length};
+      },
       ping:function(){ return 'pong'; },
+      attprobe:function(a,c,d){
+        var s=(c===undefined||c===null||c==='')? null : String(c);
+        var w=(d===undefined||d===null||d==='')? null : String(d);
+        try{ Java.scheduleOnMainThread(function(){ try{ st.att=attProbe(String(a||'refresh'), s, w); }
+          catch(e){ st.att={err:String(e)}; } });
+          return {ok:true, queued:String(a||'refresh')}; }
+        catch(e){ return {error:String(e)}; } },
+      attres:function(){ return st.att||null; },
+      ctortest:function(){
+        try{
+          var k=findClass('','ScenarioAttackInbound'); if(!k) return {err:'no class'};
+          var mi=null, g=0, m=null;
+          var it=Memory.alloc(Process.pointerSize); it.writePointer(ptr(0));
+          while(!(m=nf.il2cpp_class_get_methods(k,it)).isNull() && g++<4000){
+            if(nf.il2cpp_method_get_name(m).readUtf8String()!=='.ctor') continue;
+            if(nf.il2cpp_method_get_param_count(m)!==2) continue;
+            var t0=tname(nf.il2cpp_method_get_param(m,0)), t1=tname(nf.il2cpp_method_get_param(m,1));
+            if(t0==='SimPerson' && t1==='DataWeapon'){ mi=m; break; }
+          }
+          if(!mi) return {err:'no ctor'};
+          var mp=mi.readPointer();
+          var hits=[]; st.ctorHits=hits;
+          Interceptor.attach(mp,{ onEnter:function(a){ try{ hits.push({self:a[0].toString(), p1:a[1].toString(), p2:a[2].toString(), lr:this.returnAddress.toString()}); }catch(e){} } });
+          var obj=nf.il2cpp_object_new(k);
+          var c1=Memory.alloc(8); c1.writePointer(ptr(0));
+          var c2=Memory.alloc(8); c2.writePointer(ptr(0));
+          var r={obj:obj.toString(), mi:mi.toString(), mp:mp.toString()};
+          try{ r.empty=invoke0(mi,obj,2,[c1,c2]); }catch(e){ r.emptyErr=String(e); }
+          return r;
+        }catch(e){ return {err:String(e)}; } },
+      ctorhits:function(){ return st.ctorHits||[]; },
+      dhub:function(name,argc,arg){
+        try{
+          var k=findClass('','DataHub'); if(!k) return {err:'no DataHub'};
+          var m=findMethod(k,String(name),argc|0); if(!m) return {err:'no method '+String(name)};
+          var ab=Memory.alloc(8); ab.writeS32((arg===undefined||arg===null)?0:(arg|0));
+          var r=invoke0(m, ptr(0), argc|0, (argc|0)>0? [ab] : []);
+          var s=null; try{ if(r.r && !r.r.isNull()) s=toJS(r.r); }catch(e){}
+          return {cls:'DataHub', name:String(name), exc:r.exc, ret:r.r? r.r.toString():null, s:s,
+                  nRet:(r.r&&!r.r.isNull())? objName(r.r):null};
+        }catch(e){ return {err:String(e)}; } },
+      genp:function(){ var a=Array.prototype.slice.call(arguments); return genPerson(a[0]|0,a[1]|0,a[2]|0); },
+      fc:function(cls,gen,mn,mx){
+        try{ Java.scheduleOnMainThread(function(){ try{ st.fc=friendCard(cls, gen|0, mn|0, mx|0, null); }
+          catch(e){ st.fc={err:String(e)}; } });
+          return {ok:true, queued:cls, gender:gen|0, min:mn|0, max:mx|0}; }
+        catch(e){ return {error:String(e)}; } },
+      fcptr:function(cls,fstr){ var s=String(fstr);
+        try{ Java.scheduleOnMainThread(function(){ try{ st.fc=friendCard(cls, 0, 0, 0, s); }
+          catch(e){ st.fc={err:String(e)}; } }); return {ok:true, queued:cls, friend:s}; }
+        catch(e){ return {error:String(e)}; } },
+      fcres:function(){ return st.fc||null; },
+      rumorout:function(fstr,retal){ var s=String(fstr);
+        try{ Java.scheduleOnMainThread(function(){ try{ st.fc=rumorOutCard(s, retal|0); }
+          catch(e){ st.fc={err:String(e)}; } }); return {ok:true, queued:'ScenarioFriendRumorOutbound', friend:s, retal:retal|0}; }
+        catch(e){ return {error:String(e)}; } },
+      heroptrs:function(){ return simChain(); },
+      partypick:function(){ var a=Array.prototype.slice.call(arguments); return partyPicker(a[0]|0,a[1]|0,a[2]|0,a[3]|0,a[4]|0,a[5]|0); },
+      probegeneric:function(cls, fstr){
+        var fp=null; try{ fp=fstr? ptr(String(fstr)) : (st.hero|| (function(){ var c=simChain(); return c.hero? ptr(c.hero):null; })()); }catch(e){}
+        try{ Java.scheduleOnMainThread(function(){ try{ st.prank=probeCard(cls, fp); }catch(e){ st.prank={err:String(e)}; } }); return {ok:true, queued:cls, friend: fp? fp.toString():null}; }
+        catch(e){ return {error:String(e)}; } },
       rbi:function(){ return rbInstall(); },
       rbdump:function(n){ return rbDump(n); },
       rbi2:function(){ return rbInstall2(); },
@@ -1316,6 +1737,14 @@ function invokeN(dumpAddr, n, arg){
       hd:function(a,m,c){ return hookDicts(a,m,c); },
       pd:function(i,j,m){ return poolDump(i,j,m); },
       slots:function(){ return readMetaSlots(Array.prototype.slice.call(arguments)); },
+      slots2:function(){ return readMetaSlots2(Array.prototype.slice.call(arguments)); },
+      prank:function(which, friendStr){
+        var cls = (which==='out')? 'ScenarioFriendPrankOutbound' : 'ScenarioFriendPrankInbound';
+        var fp=null; try{ fp = friendStr? ptr(String(friendStr)) : st.hero; }catch(e){}
+        try{ Java.scheduleOnMainThread(function(){ try{ st.prank=probeCard(cls, fp); }
+          catch(e){ st.prank={err:String(e)}; } }); return {ok:true, queued:cls, friend: fp?fp.toString():null}; }
+        catch(e){ return {error:String(e)}; } },
+      prankres:function(){ return st.prank||null; },
       circ:function(x){ return invokeAt('0x73f2ce2d08', x); },
       sample:function(off,n,a){ return invokeN(off, n, a); },
       key:key,
