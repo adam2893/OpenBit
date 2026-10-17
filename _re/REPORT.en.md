@@ -21753,6 +21753,56 @@ both so the mistake is visible rather than available.
 Nothing was tuned on the back of the wrong number — the movies coin was never touched,
 which is the one good consequence of §166 having been a summary rather than a fix.
 
+## 168. Where the port actually stands, read off the instruments
+
+Four instruments, each answering a different question, run after eleven sprint cards and
+eight structural changes:
+
+```
+portgap      ENTRIES 109  rendered-by-port 107  gap 0
+rescensus    distinct residue tokens 0  total 0
+row_recover  scenarios 5  recovered 4  -> 1 UNRECOVERED
+cardrate     2,831 distinct faces across 120 lives; relationship 3.7 cards/life
+```
+
+### 168.1 What each number is allowed to mean
+
+* **`gap 0`** — every push the port renders is accounted for: nothing arrives without a
+  table/row or a class name. It does **not** say the port renders the game's pushes;
+  it says the port's own pushes are explained.
+* **`residue 0`** — no `<token>` survived into a rendered line. A token left unsubstituted
+  is the most reliable failure this port has, so zero is meaningful.
+* **`2,831 faces`** — content breadth, counted by card after §167's correction.
+* **`row_recover` 4 of 5** — the one that produced an action.
+
+### 168.2 The one unrecovered row is a card that is not ported
+
+```
+age 6  ScenarioOutdoorAgeUpParentsGiveBik  Canyon Neuron 5  UNRECOVERED
+```
+
+`ScenarioOutdoorAgeUpParentsGiveBik*` does not exist in `port/src/fam/outdoor.cpp`
+(711 lines, no such card), so "unrecovered row" here means *there is no row because
+there is no card*. It is a childhood gift push — a parent gives the hero a bicycle —
+and it is the kind of card that sits between two families: parents (who give) and
+outdoor (which owns the vehicle tables).
+
+Two others in the same run report `row None` rather than `UNRECOVERED`
+(`ScenarioSchoolEnroll`, `ScenarioLoverLeaves`) — the class and its text are known, the
+*data row* the game drew is not, and the port's version of each builds its body from the
+class's own strings rather than from a table row.
+
+### 168.3 The honest summary
+
+Nothing in the four numbers says the port is finished, and two of the four cannot see a
+missing card at all: `portgap` only audits pushes the port *already makes*. The real
+measure of what is missing is the gap between the game's scenario classes and the
+port's — 300-odd classes against ~70 ported families — and no instrument here measures
+that. What can be said is narrower and true: everything the port renders is explained,
+nothing is left as a token, and the one row that could not be recovered belongs to a
+card that has not been written.
+
+
 
 
 
