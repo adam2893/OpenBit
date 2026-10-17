@@ -22256,6 +22256,59 @@ decided.
 Step 4 is a decision point rather than a dead end, and the numbers for it exist: 928
 loaders, of which the sampled four all decrypt.
 
+## 178. Correction: "decrypts" is not a discriminator
+
+§177 gave the routine a stop condition — *if the loader decrypts, stop*. Sampling ten
+loaders at random kills that rule:
+
+```
+ENC  LoadExLoverBootyCallScenarioSet        ENC  LoadVampireBloodBathScenarioSet
+ENC  LoadCasinoCasinoThemeSet               ENC  LoadMusicConcertVenueSet
+ENC  LoadHookupScenarioSet                  ENC  LoadBlackMarketChemistProductFeedbackColorSet
+ENC  LoadPoliticalRumorSet                  ENC  LoadFinancialAssetTipSet
+ENC  LoadAstronautFitnessTrainingSet        ENC  LoadBackToSchoolHousePartyColorSet
+
+of 10: encrypted 10, table 0, of 928 loaders total
+```
+
+**Every** sampled loader references the cipher — including `LoadSexyTextItemSet`, whose
+card §173 ported successfully from a plain table. So "the loader decrypts" is true of
+the whole layer and tells the port nothing about whether the content is reachable.
+
+### 178.1 The right discriminator, which §173 already used
+
+What actually decides portability is whether the content the card renders exists in
+`gamedata_plain`:
+
+```
+tables in gamedata_plain: 1071
+DataHub loaders:           928
+```
+
+Those two counts are close enough to be the same set seen from two sides — one loader
+per table, decrypting a couple of strings *around* the rows rather than instead of them.
+That is exactly what §173 observed: the loader decrypted something, the item text came
+from `a16_sexy-text-items-enc`, and the card read correctly.
+
+### 178.2 The corrected routine, second revision
+
+```
+1. read the card's getter name
+2. read its Load*Set
+3. open the table whose name matches the set   (gamedata_plain, plain text)
+4. if that table exists -> port the card from it (§173)
+5. only if the card's text is NOT in any table -> the cipher matters (§177.2)
+```
+
+### 178.3 The cost of the correction
+
+Two rounds were spent proving that one sentence of §176 was too optimistic and that
+§177's fix was too pessimistic; the truth is in between and was already demonstrated by
+the card that worked. What it changes in the plan is concrete: the remaining content is
+**not** blocked behind a decryption subsystem, because 1,071 plain tables cover 928
+loaders. The cipher stays unread, and stays unnecessary for the cards the port can reach.
+
+
 
 
 
