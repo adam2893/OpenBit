@@ -348,7 +348,7 @@ bool Sim::loverLeavesYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice < 0 && !h.relationshipOn) return false;
   if (h.loverName.empty()) return false;
   if (h.age < 18) return false;
-  if (forcedChoice < 0 && loverRng_.below(12) != 0) return false;
+  if (forcedChoice < 0 && loverRng_.below(5) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const bool married = h.loverStatus == "married";

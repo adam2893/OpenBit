@@ -233,7 +233,9 @@ for seed in range(1, 41):
                     # writes no log line at all.
                     deltas = {k: v for k, v in event["deltas"].items() if v}
                     assert deltas == {"discipline": 30}, event
-                    assert event["logLines"][1] == "Fight back", event
+                    # A family line can precede the card line, so the branch is found by
+                    # membership rather than by position (REPORT.en.md 236).
+                    assert "Fight back" in event["logLines"], event
                 elif choice.startswith("Call the police on "):
                     seen["attack_police"] += 1
                     called = re.match(r"^I called the police on (him|her)( and | but |[.] )", narrative)
