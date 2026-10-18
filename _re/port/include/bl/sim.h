@@ -226,6 +226,8 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // A phone notification that remembers something, REPORT.en.md 210.
+  bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.
   bool arrestScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   bool childPressureRejectionYear(Life& life, AgeUp& out, int forcedChoice);

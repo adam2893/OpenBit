@@ -1340,6 +1340,8 @@ bool Sim::load(std::string* error) {
       // Arrest (insult + numN-M) and a child's refusal (child + pronoun) (209).
       "a16_arrest-scenarios-enc",
       "a16_child-pressure-rejections-enc",
+      // A notification that remembers something; flags gate the rows (210).
+      "a16_notification-bait-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3950,6 +3952,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (timeMachineYear(life, out, forcedChoice)) return true;
   if (arrestScenarioYear(life, out, forcedChoice)) return true;
   if (childPressureRejectionYear(life, out, forcedChoice)) return true;
+  if (notificationBaitYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

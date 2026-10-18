@@ -1335,4 +1335,47 @@ bool Sim::childPressureRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
   pronounOtherFemale_ = savedFemale;
   return true;
 }
+// ScenarioNotificationBait (REPORT.en.md 210): a phone notification that remembers
+// something.
+//
+// a16_notification-bait-enc, 36 rows: Index, Author, Notification, Log Version, Hero
+// Min/Max Age, Student, Job, Hero Has/Doesn't Have Lover, Both Parents Alive, Hero
+// Gender, Lover Gender. A report card; the flags are gates the port can evaluate, and a
+// row whose text still needs an actor after resolution is skipped.
+bool Sim::notificationBaitYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_notification-bait-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(20) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_notification-bait-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string note = trim(t.at(r, "Notification"));
+    if (note.empty()) continue;
+    const double mn = t.num(r, "Hero Min Age");
+    const double mx = t.num(r, "Hero Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (t.flag(r, "Student") && (h.age >= 18 || !h.schooling)) continue;
+    if (t.flag(r, "Job") && h.job.empty()) continue;
+    if (t.flag(r, "Hero Has Lover") && h.loverName.empty()) continue;
+    if (t.flag(r, "Hero Doesn't Have Lover") && !h.loverName.empty()) continue;
+    if (t.flag(r, "Both Parents Alive") && life.family.empty()) continue;
+    const std::string g = trim(t.at(r, "Hero Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    if (resolve(note).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_notification-bait-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Notification"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
+  }
+  return true;
+}
 }  // namespace bl
