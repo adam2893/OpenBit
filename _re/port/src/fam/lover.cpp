@@ -617,17 +617,18 @@ bool Sim::childDemandsYear(Life& life, AgeUp& out, int forcedChoice) {
     break;
   }
   if (kid == nullptr) return false;
-  if (forcedChoice < 0 && loverRng_.below(9) != 0) return false;
+  if (forcedChoice < 0 && childDemandRng_.below(3) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_child-demands-enc");
-  const size_t row = [&] {
-    size_t best = 0;
-    for (size_t r = 0; r < t.size(); ++r) {
-      if (t.num(r, "Age") <= kid->age) best = r;
-    }
-    return best;
-  }();
+  // Every row the child is old enough for is eligible; picking the last one made the
+  // card ask the same thing every time (REPORT.en.md 235).
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.num(r, "Age") <= kid->age) rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[childDemandRng_.below(uint32_t(rows.size()))];
   const long long amount = static_cast<long long>(t.num(row, "Amount"));
   std::vector<std::string> options;
   for (const char* col : {"Boy", "Girl"}) {

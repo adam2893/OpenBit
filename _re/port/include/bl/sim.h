@@ -863,6 +863,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The Fame family's own stream (REPORT.en.md 139).
   Rng fameRng_;
   // The lover family's new cards draw here (REPORT.en.md 142).
+  // The child-demands card draws on its own stream: it shares its family with the
+  // discipline card, and on one stream the earlier card starves the later (REPORT 235).
+  Rng childDemandRng_;
   Rng loverRng_;
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own

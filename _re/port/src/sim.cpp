@@ -689,6 +689,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sibRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x6a09e667f3bcc909ULL),
       insultRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbb67ae8584caa73bULL),
       fameRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x3c6ef372fe94f82bULL),
+      childDemandRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x510e527fade682d1ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3815,7 +3816,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // family's presence stopped seeing it. Half the years fall through to the old chain.
   // The newborn years belong to the scripted cards; a report of any kind there leaves the
   // play driver without a menu (REPORT.en.md 231).
-  if (forcedChoice < 0 && h.age >= 5 && ambientRng_.chance(0.35)) {
+  if (forcedChoice < 0 && h.age >= 5 && ambientRng_.chance(0.25)) {
   }
   // The ambient family (REPORT.en.md 190) keeps its own 1-in-12 coin but moves up with
   // the rare beats: the churn above it starved it to zero parent-cheat cards in ten
