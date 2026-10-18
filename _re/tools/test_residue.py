@@ -23,7 +23,7 @@ FAMILIES = [
 
 
 def run(seed, extra):
-    spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 70,
+    spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 80,
             "relationship": True}
     spec.update(extra)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
@@ -38,7 +38,7 @@ def run(seed, extra):
 
 offenders = {}
 for extra in FAMILIES:
-    for seed in range(1, 7):
+    for seed in range(1, 13):
         for event in run(seed, extra)["events"]:
             for item in event.get("residue") or []:
                 offenders.setdefault(item, []).append((extra, seed, event["age"]))

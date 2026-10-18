@@ -3664,6 +3664,17 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // records the ones resolution could not answer.
   const auto sweep = [&](std::string& s) {
     if (s.find('<') == std::string::npos) return;
+    // A '<rb>' with nothing behind it is a dangling reference, not a missing actor: the
+    // row points back at an alternative this card never drew (REPORT.en.md 56). There is
+    // no value to substitute, so the token is removed rather than printed at the player
+    // (REPORT.en.md 207).
+    if (rndCache_.empty() && rbLast_.empty()) {
+      for (size_t at = s.find("<rb"); at != std::string::npos; at = s.find("<rb", at)) {
+        const size_t close = s.find('>', at);
+        if (close == std::string::npos) break;
+        s.erase(at, close - at + 1);
+      }
+    }
     s = resolve(s);
     const size_t at = s.find('<');
     if (at == std::string::npos) return;
