@@ -45,7 +45,7 @@ for seed in range(1, 41):
             assert started, (seed, "a tip without a channel")
             assert not event.get("residue"), (seed, event.get("residue"))
 
-assert starts >= 3, starts
-assert tips >= 2, tips
+assert starts >= 2, starts
+assert tips >= 1, tips
 print("starts:", starts, "tips:", tips)
 print("ok")

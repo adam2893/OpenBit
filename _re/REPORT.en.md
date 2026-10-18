@@ -23448,6 +23448,116 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 222. Aircraft ownership and a flight that goes wrong
+
+```
+a16_aircraft-enc                    Make, Model, Cost, ..., Luxury Only
+a16_aircraft-danger-scenarios-enc   Title, Scenario, Log Version, Danger Score, Fatal,
+                                    Helicopter, Jet, Propeller, Glider, Blimp, Balloon
+```
+
+`Cost` is a `$304,000` string, and `Table::num` already strips the punctuation, so the
+price needed no parser of its own. `<aircraft>` now returns the aircraft the hero owns
+rather than a random row, which is what makes the danger card's sentence the hero's own
+flight:
+
+```
+While flying your Robinson R22 Beta II at top speed so ...
+```
+
+```
+bought 15 of 30 lives, danger 13, leftovers 0
+```
+
+## 223. The custody chain
+
+Three tables, and the first card table of the sprint that needed the **payload queue**
+(§184) rather than a single year:
+
+```
+a16_custody-case-enc             139 rows, Reason + the defendant's money and employment
+a16_custody-ex-argument-enc       35 rows, what the ex says in court
+a16_custody-child-argument-enc    54 rows, what the child says
+```
+
+The case card pushes `kPendingCustodyTrial`; the following age-up builds the arguments and
+the verdict. The `Reason` rows are *clauses* about the ex (`<ex> secretly hates <him/her>`),
+so the sentence reads:
+
+```
+Robin Averill is taking you to court for custody, claiming that Robin Averill gardens too much.
+```
+
+```
+cases 49, trials 48, leftovers 0
+```
+
+The verdict is the card's journal line, not a narrative field, and the test asserts it
+there.
+
+## 224. The prize asset
+
+`a16_pray-asset-scenarios-enc` has six rows and every one grants "a brand-new `<asset>`".
+The asset pool is the vehicle catalogue, so the prize is a car and the card hands it over
+the way the purchase does.
+
+```
+cards 33 over 40 lives, distinct 23, leftovers 0
+```
+
+## 225. The OnlyFans channel
+
+The last card-shaped table, and the only one that needed a *subsystem* rather than an
+actor: `a16_social-media-channels-onlyfans-tip-responses-enc` is the tip response, and a
+response needs a fan and a channel.
+
+The port now has the smallest channel the data asks for -- `Hero::onlyfans`,
+`Hero::onlyfansFans` -- a card that offers to start one, and a tip card whose fan is a
+random person so that `<him/her>` follows that person's own gender:
+
+```
+Send her an ASMR video      Send him a fashion video      Send her a date sim video
+```
+
+```
+starts 21 of 40 lives, tips 9, leftovers 0
+```
+
+## 226. `<friend>`, and the census that says the list is empty
+
+The port keeps no friend roster, so a friend is an actor like any other: one name from the
+generator the hero's own family uses.
+
+```
+While out riding your bike, you receive a call from someone who says that
+Larry East entered your name in a raffle and you won a brand-new Specialized Rockhopper.
+```
+
+With that, the scan that has driven this sprint returns nothing:
+
+```
+unported card-shaped tables: 0
+```
+
+### 226.1 What the battery can and cannot say now
+
+```
+probes 55   rc0 54   residue0 52   fails0 55
+```
+
+Two environment losses, both from the emulator wedging and `/tmp` being wiped mid-session:
+
+1. **Thirteen of the sixty-eight probes were scratch files in `/tmp`** and are gone with it.
+   The remaining fifty-five all run.
+2. **`idres.py` `rc=1`** is not the port: it reads `/tmp/meta_lits.txt`, which went with
+   the same wipe. Its failure is `FileNotFoundError`, visible in its own traceback.
+3. **`jrres.py` and `patch_flres.py` print no residue line** (old format, `residue=?`).
+
+`tools/bench.sh` is unavailable for the same reason: `/tmp/trace_c10.json` is gone and the
+MuMu emulator is unresponsive, so no fresh trace can be captured until it is restarted.
+Nothing in this sprint was bench-checked; the residue test, the per-card tests and the
+fifty-five probes are what carry it.
+
 ## 220. Vehicle ownership, and the second reaction
 
 ```

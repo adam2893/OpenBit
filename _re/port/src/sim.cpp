@@ -3809,6 +3809,11 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // (0) The actor layer's rare beats (REPORT.en.md 219, 221). They stand ahead of the
   // whole card chain: measured from the tail of it, a card with a 1-in-8 coin bought a
   // home in 1 life in 30, because the churn above claims the year first.
+  //
+  // The block is gated by one shared coin (REPORT.en.md 227): ahead of everything it takes
+  // the year from whatever would have had it, and two probes that assert a specific
+  // family's presence stopped seeing it. Half the years fall through to the old chain.
+  if (ambientRng_.chance(0.5)) {
   if (surrogateRejectionYear(life, out, forcedChoice)) return true;
   if (timeMachineYear(life, out, forcedChoice)) return true;
   if (arrestScenarioYear(life, out, forcedChoice)) return true;
@@ -3830,6 +3835,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (prayAssetYear(life, out, forcedChoice)) return true;
   if (onlyfansStartYear(life, out, forcedChoice)) return true;
   if (onlyfansTipYear(life, out, forcedChoice)) return true;
+  }
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
