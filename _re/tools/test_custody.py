@@ -45,7 +45,9 @@ for seed in range(1, 41):
             pending -= 1
             body = event["body"]
             assert "<" not in body and ">" not in body, (seed, body)
-            assert event.get("narrative"), (seed, "no verdict")
+            # The verdict is the card's journal line, not a narrative field.
+            verdict = (event.get("logLines") or [""])[-1]
+            assert verdict.startswith("The judge granted"), (seed, verdict)
             assert not event.get("residue"), (seed, event.get("residue"))
 
 assert cases >= 5, cases
