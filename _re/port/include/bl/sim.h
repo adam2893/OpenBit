@@ -230,6 +230,8 @@ class Sim {
   bool childBreakItemYear(Life& life, AgeUp& out, int forcedChoice);
   // A news item, REPORT.en.md 212.
   bool newsEventYear(Life& life, AgeUp& out, int forcedChoice);
+  // A drug offered, REPORT.en.md 214.
+  bool drugOfferYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

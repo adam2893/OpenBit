@@ -1455,4 +1455,48 @@ bool Sim::newsEventYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   return true;
 }
+
+// ScenarioDrugOffer (REPORT.en.md 214): someone offers the hero a drug.
+//
+// a16_drug-scenarios-enc: Condition, Scenario, CTA, Yes Choice, No Choice, Specific Drug.
+// '<drug>' is answered from a16_drugs-enc (REPORT 213) and '<musician-indefinite>' from the
+// resolver's own musician pool, so rows whose text still holds a token are the only ones
+// skipped.
+bool Sim::drugOfferYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_drug-scenarios-enc")) return false;
+  if (h.age < 12) return false;
+  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_drug-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    const std::string cond = trim(t.at(r, "Condition"));
+    if (cond == "School" && (h.age >= 18 || !h.schooling)) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_drug-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  out.cta = spyUpperFirst(trim(t.at(row, "CTA")));
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  const std::string drug = trim(t.at(row, "Specific Drug"));
+  if (lane == 0) {
+    out.choice = spyUpperFirst(resolve(trim(t.at(row, "Yes Choice"))));
+    out.narrative = drug.empty() ? "I took it." : "I tried " + drug + ".";
+    out.health -= 3;
+    out.happiness += 2;
+  } else {
+    out.choice = spyUpperFirst(resolve(trim(t.at(row, "No Choice"))));
+    out.narrative = drug.empty() ? "I turned it down." : "I turned down " + drug + ".";
+    out.discipline = pointsForImpact(1);
+  }
+  return true;
+}
 }  // namespace bl
