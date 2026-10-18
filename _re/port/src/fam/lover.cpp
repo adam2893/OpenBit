@@ -1378,4 +1378,51 @@ bool Sim::notificationBaitYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+// ScenarioChildBreakItem (REPORT.en.md 211): the hero breaks a relative's thing.
+//
+// a16_child-break-items-enc: Item, Scenario. '<what>' is the Item column and '<who>' is
+// the relative whose thing it was, which the port takes from the family it already has.
+bool Sim::childBreakItemYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 3 || h.age > 17) return false;
+  if (!ensureTable("a16_child-break-items-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(26) != 0) return false;
+  std::vector<std::string> kin;
+  for (const Person& p : life.family) {
+    if (!p.alive) continue;
+    kin.push_back(p.relation);
+  }
+  if (kin.empty()) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_child-break-items-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Item")).empty()) continue;
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  std::string scenario = trim(t.at(row, "Scenario"));
+  const std::string what = trim(t.at(row, "Item"));
+  const std::string who = kin[ambientRng_.below(uint32_t(kin.size()))];
+  auto fill = [&](std::string s, const char* token, const std::string& value) {
+    const size_t len = std::strlen(token);
+    for (size_t at = s.find(token); at != std::string::npos; at = s.find(token, at)) {
+      s.replace(at, len, value);
+      at += value.size();
+    }
+    return s;
+  };
+  // The sentence is 'your <who> <what>', so the relative goes in possessive.
+  scenario = fill(scenario, "<who>", who + "'s");
+  scenario = fill(scenario, "<what>", what);
+  out.table = "a16_child-break-items-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(scenario));
+  out.narrative = "I broke my " + who + "'s " + what + " while playing.";
+  out.happiness -= 3;
+  return true;
+}
 }  // namespace bl
