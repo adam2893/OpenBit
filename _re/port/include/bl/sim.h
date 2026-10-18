@@ -236,6 +236,10 @@ class Sim {
   bool crashoutYear(Life& life, AgeUp& out, int forcedChoice);
   // A prayer answered with money, REPORT.en.md 216.
   bool prayWealthYear(Life& life, AgeUp& out, int forcedChoice);
+  // The hero's feelings, REPORT.en.md 217.
+  bool sexualityYear(Life& life, AgeUp& out, int forcedChoice);
+  // The hero buys a home, REPORT.en.md 218.
+  bool homePurchaseYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

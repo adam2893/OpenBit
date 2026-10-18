@@ -1625,4 +1625,53 @@ bool Sim::sexualityYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioHomePurchase (REPORT.en.md 218): the hero buys a home.
+//
+// The port had no general ownership model -- only a rental's propType and the royal
+// castle -- so the spouse-reaction cards (which fire on a purchase) could never trigger.
+// This card is that model's first half: a house-type row, a lane that pays for it, and
+// Hero::home set so the reaction cards have something to react to.
+//
+// shortcut: the price is Price Score * 10000, a scale the house table does not state; the
+// game's own valuation lives in SimPlace and was not read.
+bool Sim::homePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.home.empty()) return false;
+  if (h.age < 20) return false;
+  if (!ensureTable("a16_house-types-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_house-types-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Type")).empty()) continue;
+    if (t.flag(r, "Royal")) continue;
+    const double mn = t.num(r, "Minimum Age");
+    if (mn > 0 && h.age < mn) continue;
+    const long long price = static_cast<long long>(t.num(r, "Price Score")) * 10000;
+    if (price <= 0 || price > h.money) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string type = trim(t.at(row, "Type"));
+  const long long price = static_cast<long long>(t.num(row, "Price Score")) * 10000;
+  out.table = "a16_house-types-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "House hunting";
+  out.body = "A " + type + " is on the market for " + money(price) + ".";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Buy it";
+    h.money -= price;
+    h.home = type;
+    out.narrative = "I bought a " + type + " for " + money(price) + ".";
+  } else {
+    out.choice = "Keep looking";
+    out.narrative = "I passed on the " + type + ".";
+  }
+  return true;
+}
 }  // namespace bl
