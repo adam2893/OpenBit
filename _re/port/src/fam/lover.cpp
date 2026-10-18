@@ -1583,4 +1583,46 @@ bool Sim::prayWealthYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioSexuality (REPORT.en.md 217): the hero's feelings, in their own words.
+//
+// a16_sexuality-scenarios-enc: Scenario, Log Version, Gender, Sexuality, Min/Max Age,
+// Student, Classmate Gender, Teacher Gender, Friend Gender, ... Most rows are pure
+// alternatives and need nothing but a gate; a row gated on a Sexuality the port does not
+// track is skipped rather than shown to everybody.
+bool Sim::sexualityYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_sexuality-scenarios-enc")) return false;
+  if (h.age < 8) return false;
+  if (forcedChoice < 0 && ambientRng_.below(34) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_sexuality-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    const std::string want = lower(trim(t.at(r, "Sexuality")));
+    if (!want.empty() && want != h.sexuality) continue;
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    if (t.flag(r, "Student") && (h.age >= 18 || !h.schooling)) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_sexuality-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
+  }
+  return true;
+}
 }  // namespace bl

@@ -587,6 +587,10 @@ struct Hero {
   // 'Transgender Identity' and 'Other Identity' columns are **flags**, not names, so the
   // port stores the fact rather than a string it would have had to invent.
   bool identityQuestioned = false;
+  // The hero's sexuality (REPORT.en.md 217). a16_sexuality-scenarios-enc gates every one
+  // of its 102 rows on this column, so the card needs the value before it can fire;
+  // 'straight' is the default the script can override.
+  std::string sexuality = "straight";
   int loverCraziness = 0;
   // The gift (REPORT.en.md 89) needs the partner's pride as well as her
   // craziness: every refusal row in the two property pools is flagged one or

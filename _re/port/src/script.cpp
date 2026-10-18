@@ -305,6 +305,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"relationship\": " << h.relationship
     << ", \"relationshipLow\": " << h.relationshipLow
     << ", \"identityQuestioned\": " << (h.identityQuestioned ? "true" : "false")
+    << ", \"sexuality\": " << jsonOrNull(h.sexuality)
     << ", \"fame\": " << h.fame
     << ", \"exLovers\": " << exLoversJson(h)
     << ", \"children\": " << childrenJson(life)
@@ -679,6 +680,16 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (json.compare(p, 4, "true") == 0) spec.engaged = true;
     else if (json.compare(p, 5, "false") != 0) return fail("engaged is not a boolean");
   }
+  p = findValue(json, "sexuality");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    const size_t q = json.find('"', p + 1);
+    if (p < json.size() && json[p] == '"' && q != std::string::npos) {
+      spec.sexuality = json.substr(p + 1, q - p - 1);
+    } else {
+      return fail("sexuality is not a string");
+    }
+  }
   p = findValue(json, "ex");
   if (p != std::string::npos) {
     while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
@@ -868,6 +879,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   // The children fixture (REPORT.en.md 146): the array exists before any card that
   // reads it. Each one is a person of the hero's own surname, born before the run.
   if (spec.cash >= 0) life.hero.money = spec.cash;
+  life.hero.sexuality = spec.sexuality;
   if (spec.engaged) {
     life.hero.loverName = "Sam Ellery";
     life.hero.loverFemale = true;
