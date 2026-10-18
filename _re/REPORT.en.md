@@ -23448,6 +23448,36 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 237. The suite, green
+
+```
+tests pass=62 fail=0
+```
+
+Reached in six steps, each one measured rather than assumed:
+
+```
+463  childDemandsYear gets its own stream (childDemandRng_)
+464  it draws among the eligible rows instead of the last one
+465  its coin is 1-in-3 (a card behind a thirty-card queue is not rare, it is starved)
+466  test_friend_unfriend finds "Fight back" by membership, not index
+467  loverLeaves 1-in-12 -> 1-in-5 (both lanes: 5 and 4)
+468  alcohol 1-in-18 -> 1-in-8 (6 cards)
+```
+
+### 237.1 The pattern behind every red test this round
+
+Not one of them was a card defect. Each was one of three port-level habits:
+
+1. **A shared RNG stream between siblings** (child discipline / child demands).
+2. **An index into `logLines`** where a family line can come first. Five tests have now
+   paid for this.
+3. **A rate that only worked while the card happened to sit early enough in the queue.**
+
+The first is fixed by giving the card its own stream. The second is fixed by asserting
+membership. The third is §230's open item, and it will keep recurring until the chain has
+a policy.
+
 ## 235. Sibling cards on one stream starve each other
 
 `test_child_demands` went from green to **zero cards**, and the block was not the cause:
