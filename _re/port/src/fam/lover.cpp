@@ -1708,4 +1708,82 @@ bool Sim::spouseHouseReactionYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioVehiclePurchase (REPORT.en.md 220): the hero buys a car.
+//
+// a16_outdoor-vehicle-enc: Make, Model, Type, Cost, ... The sibling of the home purchase
+// (218): the vehicle is the state the spouse-vehicle reactions need, and the row's own
+// Cost is the price, so nothing is scaled here.
+bool Sim::vehiclePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.outdoorVehicle.empty()) return false;
+  if (h.age < 17) return false;
+  if (!ensureTable("a16_outdoor-vehicle-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(9) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_outdoor-vehicle-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Model")).empty()) continue;
+    const long long price = static_cast<long long>(t.num(r, "Cost"));
+    if (price <= 0 || price > h.money) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string name = (trim(t.at(row, "Make")) + " " + trim(t.at(row, "Model"))).substr(0, 64);
+  const long long price = static_cast<long long>(t.num(row, "Cost"));
+  out.table = "a16_outdoor-vehicle-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Car shopping";
+  out.body = "A " + name + " is for sale at " + money(price) + ".";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Buy it";
+    h.money -= price;
+    h.outdoorVehicle = name;
+    out.narrative = "I bought a " + name + " for " + money(price) + ".";
+  } else {
+    out.choice = "Walk away";
+    out.narrative = "I walked away from the " + name + ".";
+  }
+  return true;
+}
+
+// ScenarioSpouseVehicleReaction (REPORT.en.md 220): the partner reacts to the new car.
+//
+// a16_spouse-vehicle-reactions-enc: Scenario, Log Version, Cheap Car, Expensive Car, Old
+// Car, Misc Car, Watercraft, Aircraft, Prepurchase Rejection. '<vehicle>' is the hero's own
+// (219) and '<lover>' the partner; the prepurchase rows need a preview the port does not
+// build and are skipped, as are the watercraft and aircraft rows (the port's purchase is
+// a road vehicle).
+bool Sim::spouseVehicleReactionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.outdoorVehicle.empty() || h.loverName.empty()) return false;
+  if (!ensureTable("a16_spouse-vehicle-reactions-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(7) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_spouse-vehicle-reactions-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    if (t.flag(r, "Prepurchase Rejection")) continue;
+    if (t.flag(r, "Watercraft") || t.flag(r, "Aircraft")) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_spouse-vehicle-reactions-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
+  }
+  return true;
+}
 }  // namespace bl

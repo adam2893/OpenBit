@@ -1351,6 +1351,8 @@ bool Sim::load(std::string* error) {
       "a16_drugs-enc",
       // The partner reacts to the new home (219).
       "a16_spouse-house-reactions-enc",
+      // The partner reacts to the new vehicle (220).
+      "a16_spouse-vehicle-reactions-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3791,6 +3793,24 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // The breakup announcement (REPORT.en.md 125) reports a breakup that already
   // happened, so like the hookup's morning after it is offered before the year's
   // own cards and rolls nothing at all -- no stream moves.
+  // (0) The actor layer's rare beats (REPORT.en.md 219, 221). They stand ahead of the
+  // whole card chain: measured from the tail of it, a card with a 1-in-8 coin bought a
+  // home in 1 life in 30, because the churn above claims the year first.
+  if (surrogateRejectionYear(life, out, forcedChoice)) return true;
+  if (timeMachineYear(life, out, forcedChoice)) return true;
+  if (arrestScenarioYear(life, out, forcedChoice)) return true;
+  if (childPressureRejectionYear(life, out, forcedChoice)) return true;
+  if (notificationBaitYear(life, out, forcedChoice)) return true;
+  if (childBreakItemYear(life, out, forcedChoice)) return true;
+  if (newsEventYear(life, out, forcedChoice)) return true;
+  if (drugOfferYear(life, out, forcedChoice)) return true;
+  if (crashoutYear(life, out, forcedChoice)) return true;
+  if (prayWealthYear(life, out, forcedChoice)) return true;
+  if (sexualityYear(life, out, forcedChoice)) return true;
+  if (homePurchaseYear(life, out, forcedChoice)) return true;
+  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
+  if (vehiclePurchaseYear(life, out, forcedChoice)) return true;
+  if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
@@ -3976,19 +3996,6 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // subsystem chain as well as before the dumb-scenario roulette, because every one of
   // those steps can claim the year first and a card behind them is starved however often
   // its own coin comes up.
-  if (surrogateRejectionYear(life, out, forcedChoice)) return true;
-  if (timeMachineYear(life, out, forcedChoice)) return true;
-  if (arrestScenarioYear(life, out, forcedChoice)) return true;
-  if (childPressureRejectionYear(life, out, forcedChoice)) return true;
-  if (notificationBaitYear(life, out, forcedChoice)) return true;
-  if (childBreakItemYear(life, out, forcedChoice)) return true;
-  if (newsEventYear(life, out, forcedChoice)) return true;
-  if (drugOfferYear(life, out, forcedChoice)) return true;
-  if (crashoutYear(life, out, forcedChoice)) return true;
-  if (prayWealthYear(life, out, forcedChoice)) return true;
-  if (sexualityYear(life, out, forcedChoice)) return true;
-  if (homePurchaseYear(life, out, forcedChoice)) return true;
-  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
   if (dealerYear(life, out, forcedChoice)) return true;
   // The mobster's spend-time card (REPORT.en.md 99) is the mafia subsystem's
   // own push, so it is tried before the mafia year's events. It draws on its
