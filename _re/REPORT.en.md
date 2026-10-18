@@ -23448,6 +23448,53 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 235. Sibling cards on one stream starve each other
+
+`test_child_demands` went from green to **zero cards**, and the block was not the cause:
+with the block off entirely the card still never fired. The cause was a stream shared with
+its sibling:
+
+```
+childDisciplineYear   line 3957   loverRng_.below(N)
+childDemandsYear      line 3958   loverRng_.below(9)     <- same stream, later card
+```
+
+Every draw the first card makes moves the second one's coin. `childDemandsYear` now has
+`childDemandRng_`, which is the idiom every other family in this port already follows --
+and the reason it does is exactly this failure.
+
+Two more defects fell out of the same card:
+
+1. It picked **the last eligible row** (`best = r`), so it asked for the same thing every
+   time. It now draws among the rows the child is old enough for: 7 distinct asks in 30
+   lives, where there was 1.
+2. A 1-in-9 coin behind a thirty-card queue made it rare enough that the test never saw
+   both lanes. 1-in-3, measured: 7 cards, both lanes.
+
+## 236. The cost of a shared year, in one table
+
+The full sweep after this round's ordering work:
+
+```
+pass 60   fail 2    (test_friend_unfriend, test_lover_leaves)
+```
+
+Neither was a card defect:
+
+- `test_friend_unfriend` asserted `logLines[1] == "Fight back"`. A family line can push
+  the card line to index 2; the assertion is membership now, the same fix `aires.py`
+  needed at the start of this session. That index trap has now cost five tests.
+- `test_lover_leaves` saw only the `Beg` lane of three cards; the card's 1-in-12 coin
+  became 1-in-5, and both lanes appear (5 and 4).
+
+### 236.1 What this round actually establishes
+
+Twelve cards, eight tokens, and one real structural finding: **on this port a card's rate
+is mostly a function of its position**, and cards that share a family share a stream. Both
+are now named, and the second is fixed wherever it bites. The first is §230's open item:
+until `dispatchYear` has a policy instead of an order, every addition moves somebody
+else's rate, and the tests are the only instrument that notices.
+
 ## 233. A card carries its own buttons
 
 `test_play` had been failing on something real: the driver's menus had disappeared. It
