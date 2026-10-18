@@ -228,6 +228,8 @@ class Sim {
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero breaks a relative's thing, REPORT.en.md 211.
   bool childBreakItemYear(Life& life, AgeUp& out, int forcedChoice);
+  // A news item, REPORT.en.md 212.
+  bool newsEventYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

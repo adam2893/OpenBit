@@ -1425,4 +1425,34 @@ bool Sim::childBreakItemYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness -= 3;
   return true;
 }
+
+// ScenarioNewsEvent (REPORT.en.md 212): the world's news, read by the hero.
+//
+// a16_news-events-enc, 157 rows: Type, Scenario. Every token in the corpus is
+// '<city>' / '<city2>' / '<country>' / '<country2>' / '<country-possessive>' or a
+// '<numN-M>' / '<decnumN-M>' range, and the shared resolver answers all of them, so
+// this needs a gate and nothing else.
+bool Sim::newsEventYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_news-events-enc")) return false;
+  if (h.age < 12) return false;
+  if (forcedChoice < 0 && ambientRng_.below(24) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_news-events-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_news-events-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = spyUpperFirst(trim(t.at(row, "Type")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  return true;
+}
 }  // namespace bl
