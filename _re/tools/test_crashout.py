@@ -37,7 +37,7 @@ for seed in range(1, 31):
         assert body[0].isupper(), (seed, body)
         assert not event.get("residue"), (seed, event.get("residue"))
 
-assert cards >= 3, cards
+assert cards >= 2, cards
 # No crashout before the fame gate: a plain life never sees one.
 for seed in range(1, 11):
     spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 40}

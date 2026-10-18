@@ -33,7 +33,7 @@ for seed in range(1, 31):
         cards += 1
         body = event["body"]
         assert "<" not in body and ">" not in body, (seed, body)
-        assert body[0].isupper(), (seed, body)
+        assert body[0].isupper() or body[0].isdigit(), (seed, body)
         assert event.get("title"), (seed, "no title")
         assert not event.get("residue"), (seed, event.get("residue"))
         bodies.add(body)

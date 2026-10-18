@@ -240,6 +240,8 @@ class Sim {
   bool sexualityYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero buys a home, REPORT.en.md 218.
   bool homePurchaseYear(Life& life, AgeUp& out, int forcedChoice);
+  // The partner reacts to the home, REPORT.en.md 219.
+  bool spouseHouseReactionYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

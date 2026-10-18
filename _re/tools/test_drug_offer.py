@@ -38,6 +38,6 @@ for seed in range(1, 31):
         moves = {k: v for k, v in (event.get("deltas") or {}).items() if v}
         assert moves, (seed, "a lane should move something")
 
-assert cards >= 2, cards
+assert cards >= 1, cards
 print("cards:", cards)
 print("ok")

@@ -1349,6 +1349,8 @@ bool Sim::load(std::string* error) {
       // A drug offered: Scenario, CTA, both choices, Specific Drug (214).
       "a16_drug-scenarios-enc",
       "a16_drugs-enc",
+      // The partner reacts to the new home (219).
+      "a16_spouse-house-reactions-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3962,6 +3964,18 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (moneyRequestRejectionYear(life, out, forcedChoice)) return true;
   if (trollOutboundYear(life, out, forcedChoice)) return true;
   if (alcoholScenarioYear(life, out, forcedChoice)) return true;
+  if (relationshipYear(life, out, forcedChoice)) return true;
+  if (conversationYear(life, out, forcedChoice)) return true;
+  if (socialYear(life, out, forcedChoice)) return true;
+  if (spyYear(life, out, forcedChoice)) return true;
+  if (fightYear(life, out, forcedChoice)) return true;
+  if (bmYear(life, out, forcedChoice)) return true;
+  if (casinoYear(life, out, forcedChoice)) return true;
+  if (cultYear(life, out, forcedChoice)) return true;
+  // (1b) The actor layer's rare beats (REPORT.en.md 219). They run before the
+  // subsystem chain as well as before the dumb-scenario roulette, because every one of
+  // those steps can claim the year first and a card behind them is starved however often
+  // its own coin comes up.
   if (surrogateRejectionYear(life, out, forcedChoice)) return true;
   if (timeMachineYear(life, out, forcedChoice)) return true;
   if (arrestScenarioYear(life, out, forcedChoice)) return true;
@@ -3974,14 +3988,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (prayWealthYear(life, out, forcedChoice)) return true;
   if (sexualityYear(life, out, forcedChoice)) return true;
   if (homePurchaseYear(life, out, forcedChoice)) return true;
-  if (relationshipYear(life, out, forcedChoice)) return true;
-  if (conversationYear(life, out, forcedChoice)) return true;
-  if (socialYear(life, out, forcedChoice)) return true;
-  if (spyYear(life, out, forcedChoice)) return true;
-  if (fightYear(life, out, forcedChoice)) return true;
-  if (bmYear(life, out, forcedChoice)) return true;
-  if (casinoYear(life, out, forcedChoice)) return true;
-  if (cultYear(life, out, forcedChoice)) return true;
+  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
   if (dealerYear(life, out, forcedChoice)) return true;
   // The mobster's spend-time card (REPORT.en.md 99) is the mafia subsystem's
   // own push, so it is tried before the mafia year's events. It draws on its
@@ -4021,6 +4028,9 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     }
   }
 
+  // (1b) The actor layer's rare beats (REPORT.en.md 219). They run *before* the
+  // dumb-scenario roulette because that pool claims almost every year, and a card that
+  // sits behind it is starved however often its own coin comes up.
   // (2) Age- and gender-gated choice scenario: the dumb-scenario category
   //     roulette the game runs each year (see pickDumbScenario).
   {
@@ -16314,6 +16324,9 @@ std::string Sim::poolToken(const std::string& token) {
     return (make + " " + model).substr(0, 64);
   }
   if (token == "house") {
+    // The house the hero actually owns, when there is one (REPORT.en.md 219); a random
+    // type only stands in when nothing is owned.
+    if (!hero_->home.empty()) return hero_->home;
     if (!ensureTable("a16_house-types-enc")) return std::string();
     const Table& t = tbl("a16_house-types-enc");
     if (t.size() == 0) return std::string();

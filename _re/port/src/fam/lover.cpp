@@ -1640,7 +1640,7 @@ bool Sim::homePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.home.empty()) return false;
   if (h.age < 20) return false;
   if (!ensureTable("a16_house-types-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(8) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_house-types-enc");
@@ -1671,6 +1671,40 @@ bool Sim::homePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   } else {
     out.choice = "Keep looking";
     out.narrative = "I passed on the " + type + ".";
+  }
+  return true;
+}
+
+// ScenarioSpouseHouseReaction (REPORT.en.md 219): the partner reacts to the new home.
+//
+// a16_spouse-house-reactions-enc. '<house>' is now the home the hero owns (REPORT 218/219)
+// and '<lover>' the partner, so the rows that matter are the post-purchase ones; the
+// prepurchase rows need a purchase preview the port does not build, and are skipped.
+bool Sim::spouseHouseReactionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.home.empty() || h.loverName.empty()) return false;
+  if (!ensureTable("a16_spouse-house-reactions-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(6) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_spouse-house-reactions-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    if (t.flag(r, "Prepurchase Rejection") || t.flag(r, "Prepurchase Acceptance")) continue;
+    if (t.flag(r, "Too Many Houses") || t.flag(r, "Multiple Children")) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_spouse-house-reactions-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
   }
   return true;
 }
