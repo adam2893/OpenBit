@@ -1353,6 +1353,9 @@ bool Sim::load(std::string* error) {
       "a16_spouse-house-reactions-enc",
       // The partner reacts to the new vehicle (220).
       "a16_spouse-vehicle-reactions-enc",
+      // Aircraft ownership and a flight that goes wrong (222).
+      "a16_aircraft-enc",
+      "a16_aircraft-danger-scenarios-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3811,6 +3814,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
   if (vehiclePurchaseYear(life, out, forcedChoice)) return true;
   if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
+  if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
+  if (aircraftDangerYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
@@ -16322,6 +16327,8 @@ std::string Sim::businessFormat(const char* table, const std::string& industry) 
 std::string Sim::poolToken(const std::string& token) {
   if (!hero_) return std::string();
   if (token == "aircraft") {
+    // The aircraft the hero owns, when there is one (REPORT.en.md 222).
+    if (!hero_->aircraft.empty()) return hero_->aircraft;
     if (!ensureTable("a16_aircraft-enc")) return std::string();
     const Table& t = tbl("a16_aircraft-enc");
     if (t.size() == 0) return std::string();

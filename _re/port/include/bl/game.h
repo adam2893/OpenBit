@@ -593,6 +593,8 @@ struct Hero {
   std::string sexuality = "straight";
   // The house the hero lives in (REPORT.en.md 218).
   std::string home;
+  // The aircraft the hero owns (REPORT.en.md 222), 'Make Model' from a16_aircraft-enc.
+  std::string aircraft;
   int loverCraziness = 0;
   // The gift (REPORT.en.md 89) needs the partner's pride as well as her
   // craziness: every refusal row in the two property pools is flagged one or

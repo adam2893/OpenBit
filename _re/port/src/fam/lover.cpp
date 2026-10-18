@@ -1786,4 +1786,83 @@ bool Sim::spouseVehicleReactionYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioAircraftPurchase (REPORT.en.md 222): the hero buys an aircraft.
+//
+// a16_aircraft-enc: Make, Model, Cost, ... , Luxury Only. Cost is a '$304,000' string and
+// Table::num strips the punctuation, so the price needs no parsing of its own. Hero::aircraft
+// is the state a16_aircraft-danger-scenarios-enc needs, and '<aircraft>' now returns it.
+bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.aircraft.empty()) return false;
+  if (h.age < 18) return false;
+  if (!ensureTable("a16_aircraft-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_aircraft-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Model")).empty()) continue;
+    if (t.flag(r, "Luxury Only") && !h.luxury) continue;
+    const double mn = t.num(r, "Min Age");
+    if (mn > 0 && h.age < mn) continue;
+    const long long price = static_cast<long long>(t.num(r, "Cost"));
+    if (price <= 0 || price > h.money) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string name = (trim(t.at(row, "Make")) + " " + trim(t.at(row, "Model"))).substr(0, 64);
+  const long long price = static_cast<long long>(t.num(row, "Cost"));
+  out.table = "a16_aircraft-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Aircraft shopping";
+  out.body = "A " + name + " is for sale at " + money(price) + ".";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Buy it";
+    h.money -= price;
+    h.aircraft = name;
+    out.narrative = "I bought a " + name + " for " + money(price) + ".";
+  } else {
+    out.choice = "Walk away";
+    out.narrative = "I walked away from the " + name + ".";
+  }
+  return true;
+}
+
+// ScenarioAircraftDanger (REPORT.en.md 222): something goes wrong in the air.
+//
+// a16_aircraft-danger-scenarios-enc: Title, Scenario, Log Version, Danger Score, Fatal and
+// one flag per aircraft kind. The port does not record the kind it bought, so the kind
+// flags are not evaluated; the Fatal rows are left in, because a fatal flight is the point
+// of the table and the death path is the one every other fatal card uses.
+bool Sim::aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.aircraft.empty()) return false;
+  if (!ensureTable("a16_aircraft-danger-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(14) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_aircraft-danger-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_aircraft-danger-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = spyUpperFirst(trim(t.at(row, "Title")));
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
+  }
+  return true;
+}
 }  // namespace bl
