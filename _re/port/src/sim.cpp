@@ -2554,6 +2554,13 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       const std::string v = businessToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
       else { out += v; rbLast_ = v; }
+    } else if (token == "aircraft" || token == "house" || token == "vehicle" ||
+               token == "drug" || token == "celebrity" || token == "celebrity-male" ||
+               token == "celebrity-female" || token == "random-person" ||
+               token == "random-person-indefinite") {
+      const std::string v = poolToken(token);
+      if (v.empty()) out += text.substr(i, close - i + 1);
+      else { out += v; rbLast_ = v; }
     } else if (token == "jurisdiction" || token == "jurisdiction-possessive" ||
                token == "political-office" || token == "political-office-possessive" ||
                token == "opponent" || token == "opponent-possessive" ||
@@ -16281,6 +16288,62 @@ std::string Sim::businessFormat(const char* table, const std::string& industry) 
   }
   while (!clean.empty() && clean.find("  ") != std::string::npos) clean.replace(clean.find("  "), 2, " ");
   return trim(clean);
+}
+
+
+// The actor layer's token sources (REPORT.en.md 213). Each answers a token that a card
+// table uses and the port had no value for; every one comes from a pool that already
+// exists, so a missing actor is a missing *pool*, never a guess.
+std::string Sim::poolToken(const std::string& token) {
+  if (!hero_) return std::string();
+  if (token == "aircraft") {
+    if (!ensureTable("a16_aircraft-enc")) return std::string();
+    const Table& t = tbl("a16_aircraft-enc");
+    if (t.size() == 0) return std::string();
+    const size_t r = ambientRng_.below(uint32_t(t.size()));
+    const std::string make = trim(t.at(r, "Make"));
+    const std::string model = trim(t.at(r, "Model"));
+    return (make + " " + model).substr(0, 64);
+  }
+  if (token == "house") {
+    if (!ensureTable("a16_house-types-enc")) return std::string();
+    const Table& t = tbl("a16_house-types-enc");
+    if (t.size() == 0) return std::string();
+    return trim(t.at(ambientRng_.below(uint32_t(t.size())), "Type"));
+  }
+  if (token == "vehicle") {
+    if (!ensureTable("a16_outdoor-vehicle-enc")) return std::string();
+    const Table& t = tbl("a16_outdoor-vehicle-enc");
+    if (t.size() == 0) return std::string();
+    const size_t r = ambientRng_.below(uint32_t(t.size()));
+    return (trim(t.at(r, "Make")) + " " + trim(t.at(r, "Model"))).substr(0, 64);
+  }
+  if (token == "drug") {
+    if (!ensureTable("a16_drugs-enc")) return std::string();
+    const Table& t = tbl("a16_drugs-enc");
+    if (t.size() == 0) return std::string();
+    return trim(t.at(ambientRng_.below(uint32_t(t.size())), "Drug"));
+  }
+  if (token == "celebrity" || token == "celebrity-male" || token == "celebrity-female") {
+    if (!ensureTable("a16_casino-casino-celebrity-name-enc")) return std::string();
+    const Table& t = tbl("a16_casino-casino-celebrity-name-enc");
+    std::vector<size_t> rows;
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (token == "celebrity") { rows.push_back(r); continue; }
+      const std::string g = trim(t.at(r, "Gender"));
+      const bool male = token == "celebrity-male";
+      if (g == (male ? "male" : "female")) rows.push_back(r);
+    }
+    if (rows.empty()) return std::string();
+    const size_t r = rows[ambientRng_.below(uint32_t(rows.size()))];
+    return trim(t.at(r, "First Name")) + " " + trim(t.at(r, "Last Name"));
+  }
+  if (token == "random-person" || token == "random-person-indefinite") {
+    const bool female = ambientRng_.chance(0.5);
+    const std::string name = drawFirstName(female) + " " + drawSurname();
+    return token == "random-person-indefinite" ? "a person named " + name : name;
+  }
+  return std::string();
 }
 
 std::string Sim::businessToken(const std::string& token) {

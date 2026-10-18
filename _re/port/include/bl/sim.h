@@ -694,6 +694,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   std::string musicToken(const std::string& token);
   std::string musicTitle(const char* table, const std::string& genre);
   std::string businessToken(const std::string& token);
+  // The actor layer's token sources (REPORT.en.md 213).
+  std::string poolToken(const std::string& token);
   std::string businessName(const std::string& industry);
   std::string businessFormat(const char* table, const std::string& industry);
   std::string businessSupplier(const std::string& industry);
