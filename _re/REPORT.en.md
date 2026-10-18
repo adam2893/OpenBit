@@ -23448,6 +23448,41 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 227. The block's own coin, and what it costs
+
+Running the rare beats ahead of everything fixed the starvation and broke balance: they
+took the year from whatever would have had it, and two probes that assert a specific
+family stopped seeing it -- `fuprres` found **zero** cards in its own pool.
+
+The block now shares one coin: half the years fall through to the old chain.
+
+```
+fuprres   events 0 -> 2      residue 0
+```
+
+and the new cards stay reachable:
+
+```
+onlyfans  5 starts, 1 tip of 40 lives      all twelve per-card tests ok
+```
+
+### 227.1 Three failures that are not the port's
+
+```
+idres.py   rc=1   FileNotFoundError: /tmp/meta_lits.txt   (lost with /tmp)
+lsres.py   fails=2  'Disease' + 'she died from syphilis.'
+```
+
+The second one is the probe's reading, not the code: `a16_death-types-enc`'s own row is
+
+```
+Type: Disease    Sentence: <pronoun> died from syphilis.
+```
+
+so the port is copying the table and the probe expected a different sentence for that
+cause. `fuprres.py` `rc=1` was its own `min()` on an empty list, from the same starvation
+§227 fixes.
+
 ## 222. Aircraft ownership and a flight that goes wrong
 
 ```
