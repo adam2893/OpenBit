@@ -23448,6 +23448,39 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 230. What is still red, and why it cannot be tuned blind
+
+The full sweep after §229 leaves two legacy tests failing:
+
+```
+test_lover_argues     the report never rode the same age as its hookup
+test_lover_counseling lanes {'Refuse to go': 2}   -- the agree lane never came up
+```
+
+Both are the same class as §219 and §229: a card's **rate** is a product of where it sits
+in `dispatchYear`, and every change to that order reshuffles every life's draws. Three
+times now, a card has been starved by the queue rather than by its own coin -- home
+purchase (1 in 30 lives), parent cheat (0 in 60), aircraft danger (0 in 30) -- and each
+time the fix moved a block and moved someone else's rate with it.
+
+The port has never had the game's own priority model. `dispatchYear` is a hand-ordered
+chain, and the order has been tuned by measurement, one family at a time. That is why
+these two tests go red: not because the cards are wrong, but because ordering is being
+used as a substitute for a policy.
+
+### 230.1 What that means for the next round
+
+1. **Capture a trace.** The harness is live (`blh_attach.py`, attach mode), but the bench
+   needs a played life and there is no op to start one; a UI driver or a `newlife` RPC is
+   the missing piece. Without it, every ordering decision is unverified.
+2. **Then replace the ordering with a policy**: one weighted chooser over the card
+   families, the way §190 did for the ambient family and §221 should have done for the
+   rest. That is the structural item this sprint exposed and did not build.
+3. **Only then** re-tune rates against the trace.
+
+Until step 1 exists, moving the chain again would be guessing with the tests as the only
+feedback, which is how these two went red in the first place.
+
 ## 228. Fame is a reported delta
 
 `paparazzi`'s test computes the hero's final fame from the cards it saw, and it broke when
