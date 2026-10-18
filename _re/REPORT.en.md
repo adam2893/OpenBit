@@ -23448,6 +23448,102 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 213. The actor layer
+
+The nine remaining card tables were said to need "an actor each". That was six of them,
+and the actor turned out to be a *pool*, not a person: the resolver already had the
+machinery, `referenceToken` for the reference tags and `circumstance-public` for the
+captured scenes (report 38), but nothing behind `<aircraft>`, `<house>`, `<vehicle>`,
+`<drug>`, `<celebrity>`, `<random-person>`.
+
+`Sim::poolToken` answers those six from pools that already exist:
+
+```
+<aircraft>       a16_aircraft-enc         Make + Model
+<house>          a16_house-types-enc      Type, the owned home when there is one (218)
+<vehicle>        a16_outdoor-vehicle-enc  Make + Model
+<drug>           a16_drugs-enc            Drug
+<celebrity>      a16_casino-casino-celebrity-name-enc  First + Last, by gender
+<random-person>  the name generator the hero's own family uses
+```
+
+Only two tokens stayed unanswered: `<asset>` and `<friend>` have no pool anywhere in the
+data, and `<musician-indefinite>` was answered all along.
+
+## 214. Two cards on the new tokens
+
+```
+a16_drug-scenarios-enc        Condition, Scenario, CTA, Yes Choice, No Choice, Specific Drug
+a16_crashout-scenario-enc     Severity, ..., Fame Impact
+```
+
+The drug card is a two-lane offer and keeps its `<drug>`; the crashout card is gated on
+fame and moves the score by the row's own `Fame Impact`.
+
+```
+While at the library, the librarian whispers that if you ...
+You called SWAT on Pokimane from the comfort of your home ...
+```
+
+## 215. The prayers
+
+```
+a16_pray-wealth-scenarios-enc  Scenario, Log Version, Positive, Negative, Commonness
+```
+
+`<value>` is not a pool: it is the amount this card rolls, so it is substituted in the
+card, not in the resolver, and one roll drives both the sentence and the ledger.
+`<circumstance-public>` was already implemented.
+
+`a16_pray-asset-scenarios-enc` stays unported: its `<asset>` has no table.
+
+## 216. Sexuality, and the column that gates every row
+
+`a16_sexuality-scenarios-enc` has 102 rows and **every one** is gated on its `Sexuality`
+column, whose values are only `gay` and `bi`. There is no `straight` row, so a straight
+hero never sees this card -- the table says so, and the port now says so too.
+
+`Hero::sexuality` defaults to `straight`; the script's `sexuality` key sets it.
+
+## 217. Home ownership
+
+The two spouse-reaction cards fire on a *purchase*, and the port had no ownership model:
+`propType` belongs to the rental, `royalCastle` to the royals. `Hero::home` and a purchase
+card close that gap.
+
+```
+// shortcut: the price is Price Score * 10000, a scale the house table does not state.
+```
+
+## 218. The spouse reacts
+
+`a16_spouse-house-reactions-enc` now has a `<house>` that is the home the hero actually
+owns, and `<lover>` that is the partner. Its prepurchase rows are skipped: they describe a
+preview the port does not build.
+
+## 219. The finding: a card behind the chain is starved
+
+Every card added in §208-§218 was tested in isolation and passed. `cardrate` would have
+shown the problem: the dumb-scenario roulette and the subsystem chain claim almost every
+year, and a card that sits behind them fires at whatever fraction of years is left.
+Home purchase fired in **1 of 30 lives** while its own coin says 1 in 8.
+
+The rare beats now run at the head of the dispatch chain, before `dealerYear` and before
+the roulette. Measured over 30 lives, ages 1-45:
+
+```
+notification-bait  10      pray-wealth  4      house  3
+drug                2      news         1      arrest 1
+```
+
+These are deliberately rare beats and their coins are unchanged; what changed is that the
+coin decides instead of the queue.
+
+**This reordering was not bench-checked**: the emulator wedged during this round and
+`/tmp/trace_c10.json` was lost with `/tmp`, so `tools/bench.sh` cannot run until MuMu is
+restarted and a fresh trace captured. `tools/test_residue.py` and every per-card test do
+run, and all pass.
+
 ## 207. The residue class, closed
 
 §206 reported `residue0 49` against a starting 65 and called it unattributed. It is
