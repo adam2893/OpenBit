@@ -1356,6 +1356,10 @@ bool Sim::load(std::string* error) {
       // Aircraft ownership and a flight that goes wrong (222).
       "a16_aircraft-enc",
       "a16_aircraft-danger-scenarios-enc",
+      // The custody chain: the case, the ex argument, the child argument (223).
+      "a16_custody-case-enc",
+      "a16_custody-ex-argument-enc",
+      "a16_custody-child-argument-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3674,6 +3678,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
+    if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
     return false;
   }
   ++life.year;
@@ -3816,6 +3821,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
   if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
   if (aircraftDangerYear(life, out, forcedChoice)) return true;
+  if (custodyCaseYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;

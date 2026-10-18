@@ -85,6 +85,7 @@ enum PendingCard {
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
   kPendingPaternityResults = 3,     // the court order's result, right after the test
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
+  kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
 };
 
 // The hero's own children (REPORT.en.md 146). The game keeps a SimChild array on the
@@ -249,6 +250,9 @@ class Sim {
   // Aircraft ownership and a flight that goes wrong, REPORT.en.md 222.
   bool aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice);
   bool aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice);
+  // The custody chain, REPORT.en.md 223.
+  bool custodyCaseYear(Life& life, AgeUp& out, int forcedChoice);
+  bool custodyTrialYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

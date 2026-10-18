@@ -1865,4 +1865,116 @@ bool Sim::aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioCustody (REPORT.en.md 223): the ex takes the hero to court for a child.
+//
+// Three tables, one card each of three kinds:
+//   a16_custody-case-enc          139 rows, Reason + the defendant's own profile
+//   a16_custody-ex-argument-enc    35 rows, what the ex says in court
+//   a16_custody-child-argument-enc 54 rows, what the child says
+// The game pushes the arguments and the verdict as follow-up scenarios; the port's
+// payload queue (REPORT.en.md 184) is the same machinery, so the trial is a pending card
+// and the arguments land in the following year rather than being crammed into this one.
+bool Sim::custodyCaseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (life.children.empty()) return false;
+  if (h.exLovers.empty()) return false;
+  if (!ensureTable("a16_custody-case-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(26) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_custody-case-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string reason = trim(t.at(r, "Reason"));
+    if (reason.empty()) continue;
+    const double mn = t.num(r, "Min Defendant Money");
+    const double mx = t.num(r, "Max Defendant Money");
+    if (mn > 0 && h.money < static_cast<long long>(mn)) continue;
+    if (mx > 0 && h.money > static_cast<long long>(mx)) continue;
+    if (t.flag(r, "Defendant Is Unemployed") && h.employed) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string ex = h.exLovers.front().name.empty() ? std::string("your ex") : h.exLovers.front().name;
+  out.table = "a16_custody-case-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Custody hearing";
+  // The reason rows already name the ex and read as a sentence about them, so the
+  // card does not repeat the name (REPORT.en.md 223).
+  out.body = ex + " is taking you to court for custody, claiming that " +
+             spyUpperFirst(resolve(trim(t.at(row, "Reason")))) + ".";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  life.pendingCards.push_back(kPendingCustodyTrial);
+  if (lane == 0) {
+    out.choice = "Fight it";
+    out.narrative = "I told the court I would fight for my child.";
+  } else {
+    out.choice = "Let them have custody";
+    out.narrative = "I did not fight it.";
+    out.happiness -= 6;
+  }
+  return true;
+}
+
+// The trial itself, one year on: the ex's argument, the child's, and the verdict.
+bool Sim::custodyTrialYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (life.children.empty() || h.exLovers.empty()) return false;
+  if (!ensureTable("a16_custody-ex-argument-enc")) return false;
+  if (!ensureTable("a16_custody-child-argument-enc")) return false;
+  hero_ = &h;
+  life_ = &life;
+  std::string lines;
+  const Hero::ExLover& ex = h.exLovers.front();
+  const Table& et = tbl("a16_custody-ex-argument-enc");
+  std::vector<size_t> erows;
+  for (size_t r = 0; r < et.size(); ++r) {
+    const std::string s = trim(et.at(r, "String"));
+    if (s.empty()) continue;
+    const std::string g = trim(et.at(r, "Ex Gender"));
+    if (!g.empty() && g != "both" && g != (ex.female ? "female" : "male")) continue;
+    if (resolve(s).find('<') != std::string::npos) continue;
+    erows.push_back(r);
+  }
+  if (!erows.empty()) {
+    const size_t r = erows[ambientRng_.below(uint32_t(erows.size()))];
+    lines += spyUpperFirst(resolve(trim(et.at(r, "String"))));
+  }
+  const Table& ct = tbl("a16_custody-child-argument-enc");
+  std::vector<size_t> crows;
+  for (size_t r = 0; r < ct.size(); ++r) {
+    const std::string s = trim(ct.at(r, "String"));
+    if (s.empty()) continue;
+    const std::string g = trim(ct.at(r, "Child Gender"));
+    const Child& kid = life.children.front();
+    if (!g.empty() && g != "both" && g != (kid.female ? "female" : "male")) continue;
+    const double mn = ct.num(r, "Min Child Age");
+    const double mx = ct.num(r, "Max Child Age");
+    if (mn > 0 && kid.age < mn) continue;
+    if (mx > 0 && kid.age > mx) continue;
+    if (resolve(s).find('<') != std::string::npos) continue;
+    crows.push_back(r);
+  }
+  if (!crows.empty()) {
+    const size_t r = crows[ambientRng_.below(uint32_t(crows.size()))];
+    if (!lines.empty()) lines += " ";
+    lines += spyUpperFirst(resolve(trim(ct.at(r, "String"))));
+  }
+  out.table = "a16_custody-ex-argument-enc";
+  out.title = "Custody hearing";
+  out.body = lines.empty() ? "The court heard both sides." : lines;
+  // Verdict: the side with more money wins more often, as the case table's own
+  // defendant-money columns imply. shortcut: a 60/40 split, not the game's formula.
+  const bool heroWins = ambientRng_.chance(h.money > 50000 ? 0.6 : 0.4);
+  if (heroWins) {
+    out.narrative = "The judge granted me custody.";
+    out.happiness += 4;
+  } else {
+    out.narrative = "The judge granted custody to " + (ex.name.empty() ? std::string("my ex") : ex.name) + ".";
+    out.happiness -= 8;
+  }
+  return true;
+}
 }  // namespace bl
