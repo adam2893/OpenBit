@@ -1538,4 +1538,49 @@ bool Sim::crashoutYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness -= 4;
   return true;
 }
+
+// ScenarioPrayWealth (REPORT.en.md 216): the BitLife devs answer a prayer with money.
+//
+// a16_pray-wealth-scenarios-enc: Scenario, Log Version, Positive, Negative, Commonness.
+// Both strings carry '<value>' and '<circumstance-public>'; the first is the amount this
+// card rolls, the second is the captured public-scene pool (report 38), so the value is
+// substituted here rather than in the resolver -- one roll must drive the sentence and the
+// ledger at once (REPORT.en.md 216).
+bool Sim::prayWealthYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_pray-wealth-scenarios-enc")) return false;
+  if (h.age < 6) return false;
+  if (forcedChoice < 0 && ambientRng_.below(40) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_pray-wealth-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const bool positive = t.flag(row, "Positive");
+  const long long amount = 50 + static_cast<long long>(ambientRng_.below(20000));
+  auto fill = [&](std::string s) {
+    const std::string v = money(amount);
+    for (size_t at = s.find("<value>"); at != std::string::npos; at = s.find("<value>", at)) {
+      s.replace(at, 7, v);
+      at += v.size();
+    }
+    return resolve(s);
+  };
+  out.table = "a16_pray-wealth-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(fill(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty()) out.narrative = spyUpperFirst(fill(log));
+  if (positive) {
+    h.money += amount;
+  } else if (h.money > amount) {
+    h.money -= amount;
+  }
+  return true;
+}
 }  // namespace bl

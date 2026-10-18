@@ -234,6 +234,8 @@ class Sim {
   bool drugOfferYear(Life& life, AgeUp& out, int forcedChoice);
   // A famous hero loses it, REPORT.en.md 215.
   bool crashoutYear(Life& life, AgeUp& out, int forcedChoice);
+  // A prayer answered with money, REPORT.en.md 216.
+  bool prayWealthYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.
