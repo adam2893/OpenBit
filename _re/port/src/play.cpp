@@ -31,18 +31,42 @@ struct Probe {
   std::string body;
   std::string cta;
   std::string choice;         // the button this run took, empty for a report card
+  std::vector<std::string> options;   // every label the row carries (REPORT.en.md 233)
   std::string narrative;
   std::string extra;          // the year's own log lines, \n separated
   int karma = 0, discipline = 0, happiness = 0, health = 0, smarts = 0, looks = 0;
   int age = 0;
 };
 
+// The row's labels travel as one field: \x1e between them, no card text carries it.
+std::string joinOptions(const std::vector<std::string>& v) {
+  std::string out;
+  for (size_t i = 0; i < v.size(); ++i) {
+    if (i) out.push_back('\x1e');
+    out += v[i];
+  }
+  return out;
+}
+
+std::vector<std::string> splitOptions(const std::string& s) {
+  std::vector<std::string> out;
+  size_t i = 0;
+  while (i <= s.size()) {
+    const size_t j = s.find('\x1e', i);
+    if (j == std::string::npos) { out.push_back(s.substr(i)); break; }
+    out.push_back(s.substr(i, j - i));
+    i = j + 1;
+  }
+  if (!out.empty() && out.back().empty()) out.pop_back();
+  return out;
+}
+
 // The child's one record. \x1f separates fields; no card text contains it.
 std::string encode(const Probe& p) {
   std::ostringstream s;
   s << (p.got ? 1 : 0) << '\x1f' << p.table << '\x1f' << p.row << '\x1f' << p.title
     << '\x1f' << p.body << '\x1f' << p.cta << '\x1f' << p.choice << '\x1f'
-    << p.narrative << '\x1f' << p.extra << '\x1f' << p.karma << '\x1f' << p.discipline
+    << p.narrative << '\x1f' << joinOptions(p.options) << '\x1f' << p.extra << '\x1f' << p.karma << '\x1f' << p.discipline
     << '\x1f' << p.happiness << '\x1f' << p.health << '\x1f' << p.smarts << '\x1f'
     << p.looks << '\x1f' << p.age;
   return s.str();
@@ -58,17 +82,17 @@ Probe decode(const std::string& blob) {
     f.push_back(blob.substr(i, j - i));
     i = j + 1;
   }
-  if (f.size() < 16) return p;
+  if (f.size() < 17) return p;
   p.got = f[0] == "1";
   p.table = f[1]; p.row = f[2]; p.title = f[3]; p.body = f[4]; p.cta = f[5];
-  p.choice = f[6]; p.narrative = f[7]; p.extra = f[8];
-  p.karma = std::atoi(f[9].c_str());
-  p.discipline = std::atoi(f[10].c_str());
-  p.happiness = std::atoi(f[11].c_str());
-  p.health = std::atoi(f[12].c_str());
-  p.smarts = std::atoi(f[13].c_str());
-  p.looks = std::atoi(f[14].c_str());
-  p.age = std::atoi(f[15].c_str());
+  p.choice = f[6]; p.narrative = f[7]; p.options = splitOptions(f[8]); p.extra = f[9];
+  p.karma = std::atoi(f[10].c_str());
+  p.discipline = std::atoi(f[11].c_str());
+  p.happiness = std::atoi(f[12].c_str());
+  p.health = std::atoi(f[13].c_str());
+  p.smarts = std::atoi(f[14].c_str());
+  p.looks = std::atoi(f[15].c_str());
+  p.age = std::atoi(f[16].c_str());
   return p;
 }
 
@@ -94,6 +118,7 @@ bool probeYear(Sim& sim, Life& life, int forced, Probe* out) {
       p.body = ev.body;
       p.cta = ev.cta;
       p.choice = ev.choice;
+      p.options = ev.options;
       p.narrative = ev.narrative;
       for (size_t k = 0; k < ev.extra.size(); ++k) {
         if (k) p.extra += '\n';
@@ -206,6 +231,14 @@ int runPlayMode(const std::string& reDir, const ScriptSpec& spec) {
     std::vector<std::string> labels;
     if (base.choice.empty()) {
       std::cout << "  [enter] continue\n";
+    } else if (base.options.size() >= 2) {
+      // The row itself says what its buttons are (REPORT.en.md 233), so the menu no
+      // longer depends on a probe that consumes a different RNG path.
+      for (size_t i = 0; i < base.options.size(); ++i)
+        std::cout << "  [" << (i + 1) << "] " << base.options[i]
+                  << (i == 0 ? "   (the game's own pick)" : "") << "\n";
+      lanes.push_back(-1);
+      labels = base.options;
     } else {
       lanes.push_back(-1);
       labels.push_back(base.choice);

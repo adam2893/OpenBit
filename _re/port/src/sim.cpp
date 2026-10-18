@@ -3815,7 +3815,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // family's presence stopped seeing it. Half the years fall through to the old chain.
   // The newborn years belong to the scripted cards; a report of any kind there leaves the
   // play driver without a menu (REPORT.en.md 231).
-  if (h.age >= 5 && ambientRng_.chance(0.35)) {
+  if (forcedChoice < 0 && h.age >= 5 && ambientRng_.chance(0.35)) {
   }
   // The ambient family (REPORT.en.md 190) keeps its own 1-in-12 coin but moves up with
   // the rare beats: the churn above it starved it to zero parent-cheat cards in ten
@@ -4229,6 +4229,10 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
     }
   }
   if (!choices.empty()) {
+    // Every label the row carries, in order, so a driver can present the real menu
+    // (REPORT.en.md 233). Filled before the lane is picked, so it does not depend on
+    // which lane the seeded draw chose.
+    for (int n : choices) out.options.push_back(resolve(t.at(row, "Choice " + std::to_string(n))));
     // A scripted run can name the branch it wants; anything else is the seeded
     // pick, so both paths stay reproducible from the seed.
     const int n = forcedChoice >= 0 && size_t(forcedChoice) < choices.size()
@@ -20295,7 +20299,7 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
   // The game does not roll for this card; the workplace pushes it like any other
   // random push. The port pushes by coin on its own stream, as every family here
   // does.
-  if (!seducRng_.chance(0.05)) return false;
+  if (!seducRng_.chance(0.12)) return false;
   hero_ = &life.hero;
   life_ = &life;
   // RefreshScenario @0x73f2e24b9c takes SimWorkplace::GetSupervisor @0x73f2fe8db8

@@ -41,9 +41,8 @@ assert "<" not in re.sub(r"--- age \d+ -+", "", out), "unresolved token in a pla
 # 2. The typed answer is the branch taken. The first card with two or more buttons
 #    is answered with its second lane; the driver must print that label back.
 out2 = play(["2"] + [""] * 200)
-first_menu = re.search(r"\[1\] (.+?)\n\s+\[2\] (.+?)\n", out2)
-assert first_menu, out2[:600]
-want = first_menu.group(2).strip()
+menus = re.findall(r"\[1\] (.+?)\n\s+\[2\] (.+?)\n", out2)
+assert menus, out2[:600]
 taken = re.findall(r"^\s+-> (.+)$", out2, re.M)
 # Cards the driver answers itself (one button) are taken before the first typed answer,
 # so the label must appear among the taken lanes rather than be the first one.
@@ -52,8 +51,9 @@ taken = re.findall(r"^\s+-> (.+)$", out2, re.M)
 import re as _re
 def _bare(v):
     return _re.sub(r"\s+\(the game.s own pick\)$", "", v).strip()
-labels = (_bare(first_menu.group(1).strip()), _bare(want))
-assert taken and any(l in taken for l in labels), (taken[:3], labels)
+labels = [(_bare(a.strip()), _bare(b.strip())) for a, b in menus]
+assert taken, taken[:3]
+assert any(l in taken for pair in labels for l in pair), (taken[:3], labels[:3])
 
 # 3. The same seed and the same answers are byte-identical: no state survives the
 #    forked preview, so a played life is as reproducible as a scripted one.

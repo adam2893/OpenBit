@@ -116,7 +116,7 @@ bool Sim::loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice < 0 && !h.relationshipOn) return false;
   if (h.loverName.empty()) return false;
   if (h.age < 18) return false;
-  if (forcedChoice < 0 && loverRng_.below(16) != 0) return false;
+  if (forcedChoice < 0 && loverRng_.below(7) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const std::string word = h.loverStatus == "married"
@@ -994,6 +994,8 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::jobTerminationYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.job.empty()) return false;
+  // A student is not employed and cannot be let go (REPORT.en.md 232).
+  if (h.job == "Student") return false;
   if (!ensureTable("a16_termination-scenarios-enc")) return false;
   if (forcedChoice < 0 && ambientRng_.below(28) != 0) return false;
   hero_ = &h;

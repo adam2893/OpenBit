@@ -53,6 +53,11 @@ struct AgeUp {
   // Fame is a float on the hero but the cards move it in whole points; the runner
   // applies and clamps it like the other stats (REPORT.en.md 228).
   int fame = 0;
+  // The card's buttons, when the row has more than one (REPORT.en.md 233). The engine
+  // still picks one lane for the script; the play driver needs the labels to show a
+  // real menu, and probing for them changed the RNG stream (which is why play had
+  // stopped offering any).
+  std::vector<std::string> options;
 };
 
 // One non-hero family member. The yearly lifecycle lines name these people
