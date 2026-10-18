@@ -1204,6 +1204,9 @@ bool Sim::alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
 // skipped rather than guessed at.
 bool Sim::surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
+  // A report card must not take the newborn years: the play driver needs the first event
+  // of a life to carry choices (REPORT.en.md 231).
+  if (h.age < 10) return false;
   if (!ensureTable("a16_surrogate-rejections-enc")) return false;
   if (forcedChoice < 0 && ambientRng_.below(40) != 0) return false;
   hero_ = &h;
@@ -1234,6 +1237,7 @@ bool Sim::surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
 // the hero is locked up, and 'Was Dead' while the port's death flag is clear.
 bool Sim::timeMachineYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
+  if (h.age < 12) return false;
   if (!ensureTable("a16_time-machine-scenarios-enc")) return false;
   if (forcedChoice < 0 && ambientRng_.below(55) != 0) return false;
   hero_ = &h;

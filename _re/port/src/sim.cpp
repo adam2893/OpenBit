@@ -3813,7 +3813,9 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // The block is gated by one shared coin (REPORT.en.md 227): ahead of everything it takes
   // the year from whatever would have had it, and two probes that assert a specific
   // family's presence stopped seeing it. Half the years fall through to the old chain.
-  if (ambientRng_.chance(0.35)) {
+  // The newborn years belong to the scripted cards; a report of any kind there leaves the
+  // play driver without a menu (REPORT.en.md 231).
+  if (h.age >= 5 && ambientRng_.chance(0.35)) {
   }
   // The ambient family (REPORT.en.md 190) keeps its own 1-in-12 coin but moves up with
   // the rare beats: the churn above it starved it to zero parent-cheat cards in ten

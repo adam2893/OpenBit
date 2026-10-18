@@ -23448,6 +23448,33 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 231. The newborn years are not the block's
+
+`test_play` went red because the play driver's first menu had vanished: a report card
+was claiming age 1, and a report has no buttons. The rare block now starts at age 5, and
+the two report-only cards with no age gate of their own (`surrogateRejection`,
+`timeMachine`) got one.
+
+That fixed the driver's first *card* but not the assertion: the first card of a life is
+now a one-button milestone (`Mouth`), so `test_play`'s search for the first two-button
+menu finds nothing within its 600-character window.
+
+### 231.1 State of the suite at the end of this round
+
+```
+green   every card test added in this sprint (14 files)
+green   tools/test_residue.py
+green   test_lightning, test_paparazzi, test_parent_cheat (after §228-229)
+red     test_lover_argues     the report never rode the same age as its hookup
+red     test_lover_counseling only the refuse lane came up
+red     test_play            no two-button menu in the first life window
+red     idres.py (probe)      /tmp/meta_lits.txt, lost with /tmp
+```
+
+All three red tests are dispatch-order sensitivity, which is §230's finding: the port
+orders its cards by hand and has no policy to order them by. Adding the twelve cards of
+this sprint moved the sequence enough to expose it.
+
 ## 230. What is still red, and why it cannot be tuned blind
 
 The full sweep after §229 leaves two legacy tests failing:
