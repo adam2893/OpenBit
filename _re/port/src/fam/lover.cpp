@@ -1254,4 +1254,85 @@ bool Sim::timeMachineYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   return true;
 }
+// Two more tables, both blocked only on a token the port can answer (REPORT 209).
+//
+// a16_arrest-scenarios-enc: Scenario, Min/Max Attitude, Hero Gender, Serious Offense
+// Only. The text carries '<insult>' (the §138 pool) and '<numN-M>', which the resolver
+// already draws. The Attitude gate belongs to a stat the port does not have, so rows
+// are filtered by gender and by the serious-offence flag alone.
+bool Sim::arrestScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_arrest-scenarios-enc")) return false;
+  if (h.age < 12) return false;
+  if (forcedChoice < 0 && ambientRng_.below(34) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_arrest-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    const std::string g = trim(t.at(r, "Hero Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    if (t.flag(r, "Serious Offense Only") && !h.inPrison) continue;
+    if (resolve(trim(t.at(r, "Scenario"))).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_arrest-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  return true;
+}
+
+// a16_child-pressure-rejections-enc: Feedback Scenario, Log Version, Min/Max Age,
+// Commonness. '<child>' is the child who refused and '<him/her>' that child, so the
+// pronoun pair is set from the child's own gender.
+bool Sim::childPressureRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (life.children.empty()) return false;
+  if (!ensureTable("a16_child-pressure-rejections-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  Child* kid = nullptr;
+  for (Child& c : life.children) {
+    if (!c.alive || c.movedOut || c.city != h.city) continue;
+    kid = &c;
+    break;
+  }
+  if (kid == nullptr) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_child-pressure-rejections-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && kid->age < mn) continue;
+    if (mx > 0 && kid->age > mx) continue;
+    if (trim(t.at(r, "Feedback Scenario")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const std::string name = kid->name.empty() ? std::string("the child") : kid->name;
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = kid->female;
+  auto fill = [&](std::string s) {
+    for (size_t at = s.find("<child>"); at != std::string::npos;
+         at = s.find("<child>", at)) {
+      s.replace(at, 7, name);
+      at += name.size();
+    }
+    return resolve(s);
+  };
+  out.table = "a16_child-pressure-rejections-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(fill(trim(t.at(row, "Feedback Scenario"))));
+  out.narrative = spyUpperFirst(fill(trim(t.at(row, "Log Version"))));
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  return true;
+}
 }  // namespace bl
