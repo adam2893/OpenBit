@@ -69,7 +69,11 @@ for seed in range(1, 41):
             poses += 1
         elif fame_delta == -4:
             covers += 1
-    want = min(100.0, max(0.0, 80.0 + 8 * poses - 4 * covers))
+    # Any other card that reports a fame delta moves the score too (REPORT.en.md 228),
+    # so the expectation adds every non-paparazzi fame delta in the same life.
+    other = sum(int((e.get("deltas") or {}).get("fame") or 0)
+                for e in doc["events"] if (e.get("table") or "") != TABLE)
+    want = min(100.0, max(0.0, 80.0 + 8 * poses - 4 * covers + other))
     assert abs(doc["final"]["fame"] - want) < 1e-3, (seed, doc["final"]["fame"], want)
 
 assert cards, "no paparazzi card in 40 famous lives"

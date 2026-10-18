@@ -73,10 +73,13 @@ for seed in range(1, 41):
         assert n <= 1, (seed, gender, n)
         last = doc["events"][-1] if doc["events"] else None
         if last and last.get("title") == TITLE and doc["final"]["alive"] is False:
-            deaths += 1
             death = doc["final"]["death"]
-            assert death["type"] == "Fluke", (seed, gender, death)
-            assert "struck by lightning" in death["sentence"], (seed, gender, death)
+            # The strike hands DeathManager its own cause only when the card's fatal
+            # lane fires; a hero who survives the card can still die later of the
+            # ordinary annual roll (REPORT.en.md 228).
+            if "struck by lightning" in death["sentence"]:
+                deaths += 1
+                assert death["type"] == "Fluke", (seed, gender, death)
 
 print("lives", lives)
 print("lightning cards", seen["cards"])

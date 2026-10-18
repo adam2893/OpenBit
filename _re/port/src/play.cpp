@@ -134,6 +134,7 @@ void applyStats(Hero& h, const AgeUp& ev) {
   h.health += ev.health;
   h.smarts += ev.smarts;
   h.looks += ev.looks;
+  h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(ev.fame)));
   int* stats[] = {&h.karma, &h.discipline, &h.happiness, &h.health, &h.smarts, &h.looks};
   for (int* s : stats) {
     if (*s < 0) *s = 0;

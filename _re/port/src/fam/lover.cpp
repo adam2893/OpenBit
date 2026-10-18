@@ -742,7 +742,9 @@ bool Sim::parentCheatYear(Life& life, AgeUp& out, int forcedChoice) {
     parent = &p;
     break;
   }
-  if (parent == nullptr) return false;
+  if (parent == nullptr) {
+    return false;
+  }
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_parent-cheat-scenarios-enc");
@@ -1533,8 +1535,9 @@ bool Sim::crashoutYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = spyUpperFirst(resolve(log));
   }
   // The row's own Fame Impact, in the game's integer scale, through ImpactFame.
-  const double impact = t.num(row, "Fame Impact");
-  if (impact != 0.0) h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(impact)));
+  // The row's own Fame Impact, reported as a delta so the runner applies and clamps
+  // it like every other stat (REPORT.en.md 228).
+  out.fame = pointsForImpact(int(t.num(row, "Fame Impact")));
   out.happiness -= 4;
   return true;
 }

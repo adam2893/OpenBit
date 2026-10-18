@@ -3813,7 +3813,18 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // The block is gated by one shared coin (REPORT.en.md 227): ahead of everything it takes
   // the year from whatever would have had it, and two probes that assert a specific
   // family's presence stopped seeing it. Half the years fall through to the old chain.
-  if (ambientRng_.chance(0.5)) {
+  if (ambientRng_.chance(0.35)) {
+  }
+  // The ambient family (REPORT.en.md 190) keeps its own 1-in-12 coin but moves up with
+  // the rare beats: the churn above it starved it to zero parent-cheat cards in ten
+  // sixteen-year lives (REPORT.en.md 229).
+  if (aircraftDangerYear(life, out, forcedChoice)) return true;
+  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
+  if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
+  if (custodyCaseYear(life, out, forcedChoice)) return true;
+  if (homePurchaseYear(life, out, forcedChoice)) return true;
+  if (vehiclePurchaseYear(life, out, forcedChoice)) return true;
+  if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
   if (surrogateRejectionYear(life, out, forcedChoice)) return true;
   if (timeMachineYear(life, out, forcedChoice)) return true;
   if (arrestScenarioYear(life, out, forcedChoice)) return true;
@@ -3824,18 +3835,11 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (drugOfferYear(life, out, forcedChoice)) return true;
   if (crashoutYear(life, out, forcedChoice)) return true;
   if (prayWealthYear(life, out, forcedChoice)) return true;
-  if (sexualityYear(life, out, forcedChoice)) return true;
-  if (homePurchaseYear(life, out, forcedChoice)) return true;
-  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
-  if (vehiclePurchaseYear(life, out, forcedChoice)) return true;
-  if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
-  if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
-  if (aircraftDangerYear(life, out, forcedChoice)) return true;
-  if (custodyCaseYear(life, out, forcedChoice)) return true;
   if (prayAssetYear(life, out, forcedChoice)) return true;
+  if (sexualityYear(life, out, forcedChoice)) return true;
   if (onlyfansStartYear(life, out, forcedChoice)) return true;
   if (onlyfansTipYear(life, out, forcedChoice)) return true;
-  }
+  if (ambientYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
@@ -4000,7 +4004,6 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (childDisciplineYear(life, out, forcedChoice)) return true;
   if (childDemandsYear(life, out, forcedChoice)) return true;
   // One ambient card a year at most, chosen by weight (REPORT.en.md 190).
-  if (ambientYear(life, out, forcedChoice)) return true;
   if (genderIdentityYear(life, out, forcedChoice)) return true;
   if (paranormalPhenomenaYear(life, out, forcedChoice)) return true;
   if (adoptionScenarioYear(life, out, forcedChoice)) return true;
