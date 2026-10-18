@@ -2016,4 +2016,76 @@ bool Sim::prayAssetYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness += 3;
   return true;
 }
+
+// ScenarioOnlyFans (REPORT.en.md 225): a channel, a tip, and a thank-you.
+//
+// The port had no channel at all, so this is the smallest one the data asks for:
+// a16_social-media-channels-onlyfans-tip-responses-enc is the only card the channel owns
+// (seven rows, each 'Send <him/her> a ... video'), and every one of them needs a fan to
+// send it to. The fan is a random person, so '<him/her>' is set from that person's own
+// gender, and the tip is what the response earns.
+bool Sim::onlyfansStartYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.onlyfans || h.age < 18) return false;
+  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  out.table = "a16_social-media-channels-enc";
+  out.title = "OnlyFans";
+  out.body = "A friend tells you that people are making real money on OnlyFans.";
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(ambientRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Start a channel";
+    h.onlyfans = true;
+    h.onlyfansFans = 1 + int(ambientRng_.below(20));
+    out.narrative = "I started an OnlyFans channel.";
+    out.happiness += 2;
+  } else {
+    out.choice = "Not for me";
+    out.narrative = "I passed on the idea.";
+  }
+  return true;
+}
+
+bool Sim::onlyfansTipYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.onlyfans || h.onlyfansFans <= 0) return false;
+  if (!ensureTable("a16_social-media-channels-onlyfans-tip-responses-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_social-media-channels-onlyfans-tip-responses-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string option = trim(t.at(r, "Option"));
+    if (option.empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  const bool fanFemale = ambientRng_.chance(0.5);
+  const std::string fan = drawFirstName(fanFemale) + " " + drawSurname();
+  const bool savedSet = pronounOtherSet_;
+  const bool savedFemale = pronounOtherFemale_;
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = fanFemale;
+  out.table = "a16_social-media-channels-onlyfans-tip-responses-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "OnlyFans";
+  out.body = fan + " sent you a tip. How do you say thanks?";
+  out.cta = "Send a video";
+  out.choice = spyUpperFirst(resolve(trim(t.at(row, "Option"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty()) {
+    const std::string resolved = resolve(log);
+    if (resolved.find('<') == std::string::npos) out.narrative = spyUpperFirst(resolved);
+  }
+  pronounOtherSet_ = savedSet;
+  pronounOtherFemale_ = savedFemale;
+  // The tip itself: the fan's money, scaled by how many subscribers the channel has.
+  const long long tip = 5 + static_cast<long long>(ambientRng_.below(60)) * (1 + h.onlyfansFans / 10);
+  h.money += tip;
+  out.happiness += 1;
+  return true;
+}
 }  // namespace bl

@@ -255,6 +255,9 @@ class Sim {
   bool custodyTrialYear(Life& life, AgeUp& out, int forcedChoice);
   // A prize asset, REPORT.en.md 224.
   bool prayAssetYear(Life& life, AgeUp& out, int forcedChoice);
+  // The OnlyFans channel, REPORT.en.md 225.
+  bool onlyfansStartYear(Life& life, AgeUp& out, int forcedChoice);
+  bool onlyfansTipYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.

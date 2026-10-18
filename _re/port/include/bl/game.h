@@ -595,6 +595,10 @@ struct Hero {
   std::string home;
   // The aircraft the hero owns (REPORT.en.md 222), 'Make Model' from a16_aircraft-enc.
   std::string aircraft;
+  // An OnlyFans channel (REPORT.en.md 225): the subscribers it has, and whether the
+  // channel exists at all. The tip-response table is the only card the channel owns.
+  bool onlyfans = false;
+  int onlyfansFans = 0;
   int loverCraziness = 0;
   // The gift (REPORT.en.md 89) needs the partner's pride as well as her
   // craziness: every refusal row in the two property pools is flagged one or

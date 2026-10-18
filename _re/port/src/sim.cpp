@@ -1362,6 +1362,8 @@ bool Sim::load(std::string* error) {
       "a16_custody-child-argument-enc",
       // A prize asset (224).
       "a16_pray-asset-scenarios-enc",
+      // The OnlyFans tip response (225).
+      "a16_social-media-channels-onlyfans-tip-responses-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -2573,6 +2575,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (token == "aircraft" || token == "house" || token == "vehicle" ||
                token == "drug" || token == "celebrity" || token == "celebrity-male" ||
                token == "celebrity-female" || token == "random-person" || token == "asset" ||
+               token == "friend" || token == "friend-possessive" ||
                token == "random-person-indefinite") {
       const std::string v = poolToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
@@ -3825,6 +3828,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (aircraftDangerYear(life, out, forcedChoice)) return true;
   if (custodyCaseYear(life, out, forcedChoice)) return true;
   if (prayAssetYear(life, out, forcedChoice)) return true;
+  if (onlyfansStartYear(life, out, forcedChoice)) return true;
+  if (onlyfansTipYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
@@ -16391,6 +16396,13 @@ std::string Sim::poolToken(const std::string& token) {
     if (rows.empty()) return std::string();
     const size_t r = rows[ambientRng_.below(uint32_t(rows.size()))];
     return trim(t.at(r, "First Name")) + " " + trim(t.at(r, "Last Name"));
+  }
+  if (token == "friend" || token == "friend-possessive") {
+    // The port keeps no friend roster, so a friend is an actor like any other: one
+    // name from the same generator the hero's own family uses (REPORT.en.md 226).
+    const bool female = ambientRng_.chance(0.5);
+    const std::string name = drawFirstName(female) + " " + drawSurname();
+    return token == "friend-possessive" ? name + "'s" : name;
   }
   if (token == "random-person" || token == "random-person-indefinite") {
     const bool female = ambientRng_.chance(0.5);
