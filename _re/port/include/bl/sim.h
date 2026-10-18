@@ -226,6 +226,9 @@ class Sim {
   bool loverStopsBirthControlYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner's argue report, REPORT.en.md 153.
   bool loverArguesYear(Life& life, AgeUp& out, int forcedChoice);
+  // Two report cards with no entity tokens, REPORT.en.md 208.
+  bool surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice);
+  bool timeMachineYear(Life& life, AgeUp& out, int forcedChoice);
   // A drink is offered, REPORT.en.md 204.
   bool alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero trolls back, REPORT.en.md 203.

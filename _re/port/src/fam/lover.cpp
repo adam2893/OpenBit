@@ -978,7 +978,13 @@ bool Sim::boostYear(Life& life, AgeUp& out, int forcedChoice) {
   // A field that still holds a token after resolution means the row needs an actor this
   // card does not have; the card declines rather than printing the token (REPORT 206).
   for (const std::string* field : {&out.body, &out.choice, &out.narrative}) {
-    if (field->find('<') != std::string::npos) return false;
+    if (field->find('<') != std::string::npos) {
+      // A card that writes and then declines must not leave its strings behind: the next
+      // card in the chain would inherit the button and the table would not match it
+      // (REPORT.en.md 208).
+      out = AgeUp();
+      return false;
+    }
   }
   return true;
 }
@@ -1187,6 +1193,65 @@ bool Sim::alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = "I turned " + singular + " down.";
     out.discipline = pointsForImpact(1);
   }
+  return true;
+}
+// Two report cards from tables with no entity tokens (REPORT.en.md 208).
+//
+// a16_surrogate-rejections-enc: Scenario, Gender, Gay, Min/Max Age, Single. A row
+// flagged Gay or Single needs a state the port does not model, so those rows are
+// skipped rather than guessed at.
+bool Sim::surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_surrogate-rejections-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(40) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_surrogate-rejections-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    if (t.flag(r, "Gay") || t.flag(r, "Single")) continue;
+    const std::string g = trim(t.at(r, "Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    const double mn = t.num(r, "Min Age");
+    const double mx = t.num(r, "Max Age");
+    if (mn > 0 && h.age < mn) continue;
+    if (mx > 0 && h.age > mx) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_surrogate-rejections-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  return true;
+}
+
+// a16_time-machine-scenarios-enc: Scenario, Min Age, Prison, Was Dead. A report for
+// a hero the machine has already visited: the Prison flag only offers itself while
+// the hero is locked up, and 'Was Dead' while the port's death flag is clear.
+bool Sim::timeMachineYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_time-machine-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(55) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_time-machine-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    if (t.flag(r, "Prison") && !h.inPrison) continue;
+    if (!t.flag(r, "Prison") && h.inPrison) continue;
+    if (t.flag(r, "Was Dead")) continue;   // the port never revives a hero
+    const double mn = t.num(r, "Min Age");
+    if (mn > 0 && h.age < mn) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_time-machine-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
   return true;
 }
 }  // namespace bl

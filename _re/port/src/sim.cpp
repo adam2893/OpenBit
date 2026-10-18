@@ -1334,6 +1334,9 @@ bool Sim::load(std::string* error) {
       // A drink is offered; '<singular>' comes from a16_alcohol-enc (204).
       "a16_alcohol-scenarios-enc",
       "a16_alcohol-enc",
+      // Two report tables with no entity tokens (208).
+      "a16_surrogate-rejections-enc",
+      "a16_time-machine-scenarios-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -3940,6 +3943,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (moneyRequestRejectionYear(life, out, forcedChoice)) return true;
   if (trollOutboundYear(life, out, forcedChoice)) return true;
   if (alcoholScenarioYear(life, out, forcedChoice)) return true;
+  if (surrogateRejectionYear(life, out, forcedChoice)) return true;
+  if (timeMachineYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;
