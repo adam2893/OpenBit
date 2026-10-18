@@ -23448,6 +23448,57 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 228. Fame is a reported delta
+
+`paparazzi`'s test computes the hero's final fame from the cards it saw, and it broke when
+`crashout` (§215) began moving fame behind its back: 94 where the arithmetic said 96.
+
+The fix is the idiom the rest of the port already uses -- a card reports what it changed
+and the runner applies it:
+
+```cpp
+int fame = 0;   // AgeUp
+out.fame = pointsForImpact(int(t.num(row, "Fame Impact")));   // the card
+h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(ev.fame)));   // the runner
+```
+
+`"fame"` is now part of every event's `deltas`, so a test can add up what actually moved.
+
+## 229. The blocks share the year
+
+§227's shared coin fixed the starvation and cost the legacy families their share. Three
+corrections, each measured:
+
+1. **The gate is 0.35**, not 0.5: the block takes a third of the years, not half.
+2. **The state-dependent cards run first.** An aircraft-danger card cannot fire without an
+   aircraft, and *the purchase* was queued ahead of it, so it was buying a plane in the
+   same year it would have crashed one. Fixed by ordering, and measured:
+
+```
+                    before      after
+aircraft bought     5 / 30      18 / 30
+aircraft danger     0 / 30      16 / 30
+```
+
+3. **`ambientYear` moved up** beside the block. Its own 1-in-12 coin was fine; what it
+   needed was to be reached. The parent-cheat card went from **0 cards in 60 lives** to 7:
+
+```
+test_parent_cheat   cards 7   ok
+test_lightning      ok (a lightning death is asserted only when the sentence says so)
+test_lover_argues   ok (5 reports, 2 riding the hookup's own age)
+test_paparazzi      ok (the expectation adds every other card's fame delta)
+```
+
+### 229.1 The bench, one more time
+
+MuMu was restarted, and the harness is live again -- but by **attach**, not spawn: the
+spawned instance dies at startup now (the Play-store stubs), so `blh_attach.py` launches
+the app with `monkey` and attaches to whatever pid it gets. A `fresh_trace` against that
+instance returns `ages=[0] logs=0`, because nothing has played a life and the harness has
+no op to start one. **The bench is still unavailable this session**, and no claim in
+§208-§229 has been checked against the game's own trace.
+
 ## 227. The block's own coin, and what it costs
 
 Running the rare beats ahead of everything fixed the starvation and broke balance: they
