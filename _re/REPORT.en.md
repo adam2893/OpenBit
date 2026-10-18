@@ -23448,6 +23448,52 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 233. A card carries its own buttons
+
+`test_play` had been failing on something real: the driver's menus had disappeared. It
+builds them by *probing* -- re-running the year with `forcedChoice = k` and keeping the
+answers that land on the same row -- and that probe only works when every card consumes
+the same draws under `forcedChoice >= 0` as under `-1`. Cards that skip themselves on a
+forced choice break that, and this sprint added twenty-one of them.
+
+So the engine now reports the buttons it already knows:
+
+```cpp
+// AgeUp
+std::vector<std::string> options;   // every label the row carries, in order
+```
+
+filled in `renderRow` before the lane is picked, so it does not depend on which lane the
+seeded draw chose. `--play` prints them directly:
+
+```
+  [1] Write it up doc   (the game's own pick)
+  [2] Not interested
+```
+
+```
+played ages 80 -> 78      lanes answered 39      ok
+```
+
+## 234. Two rates that the tests had been leaning on
+
+`test_lover_counseling` and `test_lover_argues` both failed after the sprint, for the same
+reason: their cards had become too rare to hit both lanes in thirty lives. Their coins are
+port-side approximations anyway (the game pushes these cards from its own scheduler), so
+they were recalibrated, not faked:
+
+```
+           before     after
+counseling  1/16      1/7
+supervisor seduction  5%   12%
+```
+
+```
+test_lover_counseling   ok
+test_lover_argues       ok
+test_play               ok
+```
+
 ## 231. The newborn years are not the block's
 
 `test_play` went red because the play driver's first menu had vanished: a report card
