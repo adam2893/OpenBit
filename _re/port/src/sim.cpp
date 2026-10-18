@@ -3970,6 +3970,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (childBreakItemYear(life, out, forcedChoice)) return true;
   if (newsEventYear(life, out, forcedChoice)) return true;
   if (drugOfferYear(life, out, forcedChoice)) return true;
+  if (crashoutYear(life, out, forcedChoice)) return true;
   if (relationshipYear(life, out, forcedChoice)) return true;
   if (conversationYear(life, out, forcedChoice)) return true;
   if (socialYear(life, out, forcedChoice)) return true;

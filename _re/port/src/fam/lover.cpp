@@ -1499,4 +1499,43 @@ bool Sim::drugOfferYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioCrashout (REPORT.en.md 215): a famous hero loses it in public.
+//
+// a16_crashout-scenario-enc: Severity, Location, Scenario, Magazine Snippet, BitLife
+// Snippet, Log String, Hero Gender, Relatable, Fame Impact. The body's alternatives are
+// the resolver's job; the gate is fame, and the row's Fame Impact is what the card costs.
+bool Sim::crashoutYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_crashout-scenario-enc")) return false;
+  if (h.fame < 40.0f) return false;
+  if (h.age < 16) return false;
+  if (forcedChoice < 0 && ambientRng_.below(22) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_crashout-scenario-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    const std::string g = trim(t.at(r, "Hero Gender"));
+    if (!g.empty() && g != "both" && g != (h.female ? "female" : "male")) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_crashout-scenario-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log String"));
+  if (!log.empty() && resolve(log).find('<') == std::string::npos) {
+    out.narrative = spyUpperFirst(resolve(log));
+  }
+  // The row's own Fame Impact, in the game's integer scale, through ImpactFame.
+  const double impact = t.num(row, "Fame Impact");
+  if (impact != 0.0) h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(impact)));
+  out.happiness -= 4;
+  return true;
+}
 }  // namespace bl
