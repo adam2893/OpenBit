@@ -23411,6 +23411,43 @@ Two rows of the 36 are skipped permanently: their text needs `<musician>` or
               child-break-items (what/who), onlyfans-tip-responses (random-person)
 ```
 
+## 212. The world's news
+
+```
+a16_news-events-enc, 157 rows
+  Type, Scenario
+```
+
+The largest remaining table, and the cheapest: every token in its corpus is
+`<city>` / `<city2>` / `<country>` / `<country2>` / `<country-possessive>` or a
+`<numN-M>` / `<decnumN-M>` range, and the shared resolver answers all of them. The card
+needed a gate and nothing else.
+
+```
+A Category 1 cyclone has made landfall on the shores of Un ...
+United States is suffering from widespread drought as a re ...
+An unforeseen tsunami devastates coastal shores in United ...
+```
+
+```
+cards 11   distinct 10   leftovers 0   residue 0   bench 0 lines
+```
+
+`tools/test_news_events.py` asserts the body carries no token and the event reports no
+residue -- the check that keeps this card from becoming §207's problem again.
+
+### 212.1 The list, after nineteen
+
+```
+28 card-shaped tables identified (§185)
+19 ported
+9 remaining, and each now needs an *actor*, not a token:
+  custody (3-stage chain), pray-asset / pray-wealth (asset, public setting),
+  aircraft-danger (aircraft), drug (drug, public setting), crashout (celebrity),
+  sexuality (celebrity, friend), spouse-house (house), spouse-vehicle (vehicle),
+  onlyfans-tip-responses (random person)
+```
+
 ## 207. The residue class, closed
 
 §206 reported `residue0 49` against a starting 65 and called it unattributed. It is
