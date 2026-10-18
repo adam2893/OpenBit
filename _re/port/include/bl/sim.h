@@ -40,6 +40,10 @@ struct AgeUp {
   // The family lifecycle lines of that same year, written to the log before the
   // scenario's own line ("My mother has been promoted to Tour Operator.").
   std::vector<std::string> extra;
+  // A token that survived resolution, with the table it came from (REPORT 207). The card
+  // has already fired, so the leak is recorded rather than hidden: the residue test
+  // asserts this is empty for every family's spec, and names the table when it is not.
+  std::vector<std::string> residue;
   int karma = 0;          // 'Karma Impact N'
   int discipline = 0;     // 'Discipline Impact N'
   int happiness = 0;      // 'Happiness Impact N'

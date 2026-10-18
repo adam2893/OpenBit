@@ -175,6 +175,12 @@ std::string eventJson(const AgeUp& ev, int age) {
     o << (i ? ",\n" : "\n") << "        " << jsonStr(lines[i]);
   }
   o << (lines.empty() ? "]," : "\n      ],") << "\n";
+  // A token the resolver could not answer, with the table it came from (REPORT 207).
+  o << "      \"residue\": [";
+  for (size_t i = 0; i < ev.residue.size(); ++i) {
+    o << (i ? ",\n" : "\n") << "        " << jsonStr(ev.residue[i]);
+  }
+  o << (ev.residue.empty() ? "],\n" : "\n      ],\n");
   // The +N shorthand in the harness spec is a sign, not JSON: numbers carry it.
   o << "      \"deltas\": {\"karma\":" << ev.karma
     << ",\"discipline\":" << ev.discipline

@@ -3658,6 +3658,25 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // The family lines go in front of whatever the card wrote, which is the order
   // the game logs them in.
   ev.extra.insert(ev.extra.begin(), familyLines.begin(), familyLines.end());
+  // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
+  // rows in several ways and 367 call sites touch a table cell; this pass is the single
+  // place that guarantees no '<token>' reaches a log line, and the single place that
+  // records the ones resolution could not answer.
+  const auto sweep = [&](std::string& s) {
+    if (s.find('<') == std::string::npos) return;
+    s = resolve(s);
+    const size_t at = s.find('<');
+    if (at == std::string::npos) return;
+    const size_t close = s.find('>', at);
+    const std::string token = close == std::string::npos ? s.substr(at) : s.substr(at, close - at + 1);
+    ev.residue.push_back((ev.table.empty() ? std::string("-") : ev.table) + " " + token);
+  };
+  sweep(ev.title);
+  sweep(ev.body);
+  sweep(ev.cta);
+  sweep(ev.choice);
+  sweep(ev.narrative);
+  for (std::string& line : ev.extra) sweep(line);
   out = ev;
   return got;
 }
