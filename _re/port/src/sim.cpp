@@ -1360,6 +1360,8 @@ bool Sim::load(std::string* error) {
       "a16_custody-case-enc",
       "a16_custody-ex-argument-enc",
       "a16_custody-child-argument-enc",
+      // A prize asset (224).
+      "a16_pray-asset-scenarios-enc",
       "a16_surrogate-run-off-scenarios-enc",
       "a16_ex-lover-rekindle-scenarios-enc",         // Scenario,..,Ex Gender,Min/Max Age
       "a16_ex-lover-hate-scenarios-enc",             // Scenario,Hero Gender,Ex Gender
@@ -2570,7 +2572,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
       else { out += v; rbLast_ = v; }
     } else if (token == "aircraft" || token == "house" || token == "vehicle" ||
                token == "drug" || token == "celebrity" || token == "celebrity-male" ||
-               token == "celebrity-female" || token == "random-person" ||
+               token == "celebrity-female" || token == "random-person" || token == "asset" ||
                token == "random-person-indefinite") {
       const std::string v = poolToken(token);
       if (v.empty()) out += text.substr(i, close - i + 1);
@@ -3822,6 +3824,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
   if (aircraftDangerYear(life, out, forcedChoice)) return true;
   if (custodyCaseYear(life, out, forcedChoice)) return true;
+  if (prayAssetYear(life, out, forcedChoice)) return true;
   if (loverBreakUpYear(life, out, forcedChoice)) return true;
   if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
   if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
@@ -16351,6 +16354,16 @@ std::string Sim::poolToken(const std::string& token) {
     const Table& t = tbl("a16_house-types-enc");
     if (t.size() == 0) return std::string();
     return trim(t.at(ambientRng_.below(uint32_t(t.size())), "Type"));
+  }
+  if (token == "asset") {
+    // '<asset>' is a prize object (REPORT.en.md 224): the tables that grant it say
+    // 'a brand-new <asset>', so the pool is the vehicle catalogue and the prize is a car.
+    if (!ensureTable("a16_outdoor-vehicle-enc")) return std::string();
+    const Table& t = tbl("a16_outdoor-vehicle-enc");
+    if (t.size() == 0) return std::string();
+    const size_t r = ambientRng_.below(uint32_t(t.size()));
+    const std::string prize = (trim(t.at(r, "Make")) + " " + trim(t.at(r, "Model"))).substr(0, 64);
+    return prize.empty() ? std::string() : "brand-new " + prize;
   }
   if (token == "vehicle") {
     if (!ensureTable("a16_outdoor-vehicle-enc")) return std::string();

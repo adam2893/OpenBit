@@ -1977,4 +1977,43 @@ bool Sim::custodyTrialYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   return true;
 }
+
+// ScenarioPrayAsset (REPORT.en.md 224): the hero is granted a prize asset.
+//
+// a16_pray-asset-scenarios-enc, six rows, every one of them 'a brand-new <asset>'. The
+// '<asset>' pool is the vehicle catalogue, so the prize is a car and the card hands it
+// over the way the vehicle purchase does. Two rows carry '<friend>', which still has no
+// pool, and are skipped.
+bool Sim::prayAssetYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 8) return false;
+  if (!ensureTable("a16_pray-asset-scenarios-enc")) return false;
+  if (forcedChoice < 0 && ambientRng_.below(45) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const Table& t = tbl("a16_pray-asset-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string text = trim(t.at(r, "Scenario"));
+    if (text.empty()) continue;
+    if (resolve(text).find('<') != std::string::npos) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_pray-asset-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  const std::string log = trim(t.at(row, "Log Version"));
+  if (!log.empty()) {
+    const std::string resolved = resolve(log);
+    if (resolved.find('<') == std::string::npos) out.narrative = spyUpperFirst(resolved);
+  }
+  if (h.outdoorVehicle.empty()) {
+    const std::string prize = poolToken("vehicle");
+    if (!prize.empty()) h.outdoorVehicle = prize;
+  }
+  out.happiness += 3;
+  return true;
+}
 }  // namespace bl

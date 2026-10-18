@@ -253,6 +253,8 @@ class Sim {
   // The custody chain, REPORT.en.md 223.
   bool custodyCaseYear(Life& life, AgeUp& out, int forcedChoice);
   bool custodyTrialYear(Life& life, AgeUp& out, int forcedChoice);
+  // A prize asset, REPORT.en.md 224.
+  bool prayAssetYear(Life& life, AgeUp& out, int forcedChoice);
   // A phone notification that remembers something, REPORT.en.md 210.
   bool notificationBaitYear(Life& life, AgeUp& out, int forcedChoice);
   // Arrest and a child's refusal, REPORT.en.md 209.
