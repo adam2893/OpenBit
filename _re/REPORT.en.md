@@ -23376,6 +23376,45 @@ So the honest count is not "19 blocked" but **"8 blocked on a token the port cou
 11 blocked on an actor"** — and the next round can take the cheapest of the first group
 (`<lover>`) to see whether it unlocks four at once.
 
+## 207. The residue class, closed
+
+§206 reported `residue0 49` against a starting 65 and called it unattributed. It is
+attributed and fixed, in one round.
+
+### 207.1 One sweep, not 367 call sites
+
+`spyUpperFirst(trim(t.at(...)))` appears at 367 table-cell sites and only some of them are
+prose. Rather than audit them, `ageUp` now runs **one final resolve** over every string a
+card produced:
+
+```cpp
+sweep(ev.title); sweep(ev.body); sweep(ev.cta); sweep(ev.choice); sweep(ev.narrative);
+for (std::string& line : ev.extra) sweep(line);
+```
+
+and anything still holding `<...>` after that is recorded in the event's new `residue`
+list as `"<table> <token>"`.
+
+### 207.2 Three findings, in order
+
+1. **Most of the sixteen were rendering misses.** `cultres` 18 -> 0 on the first sweep.
+2. **One was a dangling reference.** `a16_dumb-scenarios-universal-enc` printed `<rb>` in
+   a body whose alternative was drawn for the log; with no antecedent the token has no
+   value, so it is dropped rather than printed.
+3. **What remains is enumerated, not fog.** `tools/test_residue.py` runs 17 family specs
+   x 12 lives and names any offender; today it prints `residue: 0`.
+
+### 207.3 The numbers
+
+```
+battery   probes 68   rc0 67   residue0 65   fails0 68
+residue   49 -> 65, the pre-sprint figure
+bench     0 lines
+```
+
+`aires.py` is still `rc=1` with `residue 0` and `fails -`, which was its state before this
+goal began.
+
 ## 206. Closing measurement
 
 What this goal added, what it verified, and what it did not finish -- read off the
