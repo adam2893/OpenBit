@@ -23448,6 +23448,48 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 220. Vehicle ownership, and the second reaction
+
+```
+a16_outdoor-vehicle-enc         Make, Model, Type, Cost, ...
+a16_spouse-vehicle-reactions-enc Scenario, ..., Cheap/Expensive/Old/Misc Car,
+                                Watercraft, Aircraft, Prepurchase Rejection
+```
+
+The purchase pays the row's own `Cost`, so unlike the house nothing is scaled; the
+reaction skips the watercraft and aircraft rows because the port's purchase is a road
+vehicle, and the prepurchase row because there is no preview.
+
+```
+bought 18 of 30 lives, reactions 11, leftovers 0
+```
+
+## 221. The starved card, measured and fixed
+
+§219 reported that home purchase fired in 1 life of 30 against a 1-in-8 coin, and blamed
+the queue. Moving the block ahead of the *dumb-scenario roulette* was not enough: ahead of
+it still stands the whole card chain -- `relationshipYear`, `conversationYear`,
+`socialYear`, `fightYear`, `casinoYear`, `ambientYear` and thirty more -- and any one of
+them ends the year first.
+
+With the block at the head of the chain, before `loverBreakUpYear`:
+
+```
+            before            after
+home bought   1 / 30 lives     23 / 30
+vehicle       1 / 30 lives     18 / 30
+```
+
+and the tables that were already ported kept their rates:
+
+```
+notification-bait  75      news  47      dumb-scenarios  125      movies  77
+(30 lives, ages 1-45)
+```
+
+The order of the block is now the first thing `dispatchYear` does after the career
+bookkeeping, which is where a *rare beat* belongs: the coin decides, not the queue.
+
 ## 213. The actor layer
 
 The nine remaining card tables were said to need "an actor each". That was six of them,
