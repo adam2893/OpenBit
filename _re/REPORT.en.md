@@ -23376,6 +23376,41 @@ So the honest count is not "19 blocked" but **"8 blocked on a token the port cou
 11 blocked on an actor"** — and the next round can take the cheapest of the first group
 (`<lover>`) to see whether it unlocks four at once.
 
+## 210. A notification that remembers something
+
+```
+a16_notification-bait-enc, 36 rows
+  Index, Author, Notification, Log Version, Hero Min/Max Age, Student, Job,
+  Hero Has/Doesn't Have Lover, Both Parents Alive, Hero Gender, Lover Gender
+```
+
+Every flag is a gate the port can evaluate, so this card needed no actor -- only the rule
+that a row whose text still holds a token is skipped:
+
+```
+You just woke up, and there's a giant snake on top of ...
+Your boss just called you foolhardy and fired you!
+While digging a hole in your yard, you hit somethi ...
+```
+
+```
+cards 35   distinct 22   leftovers 0   residue 0   bench 0 lines
+```
+
+Two rows of the 36 are skipped permanently: their text needs `<musician>` or
+`<random-person-indefinite>`, which are the two tokens the port still cannot answer.
+
+### 210.1 The list
+
+```
+28 card-shaped tables identified (§185)
+17 ported
+11 remaining:  custody (chain), pray-asset, pray-wealth (asset/city), aircraft-danger,
+              drug (drug/circumstance-public), crashout (celebrity), news-events,
+              sexuality (celebrity/friend), spouse-house (house), spouse-vehicle (vehicle),
+              child-break-items (what/who), onlyfans-tip-responses (random-person)
+```
+
 ## 207. The residue class, closed
 
 §206 reported `residue0 49` against a starting 65 and called it unattributed. It is
