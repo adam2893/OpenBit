@@ -23484,6 +23484,38 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 254. The hero graduates
+
+One line from the played life needs no data at all:
+
+```
+age 17  I graduated from high school.
+```
+
+The port wrote that sentence for relatives (their own `age == 18` transition) but never
+for the hero. `schoolMilestoneLines` reads the ladder `schoolLevelFor` already defines
+(elementary 5-10, middle 11-13, high 14-17, college 18-22) and writes the line the first
+year the hero leaves the high-school band, once per life.
+
+```
+40 lives:  40 graduations, each at 18, none in a life that died before 18
+```
+
+### 254.1 What was deliberately left out
+
+The other school lines in the trace name a school that no table carries:
+
+```
+I have been enrolled in elementary school at Spirit Elementary School.
+I started middle school at Allure Middle School.
+I started high school at St. Rian's High School.
+```
+
+`Spirit`, `Allure`, `St. Rian's` are generated (a word pool and a saint pattern), and the
+generator is not in any of the extracted tables, so the port would have to invent names.
+It writes no enrollment line at all rather than a wrong one; that is the same rule as the
+refusal lane in 248.
+
 ## 253. The acceptance bars, written down
 
 `tools/acceptance.py` is the file the earlier conversation promised: the thresholds live

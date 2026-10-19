@@ -332,6 +332,7 @@ class Sim {
   bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
   bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> willLines(Life& life);
+  std::vector<std::string> schoolMilestoneLines(Life& life);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.

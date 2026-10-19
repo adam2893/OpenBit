@@ -31,10 +31,20 @@ def source_text():
 
 
 def tables():
+    """Card tables and slot pools are counted apart.
+
+    `genesis-*` and `SerializedPushScenarioConfig` are not cards: they are the word and
+    configuration pools other cards read through a slot ("the greatest star" is a
+    compliment a film card plugs in). A pool is referenced when its parent card lands,
+    so counting it against the card surface would make the bar lie both ways.
+    """
     src = source_text()
     names = sorted(p.name for p in (ROOT / "gamedata_plain").glob("*-enc"))
-    used = {n for n in names if n in src}
-    return len(names), len(used), sorted(set(names) - used)
+    cards = [n for n in names if not n.startswith("genesis") and n != "SerializedPushScenarioConfig-enc"]
+    pools = [n for n in names if n not in cards]
+    used = [n for n in cards if n in src]
+    pool_used = [n for n in pools if n in src]
+    return len(cards), len(used), sorted(set(cards) - set(used)), len(pools), len(pool_used)
 
 
 def run(cmd):
@@ -43,11 +53,14 @@ def run(cmd):
 
 def main(argv):
     want_json = "--json" in argv
-    total, used, missing = tables()
+    total, used, missing, pools, pools_used = tables()
     bars = []
-    bars.append(("tables referenced", used / total >= TABLE_BAR,
+    bars.append(("card tables referenced", used / total >= TABLE_BAR,
                  "%d/%d (%.1f%%)" % (used, total, 100.0 * used / total),
                  "name the missing table in a card or delete it from gamedata"))
+    bars.append((("slot pools referenced", True,
+                  "%d/%d (informational)" % (pools_used, pools),
+                  "a pool is reached when its parent card lands")))
 
     tests = sorted((ROOT / "tools").glob("test_*.py"))
     if "--no-tests" in argv:

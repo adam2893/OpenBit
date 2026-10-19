@@ -3746,6 +3746,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   const std::vector<std::string> diseaseLines = heroDiseaseLines(life, &diseaseHealthCost);
   const std::vector<std::string> workLines = overtimeLines(life);
   const std::vector<std::string> willLinesOut = willLines(life);
+  const std::vector<std::string> schoolLines = schoolMilestoneLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
   ev.ailmentCost = diseaseHealthCost;
@@ -3758,6 +3759,9 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
                                           workLines.size()),
                   willLinesOut.begin(), willLinesOut.end());
+  ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
+                                          workLines.size() + willLinesOut.size()),
+                  schoolLines.begin(), schoolLines.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
   // place that guarantees no '<token>' reaches a log line, and the single place that
@@ -4457,6 +4461,29 @@ bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
 // my son, Cleveland." No card is logged with it, so it is a yearly line. The
 // beneficiary is the eldest child the hero has; a hero with no child and no partner
 // has nothing to leave and gets no line.
+// ---- The school ladder (REPORT.en.md 254) -------------------------------
+// The played-life trace has "I graduated from high school." with no card and no
+// school name, so it is a yearly line like the disease and the will. The
+// enrollment lines ("I have been enrolled in elementary school at Spirit
+// Elementary School.") need the game's school-name generator, which no table
+// carries; they are left out rather than invented.
+// Defined with the school system further down the file.
+static int schoolLevelFor(int age);
+
+std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
+  std::vector<std::string> out;
+  Hero& h = life.hero;
+  const int level = schoolLevelFor(h.age);
+  // Leaving the high-school band is the graduation: schoolLevelFor puts high school
+  // at 14-17, so the year the hero turns 18 is the first without it.
+  if (!h.graduatedHighSchool && h.lastSchoolLevel == 3 && level != 3) {
+    h.graduatedHighSchool = true;
+    out.push_back("I graduated from high school.");
+  }
+  h.lastSchoolLevel = level;
+  return out;
+}
+
 std::vector<std::string> Sim::willLines(Life& life) {
   std::vector<std::string> out;
   Hero& h = life.hero;

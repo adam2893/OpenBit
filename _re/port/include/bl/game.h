@@ -172,6 +172,10 @@ struct Hero {
   // The will (REPORT.en.md 252): the trace writes "I created a will. I'm leaving
   // everything to my son, Cleveland." once in a life, so the hero carries the flag.
   bool hasWill = false;
+  // The school ladder the year lines read (REPORT.en.md 254): the level the hero was
+  // in last year and whether the high-school line has been written.
+  int lastSchoolLevel = 0;
+  bool graduatedHighSchool = false;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;
