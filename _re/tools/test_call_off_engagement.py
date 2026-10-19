@@ -51,8 +51,9 @@ for seed in range(1, 61):
         moves = {k: v for k, v in (event.get("deltas") or {}).items() if v}
         assert moves == {"karma": -50, "discipline": -16}, (seed, moves)
     if left:
-        # The engagement is over: the life is back to dating, or single.
-        assert doc["final"]["loverStatus"] in ("dating", None), (seed, doc["final"]["loverStatus"])
+        # The engagement is over. The hero can marry somebody else later, so the
+        # end state only has to be *not engaged*.
+        assert doc["final"]["loverStatus"] != "engaged", (seed, doc["final"]["loverStatus"])
 
 assert cards, "no engagement was ever called off"
 

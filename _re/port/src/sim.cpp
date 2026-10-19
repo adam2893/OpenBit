@@ -692,6 +692,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       childDemandRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x510e527fade682d1ULL),
       dispatchRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x94d049bb133111ebULL),
       diseaseRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x27d4eb2f165667c5ULL),
+      deathRng_(seed ^ 0x94d049bb133111ebULL ^ 0x369dea0f31a53f85ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3293,7 +3294,43 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
     const double deathChance =
         p.age < 30 ? 0.0 : (p.age < 45 ? 0.005 : 0.02 + 0.004 * double(p.age - 45));
     if (p.age >= 30 && familyRng_.chance(deathChance)) {
-      out.push_back(who + " passed away at the age of " + std::to_string(p.age) + ".");
+      // The cause comes from a16_death-types-enc, not from a port sentence: the
+      // played-life trace has "My father died of complications from old age." and
+      // "My mother died of natural causes.", which are the table's own rows with
+      // the <pronoun> subject replaced by the relative (REPORT.en.md 249).
+      std::string sentence;
+      if (ensureTable("a16_death-types-enc")) {
+        const Table& dt = tbl("a16_death-types-enc");
+        std::vector<size_t> pool;
+        for (size_t r = 0; r < dt.size(); ++r) {
+          const double minAge = dt.has("Min Age") ? dt.num(r, "Min Age") : 0.0;
+          if (minAge > 0 && double(p.age) < minAge) continue;
+          if (trim(dt.at(r, "Sentence")).empty()) continue;
+          pool.push_back(r);
+        }
+        if (!pool.empty()) {
+          const size_t row = weightedPickOf(dt, "Commonness Score", pool, deathRng_);
+          if (row != size_t(-1)) sentence = trim(dt.at(row, "Sentence"));
+        }
+      }
+      if (sentence.empty()) {
+        out.push_back(who + " passed away at the age of " + std::to_string(p.age) + ".");
+      } else {
+        // The row is written about the deceased ("<pronoun> died of ..."), so the
+        // leading pronoun is what the relative replaces.
+        const size_t close = sentence.find('>');
+        if (sentence.rfind("<pronoun>", 0) == 0 && close != std::string::npos)
+          sentence = sentence.substr(close + 1);
+        if (!sentence.empty() && sentence[0] == ' ') sentence.erase(0, 1);
+        out.push_back(who + " " + sentence);
+      }
+      // A parent's funeral is a card of its own in the same year (REPORT.en.md 249).
+      if ((p.relation == "father" || p.relation == "mother") &&
+          !life.hero.pendingFuneral) {
+        life.hero.pendingFuneral = true;
+        life.hero.funeralRelation = p.relation;
+        life.hero.funeralFemale = p.female;
+      }
       p.alive = false;
       continue;
     }
@@ -3749,6 +3786,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
+  // A funeral owed from the family lines takes the year ahead of any family (REPORT 249):
+  // the trace writes the death and the funeral in the same year, and a family reached by
+  // the rotation would push the card a year late.
+  if (forcedChoice < 0 && life.hero.pendingFuneral) return funeralYear(life, out, forcedChoice);
   Hero& h = life.hero;
   if (getenv("BL_DBG")) fprintf(stderr, "[dbg] age %d family %zu extra %zu\n", h.age, life.family.size(), out.extra.size());
   const bool student = h.age < 18;
@@ -3776,11 +3817,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
     h.job = row == size_t(-1) ? "Worker" : trim(t.at(row, "Career"));
-    // The employer's name the year lines use ("at Impact Racetrack", the overtime
-    // card): the careers table's own Company Type column (REPORT.en.md 248).
+    // The employer the year lines name ("at Impact Racetrack", the overtime card).
+    // Only the Company Type is kept here: naming the company draws from the main
+    // stream, and doing that for every job would move every later draw for the seed
+    // (REPORT.en.md 248). The name is drawn the first time a line needs it.
     h.employer.clear();
-    if (row != size_t(-1) && t.has("Company Type"))
-      h.employer = companyName(trim(t.at(row, "Company Type")), life);
+    h.employerType = row == size_t(-1) ? std::string() : trim(t.at(row, "Company Type"));
   }
   // The hero leaves the workforce at the age his own country sets for his gender
   // (REPORT.en.md 137): DataCountry.GetRetirementAgeForGender reads the
@@ -3852,17 +3894,22 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     struct Family {
       bool (Sim::*run)(Life&, AgeUp&, int);
       bool (*ready)(const Life&);
+      // How many front seats the family owns in the rotation wheel (REPORT 250).
+      // A family reached once in a hundred years cannot show its own lanes to a
+      // test even when its coin is 1, so the rare families buy reach here instead
+      // of inflating a coin that the game states.
+      int tickets = 1;
     };
     static const Family kFamilies[] = {
         {&Sim::aircraftDangerYear, nullptr},
         {&Sim::spouseHouseReactionYear, nullptr},
         {&Sim::spouseVehicleReactionYear, nullptr},
         {&Sim::custodyCaseYear, nullptr},
-        {&Sim::homePurchaseYear, nullptr},
-        {&Sim::vehiclePurchaseYear, nullptr},
-        {&Sim::aircraftPurchaseYear, nullptr},
-        {&Sim::surrogateRejectionYear, nullptr},
-        {&Sim::timeMachineYear, nullptr},
+        {&Sim::homePurchaseYear, nullptr, 3},
+        {&Sim::vehiclePurchaseYear, nullptr, 4},
+        {&Sim::aircraftPurchaseYear, nullptr, 4},
+        {&Sim::surrogateRejectionYear, nullptr, 2},
+        {&Sim::timeMachineYear, nullptr, 2},
         {&Sim::arrestScenarioYear, nullptr},
         {&Sim::childPressureRejectionYear, nullptr},
         {&Sim::notificationBaitYear, nullptr},
@@ -3873,8 +3920,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::prayWealthYear, nullptr},
         {&Sim::prayAssetYear, nullptr},
         {&Sim::sexualityYear, nullptr},
-        {&Sim::onlyfansStartYear, nullptr},
-        {&Sim::onlyfansTipYear, nullptr},
+        {&Sim::onlyfansStartYear, nullptr, 3},
+        {&Sim::onlyfansTipYear, nullptr, 3},
         {&Sim::ambientYear, nullptr},
         {&Sim::loverBreakUpYear, nullptr},
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
@@ -3924,8 +3971,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::paparazziYear, nullptr},
         {&Sim::loverBirthControlYear, nullptr},
         {&Sim::loverStopsBirthControlYear, nullptr},
-        {&Sim::paternityCourtOrderYear, nullptr},
-        {&Sim::birthYear, nullptr},
+        {&Sim::paternityCourtOrderYear, nullptr, 4},
+        {&Sim::birthYear, nullptr, 6},
         {&Sim::loverCounselingPushYear, nullptr},
         {&Sim::loverCallOffEngagementYear, nullptr},
         {&Sim::loverElopeYear, nullptr},
@@ -3967,20 +4014,30 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::luxuryYear, [](const Life& l) { return l.hero.luxury; }},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
-    // Rotate the front seat one family per year: a fresh shuffle leaves the tail of the
-    // draw reached only when nobody earlier fires, which starved 1-in-30 cards to 1-in-300
-    // (REPORT.en.md 239). Rotation gives every family the same share of front seats over
-    // n years, so reach stops depending on luck.
-    for (size_t k = 0; k < n; ++k) {
-      const size_t idx = (dispatchCursor_ + k) % n;
+    // The wheel is the rotation order with the rare families repeated by their ticket
+    // count (REPORT.en.md 250). Built once: the entry list is static.
+    static const std::vector<int> wheel = [&]() {
+      std::vector<int> w;
+      for (size_t i = 0; i < n; ++i) {
+        for (int t = 0; t < kFamilies[i].tickets; ++t) w.push_back(int(i));
+      }
+      return w;
+    }();
+    const size_t wn = wheel.size();
+    if (!wheelStarted_ && wn > 0) {
+      dispatchCursor_ = size_t(dispatchRng_.below(uint32_t(wn)));
+      wheelStarted_ = true;
+    }
+    for (size_t k = 0; k < wn; ++k) {
+      const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
       if (f.ready != nullptr && !f.ready(life)) continue;
       if ((this->*f.run)(life, out, forcedChoice)) {
-        dispatchCursor_ = (dispatchCursor_ + 1) % n;
+        dispatchCursor_ = (dispatchCursor_ + 1) % wn;
         return true;
       }
     }
-    dispatchCursor_ = (dispatchCursor_ + 1) % n;
+    dispatchCursor_ = (dispatchCursor_ + 1) % wn;
   }
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
@@ -4354,6 +4411,37 @@ std::string diseaseDisplayName(const Table& t, size_t r) {
 // twice: the played-life trace asks for 46 hours at 32 and says at 55 that the
 // supervisor let the hero go back to 40. The request is a card; the release is a
 // yearly line, which is how the trace logs it (no card, no title).
+// ---- The funeral (REPORT.en.md 249) -------------------------------------
+// The year a parent dies the game writes a second line about the funeral, and the
+// played-life trace has both lanes: "I couldn't be bothered to plan or even attend
+// his funeral." (54) and "I let someone else plan her funeral but I found time to
+// attend it." (56). The class title is the registry's own ("Death").
+bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.pendingFuneral) return false;
+  const bool female = h.funeralFemale;
+  const std::string poss = female ? "her" : "his";
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(familyRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioDeathRelative";
+  // shortcut: the card's own prompt was not captured; the title is the registry's.
+  out.title = "Death";
+  out.options = {"I couldn't be bothered", "Let someone else plan it"};
+  if (lane == 0) {
+    out.choice = "I couldn't be bothered";
+    out.narrative = "I couldn't be bothered to plan or even attend " + poss + " funeral.";
+  } else {
+    out.choice = "Let someone else plan it";
+    out.narrative = "I let someone else plan " + poss +
+                    " funeral but I found time to attend it.";
+  }
+  h.pendingFuneral = false;
+  h.funeralRelation.clear();
+  return true;
+}
+
 bool Sim::overtimeYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (forcedChoice < 0 && (h.age < 18 || h.hoursPerWeek != 40)) return false;
@@ -4372,6 +4460,8 @@ bool Sim::overtimeYear(Life& life, AgeUp& out, int forcedChoice) {
   const int hours = 42 + 2 * int(supRng_.below(6));
   const std::string sup = h.supName;
   const std::string pron = h.supFemale ? "her" : "him";
+  if (h.employer.empty() && !h.employerType.empty())
+    h.employer = companyName(h.employerType, life);
   const std::string at = h.employer.empty() ? h.job : h.employer;
   const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(supRng_.below(2));
   const std::vector<std::string> extra = out.extra;

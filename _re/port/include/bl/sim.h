@@ -328,6 +328,7 @@ class Sim {
   std::vector<std::string> heroDiseaseLines(Life& life, int* healthCost);
   bool overtimeYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> overtimeLines(Life& life);
+  bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.
@@ -880,9 +881,15 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The illness lifecycle draws on its own stream (REPORT.en.md 247): a yearly
   // diagnosis and cure would otherwise shift every family's draws for the seed.
   Rng diseaseRng_;
+  // The relative's death sentence is drawn on its own stream (REPORT.en.md 249): sharing
+  // the family stream would move every relative's year for a given seed.
+  Rng deathRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;
+  // The wheel starts at a seed-drawn seat, not at zero: with a fixed start only the
+  // first ~80 wheel seats ever led a life, so a family late in the list never did.
+  bool wheelStarted_ = false;
   Rng loverRng_;
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own

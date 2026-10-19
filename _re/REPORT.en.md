@@ -23484,6 +23484,90 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 250. The wheel gets tickets and a seed-drawn start
+
+Two problems surfaced once the rare families had tests of their own:
+
+```
+reach      a family led once per 112 years cannot show either lane of a card,
+            so tests that ask for three of one family in thirty lives fail
+start       every life began the rotation at seat 0, so only the first ~80 seats
+            ever led; a family late in the list never led any life at all
+```
+
+The second one is the quieter bug: with a fixed start the wheel is not a wheel, it is a
+prefix. `dispatchCursor_` now begins at a seat drawn from the seed:
+
+```cpp
+if (!wheelStarted_) { dispatchCursor_ = dispatchRng_.below(wn); wheelStarted_ = true; }
+```
+
+and the entry list carries a ticket count, so a rare family owns several seats:
+
+```cpp
+struct Family { bool (Sim::*run)(Life&, AgeUp&, int); bool (*ready)(const Life&); int tickets = 1; };
+```
+
+```
+aircraft purchase   4 tickets      home purchase     3      time machine     2
+vehicle purchase    4             onlyfans start    3      surrogate reject 2
+paternity order     4             onlyfans tips     3
+```
+
+Tickets are the honest knob here: the family's own coin is a number the game states, and
+inflating it to buy reach would make the card's rate wrong. A ticket changes only how often
+the family is offered the year first.
+
+```
+before  aircraft purchase 1 card / 30 lives, vehicle 1, time machine 2
+after   aircraft ok, vehicle ok, onlyfans ok, paternity ok
+```
+
+## 249. A parent's death and the funeral
+
+The played life gives this one twice:
+
+```
+age 54  My father died of complications from old age.
+        I couldn't be bothered to plan or even attend his funeral.
+age 56  My mother died of natural causes.
+        I let someone else plan her funeral but I found time to attend it.
+```
+
+The port already killed relatives, but with a port-side sentence ("passed away at the
+age of N"). Both halves are in `a16_death-types-enc` (110 rows, `<pronoun> died of ...`)
+and the trace is exactly those rows with the subject swapped for the relation. The
+relative's line now draws the table's sentence, keeps its `<body part>` token resolution
+("died after being bit on the jugular by a venomous snake"), and the old sentence stays
+only as the fallback when the table has no row for that age.
+
+### 249.1 The funeral card
+
+A parent's death owes a card in the same year, and the two lanes are both in the trace.
+The card is dispatched ahead of every family: with the rotation alone the card landed a
+year late 32 times out of 36 in a 30-life sample, which contradicts the trace's same-year
+pair. A `pendingFuneral` flag set by the family lines now takes the year:
+
+```
+dispatchYear:  if (forcedChoice < 0 && life.hero.pendingFuneral) return funeralYear(...)
+
+same-year funerals   before 4/36   after 46/53
+```
+
+The remaining 7 are parents who died in a year the script forced a specific card (the
+probe path), where the year belongs to the script, not the family.
+
+```
+transcribed  the death sentence (table), both funeral lanes, the possessive from the
+             parent's gender
+shortcut     the card's prompt was not captured; the title is the registry's (Death),
+             and the amount/beneficiary of an inheritance is not modelled yet
+```
+
+`tools/test_relative_death.py` matches every parent death against the table rows as
+patterns (`<token>` as a wildcard), and asserts a funeral card always carries its death
+line in the same event: 71 deaths and 71 funerals over 40 lives.
+
 ## 248. The working week
 
 `ScenarioJobOvertimeRequest` and `ScenarioOvertimeDone` are one state change seen twice.

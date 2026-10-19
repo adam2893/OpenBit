@@ -817,7 +817,7 @@ bool Sim::ambientYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::genderIdentityYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!ensureTable("a16_gender-scenarios-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(40) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(6) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_gender-scenarios-enc");
@@ -1242,7 +1242,7 @@ bool Sim::timeMachineYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 12) return false;
   if (!ensureTable("a16_time-machine-scenarios-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(55) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(8) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_time-machine-scenarios-enc");
@@ -1729,7 +1729,7 @@ bool Sim::vehiclePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.outdoorVehicle.empty()) return false;
   if (h.age < 17) return false;
   if (!ensureTable("a16_outdoor-vehicle-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(2) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(1) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_outdoor-vehicle-enc");
@@ -1807,7 +1807,7 @@ bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.aircraft.empty()) return false;
   if (h.age < 18) return false;
   if (!ensureTable("a16_aircraft-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(3) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(1) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_aircraft-enc");

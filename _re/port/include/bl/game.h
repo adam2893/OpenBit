@@ -115,6 +115,7 @@ struct Hero {
   int hoursPerWeek = 40;
   int overtimeYearsLeft = 0;
   std::string employer;  // the company the job line names ("at Impact Racetrack")
+  std::string employerType;  // the careers row's Company Type, named lazily
   // Prison state. The real game reaches it through the interactive Crime menu
   // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).
   bool inPrison = false;
@@ -162,6 +163,11 @@ struct Hero {
   // 3 high, 4 college. The hero is a pupil, not a manager, so the year is
   // about a class, a teacher and the crowd around the locker.
   bool schooling = false;
+  // A relative died this year and the funeral card is owed (REPORT.en.md 249).
+  // The trace writes the death line and the funeral line in the same year.
+  bool pendingFuneral = false;
+  std::string funeralRelation;   // "father" / "mother" / "big sister"
+  bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;
   std::string schoolTeacher, schoolClassmate, schoolPrincipal, schoolActivity;
   std::string schoolActivityRef, schoolClique, schoolFrat, schoolFratLetters, schoolFratNickname;
