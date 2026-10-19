@@ -23484,6 +23484,50 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 261. Starting school, and joining something
+
+Two more trace lines, both with no card of their own:
+
+```
+I started middle school at Allure Middle School.
+I decided to see what extracurricular activities were available at my new high school.
+I joined the Foreign Language Club at my high school.
+```
+
+The middle sentence is the prompt's own wording in the journal, and the third is the
+win. With the school loop running (260), these belong to the year the level changes,
+which is also when `makeSchool` draws the activity -- so the line can name it.
+
+### 261.1 Where the level is announced
+
+The first attempt put the lines inside `schoolYear`'s level-change block and produced
+nothing: `ageUp` now calls `makeSchool` *before* dispatch, and `makeSchool` sets
+`Hero::schoolLevel` itself, so by the time `schoolYear` ran the level was never new. The
+lines moved to `schoolMilestoneLines`, which runs in the yearly chain with the disease,
+will and graduation lines, and tracks its own `schoolAnnouncedLevel`.
+
+```
+I started high school.
+I decided to see what extracurricular activities were available at my new high school.
+I joined the Volleyball Team at my high school.
+```
+
+### 261.2 What is still missing, and why
+
+The trace's start line names the school ("Allure Middle School"); the port's does not.
+`Spirit`, `Allure` and `St. Rian's` come from a generator that is in no extracted table --
+the string does not appear in `gamedata_plain` or in the metadata literals, so it is
+built from word pools the dump does not carry. That half stays unwritten rather than
+invented (245.1's rule).
+
+```
+30 lives to 22:  116 level starts   116 joins, each naming a row of
+                 a16_school-activities-enc
+```
+
+`tools/test_school_join.py` pins the shape: a join names a real activity, always follows
+the start of the school it happens at, and a level never starts twice in one life.
+
 ## 260. The school loop
 
 The school family existed but almost never ran, for two reasons that hid each other:

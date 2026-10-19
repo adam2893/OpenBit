@@ -3716,6 +3716,7 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
 // `out = AgeUp()` (45 of them do), which used to throw the family lines away on
 // exactly the years a code-built card fired.
 static int schoolLevelFor(int age);
+static const char* schoolLevelName(int level);
 
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
@@ -4684,6 +4685,19 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
   if (!h.graduatedHighSchool && h.lastSchoolLevel == 3 && level != 3) {
     h.graduatedHighSchool = true;
     out.push_back("I graduated from high school.");
+  }
+  // The school's start and the hero's own activity lines belong to the year the
+  // level changes (REPORT.en.md 261). makeSchool has already drawn the activity by
+  // the time this runs, and the level it set is what schoolYear would have seen.
+  if (level > 0 && level != h.schoolAnnouncedLevel) {
+    h.schoolAnnouncedLevel = level;
+    out.push_back("I started " + std::string(schoolLevelName(level)) + ".");
+    if (!h.schoolActivity.empty()) {
+      out.push_back("I decided to see what extracurricular activities were available at my new " +
+                    std::string(schoolLevelName(level)) + ".");
+      out.push_back("I joined the " + h.schoolActivity + " at my " +
+                    schoolLevelName(level) + ".");
+    }
   }
   h.lastSchoolLevel = level;
   return out;
@@ -14915,6 +14929,7 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
     makeSchool(life);
     h.schoolLevel = level;
     add("I started " + std::string(lvlName) + ".");
+
   }
   h.schoolYears += 1;
   if (h.schoolTrouble >= 3) h.schoolGrades = std::max(0, h.schoolGrades - 1);

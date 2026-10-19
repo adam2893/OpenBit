@@ -176,6 +176,7 @@ struct Hero {
   // in last year and whether the high-school line has been written.
   int lastSchoolLevel = 0;
   bool graduatedHighSchool = false;
+  int schoolAnnouncedLevel = 0;  // the level whose start line has been written
   // The driver's licence (REPORT.en.md 255). ScenarioPushLicenseCar offers the test
   // at 16, ScenarioGameLicenseCar asks the question, and the outcome is one of two
   // literals from metadata (#24138 failed / #24778 passed).
