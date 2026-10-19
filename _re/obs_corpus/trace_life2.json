@@ -1,0 +1,1278 @@
+{
+ "source": "game",
+ "ages": [
+  {
+   "age": 0,
+   "logs": [
+    "I am a male who came into the world through artificial insemination in Charleston, United States. My single mother was impregnated by a sperm load that was anonymously donated to a fertility clinic.\n",
+    "My birthday is September 27. I am a Libra.\n",
+    "My name is Lil Simmons.",
+    "My mother is Amelia Simmons, an Army enlistee (age 32).",
+    "I have an older half sister named Tiana Durant (age 4).",
+    "My half sister, Tiana, started elementary school."
+   ],
+   "scenarios": [],
+   "stats": {
+    "happiness": 0,
+    "health": 0,
+    "smarts": 16,
+    "looks": 19,
+    "karma": 0,
+    "discipline": 0
+   }
+  },
+  {
+   "age": 1,
+   "logs": [],
+   "scenarios": [],
+   "stats": {
+    "happiness": 96,
+    "health": 93,
+    "smarts": 16,
+    "looks": 71,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 2,
+   "logs": [
+    "No cows are spared from a terrible twister that tears through Uruguay. 55 cows perish, while all locals survive unscathed.",
+    "I am suffering from croup."
+   ],
+   "scenarios": [
+    {
+     "title": "Croup",
+     "body": "You are suffering from croup.",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 96,
+    "health": 94,
+    "smarts": 17,
+    "looks": 72,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 3,
+   "logs": [
+    "My mother cradled me in her arms and told me I was her sweet little potato.",
+    "My mother got me and my half sister a dog named Patches.",
+    "My mother has been promoted to Sergeant Major."
+   ],
+   "scenarios": [
+    {
+     "title": "Patches",
+     "body": "Your mother wants to buy you and your half sister a pet Siberian husky named Patches!",
+     "cls": "ScenarioParentsOfferPet"
+    },
+    {
+     "title": "Dream come true",
+     "body": "Your mother brought home a dog named Patches for you and your half sister.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 96,
+    "health": 93,
+    "smarts": 16,
+    "looks": 71,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 4,
+   "logs": [
+    "A powerful volcanic eruption in El Salvador has been reported. The explosion has sent a cloud of ash into the atmosphere, and astronauts in space have reported that it has blocked their view of the country.",
+    "I sang the ABC's at the mall for a kiddie talent show.",
+    "My mother gave birth to a girl named Penelope Simmons, my new half sister. She was conceived after my mother had a botched tubal ligation procedure.",
+    "I have been enrolled in elementary school at Kawhi Joyner Elementary School, a private school."
+   ],
+   "scenarios": [
+    {
+     "title": "Talent Show",
+     "body": "You've been invited to perform at a children's talent show at the mall.\n\nWhat will you do?",
+     "cls": "DumbScenario"
+    }
+   ],
+   "stats": {
+    "happiness": 100,
+    "health": 92,
+    "smarts": 17,
+    "looks": 72,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 5,
+   "logs": [
+    "I've discovered the joy of climbing trees."
+   ],
+   "scenarios": [
+    {
+     "title": "Baby",
+     "body": "Your mother just gave birth to a girl named Penelope, your new half sister.",
+     "cls": "ScenarioScriptEventSiblingBorn"
+    },
+    {
+     "title": "Elementary School",
+     "body": "You are starting elementary school.",
+     "cls": "ScenarioSchoolEnroll"
+    }
+   ],
+   "stats": {
+    "happiness": 99,
+    "health": 93,
+    "smarts": 16,
+    "looks": 71,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 6,
+   "logs": [
+    "I went 8 weeks without taking a shower.",
+    "My Siberian husky, Patches, ate my stuffed animal. I reamed her.",
+    "My half sister, Tiana, started middle school."
+   ],
+   "scenarios": [
+    {
+     "title": "Behavior",
+     "body": "Your Siberian husky, Patches, just ate your stuffed animal.\n\nWhat will you do?",
+     "cls": "ScenarioPetDiscipline"
+    },
+    {
+     "title": "Take that",
+     "body": "You reamed your Siberian husky, Patches.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 98,
+    "health": 94,
+    "smarts": 17,
+    "looks": 72,
+    "karma": 74,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 7,
+   "logs": [
+    "I've discovered the joy of climbing trees."
+   ],
+   "scenarios": [
+    {
+     "title": "New Friend",
+     "body": "Your classmate, Chloe, wants to become your friend.",
+     "cls": "ScenarioFriendMeet"
+    }
+   ],
+   "stats": {
+    "happiness": 81,
+    "health": 95,
+    "smarts": 16,
+    "looks": 71,
+    "karma": 74,
+    "discipline": 24
+   }
+  },
+  {
+   "age": 8,
+   "logs": [
+    "I went window shopping.\nI tried to shoplift a flask but was apprehended by a mall cop!",
+    "I decided to attack the mall cop!",
+    "I delivered an uppercut to the mall cop's stomach! Then I pummeled him with body blows to the midsection!",
+    "My half sister, Tiana, has been diagnosed with scarlet fever."
+   ],
+   "scenarios": [
+    {
+     "title": "Mischief Maker",
+     "body": "You're wondering how much trouble you'll get into if you do something a little bit naughty.\n\nWhat will you do?",
+     "cls": "ScenarioRetentionCrime"
+    },
+    {
+     "title": "Mischief",
+     "body": "You're thinking about possible accomplices for your mischief.\n\nWho will you pick?",
+     "cls": "ScenarioCrimeDelinquencyPull"
+    },
+    {
+     "title": "Shoplifting",
+     "body": "You're thinking about a trip to the mall.",
+     "cls": "ScenarioCrimeShoplift"
+    },
+    {
+     "title": "Mall Cop",
+     "body": "You were apprehended by a mall cop while trying to steal a flask!\n\nWhat will you do?",
+     "cls": "ScenarioCrimeShopliftMallCop"
+    },
+    {
+     "title": "Attack",
+     "body": "How will you attack the mall cop?",
+     "cls": "ScenarioCustomAttack"
+    },
+    {
+     "title": "Ouch",
+     "body": "You delivered an uppercut to the mall cop's stomach! Then you pummeled him with body blows to the midsection!",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 74,
+    "health": 94,
+    "smarts": 15,
+    "looks": 70,
+    "karma": 58,
+    "discipline": 24
+   }
+  },
+  {
+   "age": 9,
+   "logs": [
+    "On Halloween, I upped my costume game by cosplaying as Misdreavus, my favorite Ghost-type Pokemon.",
+    "My half sister, Tiana, started high school.",
+    "My half sister, Penelope, started elementary school."
+   ],
+   "scenarios": [
+    {
+     "title": "Spook-emon",
+     "body": "Your friend always complains that your Halloween costumes are boring. This year, you're determined to prove him wrong by cosplaying as your favorite Ghost-type Pokemon.\n\nWho will you choose?",
+     "cls": "DumbScenario"
+    }
+   ],
+   "stats": {
+    "happiness": 67,
+    "health": 95,
+    "smarts": 14,
+    "looks": 71,
+    "karma": 0,
+    "discipline": 0
+   }
+  },
+  {
+   "age": 10,
+   "logs": [
+    "My mother wanted me to start taking harmonica lessons.",
+    "I took harmonica lessons.",
+    "My mother bought me a new brass harmonica.",
+    "I started middle school at Stevens Middle School, a private school."
+   ],
+   "scenarios": [
+    {
+     "title": "Harmonica",
+     "body": "Your mother want you to start taking harmonica lessons!",
+     "cls": "ScenarioParentsOfferInstrumentLessons"
+    },
+    {
+     "title": "Hitting the scales",
+     "body": "You took a course of harmonica lessons!",
+     "cls": "ScenarioInstrumentStudied"
+    },
+    {
+     "title": "Brass Harmonica",
+     "body": "Now that you're taking harmonica lessons, your mother bought you a brand new brass harmonica!",
+     "cls": "ScenarioParentsOfferInstrument"
+    },
+    {
+     "title": "New talent tree unlocked",
+     "body": "Your mother bought you a new brass harmonica.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 68,
+    "health": 96,
+    "smarts": 13,
+    "looks": 70,
+    "karma": 0,
+    "discipline": 0
+   }
+  },
+  {
+   "age": 11,
+   "logs": [
+    "I've been feeling incredibly grateful to be such a fortunate person.",
+    "My half sister, Tiana, died from complications associated with scarlet fever.",
+    "I paid my respects at her funeral."
+   ],
+   "scenarios": [
+    {
+     "title": "Death",
+     "body": "Your half sister, Tiana, passed away at the age of 15.\n\nShe died from complications associated with scarlet fever.",
+     "cls": "ScenarioDeathRelative"
+    }
+   ],
+   "stats": {
+    "happiness": 99,
+    "health": 100,
+    "smarts": 14,
+    "looks": 69,
+    "karma": 8,
+    "discipline": 24
+   }
+  },
+  {
+   "age": 12,
+   "logs": [
+    "I have been diagnosed with depression."
+   ],
+   "scenarios": [
+    {
+     "title": "Depression",
+     "body": "You are suffering from depression.",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 3,
+    "health": 99,
+    "smarts": 15,
+    "looks": 70,
+    "karma": 12,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 13,
+   "logs": [
+    "Everybody at school laughed at me for not knowing that a seahorse is, in fact, a real animal.",
+    "My Siberian husky, Patches, died of natural causes.",
+    "A meter maid hired me as a dog walker. I earned $96 after working 12 hours for her at $8 an hour.",
+    "I started high school at Virgil Hardwood High School, a private school."
+   ],
+   "scenarios": [
+    {
+     "title": "Death",
+     "body": "Your Siberian husky, Patches, died at the age of 12.\n\nShe died of natural causes.",
+     "cls": "ScenarioPetDeath"
+    },
+    {
+     "title": "Freelance Gig",
+     "body": "You're looking at your bank account and are thinking of picking up a freelance gig to get some extra cash.\n\nWhat will you do?",
+     "cls": "ScenarioRetentionFreelanceGig"
+    },
+    {
+     "title": "Pet Sitter",
+     "body": "Offer your services as a pet sitter today!",
+     "cls": "ScenarioPartTimeFreelance"
+    },
+    {
+     "title": "Pet Sitter",
+     "body": "Offer your services as a pet sitter today!",
+     "cls": "ScenarioPartTimeFreelance"
+    },
+    {
+     "title": "Pet Sitter",
+     "body": "Offer your services as a pet sitter today!",
+     "cls": "ScenarioPartTimeFreelance"
+    },
+    {
+     "title": "Dog Walker",
+     "body": "Offer your services as a dog walker today!",
+     "cls": "ScenarioPartTimeFreelance"
+    },
+    {
+     "title": "Cashin' up",
+     "body": "A meter maid named Taylor hired you as a dog walker for 12 hours.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 82,
+    "smarts": 16,
+    "looks": 63,
+    "karma": 12,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 14,
+   "logs": [
+    "I fell out of bed and injured my brain for 6 days.",
+    "I decided to see what extracurricular activities were available at my new high school.",
+    "I joined the Creative Writing Club at my high school."
+   ],
+   "scenarios": [
+    {
+     "title": "High School",
+     "body": "You are starting high school.",
+     "cls": "ScenarioSchoolEnroll"
+    },
+    {
+     "title": "Extracurricular Activity",
+     "body": "Now that you're in high school, you are thinking about participating in an extracurricular activity.\n\nWhat will you do?",
+     "cls": "ScenarioSchoolEnrollActivity"
+    },
+    {
+     "title": "Creative Writing Club",
+     "body": "Join the Creative Writing Club today!",
+     "cls": "ScenarioSchoolActivityJoin"
+    },
+    {
+     "title": "Pursuing personal interests",
+     "body": "You have joined the Creative Writing Club at your high school!",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 75,
+    "smarts": 17,
+    "looks": 55,
+    "karma": 12,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 15,
+   "logs": [
+    "I was cured of depression.",
+    "My eyesight has been worsening.\nMy mother took me to the optometrist for an eye exam.",
+    "I failed my eye exam!",
+    "My half sister, Penelope, started middle school."
+   ],
+   "scenarios": [
+    {
+     "title": "New Friend",
+     "body": "Your classmate, Dennis, wants to become your friend.",
+     "cls": "ScenarioFriendMeet"
+    },
+    {
+     "title": "Cured",
+     "body": "You are no longer suffering from depression.",
+     "cls": "ScenarioDiseaseCure"
+    },
+    {
+     "title": "Eyesight",
+     "body": "Your mother is concerned with your eyesight and is taking you for an eye exam at the optometrist.",
+     "cls": "ScenarioFailingEyesight"
+    },
+    {
+     "title": "Eye Exam",
+     "body": "Start the test and then tap the letter or number that's different than the others before time runs out!",
+     "cls": "ScenarioGameEyeExam"
+    },
+    {
+     "title": "Eye can't see",
+     "body": "You failed your eye exam and have been issued a prescription for eyeglasses!",
+     "cls": "ScenarioEyeExamOutcome"
+    }
+   ],
+   "stats": {
+    "happiness": 31,
+    "health": 63,
+    "smarts": 20,
+    "looks": 51,
+    "karma": 12,
+    "discipline": 32
+   }
+  },
+  {
+   "age": 16,
+   "logs": [
+    "Mariah just KO'd another student with a roundhouse in the teacher's lounge.",
+    "I failed my driving test."
+   ],
+   "scenarios": [
+    {
+     "title": "Driving License",
+     "body": "It's time to take your driving test.\n\nWill you take it?",
+     "cls": "ScenarioPushLicenseCar"
+    },
+    {
+     "title": "Driving Test",
+     "body": "What does this road sign mean?",
+     "cls": "ScenarioGameLicenseCar"
+    },
+    {
+     "title": "Better hitchhike",
+     "body": "You failed your driving test!",
+     "cls": "ScenarioLicenseCarOutcome"
+    },
+    {
+     "title": "Profile",
+     "body": null,
+     "cls": "ScenarioProfileHero"
+    }
+   ],
+   "stats": {
+    "happiness": 74,
+    "health": 70,
+    "smarts": 23,
+    "looks": 54,
+    "karma": 0,
+    "discipline": 36
+   }
+  },
+  {
+   "age": 17,
+   "logs": [
+    "Israel has officially declared August 2nd \"Bring Your Pet Monkey To Work Day.\" Selfish animal owners are rejoicing all over the country.",
+    "I had a gross discharge coming out of my eye.\nI drank a smoothie and hoped for the best.",
+    "I graduated from high school."
+   ],
+   "scenarios": [
+    {
+     "title": "Eye Discharge",
+     "body": "Your eye is feeling irritated, and when you go to scratch it you discover a liquid gushing out of the socket. Also, your eyes have become annoyingly itchy lately.\n\nWhat will you do?",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 81,
+    "health": 69,
+    "smarts": 28,
+    "looks": 55,
+    "karma": 0,
+    "discipline": 40
+   }
+  },
+  {
+   "age": 18,
+   "logs": [
+    "I've been dealing with some acne on my legs.",
+    "My half sister, Penelope, started high school."
+   ],
+   "scenarios": [
+    {
+     "title": "Graduation",
+     "body": "You graduated from high school.\n\nWhat will you do now?",
+     "cls": "ScenarioSchoolGraduate"
+    }
+   ],
+   "stats": {
+    "happiness": 88,
+    "health": 68,
+    "smarts": 31,
+    "looks": 56,
+    "karma": 0,
+    "discipline": 40
+   }
+  },
+  {
+   "age": 19,
+   "logs": [
+    "iap_luxury_001",
+    "I looked into experiencing the finer things in BitLife.",
+    "My mother has been diagnosed with flatulence."
+   ],
+   "scenarios": [
+    {
+     "title": "LuxeLife",
+     "body": "While sorting the mail, you notice a golden envelope addressed to \"The Big Cheese\" among a stack of letters. Opening it, you discover an invitation to explore the more luxurious side of BitLife that only the cream of the crop can enjoy.\n\nWhat will you do?",
+     "cls": "ScenarioIAPConfiguredPush"
+    }
+   ],
+   "stats": {
+    "happiness": 97,
+    "health": 69,
+    "smarts": 34,
+    "looks": 55,
+    "karma": 0,
+    "discipline": 40
+   }
+  },
+  {
+   "age": 20,
+   "logs": [
+    "I discovered welts on my body.",
+    "iap_ultimatefighter_002",
+    "I started training to become a fighting champion.",
+    "My mother is no longer suffering from flatulence."
+   ],
+   "scenarios": [
+    {
+     "title": "Flatulence",
+     "body": "Your mother is suffering from flatulence.",
+     "cls": "ScenarioScriptEventDiseaseContract"
+    },
+    {
+     "title": "Welts",
+     "body": "While taking off your pants, you notice some welts on your body.\n\nWhat will you do?",
+     "cls": "ScenarioDiseaseContract"
+    },
+    {
+     "title": "Doctor",
+     "body": "Which local doctor will you schedule an appointment to see?",
+     "cls": "ScenarioDoctors"
+    },
+    {
+     "title": "Climb the Ladder",
+     "body": "You're training against a drifter in a gym when, after a few left hand hooks and anchor bombs, he reveals himself to be a professional coach, willing to help you go up against tougher opponents.\n\nWhat will you do?",
+     "cls": "ScenarioIAPConfiguredPush"
+    }
+   ],
+   "stats": {
+    "happiness": 96,
+    "health": 73,
+    "smarts": 33,
+    "looks": 56,
+    "karma": 0,
+    "discipline": 40
+   }
+  },
+  {
+   "age": 21,
+   "logs": [
+    "I had red spots all over my skin.\nI didn't let it bother me."
+   ],
+   "scenarios": [
+    {
+     "title": "Red Spots",
+     "body": "While getting dressed, you notice some red spots on your body.\n\nWhat will you do?",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 87,
+    "health": 68,
+    "smarts": 34,
+    "looks": 56,
+    "karma": 0,
+    "discipline": 48
+   }
+  },
+  {
+   "age": 22,
+   "logs": [
+    "I couldn't stop shivering despite it being warm outside.",
+    "My half sister, Penelope, graduated from high school."
+   ],
+   "scenarios": [
+    {
+     "title": "Chills",
+     "body": "You are relaxing with friends on a warm day, but you are shivering and feeling cold. To make matters worse, your entire body is extremely achy.\n\nWhat will you do?",
+     "cls": "ScenarioDiseaseContract"
+    },
+    {
+     "title": "Doctor",
+     "body": "Which local doctor will you schedule an appointment to see?",
+     "cls": "ScenarioDoctors"
+    },
+    {
+     "title": "No funds",
+     "body": "You don't have enough money to consult with Dr. Smart.\n\nYou are $4 short.",
+     "cls": "ScenarioInsufficientFinances"
+    }
+   ],
+   "stats": {
+    "happiness": 84,
+    "health": 63,
+    "smarts": 35,
+    "looks": 56,
+    "karma": 0,
+    "discipline": 40
+   }
+  },
+  {
+   "age": 23,
+   "logs": [
+    "I think my half sister, Penelope, is starting to become sexually active.",
+    "I itched. I itched more. And more. And then more.\nI didn't let it bother me.",
+    "I solicited a hooker that I met on the street.",
+    "I was arrested for solicitation!\nI called one of the police officers that arrested me a peon!",
+    "I was charged with solicitation!\nI hired a public defender to represent me in court.",
+    "I plead guilty.",
+    "I have been convicted of solicitation and sentenced to one year in prison!\nThey sent me to Progressive Asylum, a minimum security prison.",
+    "My half sister, Penelope, started a new position as Apprentice Cameraman for Watchtower Broadcasting Corporation.",
+    "I have been freed from prison."
+   ],
+   "scenarios": [
+    {
+     "title": "Itchiness",
+     "body": "Your skin has been extremely itchy recently.\n\nWhat will you do?",
+     "cls": "ScenarioDiseaseContract"
+    },
+    {
+     "title": "Hooker",
+     "body": "While on your walk, you encounter a hooker turning tricks on the street.\n\nWhat will you do?",
+     "cls": "ScenarioEncounterProstitute"
+    },
+    {
+     "title": "Surprisingly cheap",
+     "body": "You solicited the hooker.",
+     "cls": "Scenario"
+    },
+    {
+     "title": "Police",
+     "body": "You are being arrested by the police!\n\nSeveral people are recording the incident on their cell phones as the police cuff you.\n\nHow will you behave?",
+     "cls": "ScenarioCrimeArrest"
+    },
+    {
+     "title": "I'll use my words",
+     "body": "You called one of the police officers a peon!",
+     "cls": "Scenario"
+    },
+    {
+     "title": "Criminal Charges",
+     "body": "You've been charged with solicitation and are facing 1 year in prison!\n\nWhich local law firm will you hire to defend you in court?",
+     "cls": "ScenarioCrimeCharge"
+    },
+    {
+     "title": "No funds",
+     "body": "You don't have enough money to hire Smelley & Wallace to defend you.\n\nYou are $744 short.",
+     "cls": "ScenarioInsufficientFinances"
+    },
+    {
+     "title": "Criminal Charges",
+     "body": "You've been charged with solicitation and are facing 1 year in prison!\n\nWhich local law firm will you hire to defend you in court?",
+     "cls": "ScenarioCrimeCharge"
+    },
+    {
+     "title": "Plea",
+     "body": "The judge has asked you to make a plea surrounding your charge for solicitation. If you plead guilty, you may receive a shorter sentence than if you are convicted in a trial.\n\nHow will you plea?",
+     "cls": "ScenarioCrimePlea"
+    },
+    {
+     "title": "Guilty",
+     "body": "You have been convicted of solicitation and sentenced to one year in prison!",
+     "cls": "ScenarioCrimeSentence"
+    }
+   ],
+   "stats": {
+    "happiness": 79,
+    "health": 60,
+    "smarts": 34,
+    "looks": 55,
+    "karma": 0,
+    "discipline": 48
+   }
+  },
+  {
+   "age": 24,
+   "logs": [
+    "My half sister, Penelope, confessed to me that she is thinking about coming out of the closet. I ignored her.",
+    "My half sister, Penelope, moved out. She came out of the closet as gay."
+   ],
+   "scenarios": [
+    {
+     "title": "Rehabilitated & ready",
+     "body": "You have been released from prison.",
+     "cls": "Scenario"
+    },
+    {
+     "title": "Coming Out",
+     "body": "Your half sister, Penelope, has confessed to you that she is considering coming out of the closet.\n\nWhat will you do?",
+     "cls": "ScenarioSiblingComingOut"
+    }
+   ],
+   "stats": {
+    "happiness": 28,
+    "health": 61,
+    "smarts": 35,
+    "looks": 56,
+    "karma": 0,
+    "discipline": 24
+   }
+  },
+  {
+   "age": 25,
+   "logs": [
+    "The 5 most popular social media platforms on Earth have deactivated their \"like\" and \"views\" features. Worldwide depression and suicide have dropped 14.6% and 13.7% respectively.",
+    "iap_moviedirector_001",
+    "I decided to explore the world of movie directing.",
+    "My half sister, Penelope, married Amy Bone, a 22-year old receptionist. She has been promoted to Cameraman."
+   ],
+   "scenarios": [
+    {
+     "title": "Directorial Vision",
+     "body": "You're watching Tommy Wiseau's 'The Room' when you realize that you could probably direct a better movie with your eyes closed.\n\nWhat will you do?",
+     "cls": "ScenarioIAPConfiguredPush"
+    }
+   ],
+   "stats": {
+    "happiness": 11,
+    "health": 62,
+    "smarts": 34,
+    "looks": 55,
+    "karma": 0,
+    "discipline": 8
+   }
+  },
+  {
+   "age": 26,
+   "logs": [
+    "I can't help but wonder if Johann Sebastian Bach would be happy or sad to know that his song is played each time someone dies in BitLife.",
+    "On International Chefs Day, I told my friend that Gordon Ramsay is the most inspiring chef of all time.",
+    "iap_landlord_002",
+    "I looked into becoming a landlord."
+   ],
+   "scenarios": [
+    {
+     "title": "October 20th",
+     "body": "Your friend, an aspiring chef, tells you it's International Chefs Day today and asks who you think is the most inspiring chef of all time.\n\nWho will you say?",
+     "cls": "DumbScenario"
+    },
+    {
+     "title": "Sprouting Lordling",
+     "body": "While waiting at the bus stop, you overhear a toll booth operator mention that he can afford to enjoy what life has to offer since he earns mad cash from renting out specialty homes, which makes you wonder if you could do the same.\n\nWhat will you do?",
+     "cls": "ScenarioIAPConfiguredPush"
+    }
+   ],
+   "stats": {
+    "happiness": 12,
+    "health": 58,
+    "smarts": 33,
+    "looks": 54,
+    "karma": 0,
+    "discipline": 8
+   }
+  },
+  {
+   "age": 27,
+   "logs": [
+    "A friend of my mother offered to set me up with a job as Silent Mourner for Pickles Mortuary.\nI was hired for the position of Silent Mourner for Pickles Mortuary with a salary of $15,252."
+   ],
+   "scenarios": [
+    {
+     "title": "Job Referral",
+     "body": "Your mother has a friend who works at Pickles Mortuary and can get you a job there as Silent Mourner.",
+     "cls": "ScenarioJobReferral"
+    },
+    {
+     "title": "Efficient Tiny House",
+     "body": "Now that you have a job, your mother wants to buy you a 1br/1ba efficient tiny house.\n\nHow will you react?",
+     "cls": "ScenarioRetentionNewHouse"
+    },
+    {
+     "title": "New pad",
+     "body": "You are now the owner of the efficient tiny house at 1398 Special Snowflake Lane.",
+     "cls": "Scenario"
+    },
+    {
+     "title": "When can you start?",
+     "body": "Welcome to Pickles Mortuary!",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 13,
+    "health": 59,
+    "smarts": 32,
+    "looks": 58,
+    "karma": 0,
+    "discipline": 8
+   }
+  },
+  {
+   "age": 28,
+   "logs": [
+    "Nicaragua is slammed with an extremely fast-paced and destructive Category 2 hurricane, named Kylie. Mandatory evacuations proved successful in saving 573 families."
+   ],
+   "scenarios": [
+    {
+     "title": "Love Interest",
+     "body": "While at the gym, you meet a girl named Kristen.",
+     "cls": "ScenarioLoveDate"
+    }
+   ],
+   "stats": {
+    "happiness": 44,
+    "health": 60,
+    "smarts": 31,
+    "looks": 59,
+    "karma": 8,
+    "discipline": 16
+   }
+  },
+  {
+   "age": 29,
+   "logs": [
+    "I've been wondering lately what it would be like to be in a cult, and thinking about which cult would be best for me.",
+    "I went with some friends to Kira's Charleston Casino.",
+    "I lost $4,900 on the hand of blackjack at Kira's Charleston Casino.",
+    "I considered purchasing a Golden Neko Statue to increase my casino winnings.",
+    "My mother has retired from the Army.",
+    "I have a new supervisor named Phoebe Rossi."
+   ],
+   "scenarios": [
+    {
+     "title": "Casino",
+     "body": "Some of your friends are going to a local casino called Kira's Charleston Casino.\n\nWill you join them?",
+     "cls": "ScenarioOpportunityCasino"
+    },
+    {
+     "title": "Kira's Charleston Casino",
+     "body": "Place your blackjack bets!",
+     "cls": "ScenarioCasinoBet"
+    },
+    {
+     "title": "Abraham (Dealer)",
+     "body": "Get as close as possible to 21 without going over!\n\nYou have $4,900 riding on this bet.",
+     "cls": "ScenarioGameBlackjack"
+    },
+    {
+     "title": "You lost",
+     "body": "You lost $4,900 on the hand of blackjack.",
+     "cls": "ScenarioCasinoOutcome"
+    },
+    {
+     "title": "Kira's Charleston Casino",
+     "body": "You've lost $4,900 at the casino during your life.\n\nPlace your blackjack bets!",
+     "cls": "ScenarioCasinoBet"
+    },
+    {
+     "title": "Golden Neko Statue",
+     "body": "Just as you're leaving the casino, you see a little old lady counting the biggest pile of coins you've ever seen.\n\nShe tells you that ever since she bought a Golden Neko Statue, her casino winnings have increased by 20%.\n\nWhat will you do?",
+     "cls": "ScenarioCasinoGoldenNekoAd"
+    },
+    {
+     "title": null,
+     "body": null,
+     "cls": "ScenarioMiniPaywall"
+    }
+   ],
+   "stats": {
+    "happiness": 43,
+    "health": 61,
+    "smarts": 30,
+    "looks": 58,
+    "karma": 8,
+    "discipline": 16
+   }
+  },
+  {
+   "age": 30,
+   "logs": [],
+   "scenarios": [
+    {
+     "title": "Job Offer",
+     "body": "Someone is contacting you about a job opportunity as a Bill Collector.\n\nYou are currently a Silent Mourner and make $15,252 each year.",
+     "cls": "ScenarioRetentionHeadhunter"
+    },
+    {
+     "title": "Bringing home the bacon",
+     "body": "You left your job as a Silent Mourner at Pickles Mortuary and are now a Bill Collector at The Campbell Company.",
+     "cls": "ScenarioJobAcquisition"
+    },
+    {
+     "title": "Profile",
+     "body": null,
+     "cls": "ScenarioProfileHero"
+    }
+   ],
+   "stats": {
+    "happiness": 12,
+    "health": 62,
+    "smarts": 31,
+    "looks": 59,
+    "karma": 8,
+    "discipline": 16
+   }
+  },
+  {
+   "age": 31,
+   "logs": [
+    "I laughed out loud at a debtor who refused to pay for a botched Brazilian butt lift surgery."
+   ],
+   "scenarios": [
+    {
+     "title": "Damaged goods",
+     "body": "On behalf of a hospital, you contact a debtor who owes $18,141 to the surgeon performing the Brazilian butt lift, but the debtor says it was a horribly botched surgery and refuses to pay.\n\nWhat will you do?",
+     "cls": "DumbScenario"
+    }
+   ],
+   "stats": {
+    "happiness": 29,
+    "health": 62,
+    "smarts": 32,
+    "looks": 64,
+    "karma": 8,
+    "discipline": 16
+   }
+  },
+  {
+   "age": 32,
+   "logs": [
+    "A very intelligent man from my town named Jack died, but I wasn't too upset because I don't know Jack.",
+    "I went with some friends to Oak Tree Casino."
+   ],
+   "scenarios": [
+    {
+     "title": "Casino",
+     "body": "Some of your friends are going to a local casino called Oak Tree Casino.\n\nWill you join them?",
+     "cls": "ScenarioOpportunityCasino"
+    },
+    {
+     "title": "Oak Tree Casino",
+     "body": "You've lost $4,900 at the casino during your life.\n\nPlace your blackjack bets!",
+     "cls": "ScenarioCasinoBet"
+    }
+   ],
+   "stats": {
+    "happiness": 30,
+    "health": 61,
+    "smarts": 25,
+    "looks": 55,
+    "karma": 4,
+    "discipline": 12
+   }
+  },
+  {
+   "age": 33,
+   "logs": [
+    "I feuded with my half sister, Penelope, about who is the worse driver. I apologized to her for feuding."
+   ],
+   "scenarios": [
+    {
+     "title": "Quarrel",
+     "body": "You and your half sister, Penelope, are quarreling about who is the worse driver.\n\nWhat will you do?",
+     "cls": "ScenarioSiblingSquabble"
+    }
+   ],
+   "stats": {
+    "happiness": 29,
+    "health": 62,
+    "smarts": 24,
+    "looks": 54,
+    "karma": 4,
+    "discipline": 12
+   }
+  },
+  {
+   "age": 34,
+   "logs": [
+    "I am now dating Misty Ruth."
+   ],
+   "scenarios": [
+    {
+     "title": "Love Interest",
+     "body": "A woman you met at the library has asked you on a date.",
+     "cls": "ScenarioLoveDate"
+    },
+    {
+     "title": "True love",
+     "body": "You are now dating Misty Ruth.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 24,
+    "health": 61,
+    "smarts": 23,
+    "looks": 55,
+    "karma": 12,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 35,
+   "logs": [
+    "Recently, I've been wondering why the Bible is the most stolen book in America.",
+    "My mother told me that Misty lacks a sense of morals.\nI listened to her concerns.",
+    "I have a new supervisor named Garth Felt."
+   ],
+   "scenarios": [
+    {
+     "title": "Girlfriend",
+     "body": "Your mother disapproves of your girlfriend, Misty.\n\nShe says that Misty lacks a sense of morals.\n\nWhat will you do?",
+     "cls": "ScenarioLoverParentsDisapprove"
+    }
+   ],
+   "stats": {
+    "happiness": 39,
+    "health": 62,
+    "smarts": 22,
+    "looks": 54,
+    "karma": 12,
+    "discipline": 20
+   }
+  },
+  {
+   "age": 36,
+   "logs": [
+    "I have been diagnosed with anxiety.",
+    "My mother has been diagnosed with bowel incontinence."
+   ],
+   "scenarios": [
+    {
+     "title": "Anxiety",
+     "body": "You are suffering from anxiety.",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 8,
+    "health": 63,
+    "smarts": 21,
+    "looks": 53,
+    "karma": 20,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 37,
+   "logs": [
+    "I ate some super spicy Cajun food and my anus paid the price for 6 days.",
+    "I have been diagnosed with depression."
+   ],
+   "scenarios": [
+    {
+     "title": "Bowel Incontinence",
+     "body": "Your mother is suffering from bowel incontinence.",
+     "cls": "ScenarioScriptEventDiseaseContract"
+    },
+    {
+     "title": "Depression",
+     "body": "You are suffering from depression.",
+     "cls": "ScenarioDiseaseContract"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 43,
+    "smarts": 20,
+    "looks": 54,
+    "karma": 20,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 38,
+   "logs": [
+    "My supervisor, Garth, asked me to start putting in 47 hours a week at The Campbell Company. I explained to him that I don't consider that a healthy work-life balance.",
+    "Misty and I have been together for 5 years."
+   ],
+   "scenarios": [
+    {
+     "title": "Overtime",
+     "body": "Your supervisor, Garth, approaches you and tells you that he needs you to start putting in seven more hours a week of unpaid overtime.\n\nWhat will you do?",
+     "cls": "ScenarioJobOvertimeRequest"
+    },
+    {
+     "title": "Afraid not",
+     "body": "You explained to your supervisor, Garth, that working 47 hours a week is not congruent with a healthy work-life balance.",
+     "cls": "Scenario"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 18,
+    "smarts": 19,
+    "looks": 47,
+    "karma": 20,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 39,
+   "logs": [
+    "I was axed from my job as Bill Collector for The Campbell Company.\nI called my supervisor a clown on my way out.",
+    "I have been diagnosed with high blood pressure."
+   ],
+   "scenarios": [
+    {
+     "title": "Termination",
+     "body": "You have been axed from your position as Bill Collector for The Campbell Company.\n\nThey tell you it's because they found a dildo in your desk.",
+     "cls": "ScenarioJobTermination"
+    },
+    {
+     "title": "Verbally eviscerated",
+     "body": "You called your supervisor a clown on your way out!",
+     "cls": "Scenario"
+    },
+    {
+     "title": "High Blood Pressure",
+     "body": "You are suffering from high blood pressure.",
+     "cls": "ScenarioDiseaseContract"
+    },
+    {
+     "title": "Job Offer",
+     "body": "You're being offered a position as a Bill Collector at The Lucchese Company.\n\nWhat will you do?",
+     "cls": "ScenarioRetentionRehire"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 3,
+    "smarts": 18,
+    "looks": 39,
+    "karma": 20,
+    "discipline": 44
+   }
+  },
+  {
+   "age": 40,
+   "logs": [
+    "I saw someone get bit by a venomous snake. I called an ambulance and they rescued him safely."
+   ],
+   "scenarios": [
+    {
+     "title": "Situation",
+     "body": "While on a hike, your see another hiker get bit by a venomous snake.\n\nWhat will you do?",
+     "cls": "ScenarioEthicsSaveLife"
+    },
+    {
+     "title": "Just in time",
+     "body": "The ambulance arrived and rescued him safely.",
+     "cls": "Scenario"
+    },
+    {
+     "title": "Profile",
+     "body": null,
+     "cls": "ScenarioProfileHero"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 0,
+    "smarts": 17,
+    "looks": 27,
+    "karma": 12,
+    "discipline": 28
+   }
+  },
+  {
+   "age": 41,
+   "logs": [
+    "I found a handful of pennies in my right shoe.",
+    "Misty broke up with me.",
+    "I tried to lick Misty but missed!",
+    "She attacked me!\nShe pounded my jugular.\nShe pierced my patella.",
+    "I died after sustaining massive injuries in an assault. My net worth at the time of my death was $128,350."
+   ],
+   "scenarios": [
+    {
+     "title": "Break Up",
+     "body": "Your girlfriend, Misty, wants to break up with you.\n\nShe says she is not satisfied sexually.\n\nWhat will you do?",
+     "cls": "ScenarioLoverLeaves"
+    },
+    {
+     "title": "Attack",
+     "body": "How will you attack your girlfriend, Misty?",
+     "cls": "ScenarioCustomAttack"
+    },
+    {
+     "title": "Way to go champ",
+     "body": "You tried to lick your girlfriend, Misty, but missed!",
+     "cls": "Scenario"
+    },
+    {
+     "title": "Somebody help!",
+     "body": "She attacked you!\n\nShe pounded your jugular.\nShe pierced your patella.",
+     "cls": "ScenarioAttackInbound"
+    },
+    {
+     "title": "Lil Simmons",
+     "body": "You died after sustaining massive injuries in an assault.",
+     "cls": "ScenarioDeathHero"
+    }
+   ],
+   "stats": {
+    "happiness": 0,
+    "health": 0,
+    "smarts": 16,
+    "looks": 19,
+    "karma": 20,
+    "discipline": 36
+   }
+  }
+ ]
+}

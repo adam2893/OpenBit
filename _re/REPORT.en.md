@@ -23484,6 +23484,57 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 266. A second played life, and 25 classes it added
+
+The first trace's list (264) was one life's worth. A second life was played in the emulator
+(41 years before a house fire and a fatal attack) and it surfaced **25 scenario classes the
+first never pushed** -- the whole crime chain among them. Both traces are now in the repo,
+not in `/tmp`:
+
+```
+obs_corpus/trace_life2.json   ages 0..41   112 log lines   107 scenario pushes
+```
+
+### 266.1 The crime chain, with its lines
+
+```
+age 23  I was arrested for solicitation!                       ScenarioCrimeArrest
+        I called one of the police officers that arrested me a peon!   (lane)
+        I was charged with solicitation!                      ScenarioCrimeCharge
+        I hired a public defender to represent me in court.   (lane)
+        I plead guilty.                                       ScenarioCrimePlea
+        I have been convicted of solicitation and sentenced to
+        one year in prison!                                   ScenarioCrimeSentence
+        They sent me to Progressive Asylum, a minimum security prison.
+        I have been freed from prison.
+```
+
+### 266.2 The rest of the new classes
+
+```
+age 8   ScenarioCrimeShoplift       I went window shopping. / I tried to shoplift a flask
+                                    but was apprehended by a mall cop!
+        ScenarioCrimeShopliftMallCop  I decided to attack the mall cop!
+        ScenarioCustomAttack, ScenarioAttackInbound   the fight chain
+age 15  ScenarioFailingEyesight     My eyesight has been worsening.
+        ScenarioGameEyeExam        My mother took me to the optometrist for an eye exam.
+        ScenarioEyeExamOutcome     I failed my eye exam!
+```
+
+plus `ScenarioCasinoBet`, `ScenarioCasinoOutcome`, `ScenarioGameBlackjack`,
+`ScenarioLoveDate`, `ScenarioLoverLeaves`, `ScenarioLoverParentsDisapprove`,
+`ScenarioParentsOfferPet`, `ScenarioPetDiscipline`, `ScenarioSiblingComingOut`,
+`ScenarioEthicsSaveLife`, `ScenarioJobTermination`, `ScenarioRetentionRehire`,
+`ScenarioInsufficientFinances`, `ScenarioCasinoGoldenNekoAd` (a mod purchase).
+
+### 266.3 Why this is the answer to 264.2
+
+264.2 said the blocked families needed another played life. This is that life: the crime
+chain's prompts are still card-side, but its *sentences* -- arrest, charge, plea, sentence,
+prison name, release -- are all here, and the juvenile shoplifting card brings the
+delinquency chain's first real lines too. Next pass starts from these, not from a guess.
+
+
 ## 265. The battery, restored again
 
 The probe battery came back red on one file, and it was the same file as before:
