@@ -56,7 +56,10 @@ for seed in range(1, 31):
         # The child is on the life, with that name and that partner as its parent.
         found = [c for c in kids if c["name"] == child_name]
         assert found, (seed, child_name, [c["name"] for c in kids])
-        kid = found[0]
+        # Two children can share a name; the age the log implies is what tells the
+        # right one apart (REPORT.en.md 260's suite run).
+        want_age = doc["final"]["age"] - event["age"]
+        kid = next((c for c in found if c["age"] == want_age), found[0])
         assert kid["otherParent"] == partner, (seed, kid, partner)
         assert kid["age"] == doc["final"]["age"] - event["age"], (seed, kid, event["age"])
         assert (kind == "girl") == kid["female"], (seed, kid, kind)

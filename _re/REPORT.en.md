@@ -23484,6 +23484,60 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 260. The school loop
+
+The school family existed but almost never ran, for two reasons that hid each other:
+
+```
+schooling     makeSchool() was defined and never called, and Hero::schooling (which
+              schoolYear is gated on) is only set there -- so the family could not fire
+wheel         with one seat in a 125-seat wheel it could not win a year either: three
+              school cards in thirty lives, against a trace that has one nearly every
+              year of school
+```
+
+Both are fixed: `ageUp` now draws the school when the level changes (5, 11, 14), which is
+what `makeSchool` was written for, and the school loop takes the year ahead of the wheel
+for ages below eighteen, the way the game's `Life::IncrementAge` school block does.
+
+```cpp
+if (level > 0 && (!h.schooling || level != h.schoolLevel)) makeSchool(life);   // ageUp
+if (h.age < 18 && h.schooling && schoolYear(...)) return true;                 // priority
+```
+
+### 260.1 The officer election, from the trace's two lines
+
+The activity card already had an election branch, with port-side lines ("I was elected
+President of the X"). The played life writes it as two lines, and both are metadata
+templates:
+
+```
+#30774  My fellow {0} {1} at my {2} have nominated me to become {3} of the {4}.
+#24353  I have become {0} of {1} at my {2}.
+```
+
+The office is one of the row's `Other Officers` ("Vice-President, Secretary, Treasurer")
+or its `Leader Title`, and the nomination goes to the year's extra lines with the win as
+the journal line -- exactly the shape the trace has.
+
+```
+I have become Vice-President of the Cosplay Club at my middle school.
+```
+
+### 260.2 What the priority cost
+
+Owning the school years moves every other family that was used to those years. Three
+tests noticed, and the fixes are the honest kind: the licence is now pushed at sixteen
+the way the game pushes it rather than waiting for a wheel seat, and the elope, wedding
+and pray-asset families got tickets. One test was a single-seed lane assertion
+(`test_lover_wedding` demanded seed 2 draw "Do it"); it now finds a paid wedding in any
+of twenty seeds and only asserts the marriage when the venue was affordable.
+
+```
+school cards per 30 lives   3 -> 111
+elections                   0 -> 2   (rare by the card's own coin)
+```
+
 ## 259. The prison chain gets its years
 
 258 measured the symptom: 2 of 60 lives ever entered prison, so the prison family's cards

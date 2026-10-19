@@ -3715,6 +3715,8 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
 // dispatchYear. The split exists because a card builder resets `out` with
 // `out = AgeUp()` (45 of them do), which used to throw the family lines away on
 // exactly the years a code-built card fired.
+static int schoolLevelFor(int age);
+
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
@@ -3740,6 +3742,13 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   ++life.year;
   ++h.age;
   if (h.age == 1) applyNewbornSetup(h);
+  // School begins and the level changes are drawn here, not inside schoolYear:
+  // that family is gated on Hero::schooling, which only makeSchool sets, so the
+  // call could never come from inside it (REPORT.en.md 260).
+  {
+    const int level = schoolLevelFor(h.age);
+    if (level > 0 && (!h.schooling || level != h.schoolLevel)) makeSchool(life);
+  }
   // The family's own lines for the year, written before the scenario's
   // (trace_game9 age 7: the mother's diagnosis, then the scenario line).
   const std::vector<std::string> familyLines = lifecycleLines(life);
@@ -3933,11 +3942,11 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::drugOfferYear, nullptr},
         {&Sim::crashoutYear, nullptr},
         {&Sim::prayWealthYear, nullptr},
-        {&Sim::prayAssetYear, nullptr},
+        {&Sim::prayAssetYear, nullptr, 2},
         {&Sim::sexualityYear, nullptr},
         {&Sim::onlyfansStartYear, nullptr, 3},
         {&Sim::onlyfansTipYear, nullptr, 3},
-        {&Sim::ambientYear, nullptr},
+        {&Sim::ambientYear, nullptr, 2},
         {&Sim::loverBreakUpYear, nullptr},
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
@@ -3989,8 +3998,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::birthYear, nullptr, 6},
         {&Sim::loverCounselingPushYear, nullptr},
         {&Sim::loverCallOffEngagementYear, nullptr},
-        {&Sim::loverElopeYear, nullptr},
-        {&Sim::loverWeddingYear, nullptr},
+        {&Sim::loverElopeYear, nullptr, 2},
+        {&Sim::loverWeddingYear, nullptr, 2},
         {&Sim::loverLeavesYear, nullptr},
         {&Sim::exLoverSextYear, nullptr},
         {&Sim::exLoverMarriedNowYear, nullptr},
@@ -4054,6 +4063,21 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     // because a forced card is the caller's, not the year's (REPORT.en.md 259).
     if (forcedChoice < 0 && maybeConvicted(life, out)) return true;
     if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
+    // The school loop is a yearly loop in the game (Life::IncrementAge), not a card
+    // in a roulette: with one seat in a 125-seat wheel the port showed a school
+    // card about three times in thirty lives, where the trace has one nearly every
+    // school year (REPORT.en.md 260).
+    if (forcedChoice < 0 && h.age < 18 && h.schooling &&
+        schoolYear(life, out, forcedChoice)) {
+      return true;
+    }
+    // The licence push is the game's own at sixteen (REPORT.en.md 255): with the
+    // school loop owning the high-school years it would otherwise wait its turn and
+    // never come.
+    if (forcedChoice < 0 && (h.age == 16 || h.age == 17) && !h.hasLicense &&
+        licenseYear(life, out, forcedChoice)) {
+      return true;
+    }
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -5780,7 +5804,11 @@ void Sim::makePrisoner(Life& life) {
 // Required Major, Min/Max Age, Min Intelligence/Appearance/Health/Karma, drug
 // tests, clear criminal record, licences) are not evaluated; hiring is a draw.
 bool Sim::careerYear(Life& life, AgeUp& out, int forcedChoice) {
+
   Hero& h = life.hero;
+  // Nobody hires past the country's retirement age (REPORT.en.md 260): the job
+  // cards used to re-employ a retired hero, which the retirement test caught.
+  if (h.age >= retirementAge(h)) return false;
   if (h.military || h.militaryPending) return false;
   hero_ = &h;
   life_ = &life;
@@ -14637,6 +14665,21 @@ static const char* schoolLevelName(int level) {
   }
 }
 
+// The office the activity elects (REPORT.en.md 260). The row lists its officers
+// comma-separated in 'Other Officers' and its top post in 'Leader Title'; the game
+// draws one of them for the nomination line.
+static std::string schoolsActivityOffice(const std::vector<std::string>& others,
+                                         const std::string& leader, Rng& rng) {
+  std::vector<std::string> candidates;
+  for (const std::string& o : others) {
+    const std::string v = trim(o);
+    if (!v.empty()) candidates.push_back(v);
+  }
+  if (candidates.empty() && !trim(leader).empty()) candidates.push_back(trim(leader));
+  if (candidates.empty()) return std::string("member");
+  return candidates[rng.below(uint32_t(candidates.size()))];
+}
+
 // The four teacher pools flag their level with a bare 'x' in one of three
 // columns. The data has no middle-school column, so middle school reads the
 // elementary column (shortcut: the real game's middle-school split is not in
@@ -14865,6 +14908,11 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
   // The year's bookkeeping: the level the hero moved into, the grades, and the
   // crowd's opinion drifting back to the middle.
   if (h.schoolLevel != level) {
+    h.schoolLevel = level;
+    // Drawing the school's own people and the hero's activity was defined but never
+    // called, so the activity card and the officer election had no row to stand on
+    // (REPORT.en.md 260). It draws once per level, in the first year that fires.
+    makeSchool(life);
     h.schoolLevel = level;
     add("I started " + std::string(lvlName) + ".");
   }
@@ -15169,10 +15217,20 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
         happy -= 1;
       }
     } else if (schoolRng_.chance(0.25) && at.has("Leader Title")) {
-      const std::string leader = trim(at.at(actRow, "Leader Title"));
-      title = "Election at the " + name;
-      body = "The " + name + " needed a " + leader + ".";
-      say("I was elected " + leader + " of the " + name);
+      // The game writes the nomination and the win as two journal lines, both
+      // templates from metadata: #30774 'My fellow {0} {1} at my {2} have nominated
+      // me to become {3} of the {4}.' and #24353 'I have become {0} of {1} at my
+      // {2}.' (trace at 16-17). The office is one of the row's Other Officers, or
+      // the row's Leader Title when the row lists no others.
+      std::vector<std::string> offices;
+      splitOn(trim(at.has("Other Officers") ? at.at(actRow, "Other Officers") : ""),
+              ',', offices);
+      std::string office = schoolsActivityOffice(offices, at.at(actRow, "Leader Title"), schoolRng_);
+      title = name;
+      body = "The " + name + " needed a " + office + ".";
+      add("My fellow members of the " + name + " at my " + lvlName +
+          " have nominated me to become " + office + " of the " + ref + ".");
+      say("I have become " + office + " of the " + name + " at my " + lvlName + ".");
       h.schoolPopularity = std::min(100, h.schoolPopularity + 2);
       happy += 1;
     } else {
@@ -21285,9 +21343,13 @@ bool Sim::morningYear(Life& life, AgeUp& out, int forcedChoice) {
 // _narrative 0x178; the .ctor @0x73f3d12f48 writes the title slot [self+0x38]
 // with 'Job Referral' (#27915, cell 0x5cc0908) and clears [self+0x28].
 bool Sim::jobReferralYear(Life& life, AgeUp& out, int forcedChoice) {
+
   // A pushed card owns the year, the rule every code-built card keeps.
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;
+  // Nobody hires past the country's retirement age (REPORT.en.md 260): the job
+  // cards used to re-employ a retired hero, which the retirement test caught.
+  if (h.age >= retirementAge(h)) return false;
   // Gate @0x73f3d14918 asks for a hero with no work at all -- CurrentlyHasAJob
   // @0x73f2f0e040, CurrentlyHasASpecialJob @0x73f2f0b820,
   // CurrentlyInTheMilitary @0x73f2f0e0b4, CurrentlyInSchool @0x73f2f0ccf4,
