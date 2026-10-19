@@ -3815,6 +3815,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // the trace writes the death and the funeral in the same year, and a family reached by
   // the rotation would push the card a year late.
   if (forcedChoice < 0 && life.hero.pendingFuneral) return funeralYear(life, out, forcedChoice);
+  // Graduation comes after the funeral and before the wheel: a death in the same year
+  // keeps the funeral's same-year pair (REPORT.en.md 249), and the graduation then
+  // takes the next year rather than being lost (REPORT.en.md 262).
+  if (forcedChoice < 0 && life.hero.graduationPending) return graduationYear(life, out, forcedChoice);
   Hero& h = life.hero;
   if (getenv("BL_DBG")) fprintf(stderr, "[dbg] age %d family %zu extra %zu\n", h.age, life.family.size(), out.extra.size());
   const bool student = h.age < 18;
@@ -4547,6 +4551,24 @@ bool Sim::safeSexYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---- Graduation (REPORT.en.md 262) ----------------------------------------
+// ScenarioSchoolGraduate: the played life's line is 'I graduated from high school.'
+// and the registry's card title is 'Graduation'. The year is the one the school
+// ladder ends (schoolMilestoneLines sets the flag), and it takes the year before the
+// wheel the way the other fixed-life events do.
+bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.graduationPending) return false;
+  h.graduationPending = false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioSchoolGraduate";
+  out.title = "Graduation";
+  out.narrative = "I graduated from high school.";
+  return true;
+}
+
 bool Sim::siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 14) return false;
@@ -4684,7 +4706,9 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
   // at 14-17, so the year the hero turns 18 is the first without it.
   if (!h.graduatedHighSchool && h.lastSchoolLevel == 3 && level != 3) {
     h.graduatedHighSchool = true;
-    out.push_back("I graduated from high school.");
+    // The card is ScenarioSchoolGraduate (title "Graduation", the registry's own),
+    // so the line belongs to that card, not to the year's extra lines (REPORT 262).
+    h.graduationPending = true;
   }
   // The school's start and the hero's own activity lines belong to the year the
   // level changes (REPORT.en.md 261). makeSchool has already drawn the activity by

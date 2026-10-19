@@ -23484,6 +23484,28 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 262. Graduation as its own card
+
+The graduation line was written as a yearly extra; the bench names the class that owns it
+(`ScenarioSchoolGraduate`, title "Graduation"), so it is now a card:
+
+```cpp
+schoolMilestoneLines: leaving the high-school band sets Hero::graduationPending
+dispatchYear:        pendingFuneral first, then graduationPending, then the wheel
+```
+
+`Hero::graduationPending` keeps the card from being lost when another fixed event takes
+the year: a parent's funeral in the same year keeps its same-year death line pair (249)
+and the graduation card follows the next year.
+
+```
+40 lives:  39 graduations (one life ended before 18)
+age        18 normally, 19 when a funeral took that year
+```
+
+The test now allows 17-19 and says why: the trace logs its own at 17, the port puts it at
+the end of the school band (18), and a collision with a death pushes it one year.
+
 ## 261. Starting school, and joining something
 
 Two more trace lines, both with no card of their own:
