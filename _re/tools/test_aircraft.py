@@ -38,7 +38,8 @@ for seed in range(1, 31):
                 bought += 1
                 owned = (event.get("logLines") or [""])[-1]
                 assert owned.startswith("I bought a "), (seed, owned)
-        elif table == "a16_aircraft-danger-scenarios-enc":
+        elif table in ("a16_aircraft-danger-scenarios-enc",
+                       "a16-aircraft-danger-scenarios-enc"):
             danger += 1
             assert "<" not in event["body"], (seed, event["body"])
             assert not event.get("residue"), (seed, event.get("residue"))

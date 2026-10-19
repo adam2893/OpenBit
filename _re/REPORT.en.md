@@ -23448,6 +23448,42 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 242. Green again, and what it cost
+
+After the rotation (240) the suite took five more corrections, each one a real signal:
+
+```
+threesome card      friend and third person could be the same name  -> redraw on collision
+aircraft danger     reached once in 30 lives                       -> pushed as a pending card
+                    after the purchase instead of waiting its turn
+lightning probe     the aircraft danger table carries a "Lightning Strike" row whose
+                    title collided with the lightning card        -> that row is skipped
+home / vehicle /    rates too low to appear in their own tests      -> coins raised
+  aircraft purchases
+birth test          child names can be two words ("Ray Lee")       -> parse the whole tail
+aircraft table id   the card reported a16-aircraft-... while every other card uses
+                    a16_aircraft-...                              -> spelled alike
+```
+
+```
+tests    pass=62 fail=0
+probes   55 rc0 53 residue0 51 fails0 54
+```
+
+The two probe rc=1 are not the port: `idres` reads a file the /tmp wipe took, and `flres`
+crashes in its own regex (`redefinition of group name n0`). `jrres` and `patch_flres` print
+no residue line (old format, `residue=?`).
+
+### 242.1 What remains, in order
+
+1. **Weights.** 240.1's ceiling: a family leads once per 110 years, so a card's rate is its
+   coin times ~0.2. The tests are calibrated against that today. The clean fix is a per-entry
+   weight drawn before the rotation; the lazy approximation is duplicating a rare entry in
+   the table, which buys the same effect with no new machinery.
+2. **Bench.** Still dead until a life is played (harness is attach-only; `fresh_trace` on an
+   idle app returns ages=[0]).
+3. **flres and idres**, probe-side.
+
 ## 240. Rotation instead of a draw
 
 239 measured the bias: with a fresh shuffle the year goes to whoever fires first, and a

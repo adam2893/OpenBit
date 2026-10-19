@@ -3687,6 +3687,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
     if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
+    if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
   ++life.year;
@@ -19431,7 +19432,12 @@ bool Sim::friendThreesomeYear(Life& life, AgeUp& out, int forcedChoice) {
   // same generator (src/sim.cpp 24666), so the port draws the floor plus the roll.
   const bool thirdFemale = !h.female;
   const int thirdAge = 18 + int(ftRng_.below(10));
-  const std::string thirdName = drawFirstName(thirdFemale) + " " + drawSurname();
+  // The friend and the third person are two different people; the name pools can draw the
+  // same one, which produced "your friend, X, ... with a young woman named X" (REPORT 242).
+  std::string thirdName = drawFirstName(thirdFemale) + " " + drawSurname();
+  for (int guard = 0; guard < 4 && thirdName == friendName; ++guard) {
+    thirdName = drawFirstName(thirdFemale) + " " + drawSurname();
+  }
   // The "Even though you {0}, " half of the body is the hero's own partner:
   // SimLover.RelationshipStatusString @0x73f30d35a0 lowered into three cells --
   // 0x5CBC6D8 'are married to {0}', 0x5CBC6E8 'are engaged to {0}' and 0x5CBC6E0

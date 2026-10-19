@@ -1273,7 +1273,7 @@ bool Sim::arrestScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!ensureTable("a16_arrest-scenarios-enc")) return false;
   if (h.age < 12) return false;
-  if (forcedChoice < 0 && ambientRng_.below(34) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_arrest-scenarios-enc");
@@ -1650,7 +1650,7 @@ bool Sim::homePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.home.empty()) return false;
   if (h.age < 20) return false;
   if (!ensureTable("a16_house-types-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(8) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(2) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_house-types-enc");
@@ -1729,7 +1729,7 @@ bool Sim::vehiclePurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.outdoorVehicle.empty()) return false;
   if (h.age < 17) return false;
   if (!ensureTable("a16_outdoor-vehicle-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(9) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(2) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_outdoor-vehicle-enc");
@@ -1772,7 +1772,7 @@ bool Sim::spouseVehicleReactionYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.outdoorVehicle.empty() || h.loverName.empty()) return false;
   if (!ensureTable("a16_spouse-vehicle-reactions-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(7) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(1) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_spouse-vehicle-reactions-enc");
@@ -1807,7 +1807,7 @@ bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.aircraft.empty()) return false;
   if (h.age < 18) return false;
   if (!ensureTable("a16_aircraft-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(3) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_aircraft-enc");
@@ -1834,6 +1834,9 @@ bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "Buy it";
     h.money -= price;
     h.aircraft = name;
+    // The first flight is the danger card, next year: a family behind the chooser is
+    // reached rarely, and a crash that waits for its own turn may never happen.
+    life.pendingCards.push_back(kPendingAircraftDanger);
     out.narrative = "I bought a " + name + " for " + money(price) + ".";
   } else {
     out.choice = "Walk away";
@@ -1852,7 +1855,9 @@ bool Sim::aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.aircraft.empty()) return false;
   if (!ensureTable("a16_aircraft-danger-scenarios-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(14) != 0) return false;
+  // The danger card only runs when the hero owns an aircraft, and the chooser reaches a
+  // given family rarely; its own coin is therefore the gate, not a rate (REPORT.en.md 242).
+  if (forcedChoice < 0 && ambientRng_.below(1) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_aircraft-danger-scenarios-enc");
@@ -1860,6 +1865,9 @@ bool Sim::aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice) {
   for (size_t r = 0; r < t.size(); ++r) {
     const std::string text = trim(t.at(r, "Scenario"));
     if (text.empty()) continue;
+    // The lightning family owns the strike: its variant of this row carries a title the
+    // lightning probe matches, and that probe reads a card with lanes (REPORT.en.md 242).
+    if (trim(t.at(r, "Title")) == "Lightning Strike") continue;
     if (resolve(text).find('<') != std::string::npos) continue;
     rows.push_back(r);
   }

@@ -94,6 +94,7 @@ enum PendingCard {
   kPendingPaternityResults = 3,     // the court order's result, right after the test
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
+  kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
 };
 
 // The hero's own children (REPORT.en.md 146). The game keeps a SimChild array on the

@@ -50,7 +50,9 @@ for seed in range(1, 31):
         lines = event.get("logLines") or []
         named = [l for l in lines if l.startswith("I named ")]
         assert named, (seed, lines)
-        child_name = named[0].split()[-1].rstrip(".")
+        # A child name can be two words ("Ray Lee"), so it is the whole tail, not the
+        # last token (REPORT.en.md 242).
+        child_name = re.sub(r"^I named (?:him|her) ", "", named[0]).rstrip(".").strip()
         # The child is on the life, with that name and that partner as its parent.
         found = [c for c in kids if c["name"] == child_name]
         assert found, (seed, child_name, [c["name"] for c in kids])
