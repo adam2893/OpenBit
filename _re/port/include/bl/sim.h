@@ -331,6 +331,7 @@ class Sim {
   std::vector<std::string> overtimeLines(Life& life);
   bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
   bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
+  std::vector<std::string> willLines(Life& life);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.
@@ -889,6 +890,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The ex's own paternity ask, on its own stream (REPORT.en.md 251): sharing the
   // lover stream moved every later lover card's draws for the seed.
   Rng exPatRng_;
+  // The will's own coin, on its own stream (REPORT.en.md 252).
+  Rng wllRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

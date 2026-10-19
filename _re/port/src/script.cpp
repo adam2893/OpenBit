@@ -972,6 +972,17 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     events.push_back(eventJson(ev, h.age));
 
     if (sim.checkDeath(life, deathType, deathSentence)) life.alive = false;
+    // The game closes the hero's last line with the estate (REPORT.en.md 252):
+    // "I died while sleeping peacefully. My net worth at the time of my death was
+    // $388,327."
+    if (!life.alive && !deathSentence.empty()) {
+      const long long worth = life.hero.money;
+      std::string digits = std::to_string(worth < 0 ? -worth : worth);
+      for (long long at = (long long)digits.size() - 3; at > 0; at -= 3)
+        digits.insert(size_t(at), ",");
+      deathSentence += std::string(" My net worth at the time of my death was ") +
+                       (worth < 0 ? "-$" : "$") + digits + ".";
+    }
   }
 
   if (json)

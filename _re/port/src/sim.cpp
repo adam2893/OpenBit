@@ -694,6 +694,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       diseaseRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x27d4eb2f165667c5ULL),
       deathRng_(seed ^ 0x94d049bb133111ebULL ^ 0x369dea0f31a53f85ULL),
       exPatRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xbf58476d1ce4e5b9ULL),
+      wllRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x27d4eb2f165667c5ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3744,6 +3745,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   int diseaseHealthCost = 0;
   const std::vector<std::string> diseaseLines = heroDiseaseLines(life, &diseaseHealthCost);
   const std::vector<std::string> workLines = overtimeLines(life);
+  const std::vector<std::string> willLinesOut = willLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
   ev.ailmentCost = diseaseHealthCost;
@@ -3753,6 +3755,9 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   ev.extra.insert(ev.extra.begin() + familyLines.size(), diseaseLines.begin(), diseaseLines.end());
   ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size()),
                   workLines.begin(), workLines.end());
+  ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
+                                          workLines.size()),
+                  willLinesOut.begin(), willLinesOut.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
   // place that guarantees no '<token>' reaches a log line, and the single place that
@@ -4445,6 +4450,34 @@ bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
   h.pendingFuneral = false;
   h.funeralRelation.clear();
   return true;
+}
+
+// ---- The will (REPORT.en.md 252) ----------------------------------------
+// The played-life trace writes it once: "I created a will. I'm leaving everything to
+// my son, Cleveland." No card is logged with it, so it is a yearly line. The
+// beneficiary is the eldest child the hero has; a hero with no child and no partner
+// has nothing to leave and gets no line.
+std::vector<std::string> Sim::willLines(Life& life) {
+  std::vector<std::string> out;
+  Hero& h = life.hero;
+  if (h.hasWill || h.age < 18) return out;
+  if (!wllRng_.chance(1.0 / 20.0)) return out;
+  const Child* kid = nullptr;
+  for (const Child& c : life.children) {
+    if (!c.alive) continue;
+    if (kid == nullptr || c.age > kid->age) kid = &c;
+  }
+  std::string who;
+  if (kid != nullptr) {
+    who = std::string(kid->female ? "my daughter, " : "my son, ") + kid->name;
+  } else if (h.relationshipOn && !h.loverName.empty()) {
+    who = std::string(h.loverFemale ? "my girlfriend, " : "my boyfriend, ") + h.loverName;
+  } else {
+    return out;
+  }
+  h.hasWill = true;
+  out.push_back("I created a will. I'm leaving everything to " + who + ".");
+  return out;
 }
 
 bool Sim::overtimeYear(Life& life, AgeUp& out, int forcedChoice) {

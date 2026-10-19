@@ -23484,6 +23484,46 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 252. The will, and the estate line
+
+Two lines from the played life, small enough to be transcribed exactly:
+
+```
+age 50  I created a will. I'm leaving everything to my son, Cleveland.
+age 60  I died while sleeping peacefully. My net worth at the time of my death was
+        $388,327.
+```
+
+Neither is a card in the trace -- no title, no lane -- so both are yearly lines.
+
+### 252.1 The will
+
+`Hero::hasWill` is set once. The beneficiary is the eldest living child, falling back to
+the partner when there is none, and a hero with neither gets no line at all (there is
+nothing to leave). The coin is 1-in-20 on its own stream: the trace has one will in a
+sixty-year life, and 40 test lives give 26.
+
+```
+I created a will. I'm leaving everything to my daughter, Jay.
+I created a will. I'm leaving everything to my girlfriend, Selene Gnomez.
+```
+
+### 252.2 The estate
+
+The death sentence the table writes (`he died of diabetes.`) is now closed with the
+estate, in the game's own phrasing, and formatted with thousands separators. A hero in
+debt writes `-$455`, which is the one place the trace had no example and the format is
+the port's choice: negative money is real (the trace's own hero ended at $388,327, but a
+tested life finished at minus four hundred).
+
+```
+40 lives:  26 wills   34 deaths, every sentence carrying the estate
+```
+
+`tools/test_will_estate.py` checks that a will is written at most once, that its
+beneficiary was named somewhere earlier in the same life, and that every dead hero's
+sentence ends with the net-worth clause.
+
 ## 251. The ex who asks for a paternity test
 
 The trace has the whole chain at 43, and it is the polite twin of 149's court order:

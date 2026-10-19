@@ -169,6 +169,9 @@ struct Hero {
   // The hero offered to take an ex-lover's paternity test (REPORT.en.md 251): the
   // result card then names the ex and the child the way the trace does.
   bool paternityProactive = false;
+  // The will (REPORT.en.md 252): the trace writes "I created a will. I'm leaving
+  // everything to my son, Cleveland." once in a life, so the hero carries the flag.
+  bool hasWill = false;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;
