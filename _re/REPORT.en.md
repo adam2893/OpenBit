@@ -23484,6 +23484,33 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 243. The distribution after rotation
+
+200 lives x 80 years, `tools/cardrate.py`:
+
+```
+                          per 100 lives   per life
+relationship                  815.0        8.2
+(code-built cards, no table)  725.5        7.3
+dumb-scenarios-universal      489.0        4.9
+pastimes                      380.0        3.8
+movies                        335.0        3.4
+conversations                 233.5        2.3
+coworker-hookup               195.5        2.0
+distinct faces                 4839
+```
+
+Compared with 239 (shuffle: 593/489/458/249/223) the rotation moved share toward the
+families that used to sit late, and the total face count is flat at ~4.8k. Life is now
+68 events per 80-year life (was 40.1 under the shuffle), which is closer to one card a year.
+
+### 243.1 The bench, one more attempt
+
+`blh_attach.py` + the harness `age` RPC was retried against a fresh life: the RPC reaches
+`Life.IncrementAge` and returns ok, but the hero age stays 0 and no ticks are recorded, so
+the call does nothing. That closes the last programmatic route to a played life; the bench
+needs the game driven by taps.
+
 ## 240. Rotation instead of a draw
 
 239 measured the bias: with a fresh shuffle the year goes to whoever fires first, and a
