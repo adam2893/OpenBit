@@ -591,6 +591,19 @@ struct Hero {
   // of its 102 rows on this column, so the card needs the value before it can fire;
   // 'straight' is the default the script can override.
   std::string sexuality = "straight";
+  // The hero's own illnesses (REPORT.en.md 247). The played-life trace diagnoses
+  // anxiety at 36 and depression at 37 -- two at once -- and cures both in the same
+  // year at 41, so the hero carries a list, not a single slot.
+  struct Ailment {
+    std::string name;   // display form with its article: "the flu", "acne"
+    std::string key;    // the row's Disease cell
+    int health = 0;     // Health Impact Score of the row
+    int cures = 0;      // Cures Organically Score (0 = never on its own)
+    int years = 0;      // how many age-ups it has lasted
+    bool noCure = false;
+    bool fatal = false;
+  };
+  std::vector<Ailment> ailments;
   // The house the hero lives in (REPORT.en.md 218).
   std::string home;
   // The aircraft the hero owns (REPORT.en.md 222), 'Make Model' from a16_aircraft-enc.

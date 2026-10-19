@@ -691,6 +691,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       fameRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x3c6ef372fe94f82bULL),
       childDemandRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x510e527fade682d1ULL),
       dispatchRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x94d049bb133111ebULL),
+      diseaseRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x27d4eb2f165667c5ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3381,7 +3382,9 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
       const size_t row = weightedPickOf(diseases, "Contracts Organically Score", pool, rng_);
       if (row != size_t(-1)) {
         std::string d = lower(trim(diseases.at(row, "Disease")));
-        if (!trim(diseases.at(row, "Uses Indefinite Article")).empty() && !d.empty()) {
+        if (!trim(diseases.at(row, "Uses Definite Article")).empty() && !d.empty()) {
+          d = "the " + d;
+        } else if (!trim(diseases.at(row, "Uses Indefinite Article")).empty() && !d.empty()) {
           d = (std::strchr("aeiou", d[0]) ? "an " : "a ") + d;
         }
         p.disease = d;
@@ -3696,11 +3699,18 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // The family's own lines for the year, written before the scenario's
   // (trace_game9 age 7: the mother's diagnosis, then the scenario line).
   const std::vector<std::string> familyLines = lifecycleLines(life);
+  // The hero's own illness is a yearly line like the family's (REPORT.en.md 247):
+  // the played-life trace logs "I have been diagnosed with anxiety." with no card
+  // of its own, and only the disease's own cards (symptoms, doctor) compete.
+  int diseaseHealthCost = 0;
+  const std::vector<std::string> diseaseLines = heroDiseaseLines(life, &diseaseHealthCost);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
+  ev.ailmentCost = diseaseHealthCost;
   // The family lines go in front of whatever the card wrote, which is the order
   // the game logs them in.
   ev.extra.insert(ev.extra.begin(), familyLines.begin(), familyLines.end());
+  ev.extra.insert(ev.extra.begin() + familyLines.size(), diseaseLines.begin(), diseaseLines.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
   // place that guarantees no '<token>' reaches a log line, and the single place that
@@ -4306,6 +4316,103 @@ bool Sim::renderSymptomCard(const Life& life, AgeUp& out, int choice) {
   out.choice = kLabel[idx] ? kLabel[idx] : (water ? "Chug some water" : "Take some aspirin");
   out.narrative = resolve(trim(t.at(row, "Log Version")) + kTail[idx]);
   return true;
+}
+
+// ---- The hero's own illness (REPORT.en.md 247) ---------------------------
+// The disease table (107 rows) is what the played-life trace is describing when it
+// logs "I have been diagnosed with anxiety." at 36 and "I was cured of anxiety." at
+// 41. The symptom card, the doctor picker and the treatment card already existed in
+// the dumb pool; what was missing was the state they talk about, so the port could
+// diagnose a hero without anything being wrong with him.
+namespace {
+// The display form: the table marks the eight rows that need an article, and the
+// trace confirms it ("the flu", "the chicken pox", "a staph infection").
+std::string diseaseDisplayName(const Table& t, size_t r) {
+  const std::string name = trim(t.at(r, "Disease"));
+  if (name.empty()) return name;
+  if (!trim(t.at(r, "Uses Definite Article")).empty()) return "the " + name;
+  if (!trim(t.at(r, "Uses Indefinite Article")).empty()) {
+    const char c = static_cast<char>(::tolower(static_cast<unsigned char>(name[0])));
+    const bool vowel = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
+    return std::string(vowel ? "an " : "a ") + name;
+  }
+  return name;
+}
+}  // namespace
+
+std::vector<std::string> Sim::heroDiseaseLines(Life& life, int* healthCost) {
+  std::vector<std::string> out;
+  Hero& h = life.hero;
+  if (healthCost != nullptr) *healthCost = 0;
+  // Every ailment the hero carries costs health this year and may leave on its own.
+  // The trace cures two in the same year (41: depression and anxiety), so each runs
+  // its own clock rather than sharing one slot.
+  for (size_t i = 0; i < h.ailments.size();) {
+    Hero::Ailment& a = h.ailments[i];
+    ++a.years;
+    // The cost is reported through the year's deltas, not written into the stat
+    // here: the scripted runner rebuilds every stat from the deltas, so a silent
+    // in-model drain would make the following card's figures disagree with it.
+    if (a.health > 0 && healthCost != nullptr) *healthCost += a.health;
+    // No Cure rows and rows with no organic score only leave through a treatment card.
+    const bool canCure = !a.noCure && a.cures > 0;
+    if (canCure && diseaseRng_.chance(double(a.cures) / 10.0)) {
+      // Roughly a year in two for a score of 5, one in three for a 3: the trace's
+      // anxiety lasted five years, the flu a single one.
+      out.push_back("I was cured of " + a.name + ".");
+      h.ailments.erase(h.ailments.begin() + long(i));
+      continue;
+    }
+    ++i;
+  }
+  if (h.age < 1) return out;
+  if (!ensureTable("a16_disease-types-enc")) return out;
+  // One diagnosis every seven years or so: the played life had nine in sixty, and
+  // two of them landed in consecutive years.
+  if (!diseaseRng_.chance(1.0 / 7.0)) return out;
+  const Table& t = tbl("a16_disease-types-enc");
+  std::vector<size_t> pool;
+  std::vector<int> weight;
+  int total = 0;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const int score = int(t.num(r, "Contracts Organically Score"));
+    if (score <= 0) continue;
+    const int minAge = int(t.num(r, "Minimum Age"));
+    const int maxAge = int(t.num(r, "Maximum Age"));
+    if (minAge > 0 && h.age < minAge) continue;
+    if (maxAge > 0 && h.age > maxAge) continue;
+    const std::string g = lower(trim(t.at(r, "Gender")));
+    if (g == "male" && h.female) continue;
+    if (g == "female" && !h.female) continue;
+    // Two of the same at once is not a state the game writes: the trace never
+    // diagnoses an illness the hero already carries.
+    const std::string key = trim(t.at(r, "Disease"));
+    bool held = false;
+    for (const Hero::Ailment& heldA : h.ailments) {
+      if (heldA.key == key) { held = true; break; }
+    }
+    if (held) continue;
+    pool.push_back(r);
+    weight.push_back(score);
+    total += score;
+  }
+  if (pool.empty()) return out;
+  int roll = int(diseaseRng_.below(uint32_t(total)));
+  size_t row = pool.back();
+  for (size_t i = 0; i < pool.size(); ++i) {
+    roll -= weight[i];
+    if (roll < 0) { row = pool[i]; break; }
+  }
+  Hero::Ailment a;
+  a.name = diseaseDisplayName(t, row);
+  a.key = trim(t.at(row, "Disease"));
+  a.health = int(t.num(row, "Health Impact Score"));
+  a.cures = int(t.num(row, "Cures Organically Score"));
+  a.noCure = !trim(t.at(row, "No Cure")).empty();
+  a.fatal = !trim(t.at(row, "Can Be Fatal")).empty();
+  h.ailments.push_back(a);
+  out.push_back("I have been diagnosed with " + a.name + ".");
+  return out;
 }
 
 bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& out, int choice) {

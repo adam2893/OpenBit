@@ -49,6 +49,9 @@ for seed in range(1, 41):
             pre = dict(now)
             for k in ("karma", "discipline") + STATS:
                 now[k] = max(0, min(100, now.get(k, 0) + (e.get("deltas") or {}).get(k, 0)))
+            # The hero's own ailments cost health outside the card deltas (REPORT 247),
+            # so the reconstructed stats have to charge it too.
+            now["health"] = max(0, min(100, now["health"] - int(e.get("ailmentCost") or 0)))
             if e.get("title") != TITLE:
                 continue
             n += 1

@@ -53,6 +53,10 @@ struct AgeUp {
   // Fame is a float on the hero but the cards move it in whole points; the runner
   // applies and clamps it like the other stats (REPORT.en.md 228).
   int fame = 0;
+  // The health the hero's own ailments cost this year (REPORT.en.md 247). It is part
+  // of the year's deltas and also named separately, so a test that isolates one
+  // card's math can subtract it instead of calling the card wrong.
+  int ailmentCost = 0;
   // The card's buttons, when the row has more than one (REPORT.en.md 233). The engine
   // still picks one lane for the script; the play driver needs the labels to show a
   // real menu, and probing for them changed the RNG stream (which is why play had
@@ -321,6 +325,7 @@ class Sim {
   bool loverCounselingPushYear(Life& life, AgeUp& out, int forcedChoice);
   // The court-ordered paternity test, REPORT.en.md 149.
   bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
+  std::vector<std::string> heroDiseaseLines(Life& life, int* healthCost);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.
@@ -870,6 +875,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The dispatch order draw (REPORT.en.md 238): its own stream so the shuffle cannot
   // move any family draw, and a forced-lane probe sees the same order again.
   Rng dispatchRng_;
+  // The illness lifecycle draws on its own stream (REPORT.en.md 247): a yearly
+  // diagnosis and cure would otherwise shift every family's draws for the seed.
+  Rng diseaseRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

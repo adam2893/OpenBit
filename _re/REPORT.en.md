@@ -23484,6 +23484,74 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 247. The hero's own illnesses
+
+The played life (246) is what made this card's shape obvious, and it is not a card:
+
+```
+age 36  I have been diagnosed with anxiety.
+age 37  I have been diagnosed with depression.
+age 39  I made a doctor's appointment.
+        Dr. Henderson diagnosed me with the flu.
+        I was cured of the flu.
+age 41  I was cured of depression.
+        I was cured of anxiety.
+```
+
+Two diagnoses in consecutive years, two cures in the same later year. So the hero carries
+a **list** of ailments, each with its own clock, and the lines are yearly events like the
+family's (`lifecycleLines`), not a scenario competing for the year. The symptom card, the
+doctor picker and the treatment card already existed in the dumb pool; they were describing
+a state nothing held.
+
+### 247.1 What the table gives, and what the trace gave
+
+`a16_disease-types-enc` (107 rows) has the lifecycle in its columns:
+
+```
+Contracts Organically Score   weight of the pick, and 0 = never random
+Minimum Age / Maximum Age     the row's window (acne 13-18, Alzheimer's 65+)
+Gender                        female-only rows (anorexia), male-only rows
+Cures Organically Score       yearly chance to leave on its own (0 = treatment only)
+No Cure / Can Be Fatal        flags
+Health Impact Score           the yearly cost
+Uses Definite/Indefinite Article   8 rows; the trace confirms 'the flu', 'a staph infection'
+```
+
+`Hero::ailments` now holds one `Ailment` per row: display name with its article, the row's
+score, its clock. Each year `heroDiseaseLines` charges the health cost, rolls the cure
+(score in ten a year), and rolls a fresh diagnosis at 1-in-7 — the played life had nine in
+sixty. Two of the same illness at once is refused, which is a rule the trace never breaks.
+
+```
+40 lives x 80 years   288 diagnoses   163 cures   40/40 lives caught something
+per-year diagnosis rate  0.141   (target 1/7 = 0.143)
+```
+
+`tools/test_disease_lifecycle.py` pins the four properties that are easy to get wrong: the
+article ("the flu", never "flu"), no duplicate active illness, no cure of something the hero
+does not have, and the rate at a sane floor.
+
+### 247.2 Where the cost lands, and why it is named apart
+
+The yearly health cost belongs to the hero, not to whichever card happens to fire that
+year, so it cannot be folded into a card's deltas: a test that isolates one card's maths
+would read the ailment as part of it (the lightning card's wipe/fill pair was the first to
+prove it, 15 tests behind it). The event carries the cost as `ailmentCost`, the runner
+subtracts it from the hero after the card's own deltas, and the disease system draws on its
+own stream (`diseaseRng_`) so a diagnosis cannot shift any family's sequence for the seed.
+
+```
+event.deltas      the card's own effect, unchanged
+event.ailmentCost the hero's illness cost that year, subtracted by the runner
+```
+
+### 247.3 The family's own lines got the missing half
+
+The person lifecycle drew its diseases from the same table but only honoured the *indefinite*
+article, so a family member was diagnosed with "flu" while the hero's own line said "the
+flu". The definite half is now read the same way for both.
+
 ## 246. A full life, played
 
 A life was played by hand in MuMu from birth to death (tombstone 60), with the harness

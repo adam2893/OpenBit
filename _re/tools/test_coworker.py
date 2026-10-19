@@ -273,7 +273,8 @@ for seed in range(1, 41):
                         or choice.startswith("Ignore ") else
                         {"happiness": 16, "discipline": -16}
                         if choice.startswith("Start a rumor about ") else {})
-            assert {key: value for key, value in event["deltas"].items() if value} == expected, event
+            seen_moves = {key: value for key, value in event["deltas"].items() if value}
+            assert seen_moves == expected, event
             if colleague_col and row[colleague_col].strip().lower() in ("male", "female"):
                 pronoun = "him" if row[colleague_col].strip().lower() == "male" else "her"
                 if choice.startswith(("Attack ", "Have a talk with ", "Report ")):

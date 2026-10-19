@@ -187,7 +187,7 @@ std::string eventJson(const AgeUp& ev, int age) {
     << ",\"happiness\":" << ev.happiness
     << ",\"health\":" << ev.health
     << ",\"smarts\":" << ev.smarts
-    << ",\"looks\":" << ev.looks << ",\"fame\":" << ev.fame << "}\n";
+    << ",\"looks\":" << ev.looks << ",\"fame\":" << ev.fame << "},\"ailmentCost\":" << ev.ailmentCost << "\n";
   o << "    }";
   return o.str();
 }
@@ -957,7 +957,8 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     h.karma += ev.karma;
     h.discipline += ev.discipline;
     h.happiness += ev.happiness;
-    h.health += ev.health;
+    // The hero's own ailments cost health outside the card deltas (REPORT 247).
+    h.health += ev.health - ev.ailmentCost;
     h.smarts += ev.smarts;
     h.looks += ev.looks;
     h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(ev.fame)));
