@@ -696,6 +696,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       exPatRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xbf58476d1ce4e5b9ULL),
       wllRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x27d4eb2f165667c5ULL),
       licRng_(seed ^ 0x369dea0f31a53f85ULL ^ 0x9e3779b97f4a7c15ULL),
+      sexRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3732,6 +3733,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
     if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
+    if (kind == kPendingSafeSex) return safeSexYear(life, out, -1);
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
@@ -4484,6 +4486,37 @@ static int schoolLevelFor(int age);
 // The played life at 35: "I feuded with my little brother, Max, about whose turn it
 // is to use the computer. I apologized to him for feuding." The topic is one of
 // a16_sibling-arguments-enc's 191 rows, gated on both ages and genders.
+// ---- Safe sex (REPORT.en.md 257) -----------------------------------------
+// The hookup lanes owe this card (the trace at 40: the friend-lover hookup, then
+// "I practiced unsafe sex."). Literals: #36632 'Safe Sex', #43151
+// "Things are getting hot with {0} and you're thinking about safe sex.", #45166
+// 'Use a condom', #18081 'Don't use a condom', #24824 'I practiced safe sex.',
+// #24825 'I practiced unsafe sex.'.
+bool Sim::safeSexYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.safeSexDue) return false;
+  const std::string with = h.safeSexWith;
+  h.safeSexDue = false;
+  h.safeSexWith.clear();
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(sexRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioSafeSex";
+  out.title = "Safe Sex";
+  out.body = "Things are getting hot with " + with +
+             " and you're thinking about safe sex.";
+  out.options = {"Use a condom", "Don't use a condom"};
+  if (lane == 0) {
+    out.choice = "Use a condom";
+    out.narrative = "I practiced safe sex.";
+  } else {
+    out.choice = "Don't use a condom";
+    out.narrative = "I practiced unsafe sex.";
+  }
+  return true;
+}
+
 bool Sim::siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 14) return false;
@@ -19042,6 +19075,11 @@ bool Sim::friendLoverYear(Life& life, AgeUp& out, int forcedChoice) {
     out.karma = pointsForImpact(-5);
     out.discipline = pointsForImpact(-5);
     out.narrative = line + "\nI decided to have a one night stand with " + them + ".";  // #69034
+    // The hookup owes the Safe Sex card (REPORT.en.md 257); the game pushes it
+    // from the same handler.
+    h.safeSexDue = true;
+    h.safeSexWith = loverName;
+    life.pendingCards.push_back(kPendingSafeSex);
   } else if (pick == 1) {
     // 0x73f3c45ad4: ImpactKarma(1), ImpactDiscipline(1) and nothing else -- no
     // reaction card, no draw, the journal line is the row's own.
@@ -20873,6 +20911,9 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
     // ScenarioWorkplaceDisciplineHR so HR deals with the fallout (not modelled).
     if (seducRng_.chance(0.5)) {
       out.narrative = "I seduced my supervisor, " + sup + "!";
+      h.safeSexDue = true;
+      h.safeSexWith = sup;
+      life.pendingCards.push_back(kPendingSafeSex);
       // The success lane at 0x73f2e26974 pushes ScenarioSupervisorSeduceSuccess with
       // _initiatedByHero set, and that card is the one that tells the year after.
       h.morningWith = sup;

@@ -23484,6 +23484,44 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 257. Safe sex
+
+The played life at 40 shows the card is owed by the hookup, not by the year:
+
+```
+...she said she was feeling horny.
+I decided to have a one night stand with her.
+I practiced unsafe sex.
+```
+
+The card is `ScenarioSafeSex`, and its literals are in metadata:
+
+```
+#36632  Safe Sex
+#43151  Things are getting hot with {0} and you're thinking about safe sex.
+#45166  Use a condom        #18081  Don't use a condom
+#24824  I practiced safe sex.        #24825  I practiced unsafe sex.
+```
+
+`Hero::safeSexDue` is set by every hookup lane the port models -- the friend-lover
+hookup and the supervisor success -- and the card is pushed through the same pending queue
+the morning-after card uses, so it lands on the next age-up.
+
+### 257.1 Shortcuts named
+
+```
+availability  #31597/#31598 ("No condoms are available...") are not modelled: the
+              port assumes a condom exists, which is the trace's own case
+pregnancy     the unsafe lane writes its line and nothing else; the pregnancy risk
+              stays where the port already has it (the morning-after family)
+```
+
+```
+60 lives to 60:  10 cards   4 safe   6 unsafe
+```
+
+`tools/test_safe_sex.py` pins the body's partner, both lanes, and their two sentences.
+
 ## 256. The sibling squabble
 
 The trace at 35 gives both the shape and one entire lane:

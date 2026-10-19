@@ -183,6 +183,9 @@ struct Hero {
   // The sibling squabble (REPORT.en.md 256): one card per fight, and the topic comes
   // from a16_sibling-arguments-enc's 191 rows.
   int siblingFeuds = 0;
+  // The safe-sex card owed after a hookup (REPORT.en.md 257).
+  bool safeSexDue = false;
+  std::string safeSexWith;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;
