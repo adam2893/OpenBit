@@ -23484,6 +23484,71 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 264. The evidence-gap register
+
+After 247-263 the played life's list is mostly closed. This is what is left of it, and
+what each item waits on -- so the next pass starts from facts instead of re-reading the
+trace.
+
+```
+acceptance today
+  card tables referenced    870/935 (93.0%)
+  played-life log overlap   36.4%   (was 33.2% before 247; informational)
+```
+
+### 264.1 The classes that are done
+
+```
+ScenarioJobOvertimeRequest  248      ScenarioSiblingSquabble        256
+ScenarioOvertimeDone        248      ScenarioSafeSex                257
+ScenarioDeathRelative       249      ScenarioCoworkerReportedToSupervis 263
+ScenarioWill                252      ScenarioPushLicenseCar         255
+ScenarioDiseaseContract     247      ScenarioGameLicenseCar         255
+ScenarioDiseaseCure         247      ScenarioSchoolGraduate         262
+ScenarioExLoverPaternityTest 251     ScenarioSchoolActivityLeadership 260
+ScenarioExLoverPaternityTestResult 251
+```
+
+### 264.2 The classes that are blocked on data
+
+```
+class                         needs
+BackToSchoolAgeUpPromRoyal    the school-name generator ('St. Rian's High School'):
+                              in no table, in no metadata literal
+ScenarioEncounterPerson       the '{1}' of 'I ignored {0} who was {1}.' -- 'bothering
+                              me' is in no table or literal; the verb pool is code-side
+ScenarioCrimeDelinquencyPull  the outcome array ('sack of dog turds on fire ...'),
+                              also code-side and absent from the dump
+ScenarioParentsOfferInstrument/InstrumentStudied  the instrument catalogue and its
+                              materials -- metadata carries asset tags
+                              (saxophone-gold, flute-nickel), not the card text
+ScenarioInheritance           the parents' estate: the port keeps no parent money,
+                              and the amount in 'each inherited $213,446' is computed
+ScenarioJobAcquisition        a silent retention push: the trace has no line for it,
+                              so there is nothing to transcribe yet
+RetentionCareer/Headhunter/NewHouse   same: pushes with no journal line in the trace
+ScenarioMiniPaywall           a mod artefact, not the game
+```
+
+### 264.3 The classes the port already answers under another name
+
+`ScenarioFriendLoverHookup` (`friendLoverYear`), `ScenarioOfferAlcohol`, `ScenarioPartTimeFreelance`
+and `ScenarioScriptEventDiseaseCure` are implemented cards; the class string simply never
+appears in the port's source, and the bench counts a class as recovered by its registry
+row, not by behaviour. Renaming the source would make the number move without making a
+card better, so it is left alone and recorded here.
+
+### 264.4 What would unblock the blocked half
+
+```
+one more played life   lands the missing pushes with their real lines; it is how 246
+                       produced the list, and the same tap recipe works (244.1)
+a Frida capture        of the card views named in 264.2 would give the prompts and
+                       lanes, the parts a LifeLog cannot show
+a newer metadata dump  if the code-side arrays were ever serialised; nothing in this
+                       APK carries them
+```
+
 ## 263. The reported coworker, and a token that must not change its mind
 
 The trace at 31 has one card in two sentences:
