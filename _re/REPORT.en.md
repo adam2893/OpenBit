@@ -23484,6 +23484,48 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 253. The acceptance bars, written down
+
+`tools/acceptance.py` is the file the earlier conversation promised: the thresholds live
+there as constants, and it prints PASS/FAIL per bar with what to fix on a failure.
+
+```
+tables referenced          FAIL  868/965 (89.9%)   bar 95%
+test suite                 PASS  67/67 green
+played-life log overlap    PASS  33.2% (informational)
+bench stat streams         PASS  61 ages measured
+```
+
+### 253.1 Why only two of those are pass/fail
+
+* **tables referenced** is a real bar: the name appears in `port/src`, so the loader can
+  find it. It says nothing about whether the card fires (home purchase was referenced and
+  fired once in thirty lives), which is why the suite exists.
+* **test suite** is a real bar for the same reason the tests are: one per family, each
+  firing the card and checking its text, lanes and deltas.
+* **played-life log overlap** is informational until a spec-locked comparison exists. The
+  port picks its own cards, so after the first card the two lives do not share, every
+  later age compares different events (246.1). 33.2% is the drift of two different lives,
+  not a missing family.
+* **bench stat streams** reports that a 61-age trace is measured; the per-stream bars
+  ("mean |delta| per decade, karma <= 2, happiness <= 5") need many lives to mean
+  anything, and the tool says so instead of inventing a number.
+
+### 253.2 The 97 missing references, by cluster
+
+```
+genesis-*            29   the metadata filler pools (md-coaching, actor-compliments, ...)
+a16_secret-*          9   the secret-agent mission chain
+a16_accessories-*     3   headwear / masks / sunglasses
+a16_bank-*            3   bank robbery disguises and partners
+a16_jewelry-*         3   gemstones and settings
+a16_license-*         2   the driving-test question tables
+a16_casino/crashout/notification/... each 1-2
+```
+
+The genesis pools are the largest single block and the cheapest: they are filler lines
+with no state, and the dumb pool already has the machinery to render them.
+
 ## 252. The will, and the estate line
 
 Two lines from the played life, small enough to be transcribed exactly:
