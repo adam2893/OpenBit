@@ -23484,6 +23484,60 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 246. A full life, played
+
+A life was played by hand in MuMu from birth to death (tombstone 60), with the harness
+recording throughout. This is the first trace long enough to compare distributions rather
+than anecdotes.
+
+```
+/tmp/trace_c10.json   ages 0..60   225 log lines   131 scenario pushes
+```
+
+One stall, at age 37: an informational card with no buttons rendered and the UI stopped
+painting. Pressing Home and reopening the app cleared it, the life and the hooks survived,
+and the recording resumed. That is the recovery procedure for the next one.
+
+### 246.1 What the bench says
+
+```
+log stream        55 ages compared   204 game-only lines   88 port-only
+stat stream       61 ages   worst: happiness 29, karma 13, discipline 7, looks 5
+                  median |delta| 16   max 85
+registry          131 scenarios pushed, 69 recovered (53%), 62 unrecovered
+```
+
+`game_only` is high because the port's life diverges from the played one after the first
+card it does not share, so the two streams describe different lives from age ~5 onward. The
+number is a baseline, not a verdict. The registry column is the useful one: it is a direct
+list of what the game pushed at this hero and whether the port recognises it.
+
+### 246.2 The unrecovered families, grouped
+
+62 pushes, 39 distinct classes. Grouped by subsystem, largest first:
+
+```
+disease             DiseaseContract 2, DiseaseCure 6, ScriptEventDiseaseCure 1
+job / workplace     JobOvertimeRequest 4, OvertimeDone, JobReferral, JobAcquisition,
+                    RetentionCareer, RetentionHeadhunter, CoworkerAnnoying,
+                    CoworkerReportedToSupervisor
+school extras       SchoolActivityLeadership 2, SchoolGraduate, BackToSchoolPromRoyal,
+                    ParentsOfferInstrument, ParentsOfferInstrumentLess, InstrumentStudied
+death / will        DeathRelative 2, DeathHero, Will, RetentionWill, Inheritance
+paternity chain      ExLoverPaternityTest, ExLoverPaternityTestResult, ExLoverChildPaternity
+licence / car        PushLicenseCar, GameLicenseCar, LicenseCarOutcome
+misc                PartTimeFreelance 2, FriendStatusInbound 2, SafeSex, OfferAlcohol,
+                    EncounterPerson, SiblingSquabble, CrimeDelinquencyPull, RetentionNewHouse
+mod only             MiniPaywall 2, IAPConfiguredPush, DumbScenario (calendar)
+unresolved "Scenario" 10 pushes whose class name did not resolve
+```
+
+That is the work list for the next pass, in dependency order: disease, workplace, licence,
+school extras, death/will, paternity chain, then the misc lines. It is also why the table
+count (103 missing) and the push list disagree in shape: a table can exist without a
+scenario class, and a class can exist (death, will) with its data spread over several
+tables the port never loads.
+
 ## 245. Probes, and the limit of driving the game
 
 `idres` was rc=1 only because `/tmp/meta_lits.txt` died with `/tmp`. The file is a
