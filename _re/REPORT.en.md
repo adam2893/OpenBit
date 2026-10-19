@@ -23484,6 +23484,37 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 265. The battery, restored again
+
+The probe battery came back red on one file, and it was the same file as before:
+`flres` had accumulated a second and third copy of `tail_match` (the last one without
+the tolerant `try/except`) and its hypnotize branch compiled the log cell twice, so
+Python rejected the duplicate group names. The file in `/tmp` is scratch and every
+patch script that touched it appended rather than replaced; this pass deleted the extra
+definitions and rewrote the branch with one cell and one alternation.
+
+```
+flres:  rc 0   failures 0   events 44   residue 0
+battery 20 files   rc0 20   residue 0 on every readable   fails 0
+```
+
+### 265.1 What did not move this round, and why
+
+No new family landed. 264.2's blocked list was checked against the two holes that
+looked most promising, and both are genuinely empty in this APK:
+
+```
+instrument lessons   metadata carries the asset tags (saxophone-gold, violin-maple,
+                     flute-nickel, trumpet-brass) but not the card's prompt or lanes,
+                     and no table carries the lesson text
+film director chain  the trace's five lines at 19 are a production chain the port
+                     does not have; the prompts and lanes are code-side, so this is
+                     a subsystem to build from a capture, not a line to transcribe
+```
+
+The acceptance surface is unchanged at 870/935 card tables, 36.4% played-life overlap,
+72/72 tests and 20/20 probes.
+
 ## 264. The evidence-gap register
 
 After 247-263 the played life's list is mostly closed. This is what is left of it, and
