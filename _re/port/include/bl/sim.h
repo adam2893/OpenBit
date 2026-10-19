@@ -869,6 +869,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The dispatch order draw (REPORT.en.md 238): its own stream so the shuffle cannot
   // move any family draw, and a forced-lane probe sees the same order again.
   Rng dispatchRng_;
+  // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
+  // family is first in turn instead of by luck of a draw.
+  size_t dispatchCursor_ = 0;
   Rng loverRng_;
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own

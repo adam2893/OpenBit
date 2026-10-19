@@ -2577,6 +2577,7 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
     } else if (token == "aircraft" || token == "house" || token == "vehicle" ||
                token == "drug" || token == "celebrity" || token == "celebrity-male" ||
                token == "celebrity-female" || token == "random-person" || token == "asset" ||
+               token == "random-person-indefinite" || token == "random-person-indefiinte" ||
                token == "friend" || token == "friend-possessive" ||
                token == "random-person-indefinite") {
       const std::string v = poolToken(token);
@@ -3946,19 +3947,20 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::luxuryYear, [](const Life& l) { return l.hero.luxury; }},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
-    std::vector<int> order(n);
-    for (size_t i = 0; i < n; ++i) order[i] = int(i);
-    for (size_t i = n; i > 1; --i) {
-      const size_t j = dispatchRng_.below(uint32_t(i));
-      const int t = order[i - 1];
-      order[i - 1] = order[j];
-      order[j] = t;
-    }
-    for (int idx : order) {
+    // Rotate the front seat one family per year: a fresh shuffle leaves the tail of the
+    // draw reached only when nobody earlier fires, which starved 1-in-30 cards to 1-in-300
+    // (REPORT.en.md 239). Rotation gives every family the same share of front seats over
+    // n years, so reach stops depending on luck.
+    for (size_t k = 0; k < n; ++k) {
+      const size_t idx = (dispatchCursor_ + k) % n;
       const Family& f = kFamilies[idx];
       if (f.ready != nullptr && !f.ready(life)) continue;
-      if ((this->*f.run)(life, out, forcedChoice)) return true;
+      if ((this->*f.run)(life, out, forcedChoice)) {
+        dispatchCursor_ = (dispatchCursor_ + 1) % n;
+        return true;
+      }
     }
+    dispatchCursor_ = (dispatchCursor_ + 1) % n;
   }
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
@@ -16335,10 +16337,13 @@ std::string Sim::poolToken(const std::string& token) {
     const std::string name = drawFirstName(female) + " " + drawSurname();
     return token == "friend-possessive" ? name + "'s" : name;
   }
-  if (token == "random-person" || token == "random-person-indefinite") {
+  // The tables also spell it "random-person-indefiinte" (a16_pet-releases-enc), so both
+  // spellings answer the same pool (REPORT.en.md 241).
+  if (token == "random-person" || token == "random-person-indefinite" ||
+      token == "random-person-indefiinte") {
     const bool female = ambientRng_.chance(0.5);
     const std::string name = drawFirstName(female) + " " + drawSurname();
-    return token == "random-person-indefinite" ? "a person named " + name : name;
+    return token == "random-person" ? name : "a person named " + name;
   }
   return std::string();
 }

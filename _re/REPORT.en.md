@@ -23448,6 +23448,46 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 240. Rotation instead of a draw
+
+239 measured the bias: with a fresh shuffle the year goes to whoever fires first, and a
+1-in-30 card is reached before somebody else fires only a fraction of the time. The front
+seat now rotates one family per year:
+
+```cpp
+for (size_t k = 0; k < n; ++k) {
+  const size_t idx = (dispatchCursor_ + k) % n;
+  ...
+}
+dispatchCursor_ = (dispatchCursor_ + 1) % n;
+```
+
+Every family leads once per n years instead of by luck. Measured, 40 lives of 40 years:
+
+```
+channel offers   3 -> 12      (coin 1-in-15)
+events per life  68.4 -> 40.1
+fuprres probe    failures 0, events 3   (was zero cards)
+```
+
+### 240.1 The honest ceiling
+
+Rotation fixes reach bias but not reach *probability*: a family is first in ~1/110 of years,
+so a 22-year adult life gives it ~20% of the front seats. A card whose coin is its intended
+annual rate still lands at coin x 0.2. Closing that needs per-family weights (a family's
+share of the year drawn from its own coin), which the table can carry once each entry knows
+its coin. Not done yet; recorded here so the next pass starts from the measurement.
+
+## 241. A typo in the data, found by the sweep
+
+`a16_pet-releases-enc` spells the token `<random-person-indefiinte>` (missing an n). The
+resolver only knew the correct spelling, so the pet-release card printed the token, and the
+`succres` probe reported it as residue. Both spellings now answer the same pool.
+
+```
+succres   RESIDUE 0 (was 1)
+```
+
 ## 239. What the chooser actually did to the rates
 
 Measured after 238, 200 lives at 80 years (`tools/cardrate.py`):
