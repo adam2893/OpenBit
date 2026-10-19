@@ -23484,6 +23484,45 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 258. The probe battery, after ten sections
+
+The scratch probes live in `/tmp/qdir`, and `/tmp` is allowed to disappear: the battery is
+down from 56 files to 20. What survived still covers the families it was written for, and
+two of the three failures were the probes themselves.
+
+```
+probes 20   rc0 19   residue0 0 with residue?  (all readable probes)   fails0 19
+```
+
+### 258.1 flres: two probe bugs, one row still unreadable
+
+`flres` crashed in `re` for two reasons, both in its own file:
+
+```
+duplicate function  tail_match had been duplicated, and the plain copy (no try/except)
+                    overrode the tolerant one - removed
+duplicate groups    the hypnotize branch compiled the same log cell twice, so `n0`
+                    appeared in both arms - one arm now alternates inside a group
+```
+
+It now finishes with rc 0 and reports one unreadable row (`log-cell (4)`), where the card
+cell ends in a bare `<rb>` and the journal line joins the outcome without a separator.
+That is a probe-side reading of the card, not a port defect: the card's own text is the
+cell, and the port writes it.
+
+### 258.2 fuprres: the prison chain is rarely entered
+
+`fuprres` drives 160 lives looking for prison unfriend cards and finds none. The reason is
+upstream of that card: in 60 lives of 80 years the port enters prison in two of them,
+
+```
+60 lives:  2 with any prison line
+```
+
+so a card that only fires inside a sentence has almost no window. This is a reach number
+about the crime - arrest - prison chain, not about the unfriend card, and it is written
+down as the next family area rather than papered over with a coin.
+
 ## 257. Safe sex
 
 The played life at 40 shows the card is owed by the hookup, not by the year:
