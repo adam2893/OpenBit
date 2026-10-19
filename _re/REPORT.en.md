@@ -23448,6 +23448,53 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 239. What the chooser actually did to the rates
+
+Measured after 238, 200 lives at 80 years (`tools/cardrate.py`):
+
+```
+                        per 100 lives   per life     before (167)
+relationship                  593.5        5.9          3.7
+dumb-scenarios-universal      489.0        4.9          7.4
+conversations                 457.0        4.6
+pastimes                      249.5        2.5
+movies                        223.5        2.2          6.4
+alcohol                       150.0        1.5
+distinct faces                 4845                     2831
+```
+
+Breadth up by 70% in distinct faces; the two families that used to soak most years
+(`dumb`, `movies`) are down, and `relationship` up. That is the intended direction: the
+ordered chain concentrated years in whoever sat early.
+
+### 239.1 The inverse problem, measured
+
+A uniform draw fixed position starvation and created a different bias: the year is taken by
+the first family that fires, and with a hundred families the early ones in the draw usually
+do. A 1-in-30 card is reached before somebody else fires only a fraction of the time, so its
+effective rate collapses again:
+
+```
+onlyfans channel offer, coin 1/30:  29 expected in 40 lives, 3 observed
+```
+
+Probes agree: `fuprres` (the in-prison unfriend card) now renders **zero** cards in its own
+sample, the same starvation in a different family.
+
+```
+probes 55   rc0 52   residue0 49   fails0 55
+(before the chooser: rc0 54, residue0 52; idres still fails on the lost /tmp input)
+```
+
+`succres` also reports 2 residues ("Letting go"), a separate leak to chase.
+
+### 239.2 What that means for the next step
+
+The chooser needs **weights**, exactly as the first plan said: a family's share of years
+should be its own coin, not its luck in the draw. The cheap shape is a `weight` field per
+table entry (the coin denominator), drawn first, with the family's internal coin kept as the
+gate. That makes a 1-in-30 card a 1-in-30 card instead of a 1-in-300 one.
+
 ## 238. The family chooser
 
 `dispatchYear` was a hand-ordered list of ~110 `if (xYear(...)) return true;` calls. A
