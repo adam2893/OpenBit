@@ -23484,6 +23484,45 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 244. The bench runs again
+
+A life was played in MuMu by driving taps (age disc, a top-down sweep of the card button
+band, and the three modal dismiss points), and captured with the live harness:
+
+```
+/tmp/trace_c10.json   ages [0..18]   logs 51   scenarios 36
+bash tools/bench.sh /tmp/trace_c10.json   -> per-age streams
+```
+
+The first diff stream is informative rather than alarming:
+
+```
+age 9   game_only 1  port_only 2   near 1
+age 12  game_only 5  port_only 1
+age 16  game_only 4  port_only 5
+stats   game moves karma/happiness nearly every age; port_shifted is 0
+```
+
+`port_shifted` = 0 means the port produced no stat deltas at those ages. Two explanations,
+both true at once: the trace is a short life (18 years, childhood-heavy), and the port's
+chooser now picks a different card than the game did, so the age-by-age streams diverge by
+construction. The bench is a measuring instrument, not a test: it says where the streams
+differ, and that difference is the honest state after 238-242.
+
+### 244.1 Driving MuMu without a driver
+
+No screenshot classifier survived every modal, so the working recipe is blind and bounded:
+
+```
+tap 723,1764            the Age disc
+tap 720,1080..1860/40   the card button band, top-down
+tap 300,330 / 300,832 / 1332,140   item modal X, card X, bundle-ad X
+```
+
+That reached age 18 in ~140 rounds before a modal stopped it; it is enough to prove the
+capture path and the bench, not enough for a statistical baseline. A longer trace needs the
+same loop with the modal set extended, or a hand-played life.
+
 ## 243. The distribution after rotation
 
 200 lives x 80 years, `tools/cardrate.py`:
