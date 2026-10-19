@@ -1,0 +1,29 @@
+import subprocess, time, sys
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+import blhrpc
+DEV='127.0.0.1:16384'
+def tap(x,y): subprocess.run(['adb','-s',DEV,'shell','input','tap',str(int(x)),str(int(y))],capture_output=True)
+def swipe(x1,y1,x2,y2,ms=300):
+    subprocess.run(['adb','-s',DEV,'shell','input','swipe',str(x1),str(y1),str(x2),str(y2),str(ms)],capture_output=True)
+def logs_age():
+    ls=blhrpc.rpc('logs', n=60) or []
+    best=0
+    for l in ls:
+        if isinstance(l, dict):
+            a=l.get('age')
+            if isinstance(a,(int,float)) and a>best: best=int(a)
+    return best
+
+N=int(sys.argv[1]) if len(sys.argv)>1 else 140
+for i in range(N):
+    tap(723,1764); time.sleep(0.55)
+    for y in range(1080,1861,40):
+        tap(720,y); time.sleep(0.06)
+    # Modal dismissals: item/IAP popup, card corner, bundle ad corner.
+    for (x,y) in ((300,330),(300,832),(1332,140)):
+        tap(x,y); time.sleep(0.18)
+    if i%6==5:
+        swipe(720,1700,720,1150,250); time.sleep(0.3)
+    if i%10==0:
+        print('i',i,'log_age',logs_age(),flush=True)
+print('done', logs_age(), flush=True)
