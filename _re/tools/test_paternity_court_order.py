@@ -65,7 +65,10 @@ assert all(lanes.values()), lanes
 for seed in range(1, 16):
     doc = run(seed, children=2)
     hits = [e for e in doc["events"] if "court order" in (e.get("body") or "")]
-    assert not hits, (seed, hits[:1])
+    # The fixture does not force an ex, but a life can date and break up on its
+    # own; the gate is the ex, so a hit is only wrong when the life has none.
+    if hits:
+        assert doc["final"]["exLovers"], (seed, hits[:1])
 
 # The card asks once per child: the counter is what stops it.
 for seed in range(1, 31):
@@ -86,6 +89,8 @@ for seed in range(1, 31):
         body = event.get("body") or ""
         if "came back" not in body:
             continue
+        if (event.get("table") or "").startswith("registry:"):
+            continue  # the ex who asks in person has its own test (251)
         assert body.startswith("The paternity test for your "), (seed, body)
         assert body.endswith(" positive!") or body.endswith(" negative!"), (seed, body)
         kind = "positive" if body.endswith(" positive!") else "negative"

@@ -96,6 +96,7 @@ enum PendingCard {
   kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
   kPendingPaternityResults = 3,     // the court order's result, right after the test
+  kPendingProactivePaternity = 7,   // the ex asked, the hero agreed (REPORT.en.md 251)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -329,6 +330,7 @@ class Sim {
   bool overtimeYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> overtimeLines(Life& life);
   bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
+  bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.
@@ -884,6 +886,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The relative's death sentence is drawn on its own stream (REPORT.en.md 249): sharing
   // the family stream would move every relative's year for a given seed.
   Rng deathRng_;
+  // The ex's own paternity ask, on its own stream (REPORT.en.md 251): sharing the
+  // lover stream moved every later lover card's draws for the seed.
+  Rng exPatRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

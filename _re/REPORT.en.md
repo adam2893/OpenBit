@@ -23484,6 +23484,41 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 251. The ex who asks for a paternity test
+
+The trace has the whole chain at 43, and it is the polite twin of 149's court order:
+
+```
+My ex-fling, Ariana, asked me to take a paternity test for her 2-year old son, Cleveland.
+I agreed to take a paternity test.
+The paternity test for my ex-fling, Ariana's, 2-year old son came back positive!
+I became the legal father of Cleveland Jenner.
+```
+
+`ScenarioExLoverPaternityTest` now exists as `exPaternityYear`: the ex and the child come
+from the same records the court-order card uses, the ask is a two-lane card, and the
+accepted lane pushes the result through the pending queue the court order already had.
+
+### 251.1 Two things the court-order card had hidden
+
+```
+child age   the result lookup only accepted a child of three or younger, because the
+            court order is about a baby; an ex who asks in person can ask about an
+            older child, as the fixture does (24 in one run). The proactive flag lifts
+            the gate.
+phrasing    the result names the ex and the child the trace's way
+            ("my ex-girlfriend, Robin Averill's, 1-year old son") instead of
+            "my son, Dustin", and a positive result adds the legal-father line.
+```
+
+```
+40 lives (ex + children fixture):  29 cards   12 agreed   12 results   9 positive
+```
+
+`tools/test_ex_paternity.py` ties each result back to its ask (same ex, same child age
+and sex), refuses a result with no ask, requires the legal-father line on a positive and
+forbids it on a negative.
+
 ## 250. The wheel gets tickets and a seed-drawn start
 
 Two problems surfaced once the rare families had tests of their own:

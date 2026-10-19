@@ -166,6 +166,9 @@ struct Hero {
   // A relative died this year and the funeral card is owed (REPORT.en.md 249).
   // The trace writes the death line and the funeral line in the same year.
   bool pendingFuneral = false;
+  // The hero offered to take an ex-lover's paternity test (REPORT.en.md 251): the
+  // result card then names the ex and the child the way the trace does.
+  bool paternityProactive = false;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;

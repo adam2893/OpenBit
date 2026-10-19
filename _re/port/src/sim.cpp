@@ -693,6 +693,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dispatchRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x94d049bb133111ebULL),
       diseaseRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x27d4eb2f165667c5ULL),
       deathRng_(seed ^ 0x94d049bb133111ebULL ^ 0x369dea0f31a53f85ULL),
+      exPatRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xbf58476d1ce4e5b9ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3727,6 +3728,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
     if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
+    if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
@@ -3950,7 +3952,6 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::friendPartyYear, nullptr},
         {&Sim::friendLoverYear, nullptr},
         {&Sim::coworkerYear, nullptr},
-        {&Sim::overtimeYear, nullptr},
         {&Sim::supervisorYear, nullptr},
         {&Sim::teamBuildingYear, nullptr},
         {&Sim::afterHoursYear, nullptr},
@@ -4012,6 +4013,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::financeYear, [](const Life& l) { return l.hero.investing; }},
         {&Sim::modelYear, [](const Life& l) { return l.hero.model; }},
         {&Sim::luxuryYear, [](const Life& l) { return l.hero.luxury; }},
+        // Families added later sit at the end of the wheel so the relative order of
+        // everything before them stays what the tests were calibrated against.
+        {&Sim::overtimeYear, nullptr},
+        {&Sim::exPaternityYear, nullptr, 4},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket

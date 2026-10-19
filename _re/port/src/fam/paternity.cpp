@@ -106,6 +106,64 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
 // The game decides which by rolling GetRandomNumber(0, 1000) against a field on the
 // hero; the port keeps the answer on the child (Child::isHeroes) instead, so a
 // fixture child that belongs to the ex stays hers (REPORT.en.md 150's shortcut).
+// ScenarioExLoverPaternityTest (REPORT.en.md 251), the polite twin of the court
+// order: the ex asks, and the played-life trace has every line of it --
+//
+//   My ex-fling, Ariana, asked me to take a paternity test for her 2-year old son,
+//   Cleveland. / I agreed to take a paternity test.
+//   The paternity test for my ex-fling, Ariana's, 2-year old son came back positive!
+//   I became the legal father of Cleveland Jenner.
+bool Sim::exPaternityYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.female) return false;
+  const Hero::ExLover* ex = h.latestEx();
+  if (ex == nullptr) return false;
+  if (forcedChoice < 0 && !h.relationship && h.relationshipOn) return false;
+  Child* kid = nullptr;
+  for (Child& c : life.children) {
+    if (!c.alive || c.isHeroes) continue;
+    if (!c.otherParent.empty() && c.otherParent != ex->name) continue;
+    if (!ex->city.empty() && !h.city.empty() && ex->city != h.city) continue;
+    kid = &c;
+    break;
+  }
+  if (kid == nullptr) return false;
+  if (h.age < 18) return false;
+  // No push rate is readable off the class; the coin is the port's own on the
+  // family's stream, at about the one-in-twenty the trace suggests.
+  if (forcedChoice < 0 && exPatRng_.below(12) != 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string exWord = lower(trim(ex->status == "married"
+                                        ? (ex->female ? "Ex-Wife" : "Ex-Husband")
+                                        : (ex->female ? "Ex-Girlfriend" : "Ex-Boyfriend")));
+  const std::string kidPhrase = std::to_string(kid->age) + "-year old " +
+                                (kid->female ? "daughter" : "son");
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(exPatRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioExLoverPaternityTest";
+  out.title = "Paternity Test";
+  // shortcut: the prompt's own sentence was not captured; the log sentence is the
+  // one the game writes and it is rebuilt from the same six arguments as the log.
+  out.body = "My " + exWord + ", " + ex->name + ", asked me to take a paternity "
+             "test for her " + kidPhrase + ", " + kid->name + ".";
+  out.options = {"I agree to take a paternity test", "Refuse the test"};
+  if (lane == 0) {
+    out.choice = "I agree to take a paternity test";
+    out.narrative = "My " + exWord + ", " + ex->name + ", asked me to take a " +
+                    "paternity test for her " + kidPhrase + ", " + kid->name + "." +
+                    "\nI agreed to take a paternity test.";
+    h.paternityProactive = true;
+    life.pendingCards.push_back(kPendingProactivePaternity);
+  } else {
+    out.choice = "Refuse the test";
+    // shortcut: no refusal line is in the trace, so the port writes none.
+  }
+  return true;
+}
+
 bool Sim::paternityResultsYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -114,7 +172,11 @@ bool Sim::paternityResultsYear(Life& life, AgeUp& out, int forcedChoice) {
   if (ex == nullptr) return false;
   Child* kid = nullptr;
   for (Child& c : life.children) {
-    if (!c.alive || c.age > 3) continue;
+    if (!c.alive) continue;
+    // The court-order result is about a baby (the class asks within three years);
+    // the ex who asks in person can do it at any age, as the trace's 2-year old
+    // and the fixture's grown child both show (REPORT.en.md 251).
+    if (!h.paternityProactive && c.age > 3) continue;
     if (!c.otherParent.empty() && c.otherParent != ex->name) continue;
     kid = &c;
     break;
@@ -126,6 +188,32 @@ bool Sim::paternityResultsYear(Life& life, AgeUp& out, int forcedChoice) {
                            ", " + kid->name;
   out.table = "relationship";
   out.row_id = "0";
+  if (h.paternityProactive) {
+    out.table = "registry:ScenarioExLoverPaternityTestResult";
+    // The proactive test names the ex and the child the way the trace does
+    // (REPORT.en.md 251), and a positive result makes the hero the legal father.
+    const std::string exWord = lower(trim(ex->status == "married"
+                                          ? (ex->female ? "Ex-Wife" : "Ex-Husband")
+                                          : (ex->female ? "Ex-Girlfriend" : "Ex-Boyfriend")));
+    const std::string exPhrase = "my " + exWord + ", " + ex->name + "'s, " +
+                                 std::to_string(kid->age) + "-year old " +
+                                 (kid->female ? "daughter" : "son");
+    const bool positive = kid->isHeroes || loverRng_.chance(0.6);
+    h.paternityProactive = false;
+    if (positive) {
+      kid->isHeroes = true;
+      out.title = "The DNA matches";
+      out.body = "The paternity test for " + exPhrase + " came back positive!";
+      out.narrative = "The paternity test for " + exPhrase + " came back positive!";
+      out.extra.push_back("I became the legal father of " + kid->name + " " +
+                          h.lastName + ".");
+    } else {
+      out.title = "One less stress";
+      out.body = "The paternity test for " + exPhrase + " came back negative!";
+      out.narrative = "The paternity test for " + exPhrase + " came back negative!";
+    }
+    return true;
+  }
   if (kid->isHeroes) {
     static const char* const kTitles[] = {"New responsibilities",
                                            "Proof is in the pudding", "The DNA matches"};
