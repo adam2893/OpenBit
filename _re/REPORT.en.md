@@ -23484,6 +23484,46 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 245. Probes, and the limit of driving the game
+
+`idres` was rc=1 only because `/tmp/meta_lits.txt` died with `/tmp`. The file is a
+`#cell<TAB>text` index; `tools/lit_cells.json` holds the same pairs, so it is regenerated
+from that:
+
+```
+python3 -c "dump lit_cells.json as #cell	text" > /tmp/meta_lits.txt
+idres  rc=0
+```
+
+`flres` had two faults, both in the probe, not the port: its `tail_match` helper had been
+duplicated into a dozen copies by earlier edits, and the hypnotize branch compiles `patl`
+twice in one alternation, so Python rejects the duplicate group names. Duplicates removed,
+second arm renamed. One row now reaches a second copy of the same construction that was not
+renamed; the row is skipped rather than crashing, and the probe reports it as a log-cell
+failure. Probe-side, recorded here so it is not mistaken for a port defect.
+
+### 245.1 Driving MuMu: what works, what does not
+
+```
+works    tap 723,1764 (age disc) + tap band 1250..1800 step 55 + dismiss
+         (300,664) profile, (300,330) item modal, (300,832) card, (1332,140) bundle ad
+fails    any modal whose close button is outside those points stops the loop;
+         the profile panel reopening is silent (no tick change), the game keeps its screen
+```
+
+Reached age 18-24 in three attempts; the honest ceiling of blind tapping is a short life.
+`fresh_trace` therefore holds a 19-age life, and the bench runs against it (244). A real
+baseline needs either a hand-played life or a modal detector trained on the screens actually
+seen; both are longer than this pass.
+
+### 245.2 State
+
+```
+tests     pass=62 fail=0
+probes    56  rc0 55  residue0 51  fails0 55
+bench     runs against /tmp/trace_c10.json
+```
+
 ## 244. The bench runs again
 
 A life was played in MuMu by driving taps (age disc, a top-down sweep of the card button

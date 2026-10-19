@@ -1,5 +1,5 @@
 import frida, json, os, sys, time, glob, traceback
-LOG = '/Users/Adam/Documents/bitlife/_re/blh_attach.log'
+LOG = '/Users/Adam/Documents/bitlife/_re/blh_hold.log'
 REQ = '/tmp/blh_req.'
 def log(m):
     with open(LOG,'a') as f: f.write(time.strftime('%H:%M:%S ')+str(m)+'\n')
@@ -7,14 +7,19 @@ def log(m):
 for f in glob.glob(REQ+'*.json'): os.remove(f)
 dev = frida.get_device('127.0.0.1:16384', timeout=10)
 import subprocess
-pid = int(subprocess.check_output(['adb','-s','127.0.0.1:16384','shell','pidof','com.candywriter.bitlife']).split()[0])
-log('attached pid='+str(pid))
+subprocess.run(['adb','-s','127.0.0.1:16384','shell','monkey','-p','com.candywriter.bitlife','-c','android.intent.category.LAUNCHER','1'], capture_output=True)
+time.sleep(12)
+out = subprocess.run(['adb','-s','127.0.0.1:16384','shell','pidof','com.candywriter.bitlife'], capture_output=True, text=True).stdout.strip()
+pid = int(out.split()[0]) if out else 0
+log('spawned pid='+str(pid))
 s = dev.attach(pid)
 script = s.create_script(open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
 script.on('message', lambda m,d: log('MSG '+str(m)[:250]))
 script.on('destroyed', lambda: log('!! SCRIPT DESTROYED (process died?)'))
 script.load()
-log('loaded (late attach)')
+pass
+# attached, not spawned: no resume needed
+log('resumed')
 open('/tmp/blh_pid.txt','w').write(str(pid))
 ready = False
 for i in range(600):
@@ -69,6 +74,12 @@ while True:
             elif op == 'seed': r = script.exports_sync.seed()
             elif op == 'picks': r = script.exports_sync.picks(req.get('n', 40), req.get('tag'))
             elif op == 'prod2': r = script.exports_sync.prod2(req.get('n', 40))
+            elif op == 'pushdumb': r = script.exports_sync.pushdumb(req.get('n', 20))
+            elif op == 'queues': r = script.exports_sync.queues(req.get('n', 20))
+            elif op == 'bags': r = script.exports_sync.bags(req.get('n', 10))
+            elif op == 'picksall': r = script.exports_sync.picksall(req.get('n', 50))
+            elif op == 'qchecks': r = script.exports_sync.qchecks(req.get('n', 500))
+            elif op == 'qtexts': r = script.exports_sync.qtexts(req.get('n', 50))
             elif op == 'prod': r = script.exports_sync.prod(req.get('n', 60))
             elif op == 'rand': r = script.exports_sync.rand(req.get('n', 600))
             elif op == 'decks': r = script.exports_sync.decks(req.get('n',40))
@@ -79,6 +90,17 @@ while True:
             elif op == 'deckmath': r = script.exports_sync.deckmath(req.get('ps',[0.0,0.05,0.1,0.25,0.5,0.75,1.0]))
             elif op == 'deckmathres': r = script.exports_sync.deckmathres()
             elif op == 'deckobj': r = script.exports_sync.deckobj(req.get('size',100), req.get('succ',50))
+            elif op == 'statw': r = script.exports_sync.statw(req.get('n',500))
+            elif op == 'reload':
+                try: script.unload()
+                except Exception as e: log('unload: '+str(e))
+                script = s.create_script(open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
+                script.on('message', lambda m,d: log('MSG '+str(m)[:250]))
+                script.on('destroyed', lambda: log('!! SCRIPT DESTROYED (process died?)'))
+                script.load()
+                r = {'ok': True, 'hooks': script.exports_sync.hooks()}
+            elif op == 'hk': r = script.exports_sync.hk(req.get('n',''), req.get('t',''))
+            elif op.startswith('x_'): r = getattr(script.exports_sync, op[2:])(*req.get('args',[]))
             elif op == 'quit': json.dump({'ok':True}, open('/tmp/blh_res.'+rid+'.json','w')); log('quit'); sys.exit(0)
             else: r = {'error':'unknown op'}
             json.dump(r if r is not None else {'ok':False}, open('/tmp/blh_res.'+rid+'.json','w'))
