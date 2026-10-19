@@ -109,6 +109,12 @@ struct Hero {
   int ageWentOffBirthControl = 0;
   bool employed = false;
   std::string job;  // port-side only: drives which scenario pools apply
+  // The working week (REPORT.en.md 248). The overtime family raises it and a later
+  // year brings it back to 40: the played-life trace shows 46 hours at 32 and
+  // "my supervisor told me I can go back to working 40 hours a week again" at 55.
+  int hoursPerWeek = 40;
+  int overtimeYearsLeft = 0;
+  std::string employer;  // the company the job line names ("at Impact Racetrack")
   // Prison state. The real game reaches it through the interactive Crime menu
   // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).
   bool inPrison = false;

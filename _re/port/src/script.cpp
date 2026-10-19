@@ -299,6 +299,7 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     << ", \"birthControl\": " << (h.onBirthControl ? "true" : "false")
     << ", \"employed\": " << (h.employed ? "true" : "false")
     << ", \"job\": " << jsonOrNull(h.job)
+    << ", \"hoursPerWeek\": " << h.hoursPerWeek
     << ", \"city\": " << jsonOrNull(h.city)
     << ", \"loverStatus\": " << jsonOrNull(h.loverStatus)
     << ", \"loverName\": " << jsonOrNull(h.loverName)

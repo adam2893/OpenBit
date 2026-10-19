@@ -23484,6 +23484,47 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 248. The working week
+
+`ScenarioJobOvertimeRequest` and `ScenarioOvertimeDone` are one state change seen twice.
+The played life is the evidence and the card list is short:
+
+```
+age 32  My supervisor, Cheyenne, asked me to start putting in 46 hours a week at
+        Impact Racetrack. I told her that would be no problem.
+        She called me fresh.
+age 44  44 hours   age 48  48 hours   age 52  52 hours   (no reaction line)
+age 55  My supervisor told me I can go back to working 40 hours a week again.
+```
+
+So: the hero carries a week (`Hero::hoursPerWeek`, 40 by default), the ask is a card that
+raises it to an even 42-52 and starts a 2-5 year clock, and the release is a yearly line
+with no card -- which is how the trace logs it. The employer is now kept on the hero
+(`Hero::employer`, drawn from the careers table's own `Company Type` column), because the
+sentence names the place, not the job title.
+
+### 248.1 What is transcribed and what is shortcut
+
+```
+transcribed  the ask sentence, the reaction line (about half the asks, drawn from
+             a16_insults-enc), the release sentence, the 42-52 even hours
+shortcut     the card prompt itself was not captured; it is rebuilt from the log
+             sentence, and the refusal lane writes no line (no evidence for one)
+shortcut     no stat or salary deltas: the trace never shows the game's own numbers
+             for either lane, so the port does not invent them
+```
+
+`tools/test_overtime.py` pins the shape: card age >= 18, lane labels, hours even in
+42..52, the card and log naming the same supervisor and place, a release 2-5 years after
+an acceptance, a release never without one, and `hoursPerWeek` back to 40 once released.
+
+```
+40 lives:  30 cards   17 accepted   13 refused   16 released
+```
+
+The refusal-lane silence is the same rule as 208: a lane with no evidence writes nothing
+rather than a guess.
+
 ## 247. The hero's own illnesses
 
 The played life (246) is what made this card's shape obvious, and it is not a card:

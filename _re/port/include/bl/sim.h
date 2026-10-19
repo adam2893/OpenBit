@@ -326,6 +326,8 @@ class Sim {
   // The court-ordered paternity test, REPORT.en.md 149.
   bool paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> heroDiseaseLines(Life& life, int* healthCost);
+  bool overtimeYear(Life& life, AgeUp& out, int forcedChoice);
+  std::vector<std::string> overtimeLines(Life& life);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.

@@ -3704,6 +3704,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // of its own, and only the disease's own cards (symptoms, doctor) compete.
   int diseaseHealthCost = 0;
   const std::vector<std::string> diseaseLines = heroDiseaseLines(life, &diseaseHealthCost);
+  const std::vector<std::string> workLines = overtimeLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
   ev.ailmentCost = diseaseHealthCost;
@@ -3711,6 +3712,8 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // the game logs them in.
   ev.extra.insert(ev.extra.begin(), familyLines.begin(), familyLines.end());
   ev.extra.insert(ev.extra.begin() + familyLines.size(), diseaseLines.begin(), diseaseLines.end());
+  ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size()),
+                  workLines.begin(), workLines.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
   // place that guarantees no '<token>' reaches a log line, and the single place that
@@ -3773,6 +3776,11 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     const size_t row = weightedPickOf(t, "Commonness Score", pool, rng_);
     h.job = row == size_t(-1) ? "Worker" : trim(t.at(row, "Career"));
+    // The employer's name the year lines use ("at Impact Racetrack", the overtime
+    // card): the careers table's own Company Type column (REPORT.en.md 248).
+    h.employer.clear();
+    if (row != size_t(-1) && t.has("Company Type"))
+      h.employer = companyName(trim(t.at(row, "Company Type")), life);
   }
   // The hero leaves the workforce at the age his own country sets for his gender
   // (REPORT.en.md 137): DataCountry.GetRetirementAgeForGender reads the
@@ -3895,6 +3903,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::friendPartyYear, nullptr},
         {&Sim::friendLoverYear, nullptr},
         {&Sim::coworkerYear, nullptr},
+        {&Sim::overtimeYear, nullptr},
         {&Sim::supervisorYear, nullptr},
         {&Sim::teamBuildingYear, nullptr},
         {&Sim::afterHoursYear, nullptr},
@@ -4339,6 +4348,76 @@ std::string diseaseDisplayName(const Table& t, size_t r) {
   return name;
 }
 }  // namespace
+
+// ---- The working week (REPORT.en.md 248) --------------------------------
+// ScenarioJobOvertimeRequest and ScenarioOvertimeDone are one state change seen
+// twice: the played-life trace asks for 46 hours at 32 and says at 55 that the
+// supervisor let the hero go back to 40. The request is a card; the release is a
+// yearly line, which is how the trace logs it (no card, no title).
+bool Sim::overtimeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && (h.age < 18 || h.hoursPerWeek != 40)) return false;
+  if (forcedChoice < 0 && (!h.employed || h.job.empty() || h.job == "Student")) return false;
+  // The class carries no push rate the port can read, so the coin is its own, on
+  // the workplace stream: the trace shows four requests in sixty years (~1 in 15).
+  if (forcedChoice < 0 && !supRng_.chance(1.0 / 15.0)) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.supName.empty()) {
+    h.supName = resolve("<supervisor>");
+    if (h.supName.empty()) return false;
+    h.supFemale = supRng_.chance(0.5);
+  }
+  // The hours the trace shows run 44, 46, 48, 52: even numbers above the base week.
+  const int hours = 42 + 2 * int(supRng_.below(6));
+  const std::string sup = h.supName;
+  const std::string pron = h.supFemale ? "her" : "him";
+  const std::string at = h.employer.empty() ? h.job : h.employer;
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(supRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioJobOvertimeRequest";
+  out.title = "Overtime";
+  // shortcut: the card's own prompt was not captured; it is rebuilt from the log
+  // sentence the game wrote, which names the supervisor, the hours and the place.
+  out.body = "Your supervisor, " + sup + ", asked you to start putting in " +
+             std::to_string(hours) + " hours a week at " + at + "\\n\\nWhat will you do?";
+  out.options = {"It's no problem", "I'd rather not"};
+  if (lane == 0) {
+    h.hoursPerWeek = hours;
+    h.overtimeYearsLeft = 2 + int(supRng_.below(4));
+    out.choice = "It's no problem";
+    out.narrative = "My supervisor, " + sup + ", asked me to start putting in " +
+                    std::to_string(hours) + " hours a week at " + at +
+                    ". I told " + pron + " that would be no problem.";
+    // The trace adds a reaction only sometimes (32 had one, 44/48/52 did not).
+    if (supRng_.chance(0.5) && ensureTable("a16_insults-enc")) {
+      const Table& t = tbl("a16_insults-enc");
+      if (t.size() > 0) {
+        const std::string insult = trim(t.at(supRng_.below(uint32_t(t.size())), "Insult"));
+        if (!insult.empty())
+          out.narrative += "\n" + std::string(h.supFemale ? "She" : "He") +
+                           " called me " + insult + ".";
+      }
+    }
+  } else {
+    out.choice = "I'd rather not";
+    // shortcut: the refusal lane's line is not in the trace and the port will not
+    // invent one, so a refusal writes no sentence (REPORT.en.md 208's rule).
+  }
+  return true;
+}
+
+std::vector<std::string> Sim::overtimeLines(Life& life) {
+  std::vector<std::string> out;
+  Hero& h = life.hero;
+  if (h.overtimeYearsLeft <= 0) return out;
+  if (--h.overtimeYearsLeft > 0) return out;
+  h.hoursPerWeek = 40;
+  out.push_back("My supervisor told me I can go back to working 40 hours a week again.");
+  return out;
+}
 
 std::vector<std::string> Sim::heroDiseaseLines(Life& life, int* healthCost) {
   std::vector<std::string> out;
