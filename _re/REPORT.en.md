@@ -23484,6 +23484,54 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 255. The driver's licence
+
+The pool that had been missing all along was the string table itself. `tools/metadata_strings.py
+grep` reads `global-metadata.dat` and returns every literal with its index, so the card texts
+are no longer guesses:
+
+```
+#18224  Driving License
+#27800  It's time to take your driving test.\n\nWill you take it?
+#40905  Take the driving test
+#23835  I couldn't be bothered to get a driving license.
+#18225  Driving Test
+#24138  I failed my driving test.
+#24778  I passed my driving test and got a driving license.
+```
+
+Three classes make the chain in the played life (`ScenarioPushLicenseCar`,
+`ScenarioGameLicenseCar`, `ScenarioLicenseCarOutcome`), and the question data is already a
+table: `a16_license-car-questions-enc`, 29 signs with `Correct`, `Incorrect Funny` and
+`Incorrect Decoy` answers.
+
+```cpp
+licenseYear      age 16-20, no licence, 30% a year: the offer card
+                 lanes: Take the driving test / I couldn't be bothered
+licenseTestYear  the year after the offer: one sign and its three answers;
+                 the Correct lane passes and sets Hero::hasLicense
+```
+
+### 255.1 Shortcuts named
+
+```
+question    the card shows the sign as an image; the port has no image, so the sign's
+            own name opens the question ("What does this sign mean?\n\n22")
+outcome     a third card class (LicenseCarOutcome, title "Whatever") is not modelled:
+            the outcome is written in the test card's own line, which is where the
+            trace's two sentences belong either way
+chance      the game's own probability of picking right is not read; the script's
+            lane decides
+```
+
+```
+40 lives to 22:  37 offers   20 tests   4 passed   16 failed
+```
+
+`tools/test_license.py` checks the offer age and both lanes, that the test's choice is one
+of that row's three answers, that a pass names the correct one, and that `final.license`
+agrees with the pass line.
+
 ## 254. The hero graduates
 
 One line from the played life needs no data at all:

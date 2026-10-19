@@ -176,6 +176,10 @@ struct Hero {
   // in last year and whether the high-school line has been written.
   int lastSchoolLevel = 0;
   bool graduatedHighSchool = false;
+  // The driver's licence (REPORT.en.md 255). ScenarioPushLicenseCar offers the test
+  // at 16, ScenarioGameLicenseCar asks the question, and the outcome is one of two
+  // literals from metadata (#24138 failed / #24778 passed).
+  bool hasLicense = false;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;

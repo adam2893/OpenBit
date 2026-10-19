@@ -97,6 +97,7 @@ enum PendingCard {
   kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
   kPendingPaternityResults = 3,     // the court order's result, right after the test
   kPendingProactivePaternity = 7,   // the ex asked, the hero agreed (REPORT.en.md 251)
+  kPendingLicenseTest = 8,         // the test itself, the year after the offer (REPORT.en.md 255)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -333,6 +334,8 @@ class Sim {
   bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> willLines(Life& life);
   std::vector<std::string> schoolMilestoneLines(Life& life);
+  bool licenseYear(Life& life, AgeUp& out, int forcedChoice);
+  bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.
@@ -893,6 +896,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng exPatRng_;
   // The will's own coin, on its own stream (REPORT.en.md 252).
   Rng wllRng_;
+  // The licence's own coin and question pick (REPORT.en.md 255).
+  Rng licRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

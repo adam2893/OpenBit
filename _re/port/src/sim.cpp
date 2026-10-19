@@ -695,6 +695,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       deathRng_(seed ^ 0x94d049bb133111ebULL ^ 0x369dea0f31a53f85ULL),
       exPatRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0xbf58476d1ce4e5b9ULL),
       wllRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x27d4eb2f165667c5ULL),
+      licRng_(seed ^ 0x369dea0f31a53f85ULL ^ 0x9e3779b97f4a7c15ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3730,6 +3731,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
     if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
     if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
+    if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
@@ -4026,6 +4028,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         // everything before them stays what the tests were calibrated against.
         {&Sim::overtimeYear, nullptr},
         {&Sim::exPaternityYear, nullptr, 4},
+        {&Sim::licenseYear, nullptr, 3},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket
@@ -4469,6 +4472,75 @@ bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
 // carries; they are left out rather than invented.
 // Defined with the school system further down the file.
 static int schoolLevelFor(int age);
+
+// ---- The driver's licence (REPORT.en.md 255) -----------------------------
+// Card literals are from global-metadata (metadata_strings.py): #18224 'Driving
+// License', #27800 "It's time to take your driving test.\n\nWill you take it?",
+// #40905 'Take the driving test', #23835 "I couldn't be bothered to get a driving
+// license.", #18225 'Driving Test', #24138 'I failed my driving test.', #24778
+// 'I passed my driving test and got a driving license.'.
+bool Sim::licenseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.hasLicense || h.age < 16 || h.age > 20) return false;
+  if (forcedChoice < 0 && !licRng_.chance(0.3)) return false;
+  hero_ = &h;
+  life_ = &life;
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(licRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioPushLicenseCar";
+  out.title = "Driving License";
+  out.body = "It's time to take your driving test.\n\nWill you take it?";
+  out.options = {"Take the driving test", "I couldn't be bothered"};
+  if (lane == 0) {
+    out.choice = "Take the driving test";
+    life.pendingCards.push_back(kPendingLicenseTest);
+  } else {
+    out.choice = "I couldn't be bothered";
+    out.narrative = "I couldn't be bothered to get a driving license.";
+  }
+  return true;
+}
+
+// ScenarioGameLicenseCar: one sign from a16_license-car-questions-enc and its three
+// answers. The right one is the 'Correct' cell; the other two are the funny and the
+// decoy. shortcut: the game's own chance of the hero picking right is not read, so
+// the script's lane decides and a live driver picks one of the three.
+bool Sim::licenseTestYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_license-car-questions-enc")) return false;
+  const Table& t = tbl("a16_license-car-questions-enc");
+  if (t.size() == 0) return false;
+  const size_t row = licRng_.below(uint32_t(t.size()));
+  const std::string correct = trim(t.at(row, "Correct"));
+  const std::string funny = trim(t.at(row, "Incorrect Funny"));
+  const std::string decoy = trim(t.at(row, "Incorrect Decoy"));
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1 + int(licRng_.below(2)))
+                                     : int(licRng_.below(3));
+  const bool pass = lane == 0;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_license-car-questions-enc";
+  out.row_id = std::to_string(row + 1);
+  // shortcut: the card shows the sign as an image; the port has no image, so the
+  // sign's own name from the table opens the question.
+  out.title = "Driving Test";
+  out.body = "What does this sign mean?\n\n" + trim(t.at(row, "Sign"));
+  std::vector<std::string> opts = {correct, funny, decoy};
+  out.options = opts;
+  out.choice = opts[size_t(lane)];
+  if (pass) {
+    h.hasLicense = true;
+    out.narrative = "I passed my driving test and got a driving license.";
+  } else {
+    out.narrative = "I failed my driving test.";
+  }
+  return true;
+}
 
 std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
   std::vector<std::string> out;
