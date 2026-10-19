@@ -23484,6 +23484,48 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 263. The reported coworker, and a token that must not change its mind
+
+The trace at 31 has one card in two sentences:
+
+```
+My co-worker, Whitney, annoyed me when she rambled on about her weekend while
+smelling like sweat.
+I complained to my supervisor about my co-worker, Whitney.
+```
+
+The first sentence is the annoyance row's own `Log Version`; the second is the report
+lane. The bench shows the push as `ScenarioCoworkerReportedToSupervisor` with the title
+"Someone's getting in trouble" (#39478), which is why the annoyance class itself does
+not appear in that year.
+
+```cpp
+report lane, annoyance kind:  table registry:ScenarioCoworkerReportedToSupervisor
+                              title "Someone's getting in trouble"
+                              line  = annoyance row + " I complained to my supervisor
+                              about my coworker, X."
+```
+
+Forty lives give three of them; the other three coworker cards keep their own report
+lane, because the trace has no evidence for their wording.
+
+### 263.1 A real leak the card exposed
+
+The row behind this is two sentences that name the same thing:
+
+```
+you are a spy from <country-other>      I am a spy from <country-other>
+```
+
+`resolve()` kept a memo per *line*, so the card said Slovakia and the journal said
+Peru. The memo now spans both sentences of a card for the pool-drawn tokens (the other
+country is the one the suite caught). That is a text-consistency bug no single-sentence
+check could see: every sentence was individually valid.
+
+```
+tests 72/72 green
+```
+
 ## 262. Graduation as its own card
 
 The graduation line was written as a yearly extra; the bench names the class that owns it

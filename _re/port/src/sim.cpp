@@ -2801,7 +2801,16 @@ std::string Sim::resolveInto(const std::string& text, std::map<std::string, std:
         possessive = true;
         key.resize(key.size() - suffix.size());
       }
-      const std::string value = heroToken(key, possessive);
+      std::string value = heroToken(key, possessive);
+      // The other country is a pool draw, and the game's own dictionary keeps it
+      // for the year: a card that names it and a journal that names it again say
+      // the same country (REPORT.en.md 263).
+      if (key == "country-other" || key == "country2") {
+        const std::string memoKey = "country-other";
+        std::map<std::string, std::string>::iterator it = memo.find(memoKey);
+        if (it == memo.end()) it = memo.emplace(memoKey, value).first;
+        else value = it->second;
+      }
       if (value.empty()) out += text.substr(i, close - i + 1);  // unresolved: keep verbatim
       else out += value;
     } else if (relIsToken(token)) {
@@ -20289,10 +20298,15 @@ bool Sim::coworkerYear(Life& life, AgeUp& out, int forcedChoice) {
       // body is Format3 'Your {0}, {1}, started a rumor that {2}.' (#50783) and
       // its narrative the matching 'My {0}, {1}, started a rumor that {2}.'
       // (#30998), with the column's own snippet as {2}.
+      // One memo for both sentences: the row's tokens name the same person in the
+      // body and the journal ('you are a spy from <country-other>' / 'I am a spy
+      // from <country-other>'), and resolving them apart wrote Slovakia into the
+      // card and Peru into the log (REPORT.en.md 263).
+      std::map<std::string, std::string> memo;
       body = "Your coworker, " + cwName + ", started a rumor that " +
-             resolve(drawCardText(scenario, true)) + ".";
+             resolveInto(drawCardText(scenario, true), memo) + ".";
       logLine = "My coworker, " + cwName + ", started a rumor that " +
-                resolve(drawCardText(logCell, false)) + ".";
+                resolveInto(drawCardText(logCell, false), memo) + ".";
     } else {
       // Body and narrative are the row's own cells, wrapped by
       // '{0}\n\nWhat will you do?' (cell 0x5C35668) and the identity '{0}'
@@ -20378,13 +20392,22 @@ bool Sim::coworkerYear(Life& life, AgeUp& out, int forcedChoice) {
       out.happiness = pointsForImpact(3);
       out.discipline = pointsForImpact(-3);
     } else {
-      // The report lane pushes a bare Scenario carrying the coworker and leaves
-      // the journal at the row's own line; no stat moves at all. The card's
-      // label names the supervisor or, when [_coworker+0x1f4] says the
-      // workplace's type is the military one, the commanding officer
-      // ('Report {0} to my supervisor' #35790 and '... commanding officer'
-      // #35789); the port uses the supervisor's wording.
+      // The report lane pushes a bare Scenario carrying the coworker; no stat
+      // moves at all. The label names the supervisor, or the commanding officer
+      // in a military workplace ('Report {0} to my supervisor' #35790 and
+      // '... commanding officer' #35789).
       out.choice = "Report " + them + " to my supervisor";  // #35790
+      if (kind == 0) {
+        // The played life at 31 is this card: it opens with the annoyance row's
+        // own line and closes with the complaint. Its class is
+        // ScenarioCoworkerReportedToSupervisor and its title is
+        // 'Someone's getting in trouble' (#39478), which is why the bench shows
+        // that push and not the annoyance one (REPORT.en.md 263).
+        out.table = "registry:ScenarioCoworkerReportedToSupervisor";
+        out.title = "Someone's getting in trouble";
+        out.narrative = logLine + " I complained to my supervisor about my " +
+                        "co-worker, " + cwName + ".";
+      }
     }
     ++*card.presented;
     return true;
