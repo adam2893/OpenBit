@@ -4048,6 +4048,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
       dispatchCursor_ = size_t(dispatchRng_.below(uint32_t(wn)));
       wheelStarted_ = true;
     }
+    // A conviction and a prison year are year events, not cards: they take the year
+    // ahead of the wheel, which used to starve both (30 lives gave one prison year, so
+    // the prison family's own cards had no window). The scripted lanes keep priority
+    // because a forced card is the caller's, not the year's (REPORT.en.md 259).
+    if (forcedChoice < 0 && maybeConvicted(life, out)) return true;
+    if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -4059,8 +4065,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     dispatchCursor_ = (dispatchCursor_ + 1) % wn;
   }
-  if (maybeConvicted(life, out)) return true;
-  if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
+
 
   // (1) Job-flavoured line from the only real core-loop table that carries a
   //     Commonness Score: a16_employee-recognition-scenarios-enc.
@@ -5279,7 +5284,10 @@ bool Sim::maybeConvicted(Life& life, AgeUp& out) {
   if (prisonForced_) {
     if (h.prisonServed || h.age < 18) return false;
   }
-  if (!prisonRng_.chance(prisonForced_ ? 1.0 : 0.02)) return false;
+  // The coin is the port's: the played life (60 years) has no arrest, and a flat 2%
+  // a year put a prison year in three lives out of four, which is not what the trace
+  // shows. Half a percent keeps the prison family reachable without dominating.
+  if (!prisonRng_.chance(prisonForced_ ? 1.0 : 0.005)) return false;
   const bool juvenile = h.age < 18;
   const char* name = juvenile ? "a16_prisoner-juvenile-crimes-enc" : "a16_prisoner-crimes-enc";
   if (!ensureTable(name)) return false;
@@ -5321,6 +5329,10 @@ bool Sim::maybeConvicted(Life& life, AgeUp& out) {
 bool Sim::prisonYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.inPrison) return false;
+  // The friend loop runs inside the prison year too (REPORT.en.md 110), and its
+  // prison flavour is the card the fuprres probe looks for. It takes the year when
+  // it fires; otherwise the prison scene has it (REPORT.en.md 259).
+  if (forcedChoice < 0 && friendUnfriendYear(life, out, -1)) return true;
   h.employed = false;  // no career lines while inside
   const std::string hg = heroToken("gender", false);
   prisonLive_ = true;

@@ -23484,6 +23484,57 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 259. The prison chain gets its years
+
+258 measured the symptom: 2 of 60 lives ever entered prison, so the prison family's cards
+(and the unfriend-prison probe) had no window. The cause was dispatch order:
+
+```cpp
+// before
+if (family loop fires) return true;
+if (maybeConvicted(...)) return true;        // only on years no family wanted
+if (h.inPrison) return prisonYear(...);      // same
+```
+
+A conviction and a prison year are *year events*, not cards, so they now run ahead of the
+wheel (a forced lane still wins, because a scripted card belongs to the caller):
+
+```cpp
+if (forcedChoice < 0 && maybeConvicted(life, out)) return true;
+if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
+```
+
+### 259.1 The coin, tuned against the trace
+
+The 2%/year the port carried was port-side invention that had never actually run. Promoted
+where it belongs, it put a prison year in **46 of 60** lives, which the played life does
+not show at all. Half a percent gives the prison family a real window without owning the
+game:
+
+```
+2%/year   46/60 lives with a prison line   (was unreachable, now overshoots)
+0.5%/year 22/60 lives
+```
+
+### 259.2 The prison unfriend card
+
+`friendUnfriendYear` already had the prison flavour (title pool 'Petty prison pal',
+'Limited options here', ...), but with `prisonYear` owning every prison year it could never
+run inside one. `prisonYear` now offers the year to the friend loop first: when the prison
+unfriend fires it takes the year, otherwise the prison scene does. That is the game's own
+push site (0x73f2f03e08 picks the prison variant on `CurrentlyInPrison`).
+
+```
+fuprres probe:  events 8   failures 0   residue 0   (was: no card in 160 lives)
+```
+
+### 259.3 State after the round
+
+```
+tests   71/71 green
+probes  20 files, rc0 20, residue 0 on all readable, fails 0
+```
+
 ## 258. The probe battery, after ten sections
 
 The scratch probes live in `/tmp/qdir`, and `/tmp` is allowed to disappear: the battery is
