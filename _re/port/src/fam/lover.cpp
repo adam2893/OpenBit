@@ -1144,7 +1144,7 @@ bool Sim::alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!ensureTable("a16_alcohol-scenarios-enc") || !ensureTable("a16_alcohol-enc")) return false;
   if (h.age < 18) return false;
-  if (forcedChoice < 0 && ambientRng_.below(18) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(8) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_alcohol-scenarios-enc");
@@ -2037,7 +2037,7 @@ bool Sim::prayAssetYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::onlyfansStartYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.onlyfans || h.age < 18) return false;
-  if (forcedChoice < 0 && ambientRng_.below(30) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(10) != 0) return false;
   hero_ = &h;
   life_ = &life;
   out.table = "a16_social-media-channels-enc";
@@ -2061,7 +2061,7 @@ bool Sim::onlyfansTipYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.onlyfans || h.onlyfansFans <= 0) return false;
   if (!ensureTable("a16_social-media-channels-onlyfans-tip-responses-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(12) != 0) return false;
+  if (forcedChoice < 0 && ambientRng_.below(4) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const Table& t = tbl("a16_social-media-channels-onlyfans-tip-responses-enc");

@@ -690,6 +690,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       insultRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xbb67ae8584caa73bULL),
       fameRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0x3c6ef372fe94f82bULL),
       childDemandRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x510e527fade682d1ULL),
+      dispatchRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3816,235 +3817,149 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // family's presence stopped seeing it. Half the years fall through to the old chain.
   // The newborn years belong to the scripted cards; a report of any kind there leaves the
   // play driver without a menu (REPORT.en.md 231).
-  if (forcedChoice < 0 && h.age >= 5 && ambientRng_.chance(0.25)) {
-  }
   // The ambient family (REPORT.en.md 190) keeps its own 1-in-12 coin but moves up with
   // the rare beats: the churn above it starved it to zero parent-cheat cards in ten
   // sixteen-year lives (REPORT.en.md 229).
-  if (aircraftDangerYear(life, out, forcedChoice)) return true;
-  if (spouseHouseReactionYear(life, out, forcedChoice)) return true;
-  if (spouseVehicleReactionYear(life, out, forcedChoice)) return true;
-  if (custodyCaseYear(life, out, forcedChoice)) return true;
-  if (homePurchaseYear(life, out, forcedChoice)) return true;
-  if (vehiclePurchaseYear(life, out, forcedChoice)) return true;
-  if (aircraftPurchaseYear(life, out, forcedChoice)) return true;
-  if (surrogateRejectionYear(life, out, forcedChoice)) return true;
-  if (timeMachineYear(life, out, forcedChoice)) return true;
-  if (arrestScenarioYear(life, out, forcedChoice)) return true;
-  if (childPressureRejectionYear(life, out, forcedChoice)) return true;
-  if (notificationBaitYear(life, out, forcedChoice)) return true;
-  if (childBreakItemYear(life, out, forcedChoice)) return true;
-  if (newsEventYear(life, out, forcedChoice)) return true;
-  if (drugOfferYear(life, out, forcedChoice)) return true;
-  if (crashoutYear(life, out, forcedChoice)) return true;
-  if (prayWealthYear(life, out, forcedChoice)) return true;
-  if (prayAssetYear(life, out, forcedChoice)) return true;
-  if (sexualityYear(life, out, forcedChoice)) return true;
-  if (onlyfansStartYear(life, out, forcedChoice)) return true;
-  if (onlyfansTipYear(life, out, forcedChoice)) return true;
-  if (ambientYear(life, out, forcedChoice)) return true;
-  if (loverBreakUpYear(life, out, forcedChoice)) return true;
-  if (life.hero.vampire && vampireYear(life, out, forcedChoice)) return true;
-  if ((life.hero.military || life.hero.militaryPending) && militaryYear(life, out, forcedChoice)) return true;
-  if (careerYear(life, out, forcedChoice)) return true;
-  if (life.hero.ofcManager && officeYear(life, out, forcedChoice)) return true;
-  // The skip-school card (REPORT.en.md 98) is a push aimed at a pupil, so it is
-  // tried before the school year itself claims the year; it draws on its own
-  // stream (include/bl/sim.h skipRng_), so no earlier subsystem's sequence moves.
-  if (skipSchoolYear(life, out, forcedChoice)) return true;
-  if (life.hero.schooling && schoolYear(life, out, forcedChoice)) return true;
-  if (backToSchoolYear(life, out, forcedChoice)) return true;
-  if (life.hero.podcaster && podcastYear(life, out, forcedChoice)) return true;
-  if (life.hero.athlete && sportsSeason(life, out, forcedChoice)) return true;
-  if (life.hero.boating && boatYear(life, out, forcedChoice)) return true;
-  if (life.hero.royal && royalYear(life, out, forcedChoice)) return true;
-  if (sportsYear(life, out, forcedChoice)) return true;
-  if (businessYear(life, out, forcedChoice)) return true;
-  if (musicYear(life, out, forcedChoice)) return true;
-  if (studioYear(life, out, forcedChoice)) return true;
-  if (tradeYear(life, out, forcedChoice)) return true;
-  if (politicalYear(life, out, forcedChoice)) return true;
-  if (miscPoolYear(life, out, forcedChoice)) return true;
-  if (movieYear(life, out, forcedChoice)) return true;
-  if (spendTimeYear(life, out, forcedChoice)) return true;
-  // The friend-advice card (REPORT.en.md 100) is a friend's push, so it is tried
-  // before the relationship year's own events. It draws on its own stream
-  // (include/bl/sim.h advRng_), so no earlier subsystem's sequence moves.
-  if (friendAdviceYear(life, out, forcedChoice)) return true;
-  // The friend-prank card (REPORT.en.md 101) is the same kind of friend push
-  // (the friend opens it, the relationship year never sees it), so it is tried
-  // next to the advice card. It draws on its own stream
-  // (include/bl/sim.h prankRng_), so no earlier subsystem's sequence moves.
-  if (friendPrankYear(life, out, forcedChoice)) return true;
-  // The friend-rumor card (REPORT.en.md 102) is the same kind of friend push --
-  // the friend opens it and the relationship year never sees it -- so it is
-  // tried next to the prank card. It draws on its own stream
-  // (include/bl/sim.h rumorRng_), so no earlier subsystem's sequence moves.
-  if (friendRumorYear(life, out, forcedChoice)) return true;
-  // The friend-party card (REPORT.en.md 103) is the same kind of friend push --
-  // the friend opens it and the relationship year never sees it -- so it is
-  // tried next to the rumor card. It draws on its own stream
-  // (include/bl/sim.h partyRng_), so no earlier subsystem's sequence moves.
-  if (friendPartyYear(life, out, forcedChoice)) return true;
-  // The friend-lover card (REPORT.en.md 104) is the family's fifth push and its
-  // only one-shot -- the class's own gate reads PresentedCountForScenario, which
-  // life.loverPresented carries -- so it is tried after the party card. It draws
-  // on its own stream (include/bl/sim.h flRng_), so no earlier subsystem's
-  // sequence moves.
-  if (friendLoverYear(life, out, forcedChoice)) return true;
-  // The coworker family (REPORT.en.md 105) is the fifth table-driven push: four
-  // cards about the person next to the hero at work, each with its own
-  // presented cap. They are tried after the friend cards and draw on their own
-  // stream (include/bl/sim.h cwRng_), so no earlier subsystem's sequence moves.
-  if (coworkerYear(life, out, forcedChoice)) return true;
-  // The unprofessional-supervisor card (REPORT.en.md 116) is the workplace
-  // family's second card: the same table-driven shape as the four above, but
-  // about the person above the hero instead of the one next to him, with its
-  // own presented cap and its report button. It is tried right after them and
-  // shares their stream (include/bl/sim.h cwRng_), so no earlier subsystem
-  // sequence moves.
-  if (supervisorYear(life, out, forcedChoice)) return true;
-  // The team-building card (REPORT.en.md 117) is that family's third push: not a
-  // table but a sentence RefreshScenario composes out of four objects, with a
-  // once-per-life workplace flag. It is tried right after the unprofessional
-  // card and draws on its own stream (include/bl/sim.h tbRng_), so no earlier
-  // subsystem's sequence moves.
-  if (teamBuildingYear(life, out, forcedChoice)) return true;
-  // The after-hours invitation (REPORT.en.md 118) is that family's fourth push:
-  // the supervisor asks the hero out, and the card shows one of two sentences
-  // depending on whether he has asked before. It is tried right after the
-  // team-building card and draws on its own stream (include/bl/sim.h ahRng_), so
-  // no earlier subsystem's sequence moves.
-  if (afterHoursYear(life, out, forcedChoice)) return true;
-  // The lightning strike (REPORT.en.md 119) is the disaster family's first
-  // wired card and the only one in the port that can kill the hero. It is
-  // tried right after the workplace cards and draws on its own stream
-  // (include/bl/sim.h lightRng_), so no earlier subsystem's sequence moves.
-  if (lightningYear(life, out, forcedChoice)) return true;
-  // The supervisor hookup card (REPORT.en.md 120) is that family's fifth push
-  // and the only workplace card that runs in both directions. It is tried
-  // after the lightning strike and draws on its own stream (include/bl/sim.h
-  // seducRng_), so no earlier subsystem's sequence moves.
-  if (seduceYear(life, out, forcedChoice)) return true;
-  // The witness card (REPORT.en.md 121) is the citizen family's first push and
-  // the only street card in the port. It is tried after the supervisor hookup
-  // and draws on its own stream (include/bl/sim.h witRng_), so no earlier
-  // subsystem's sequence moves.
-  if (witnessYear(life, out, forcedChoice)) return true;
-
-  // The drug find (REPORT.en.md 122) is the same Citizen family and the second
-  // card that can end the life. It has its own stream so the cards before it
-  // draw exactly as they did.
-  if (findDrugsYear(life, out, forcedChoice)) return true;
-
-  // The hookup's follow-up (REPORT.en.md 123) never rolls for itself: it reports a
-  // choice that already happened, so it is offered before the year's own cards.
-  if (morningYear(life, out, forcedChoice)) return true;
-
-  // The job referral (REPORT.en.md 124) is the citizen family's career card and
-  // the only one a friend hands over. It draws on its own stream so the cards
-  // above it draw exactly as they did.
-  if (jobReferralYear(life, out, forcedChoice)) return true;
-  // The friend spend-time card (REPORT.en.md 106) is the family's sixth push and
-  // its only buttonless one. It is tried last of the friend cards and draws on
-  // its own stream (include/bl/sim.h fstRng_), so no earlier subsystem's
-  // sequence moves.
-  if (friendSpendTimeYear(life, out, forcedChoice)) return true;
-  // The friend-rumor outbound card (REPORT.en.md 107) is queued rather than
-  // pushed: it answers the inbound card's "Start a rumor about ..." choice from
-  // the previous age-up, so it is tried here and draws on its own stream
-  // (include/bl/sim.h rumOutRng_), moving no earlier subsystem's sequence.
-  if (friendRumorOutYear(life, out, forcedChoice)) return true;
-  // The unfriend card (REPORT.en.md 108) is the family's seventh push and its
-  // only push the game makes out of the yearly friend loop rather than a table.
-  // It is tried last of the friend cards and draws on its own stream
-  // (include/bl/sim.h unfrRng_), so no earlier subsystem's sequence moves.
-  if (friendUnfriendYear(life, out, forcedChoice)) return true;
-  // The unfriend outbound card (REPORT.en.md 111) is queued rather than pushed: it
-  // answers the inbound card's "Let ... go" and "Insult ... one last time" outcomes
-  // from the previous age-up, so it is tried here and draws on its own stream
-  // (include/bl/sim.h unrOutRng_), moving no earlier subsystem's sequence.
-  if (friendUnfriendOutYear(life, out, forcedChoice)) return true;
-  // The friend-status card (REPORT.en.md 109) is the friend loop's third decision
-  // and the family's eighth push: the best-friend request, or a friend who turns
-  // into an enemy. It is tried after the unfriend card and draws on its own stream
-  // (include/bl/sim.h fsRng_), so no earlier subsystem's sequence moves. shortcut:
-  // the game runs the enemy decision before the unfriend card inside one friend's
-  // turn, the port after it, so a year in which both would fire shows the unfriend
-  // card first.
-  if (friendStatusYear(life, out, forcedChoice)) return true;
-  // The friend-weapon encounter (REPORT.en.md 112) is the family's ninth push and the
-  // one that hands off to the assault family. It is tried last of the friend cards and
-  // draws on its own stream (include/bl/sim.h fwRng_), so no earlier subsystem's
-  // sequence moves. shortcut: the game has no push site for it at all (a generic
-  // factory builds the class), so the coin is the port's.
-  if (friendWeaponYear(life, out, forcedChoice)) return true;
-  // The assault card (REPORT.en.md 113) is queued rather than pushed: it is the card
-  // the friend-weapon encounter's shared tail links, so it is tried right after the
-  // encounter and draws on its own stream (include/bl/sim.h aiRng_), moving no earlier
-  // subsystem's sequence.
-  if (attackInboundYear(life, out, forcedChoice)) return true;
-  // The friend threesome (REPORT.en.md 114) is the family's one adult card and a
-  // real random push (the registry lists it with a limit of fourteen), so it is
-  // tried last of the friend cards and draws on its own stream
-  // (include/bl/sim.h ftRng_), moving no earlier subsystem's sequence.
-  if (friendThreesomeYear(life, out, forcedChoice)) return true;
-  // The paparazzi (REPORT.en.md 139) is the Fame family's first card and the only
-  // one whose gate is fame alone, so it is tried last: a life that is not famous
-  // never sees it, and no earlier draw moves.
-  if (paparazziYear(life, out, forcedChoice)) return true;
-  if (loverBirthControlYear(life, out, forcedChoice)) return true;
-  if (loverStopsBirthControlYear(life, out, forcedChoice)) return true;
-  if (paternityCourtOrderYear(life, out, forcedChoice)) return true;
-  if (birthYear(life, out, forcedChoice)) return true;
-  if (loverCounselingPushYear(life, out, forcedChoice)) return true;
-  if (loverCallOffEngagementYear(life, out, forcedChoice)) return true;
-  if (loverElopeYear(life, out, forcedChoice)) return true;
-  if (loverWeddingYear(life, out, forcedChoice)) return true;
-  if (loverLeavesYear(life, out, forcedChoice)) return true;
-  if (exLoverSextYear(life, out, forcedChoice)) return true;
-  if (exLoverMarriedNowYear(life, out, forcedChoice)) return true;
-  if (childDisciplineYear(life, out, forcedChoice)) return true;
-  if (childDemandsYear(life, out, forcedChoice)) return true;
-  // One ambient card a year at most, chosen by weight (REPORT.en.md 190).
-  if (genderIdentityYear(life, out, forcedChoice)) return true;
-  if (paranormalPhenomenaYear(life, out, forcedChoice)) return true;
-  if (adoptionScenarioYear(life, out, forcedChoice)) return true;
-  if (boostYear(life, out, forcedChoice)) return true;
-  if (jobTerminationYear(life, out, forcedChoice)) return true;
-  if (moneyRequestRejectionYear(life, out, forcedChoice)) return true;
-  if (trollOutboundYear(life, out, forcedChoice)) return true;
-  if (alcoholScenarioYear(life, out, forcedChoice)) return true;
-  if (relationshipYear(life, out, forcedChoice)) return true;
-  if (conversationYear(life, out, forcedChoice)) return true;
-  if (socialYear(life, out, forcedChoice)) return true;
-  if (spyYear(life, out, forcedChoice)) return true;
-  if (fightYear(life, out, forcedChoice)) return true;
-  if (bmYear(life, out, forcedChoice)) return true;
-  if (casinoYear(life, out, forcedChoice)) return true;
-  if (cultYear(life, out, forcedChoice)) return true;
-  // (1b) The actor layer's rare beats (REPORT.en.md 219). They run before the
-  // subsystem chain as well as before the dumb-scenario roulette, because every one of
-  // those steps can claim the year first and a card behind them is starved however often
-  // its own coin comes up.
-  if (dealerYear(life, out, forcedChoice)) return true;
-  // The mobster's spend-time card (REPORT.en.md 99) is the mafia subsystem's
-  // own push, so it is tried before the mafia year's events. It draws on its
-  // own stream (include/bl/sim.h mobRng_), so no earlier subsystem's sequence
-  // moves for a given seed.
-  if (mobsterSpendYear(life, out, forcedChoice)) return true;
-  if (mafiaYear(life, out, forcedChoice)) return true;
-  if (zooYear(life, out, forcedChoice)) return true;
-  if (landlordYear(life, out, forcedChoice)) return true;
-  if (petYear(life, out, forcedChoice)) return true;
-  if (life.hero.outdoors && outdoorYear(life, out, forcedChoice)) return true;
-  if (life.hero.hustle && hustlerYear(life, out, forcedChoice)) return true;
-  if (life.hero.astronaut && astroYear(life, out, forcedChoice)) return true;
-  if (life.hero.racing && racingYear(life, out, forcedChoice)) return true;
-  if (life.hero.actor && actorYear(life, out, forcedChoice)) return true;
-  if (life.hero.investing && financeYear(life, out, forcedChoice)) return true;
-  if (life.hero.model && modelYear(life, out, forcedChoice)) return true;
-  if (life.hero.luxury && luxuryYear(life, out, forcedChoice)) return true;
+  // (0b) The family chooser (REPORT.en.md 238). The chain used to be written in a
+  // fixed order, and a card rate was mostly a function of where it sat: behind the
+  // queue a family starved however often its own coin came up. Every eligible family
+  // is tried in a freshly drawn order now, so position stops deciding and the coin
+  // is the rate.
+  //
+  // The order draw has its own stream: it must not move any family draws, and a probe
+  // that re-runs the year with a forced lane has to see the same order again.
+  {
+    struct Family {
+      bool (Sim::*run)(Life&, AgeUp&, int);
+      bool (*ready)(const Life&);
+    };
+    static const Family kFamilies[] = {
+        {&Sim::aircraftDangerYear, nullptr},
+        {&Sim::spouseHouseReactionYear, nullptr},
+        {&Sim::spouseVehicleReactionYear, nullptr},
+        {&Sim::custodyCaseYear, nullptr},
+        {&Sim::homePurchaseYear, nullptr},
+        {&Sim::vehiclePurchaseYear, nullptr},
+        {&Sim::aircraftPurchaseYear, nullptr},
+        {&Sim::surrogateRejectionYear, nullptr},
+        {&Sim::timeMachineYear, nullptr},
+        {&Sim::arrestScenarioYear, nullptr},
+        {&Sim::childPressureRejectionYear, nullptr},
+        {&Sim::notificationBaitYear, nullptr},
+        {&Sim::childBreakItemYear, nullptr},
+        {&Sim::newsEventYear, nullptr},
+        {&Sim::drugOfferYear, nullptr},
+        {&Sim::crashoutYear, nullptr},
+        {&Sim::prayWealthYear, nullptr},
+        {&Sim::prayAssetYear, nullptr},
+        {&Sim::sexualityYear, nullptr},
+        {&Sim::onlyfansStartYear, nullptr},
+        {&Sim::onlyfansTipYear, nullptr},
+        {&Sim::ambientYear, nullptr},
+        {&Sim::loverBreakUpYear, nullptr},
+        {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
+        {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
+        {&Sim::careerYear, nullptr},
+        {&Sim::officeYear, [](const Life& l) { return l.hero.ofcManager; }},
+        {&Sim::skipSchoolYear, nullptr},
+        {&Sim::schoolYear, [](const Life& l) { return l.hero.schooling; }},
+        {&Sim::backToSchoolYear, nullptr},
+        {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
+        {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
+        {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
+        {&Sim::royalYear, [](const Life& l) { return l.hero.royal; }},
+        {&Sim::sportsYear, nullptr},
+        {&Sim::businessYear, nullptr},
+        {&Sim::musicYear, nullptr},
+        {&Sim::studioYear, nullptr},
+        {&Sim::tradeYear, nullptr},
+        {&Sim::politicalYear, nullptr},
+        {&Sim::miscPoolYear, nullptr},
+        {&Sim::movieYear, nullptr},
+        {&Sim::spendTimeYear, nullptr},
+        {&Sim::friendAdviceYear, nullptr},
+        {&Sim::friendPrankYear, nullptr},
+        {&Sim::friendRumorYear, nullptr},
+        {&Sim::friendPartyYear, nullptr},
+        {&Sim::friendLoverYear, nullptr},
+        {&Sim::coworkerYear, nullptr},
+        {&Sim::supervisorYear, nullptr},
+        {&Sim::teamBuildingYear, nullptr},
+        {&Sim::afterHoursYear, nullptr},
+        {&Sim::lightningYear, nullptr},
+        {&Sim::seduceYear, nullptr},
+        {&Sim::witnessYear, nullptr},
+        {&Sim::findDrugsYear, nullptr},
+        {&Sim::morningYear, nullptr},
+        {&Sim::jobReferralYear, nullptr},
+        {&Sim::friendSpendTimeYear, nullptr},
+        {&Sim::friendRumorOutYear, nullptr},
+        {&Sim::friendUnfriendYear, nullptr},
+        {&Sim::friendUnfriendOutYear, nullptr},
+        {&Sim::friendStatusYear, nullptr},
+        {&Sim::friendWeaponYear, nullptr},
+        {&Sim::attackInboundYear, nullptr},
+        {&Sim::friendThreesomeYear, nullptr},
+        {&Sim::paparazziYear, nullptr},
+        {&Sim::loverBirthControlYear, nullptr},
+        {&Sim::loverStopsBirthControlYear, nullptr},
+        {&Sim::paternityCourtOrderYear, nullptr},
+        {&Sim::birthYear, nullptr},
+        {&Sim::loverCounselingPushYear, nullptr},
+        {&Sim::loverCallOffEngagementYear, nullptr},
+        {&Sim::loverElopeYear, nullptr},
+        {&Sim::loverWeddingYear, nullptr},
+        {&Sim::loverLeavesYear, nullptr},
+        {&Sim::exLoverSextYear, nullptr},
+        {&Sim::exLoverMarriedNowYear, nullptr},
+        {&Sim::childDisciplineYear, nullptr},
+        {&Sim::childDemandsYear, nullptr},
+        {&Sim::genderIdentityYear, nullptr},
+        {&Sim::paranormalPhenomenaYear, nullptr},
+        {&Sim::adoptionScenarioYear, nullptr},
+        {&Sim::boostYear, nullptr},
+        {&Sim::jobTerminationYear, nullptr},
+        {&Sim::moneyRequestRejectionYear, nullptr},
+        {&Sim::trollOutboundYear, nullptr},
+        {&Sim::alcoholScenarioYear, nullptr},
+        {&Sim::relationshipYear, nullptr},
+        {&Sim::conversationYear, nullptr},
+        {&Sim::socialYear, nullptr},
+        {&Sim::spyYear, nullptr},
+        {&Sim::fightYear, nullptr},
+        {&Sim::bmYear, nullptr},
+        {&Sim::casinoYear, nullptr},
+        {&Sim::cultYear, nullptr},
+        {&Sim::dealerYear, nullptr},
+        {&Sim::mobsterSpendYear, nullptr},
+        {&Sim::mafiaYear, nullptr},
+        {&Sim::zooYear, nullptr},
+        {&Sim::landlordYear, nullptr},
+        {&Sim::petYear, nullptr},
+        {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
+        {&Sim::hustlerYear, [](const Life& l) { return l.hero.hustle; }},
+        {&Sim::astroYear, [](const Life& l) { return l.hero.astronaut; }},
+        {&Sim::racingYear, [](const Life& l) { return l.hero.racing; }},
+        {&Sim::actorYear, [](const Life& l) { return l.hero.actor; }},
+        {&Sim::financeYear, [](const Life& l) { return l.hero.investing; }},
+        {&Sim::modelYear, [](const Life& l) { return l.hero.model; }},
+        {&Sim::luxuryYear, [](const Life& l) { return l.hero.luxury; }},
+    };
+    const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
+    std::vector<int> order(n);
+    for (size_t i = 0; i < n; ++i) order[i] = int(i);
+    for (size_t i = n; i > 1; --i) {
+      const size_t j = dispatchRng_.below(uint32_t(i));
+      const int t = order[i - 1];
+      order[i - 1] = order[j];
+      order[j] = t;
+    }
+    for (int idx : order) {
+      const Family& f = kFamilies[idx];
+      if (f.ready != nullptr && !f.ready(life)) continue;
+      if ((this->*f.run)(life, out, forcedChoice)) return true;
+    }
+  }
   if (maybeConvicted(life, out)) return true;
   if (life.hero.inPrison) return prisonYear(life, out, forcedChoice);
 
@@ -21127,8 +21042,8 @@ bool Sim::loverBreakUpYear(Life& life, AgeUp& out, int forcedChoice) {
                                     ? (h.loverFemale ? std::string("girlfriend")
                                                      : std::string("boyfriend"))
                                     : (h.breakUpWord == "engaged"
-                                           ? (h.loverFemale ? std::string("fiancee")
-                                                            : std::string("fiance"))
+                                           ? (h.loverFemale ? std::string("fiancée")
+                                                            : std::string("fiancé"))
                                            : (h.breakUpWord == "married"
                                                   ? (h.loverFemale ? std::string("wife")
                                                                    : std::string("husband"))

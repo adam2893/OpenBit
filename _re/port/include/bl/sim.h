@@ -866,6 +866,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The child-demands card draws on its own stream: it shares its family with the
   // discipline card, and on one stream the earlier card starves the later (REPORT 235).
   Rng childDemandRng_;
+  // The dispatch order draw (REPORT.en.md 238): its own stream so the shuffle cannot
+  // move any family draw, and a forced-lane probe sees the same order again.
+  Rng dispatchRng_;
   Rng loverRng_;
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own

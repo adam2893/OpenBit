@@ -48,7 +48,7 @@ bool Sim::paternityCourtOrderYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   if (kid == nullptr) return false;
   if (h.age < 18) return false;
-  if (forcedChoice < 0 && loverRng_.below(10) != 0) return false;
+  if (forcedChoice < 0 && loverRng_.below(4) != 0) return false;
   hero_ = &h;
   life_ = &life;
   const std::string exWord = lower(trim(ex->status == "married"

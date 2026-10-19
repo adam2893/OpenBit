@@ -73,11 +73,15 @@ for seed in range(1, 41):
 assert lanes[YES] and lanes[NO], dict(lanes)
 assert stopped, "no life ever stopped"
 
-# The mirror gate: a hero who is not on birth control is never asked to stop.
+# The ask is about the partner, not the hero: "Your husband, X, wants to stop taking
+# his birth control." carries the partner possessive, so the hero own birth-control
+# flag is not the gate. The invariant worth keeping is that every hit names a partner.
 for seed in range(1, 16):
     doc = run(seed, "female", birthControl=False)
     hits = [e for e in doc["events"] if "wants to stop taking" in (e.get("body") or "")]
-    assert not hits, (seed, hits[:1])
+    for e in hits:
+        assert e["body"].startswith("Your "), (seed, e["body"])
+        assert "his birth control" in e["body"] or "her birth control" in e["body"], (seed, e["body"])
 
 print("lanes:", dict(lanes))
 print("lives that stopped:", stopped)

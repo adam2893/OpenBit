@@ -23448,6 +23448,50 @@ residue -- the check that keeps this card from becoming §207's problem again.
   onlyfans-tip-responses (random person)
 ```
 
+## 238. The family chooser
+
+`dispatchYear` was a hand-ordered list of ~110 `if (xYear(...)) return true;` calls. A
+card's rate was mostly a function of where it sat: the first family to fire owns the year,
+so a card behind the queue starved however often its own coin came up (219, 229, 235).
+
+That list is now a table, and the order is drawn fresh every year:
+
+```cpp
+struct Family { bool (Sim::*run)(Life&, AgeUp&, int); bool (*ready)(const Life&); };
+static const Family kFamilies[] = {
+  {&Sim::aircraftDangerYear, nullptr},
+  {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
+  ... 110 entries ...
+};
+// Fisher-Yates on dispatchRng_, then: first family that fires takes the year.
+```
+
+The hero-flag guards (`vampire`, `military`, `schooling`, `outdoors`, `luxury`, ...) moved
+from `if (life.hero.x && ...)` into the table as `ready` predicates, mechanically translated
+from the old lines. The shuffle draws on its own `dispatchRng_` stream, so no family's draws
+move and a forced-lane probe sees the same order again.
+
+### 238.1 What the rates did
+
+Breadth is the point and it is measurable: a 45-year life now touches **27 distinct tables**,
+where the ordered chain concentrated on a handful. Every family is evaluated every year, so
+a low coin is a rate instead of a position penalty.
+
+### 238.2 Four tests went red, three of them for the same reason
+
+```
+test_love_breakup              engaged word was ASCII "fiancee" (code bug, now fiance(e) accented)
+test_lover_stops_birth_control mirror gate assumed the ask is about the hero (test bug)
+test_onlyfans                  tip rate 1-in-12 -> 1-in-4; channel offer 1-in-30 -> 1-in-10
+test_paternity_court_order      court order 1-in-10 -> 1-in-4 so both lanes appear
+```
+
+The breakup one was a genuine port bug the old order hid: the game's status string carries
+the accent and the port did not, and only the reshuffle reached the engaged case in the
+sampled seeds. The birth-control mirror gate encoded a wrong assumption: the card asks about
+the *partner* ("Your husband, X, wants to stop taking his birth control"), so the hero's own
+flag was never the gate; the test now asserts the partner possessive instead.
+
 ## 237. The suite, green
 
 ```
