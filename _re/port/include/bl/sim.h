@@ -336,6 +336,7 @@ class Sim {
   std::vector<std::string> schoolMilestoneLines(Life& life);
   bool licenseYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
+  bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
   // A child is born, REPORT.en.md 151.

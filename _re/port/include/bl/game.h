@@ -180,6 +180,9 @@ struct Hero {
   // at 16, ScenarioGameLicenseCar asks the question, and the outcome is one of two
   // literals from metadata (#24138 failed / #24778 passed).
   bool hasLicense = false;
+  // The sibling squabble (REPORT.en.md 256): one card per fight, and the topic comes
+  // from a16_sibling-arguments-enc's 191 rows.
+  int siblingFeuds = 0;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
   int schoolLevel = 0, schoolYears = 0;

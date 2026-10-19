@@ -23484,6 +23484,44 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 256. The sibling squabble
+
+The trace at 35 gives both the shape and one entire lane:
+
+```
+I feuded with my little brother, Max, about whose turn it is to use the computer.
+I apologized to him for feuding.
+```
+
+The topic is data: `a16_sibling-arguments-enc` is 191 rows of `Condition, Topic` gated on
+hero and sibling gender and both ages, with a `Controversy Score` to weight the pick.
+The sentence is assembled from literals (`feuded`, `' apolized...'` prefixes exist in
+metadata, but the line is built in code, which is why no single literal matched it).
+
+```cpp
+siblingSquabbleYear   age >= 14, a sibling still at home, 1-in-12 a year
+                      picks a row by Controversy Score; lanes Apologize / Double down
+```
+
+### 256.1 Shortcuts named
+
+```
+prompt     not captured; the body is rebuilt as "Squabble with my <relation> about <topic>."
+refusal    "Double down" writes no sentence: the trace has no such line and the port
+           will not invent one (the same rule as 208 and 248)
+effects    no deltas, for the same reason
+```
+
+```
+40 lives to 50:  29 squabbles   14 apologies   15 declines
+I feuded with my little brother, Ricky, about who the hottest girl in school is. I
+apologized to him for feuding.
+```
+
+`tools/test_sibling_squabble.py` keeps the topic inside the table's literal rows, checks
+the relation is a brother or a sister, matches the apology's pronoun against the sibling's
+gender in the final family, and asserts a decline writes nothing.
+
 ## 255. The driver's licence
 
 The pool that had been missing all along was the string table itself. `tools/metadata_strings.py

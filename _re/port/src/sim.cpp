@@ -4029,6 +4029,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::overtimeYear, nullptr},
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
+        {&Sim::siblingSquabbleYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket
@@ -4479,6 +4480,76 @@ static int schoolLevelFor(int age);
 // #40905 'Take the driving test', #23835 "I couldn't be bothered to get a driving
 // license.", #18225 'Driving Test', #24138 'I failed my driving test.', #24778
 // 'I passed my driving test and got a driving license.'.
+// ---- The sibling squabble (REPORT.en.md 256) ------------------------------
+// The played life at 35: "I feuded with my little brother, Max, about whose turn it
+// is to use the computer. I apologized to him for feuding." The topic is one of
+// a16_sibling-arguments-enc's 191 rows, gated on both ages and genders.
+bool Sim::siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 14) return false;
+  if (forcedChoice < 0 && !sibRng_.chance(1.0 / 12.0)) return false;
+  // A living sibling in the house is who the fight is with.
+  Person* sib = nullptr;
+  for (Person& p : life.family) {
+    if (!p.alive || p.movedOut) continue;
+    if (p.relation.find("brother") == std::string::npos &&
+        p.relation.find("sister") == std::string::npos) continue;
+    if (sib == nullptr || p.age > sib->age) sib = &p;
+  }
+  if (sib == nullptr) return false;
+  if (!sib->name.empty()) { /* named siblings are the normal case */ }
+  if (!ensureTable("a16_sibling-arguments-enc")) return false;
+  const Table& t = tbl("a16_sibling-arguments-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string topic = trim(t.at(r, "Topic"));
+    if (topic.empty() || topic.find('<') != std::string::npos) continue;
+    const std::string heroG = lower(trim(t.at(r, "Hero Gender")));
+    if (heroG == "male" && h.female) continue;
+    if (heroG == "female" && !h.female) continue;
+    const std::string sibG = lower(trim(t.at(r, "Sibling Gender")));
+    if (sibG == "male" && sib->female) continue;
+    if (sibG == "female" && !sib->female) continue;
+    const double minA = t.num(r, "Hero Min Age");
+    const double maxA = t.num(r, "Hero Max Age");
+    if (minA > 0 && h.age < int(minA)) continue;
+    if (maxA > 0 && h.age > int(maxA)) continue;
+    const double sMin = t.num(r, "Sibling Min Age");
+    const double sMax = t.num(r, "Sibling Max Age");
+    if (sMin > 0 && sib->age < int(sMin)) continue;
+    if (sMax > 0 && sib->age > int(sMax)) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = weightedPickOf(t, "Controversy Score ", pool, sibRng_);
+  if (row == size_t(-1)) return false;
+  const std::string topic = trim(t.at(row, "Topic"));
+  const std::string rel = sib->relation;
+  const std::string pron = sib->female ? "her" : "him";
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(sibRng_.below(2));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_sibling-arguments-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Squabble";
+  // shortcut: the prompt's own lines were not captured; the log sentence is the
+  // game's and it is rebuilt from the same pieces.
+  out.body = "Squabble with my " + rel + " about " + topic + ".";
+  out.options = {"Apologize", "Double down"};
+  if (lane == 0) {
+    out.choice = "Apologize";
+    out.narrative = "I feuded with my " + rel +
+                    (sib->name.empty() ? std::string() : ", " + sib->name + ",") +
+                    " about " + topic + ". I apologized to " + pron + " for feuding.";
+  } else {
+    out.choice = "Double down";
+    // shortcut: no doubled-down line is in the trace, so the port writes none.
+  }
+  ++h.siblingFeuds;
+  return true;
+}
+
 bool Sim::licenseYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.hasLicense || h.age < 16 || h.age > 20) return false;
