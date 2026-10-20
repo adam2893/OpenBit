@@ -3354,8 +3354,13 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
     // stepfather had a baby girl named Inka Tuominen, my new half sister. She
     // was an accidental pregnancy." The port's two parents are the biological
     // ones, so the new sibling is a full one.
+    // The played life's parents keep having children through the hero's
+    // childhood: its four siblings were born when the hero was about 1, 5, 7 and
+    // 13, roughly one every four years (REPORT.en.md 271). The old coin (0.05 a
+    // year while the mother is 20-45) produced about one sibling in a life.
+    const double babyChance = life.hero.age < 18 ? 0.15 : 0.05;
     if ((p.relation == "mother" || p.relation == "stepmother") && life.hero.age >= 1 &&
-        p.age >= 20 && p.age <= 45 && rng_.chance(0.05)) {
+        p.age >= 20 && p.age <= 45 && rng_.chance(babyChance)) {
       const bool sister = rng_.chance(0.5);
       const std::string baby = drawFirstName(sister);
       const std::string other = p.relation == "mother" ? "father" : "stepfather";

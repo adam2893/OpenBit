@@ -23484,6 +23484,51 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 271. The relatives the game actually gives you
+
+270.1 said raising marriage coins cannot fix a population that isn't there. Measured:
+
+```
+port   1.0 sibling a life
+trace  4 siblings (Max, Camille, Omari, Jessalyn), plus 3 nieces
+```
+
+The trace's four were not all there at birth. Their first mentions date them:
+
+```
+Max       born about hero age 1   (he graduates high school at hero 19)
+Camille   born about hero age 5
+Omari     born about hero age 7
+Jessalyn  born about hero age 13  (she starts high school at hero 27)
+```
+
+That is one child every four to six years through the hero's childhood -- a rate, not a
+starting count. The port had one sibling draw (55%, one child) plus a parental-birth
+coin of 0.05 a year, which gave one sibling a life.
+
+```cpp
+parental births   0.05 -> 0.15 a year while the hero is under 18
+                  (0.05 after; the mother still has to be 20-45)
+```
+
+```
+siblings a life   1.0 -> 2.3   (max 8)
+lines a year      2.14 -> 2.33
+tests             74/74 green
+```
+
+The extra children are what made a first name repeat in a family, so `test_family` now
+skips the name-attribution check for duplicated names -- a line that says 'My little
+sister, Lissie,' cannot be tied to one of two Lissies by name alone.
+
+### 271.1 What this leaves
+
+The trace's 4 is at the top of the port's new range rather than its middle; the initial
+draw (one sibling at 55%) is unchanged. With the population in place, the marriage and
+birth rates from 270 are the next tuning pass -- and they are now measurable against a
+comparable family, which they were not before.
+
+
 ## 270. A sibling's marriage and children
 
 269 left two categories short. Both now exist in the person loop, with the played life's

@@ -41,6 +41,12 @@ for seed in range(1, 61):
                 lines.append(extra)
         siblings = [f for f in doc['final']['family']
                     if 'brother' in f['relation'] or 'sister' in f['relation']]
+        # With more siblings a first name can repeat, and a line then cannot be
+        # attributed to one of them by name alone (REPORT.en.md 271).
+        seen_names = {}
+        for f in siblings:
+            seen_names[f['name']] = seen_names.get(f['name'], 0) + 1
+        dup_names = {n for n, c in seen_names.items() if c > 1}
         counts['lives'] += 1
         counts['siblings'] += len(siblings)
         for sib in siblings:
@@ -49,7 +55,8 @@ for seed in range(1, 61):
                 counts['movedOut'] += 1
                 assert who + ' moved out.' in lines, (seed, gender, sib, lines[-6:])
             else:
-                assert who + ' moved out.' not in lines, (seed, gender, sib)
+                if sib['name'] not in dup_names:
+                    assert who + ' moved out.' not in lines, (seed, gender, sib)
             if sib['spouse']:
                 counts['married'] += 1
                 # The marriage sentence now carries the spouse's age and occupation
