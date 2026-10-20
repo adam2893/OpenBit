@@ -19,9 +19,12 @@ for i in range(N):
     tap(723,1764); time.sleep(0.55)
     for y in range(1080,1861,40):
         tap(720,y); time.sleep(0.06)
-    # Modal dismissals: item/IAP popup, card corner, bundle ad corner.
-    for (x,y) in ((300,330),(300,832),(1332,140)):
-        tap(x,y); time.sleep(0.18)
+    # Modal dismissals: every IAP/metric modal puts its X on the same vertical strip
+    # (device x ~300, y anywhere from 300 to 1100), so walk the strip and be done
+    # with knowing each popup's height.
+    for y in range(300, 1101, 40):
+        tap(300, y); time.sleep(0.06)
+    tap(1332, 140); time.sleep(0.12)  # bundle ad corner
     if i%6==5:
         swipe(720,1700,720,1150,250); time.sleep(0.3)
     if i%10==0:
