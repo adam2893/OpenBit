@@ -85,6 +85,11 @@ struct Person {
   bool movedOut = false;
   std::string spouse;      // full name of the sibling's husband/wife, "" when single
   int ageAtMarriage = 0;   // the sibling's age when that marriage happened
+  // The sibling's own coming out (REPORT.en.md 274): the confession card and the
+  // announcement that later rides the move-out line.
+  bool outConsidered = false;
+  bool out = false;
+  std::string sexuality;   // 'gay' or 'bi', drawn when the confession happens
 };
 
 // The cards a year pushes in addition to the one it draws (REPORT.en.md 133).
@@ -350,6 +355,7 @@ class Sim {
   bool licenseYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);
+  bool siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);

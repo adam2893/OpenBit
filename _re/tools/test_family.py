@@ -53,7 +53,10 @@ for seed in range(1, 61):
             who = 'My ' + sib['relation'] + (', ' + sib['name'] + ',' if sib['name'] else '')
             if sib['movedOut']:
                 counts['movedOut'] += 1
-                assert who + ' moved out.' in lines, (seed, gender, sib, lines[-6:])
+                # The coming-out announcement rides the move-out line (REPORT 274),
+                # so the line can go on after 'moved out.'.
+                assert (who + ' moved out.' in lines or
+                        any(l.startswith(who + ' moved out.') for l in lines)),                        (seed, gender, sib, lines[-6:])
             else:
                 if sib['name'] not in dup_names:
                     assert who + ' moved out.' not in lines, (seed, gender, sib)

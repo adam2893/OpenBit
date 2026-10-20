@@ -3390,7 +3390,16 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
       // per-year coin on the sibling's own stream.
       if (!p.movedOut && p.age >= 18 && sibRng_.chance(0.35)) {
         p.movedOut = true;
-        out.push_back(who + " moved out.");
+        // The played life's line is 'My half sister, Penelope, moved out. She came
+        // out of the closet as gay.' -- the announcement rides the move-out
+        // (REPORT.en.md 274).
+        std::string line = who + " moved out.";
+        if (p.outConsidered && !p.out) {
+          p.out = true;
+          line += " " + std::string(p.female ? "She" : "He") +
+                  " came out of the closet as " + p.sexuality + ".";
+        }
+        out.push_back(line);
         continue;
       }
       if (p.movedOut && p.spouse.empty() && p.age >= 18 && sibRng_.chance(0.20)) {
@@ -4112,6 +4121,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
         {&Sim::siblingSquabbleYear, nullptr, 3},
+        {&Sim::siblingComingOutYear, nullptr, 3},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -4702,6 +4712,65 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
   out.table = "registry:ScenarioSchoolGraduate";
   out.title = "Graduation";
   out.narrative = "I graduated from high school.";
+  return true;
+}
+
+// ---- Coming out (REPORT.en.md 274) ----------------------------------------
+// ScenarioSiblingComingOut, title 'Coming Out'. The prompt is #50695, the ignore
+// lane #30968 and the ridicule lane #25017; the later announcement is #9380's
+// '<person> came out of the closet as <sexuality>.', which in the trace rides the
+// sibling's move-out line.
+bool Sim::siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 12) return false;
+  Person* sib = nullptr;
+  for (Person& p : life.family) {
+    if (!p.alive || p.outConsidered) continue;
+    if (p.relation.find("brother") == std::string::npos &&
+        p.relation.find("sister") == std::string::npos) continue;
+    if (p.age < 13 || p.age > 20) continue;
+    sib = &p;
+    if (sibRng_.chance(0.5)) break;
+  }
+  if (sib == nullptr) return false;
+  if (!sibRng_.chance(0.08)) return false;
+  Person& s = *sib;
+  s.outConsidered = true;
+  s.sexuality = sibRng_.chance(0.7) ? "gay" : "bi";
+  const std::string who = "My " + s.relation + ", " + s.name + ",";
+  const std::string pron = s.female ? "she" : "he";
+  const std::string obj = s.female ? "her" : "him";
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioSiblingComingOut";
+  out.title = "Coming Out";
+  out.body = "Your " + s.relation + ", " + s.name + ", has confessed to you that " +
+             pron + " is considering coming out of the closet." + "\n\n" +
+             "What will you do?";
+  out.cta = "What will you do?";
+  out.options = {"Support " + obj, "Ridicule " + obj, "Ignore " + obj};
+  const int lane = int(sibRng_.below(3));
+  if (lane == 0) {
+    out.choice = "Support " + obj;
+    // The trace shows only the ignored lane; the supportive one is the port's
+    // own wording (shortcut).
+    out.narrative = who + " confessed to me that " + pron +
+                    " is thinking about coming out of the closet. I supported " +
+                    obj + ".";
+    out.happiness = pointsForImpact(2);
+  } else if (lane == 1) {
+    out.choice = "Ridicule " + obj;
+    out.narrative = "I ridiculed my " + s.relation + ", " + s.name +
+                    ", for thinking about coming out of the closet.";  // #25017
+    out.karma = pointsForImpact(-3);
+  } else {
+    out.choice = "Ignore " + obj;
+    out.narrative = who + " confessed to me that " + pron +
+                    " is thinking about coming out of the closet. I ignored " + obj +
+                    ".";  // #30968
+  }
   return true;
 }
 

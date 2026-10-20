@@ -23484,6 +23484,39 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 274. A sibling comes out
+
+The second played life at 24:
+
+```
+My half sister, Penelope, confessed to me that she is thinking about coming out of
+the closet. I ignored her.
+My half sister, Penelope, moved out. She came out of the closet as gay.
+```
+
+`ScenarioSiblingComingOut`, title "Coming Out", is now a card with three lanes and
+an announcement that rides the move-out:
+
+```
+prompt        Your {relation}, {name}, has confessed to you that {pron} is
+              considering coming out of the closet.\n\nWhat will you do?   #50695
+ignore        My ..., ..., confessed to me that she is thinking about coming
+              out of the closet. I ignored her.                              #30968
+ridicule      I ridiculed my ..., ..., for thinking about coming out of the
+              closet.                                                        #25017
+announcement  My ..., ..., moved out. She came out of the closet as gay.      #9380
+```
+
+The supportive lane's wording is the port's own -- the trace only shows the ignored
+one -- and is marked as such. The sexuality drawn is `gay` or `bi`, the two values the
+sexuality table itself carries.
+
+```
+40 lives:  18 confessions   13 announcements, each tied to a sibling who confessed
+tests      76/76 green (test_sibling_coming_out added)
+```
+
+
 ## 273. The crime chain: arrested, charged, pleaded, sentenced
 
 The second played life carried the whole chain at 23:
