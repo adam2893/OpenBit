@@ -23484,6 +23484,49 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 269. The family lifecycle's own rates
+
+268 pointed at the relative lines as the real composition gap. Measured on both played
+lives and on twenty port lives:
+
+```
+relative lines per year        trace 1    trace 2    port
+  any relative line             1.62       0.60      0.31
+    promotion                   0.31       0.07      0.02
+    school transition           0.44       0.17      0.03
+    illness                     0.34       0.10      0.16
+    baby                        0.11       0.02      0.01
+    marriage                    0.10       --        0.01
+    move-out                    0.08       0.02      0.01
+    death                       0.03       0.05      0.04
+```
+
+Two things were underneath the gap, and both are now fixed:
+
+```cpp
+ages 11 and 14  the person loop had only 'started elementary school' at 6 and
+                'graduated from high school' at 18; both traces show the middle
+                and high starts at exactly 11 and 14 for every relative
+promotion coin  0.05 -> 0.12 a year. The trace promotes an adult relative about
+                once every twelve career years; 0.05 gave one promotion in a life
+```
+
+```
+relative lines a year   0.31 -> 0.57   (+84%)
+total lines a year      2.09 -> 2.09   (the new lines ride years the family
+                                       already claimed: they replace nothing)
+tests                   73/73 green -- no test needed to move
+```
+
+### 269.1 What is still short, and the next measurable step
+
+The trace's cleanest number is trace 1's 1.62 relative lines a year; the port now sits
+at 0.57. The remaining categories are babies (0.11 against 0.01) and marriages (0.10
+against 0.01): the port's person loop marries a relative only when the hero's own card
+pushes it, and never has a relative's baby. Those two are the next section's work, and
+they are countable the same way.
+
+
 ## 268. The composition gap, measured and corrected
 
 267 called the composition gap \"the largest fidelity item left\" on a number that was
