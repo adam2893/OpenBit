@@ -34,7 +34,7 @@ def run(seed, gender, ages=70, **extra):
 
 lanes = collections.Counter()
 agree_runs = 0
-for seed in range(1, 41):
+for seed in range(1, 81):
     for gender in ("male", "female"):
         doc = run(seed, gender)
         agreed = False

@@ -706,6 +706,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
+      planeRng_(seed ^ 0x6c2a8e4f1b7d3950ULL ^ 0xbf58476d1ce4e5b9ULL),
+      intRng_(seed ^ 0x7d3b9f1e5a2c4680ULL ^ 0x9e3779b97f4a7c15ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4111,6 +4113,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::loverBreakUpYear, nullptr},
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
+        {&Sim::interviewYear, nullptr, 2},
         {&Sim::careerYear, nullptr},
         {&Sim::officeYear, [](const Life& l) { return l.hero.ofcManager; }},
         {&Sim::skipSchoolYear, nullptr},
@@ -4119,6 +4122,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::bookYear, nullptr, 2},
         {&Sim::dietYear, nullptr, 2},
         {&Sim::martialArtsYear, nullptr, 2},
+        {&Sim::pilotYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
@@ -4157,18 +4161,18 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::attackInboundYear, nullptr},
         {&Sim::friendThreesomeYear, nullptr},
         {&Sim::paparazziYear, nullptr},
-        {&Sim::loverBirthControlYear, nullptr},
+        {&Sim::loverBirthControlYear, nullptr, 3},
         {&Sim::loverStopsBirthControlYear, nullptr},
         {&Sim::paternityCourtOrderYear, nullptr, 4},
         {&Sim::birthYear, nullptr, 6},
-        {&Sim::loverCounselingPushYear, nullptr},
+        {&Sim::loverCounselingPushYear, nullptr, 4},
         {&Sim::loverCallOffEngagementYear, nullptr},
-        {&Sim::loverElopeYear, nullptr, 2},
+        {&Sim::loverElopeYear, nullptr, 6},
         {&Sim::loverWeddingYear, nullptr, 2},
         {&Sim::loverLeavesYear, nullptr},
         {&Sim::exLoverSextYear, nullptr},
         {&Sim::exLoverMarriedNowYear, nullptr, 2},
-        {&Sim::childDisciplineYear, nullptr},
+        {&Sim::childDisciplineYear, nullptr, 4},
         {&Sim::childDemandsYear, nullptr},
         {&Sim::genderIdentityYear, nullptr},
         {&Sim::paranormalPhenomenaYear, nullptr},
@@ -4206,9 +4210,9 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
         {&Sim::siblingSquabbleYear, nullptr, 3},
-        {&Sim::siblingComingOutYear, nullptr, 3},
+        {&Sim::siblingComingOutYear, nullptr, 6},
         {&Sim::parentsPetYear, nullptr, 2},
-        {&Sim::partTimeYear, nullptr, 3},
+        {&Sim::partTimeYear, nullptr, 5},
         {&Sim::parentsCarYear, nullptr, 4},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
@@ -23534,6 +23538,181 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 //   result 'I took {0} lessons and earned my {1} belt!' (#25341)
 // shortcut: the lesson count in {0} is not captured (10 is used) and the game's
 // move list is not modelled; a course advances one belt in the art's hierarchy.
+// ---- The pilot test (REPORT.en.md 295) -------------------------------------
+// Activities -> Mind & Body -> flying lessons: 'Take a flying lesson today!'
+// (#40857), 'I took 10 hours of flying lessons.' (#25283), then the test
+// (a16_license-plane-questions: Question / Correct Answer / Incorrect Funny /
+// Incorrect Decoy) with 'I passed my pilot test and earned a pilot's license.'
+// (#24780) and 'I failed my pilot test.' (#24140).
+// shortcut: the lesson costs $1,000 (the game prices it in code the dump does not
+// carry) and the test's own prompt is assembled from its question.
+bool Sim::pilotYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 16 || h.pilotLicense || h.flyingAttempts >= 3) return false;
+  if (!ensureTable("a16_license-plane-questions-enc")) return false;
+  if (forcedChoice < 0 && !planeRng_.chance(0.05)) return false;
+  const Table& t = tbl("a16_license-plane-questions-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) if (!trim(t.at(r, "Question")).empty()) rows.push_back(r);
+  if (rows.empty()) return false;
+  if (h.flyingLessons == 0) {
+    const std::vector<std::string> extra = out.extra;
+    out = AgeUp();
+    out.extra = extra;
+    out.table = "a16_license-plane-questions-enc";
+    out.title = "Flying Lesson";
+    out.body = "Take a flying lesson today!";  // #40857
+    out.options = {"Take a flying lesson", "Not now"};
+    const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : planeRng_.chance(0.8);
+    if (!accept) { out.choice = "Not now"; return true; }
+    out.choice = "Take a flying lesson";
+    h.flyingLessons = 1;
+    h.money = std::max(0LL, h.money - 1000);
+    out.narrative = "I took 10 hours of flying lessons.";  // #25283
+    return true;
+  }
+  const size_t row = rows[planeRng_.below(uint32_t(rows.size()))];
+  const std::string question = trim(t.at(row, "Question"));
+  std::vector<std::string> answers;
+  const std::string correct = trim(t.at(row, "Correct Answer"));
+  if (correct.empty()) return false;
+  answers.push_back(correct);
+  for (const char* col : {"Incorrect Funny", "Incorrect Decoy"}) {
+    const std::string wrong = trim(t.at(row, col));
+    if (!wrong.empty() && wrong != correct) answers.push_back(wrong);
+  }
+  if (answers.size() < 2) return false;
+  const bool answered = forcedChoice >= 0 ? forcedChoice == 0 : planeRng_.chance(0.75);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Pilot Test";
+  out.body = question;
+  out.cta = "What's your answer?";
+  out.options = answers;
+  if (!answered) {
+    out.choice = answers[1];  // walked away from the test
+    out.narrative = "I failed my pilot test.";  // #24140
+    return true;
+  }
+  const size_t pick = planeRng_.below(uint32_t(answers.size()));
+  out.choice = answers[pick];
+  ++h.flyingAttempts;
+  const bool pass = answers[pick] == correct;
+  if (pass) {
+    h.pilotLicense = true;
+    out.narrative = "I passed my pilot test and earned a pilot's license.";  // #24780
+    out.smarts = pointsForImpact(2);
+  } else {
+    out.narrative = "I failed my pilot test.";  // #24140
+  }
+  return true;
+}
+
+// ---- The interview (REPORT.en.md 296) ---------------------------------------
+// a16_interview-questions-enc carries the whole card: Question, CTA
+// ('How will you respond?'), Default Choice / Default Choice Score and up to
+// fourteen Choice N / Choice N Score pairs. The outcome lines are metadata:
+// 'I was hired for the position of {1} for {2} with a salary of {3}.' (#69268)
+// and 'Due to your performance in the interview, you were not offered a position
+// at ' (#18281). The best-scoring answer is the one that gets the job.
+bool Sim::interviewYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.age >= retirementAge(h)) return false;
+  // The school state sets `employed` at 18 before any job is drawn, so the gate
+  // keys on the career track (the same signal careerYear uses).
+  if (h.inPrison || h.schooling || h.military || h.royal) return false;
+  if (!h.careerTrack.empty()) return false;
+  if (forcedChoice < 0 && !intRng_.chance(0.50)) return false;
+  if (!ensureTable("a16_interview-questions-enc")) return false;
+  if (!ensureTable("a16_careers-enc")) return false;
+  const Table& qi = tbl("a16_interview-questions-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < qi.size(); ++r) if (!trim(qi.at(r, "Question")).empty()) rows.push_back(r);
+  if (rows.empty()) return false;
+  const size_t qrow = rows[intRng_.below(uint32_t(rows.size()))];
+  std::vector<std::string> answers;
+  std::vector<int> scores;
+  for (int i = 1; i <= 14; ++i) {
+    const std::string col = "Choice " + std::to_string(i);
+    if (!qi.has(col)) continue;
+    const std::string text = trim(qi.at(qrow, col));
+    if (text.empty()) continue;
+    answers.push_back(text);
+    const std::string scoreCol = "Choice " + std::to_string(i) + " Score";
+    scores.push_back(qi.has(scoreCol) ? int(qi.num(qrow, scoreCol)) : 0);
+  }
+  if (answers.size() < 2) return false;
+  // Four options at most: the best answer and three others, so a card can show
+  // the ladder the table describes without a fifteen-row page.
+  std::vector<size_t> keep;
+  size_t best = 0;
+  for (size_t i = 1; i < scores.size(); ++i) if (scores[i] > scores[best]) best = i;
+  keep.push_back(best);
+  for (size_t i = 0; i < answers.size() && keep.size() < 4; ++i) {
+    bool have = false;
+    for (size_t k : keep) if (k == i) have = true;
+    if (!have) keep.push_back(i);
+  }
+  // Shuffle the kept options so the right answer is not always first.
+  for (size_t i = keep.size(); i > 1; --i) {
+    const size_t j = intRng_.below(uint32_t(i));
+    std::swap(keep[i - 1], keep[j]);
+  }
+  const Table& careers = tbl("a16_careers-enc");
+  if (!careers.size()) return false;
+  const size_t crow = intRng_.below(uint32_t(careers.size()));
+  std::vector<std::string> steps;
+  splitOn(careers.at(crow, "Seniority Track"), ',', steps);
+  for (std::string& st : steps) st = trim(st);
+  std::string title = steps.empty() ? trim(careers.at(crow, "Career")) : steps[0];
+  if (title.empty() || title == "None" || title == "Abbreviated" ||
+      title == "Working Class" || title == "Corporate") {
+    title = trim(careers.at(crow, "Career"));
+  }
+  if (title.empty()) return false;
+  const std::string company = companyName(careers.at(crow, "Company Type"), life);
+  if (company.empty()) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = qi.name();
+  out.row_id = std::to_string(qrow + 1);
+  out.title = "Interview";
+  out.body = trim(qi.at(qrow, "Question"));
+  out.cta = trim(qi.at(qrow, "CTA"));
+  for (size_t k : keep) out.options.push_back(answers[k]);
+  size_t pick = keep[0];
+  if (forcedChoice >= 0) {
+    const size_t want = size_t(forcedChoice);
+    if (want < keep.size()) pick = keep[want];
+  } else {
+    pick = keep[intRng_.below(uint32_t(keep.size()))];
+  }
+  out.choice = answers[pick];
+  const bool hired = scores[pick] >= scores[best];
+  if (hired) {
+    const int salary = 40000 + int(intRng_.below(100)) * 1000;
+    h.job = title;
+    h.employed = true;
+    h.employer = company;
+    h.employerType = trim(careers.at(crow, "Company Type"));
+    h.jobSalary = salary;
+    h.careerTrack = trim(careers.at(crow, "Seniority Track"));
+    h.careerStep = 0;
+    h.careerYears = 0;
+    out.narrative = "I was hired for the position of " + title + " for " + company +
+                    " with a salary of " + money(salary) + ".";  // #69268
+    out.happiness = pointsForImpact(2);
+  } else {
+    out.narrative = "Due to your performance in the interview, you were not offered "
+                    "a position at " + company + ".";  // #18281
+  }
+  return true;
+}
+
 bool Sim::martialArtsYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 6) return false;

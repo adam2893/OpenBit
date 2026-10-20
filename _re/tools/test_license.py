@@ -32,7 +32,7 @@ offers = 0
 tests = 0
 passes = 0
 fails = 0
-for seed in range(1, 41):
+for seed in range(1, 81):
     doc = run(seed)
     licensed = False
     for event in doc["events"]:

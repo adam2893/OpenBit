@@ -364,6 +364,8 @@ class Sim {
   bool bookYear(Life& life, AgeUp& out, int forcedChoice);
   bool dietYear(Life& life, AgeUp& out, int forcedChoice);
   bool martialArtsYear(Life& life, AgeUp& out, int forcedChoice);
+  bool pilotYear(Life& life, AgeUp& out, int forcedChoice);
+  bool interviewYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> fillerNarrationLines(Life& life);
   std::string makeSchoolName(int level);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
@@ -950,6 +952,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng dietRng_;
   // The martial-arts menu's own draw (REPORT.en.md 291).
   Rng maRng_;
+  // The pilot test and the interview draws (REPORT.en.md 295, 296).
+  Rng planeRng_;
+  Rng intRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

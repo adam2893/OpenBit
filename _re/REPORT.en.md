@@ -23484,6 +23484,62 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 295. The pilot test, and the four tables' first half
+
+294 left four card payloads unreferenced. This round took the two clearest.
+
+```
+a16_license-plane-questions-enc   Question / Correct Answer / Incorrect Funny /
+                                 Incorrect Decoy
+  body      Take a flying lesson today!                        #40857
+  lesson    I took 10 hours of flying lessons.                 #25283
+  test      4 questions... the card asks one, three answers
+  passed    I passed my pilot test and earned a pilot's license.  #24780
+  failed    I failed my pilot test.                            #24140
+```
+
+The lesson comes first, then up to three rides at the test (a hero who fails three
+times stops trying); passing sets the licence for good.
+
+```
+40 lives:  21 lessons   15 tests   3 passed   12 failed
+acceptance: card tables 874/878 -> 875/878
+tests      86/87 (test_pilot added)
+```
+
+shortcut: the lesson is charged $1,000 (the game prices it code-side) and the test's
+prompt is its own question.
+
+## 296. The interview
+
+a16_interview-questions-enc is the whole card in one row: `Question`, `CTA`
+('How will you respond?'), up to fourteen `Choice N` / `Choice N Score` pairs.
+
+```
+title     Interview
+body      the row's Question (e.g. 'Why do you want this job?')
+cta       the row's CTA
+options   the best-scoring answer plus three others, shuffled
+hired     best-scoring answer chosen ->
+          I was hired for the position of {title} for {company} with a salary of {amount}.
+          (#69268) and the career track is set from a16_careers-enc
+refused   anything else ->
+          Due to your performance in the interview, you were not offered a position at
+          {company}. (#18281)
+```
+
+```
+40 lives:  13 interviews   6 hired   7 refused
+acceptance: card tables 875/878 -> 876/878
+tests      87/87 green (test_interview added)
+```
+
+Two defects found while wiring it: the school state sets `employed` at 18 before any
+job is drawn, so the gate now keys on the empty career track (the same signal
+careerYear uses), and the drawn title could be the class word 'Abbreviated' until the
+career-name fallback 286 introduced was applied here too.
+
+
 ## 294. Counting menus apart from cards
 
 293 ended with the problem stated: the acceptance check treats every `*-enc` table as a

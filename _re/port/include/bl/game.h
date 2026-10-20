@@ -120,6 +120,9 @@ struct Hero {
   bool onDiet = false;       // the year the diet card is spent (REPORT 290)
   std::string martialArt;    // the art the belt belongs to (REPORT 291)
   int martialBelt = -1;      // index into the art's Belt Hierarchy
+  int flyingLessons = 0;     // the pilot test is taken after one lesson (REPORT 295)
+  int flyingAttempts = 0;    // three rides at the test, then the licence waits
+  bool pilotLicense = false;
   // Prison state. The real game reaches it through the interactive Crime menu
   // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).
   bool inPrison = false;
