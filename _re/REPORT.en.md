@@ -23484,6 +23484,34 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 290. The diet menu
+
+Second menu capture from the emulator:
+
+```
+Activities -> Mind & Body -> Diet
+  section   Mind & Body
+  title     Diet
+  body      Start a diet today!                     #39862
+  dropdown  'Pick your diet' (#33864): a16_diets-enc rows, e.g. 'Vegan ($300/mo)'
+  button    Do it
+  result    I went on {0} diet.                     #25767
+```
+
+The article comes from the row's own `Use Definite Article` flag ('the Atkins diet',
+'a vegan diet'), the monthly cost is charged for the year, and the row's Health /
+Happiness / Appearance impacts go through the same impact scale every card uses.
+
+```
+40 lives:  17 diets, every one matching its row's name, article and impacts
+acceptance: card tables 872/935 -> 873/935
+tests      84/84 green (test_diet added)
+```
+
+shortcut: the game keeps a diet running with a menu to manage it and charges monthly;
+the port spends one year and charges that year's cost.
+
+
 ## 289. The bookshelf, and the menu capture 288 asked for
 
 288 said the remaining 64 tables need a menu-flow capture, not a playthrough. This is

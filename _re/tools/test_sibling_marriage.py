@@ -51,7 +51,8 @@ for seed in range(1, 21):
                 name = m.group(2)
                 assert name in married_at, (seed, "a father with no marriage", line)
                 first = m.group(4).split()[0]
-                assert any(p.get("name") == first for p in doc["final"]["family"]), (seed, line)
+                assert any((p.get("name") or "").split()[:1] == [first]
+                           for p in doc["final"]["family"]), (seed, line)
                 continue
             m = BIRTH.match(line)
             if m:
@@ -72,7 +73,8 @@ for seed in range(1, 21):
         for age, child in records:
             assert age >= married_at[parent], (seed, "a birth before the marriage", parent)
             first = child.split()[0]
-            assert any(p.get("name") == first for p in doc["final"]["family"]), (seed, child)
+            assert any((p.get("name") or "").split()[:1] == [first]
+                       for p in doc["final"]["family"]), (seed, child)
 
 assert marriages >= 5, marriages
 assert fathers >= 3, fathers

@@ -704,6 +704,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
+      dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4115,6 +4116,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::schoolYear, [](const Life& l) { return l.hero.schooling; }},
         {&Sim::backToSchoolYear, nullptr, 4},
         {&Sim::bookYear, nullptr, 2},
+        {&Sim::dietYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
@@ -23511,6 +23513,47 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 //   (#16771), 'Pick your book' (#33840), a dropdown of a16_books-enc and one
 //   button, 'Read it' (#35253). The result is #24883, 'I read it from cover to
 //   cover. It was {0} pages.'
+// ---- The diet (REPORT.en.md 290) -------------------------------------------
+// Activities -> Mind & Body -> Diet, captured in the emulator:
+//   section 'Mind & Body', title 'Diet', body 'Start a diet today!' (#39862),
+//   'Pick your diet' (#33864) with a16_diets-enc rows ('Vegan ($300/mo)'),
+//   button 'Do it'. The result is #25767, 'I went on {0} diet.'
+// shortcut: the game charges the monthly cost for as long as the diet runs and
+// has a menu to manage it; the port spends one year on it and charges that
+// year's cost.
+bool Sim::dietYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.onDiet || h.age < 12) return false;
+  if (!ensureTable("a16_diets-enc")) return false;
+  if (forcedChoice < 0 && !dietRng_.chance(0.05)) return false;
+  const Table& t = tbl("a16_diets-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) if (!trim(t.at(r, "Diet")).empty()) rows.push_back(r);
+  if (rows.empty()) return false;
+  const size_t row = rows[dietRng_.below(uint32_t(rows.size()))];
+  h.onDiet = true;
+  const bool definite = t.flag(row, "Use Definite Article");
+  const std::string diet = trim(t.at(row, "Diet"));
+  const long long cost = static_cast<long long>(t.num(row, "Monthly Cost")) * 12;
+  if (cost > 0) h.money = std::max(0LL, h.money - cost);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Diet";
+  out.body = "Start a diet today!";  // #39862
+  out.cta = "Pick your diet";  // #33864
+  out.options = {"Do it"};
+  out.choice = "Do it";
+  out.narrative = "I went on " + std::string(definite ? "the " : "a ") + diet +
+                  " diet.";  // #25767
+  if (t.has("Health Impact")) out.health = pointsForImpact(int(t.num(row, "Health Impact")));
+  if (t.has("Happiness Impact")) out.happiness = pointsForImpact(int(t.num(row, "Happiness Impact")));
+  if (t.has("Appearance Impact")) out.looks = pointsForImpact(int(t.num(row, "Appearance Impact")));
+  return true;
+}
+
 bool Sim::bookYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 6) return false;
