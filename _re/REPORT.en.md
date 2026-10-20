@@ -23484,6 +23484,49 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 276. The part-time job
+
+The second played life at 13:
+
+```
+A meter maid hired me as a dog walker. I earned $96 after working 12 hours for
+her at $8 an hour.
+```
+
+Its row is `a16_part-time-jobs-enc`'s Dog Walker (Freelance, $8-$25 an hour, min age
+13) -- a table the port never referenced before.
+
+```cpp
+gate    ages 13-22, not employed, not in prison; rows filtered by Min/Max Age,
+        driving licence and student requirement; coin 0.22 a year on its own stream
+pay     rate in [Min, Max] Hourly Rate, hours 8-16, pay = rate x hours; hero money
+        rises by it, and the test recomputes the product
+line    'A {employer career} hired me as a {job}. I earned ${pay} after working
+        {hours} hours for {him/her} at ${rate} an hour.'
+```
+
+The employer is a career title, the way the trace's 'metro maid' is a job, and the
+article capitalises it ('A Santa Claus', not 'A santa claus').
+
+```
+40 lives:  7 part-time jobs, every one earning rate x hours
+acceptance: card tables 870/935 -> 871/935 (93.2%)
+            played-life log overlap 36.4% -> 40.7%
+tests      78/78 green (test_part_time added)
+
+### 276.1 The clamp is applied after every card, not once
+
+The part-time job moved enough years to expose a test bug that had nothing to do with it:
+`test_paparazzi` reconstructed a famous life's fame as `clamp(80 + sum of every delta)`,
+and seed 26 now ends at 92 instead of 96. Three poses from 80 reach the 100 ceiling (24
+points asked for, 20 kept), and a later -8 ends at 92 -- the game clamps after each
+impact, so the simulation has to clamp per event too.
+```
+
+`test_pray_wealth` fell to two cards with the new family taking years; pray-asset got a
+third wheel seat (six cards now) rather than a lowered bar.
+
+
 ## 275. The parents' pet
 
 The second played life at 3:

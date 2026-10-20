@@ -698,6 +698,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       licRng_(seed ^ 0x369dea0f31a53f85ULL ^ 0x9e3779b97f4a7c15ULL),
       sexRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x94d049bb133111ebULL),
       eyeRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x369dea0f31a53f85ULL),
+      ptRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xb5297a4d3a2ba1f3ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4032,7 +4033,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::drugOfferYear, nullptr},
         {&Sim::crashoutYear, nullptr},
         {&Sim::prayWealthYear, nullptr},
-        {&Sim::prayAssetYear, nullptr, 2},
+        {&Sim::prayAssetYear, nullptr, 3},
         {&Sim::sexualityYear, nullptr},
         {&Sim::onlyfansStartYear, nullptr, 3},
         {&Sim::onlyfansTipYear, nullptr, 3},
@@ -4133,6 +4134,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::siblingSquabbleYear, nullptr, 3},
         {&Sim::siblingComingOutYear, nullptr, 3},
         {&Sim::parentsPetYear, nullptr, 2},
+        {&Sim::partTimeYear, nullptr, 2},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -4736,6 +4738,61 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
 // Patches.' -- #30910's 'My {0} got me{1} {2} named {3}.' The card is a report
 // (its title is the pet's name in the registry's own dump), and the animal, breed
 // and name come from a16_pets-enc and a16_pet-names-enc.
+// ---- The part-time job (REPORT.en.md 276) ----------------------------------
+// The second played life at 13: 'A meter maid hired me as a dog walker. I earned
+// $96 after working 12 hours for her at $8 an hour.' -- the row is
+// a16_part-time-jobs-enc's Dog Walker (Freelance, $8-$25 an hour, min age 13).
+// The employer is a career title, the pay is rate x hours, and the year is filled
+// by the job instead of a card.
+bool Sim::partTimeYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.age < 13 || h.age > 22 || h.employed || h.inPrison) return false;
+  if (!ensureTable("a16_part-time-jobs-enc")) return false;
+  if (!ensureTable("a16_careers-enc")) return false;
+  if (!ptRng_.chance(0.22)) return false;
+  const Table& t = tbl("a16_part-time-jobs-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const double minAge = t.num(r, "Min Age");
+    const double maxAge = t.num(r, "Max Age");
+    if (minAge > 0 && h.age < int(minAge)) continue;
+    if (maxAge > 0 && h.age > int(maxAge)) continue;
+    if (t.flag(r, "Requires Driving License") && !h.hasLicense) continue;
+    if (t.flag(r, "Must Be Student") && !h.schooling) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = weightedPickOf(t, "Commonness Score", pool, ptRng_);
+  if (row == size_t(-1)) return false;
+  const std::string job = lower(trim(t.at(row, "Job")));
+  const int low = std::max(1, int(t.num(row, "Min Hourly Rate")));
+  const int high = std::max(low, int(t.num(row, "Max Hourly Rate")));
+  const int rate = low + int(ptRng_.below(uint32_t(high - low + 1)));
+  const int hours = 8 + int(ptRng_.below(9));
+  const int pay = rate * hours;
+  // The employer is a career the hero is not in; its title is the person the line
+  // names ('A meter maid').
+  const Table& careers = tbl("a16_careers-enc");
+  std::string employer = "neighbor";
+  if (careers.size() > 0) {
+    employer = lower(trim(careers.at(ptRng_.below(uint32_t(careers.size())), "Career")));
+  }
+  const bool female = ptRng_.chance(0.5);
+  const std::string obj = female ? "her" : "him";
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Part-time job";
+  out.narrative = "A " + spyUpperFirst(employer) + " hired me as a " + job + ". I earned $" +
+                  std::to_string(pay) + " after working " + std::to_string(hours) +
+                  " hours for " + obj + " at $" + std::to_string(rate) + " an hour.";
+  h.money += pay;
+  return true;
+}
+
 bool Sim::parentsPetYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;

@@ -69,11 +69,16 @@ for seed in range(1, 41):
             poses += 1
         elif fame_delta == -4:
             covers += 1
-    # Any other card that reports a fame delta moves the score too (REPORT.en.md 228),
-    # so the expectation adds every non-paparazzi fame delta in the same life.
-    other = sum(int((e.get("deltas") or {}).get("fame") or 0)
-                for e in doc["events"] if (e.get("table") or "") != TABLE)
-    want = min(100.0, max(0.0, 80.0 + 8 * poses - 4 * covers + other))
+    # Every card that reports a fame delta moves the score, and the clamp applies
+    # *after each one*: three poses from 80 reach the 100 ceiling and a later -8
+    # ends at 92, not 96 (REPORT.en.md 276.1).
+    want = 80.0
+    for e in doc["events"]:
+        delta = int((e.get("deltas") or {}).get("fame") or 0)
+        if (e.get("table") or "") == TABLE:
+            choice = e.get("choice")
+            delta = TAILS[choice][1]
+        want = min(100.0, max(0.0, want + delta))
     assert abs(doc["final"]["fame"] - want) < 1e-3, (seed, doc["final"]["fame"], want)
 
 assert cards, "no paparazzi card in 40 famous lives"

@@ -357,6 +357,7 @@ class Sim {
   bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsPetYear(Life& life, AgeUp& out, int forcedChoice);
+  bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);
@@ -924,6 +925,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng sexRng_;
   // The optometrist chain's own coin and outcome draw (REPORT.en.md 267).
   Rng eyeRng_;
+  // The part-time job family's own draws (REPORT.en.md 276).
+  Rng ptRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;
