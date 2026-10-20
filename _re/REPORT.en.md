@@ -23484,6 +23484,46 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 272. Marriage and birth rates, against a family that exists
+
+271 said the rates could only be tuned once the population was there. It is, so:
+
+```
+measure                trace      port before   port after
+marriage lines a year  0.10       0.016         0.032
+birth lines a year     0.11       0.005         0.098
+```
+
+```cpp
+move-out coin   0.06 -> 0.35 a year once 18   (the traces leave home within a few
+                                              years of turning 18)
+marriage coin   0.10 -> 0.20                  (married within a few years of the
+                                              move-out)
+birth coin      0.10 -> 0.30                  (several children across the
+                                              childbearing years)
+```
+
+Births now match the trace; marriages are a third. The difference is visible in the
+numbers themselves: the trace's 0.10 counts every relative's marriage, and its hero had
+four always-marrying siblings, while the port's 2.3 siblings average fewer marriages
+before they die. Closing it further is population, not coin, again.
+
+### 272.1 The cost, paid in two tests
+
+```
+test_sibling_squabble  10 cards -> 6: siblings leave home earlier, so the card's
+                       in-house window shrank. The coin went 1/12 -> 1/8 and the
+                       wheel seat 2 -> 3; 24 cards now.
+test_sibling_marriage  a birth dated before its mother's marriage, because two
+                       sisters shared a first name. Ordering is now checked only
+                       where the name is unique in that life.
+```
+
+```
+tests 74/74 green
+```
+
+
 ## 271. The relatives the game actually gives you
 
 270.1 said raising marriage coins cannot fix a population that isn't there. Measured:

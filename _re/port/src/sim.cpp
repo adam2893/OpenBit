@@ -3388,12 +3388,12 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
       // only sets the flag at +0x1fd and answers "announce".
       // shortcut: the game's own chances for both are not read; the port uses a
       // per-year coin on the sibling's own stream.
-      if (!p.movedOut && p.age >= 18 && sibRng_.chance(0.06)) {
+      if (!p.movedOut && p.age >= 18 && sibRng_.chance(0.35)) {
         p.movedOut = true;
         out.push_back(who + " moved out.");
         continue;
       }
-      if (p.movedOut && p.spouse.empty() && p.age >= 18 && sibRng_.chance(0.10)) {
+      if (p.movedOut && p.spouse.empty() && p.age >= 18 && sibRng_.chance(0.20)) {
         // The played life's own line is 'My little sister, Camille, married Owen
         // Wood, a 18-year old unemployed person. She changed her name to Camille
         // Schlitz-Wood.' -- a full sentence, not the bare name (#9396 expands into
@@ -3424,7 +3424,7 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
       // to a girl named Katelyn Colbert.' (REPORT.en.md 270). The child joins the
       // family, so the school and illness lines above apply to her in later years.
       if (!p.spouse.empty() && p.female && p.age >= 18 && p.age <= 45 &&
-          sibRng_.chance(0.10)) {
+          sibRng_.chance(0.30)) {
         const bool girl = sibRng_.chance(0.5);
         std::string surname = p.spouse;
         const size_t sp = surname.find(' ');
@@ -4047,7 +4047,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::afterHoursYear, nullptr},
         {&Sim::lightningYear, nullptr},
         {&Sim::seduceYear, nullptr},
-        {&Sim::witnessYear, nullptr},
+        {&Sim::witnessYear, nullptr, 2},
         {&Sim::findDrugsYear, nullptr},
         {&Sim::morningYear, nullptr},
         {&Sim::jobReferralYear, nullptr},
@@ -4108,7 +4108,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::overtimeYear, nullptr},
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
-        {&Sim::siblingSquabbleYear, nullptr, 2},
+        {&Sim::siblingSquabbleYear, nullptr, 3},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -4705,7 +4705,10 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 14) return false;
-  if (forcedChoice < 0 && !sibRng_.chance(1.0 / 12.0)) return false;
+  // Siblings now leave home at the trace's pace (REPORT 272), which shortens the
+  // in-house window this card lives in; the coin is 1/8 a year and the wheel gives
+  // it three seats (REPORT.en.md 272).
+  if (forcedChoice < 0 && !sibRng_.chance(1.0 / 8.0)) return false;
   // A living sibling in the house is who the fight is with.
   Person* sib = nullptr;
   for (Person& p : life.family) {
