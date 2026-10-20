@@ -23484,6 +23484,45 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 293. The Assets walk, and why the last tables are shells
+
+The menu walk continued into Assets and its Belongings browser. What it shows is the
+shape of the remaining table tail:
+
+```
+ASSETS        Finances, Investments, Luxury | Auction Houses, Casino, Museum,
+              Race Car Garage, Zoo | Belongings | Properties
+BELONGINGS    Antiques, Art, Closet, Fashion, Gemstones, Heirlooms, Historical
+              Relics, Items, Jewelry, Lucky Charms, Luxury Jewelry, ...
+              every one greyed out except 'Items' -- an inventory browser, not a card
+ITEMS         'Assassin's Blade Replica', 'Aura Ring Replica', 'Dab of Pixie Dust',
+              'Get Out Of Jail Free Card Replica', 'Golden Pacifier Replica',
+              'Golden Passport Replica', 'Golden Piggy Bank Replica', ... -- each with
+              a Condition bar
+```
+
+Those names are the **in-app-purchase catalog**: the hero owns them because the
+account bought them, and the screen is the store's inventory, not a scenario. The same
+holds for the rest of the 64: `a16_jewelry-*` fills the Jewelry browser, `a16_heirlooms`
+the Heirloom browser, `a16_black-market-auction-categories` the Auction Houses icon,
+`a16_secret-agent-*` the premium skill's own flow. None of them has a card with a
+prompt and lanes -- they are lists behind menus, and the menu itself is the interface.
+
+```
+verdict    the remaining ~60 tables are not pushed scenarios at all
+           they are inventory/store/menu payloads, and the game draws them as lists
+           wiring them as yearly cards would invent content the game never shows
+state      tests 85/85, card tables 874/935 (unchanged by this walk)
+```
+
+### 293.1 What this means for the bar
+
+The acceptance check counts 'card tables referenced'. For this 6.8% the honest
+reading is the inverse: a table that the game only ever draws as a menu row is not a
+card table, and the checker cannot tell the two apart. The bar can be met for any
+individual table by naming it in a card, but that would be fabrication, not porting.
+
+
 ## 292. What the menu walk found, and what it did not
 
 After the book, diet and martial-arts captures (289-291), the walk continued:
