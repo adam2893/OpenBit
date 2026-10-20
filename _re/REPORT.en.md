@@ -23484,6 +23484,34 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 292. What the menu walk found, and what it did not
+
+After the book, diet and martial-arts captures (289-291), the walk continued:
+
+```
+Mind & Body -> Library
+  an instant action, not a card: the achievement 'Bookworm' ("You spent some time
+  quietly perusing books and other media at Charleston Public Library.")
+  the fragments are metadata: #45781 'Visit the public library' and #64167
+  'quietly perusing books and other media'
+  a16_public-places-enc is the location list the sentence names, not a card
+
+the same visit drew 'Love Interest' (ScenarioLoveDate):
+  'While at the library, you meet a male named Elmer.'
+  buttons 'Ask him on a date' / 'No, he's not my type' (#31871)
+```
+
+The love card is already ported, so the only new fact is its real button pair; its
+static registry entry carries one lane ('True love') because it was transcribed from
+a journal line, not the modal. The library itself is left as it was: an instant menu
+action with no card of its own and no line in either trace -- wiring it would be an
+invented year, not a transcribed one.
+
+```
+state unchanged:   tests 85/85, card tables 874/935
+```
+
+
 ## 291. Martial arts, and the belt ladder
 
 Third menu capture:
