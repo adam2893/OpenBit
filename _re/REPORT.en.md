@@ -23484,6 +23484,62 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 288. The 64 tables nobody has opened
+
+The acceptance bar asks for every card table to be referenced. 871 of 935 are. The
+remaining 64 are not a random tail: they belong to subsystems neither played life ever
+entered, because the game opens them from a **menu**, not a push:
+
+```
+buckets                                  tables
+  shopping and collections                11
+    accessories headwear / masks / sunglasses, jewelry gemstones / metals / types,
+    books, magazines, mystuff catalog, heirlooms + notification-heirlooms
+  crime and courts                         7
+    bank robbery disguises / getaways / weapons, hitmen, murders, assaults,
+    black-market auction categories
+  secret agent                             9
+    agency front, client mission terminated, hack briefing / file, honeypot
+    approach / meeting / briefing, potential-agent background, stealth alarm
+  casino                                   3
+    game-room complaint, ledger feedback, celebrity demand
+  lifestyle menus                         27
+    diets, plastic surgeries, martial arts, horses, youtube channels, public places,
+    adoption reasons, proposal settings, funeral ash locations, ghosts, witch
+    remedies, landlord ghost, crash-out pair, club update, delinquent activities,
+    body parts, animals, compliments, dirty talk, wealthy persons, pray feedback,
+    biographies, back-to-school titles, special-talent filler, supervisor warnings
+  school and career                        5
+    colleges, company-name-type, interview questions, plane licence questions,
+    aircraft parts and car parts
+  notifications                            2
+```
+
+None of these appeared in the two traces, and none has a prompt in metadata: the
+tables are the *lists* a menu fills, and the strings that introduce the menus are
+code-side. They cannot be wired honestly from what this APK carries.
+
+### 288.1 State after the last eleven sections
+
+```
+tests            82/82 green
+probes           19 files, rc 0 on all 19, failures 0
+                 (the battery held 20; one file lived only in /tmp and is gone,
+                  the repository tests are the durable half)
+card tables      871/935 (93.2%)
+played-life log  40.4% overlap (informational)
+bench            61 ages measured
+```
+
+### 288.2 What actually closes them
+
+A **menu-flow capture**: open each of these menus once in the emulator and screenshot
+it. The texts are all visible in the UI -- the emulator is alive, the game is installed,
+and the third character is still playable. That is a different capture method from the
+age-up play (`tools/mumu_play.py` taps Age; a menu walker would tap Activities, Assets,
+Relationships and their submenus), and it is the only path left to the last 6.8%.
+
+
 ## 287. A brother's children, and the sentence for it
 
 The third played life at 18:
