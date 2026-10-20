@@ -23484,6 +23484,58 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 277. Where the port stands, and what it waits on
+
+```
+tests            78/78
+probes           20 files, rc 0 on all 20, failures 0
+card tables      871/935 referenced (93.2%)
+played-life log  39.5%   (two played lives; informational)
+bench            61 ages measured
+```
+
+The last rounds closed the trace families that had evidence: disease (247), overtime
+(248), a relative's death and its funeral (249), the paternity chain (251-252), the
+will (252), the licence chain (255), squabbles (256), safe sex (257), the prison year
+(259), the school loop and its election (260-262), the reported coworker (263), the
+optometrist (267), the crime chain (273), a sibling's coming out (274), the parents'
+pet (275) and the part-time job (276). The family lifecycle now matches the played
+lives on births and school transitions (269-272).
+
+### 277.1 What is left, and why it cannot move
+
+```
+blocked surface                          needs
+64 card tables (shops, bank, jewellery,   a card whose prompt and lanes are
+sunglasses, hitmen, secret-agent colour   code-side; the tables alone say
+pools, heirlooms, interviews, ...)        nothing about when or how they open
+Prom royal, EncounterPerson,             the school-name generator, the encounter
+filmed director chain, shoplifting       verb pool, the production prompts -- all
+                                         code-side, none in tables or metadata
+Inheritance                              the parents' estate model
+JobAcquisition / RetentionCareer /       silent pushes; the plays carry no line
+Headhunter / NewHouse                    to transcribe
+```
+
+Every one was checked against both the tables and `global-metadata.dat`; the sections
+named above record the exact literal or table that is missing in each case.
+
+### 277.2 The unblock paths, in order of cost
+
+```
+1. another played life      the MuMu emulator that produced the first two is no
+                            longer reachable (127.0.0.1:16384 refuses connections),
+                            so this needs the emulator restarted on the host
+2. a Frida capture          of the card views named in 264.2 -- the prompts and lanes
+                            a LifeLog cannot show
+3. a newer metadata dump    only if the code-side arrays were ever serialised;
+                            nothing in this APK carries them
+```
+
+The port is at the evidence ceiling: further work is a decision about which capture to
+take, not a code change that is waiting to be written.
+
+
 ## 276. The part-time job
 
 The second played life at 13:
