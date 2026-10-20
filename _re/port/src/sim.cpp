@@ -708,6 +708,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
       planeRng_(seed ^ 0x6c2a8e4f1b7d3950ULL ^ 0xbf58476d1ce4e5b9ULL),
       intRng_(seed ^ 0x7d3b9f1e5a2c4680ULL ^ 0x9e3779b97f4a7c15ULL),
+      surgRng_(seed ^ 0x2a6c4e8f1d3b5a79ULL ^ 0xbf58476d1ce4e5b9ULL),
+      adoptRng_(seed ^ 0x3b7d5f9a1c4e6820ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4114,6 +4116,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
         {&Sim::interviewYear, nullptr, 2},
+        {&Sim::plasticSurgeryYear, nullptr, 2},
+        {&Sim::adoptionYear, nullptr, 2},
         {&Sim::careerYear, nullptr},
         {&Sim::officeYear, [](const Life& l) { return l.hero.ofcManager; }},
         {&Sim::skipSchoolYear, nullptr},
@@ -23618,6 +23622,114 @@ bool Sim::pilotYear(Life& life, AgeUp& out, int forcedChoice) {
 // 'I was hired for the position of {1} for {2} with a salary of {3}.' (#69268)
 // and 'Due to your performance in the interview, you were not offered a position
 // at ' (#18281). The best-scoring answer is the one that gets the job.
+// ---- Plastic surgery (REPORT.en.md 297) ------------------------------------
+// a16_plastic-surgeries-enc: Procedure, Description, Uses Indefinite Article,
+// Max Surgeries, Cost, Optimal Age, Success Likeliness Score, Danger Score,
+// Appearance Improvement Score. The literals are #34076 'Plastic Surgery',
+// #21450 'Get plastic surgery', #21480 'Get the surgery',
+// #25536 'I underwent surgery on my {0}.' and #24287 'I had a botched {0}!'.
+// shortcut: the menu's own prompt is not in the dump, so the body is the menu
+// label (#21450); a low Success Likeliness Score turns the outcome into the
+// botched line.
+bool Sim::plasticSurgeryYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18) return false;
+  if (!ensureTable("a16_plastic-surgeries-enc")) return false;
+  if (forcedChoice < 0 && !surgRng_.chance(0.015)) return false;
+  const Table& t = tbl("a16_plastic-surgeries-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Procedure")).empty()) continue;
+    if (t.has("Gender") && lower(trim(t.at(r, "Gender"))) != "both" &&
+        lower(trim(t.at(r, "Gender"))) != (h.female ? "female" : "male")) continue;
+    // A hero cannot buy more procedures than the row allows.
+    if (t.has("Max Surgeries") && t.num(r, "Max Surgeries") > 0 &&
+        h.surgeries >= int(t.num(r, "Max Surgeries"))) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[surgRng_.below(uint32_t(rows.size()))];
+  const std::string procedure = trim(t.at(row, "Procedure"));
+  std::string part = trim(t.at(row, "Description"));
+  if (part.empty()) part = procedure;
+  const long long cost = static_cast<long long>(t.num(row, "Cost"));
+  const int success = t.has("Success Likeliness Score") ? int(t.num(row, "Success Likeliness Score")) : 4;
+  const int improve = t.has("Appearance Improvement Score") ? int(t.num(row, "Appearance Improvement Score")) : 2;
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : surgRng_.chance(0.7);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Plastic Surgery";  // #34076
+  out.body = "Get plastic surgery.";  // #21450
+  out.options = {"Get the surgery", "Not now"};  // #21480
+  if (!accept) {
+    out.choice = "Not now";
+    return true;
+  }
+  out.choice = "Get the surgery";
+  h.money = std::max(0LL, h.money - cost);
+  ++h.surgeries;
+  if (surgRng_.below(6) < uint32_t(std::min(6, std::max(0, 6 - success)))) {
+    out.narrative = "I had a botched " + part + "!";  // #24287
+    out.looks = pointsForImpact(-2);
+    out.health = pointsForImpact(-1);
+  } else {
+    out.narrative = "I underwent surgery on my " + part + ".";  // #25536
+    out.looks = pointsForImpact(improve);
+  }
+  return true;
+}
+
+// ---- Adoption (REPORT.en.md 298) -------------------------------------------
+// a16_adoption-reasons-enc: Reason / Abbreviated Reason / Snippet / Max Looks /
+// Max Smarts / Min Craziness / Commonness Score. The result line is #23411
+// 'I adopted {0}, a {1}-year old {2}.'
+// shortcut: the adoption menu's prompt is not in the dump, so the body names the
+// child's reason via the row's Snippet ('whose birth parents were abusive').
+bool Sim::adoptionYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 21 || h.inPrison || h.age > 60) return false;
+  if (!ensureTable("a16_adoption-reasons-enc")) return false;
+  if (forcedChoice < 0 && !adoptRng_.chance(0.04)) return false;
+  const Table& t = tbl("a16_adoption-reasons-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) if (!trim(t.at(r, "Snippet")).empty()) rows.push_back(r);
+  if (rows.empty()) return false;
+  const size_t row = rows[adoptRng_.below(uint32_t(rows.size()))];
+  const std::string snippet = trim(t.at(row, "Snippet"));
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : adoptRng_.chance(0.6);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Adoption";
+  out.body = "You are thinking about adopting a child " + snippet +
+             ".\n\nWhat will you do?";
+  out.options = {"Adopt the child", "Not now"};
+  if (!accept) {
+    out.choice = "Not now";
+    return true;
+  }
+  out.choice = "Adopt the child";
+  const bool girl = adoptRng_.chance(0.5);
+  const int childAge = 1 + int(adoptRng_.below(8));
+  const std::string name = life_ && !life_->hero.lastName.empty()
+                               ? drawFirstName(girl) + " " + h.lastName
+                               : drawFirstName(girl);
+  Person child;
+  child.relation = girl ? "daughter" : "son";
+  child.name = name;
+  child.female = girl;
+  child.age = childAge;
+  out.narrative = "I adopted " + name + ", a " + std::to_string(childAge) +
+                  "-year old " + (girl ? "girl" : "boy") + ".";  // #23411
+  out.happiness = pointsForImpact(2);
+  return true;
+}
+
 bool Sim::interviewYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 18 || h.age >= retirementAge(h)) return false;

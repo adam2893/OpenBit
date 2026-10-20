@@ -122,6 +122,7 @@ struct Hero {
   int martialBelt = -1;      // index into the art's Belt Hierarchy
   int flyingLessons = 0;     // the pilot test is taken after one lesson (REPORT 295)
   int flyingAttempts = 0;    // three rides at the test, then the licence waits
+  int surgeries = 0;         // plastic surgery count, capped by the row (REPORT 297)
   bool pilotLicense = false;
   // Prison state. The real game reaches it through the interactive Crime menu
   // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).

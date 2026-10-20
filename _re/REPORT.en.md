@@ -23510,6 +23510,57 @@ tests      86/87 (test_pilot added)
 shortcut: the lesson is charged $1,000 (the game prices it code-side) and the test's
 prompt is its own question.
 
+## 297. Plastic surgery
+
+```
+a16_plastic-surgeries-enc   Procedure / Description / Max Surgeries / Cost /
+                            Optimal Age / Success Likeliness Score / Danger Score /
+                            Appearance Improvement Score
+  title     Plastic Surgery                              #34076
+  body      Get plastic surgery.                         #21450
+  button    Get the surgery                              #21480
+  done      I underwent surgery on my {0}.               #25536
+  botched   I had a botched {0}!                         #24287
+```
+
+A low Success Likeliness Score turns the outcome into the botched line, which costs
+looks and a little health; the row's Max Surgeries caps how many procedures of that
+kind the hero can buy, and the cost comes from the row.
+
+```
+40 lives x 2 genders:  30 cards   14 done   8 botched   8 refused
+acceptance: card tables 876/878 -> 877/878
+tests      89/89 green (test_plastic_surgery added)
+```
+
+shortcut: the menu's own prompt is not in the dump, so the body is the menu label
+#21450, and a row without a Description falls back to its Procedure name.
+
+## 298. Adoption
+
+```
+a16_adoption-reasons-enc   Reason / Abbreviated Reason / Snippet / Max Looks /
+                           Max Smarts / Min Craziness / Commonness Score
+  title     Adoption
+  body      You are thinking about adopting a child {snippet}.
+            e.g. 'whose birth parents died while procreating'
+  buttons   Adopt the child / Not now
+  adopted   I adopted {0}, a {1}-year old {2}.            #23411
+```
+
+The child joins the family with the hero's surname, an age 1-8 and the line's boy/girl
+word.
+
+```
+40 lives:  14 cards   11 adopted   3 refused
+acceptance: card tables 877/878 -> 878/878
+tests      89/89 green (test_adoption added)
+```
+
+shortcut: the adoption menu's prompt is not in the dump; the body names the child's
+reason via the row's own Snippet, whose <his/her> slot the text resolver fills.
+
+
 ## 296. The interview
 
 a16_interview-questions-enc is the whole card in one row: `Question`, `CTA`
