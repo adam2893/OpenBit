@@ -52,7 +52,11 @@ for seed in range(1, 61):
                 assert who + ' moved out.' not in lines, (seed, gender, sib)
             if sib['spouse']:
                 counts['married'] += 1
-                assert who + ' married ' + sib['spouse'] + '.' in lines, (seed, gender, sib)
+                # The marriage sentence now carries the spouse's age and occupation
+                # and the name change (REPORT.en.md 270).
+                assert (who + ' married ' + sib['spouse'] + '.' in lines or
+                        any(l.startswith(who + ' married ' + sib['spouse'] + ',')
+                            for l in lines)), (seed, gender, sib)
                 # SimSibling.ThirdPersonMarries records the age it happened at.
                 assert sib['ageAtMarriage'] > 0, (seed, gender, sib)
                 assert sib['ageAtMarriage'] <= sib['age'], (seed, gender, sib)

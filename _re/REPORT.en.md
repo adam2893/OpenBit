@@ -23484,6 +23484,51 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 270. A sibling's marriage and children
+
+269 left two categories short. Both now exist in the person loop, with the played life's
+own sentences:
+
+```
+My little sister, Camille, married Owen Wood, a 18-year old unemployed person.
+She changed her name to Camille Schlitz-Wood.
+My little sister, Camille, gave birth to a girl named Katelyn Colbert.
+```
+
+```cpp
+marriage   coin 0.10 on the sibling's stream once moved out: spouse first and last
+           name from the same generators, age within four years, occupation from
+           the careers table (or 'unemployed'), and the double-barrelled name
+           change. Appending the clauses is what the trace shows: the bare
+           'married X.' was the old line, not the game's.
+birth      a married sister aged 18-45, coin 0.10: 'gave birth to a girl named
+           <first> <spouse's surname>.' The child joins the family as niece or
+           nephew, so every later person-line (school, illness, death) applies to
+           her.
+```
+
+```
+20 lives:  18 marriages   6 births (all after their mother's marriage)
+relative lines a year   0.57 -> 0.61
+total lines a year      2.09 -> 2.14
+tests                   74/74 green
+```
+
+### 270.1 What is still short
+
+The trace's marriage and birth rates are 0.10 lines a year each; the port now writes
+0.016 and 0.005. The cause is structural, not a coin: the trace's hero had four
+surviving siblings, each marrying and having children, while the port's sibling count
+depends on the birth card and death. Raising the coins cannot fix a population that
+isn't there; that is the next measurement -- relatives alive per life, against the
+played lives' own family sizes.
+
+`test_sibling_marriage.py` pins the sentences, the gender agreement ('She ... her',
+'He ... his'), the name change carrying the married person's own first name, and that
+a birth never precedes its mother's marriage. `test_family.py` accepts the longer
+sentence for the same reason.
+
+
 ## 269. The family lifecycle's own rates
 
 268 pointed at the relative lines as the real composition gap. Measured on both played

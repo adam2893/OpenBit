@@ -3389,10 +3389,50 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
         continue;
       }
       if (p.movedOut && p.spouse.empty() && p.age >= 18 && sibRng_.chance(0.10)) {
-        const std::string mate = drawFirstName(!p.female) + " " + drawSurname();
-        p.spouse = mate;
+        // The played life's own line is 'My little sister, Camille, married Owen
+        // Wood, a 18-year old unemployed person. She changed her name to Camille
+        // Schlitz-Wood.' -- a full sentence, not the bare name (#9396 expands into
+        // the spouse's age, occupation and the name change) (REPORT.en.md 270).
+        const std::string mateFirst = drawFirstName(!p.female);
+        const std::string mateLast = drawSurname();
+        const int mateAge = std::max(18, p.age + int(sibRng_.below(9)) - 4);
+        std::string mateJob = "unemployed";
+        if (mateAge >= 22 && sibRng_.chance(0.7) && careers.size() > 0) {
+          const size_t crow = weightedPick(careers, "Commonness Score", sibRng_);
+          if (crow != size_t(-1)) mateJob = trim(careers.at(crow, "Career"));
+        }
+        p.spouse = mateFirst + " " + mateLast;
         p.ageAtMarriage = p.age;
-        out.push_back(who + " married " + mate + ".");
+        const std::string herTheirs = p.female ? "She changed her name" : "He changed his name";
+        const std::string newName = p.name + " " +
+            (p.lastName.empty() ? mateLast : p.lastName + "-" + mateLast);
+        // 'a 18-year old unemployed person' is the no-job form; a working spouse is
+        // named by occupation alone (the trace's own bracket) (REPORT.en.md 270).
+        const std::string matePhrase =
+            mateJob == "unemployed" ? "unemployed person" : mateJob;
+        out.push_back(who + " married " + p.spouse + ", a " +
+                      std::to_string(mateAge) + "-year old " + matePhrase +
+                      ". " + herTheirs + " to " + newName + ".");
+        continue;
+      }
+      // A married sibling's own children: 'My little sister, Camille, gave birth
+      // to a girl named Katelyn Colbert.' (REPORT.en.md 270). The child joins the
+      // family, so the school and illness lines above apply to her in later years.
+      if (!p.spouse.empty() && p.female && p.age >= 18 && p.age <= 45 &&
+          sibRng_.chance(0.10)) {
+        const bool girl = sibRng_.chance(0.5);
+        std::string surname = p.spouse;
+        const size_t sp = surname.find(' ');
+        if (sp != std::string::npos) surname = surname.substr(sp + 1);
+        Person nb;
+        nb.relation = girl ? "niece" : "nephew";
+        nb.name = drawFirstName(girl);
+        nb.lastName = surname;
+        nb.female = girl;
+        newborns.push_back(nb);
+        out.push_back(who + " gave birth to a " + (girl ? "girl" : "boy") +
+                      " named " + nb.name +
+                      (surname.empty() ? std::string() : " " + surname) + ".");
         continue;
       }
     }
