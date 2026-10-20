@@ -23484,6 +23484,37 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 279. The yearly filler narration
+
+The third character's screen at 16 carried the line the port had never written:
+
+```
+I think my teacher may have a crush on me.
+```
+
+That is `a16_hero-filler-enc` row 67 (`Student`, ages 15-18) -- the game's plain-narration
+table. The port referenced the table but only as a last-resort **card**, and the family
+wheel claims almost every year, so twenty lives produced **zero** filler lines.
+
+```
+measured in the two played lives   0.13-0.19 filler lines a year
+port before                        0
+port now                           2.97 total lines a year (was 2.33)
+```
+
+The line is now drawn every year with a 0.15 coin on its own stream, appended beside the
+card's line. Two rules learned while wiring it:
+
+```
+tokens    a filler row whose String carries '<...>' is skipped *before* resolve(),
+          because resolve() draws from the main stream and the first attempt moved
+          a card sequence (test_boosts fell from 10 cards to 9)
+residue   a row that still resolves with '<' is dropped rather than logged
+```
+
+`test_boosts` came back to 18 cards once the main stream stopped moving.
+
+
 ## 278. The eye exam is a mini-game, and the card says so
 
 With the emulator back, a third character was created to mine more evidence. It froze

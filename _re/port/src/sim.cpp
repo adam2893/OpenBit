@@ -699,6 +699,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sexRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x94d049bb133111ebULL),
       eyeRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x369dea0f31a53f85ULL),
       ptRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xb5297a4d3a2ba1f3ULL),
+      fillerRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0xbb67ae8584caa73bULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3655,6 +3656,31 @@ bool Sim::fillerEligible(const Table& t, size_t row, const Life& life) const {
   return true;
 }
 
+// ---- The yearly filler narration (REPORT.en.md 279) ------------------------
+// a16_hero-filler-enc is the game's plain-narration table ('I think my teacher
+// may have a crush on me.'), and the played lives carry its lines at about 0.15
+// a year. The port only ever reached it as a last-resort *card*, which the
+// family wheel never allows; it is now a line of its own, beside the card.
+std::vector<std::string> Sim::fillerNarrationLines(Life& life) {
+  std::vector<std::string> out;
+  if (!fillerRng_.chance(0.15)) return out;
+  if (!ensureTable("a16_hero-filler-enc")) return out;
+  const Table& t = tbl("a16_hero-filler-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) if (fillerEligible(t, r, life)) pool.push_back(r);
+  if (pool.empty()) return out;
+  const size_t row = pool[fillerRng_.below(uint32_t(pool.size()))];
+  const std::string raw = trim(t.at(row, "String"));
+  // Rows with tokens are skipped: resolve() draws from the main stream, and a
+  // filler line must not move any card's sequence (REPORT.en.md 279).
+  if (raw.find('<') != std::string::npos) return out;
+  const std::string line = resolve(raw);
+  if (line.empty()) return out;
+  if (line.find('<') != std::string::npos) return out;
+  out.push_back(spyUpperFirst(line));
+  return out;
+}
+
 void Sim::setDate(int month, int day) {
   dateMonth_ = (month >= 1 && month <= 12) ? month : 0;
   dateDay_ = (dateMonth_ && day >= 1 && day <= 31) ? day : 0;
@@ -3847,6 +3873,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   const std::vector<std::string> workLines = overtimeLines(life);
   const std::vector<std::string> willLinesOut = willLines(life);
   const std::vector<std::string> schoolLines = schoolMilestoneLines(life);
+  const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
   ev.ailmentCost = diseaseHealthCost;
@@ -3862,6 +3889,10 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
                                           workLines.size() + willLinesOut.size()),
                   schoolLines.begin(), schoolLines.end());
+  ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
+                                          workLines.size() + willLinesOut.size() +
+                                          schoolLines.size()),
+                  fillerNarration.begin(), fillerNarration.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
   // place that guarantees no '<token>' reaches a log line, and the single place that
