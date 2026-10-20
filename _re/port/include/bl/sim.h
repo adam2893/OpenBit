@@ -360,6 +360,7 @@ class Sim {
   bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
   bool promYear(Life& life, AgeUp& out, int forcedChoice);
+  bool headhunterYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> fillerNarrationLines(Life& life);
   std::string makeSchoolName(int level);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
@@ -938,6 +939,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The school tryout coin, on its own stream so the school-year family is
   // not moved by it (REPORT.en.md 284).
   Rng tryoutRng_;
+  // The headhunter family's own draw (REPORT.en.md 286).
+  Rng hhRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

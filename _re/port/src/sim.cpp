@@ -702,6 +702,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       fillerRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0xbb67ae8584caa73bULL),
       carGiftRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0xa54ff53a5f1d36f1ULL),
       tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
+      hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4093,6 +4094,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::skipSchoolYear, nullptr},
         {&Sim::schoolYear, [](const Life& l) { return l.hero.schooling; }},
         {&Sim::backToSchoolYear, nullptr, 4},
+        {&Sim::headhunterYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -4181,7 +4183,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::siblingSquabbleYear, nullptr, 3},
         {&Sim::siblingComingOutYear, nullptr, 3},
         {&Sim::parentsPetYear, nullptr, 2},
-        {&Sim::partTimeYear, nullptr, 2},
+        {&Sim::partTimeYear, nullptr, 3},
         {&Sim::parentsCarYear, nullptr, 4},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
@@ -23475,13 +23477,74 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 // #25682 + " at " + #5441 ", but lost to ", #25645 "I was elected prom " and
 // #48258 for the decline. The vote itself is the port's (looks, as the school-year
 // family had it) because the game's tally is code-side.
+// ---- The headhunter (REPORT.en.md 286) ------------------------------------
+// The third played life at 19: 'I was hired for the position of President for
+// Cobait Investments with a salary of $185,015.' -- #69268's
+// '{0}\nI was hired for the position of {1} for {2} with a salary of {3}.' The
+// prompt's opening is metadata (#28037, #28040, #28041, #46722) and its CTA is
+// 'When can you start?' (#46505); the sentence between them is assembled, as the
+// dump carries only the fragment (shortcut). The decline is #25531.
+bool Sim::headhunterYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice >= 0) return false;
+  if (h.age < 18 || h.inPrison || h.schooling || h.military || h.royal) return false;
+  if (!h.employed || h.job.empty()) return false;
+  if (!hhRng_.chance(1.0 / 45.0)) return false;
+  if (!ensureTable("a16_careers-enc")) return false;
+  static const char* const kOpen[] = {
+      "Just as you're finishing your workout, a headhunter from the ",
+      "Just as you're leaving the library, a headhunter from the ",
+      "Just as your modeling lessons end, a headhunter from the ",
+      "While on your walk, a headhunter from the "};
+  const std::string opener = kOpen[hhRng_.below(4)];
+  const Table& t = tbl("a16_careers-enc");
+  const size_t row = hhRng_.below(uint32_t(t.size()));
+  std::vector<std::string> steps;
+  splitOn(t.at(row, "Seniority Track"), ',', steps);
+  for (std::string& st : steps) st = trim(st);
+  std::string stepTitle = steps.empty() ? std::string() : steps.back();
+  // Class words and 'None' are not titles (the careers table explains them).
+  if (stepTitle.empty() || stepTitle == "None" || stepTitle == "Abbreviated" ||
+      stepTitle == "Working Class" || stepTitle == "Corporate") {
+    stepTitle = trim(t.at(row, "Career"));
+  }
+  const std::string title = stepTitle;
+  if (title.empty()) return false;
+  const std::string company = companyName(t.at(row, "Company Type"), life);
+  if (company.empty()) return false;
+  const int salary = 60000 + int(hhRng_.below(191)) * 1000;
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : hhRng_.chance(0.7);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioJobAcquisition";
+  out.title = "When can you start?";  // #46505
+  out.body = opener + company + " wants to offer you a job.\n\nWhen can you start?";
+  out.options = {"Accept the job", "I turned them down"};
+  if (accept) {
+    out.choice = "Accept the job";
+    h.job = title;
+    h.employed = true;
+    h.employer = company;
+    h.employerType = trim(t.at(row, "Company Type"));
+    h.jobSalary = salary;
+    out.narrative = "I was hired for the position of " + title + " for " + company +
+                    " with a salary of " + money(salary) + ".";  // #69268
+    out.happiness = pointsForImpact(2);
+  } else {
+    out.choice = "I turned them down";
+    out.narrative = "I turned them down.";  // #25531
+  }
+  return true;
+}
+
 bool Sim::promYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.b2sPromDone || !h.schooling) return false;
   // 17-18 only: 16 stays free for the licence offer the played life takes then
   // (REPORT.en.md 283).
   if (h.age < 17 || h.age > 18 || h.schoolLevel <= 0 || h.schoolLevel > 3) return false;
-  if (forcedChoice < 0 && !relRng_.chance(0.5)) return false;
+  if (forcedChoice < 0 && !relRng_.chance(0.65)) return false;
   h.b2sPromDone = true;
   const std::string crown = h.female ? "queen" : "king";
   const std::string school = h.schoolName[h.schoolLevel - 1];

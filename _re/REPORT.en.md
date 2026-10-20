@@ -23484,6 +23484,41 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 286. The headhunter
+
+The third played life at 19, just after it starts working:
+
+```
+I was hired for the position of President for Cobait Investments with a salary of
+$185,015.
+```
+
+That is #69268's `{0}\nI was hired for the position of {1} for {2} with a salary of
+{3}.`, and the card around it is `ScenarioJobAcquisition` (title "When can you
+start?", #46505). The prompt's four openings are metadata too -- #28037 "Just as
+you're finishing your workout, a headhunter from the ", #28040 (the library), #28041
+(modeling lessons), #46722 (a walk) -- but the sentence between the opening and the
+company is code-side, so it is assembled (marked as the shortcut).
+
+```
+gate      18+, employed, not in prison / school / military / royal
+card      'When can you start?', opening + company + the offer
+accept    title from the careers ladder (class words fall back to the career name),
+          employer named, salary $60k-$250k, hero takes the job
+          line: the played life's #69268 sentence
+decline   'I turned them down.' (#25531)
+```
+
+```
+40 lives:  15 cards   12 hired   3 declined
+tests      82/82 green (test_headhunter added)
+```
+
+The first version named the job `None` for careers whose Seniority Track is a class
+word; those fall back to the Career column now, as careerYear already does for its
+own line.
+
+
 ## 285. The wheel experiment, measured and put back
 
 284 ended with the structural issue named: the family wheel is a rotation, and the loop
