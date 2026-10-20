@@ -23484,6 +23484,32 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 287. A brother's children, and the sentence for it
+
+The third played life at 18:
+
+```
+My stepbrother, Amani, has fathered a boy named Luis Chippendale.
+```
+
+#60125's `has fathered a {0} named {1}{2}` is the male half of the sibling-birth lane
+270 added for sisters. The port now writes it for married brothers (ages 18-55) and
+adds the child to the family as niece or nephew, so the school, illness and death
+lines apply to him in later years just as they do for a sister's child.
+
+```
+before   sisters only: 110 births in 20 lives, brothers never named
+after    brothers: 43 fathers, sisters: 36 births in 20 lives
+```
+
+The first version used the sister coin for brothers and produced six children per
+brother in a life; both coins were re-derived from what the played lives show --
+a few nieces and nephews per life, not a nursery.
+
+`test_sibling_marriage` now counts both forms, checks that a named father is a sibling
+the life married, and that the child really joins the family.
+
+
 ## 286. The headhunter
 
 The third played life at 19, just after it starts working:

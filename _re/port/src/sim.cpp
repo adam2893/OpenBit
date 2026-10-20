@@ -3449,10 +3449,29 @@ std::vector<std::string> Sim::lifecycleLines(Life& life) {
         continue;
       }
       // A married sibling's own children: 'My little sister, Camille, gave birth
-      // to a girl named Katelyn Colbert.' (REPORT.en.md 270). The child joins the
-      // family, so the school and illness lines above apply to her in later years.
+      // to a girl named Katelyn Colbert.' (REPORT.en.md 270), and for a brother
+      // 'My stepbrother, Amani, has fathered a boy named Luis Chippendale.'
+      // (#60125, REPORT.en.md 287). The child joins the family, so the school and
+      // illness lines above apply to her in later years.
+      if (!p.spouse.empty() && !p.female && p.age >= 18 && p.age <= 55 &&
+          sibRng_.chance(0.08)) {
+        const bool girl = sibRng_.chance(0.5);
+        std::string surname = p.spouse;
+        const size_t sp = surname.find(' ');
+        if (sp != std::string::npos) surname = surname.substr(sp + 1);
+        Person nb;
+        nb.relation = girl ? "niece" : "nephew";
+        nb.name = drawFirstName(girl);
+        nb.lastName = surname;
+        nb.female = girl;
+        newborns.push_back(nb);
+        out.push_back(who + " has fathered a " + (girl ? "girl" : "boy") +
+                      " named " + nb.name +
+                      (surname.empty() ? std::string() : " " + surname) + ".");  // #60125
+        continue;
+      }
       if (!p.spouse.empty() && p.female && p.age >= 18 && p.age <= 45 &&
-          sibRng_.chance(0.30)) {
+          sibRng_.chance(0.12)) {
         const bool girl = sibRng_.chance(0.5);
         std::string surname = p.spouse;
         const size_t sp = surname.find(' ');

@@ -10,6 +10,7 @@ PORT = ROOT / "port" / "build" / "blsim"
 MARRIAGE = re.compile(
     r"^(My [a-z ]+, ([A-Za-z]+),) married (.+), a (\d+)-year old (.+)\. (She|He) changed (her|his) name to (.+)\.$")
 BIRTH = re.compile(r"^(My [a-z ]+, ([A-Za-z]+),) gave birth to a (girl|boy) named (.+)$")
+FATHER = re.compile(r"^(My [a-z ]+, ([A-Za-z-]+),) has fathered a (girl|boy) named (.+)$")
 
 
 def run(seed, ages=80):
@@ -26,6 +27,7 @@ def run(seed, ages=80):
 
 marriages = 0
 births = 0
+fathers = 0
 for seed in range(1, 21):
     doc = run(seed)
     married_at = {}
@@ -43,6 +45,14 @@ for seed in range(1, 21):
                 assert (pron == "She") == (poss == "her"), (seed, line)
                 assert job == "unemployed person" or not job.endswith(" person"), (seed, line)
                 married_at[name.split()[0]] = event["age"]
+            m = FATHER.match(line)
+            if m:
+                fathers += 1
+                name = m.group(2)
+                assert name in married_at, (seed, "a father with no marriage", line)
+                first = m.group(4).split()[0]
+                assert any(p.get("name") == first for p in doc["final"]["family"]), (seed, line)
+                continue
             m = BIRTH.match(line)
             if m:
                 births += 1
@@ -65,6 +75,7 @@ for seed in range(1, 21):
             assert any(p.get("name") == first for p in doc["final"]["family"]), (seed, child)
 
 assert marriages >= 5, marriages
+assert fathers >= 3, fathers
 assert births >= 1, births
-print("marriages:", marriages, "births:", births)
+print("marriages:", marriages, "births:", births, "fathers:", fathers)
 print("ok")
