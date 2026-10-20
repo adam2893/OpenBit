@@ -101,6 +101,9 @@ enum PendingCard {
   kPendingSafeSex = 9,             // the hookup's own question, next age-up (REPORT.en.md 257)
   kPendingEyeExam = 10,            // the optometrist visit (REPORT.en.md 267)
   kPendingEyeOutcome = 11,         // its result card
+  kPendingCrimeCharge = 12,        // the charge, right after the arrest (REPORT.en.md 273)
+  kPendingCrimePlea = 13,          // the plea
+  kPendingCrimeSentence = 14,      // the sentence
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -341,6 +344,9 @@ class Sim {
   bool failingEyesightYear(Life& life, AgeUp& out, int forcedChoice);
   bool eyeExamYear(Life& life, AgeUp& out, int forcedChoice);
   bool eyeOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool crimeChargeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool crimePleaYear(Life& life, AgeUp& out, int forcedChoice);
+  bool crimeSentenceYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);

@@ -23484,6 +23484,61 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 273. The crime chain: arrested, charged, pleaded, sentenced
+
+The second played life carried the whole chain at 23:
+
+```
+I was arrested for solicitation!
+I called one of the police officers that arrested me a peon!
+I was charged with solicitation!
+I hired a public defender to represent me in court.
+I plead guilty.
+I have been convicted of solicitation and sentenced to one year in prison!
+They sent me to Progressive Asylum, a minimum security prison.
+I have been freed from prison.
+```
+
+The port had a single conviction card and a sentence. It now has the chain, with the
+literals the dump does carry:
+
+```
+card           line                                    literal
+Police         I was arrested for {0}!                 #25605
+Criminal       You've been charged with {0} and are    #50057 (the law-firm
+Charges        facing {1}! ... hire to defend you?     question is its own CTA)
+               I hired a public defender ...           #69088
+Plea           ... make a plea surrounding your        #42071
+               charge for {0} ...
+               I plead guilty.                         #70729
+Guilty         I have been convicted of {0} and        #9559 with the
+               sentenced to {1} in prison!             pronoun replaced
+```
+
+```cpp
+Hero::crimeName / crimeYears   the crime is carried across the cards
+kPendingCrimeCharge/Plea/Sentence   one card a year, the queue's own order
+maybeConvicted   now the arrest and the draw; prison begins at the sentence
+```
+
+```
+40 lives:  11 complete chains; every sentence names the crime the arrest did
+tests      75/75 green (test_crime_chain added)
+```
+
+### 273.1 What is still unwritten, and why
+
+```
+'They sent me to Progressive Asylum, a minimum security prison.'
+   the prison-name pool is code-side; no table and no literal carries the names
+   (the one literal with 'Prison Minimum Security' is a card title, not a place)
+'I have been freed from prison.'  vs the port's 'I was released from prison.'
+   both phrasings exist in metadata; the port keeps its own
+acquittal          the trial's coin is the port's (50/50); the trace only shows
+                   a guilty plea, so there is no evidence for the trial's odds
+```
+
+
 ## 272. Marriage and birth rates, against a family that exists
 
 271 said the rates could only be tuned once the population was there. It is, so:

@@ -183,6 +183,10 @@ struct Hero {
   bool glasses = false;
   // The exam is owed the year after the eyesight first worsens (REPORT.en.md 267).
   bool eyeExamPending = false;
+  // The crime chain's own state (REPORT.en.md 273): the crime the hero was
+  // arrested for and the sentence the court handed down, carried between cards.
+  std::string crimeName;
+  int crimeYears = 0;
   // The driver's licence (REPORT.en.md 255). ScenarioPushLicenseCar offers the test
   // at 16, ScenarioGameLicenseCar asks the question, and the outcome is one of two
   // literals from metadata (#24138 failed / #24778 passed).

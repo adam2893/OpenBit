@@ -3799,6 +3799,9 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
     if (kind == kPendingSafeSex) return safeSexYear(life, out, -1);
+    if (kind == kPendingCrimeCharge) return crimeChargeYear(life, out, -1);
+    if (kind == kPendingCrimePlea) return crimePleaYear(life, out, -1);
+    if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -5496,24 +5499,104 @@ bool Sim::maybeConvicted(Life& life, AgeUp& out) {
   const int ser = std::max(1, std::min(5, int(t.num(row, "Seriousness Score"))));
   // The probe hook asks for a sentence long enough to spend: eight years.
   const int years = prisonForced_ ? std::max(8, kSentence[ser - 1]) : kSentence[ser - 1];
-  h.inPrison = true;
-  h.prisonYearsLeft = years;
-  h.prisonJob.clear();
-  h.employed = false;
+  // The chain opens with the arrest and runs charge -> plea -> sentence, the way
+  // the played life has it (REPORT.en.md 273). The cards are queued, so the
+  // prison years still begin the year after the sentence.
+  h.crimeName = resolve(t.at(row, "Crime"));
+  h.crimeYears = years;
   if (prisonForced_) h.prisonServed = true;
-  // The year's family lines were written before this scenario was picked and
-  // belong to no row, so they survive the reset.
+  {
+    const std::vector<std::string> extra = out.extra;
+    out = AgeUp();
+    out.extra = extra;
+    out.table = "registry:ScenarioCrimeArrest";
+    out.title = "Police";
+    out.narrative = "I was arrested for " + h.crimeName + "!";
+  }
+  life.pendingCards.push_back(kPendingCrimeCharge);
+  return true;
+}
+
+// The charge: 'You've been charged with {0} and are facing {1}!' (#50057), with
+// the local-law-firm question the same literal asks; the played life picks the
+// public defender and logs #69088's line.
+bool Sim::crimeChargeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.crimeName.empty()) return false;
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(prisonRng_.below(2));
+  const std::string span =
+      h.crimeYears == 1 ? "1 year" : (std::to_string(h.crimeYears) + " years");
   const std::vector<std::string> extra = out.extra;
   out = AgeUp();
   out.extra = extra;
-  out.table = t.name();
-  out.row_id = std::to_string(row + 1);
-  const std::string crime = resolve(t.at(row, "Crime"));
-  const std::string span = (years == 1) ? "1 year" : (std::to_string(years) + " years");
-  out.narrative = "I have been convicted of " + crime + " and sentenced to " + span +
-                  (juvenile ? " at a juvenile detention center!" : " in prison!");
+  out.table = "registry:ScenarioCrimeCharge";
+  out.title = "Criminal Charges";
+  out.body = "You've been charged with " + h.crimeName + " and are facing " + span +
+             "!" + "\n\n" + "Which local law firm will you hire to defend you in court?";
+  out.options = {"Hire a lawyer", "Use a public defender"};
+  if (lane == 1) {
+    out.choice = "Use a public defender";
+    out.narrative = "I hired a public defender to represent me in court.";  // #69088
+  } else {
+    out.choice = "Hire a lawyer";
+  }
+  life.pendingCards.push_back(kPendingCrimePlea);
   return true;
 }
+
+// The plea: #42071's question and #70729's line for the guilty plea. The
+// not-guilty lane is the port's: the trial's coin is its own (shortcut), and a
+// conviction goes on to the sentence while an acquittal ends the chain.
+bool Sim::crimePleaYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.crimeName.empty()) return false;
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(prisonRng_.below(100)) < 70 ? 0 : 1;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioCrimePlea";
+  out.title = "Plea";
+  out.body = "The judge has asked you to make a plea surrounding your charge for " +
+             h.crimeName + ". If you plead guilty, you may receive a shorter "
+             "sentence than if you are convicted in a trial." + "\n\n" + "How will you plea?";
+  out.options = {"Plead guilty", "Plead not guilty"};
+  if (lane == 0) {
+    out.choice = "Plead guilty";
+    out.narrative = "I plead guilty.";  // #70729
+    life.pendingCards.push_back(kPendingCrimeSentence);
+  } else {
+    out.choice = "Plead not guilty";
+    if (prisonRng_.chance(0.5)) {
+      out.narrative = "I plead not guilty.";
+      h.crimeName.clear();
+      h.crimeYears = 0;
+    } else {
+      out.narrative = "I plead not guilty and was still convicted.";
+      life.pendingCards.push_back(kPendingCrimeSentence);
+    }
+  }
+  return true;
+}
+
+// The sentence: the trace's own line, and the point where the prison years start.
+bool Sim::crimeSentenceYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  const std::string span =
+      h.crimeYears == 1 ? "1 year" : (std::to_string(h.crimeYears) + " years");
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioCrimeSentence";
+  out.title = "Guilty";
+  out.narrative = "I have been convicted of " + h.crimeName +
+                  " and sentenced to " + span + " in prison!";
+  h.inPrison = true;
+  h.prisonYearsLeft = h.crimeYears;
+  h.prisonJob.clear();
+  h.employed = false;
+  return true;
+}
+
 
 // One prison year: the year's scenario comes from the prison dumb-scenario pool
 // (dumbSetRows gates it), the hero may pick up a prison job, and the sentence
