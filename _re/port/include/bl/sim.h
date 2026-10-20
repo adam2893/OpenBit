@@ -356,6 +356,7 @@ class Sim {
   bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice);
+  bool parentsPetYear(Life& life, AgeUp& out, int forcedChoice);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);

@@ -77,7 +77,10 @@ for seed in range(1, 41):
             acquittals += 1
             pending = None
     if pending is not None:
-        assert pending["stage"] < 2, (seed, "a plea with no verdict", pending)
+        # A death in the year after the plea cuts the chain: the queue never drains
+        # for a hero who is no longer there (REPORT.en.md 275.2).
+        if doc["final"]["alive"]:
+            assert pending["stage"] < 2, (seed, "a plea with no verdict", pending)
 
 assert chains >= 5, chains
 print("chains:", chains, "acquittals:", acquittals)

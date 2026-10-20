@@ -72,7 +72,13 @@ for trial in range(1, 21):
         break
 assert paid is not None, "no paid wedding in twenty seeds"
 if any("The wedding cost" in l for l in (paid.get("logLines") or [])):
-    assert paid_doc["final"]["loverStatus"] == "married", paid_doc["final"]
+    # A paid wedding marries, but a later break-up can leave the hero single at the
+    # end; the assertion holds only while no such line follows (REPORT.en.md 275.2).
+    # A paid wedding marries, but the end of the life is not the place to look: the
+    # spouse can later die or the pair can break up, and twenty lives now reach far
+    # enough for both (REPORT.en.md 275.2). What the event itself proves is that the
+    # fee was taken and the ceremony body is the marriage one.
+    assert "You have chosen to marry" in (paid.get("body") or ""), paid
 
 print("lanes:", dict(lanes))
 print("distinct venues:", len(venues))

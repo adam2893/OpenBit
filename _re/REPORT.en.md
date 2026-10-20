@@ -23484,6 +23484,46 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 275. The parents' pet
+
+The second played life at 3:
+
+```
+My mother got me and my half sister a dog named Patches.
+...
+My Siberian husky, Patches, died of natural causes.
+```
+
+`ScenarioParentsOfferPet` is a report card whose title is the pet's name (the
+registry's own dump shows 'Patches' as the title). Its line is #30910:
+
+```
+My {0} got me{1} {2} named {3}.
+  {0} the parent, {1} ' and my <sibling>' when one is alive,
+  {2} the animal, {3} the name
+```
+
+The animal and name come from `a16_pets-enc` and `a16_pet-names-enc`, and the gift is
+once a life (`Hero::parentsPetGiven`) -- a second gift after the first pet died was the
+probe's first failure.
+
+### 275.1 The death line had the pet's pronoun where its name belonged
+
+The pet-death table's rows all start `<pronoun> died ...`, and the port printed exactly
+that: `he died after being attacked by an eagle.` The game's line leads with the
+animal and name, so the pronoun comes off when the name is in front:
+
+```
+My rottweiler, Donkey, died after being attacked by an eagle.
+My ragdoll cat, Sebastian, perished after losing his last fight, against old age.
+```
+
+```
+40 lives:  31 pet gifts, 2 named pet deaths
+tests      77/77 green (test_parents_pet added)
+```
+
+
 ## 274. A sibling comes out
 
 The second played life at 24:

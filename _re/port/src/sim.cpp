@@ -3794,9 +3794,19 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     // queue picked up that year (REPORT.en.md 267): a safe-sex card pushed by the
     // hookup used to sit in front of it and push the report two years out.
     size_t pick = 0;
-    for (size_t i = 0; i < life.pendingCards.size(); ++i) {
-      if (life.pendingCards[i].kind == kPendingLoverArgues) { pick = i; break; }
+    bool picked = false;
+    // The crime chain's cards are consecutive steps of one scene (REPORT.en.md
+    // 273) and the argument answers the same night (267), so both outrank the
+    // others; a chain left behind another pending card can be stranded by a death.
+    const PendingCard priority[] = {kPendingLoverArgues, kPendingCrimeSentence,
+                                    kPendingCrimePlea, kPendingCrimeCharge};
+    for (PendingCard kind : priority) {
+      for (size_t i = 0; i < life.pendingCards.size(); ++i) {
+        if (life.pendingCards[i].kind == kind) { pick = i; picked = true; break; }
+      }
+      if (picked) break;
     }
+    (void)picked;
     const Life::PendingCard pending = life.pendingCards[pick];
     life.pendingCards.erase(life.pendingCards.begin() + long(pick));
     const int kind = pending.kind;
@@ -4026,7 +4036,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::sexualityYear, nullptr},
         {&Sim::onlyfansStartYear, nullptr, 3},
         {&Sim::onlyfansTipYear, nullptr, 3},
-        {&Sim::ambientYear, nullptr, 2},
+        {&Sim::ambientYear, nullptr, 3},
         {&Sim::loverBreakUpYear, nullptr},
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
@@ -4122,6 +4132,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::licenseYear, nullptr, 3},
         {&Sim::siblingSquabbleYear, nullptr, 3},
         {&Sim::siblingComingOutYear, nullptr, 3},
+        {&Sim::parentsPetYear, nullptr, 2},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -4720,6 +4731,61 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
 // lane #30968 and the ridicule lane #25017; the later announcement is #9380's
 // '<person> came out of the closet as <sexuality>.', which in the trace rides the
 // sibling's move-out line.
+// ---- The parents' pet (REPORT.en.md 275) ----------------------------------
+// The second played life at 3: 'My mother got me and my half sister a dog named
+// Patches.' -- #30910's 'My {0} got me{1} {2} named {3}.' The card is a report
+// (its title is the pet's name in the registry's own dump), and the animal, breed
+// and name come from a16_pets-enc and a16_pet-names-enc.
+bool Sim::parentsPetYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  if (h.hasPet || h.parentsPetGiven || h.age < 3 || h.age > 8) return false;
+  if (!petRng_.chance(0.45)) return false;
+  if (!ensureTable("a16_pets-enc") || !ensureTable("a16_pet-names-enc")) return false;
+  const Table& pets = tbl("a16_pets-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < pets.size(); ++r) {
+    const std::string animal = trim(pets.at(r, "Animal"));
+    if (animal == "Dog" || animal == "Cat") pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t petRow = weightedPickOf(pets, "Commonness Score", pool, petRng_);
+  if (petRow == size_t(-1)) return false;
+  h.parentsPetGiven = true;
+  makePet(life);
+  // makePet draws its own animal; the gift uses that same animal's name pool.
+  const Table& names = tbl("a16_pet-names-enc");
+  std::vector<size_t> namePool;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (lower(trim(names.at(r, "Animal"))) != lower(h.petAnimal)) continue;
+    namePool.push_back(r);
+  }
+  if (!namePool.empty()) {
+    const size_t nr = namePool[petRng_.below(uint32_t(namePool.size()))];
+    h.petName = trim(names.at(nr, "Name"));
+    h.petFemale = lower(trim(names.at(nr, "Gender"))) == "female";
+  }
+  const std::string parent = h.female ? "father" : "mother";
+  std::string siblingPart;
+  for (const Person& p : life.family) {
+    if (!p.alive) continue;
+    if (p.relation.find("brother") == std::string::npos &&
+        p.relation.find("sister") == std::string::npos) continue;
+    siblingPart = " and my " + p.relation;
+    break;
+  }
+  const std::string animal = lower(trim(pets.at(petRow, "Animal")));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioParentsOfferPet";
+  out.title = h.petName.empty() ? animal : h.petName;
+  out.narrative = "My " + parent + " got me" + siblingPart + " a " + animal +
+                  " named " + (h.petName.empty() ? std::string("Pet") : h.petName) + ".";
+  out.happiness = pointsForImpact(2);
+  return true;
+}
+
 bool Sim::siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;
@@ -10214,7 +10280,15 @@ bool Sim::petYear(Life& life, AgeUp& out, int forcedChoice) {
       petOn();
       std::string sentence = spySwap(trim(t.at(row, "Sentence")), "<pronoun>", h.petFemale ? "she" : "he");
       if (!someoneElse) sentence = spySwap(sentence, " <person>", "");
-      say(resolve(sentence));
+      // The played life's line names the pet in front: 'My Siberian husky,
+      // Patches, died of natural causes.' -- so the template's leading pronoun
+      // comes off when the name leads (REPORT.en.md 275).
+      if (sentence.rfind("she ", 0) == 0) sentence.erase(0, 4);
+      else if (sentence.rfind("he ", 0) == 0) sentence.erase(0, 3);
+      const std::string petDesc = h.petBreed.empty() ? lower(h.petAnimal) : h.petBreed;
+      say("My " + petDesc + ", " +
+          (h.petName.empty() ? std::string("my pet") : h.petName) + ", " +
+          resolve(sentence));
       petOff();
       title = "The end of " + petToken("pet");
       body = "Cause: " + trim(t.at(row, "Type")) + ".";
