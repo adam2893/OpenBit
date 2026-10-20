@@ -99,6 +99,8 @@ enum PendingCard {
   kPendingProactivePaternity = 7,   // the ex asked, the hero agreed (REPORT.en.md 251)
   kPendingLicenseTest = 8,         // the test itself, the year after the offer (REPORT.en.md 255)
   kPendingSafeSex = 9,             // the hookup's own question, next age-up (REPORT.en.md 257)
+  kPendingEyeExam = 10,            // the optometrist visit (REPORT.en.md 267)
+  kPendingEyeOutcome = 11,         // its result card
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -336,6 +338,9 @@ class Sim {
   std::vector<std::string> willLines(Life& life);
   std::vector<std::string> schoolMilestoneLines(Life& life);
   bool graduationYear(Life& life, AgeUp& out, int forcedChoice);
+  bool failingEyesightYear(Life& life, AgeUp& out, int forcedChoice);
+  bool eyeExamYear(Life& life, AgeUp& out, int forcedChoice);
+  bool eyeOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseYear(Life& life, AgeUp& out, int forcedChoice);
   bool licenseTestYear(Life& life, AgeUp& out, int forcedChoice);
   bool siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice);
@@ -904,6 +909,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng licRng_;
   // The condom question's own coin (REPORT.en.md 257).
   Rng sexRng_;
+  // The optometrist chain's own coin and outcome draw (REPORT.en.md 267).
+  Rng eyeRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

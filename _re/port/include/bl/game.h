@@ -178,6 +178,11 @@ struct Hero {
   bool graduatedHighSchool = false;
   int schoolAnnouncedLevel = 0;  // the level whose start line has been written
   bool graduationPending = false;  // the graduation card owns that year (REPORT 262)
+  // The optometrist chain (REPORT.en.md 267): worsening eyesight, the exam, and the
+  // glasses the failure buys.
+  bool glasses = false;
+  // The exam is owed the year after the eyesight first worsens (REPORT.en.md 267).
+  bool eyeExamPending = false;
   // The driver's licence (REPORT.en.md 255). ScenarioPushLicenseCar offers the test
   // at 16, ScenarioGameLicenseCar asks the question, and the outcome is one of two
   // literals from metadata (#24138 failed / #24778 passed).

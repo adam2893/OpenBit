@@ -697,6 +697,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       wllRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x27d4eb2f165667c5ULL),
       licRng_(seed ^ 0x369dea0f31a53f85ULL ^ 0x9e3779b97f4a7c15ULL),
       sexRng_(seed ^ 0x27d4eb2f165667c5ULL ^ 0x94d049bb133111ebULL),
+      eyeRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x369dea0f31a53f85ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -3735,8 +3736,15 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
   // A year can owe more than one card (REPORT.en.md 133): the extras are built by
   // the same functions that used to run a year late, and none of them draws.
   if (!life.pendingCards.empty()) {
-    const Life::PendingCard pending = life.pendingCards.front();
-    life.pendingCards.erase(life.pendingCards.begin());
+    // The cheating argument answers the same night and outranks anything else the
+    // queue picked up that year (REPORT.en.md 267): a safe-sex card pushed by the
+    // hookup used to sit in front of it and push the report two years out.
+    size_t pick = 0;
+    for (size_t i = 0; i < life.pendingCards.size(); ++i) {
+      if (life.pendingCards[i].kind == kPendingLoverArgues) { pick = i; break; }
+    }
+    const Life::PendingCard pending = life.pendingCards[pick];
+    life.pendingCards.erase(life.pendingCards.begin() + long(pick));
     const int kind = pending.kind;
     if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
@@ -3746,6 +3754,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
     if (kind == kPendingSafeSex) return safeSexYear(life, out, -1);
+
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
@@ -4055,6 +4064,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
         {&Sim::siblingSquabbleYear, nullptr, 2},
+        {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket
@@ -4092,6 +4102,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         licenseYear(life, out, forcedChoice)) {
       return true;
     }
+    if (forcedChoice < 0 && h.eyeExamPending && eyeExamYear(life, out, forcedChoice))
+      return true;
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -4565,6 +4577,73 @@ bool Sim::safeSexYear(Life& life, AgeUp& out, int forcedChoice) {
 // and the registry's card title is 'Graduation'. The year is the one the school
 // ladder ends (schoolMilestoneLines sets the flag), and it takes the year before the
 // wheel the way the other fixed-life events do.
+// ---- The optometrist (REPORT.en.md 267) ------------------------------------
+// The second played life at 15: "My eyesight has been worsening." / "My mother
+// took me to the optometrist for an eye exam." / "I failed my eye exam!". The
+// card literals are in metadata: #30766, #50327's prompt, #69309 (minor) and #69277
+// (adult) for the visit, #24139/#24779 for the two results and #48452/#49098 for
+// the prescriptions.
+bool Sim::failingEyesightYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.glasses || h.age < 8) return false;
+  // No eyesight stat is modelled; the coin is the port's own, once every few lives.
+  if (forcedChoice < 0 && !eyeRng_.chance(1.0 / 12.0)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioFailingEyesight";
+  out.title = "Eyesight";
+  out.narrative = "My eyesight has been worsening.";
+  out.happiness = -1;
+  h.eyeExamPending = true;
+  return true;
+}
+
+bool Sim::eyeExamYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.eyeExamPending) return false;
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(eyeRng_.below(2));
+  // The card is owed the year after the eyesight first worsened; declining drops it,
+  // and the chain can come round again on the family's own coin.
+  h.eyeExamPending = false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioGameEyeExam";
+  out.title = "Eye Exam";
+  out.body = "Your eyesight seems to be worsening and it's time to visit the "
+             "optometrist for an eye exam.";
+  out.options = {"Take the eye exam", "Not right now"};
+  if (lane != 0) {
+    out.choice = "Not right now";
+    return true;
+  }
+  out.choice = "Take the eye exam";
+  if (h.age < 18) {
+    const std::string parent = h.female ? "father" : "mother";
+    out.narrative = "My " + parent +
+                    " took me to the optometrist for an eye exam.";
+  } else {
+    out.narrative = "I went to take an eye exam at the optometrist.";
+  }
+  // The result renders in the same card: with another pending family in the queue
+  // the third age-up would push the pair apart, and the pending queue has one card
+  // per year (REPORT.en.md 267). The pass/fail split is the port's own (shortcut).
+  const double failChance = h.age < 18 ? 0.35 : (h.age < 40 ? 0.5 : 0.7);
+  if (eyeRng_.unit() < failChance) {
+    h.glasses = true;
+    out.table = "registry:ScenarioEyeExamOutcome";
+    out.title = "Eye Exam Failed";
+    out.body = "You failed your eye exam and have been issued a prescription for "
+               "eyeglasses!";
+    out.narrative += "\nI failed my eye exam!";
+  } else {
+    out.body = "You passed your eye exam and do not need eyeglasses!";
+    out.narrative += "\nI passed my eye exam!";
+  }
+  return true;
+}
+
 bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.graduationPending) return false;

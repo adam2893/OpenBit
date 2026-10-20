@@ -53,8 +53,12 @@ for seed in range(1, 41):
         # The report is drained from the queue at the top of a later dispatch, so the hookup
         # it answers is at the same age or one earlier -- not necessarily the event before it
         # (REPORT.en.md 205).
+        # Both seduction phrasings count: the hero's attempt ("I seduced my
+        # supervisor") and the inbound one ("You let your supervisor ... seduce
+        # you!") -- the report answers either (REPORT.en.md 267).
         near = [e for e in events[:i]
-                if "seduced" in ((e.get("body") or "") + str(e.get("logLines"))).lower()
+                if ("seduced" in ((e.get("body") or "") + str(e.get("logLines"))).lower()
+                    or "seduce you" in ((e.get("body") or "") + str(e.get("logLines"))).lower())
                 and 0 <= event["age"] - e["age"] <= 1]
         if near:
             chained += 1

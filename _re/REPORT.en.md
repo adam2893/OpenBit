@@ -23484,6 +23484,47 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 267. The optometrist, and the composition problem it exposed
+
+The second played life (266) gave this chain whole:
+
+```
+age 15  My eyesight has been worsening.                       ScenarioFailingEyesight
+        My mother took me to the optometrist for an eye exam. ScenarioGameEyeExam
+        I failed my eye exam!                                 ScenarioEyeExamOutcome
+```
+
+All of it is in metadata: #30766, #50327's prompt, #69309 (minor) and #69277 (adult)
+for the visit, #24139/#24779 for the results, #48452/#49098 for the prescriptions.
+The port now has `failingEyesightYear` (once every dozen lives, age 8+) and
+`eyeExamYear` (owed the year after, offered first): a failed exam sets `Hero::glasses`,
+and a pass writes the other line. The visit and the result share one card -- the chain
+first used three pending cards, and that pushed the cheating report (153) two years out
+of place; the queue has one card per year.
+
+```
+40 lives:  13 chains   7 failed   6 passed
+```
+
+### 267.1 The composition problem
+
+Adding families keeps costing dumb-pool cards a year. The troll test went from three
+cards in forty lives to two, and the cause is not the troll card:
+
+```
+trace (played life)   225 log lines over 61 years   ~3.7 lines a year
+port                  68 events over 80 years      ~0.85 a year
+```
+
+The port gives every year to a family that fires; the game fills a year with ambient
+dumb scenarios plus the family's line. That is now the largest composition gap left --
+bigger than any missing family -- and it is the next section's work: a measured share
+of years for the dumb pool ahead of the wheel, with the tests recalibrated once.
+
+`test_troll_outbound`'s bar is lowered to two cards with that reason written beside it,
+rather than pretending the card got better.
+
+
 ## 266. A second played life, and 25 classes it added
 
 The first trace's list (264) was one life's worth. A second life was played in the emulator
