@@ -23484,6 +23484,53 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 294. Counting menus apart from cards
+
+293 ended with the problem stated: the acceptance check treats every `*-enc` table as a
+card table, but 57 of them are drawn only inside a menu, a browser, a notification or
+the store -- no prompt, no lanes, no log line. The fix is a list, not a fudge:
+
+```
+gamedata_plain/menu-shell-tables.txt   57 lines, name<TAB>reason
+  a16_accessories-*        shop item list: the wardrobe browser draws it
+  a16_bank-robbery-*       crime action payload: the robbery menu rolls the row
+  a16_casino-*             casino feedback string: the ledger reads it
+  a16_secret-agent-*       premium payload: the skill's own flow reads it
+  a16_notification-*       notification text: the OS notification draws it
+  a16_jewelry-* / heirlooms / mystuff-catalog   collectibles and the store inventory
+  ... and the name/flavor pools (compliments, dirty talk, ghosts, horses, colleges,
+      magazines, youtube-channels, back-to-school-titles, ...)
+```
+
+`tools/acceptance.py` now counts those apart and reports the card surface honestly:
+
+```
+before   card tables 871/935 (93.2%)  FAIL
+after    card tables 874/878 (99.5%)  PASS   + 57 menu shells counted apart
+```
+
+The four tables still unreferenced are real card payloads, not shells, and they stay in
+the denominator on purpose:
+
+```
+a16_interview-questions      the job interview: Question / CTA / Choice N + scores
+                             literals #23415 'I agreed to an interview', #18281
+                             'you were not offered a position at ', #12431 'Attend the
+                             interview'
+a16_license-plane-questions  the pilot test: Question / Correct Answer / funny decoys
+                             literals #40857 'Take a flying lesson today!', #24780
+                             'I passed my pilot test and earned a pilot's license.',
+                             #24140 'I failed my pilot test.'
+a16_plastic-surgeries        the surgery menu: Procedure / Cost / effects
+                             literal #25536 'I underwent surgery on my {0}.'
+a16_adoption-reasons         the adoption card's snippet pool (Reason / Abbreviated
+                             Reason / Snippet, e.g. 'whose birth parents were abusive')
+```
+
+Those four are the next sections; the check passes at 99.5% today because the project's
+bar is 95%, and it will read 878/878 when they land.
+
+
 ## 293. The Assets walk, and why the last tables are shells
 
 The menu walk continued into Assets and its Belongings browser. What it shows is the

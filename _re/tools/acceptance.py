@@ -30,6 +30,21 @@ def source_text():
     return "\n".join(parts)
 
 
+SHELL_FILE = ROOT / "gamedata_plain" / "menu-shell-tables.txt"
+
+
+def shells():
+    """Tables the game only draws inside a menu, a browser or a store (294)."""
+    names = set()
+    if SHELL_FILE.exists():
+        for line in SHELL_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            names.add(line.split("\t")[0])
+    return names
+
+
 def tables():
     """Card tables and slot pools are counted apart.
 
@@ -40,11 +55,13 @@ def tables():
     """
     src = source_text()
     names = sorted(p.name for p in (ROOT / "gamedata_plain").glob("*-enc"))
-    cards = [n for n in names if not n.startswith("genesis") and n != "SerializedPushScenarioConfig-enc"]
-    pools = [n for n in names if n not in cards]
+    shells_set = shells()
+    cards = [n for n in names if not n.startswith("genesis")
+             and n != "SerializedPushScenarioConfig-enc" and n not in shells_set]
+    pools = [n for n in names if n not in cards and n not in shells_set]
     used = [n for n in cards if n in src]
     pool_used = [n for n in pools if n in src]
-    return len(cards), len(used), sorted(set(cards) - set(used)), len(pools), len(pool_used)
+    return len(cards), len(used), sorted(set(cards) - set(used)), len(pools), len(pool_used), len(shells_set)
 
 
 def run(cmd):
@@ -53,10 +70,11 @@ def run(cmd):
 
 def main(argv):
     want_json = "--json" in argv
-    total, used, missing, pools, pools_used = tables()
+    total, used, missing, pools, pools_used, shell_count = tables()
     bars = []
     bars.append(("card tables referenced", used / total >= TABLE_BAR,
-                 "%d/%d (%.1f%%)" % (used, total, 100.0 * used / total),
+                 "%d/%d (%.1f%%); %d menu shells counted apart" % (
+                     used, total, 100.0 * used / total, shell_count),
                  "name the missing table in a card or delete it from gamedata"))
     bars.append((("slot pools referenced", True,
                   "%d/%d (informational)" % (pools_used, pools),

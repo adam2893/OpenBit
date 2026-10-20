@@ -1,0 +1,60 @@
+# Tables the game only draws inside a menu, a browser, a notification or a store.
+# They are not cards: no prompt, no lanes, no log line. The acceptance check counts
+# them apart from the card surface (REPORT.en.md 294). One table per line, name<TAB>reason.
+a16_accessories-headwear-enc	shop item list: the wardrobe browser draws it, no card
+a16_accessories-masks-enc	shop item list: the wardrobe browser draws it, no card
+a16_accessories-sunglasses-enc	shop item list: the wardrobe browser draws it, no card
+a16_aircraft-parts-enc	repair part list: the garage/shop browser draws it
+a16_animals-enc	attack payload: the wilderness roll reads the row, no card
+a16_assaults-enc	crime action payload: the crime menu rolls the row
+a16_back-to-school-titles-enc	prompt title pool: the school card draws a title
+a16_bank-robbery-disguises-enc	crime action payload: the robbery menu rolls the row
+a16_bank-robbery-getaways-enc	crime action payload: the robbery menu rolls the row
+a16_bank-robbery-weapons-enc	crime action payload: the robbery menu rolls the row
+a16_biographies-enc	title pool: the biography menu labels its entry
+a16_black-market-auction-categories-enc	auction category list: the auction browser draws it
+a16_body-parts-enc	repair part list: the garage/shop browser draws it
+a16_car-parts-enc	repair part list: the garage/shop browser draws it
+a16_casino-game-room-complaint-enc	casino feedback string: the casino ledger reads it
+a16_casino-ledger-feedback-enc	casino feedback string: the casino ledger reads it
+a16_casion-celebrity-demand-enc	casino feedback string: the casino ledger reads it
+a16_clubupdateufldumb-enc	flavor pool: the club update draws it
+a16_colleges-enc	school list: the education menu draws the row
+a16_company-name-type-enc	name pool: the employer namer reads the type
+a16_compliments-enc	flavor pool: the compliment interaction draws it
+a16_crashout-celebrity-friend-string-enc	flavor pool: the crash-out reaction draws it
+a16_crashout-public-response-string-enc	flavor pool: the crash-out reaction draws it
+a16_delinquent-activities-enc	crime action payload: the delinquent menu rolls the row
+a16_dirty-talk-enc	flavor pool: the intimate interaction draws it
+a16_funeral-ash-locations-enc	place pool: the funeral card draws the place
+a16_ghosts-enc	name pool: the ghost encounter draws it
+a16_heirlooms-enc	collectible payload: the heirloom browser draws it
+a16_hitmen-enc	crime action payload: the hitman menu rolls the name
+a16_horses-enc	name pool: the stable browser draws it
+a16_jewelry-gemstones-enc	collectible payload: the jewelry browser draws it
+a16_jewelry-metals-enc	collectible payload: the jewelry browser draws it
+a16_jewelry-types-enc	collectible payload: the jewelry browser draws it
+a16_landlord-ghost-kill-tenant-color-enc	name pool: the landlord ghost draws it
+a16_local-notification-v1-text-enc	notification text: the OS notification draws it
+a16_magazines-enc	name pool: the magazine list draws it
+a16_murders-enc	crime action payload: the crime menu rolls the row
+a16_mystuff-catalog-enc	in-app-purchase catalog: the store inventory draws it
+a16_notification-heirlooms-enc	collectible payload: the heirloom browser draws it
+a16_notification-voices-enc	notification text: the OS notification draws it
+a16_pray-feedback-enc	flavor pool: the pray action draws it
+a16_proposal-settings-enc	place pool: the proposal card draws it
+a16_public-places-enc	place list: the menu labels read it
+a16_secret-agent-agency-front-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-client-mission-terminated-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-hack-mission-briefing-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-hack-mission-file-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-honeypot-approach-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-honeypot-meeting-scenario-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-honeypot-misssion-briefing-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-potential-agent-background-check-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_secret-agent-stealth-alarm-color-enc	premium secret-agent payload: the skill's own flow reads it
+a16_special-talent-filler-enc	flavor pool: the special-talent narration draws it
+a16_supervisor-warnings-enc	warning line pool: the job card draws one
+a16_wealthy-persons-enc	name pool: a scene draws the description
+a16_witch-remedies-enc	item pool: the remedy interaction draws it
+a16_youtube-channels-enc	name pool: the channel list draws it
