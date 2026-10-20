@@ -23484,6 +23484,41 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 285. The wheel experiment, measured and put back
+
+284 ended with the structural issue named: the family wheel is a rotation, and the loop
+walks its seats until a family fires, so reach is a function of *position* as much as
+tickets. Adding a ticket to an early family starves every later one, which is why each
+family added this session moved some other family's test bar.
+
+The fix is obvious: draw one seat at random, try only that family, and let the year
+fall through to the dumb pool when it declines. Then reach is the ticket share and
+nothing else.
+
+```
+experiment: single random seat (dispatchRng_)
+  test_license       FAIL
+  test_prom          FAIL
+  test_pray_wealth   FAIL
+  test_overtime      FAIL
+  test_parent_cheat  FAIL
+  test_drug_offer    ok
+```
+
+Five of six sampled bars fell at once. That is the expected direction -- every reach
+bar in the suite was calibrated against the *positional* rotation and the game's own
+observed rates -- but the recalibration it demands is suite-wide: every family's tickets
+would have to be re-derived against the new shares before a single test could be
+trusted again. At this point in the session that trade is not worth making blind, so
+the experiment was reverted and the tree is byte-identical to the last green commit.
+
+```
+verdict        correct fix, wrong moment
+when           the next session that can re-derive every family's ticket share
+               against the two played lives in one pass
+```
+
+
 ## 284. The tryout, and the two sentences around it
 
 The third played life at 14 adds the sentence between the school's start and its
