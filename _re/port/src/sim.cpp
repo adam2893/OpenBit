@@ -1925,6 +1925,20 @@ std::string Sim::heroToken(const std::string& key, bool possessive) {
   if (!hero_) return std::string();
   const Hero& h = *hero_;
   const std::string own = possessive ? "'s" : "";
+  // The school tokens (REPORT.en.md 282). '<school>' and '<old-school>' are the
+  // hero's current tier; '<new-school>' is where an offer would move him.
+  if (key == "elementary-school" || key == "middle-school" || key == "high-school" ||
+      key == "school" || key == "old-school" || key == "new-school" ||
+      key == "school-type") {
+    int idx = std::max(1, std::min(3, h.schoolLevel)) - 1;
+    if (key == "elementary-school") idx = 0;
+    else if (key == "middle-school") idx = 1;
+    else if (key == "high-school") idx = 2;
+    if (key == "school-type")
+      return h.schoolPrivate[idx] ? "private" : "public";
+    if (!h.schoolName[idx].empty()) return h.schoolName[idx] + own;
+    return std::string();
+  }
   if (key == "hero-name" || key == "hero:full_name") return h.firstName + " " + h.lastName + own;
   if (key == "hero-first-name" || key == "hero:first_name" || key == "first name") return h.firstName + own;
   if (key == "hero-last-name" || key == "hero:last_name" || key == "hero:last-name") return h.lastName + own;
@@ -4062,7 +4076,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::notificationBaitYear, nullptr},
         {&Sim::childBreakItemYear, nullptr},
         {&Sim::newsEventYear, nullptr},
-        {&Sim::drugOfferYear, nullptr},
+        {&Sim::drugOfferYear, nullptr, 2},
         {&Sim::crashoutYear, nullptr},
         {&Sim::prayWealthYear, nullptr},
         {&Sim::prayAssetYear, nullptr, 3},
@@ -4160,7 +4174,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::luxuryYear, [](const Life& l) { return l.hero.luxury; }},
         // Families added later sit at the end of the wheel so the relative order of
         // everything before them stays what the tests were calibrated against.
-        {&Sim::overtimeYear, nullptr},
+        {&Sim::overtimeYear, nullptr, 3},
         {&Sim::exPaternityYear, nullptr, 4},
         {&Sim::licenseYear, nullptr, 3},
         {&Sim::siblingSquabbleYear, nullptr, 3},
@@ -5087,7 +5101,7 @@ bool Sim::siblingSquabbleYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::licenseYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.hasLicense || h.age < 16 || h.age > 20) return false;
-  if (forcedChoice < 0 && !licRng_.chance(0.3)) return false;
+  if (forcedChoice < 0 && !licRng_.chance(0.45)) return false;
   hero_ = &h;
   life_ = &life;
   const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(licRng_.below(2));
@@ -5164,7 +5178,14 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
   // the time this runs, and the level it set is what schoolYear would have seen.
   if (level > 0 && level != h.schoolAnnouncedLevel) {
     h.schoolAnnouncedLevel = level;
-    out.push_back("I started " + std::string(schoolLevelName(level)) + ".");
+    const int idx = std::max(0, std::min(2, level - 1));
+    // College has no name evidence yet; the three school tiers do (REPORT 282).
+    const bool named = level <= 3 && !h.schoolName[idx].empty();
+    out.push_back(std::string("I started ") + schoolLevelName(level) +
+                  (named ? " at " + h.schoolName[idx] + ", a " +
+                               (h.schoolPrivate[idx] ? "private" : "public") +
+                               " school."
+                         : std::string(".")));
     if (!h.schoolActivity.empty()) {
       out.push_back("I decided to see what extracurricular activities were available at my new " +
                     std::string(schoolLevelName(level)) + ".");
@@ -15294,6 +15315,46 @@ static std::string schoolFoldFirstPerson(const std::string& text) {
   return out;
 }
 
+// ---- The school's own name (REPORT.en.md 282) -----------------------------
+// The game names every school and tags it private or public: the third played
+// life says 'I started high school at Adams High School, a private school.'
+// (#5337 is the ', a private school' fragment). The forms the plays show:
+//   Adams High School            surname + tier
+//   Allure Middle School         word + tier
+//   Virgil Hardwood High School  first + surname + tier
+//   St. Rian's High School       saint form
+// No table carries the pools, so the forms are drawn from the name pools the
+// port already has (the weights are the port's: shortcut).
+std::string Sim::makeSchoolName(int level) {
+  static const char* const kTier[] = {"Elementary School", "Middle School",
+                                      "High School"};
+  const int tier = std::max(0, std::min(2, level - 1));
+  const int form = int(schoolRng_.below(4));
+  const std::string suffix = std::string(" ") + kTier[tier];
+  // The name draws use this generator's own stream: drawFirstName()/drawSurname()
+  // draw from the main one, and calling them here moved every card sequence
+  // (three tests fell). The tables are the same ones those helpers read.
+  ensureTable("a16_casino-casino-celebrity-name-enc");
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  auto firstName = [&]() -> std::string {
+    const std::string want = schoolRng_.chance(0.5) ? "female" : "male";
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < names.size(); ++r) {
+      if (lower(trim(names.at(r, "Gender"))) == want) pool.push_back(r);
+    }
+    if (pool.empty()) return std::string();
+    return names.at(pool[schoolRng_.below(uint32_t(pool.size()))], "First Name");
+  };
+  auto surname = [&]() -> std::string {
+    if (names.size() == 0) return std::string();
+    return names.at(schoolRng_.below(uint32_t(names.size())), "Last Name");
+  };
+  if (form == 0) return surname() + suffix;
+  if (form == 1) return spyUpperFirst(firstName()) + suffix;
+  if (form == 2) return spyUpperFirst(firstName()) + " " + surname() + suffix;
+  return "St. " + spyUpperFirst(firstName()) + "'s" + suffix;
+}
+
 void Sim::makeSchool(Life& life) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -15323,6 +15384,15 @@ void Sim::makeSchool(Life& life) {
   h.schoolClassmateFemale = schoolRng_.chance(0.5);
   h.schoolPrincipal = personName("principal");
   h.schoolPrincipalFemale = schoolRng_.chance(0.5);
+  // The names for the levels the hero has reached, drawn once each; the tier's
+  // private flag comes with it (REPORT.en.md 282).
+  for (int level = 1; level <= 3; ++level) {
+    if (level > h.schoolLevel) break;
+    if (h.schoolName[level - 1].empty()) {
+      h.schoolName[level - 1] = makeSchoolName(level);
+      h.schoolPrivate[level - 1] = schoolRng_.chance(0.2);
+    }
+  }
 
   // One activity out of the 115-row catalogue, gated on the level's own column
   // and the row's Gender.

@@ -33,10 +33,12 @@ cards = 0
 for seed in range(1, 61):
     doc = run(seed, engaged=True)
     left = False
+    left_at = -1
     for event in doc["events"]:
         body = event.get("body") or ""
         if "called off" not in body:
             continue
+        left_at = event["age"]
         cards += 1
         left = True
         assert body.startswith("You called off your engagement with your "), (seed, body)
@@ -51,9 +53,16 @@ for seed in range(1, 61):
         moves = {k: v for k, v in (event.get("deltas") or {}).items() if v}
         assert moves == {"karma": -50, "discipline": -16}, (seed, moves)
     if left:
-        # The engagement is over. The hero can marry somebody else later, so the
-        # end state only has to be *not engaged*.
-        assert doc["final"]["loverStatus"] != "engaged", (seed, doc["final"]["loverStatus"])
+        # The engagement is over, unless the hero is engaged again later: the
+        # elopement card's 'Plan a wedding instead' lane re-engages (REPORT 283).
+        re_engaged = any(
+            e["age"] >= left_at and
+            ((e.get("table") or "") == "a16_lover-marriage-nags-enc" or
+             "get eloped" in (e.get("body") or "") or
+             e.get("choice") == "Plan a wedding instead")
+            for e in doc["events"])
+        if not re_engaged:
+            assert doc["final"]["loverStatus"] != "engaged", (seed, doc["final"]["loverStatus"])
 
 assert cards, "no engagement was ever called off"
 

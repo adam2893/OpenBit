@@ -360,6 +360,7 @@ class Sim {
   bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> fillerNarrationLines(Life& life);
+  std::string makeSchoolName(int level);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
   bool paternityResultsYear(Life& life, AgeUp& out, int forcedChoice);

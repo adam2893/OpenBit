@@ -177,6 +177,12 @@ struct Hero {
   int lastSchoolLevel = 0;
   bool graduatedHighSchool = false;
   int schoolAnnouncedLevel = 0;  // the level whose start line has been written
+  // The school each level is at (REPORT.en.md 282): the played life says
+  // 'I started high school at Adams High School, a private school.', and the
+  // named forms are 'Adams High School', 'Allure Middle School', 'Virgil
+  // Hardwood High School' and 'St. Rian's High School'.
+  std::string schoolName[3];   // elementary, middle, high
+  bool schoolPrivate[3] = {false, false, false};
   bool graduationPending = false;  // the graduation card owns that year (REPORT 262)
   // The optometrist chain (REPORT.en.md 267): worsening eyesight, the exam, and the
   // glasses the failure buys.

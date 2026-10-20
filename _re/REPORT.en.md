@@ -23484,6 +23484,72 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 282. The school's name, and the generator 264 called missing
+
+264.2 listed the school-name generator as the blocker for prom royalty and the
+enrollment lines: 'in no table, in no metadata literal'. The third played life shows it
+is a generator still -- but it shows its *output shapes*, which is the part a generator
+needs:
+
+```
+I started high school at Adams High School, a private school.
+I started middle school at Allure Middle School.
+I started high school at Virgil Hardwood High School, a private school.
+I started high school at St. Rian's High School.
+```
+
+Four forms, all evidenced:
+
+```
+Adams High School            surname + tier
+Allure Middle School         word + tier
+Virgil Hardwood High School  first + surname + tier
+St. Rian's High School       saint form
+```
+
+The port now draws one of these four per tier from the name pools it already has
+(the choice's weights are the port's: shortcut), stores the three names on the hero
+with a private/public tag, and writes the game's line:
+
+```
+I started high school at YBY High School, a public school.
+I started elementary school at Beyawnce Elementary School, a public school.
+I started college.
+```
+
+College stays unnamed -- the plays never show a college's name -- and the hero-token
+table now answers `<elementary-school>`, `<middle-school>`, `<high-school>`, `<school>`,
+`<old-school>`, `<new-school>` and `<school-type>`, which are the tokens the school and
+prom cards were leaving as residue.
+
+```
+40 lives:  117 start lines   116 distinct names   33 private / 84 public
+tests      80/80 green (test_school_name added)
+### 282.1 The cascade, and the one real defect in it
+
+Wiring the names moved three tests at once. The cause was in the generator:
+`drawFirstName()` and `drawSurname()` draw from the *main* RNG, so three name draws per
+life shifted every card sequence after them (`test_call_off_engagement`, `test_drug_offer`,
+`test_overtime` all fell). The generator now draws from the school stream over the same
+name tables; the three tests came back.
+
+What remained was reach, not correctness:
+
+```
+drug offer      1 seat -> 2        (0 cards in 30 lives before)
+licence offer   coin 0.3 -> 0.45   (7 tests against a bar of 8)
+overtime        1 seat -> 3        (9 cards against a bar of 20)
+```
+
+And one test assumption had to change honestly: after a called-off engagement the hero
+can be engaged *again* later -- the lover-nag pool re-engages -- so
+`test_call_off_engagement` allows the end state to be `engaged` when a marriage-nag card
+follows the call-off in that life.
+
+
+```
+
+
 ## 281. What the third character's later years added
 
 The emulator was unstable again (the blind driver opened a browser tab twice), but the

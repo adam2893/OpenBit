@@ -9,7 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
 JOIN = re.compile(r"^I joined the (.+?) at my (elementary school|middle school|high school|college)\.$")
-START = re.compile(r"^I started (elementary school|middle school|high school|college)\.$")
+START = re.compile(r"^(?:I started (elementary school|middle school|high school)"
+                  r"(?: at .+, an? (?:private|public) school)?\.|I started college\.)$")
 
 activities = set()
 with open(ROOT / "gamedata_plain" / "a16_school-activities-enc", newline="") as fh:
@@ -47,7 +48,7 @@ for seed in range(1, 31):
             m = START.match(line)
             if m:
                 starts += 1
-                announced.append(m.group(1))
+                announced.append(m.group(1) or "college")
     # A level starts at most once in a life and only in the school years.
     assert len(announced) == len(set(announced)), (seed, "a level started twice", announced)
     for level in announced:
