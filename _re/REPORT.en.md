@@ -23484,6 +23484,40 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 283. The prom is its own card
+
+With the school names from 282, the trace's prom line can finally be built as the game
+writes it:
+
+```
+I was nominated for prom king at St. Rian's High School, but lost to Dean Rizzo.
+```
+
+Literals: #50060's prompt prefix, #25682 + `" at "` + #5441 `", but lost to "`, #25645
+`"I was elected prom "` and #48258 for the decline. The card is a family of its own
+now (`promYear`), because the school-year family draws one of five kinds and no amount
+of weight gave the once-a-life vote a year:
+
+```
+before   prom inside backToSchoolYear: 3 cards in 100 lives
+after    promYear, offered at 16-18 ahead of the school loop:
+         19 cards in 40 lives (6 won, 7 lost, 6 declined)
+```
+
+```
+card     'Prom king' / 'Prom queen'
+         body: You've been nominated for prom {crown}[ at {school}]!
+buttons  Run for prom {crown} / I don't care   (labels assembled; see shortcut)
+run      vote on looks (the school-year family's own rule);
+         win  -> 'I was elected prom king.' + the win colour row
+         lose -> the trace's line, with the school and the winner's name
+decline  'You decided you didn't care about being nominated for prom king.'
+```
+
+The vote, the two button labels and the winner's name are the port's (the game's tally
+and the label drawing are code-side); the sentences are the literals above.
+
+
 ## 282. The school's name, and the generator 264 called missing
 
 264.2 listed the school-name generator as the blocker for prom royalty and the

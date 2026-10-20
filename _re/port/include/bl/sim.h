@@ -359,6 +359,7 @@ class Sim {
   bool parentsPetYear(Life& life, AgeUp& out, int forcedChoice);
   bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
+  bool promYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> fillerNarrationLines(Life& life);
   std::string makeSchoolName(int level);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);

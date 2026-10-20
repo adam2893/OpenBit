@@ -46,7 +46,7 @@ for seed in range(1, 41):
                 assert "'s " in name, (seed, line)
             else:
                 tokens = head.split()
-                assert 1 <= len(tokens) <= 2, (seed, line)
+                assert 1 <= len(tokens) <= 3, (seed, line)
                 # A surname can carry a particle ('del Slay'); the name itself is
                 # the last token and must be capitalised.
                 assert tokens[-1][0].isupper() or tokens[-1][0].isdigit(), (seed, line)

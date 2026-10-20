@@ -4079,7 +4079,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::drugOfferYear, nullptr, 2},
         {&Sim::crashoutYear, nullptr},
         {&Sim::prayWealthYear, nullptr},
-        {&Sim::prayAssetYear, nullptr, 3},
+        {&Sim::prayAssetYear, nullptr, 4},
         {&Sim::sexualityYear, nullptr},
         {&Sim::onlyfansStartYear, nullptr, 3},
         {&Sim::onlyfansTipYear, nullptr, 3},
@@ -4091,7 +4091,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::officeYear, [](const Life& l) { return l.hero.ofcManager; }},
         {&Sim::skipSchoolYear, nullptr},
         {&Sim::schoolYear, [](const Life& l) { return l.hero.schooling; }},
-        {&Sim::backToSchoolYear, nullptr},
+        {&Sim::backToSchoolYear, nullptr, 4},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -4213,6 +4213,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         schoolYear(life, out, forcedChoice)) {
       return true;
     }
+    // The prom is one vote in a life and takes its year ahead of the school loop
+    // (REPORT.en.md 283).
+    if (forcedChoice < 0 && h.age >= 16 && h.age <= 18 && h.schooling &&
+        !h.b2sPromDone && promYear(life, out, forcedChoice)) {
+      return true;
+    }
     // The licence push is the game's own at sixteen (REPORT.en.md 255): with the
     // school loop owning the high-school years it would otherwise wait its turn and
     // never come.
@@ -4226,6 +4232,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     // (REPORT.en.md 280), so it is offered ahead of the wheel for those years.
     if (forcedChoice < 0 && (h.age == 16 || h.age == 17) && !h.parentsCarGiven &&
         h.outdoorVehicle.empty() && parentsCarYear(life, out, forcedChoice)) {
+      return true;
+    }
+    // The prom is one vote in a life and the played life carries it at 17
+    // (REPORT.en.md 283): the school-year family is tried ahead of the wheel then.
+    if (forcedChoice < 0 && h.age >= 16 && h.age <= 18 && h.schooling &&
+        !h.b2sPromDone && backToSchoolYear(life, out, forcedChoice)) {
       return true;
     }
     for (size_t k = 0; k < wn; ++k) {
@@ -23437,6 +23449,75 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 // The school year (REPORT.en.md 92): the trip, the dance, the prom and the
 // party. Ten tables, at most one of the four a school year.
 // ---------------------------------------------------------------------------
+// ---- The prom (REPORT.en.md 283) ------------------------------------------
+// The played life at 17: "I was nominated for prom king at St. Rian's High
+// School, but lost to Dean Rizzo." The literals are #50060's prompt prefix,
+// #25682 + " at " + #5441 ", but lost to ", #25645 "I was elected prom " and
+// #48258 for the decline. The vote itself is the port's (looks, as the school-year
+// family had it) because the game's tally is code-side.
+bool Sim::promYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.b2sPromDone || !h.schooling) return false;
+  // 17-18 only: 16 stays free for the licence offer the played life takes then
+  // (REPORT.en.md 283).
+  if (h.age < 17 || h.age > 18 || h.schoolLevel <= 0 || h.schoolLevel > 3) return false;
+  if (forcedChoice < 0 && !relRng_.chance(0.5)) return false;
+  h.b2sPromDone = true;
+  const std::string crown = h.female ? "queen" : "king";
+  const std::string school = h.schoolName[h.schoolLevel - 1];
+  auto fullName = [&]() -> std::string {
+    ensureTable("a16_casino-casino-celebrity-name-enc");
+    const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+    if (names.size() == 0) return std::string("a classmate");
+    const std::string want = relRng_.chance(0.5) ? "female" : "male";
+    std::vector<size_t> pool;
+    for (size_t r2 = 0; r2 < names.size(); ++r2) {
+      if (lower(trim(names.at(r2, "Gender"))) == want) pool.push_back(r2);
+    }
+    if (pool.empty()) return std::string("a classmate");
+    const size_t p2 = pool[relRng_.below(uint32_t(pool.size()))];
+    return names.at(p2, "First Name") + " " + names.at(p2, "Last Name");
+  };
+  const bool run = forcedChoice >= 0 ? forcedChoice == 0 : relRng_.chance(0.7);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioBackToSchoolAgeUpPromRoyal";
+  out.title = h.female ? "Prom queen" : "Prom king";
+  out.body = "You've been nominated for prom " + crown +
+             (school.empty() ? std::string() : " at " + school) + "!";
+  out.options = {"Run for prom " + crown, "I don't care"};
+  if (!run) {
+    out.choice = "I don't care";
+    out.narrative = "You decided you didn't care about being nominated for prom " +
+                    crown + ".";  // #48258
+    return true;
+  }
+  out.choice = "Run for prom " + crown;
+  const bool win = h.looks >= 60 || relRng_.chance(0.25);
+  const char* table = win ? "a16_backtoschool-prom-win-color-enc"
+                          : "a16_backtoschool-prom-lose-color-enc";
+  ensureTable(table);
+  const Table& t = tbl(table);
+  const size_t r = weightedPick(t, "Commonness Score", relRng_);
+  const std::string colour = r == size_t(-1) ? std::string() : resolve(t.at(r, "String"));
+  if (!colour.empty()) out.extra.push_back(spyUpperFirst(colour));
+  if (win) {
+    out.happiness = pointsForImpact(4);
+    out.looks = pointsForImpact(1);
+    out.narrative = "I was elected prom " + crown + ".";  // #25645
+    if (t.size() > 0 && r != size_t(-1) && t.has("Gave Speech") && t.flag(r, "Gave Speech"))
+      out.extra.push_back("I gave the class a speech they will not forget.");
+  } else {
+    out.happiness = pointsForImpact(-2);
+    const std::string winner = fullName();
+    out.narrative = "I was nominated for prom " + crown +
+                    (school.empty() ? std::string() : " at " + school) +
+                    ", but lost to " + winner + ".";  // #25682 + #5441
+  }
+  return true;
+}
+
 bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -23481,9 +23562,9 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
                        ensureTable("a16_backtoschool-school-dance-event-feedback-enc") &&
                        ensureTable("a16_backtoschool-school-dance-theme-enc") &&
                        ensureTable("a16_backtoschool-school-dance-rejection-color-enc");
-  const bool promOk = !h.b2sPromDone && h.age >= 16 &&
-                      ensureTable("a16_backtoschool-prom-win-color-enc") &&
-                      ensureTable("a16_backtoschool-prom-lose-color-enc");
+  // The prom is its own card now (promYear, REPORT.en.md 283): one vote in a life
+  // needs a guaranteed year, which this family's five-way draw cannot give it.
+  const bool promOk = false;
   const bool partyOk = h.age >= 14 &&
                        ensureTable("a16_backtoschool-house-party-color-enc") &&
                        ensureTable("a16_backtoschool-house-party-parental-absence-color-enc") &&
@@ -23635,17 +23716,40 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
     body = resolve(t.at(r, "String"));
     title = h.female ? "Prom queen" : "Prom king";
     const std::string crown = h.female ? "queen" : "king";
+    // The played life's own line names the school and the winner (REPORT 283):
+    // "I was nominated for prom king at St. Rian's High School, but lost to
+    // Dean Rizzo." -- #25682 + " at " + #5441 ", but lost to ". The win line is
+    // #25645 "I was elected prom ".
+    const std::string school = h.schoolLevel >= 1 && h.schoolLevel <= 3
+                                   ? h.schoolName[h.schoolLevel - 1]
+                                   : std::string();
+    auto fullName = [&]() -> std::string {
+      ensureTable("a16_casino-casino-celebrity-name-enc");
+      const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+      if (names.size() == 0) return std::string("a classmate");
+      const std::string want = relRng_.chance(0.5) ? "female" : "male";
+      std::vector<size_t> pool;
+      for (size_t r2 = 0; r2 < names.size(); ++r2) {
+        if (lower(trim(names.at(r2, "Gender"))) == want) pool.push_back(r2);
+      }
+      if (pool.empty()) return std::string("a classmate");
+      const size_t p2 = pool[relRng_.below(uint32_t(pool.size()))];
+      return names.at(p2, "First Name") + " " + names.at(p2, "Last Name");
+    };
     if (win) {
       happy += 8;
       looks += 2;
-      tell("I was voted prom " + crown + ".");
+      tell("I was elected prom " + crown + ".");
       if (t.has("Gave Speech") && t.flag(r, "Gave Speech")) {
         happy += 2;
         tell("I gave the class a speech they will not forget.");
       }
     } else {
       happy -= 4;
-      tell("I lost the vote for prom " + crown + ".");
+      const std::string winner = fullName();
+      tell("I was nominated for prom " + crown +
+           (school.empty() ? std::string() : " at " + school) +
+           ", but lost to " + winner + ".");
     }
   } else if (kind == 3) {
     // --- the house party: the parents' own excuse, then the rowdiness -------
