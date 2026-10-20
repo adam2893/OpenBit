@@ -358,6 +358,7 @@ class Sim {
   bool siblingComingOutYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsPetYear(Life& life, AgeUp& out, int forcedChoice);
   bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> fillerNarrationLines(Life& life);
   bool safeSexYear(Life& life, AgeUp& out, int forcedChoice);
   // Its result, REPORT.en.md 150.
@@ -930,6 +931,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng ptRng_;
   // The yearly filler narration's own draw (REPORT.en.md 279).
   Rng fillerRng_;
+  // The parents' car gift draws (REPORT.en.md 280).
+  Rng carGiftRng_;
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;

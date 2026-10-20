@@ -700,6 +700,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       eyeRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x369dea0f31a53f85ULL),
       ptRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xb5297a4d3a2ba1f3ULL),
       fillerRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0xbb67ae8584caa73bULL),
+      carGiftRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0xa54ff53a5f1d36f1ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4124,7 +4125,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::loverWeddingYear, nullptr, 2},
         {&Sim::loverLeavesYear, nullptr},
         {&Sim::exLoverSextYear, nullptr},
-        {&Sim::exLoverMarriedNowYear, nullptr},
+        {&Sim::exLoverMarriedNowYear, nullptr, 2},
         {&Sim::childDisciplineYear, nullptr},
         {&Sim::childDemandsYear, nullptr},
         {&Sim::genderIdentityYear, nullptr},
@@ -4166,6 +4167,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::siblingComingOutYear, nullptr, 3},
         {&Sim::parentsPetYear, nullptr, 2},
         {&Sim::partTimeYear, nullptr, 2},
+        {&Sim::parentsCarYear, nullptr, 4},
         {&Sim::failingEyesightYear, nullptr, 2},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -4206,6 +4208,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     if (forcedChoice < 0 && h.eyeExamPending && eyeExamYear(life, out, forcedChoice))
       return true;
+    // The parents' car gift is a card of its own at 16 in the played life
+    // (REPORT.en.md 280), so it is offered ahead of the wheel for those years.
+    if (forcedChoice < 0 && (h.age == 16 || h.age == 17) && !h.parentsCarGiven &&
+        h.outdoorVehicle.empty() && parentsCarYear(life, out, forcedChoice)) {
+      return true;
+    }
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -4777,6 +4785,81 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
 // a16_part-time-jobs-enc's Dog Walker (Freelance, $8-$25 an hour, min age 13).
 // The employer is a career title, the pay is rate x hours, and the year is filled
 // by the job instead of a card.
+// ---- The parents' car gift (REPORT.en.md 280) -----------------------------
+// The third played life at 16:
+//   I rejected the Nissan Murano my mother offered to buy me and demanded
+//   something more expensive. She agreed to buy me a more expensive car.
+//   My mother bought me a gray Cadillac CT5-V.
+// The literals are #24964, #70433 and #30907; the models come from
+// a16_car-models-enc and the paint names from the car asset tags (gray,
+// burgundy, silver, white, blue, yellow, seafoam).
+bool Sim::parentsCarYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.parentsCarGiven || !h.outdoorVehicle.empty()) return false;
+  if (h.age < 16 || h.age > 18) return false;
+  if (!ensureTable("a16_car-models-enc")) return false;
+  if (!carGiftRng_.chance(0.5)) return false;
+  const Table& t = tbl("a16_car-models-enc");
+  std::vector<size_t> cheap, pricey;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.flag(r, "Unavailable") || t.flag(r, "Race Car Dealership Only")) continue;
+    const long long cost = static_cast<long long>(t.num(r, "Cost"));
+    if (cost <= 0) continue;
+    if (cost <= 45000) cheap.push_back(r);
+    else if (cost <= 120000) pricey.push_back(r);
+  }
+  if (cheap.empty() || pricey.empty()) return false;
+  const size_t offered = cheap[carGiftRng_.below(uint32_t(cheap.size()))];
+  const size_t demanded = pricey[carGiftRng_.below(uint32_t(pricey.size()))];
+  static const char* const kPaint[] = {"gray", "burgundy", "silver",
+                                       "white", "blue", "yellow", "seafoam"};
+  const std::string paint = kPaint[carGiftRng_.below(7)];
+  const std::string parent = h.female ? "father" : "mother";
+  const std::string offeredName = trim(t.at(offered, "Make")) + " " +
+                                  trim(t.at(offered, "Model"));
+  const std::string demandedModel = trim(t.at(demanded, "Model"));
+  const std::string demandedName = trim(t.at(demanded, "Make")) + " " +
+                                   demandedModel;
+  h.parentsCarGiven = true;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.title = "A new car";
+  out.body = "Your " + parent + " offered to buy you a " + offeredName +
+             ".\n\nWhat will you do?";
+  out.options = {"Ask for a more expensive car", "Take it"};
+  const bool demand = forcedChoice >= 0 ? forcedChoice == 0 : carGiftRng_.chance(0.6);
+  if (demand) {
+    out.choice = "Ask for a more expensive car";  // #12151
+    out.row_id = std::to_string(demanded + 1);
+    out.narrative = "I rejected the " + offeredName + " my " + parent +
+                    " offered to buy me and demanded something more expensive. " +
+                    (h.female ? "He" : "She") +
+                    " agreed to buy me a more expensive car.";  // #24964, #70433
+    out.extra.push_back("My " + parent + " bought me a " + paint + " " +
+                        demandedName + ".");  // #30907
+    h.outdoorVehicle = demandedName.substr(0, 64);
+    h.carMake = trim(t.at(demanded, "Make"));
+    h.carModel = demandedModel;
+    h.carType = trim(t.at(demanded, "Type"));
+    h.carName = demandedName.substr(0, 64);
+    h.carClass = trim(t.at(demanded, "Racing Class"));
+  } else {
+    out.choice = "Take it";
+    out.row_id = std::to_string(offered + 1);
+    out.narrative = "My " + parent + " bought me a " + paint + " " +
+                    offeredName + ".";  // #30907
+    h.outdoorVehicle = offeredName.substr(0, 64);
+    h.carMake = trim(t.at(offered, "Make"));
+    h.carModel = trim(t.at(offered, "Model"));
+    h.carType = trim(t.at(offered, "Type"));
+    h.carName = offeredName.substr(0, 64);
+    h.carClass = trim(t.at(offered, "Racing Class"));
+  }
+  return true;
+}
+
 bool Sim::partTimeYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;

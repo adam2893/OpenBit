@@ -186,6 +186,7 @@ struct Hero {
   // The crime chain's own state (REPORT.en.md 273): the crime the hero was
   // arrested for and the sentence the court handed down, carried between cards.
   bool parentsPetGiven = false;  // the family gives one pet, once (REPORT 275)
+  bool parentsCarGiven = false;  // the parents' car gift, once (REPORT 280)
   std::string crimeName;
   int crimeYears = 0;
   // The driver's licence (REPORT.en.md 255). ScenarioPushLicenseCar offers the test

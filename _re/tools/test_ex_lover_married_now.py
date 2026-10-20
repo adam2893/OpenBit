@@ -28,7 +28,7 @@ def run(seed, **extra):
 
 
 lanes = collections.Counter()
-for seed in range(1, 26):
+for seed in range(1, 41):
     for event in run(seed)["events"]:
         body = event.get("body") or ""
         if not body.startswith("Your ex-") or " is married" not in body:

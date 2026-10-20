@@ -23484,6 +23484,40 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 280. The parents' car gift
+
+The third played life at 16, in one card and two sentences:
+
+```
+I rejected the Nissan Murano my mother offered to buy me and demanded something
+more expensive. She agreed to buy me a more expensive car.
+My mother bought me a gray Cadillac CT5-V.
+```
+
+All three literals are metadata: #24964 (the rejection), #70433 (the agreement) and
+#30907 `My {0} bought me {1}.`. The models come from `a16_car-models-enc`, split into
+a cheap band (<= $45,000) and a pricier one (<= $120,000), and the paint names are the
+ones the car assets themselves carry (gray, burgundy, silver, white, blue, yellow,
+seafoam).
+
+```
+card      title 'A new car' (the class is code-side; bench never pushed it)
+          body assembled: 'Your {parent} offered to buy you a {make} {model}.'
+          + #2889's ' offered to buy you a ' fragment
+buttons   'Ask for a more expensive car' (#12151) / 'Take it' (assembled)
+demand    the played life's pair, then the gift line in the same year
+take      the offered car, with the same gift line
+```
+
+```
+40 lives:  9 gifts   4 asked for more   5 took it
+tests      79/79 green (test_parents_car added)
+```
+
+The card is offered ahead of the wheel at 16-17 the way graduation and the exam are;
+without that it reached one life in forty.
+
+
 ## 279. The yearly filler narration
 
 The third character's screen at 16 carried the line the port had never written:
