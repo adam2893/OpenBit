@@ -23484,6 +23484,33 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 291. Martial arts, and the belt ladder
+
+Third menu capture:
+
+```
+Activities -> Mind & Body -> Martial Arts   (a16_martial-arts-enc rows)
+  Jiu-Jitsu   ->  section Mind & Body, title Jiu-Jitsu
+                  body 'Enroll in a course of {0} lessons today!'   #18856
+                  'Current Belt: None' (#16787), 'Cost: $1,000'
+                  button 'Take {0} lessons'
+                  result 'I took {0} lessons and earned my {1} belt!'  #25341
+```
+
+The port now walks the art's own `Belt Hierarchy` (`white, blue, purple, brown,
+black, red` for jiu-jitsu), charges the $1,000 course, and writes the belt line.
+
+```
+40 lives:  33 cards   24 courses taken   9 declined
+           belts advance one per course (white -> yellow -> ...)
+acceptance: card tables 873/935 -> 874/935
+tests      85/85 green (test_martial_arts added)
+```
+
+shortcut: the lesson count in {0} is not captured (10 is used) and the game's move
+list is not modelled; a course advances one belt in the hierarchy.
+
+
 ## 290. The diet menu
 
 Second menu capture from the emulator:

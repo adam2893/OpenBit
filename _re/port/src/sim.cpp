@@ -705,6 +705,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
+      maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4117,6 +4118,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::backToSchoolYear, nullptr, 4},
         {&Sim::bookYear, nullptr, 2},
         {&Sim::dietYear, nullptr, 2},
+        {&Sim::martialArtsYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
@@ -23521,6 +23523,60 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 // shortcut: the game charges the monthly cost for as long as the diet runs and
 // has a menu to manage it; the port spends one year on it and charges that
 // year's cost.
+// ---- Martial arts (REPORT.en.md 291) ---------------------------------------
+// Activities -> Mind & Body -> Martial Arts opens a list of the art rows
+// (jiu-jitsu, judo, karate, krav maga, kung fu, taekwondo). A capture of the
+// jiu-jitsu card:
+//   section 'Mind & Body', title 'Jiu-Jitsu'
+//   body 'Enroll in a course of {0} lessons today!' (#18856)
+//   'Current Belt: None', 'Cost: $1,000'
+//   button 'Take {0} lessons'
+//   result 'I took {0} lessons and earned my {1} belt!' (#25341)
+// shortcut: the lesson count in {0} is not captured (10 is used) and the game's
+// move list is not modelled; a course advances one belt in the art's hierarchy.
+bool Sim::martialArtsYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 6) return false;
+  if (!ensureTable("a16_martial-arts-enc")) return false;
+  if (forcedChoice < 0 && !maRng_.chance(0.06)) return false;
+  const Table& t = tbl("a16_martial-arts-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) if (!trim(t.at(r, "Martial Art")).empty()) rows.push_back(r);
+  if (rows.empty()) return false;
+  size_t row = rows[maRng_.below(uint32_t(rows.size()))];
+  for (size_t r : rows) {
+    if (lower(trim(t.at(r, "Martial Art"))) == lower(h.martialArt)) { row = r; break; }
+  }
+  const std::string art = trim(t.at(row, "Martial Art"));
+  std::vector<std::string> belts;
+  splitOn(t.at(row, "Belt Hierarchy"), ',', belts);
+  for (std::string& b : belts) b = trim(b);
+  if (belts.empty()) return false;
+  if (h.martialBelt + 1 >= int(belts.size())) return false;  // the ladder is done
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : maRng_.chance(0.8);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = spyUpperFirst(art);
+  out.body = "Enroll in a course of " + art + " lessons today!";  // #18856
+  out.options = {"Take " + art + " lessons", "Not now"};
+  if (!accept) {
+    out.choice = "Not now";
+    return true;
+  }
+  out.choice = "Take " + art + " lessons";
+  h.martialArt = art;
+  h.martialBelt += 1;
+  const std::string belt = belts[size_t(h.martialBelt)];
+  h.money = std::max(0LL, h.money - 1000);
+  out.narrative = "I took 10 " + art + " lessons and earned my " + belt +
+                  " belt!";  // #25341
+  out.health = pointsForImpact(1);
+  return true;
+}
+
 bool Sim::dietYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.onDiet || h.age < 12) return false;

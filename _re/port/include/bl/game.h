@@ -118,6 +118,8 @@ struct Hero {
   std::string employerType;  // the careers row's Company Type, named lazily
   long long jobSalary = 0;   // the salary a job line names (REPORT.en.md 286)
   bool onDiet = false;       // the year the diet card is spent (REPORT 290)
+  std::string martialArt;    // the art the belt belongs to (REPORT 291)
+  int martialBelt = -1;      // index into the art's Belt Hierarchy
   // Prison state. The real game reaches it through the interactive Crime menu
   // and its court; the port draws a yearly conviction instead (REPORT.en.md 45).
   bool inPrison = false;
