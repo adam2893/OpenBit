@@ -703,6 +703,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       carGiftRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0xa54ff53a5f1d36f1ULL),
       tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
+      bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -4113,6 +4114,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::skipSchoolYear, nullptr},
         {&Sim::schoolYear, [](const Life& l) { return l.hero.schooling; }},
         {&Sim::backToSchoolYear, nullptr, 4},
+        {&Sim::bookYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
@@ -23503,6 +23505,45 @@ bool Sim::socialYear(Life& life, AgeUp& out, int forcedChoice) {
 // prompt's opening is metadata (#28037, #28040, #28041, #46722) and its CTA is
 // 'When can you start?' (#46505); the sentence between them is assembled, as the
 // dump carries only the fragment (shortcut). The decline is #25531.
+// ---- The bookshelf (REPORT.en.md 289) -------------------------------------
+// Activities -> Mind & Body -> Book opens a modal captured in the emulator:
+//   section 'Mind & Body', title 'Book', body 'Curl up with a good book today!'
+//   (#16771), 'Pick your book' (#33840), a dropdown of a16_books-enc and one
+//   button, 'Read it' (#35253). The result is #24883, 'I read it from cover to
+//   cover. It was {0} pages.'
+bool Sim::bookYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 6) return false;
+  if (!ensureTable("a16_books-enc")) return false;
+  if (forcedChoice < 0 && !bookRng_.chance(0.04)) return false;
+  const Table& t = tbl("a16_books-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Book")).empty()) continue;
+    if (t.has("Minimum Age") && t.num(r, "Minimum Age") > 0 &&
+        h.age < int(t.num(r, "Minimum Age"))) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[bookRng_.below(uint32_t(rows.size()))];
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Book";
+  out.body = "Curl up with a good book today!";  // #16771
+  out.cta = "Pick your book";  // #33840
+  out.options = {"Read it"};  // #35253
+  out.choice = "Read it";
+  const int pages = int(t.num(row, "Pages"));
+  out.narrative = "I read it from cover to cover. It was " + std::to_string(pages) +
+                  " pages.";  // #24883
+  if (t.has("Intelligence Score")) out.smarts = pointsForImpact(int(t.num(row, "Intelligence Score")));
+  if (t.has("Happiness Score")) out.happiness = pointsForImpact(int(t.num(row, "Happiness Score")));
+  return true;
+}
+
 bool Sim::headhunterYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (forcedChoice >= 0) return false;

@@ -23484,6 +23484,50 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 289. The bookshelf, and the menu capture 288 asked for
+
+288 said the remaining 64 tables need a menu-flow capture, not a playthrough. This is
+the first one, taken in the emulator:
+
+```
+Activities -> Mind & Body -> Book
+  section   Mind & Body
+  title     Book
+  body      Curl up with a good book today!              #16771
+  dropdown  'Pick your book' (#33840), one row per a16_books-enc title
+  button    Read it                                     #35253
+  result    I read it from cover to cover. It was {0} pages.   #24883
+```
+
+The port now reads from that shelf (`bookYear`): a book whose Minimum Age the hero
+meets, `Read it` as the one button, the page count from the row, and the row's own
+Intelligence/Happiness scores applied through the impact scale.
+
+```
+40 lives:  22 books read, every page count matching the row it names
+acceptance: card tables 871/935 -> 872/935
+tests      83/83 green (test_book added)
+```
+
+A detail worth writing down: the script reports the table index 0-based over the data
+rows, while a card's `row_id` is 1-based -- the first test compared the page count
+against the wrong row and caught it (288 pages against a 27-page book).
+
+### 289.1 The next captures, in menu order
+
+```
+Mind & Body   Diet (a16_diets), Martial Arts (a16_martial-arts), Library
+              (a16_books again + magazines?), Memory Test
+Salon & Spa   plastic surgery (a16_plastic-surgeries)
+Assets        jewelry (3 tables), heirlooms (+notification-heirlooms)
+Shop          accessories (3), mystuff catalog
+Activities    Outdoor (horses?), Casino (3), Black Market (auction categories)
+```
+
+Each is one screenshot away, and each screenshot turns a table from 'unreferenced'
+into a card with the game's own text.
+
+
 ## 288. The 64 tables nobody has opened
 
 The acceptance bar asks for every card table to be referenced. 871 of 935 are. The
