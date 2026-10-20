@@ -4673,23 +4673,28 @@ bool Sim::failingEyesightYear(Life& life, AgeUp& out, int forcedChoice) {
 bool Sim::eyeExamYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.eyeExamPending) return false;
-  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(eyeRng_.below(2));
-  // The card is owed the year after the eyesight first worsened; declining drops it,
-  // and the chain can come round again on the family's own coin.
   h.eyeExamPending = false;
+  // The card is the game's mini-game (captured from a played life, REPORT.en.md
+  // 278): section 'Healthcare', title 'Eye Exam', the prompt below, and the two
+  // buttons 'Start' / 'Forget it, I need glasses'. The letter-grid draw itself is
+  // not modelled -- the result is a coin (shortcut) carrying the played life's own
+  // lines.
+  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(eyeRng_.below(2));
   const std::vector<std::string> extra = out.extra;
   out = AgeUp();
   out.extra = extra;
   out.table = "registry:ScenarioGameEyeExam";
   out.title = "Eye Exam";
-  out.body = "Your eyesight seems to be worsening and it's time to visit the "
-             "optometrist for an eye exam.";
-  out.options = {"Take the eye exam", "Not right now"};
+  out.body = "Start the test and then tap the letter or number that's different "
+             "than the others before time runs out!";
+  out.options = {"Start", "Forget it, I need glasses"};
   if (lane != 0) {
-    out.choice = "Not right now";
+    out.choice = "Forget it, I need glasses";
+    h.glasses = true;
+    out.narrative = "I picked out some glasses at the optometrist.";  // #24793
     return true;
   }
-  out.choice = "Take the eye exam";
+  out.choice = "Start";
   if (h.age < 18) {
     const std::string parent = h.female ? "father" : "mother";
     out.narrative = "My " + parent +
@@ -4697,9 +4702,6 @@ bool Sim::eyeExamYear(Life& life, AgeUp& out, int forcedChoice) {
   } else {
     out.narrative = "I went to take an eye exam at the optometrist.";
   }
-  // The result renders in the same card: with another pending family in the queue
-  // the third age-up would push the pair apart, and the pending queue has one card
-  // per year (REPORT.en.md 267). The pass/fail split is the port's own (shortcut).
   const double failChance = h.age < 18 ? 0.35 : (h.age < 40 ? 0.5 : 0.7);
   if (eyeRng_.unit() < failChance) {
     h.glasses = true;

@@ -23484,6 +23484,47 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 278. The eye exam is a mini-game, and the card says so
+
+With the emulator back, a third character was created to mine more evidence. It froze
+on a real card that the port had guessed wrong -- and the screenshot settles it:
+
+```
+section   Healthcare
+title     Eye Exam
+body      Start the test and then tap the letter or number that's different than
+          the others before time runs out!
+buttons   Start / Forget it, I need glasses
+```
+
+267 had written the *preceding* line ('Your eyesight seems to be worsening and it's
+time to visit the optometrist for an eye exam.', #50327) as this card's prompt. It is
+not the prompt; it is the sentence that puts the exam on the queue. The card itself is
+a letter-grid mini-game with a Start button and a bypass that buys glasses outright.
+
+```cpp
+body      the captured prompt
+options   Start / Forget it, I need glasses
+Start     the mini-game result is a coin (not modelled); pass and fail carry
+          #24779 / #24139 and the prescription bodies #49098 / #48452
+Forget    'I picked out some glasses at the optometrist.' (#24793) and glasses set
+```
+
+```
+40 lives:  11 chains   8 failed   3 passed
+tests      78/78 green
+```
+
+### 278.1 The third playthrough did not finish
+
+The emulator froze twice on cards during the run (a Wedding modal and the eye exam);
+after the second freeze a Home/relaunch sequence left the browser in front and the
+harness reattached to a life whose log had already rolled, so the harvested trace was
+only seven ages wide. It is not committed: the useful artefact from this session is the
+screenshot above, and the frozen-card behaviour is recorded here because it will meet
+the next playthrough too -- the driver cannot play mini-games.
+
+
 ## 277. Where the port stands, and what it waits on
 
 ```

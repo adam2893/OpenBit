@@ -43,10 +43,16 @@ for seed in range(1, 41):
             stage = 1
             continue
         if event.get("title") in ("Eye Exam", "Eye Exam Failed") and event.get("choice") in (
-                "Take the eye exam", "Not right now"):
+                "Start", "Forget it, I need glasses"):
             assert stage == 1, (seed, "exam without a worsening", event)
-            if event["choice"] == "Not right now":
+            # The card is the mini-game view captured in REPORT.en.md 278.
+            body = event.get("body") or ""
+            assert ("different than the others" in body or
+                    "passed your eye exam" in body or
+                    "failed your eye exam" in body), (seed, event)
+            if event["choice"] == "Forget it, I need glasses":
                 stage = 0
+                assert "picked out some glasses" in (event.get("logLines") or [""])[-1], (seed, event)
                 continue
             visit = [l for l in lines if l == ADULT_VISIT or MINOR_VISIT.match(l)]
             assert visit, (seed, lines)
