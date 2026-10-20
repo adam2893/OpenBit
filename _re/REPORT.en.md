@@ -23484,6 +23484,39 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 284. The tryout, and the two sentences around it
+
+The third played life at 14 adds the sentence between the school's start and its
+activity:
+
+```
+I decided to see what extracurricular activities were available at my new high school.
+I tried out for my high school field hockey team but did not make the cut.
+```
+
+Both are metadata: #23935 for the first, and #25369
+`I tried out for my {0} {1} but did not make the cut.` for the second, with {0} the tier
+and {1} the club lowercased.
+
+The port's school-start block already wrote the first sentence; it now decides between
+joining and trying out, using the activities table's own `Sports Activity` flag:
+
+```
+sport club, coin 0.5   'I tried out for my high school baseball team but did not make
+                       the cut.'
+otherwise              'I joined the Volleyball Team at my high school.'
+```
+
+The tryout coin is the port's (the game's odds are code-side), and the club keeps the
+game's lowercase spelling in the tryout sentence.
+
+```
+20 lives:  13 tryouts   63 joins
+30 lives:  18 tryouts   96 joins   114 starts
+tests      81/81 green (test_school_join now covers both)
+```
+
+
 ## 283. The prom is its own card
 
 With the school names from 282, the trace's prom line can finally be built as the game

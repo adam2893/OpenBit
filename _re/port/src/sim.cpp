@@ -701,6 +701,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       ptRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xb5297a4d3a2ba1f3ULL),
       fillerRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0xbb67ae8584caa73bULL),
       carGiftRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0xa54ff53a5f1d36f1ULL),
+      tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
@@ -5199,10 +5200,29 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
                                " school."
                          : std::string(".")));
     if (!h.schoolActivity.empty()) {
+      // The played life at 14 is this scene: 'I decided to see what extracurricular
+      // activities were available at my new high school.' (#23935) and then, because
+      // the club is a sport, 'I tried out for my high school field hockey team but
+      // did not make the cut.' (#25369). The tryout is a coin (the game's odds are
+      // code-side); a non-sport club can only be joined.
       out.push_back("I decided to see what extracurricular activities were available at my new " +
                     std::string(schoolLevelName(level)) + ".");
-      out.push_back("I joined the " + h.schoolActivity + " at my " +
-                    schoolLevelName(level) + ".");
+      bool sport = false;
+      if (ensureTable("a16_school-activities-enc")) {
+        const Table& act = tbl("a16_school-activities-enc");
+        for (size_t r = 0; r < act.size(); ++r) {
+          if (trim(act.at(r, "Activity")) != h.schoolActivity) continue;
+          sport = act.has("Sports Activity") && act.flag(r, "Sports Activity");
+          break;
+        }
+      }
+      if (sport && tryoutRng_.chance(0.5)) {
+        out.push_back("I tried out for my " + std::string(schoolLevelName(level)) + " " +
+                      lower(h.schoolActivity) + " but did not make the cut.");
+      } else {
+        out.push_back("I joined the " + h.schoolActivity + " at my " +
+                      schoolLevelName(level) + ".");
+      }
     }
   }
   h.lastSchoolLevel = level;

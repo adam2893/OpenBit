@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
 JOIN = re.compile(r"^I joined the (.+?) at my (elementary school|middle school|high school|college)\.$")
+TRYOUT = re.compile(r"^I tried out for my (elementary school|middle school|high school|college) (.+?) but did not make the cut\.$")
 START = re.compile(r"^(?:I started (elementary school|middle school|high school)"
                   r"(?: at .+, an? (?:private|public) school)?\.|I started college\.)$")
 
@@ -33,12 +34,18 @@ def run(seed, ages=22):
 
 
 joins = 0
+tryouts = 0
 starts = 0
 for seed in range(1, 31):
     doc = run(seed)
     announced = []
     for event in doc["events"]:
         for line in (event.get("logLines") or []):
+            m = TRYOUT.match(line)
+            if m:
+                tryouts += 1
+                assert announced, (seed, "tried out before school started", line)
+                continue
             m = JOIN.match(line)
             if m:
                 joins += 1
@@ -56,5 +63,6 @@ for seed in range(1, 31):
 
 assert starts >= 30, starts
 assert joins >= 10, joins
-print("starts:", starts, "joins:", joins)
+assert tryouts >= 3, tryouts
+print("starts:", starts, "joins:", joins, "tryouts:", tryouts)
 print("ok")
