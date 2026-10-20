@@ -4616,7 +4616,9 @@ bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
   out.options = {"I couldn't be bothered", "Let someone else plan it"};
   if (lane == 0) {
     out.choice = "I couldn't be bothered";
-    out.narrative = "I couldn't be bothered to plan or even attend " + poss + " funeral.";
+    // The third played life at 23, at a sibling's funeral: the game says only
+    // "I couldn't be bothered to attend his funeral." (#288 + the possessive).
+    out.narrative = "I couldn't be bothered to attend " + poss + " funeral.";
   } else {
     out.choice = "Let someone else plan it";
     out.narrative = "I let someone else plan " + poss +

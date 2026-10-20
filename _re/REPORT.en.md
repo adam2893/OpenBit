@@ -23484,6 +23484,52 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 281. What the third character's later years added
+
+The emulator was unstable again (the blind driver opened a browser tab twice), but the
+character did reach 25, and its journal pages gave a handful of facts:
+
+```
+age 23  My little brother, Apollo, was hit by a foul ball at a baseball game and died.
+        I couldn't be bothered to attend his funeral.
+        I ignored a gigolo who was trying to solicit me.
+age 25  My stepbrother, Elon, has been promoted to Sr. Insurance Agent.
+        My Golden Wrench restored my vehicle to mint condition.        (IAP item)
+        I earned an extra $7,746 due to my Golden Neko Statue.         (IAP item)
+```
+
+### 281.1 The funeral decline said more than the game does
+
+The port's decline lane read:
+
+```
+I couldn't be bothered to plan or even attend his funeral.
+```
+
+The game's line is shorter -- #288 is the fragment `\nI couldn't be bothered to attend `
+and the played life ends it with the possessive:
+
+```
+I couldn't be bothered to attend his funeral.
+```
+
+The port now writes exactly that, and `test_relative_death` follows.
+
+```
+deaths 77   funerals 77
+```
+
+### 281.2 The encounter card is still prompt-blocked, but its verb pool is peeking out
+
+`ScenarioEncounterPerson` has resisted since 264.2 for want of the `{1}` verb pool. The
+played life has now produced one member of it -- `trying to solicit me` -- and metadata
+carries the two fragments that build the ignore lane: #4070 `' who was trying to '` and
+#67284 `'trying to solicit <pronoun>'`, plus the ready-made `'I ignored a commoner who
+{0}.'` (#24456). The card's *prompt* is still absent, so the family stays unwritten;
+what is new is that the ignore line is now half-assembled from literals rather than
+wholly unknown.
+
+
 ## 280. The parents' car gift
 
 The third played life at 16, in one card and two sentences:

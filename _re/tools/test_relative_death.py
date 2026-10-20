@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
 
 DEATH = re.compile(r"^My (father|mother) (.+)$")
-FUNERAL = re.compile(r"^(I couldn't be bothered to plan or even attend (his|her) funeral\.|"
+FUNERAL = re.compile(r"^(I couldn't be bothered to attend (his|her) funeral\.|"
                      r"I let someone else plan (his|her) funeral but I found time to attend it\.)$")
 
 # The table's own sentences, with the leading subject token removed. A row can carry
