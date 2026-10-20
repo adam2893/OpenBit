@@ -23484,6 +23484,47 @@ no residue line (old format, `residue=?`).
    idle app returns ages=[0]).
 3. **flres and idres**, probe-side.
 
+## 268. The composition gap, measured and corrected
+
+267 called the composition gap \"the largest fidelity item left\" on a number that was
+wrong: it compared the trace's **log lines** with the port's **events**. A port event
+carries one to three lines, so the real figures are:
+
+```
+trace   225 log lines / 61 years   3.7 lines a year
+port    2.09 lines a year          1.01 events a year
+```
+
+The gap is real but it is 1.6 lines a year, not 2.8.
+
+### 268.1 The dumb-pool share was tried and rejected
+
+The hypothesis: the wheel claims almost every year, so giving the dumb pool a measured
+share of years ahead of it should restore the game's density. Two settings were built
+and measured:
+
+```
+dumb pool share 0.55   1.84 lines a year
+dumb pool share 0.80   1.76 lines a year
+no share (baseline)    2.09 lines a year
+```
+
+Both are **worse**. A dumb card writes one line; a family year writes the family's
+lifecycle lines plus the card's, which is where the density comes from. The change was
+built, measured and reverted; the tree is back to the baseline commit and no test needed
+to move.
+
+### 268.2 What the gap actually is
+
+The trace's years are dense with *relative* lines -- promotions, diagnoses, new babies,
+moves, marriages, deaths -- two or three a year in the middle stretch. The port emits
+those from `lifecycleLines`, and it emits them less often. The next work is therefore
+not card dispatch at all but the family lifecycle's rates: how often a relative is
+promoted, gets ill, marries, or has a child. That is measurable the same way (lines a
+year), and it does not disturb any card's calibration because those lines come from
+their own streams.
+
+
 ## 267. The optometrist, and the composition problem it exposed
 
 The second played life (266) gave this chain whole:
