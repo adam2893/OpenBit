@@ -23536,6 +23536,56 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 299. Reading a live card: il2cpp runtime toolkit
+
+The static side is done: 878/878 card tables referenced, and the 57 `*-enc` files that remain are menus (294). What static work cannot answer is the text of a scenario that exists only as code -- the DLC subsystems, and the few base-game lanes left without a literal. This section is the runtime answer, and it needs no decompiler.
+
+```
+libil2cpp.so .dynsym     2498 symbols, 241 il2cpp_* exported
+  il2cpp_domain_get / domain_get_assemblies / assembly_get_image
+  image_get_name / image_get_class_count / image_get_class
+  class_get_name / class_get_namespace / class_get_methods / method_get_name
+  il2cpp_method_get_pointer   ABSENT  -> address read from MethodInfo+0x00
+metadata                 af1bb1fa, version 39 (0x27), 2763 Scenario* class names
+```
+
+`tools/il2cpp_scenarios.py` drives those exports through frida-server, two subcommands. `dump` walks assemblies -> images -> classes, keeps the `Scenario*` ones, writes class -> method -> address:
+
+```
+2756 Scenario classes   11048 methods
+  .ctor 3139   RefreshScenario 2525   ChoiceSelectedAtIndex 1777   EmojiString 793
+  DismissSelected 518   ScenarioIsEligibleForRandomPush 308   PrepareParser 88
+  MiniGameCompleted 58   RequireRewardedVideoToGet 49
+```
+
+The dump is committed as `_re/obs_corpus/scenario-methods.json`, so the class map is available offline next time.
+
+`watch` attaches to `RefreshScenario` (card build) and `ChoiceSelectedAtIndex` (pick resolution), on all classes or a prefix list, and decodes the `Il2CppString` fields hanging off the scenario object: `[klass 8][monitor 8][length i32 @0x10][utf16 @0x14]`. That is the card's title, prompt and outcome verbatim -- the strings a decompiler would have to be coaxed into producing, delivered while the game runs.
+
+```
+ScenarioDiseaseContract        Symptom | Stiffness
+        Lately, your muscles have felt especially stiff.
+ScenarioScriptEventDisease...  Hemorrhoids | Your mother is suffering from hemorrhoids.
+ScenarioFriendPartyInbound     Party Time | Your friend, Lynn, has invited you to come to
+        her cousin's college graduation party.  -> You went with your friend, Lynn, ...
+ScenarioDeathRelative          Death | Your stepfather passed away at the age of 71.
+        He died of natural causes.
+ScenarioDeathHero              You died after suffering a deadly stroke.
+ScenarioSexualityDeclare       Identity | You are feeling bisexual tendencies. ...
+```
+
+The first two cross-check sections that were built statically: `renderSymptomCard` (sim.cpp:4588) reads the same symptom table and the same four buttons, so the capture confirms the port rather than adding to it. The rest are lanes already logged.
+
+DLC classes carry exactly the same surface -- `ScenarioCasinoAgeUpCelebrityDemand` has `RefreshScenario`, `ChoiceSelectedAtIndex`, `ScenarioIsEligibleForRandomPush`; `ScenarioBankLoanLawSuit` carries `PrepareParser` instead. So a DLC subsystem can be ported the same way the base game was, once its card has been seen firing: the blocker was never the code layout, it was unreachable gameplay, and that is now a gameplay problem, not a tooling one.
+
+```
+attach    4302 methods hooked (every Scenario class, both methods)
+watch     live cards captured across aging 32 -> 34 in one sitting
+tests     89/89 -> 90/90 (test_il2cpp_tool checks exports + metadata version offline)
+```
+
+Limits, stated so they are not rediscovered: the emulator must be running with frida-server listening and `adb forward tcp:27042 tcp:27042` in place; `watch` only sees cards that fire while attached, so a rare push needs patience or a targeted menu walk; and it reads string fields only -- numbers (costs, impacts) still come from the tables.
+
 ## 298. Adoption
 
 ```
