@@ -81,6 +81,7 @@ struct Hero {
   int smarts = 100;
   int looks = 100;
   int karma = 0;
+  int murders = 0;  // confirmed kills (REPORT.en.md 300)
   int discipline = 0;
   // Fame is a float 0..100 at hero+0xb4 (REPORT.en.md 136):
   // SimPerson::ImpactFame @0x73f30e4d88 adds

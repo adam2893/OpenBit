@@ -703,6 +703,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       carGiftRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0xa54ff53a5f1d36f1ULL),
       tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
+      murderRng_(seed ^ 0x4b7f2d9a1c8e6350ULL ^ 0x9e3779b97f4a7c15ULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
@@ -4128,6 +4129,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::martialArtsYear, nullptr, 2},
         {&Sim::pilotYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
+        {&Sim::murderYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -23898,6 +23900,131 @@ bool Sim::dietYear(Life& life, AgeUp& out, int forcedChoice) {
   if (t.has("Health Impact")) out.health = pointsForImpact(int(t.num(row, "Health Impact")));
   if (t.has("Happiness Impact")) out.happiness = pointsForImpact(int(t.num(row, "Happiness Impact")));
   if (t.has("Appearance Impact")) out.looks = pointsForImpact(int(t.num(row, "Appearance Impact")));
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The murder card (REPORT.en.md 300). Evidence: a16_murders-enc's eight method
+// rows (Method plus Effectiveness / Retaliation Likeliness / Get Caught
+// Likeliness scores, the two requirement flags, and the Success / Attempt /
+// Retaliatory strings) and metadata #30585 "Murder", #17323 "Decide how you
+// will attempt to murder ", #16009 "Commit the murder". ScenarioCrimeMurder
+// picks a SimMurderTarget and resolves through
+// GetMurderAttemptOutcomeForTargetAndMethod.
+//
+// shortcut: the real class rolls its three likeliness columns in a formula that
+// is not readable from the table, so the port reads the same columns as straight
+// percentages out of ten (effectiveness -> clean hit, retaliation -> the victim
+// turns it around, caught -> the police get involved). The table's own three
+// strings carry the result, so the card never invents what happened.
+//
+// The victim is a living relative: the real SimMurderTarget list also carries
+// friends and strangers, which this port's family model does not store, and it
+// has no affinity score to rank them by.
+// ---------------------------------------------------------------------------
+bool Sim::murderYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice >= 0) return false;
+  if (h.age < 16 || h.inPrison) return false;
+  if (!ensureTable("a16_murders-enc")) return false;
+  // A rare coin, like the other activity families: it keeps the card out of the
+  // wheel's rotation so no sibling family's reach moves (REPORT.en.md 285).
+  if (!murderRng_.chance(1.0 / 40.0)) return false;
+
+  struct Cand {
+    std::string label;
+    std::string possessive;
+    bool female = false;
+    size_t index = 0;
+  };
+  std::vector<Cand> cands;
+  for (size_t i = 0; i < life.family.size(); ++i) {
+    const Person& p = life.family[i];
+    if (!p.alive || p.relation.empty()) continue;
+    Cand c;
+    if (!p.name.empty()) {
+      c.label = p.name;
+      c.possessive = p.name + "'s";
+    } else {
+      c.label = "my " + p.relation;
+      c.possessive = "my " + p.relation + "'s";
+    }
+    c.female = p.female;
+    c.index = i;
+    cands.push_back(c);
+  }
+  if (cands.empty()) return false;
+  const Cand v = cands[murderRng_.below(uint32_t(cands.size()))];
+
+  const Table& t = tbl("a16_murders-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Method")).empty()) continue;
+    if (t.flag(r, "Requires Driving License") && !h.hasLicense) continue;
+    if (t.flag(r, "Requires Vehicle") && h.outdoorVehicle.empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[murderRng_.below(uint32_t(rows.size()))];
+  const std::string method = trim(t.at(row, "Method"));
+
+  auto fill = [&](std::string s) {
+    struct Rep {
+      const char* tok;
+      std::string val;
+    };
+    const Rep kRep[] = {{"<pronoun>", "I"},
+                        {"<victim-possessive>", v.possessive},
+                        {"<victim>", v.label},
+                        {"<his/her>", v.female ? "her" : "his"},
+                        {"<him/her>", v.female ? "her" : "him"},
+                        {"<he/she>", v.female ? "she" : "he"},
+                        {"<me/you>", "me"},
+                        {"<my/your>", "my"},
+                        {"<our/your>", "our"}};
+    for (const Rep& rep : kRep) {
+      for (size_t at = s.find(rep.tok); at != std::string::npos;
+           at = s.find(rep.tok, at)) {
+        s.replace(at, strlen(rep.tok), rep.val);
+      }
+    }
+    return s;
+  };
+
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = t.name();
+  out.row_id = std::to_string(row + 1);
+  out.title = "Murder";  // #30585
+  out.body = "Decide how you will attempt to murder " + v.label + ".";  // #17323
+  out.options.clear();
+  for (size_t r : rows) out.options.push_back(trim(t.at(r, "Method")));
+  out.choice = method;
+
+  const double eff = t.num(row, "Effectiveness Score");
+  const double ret = t.num(row, "Retaliation Likeliness Score");
+  const double caught = t.num(row, "Get Caught Likeliness Score");
+  const double roll = murderRng_.unit() * 10.0;
+  bool killed = false;
+  if (roll < eff) {
+    killed = true;
+    out.narrative = fill(trim(t.at(row, "Success String")));
+    life.family[v.index].alive = false;
+    h.murders += 1;
+    out.karma = pointsForImpact(-4);
+  } else if (murderRng_.unit() * 10.0 < ret) {
+    out.narrative = fill(trim(t.at(row, "Retaliatory String")));
+    out.karma = pointsForImpact(-2);
+    out.health = pointsForImpact(-3);
+  } else {
+    out.narrative = fill(trim(t.at(row, "Attempt String")));
+  }
+  if (murderRng_.unit() * 10.0 < caught) {
+    h.crimeName = killed ? "murder" : "attempted murder";
+    h.crimeYears = killed ? 10 : 5;
+    life.pendingCards.push_back(kPendingCrimeCharge);
+  }
   return true;
 }
 

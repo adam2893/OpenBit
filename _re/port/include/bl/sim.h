@@ -361,6 +361,7 @@ class Sim {
   bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
   bool promYear(Life& life, AgeUp& out, int forcedChoice);
   bool headhunterYear(Life& life, AgeUp& out, int forcedChoice);
+  bool murderYear(Life& life, AgeUp& out, int forcedChoice);
   bool bookYear(Life& life, AgeUp& out, int forcedChoice);
   bool dietYear(Life& life, AgeUp& out, int forcedChoice);
   bool martialArtsYear(Life& life, AgeUp& out, int forcedChoice);
@@ -948,6 +949,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng tryoutRng_;
   // The headhunter family's own draw (REPORT.en.md 286).
   Rng hhRng_;
+  Rng murderRng_;
   // The book shelf's own draw (REPORT.en.md 289).
   Rng bookRng_;
   // The diet menu's own draw (REPORT.en.md 290).

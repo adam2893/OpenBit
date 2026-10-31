@@ -23536,6 +23536,55 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 300. The murder card: a16_murders-enc
+
+The crime surface had an arrest lane (273) but no way to commit the crime. ```ScenarioCrimeMurder``` (il2cpp_dump.txt line 35908) is the missing card shell, and two of its methods name both inputs of the table: ```GetMurderAttemptOutcomeForTargetAndMethod(SimMurderTarget, DataMurder)``` and ```ImpactKarmaForEvenConsideringIt```.
+
+The table is one row per method, and its three string columns are the card's three outcomes:
+
+```
+a16_murders-enc   14 rows
+  Method / Effectiveness Score / Retaliation Likeliness Score /
+  Get Caught Likeliness Score / Requires Driving License / Requires Vehicle /
+  Success String / Attempt String / Retaliatory String / Will Kill Vampire
+
+  Strangle Them      2 4 3          <pronoun> strangled <victim>!
+  Drive-By           5 1 1   x x    <pronoun> performed a drive-by shooting on <victim>!
+  Bear Trap          ...            <pronoun> dug a bear trap outside <victim-possessive>
+                                    front door and watched <him/her> fall into it!
+  Decapitate Them    ...            <pronoun> decapitated <victim> with a
+                                    <machete/hunting knife/lawnmower blade/butcher knife>!
+```
+
+Card shape:
+
+```
+  title    Murder                                              #30585
+  body     Decide how you will attempt to murder {victim}.      #17323
+  buttons  the eligible method rows -- the licence and vehicle flags drop Drive-By
+           until the hero has both, exactly as the two columns say
+  result   the chosen row's own string, tokens filled:
+             I strangled <victim>!       success: the target dies, hero.murders += 1
+             I tried to strangle <victim>!   attempt
+             She strangled me instead!       retaliation
+```
+
+shortcut: the real class rolls its three likeliness columns through a formula that is not readable from the table or the stripped class, so the port reads the same columns as straight tenths -- effectiveness for the clean hit, retaliation for the victim turning it around, caught for the police -- and reuses the arrest pipeline from 273 with ```h.crimeName``` set to "murder" or "attempted murder". The table still supplies every word the log prints.
+
+The victim comes from the living family: the real ```SimMurderTarget``` also reaches friends and strangers, which this port's family model does not store, and there is no affinity score to rank candidates by. The card runs on its own ```murderRng_``` stream (the 282 lesson) and is entered at 2 wheel tickets behind a 1-in-40 coin, so no sibling family's reach moves.
+
+```
+40 lives   seed 1-40, US male, ages 80
+  6 cards   3 killed   3 failed (attempt or retaliation)
+  ages 25-75, all >= 16
+  every log line matched back to its row's Success/Attempt/Retaliatory template
+  success rows: karma -30; failed rows: karma 0
+acceptance: card tables 878/878 (the murder table sits outside the card
+            denominator, with the crime tables) and 91 tests in the suite
+test       test_murder: the card fires, and every log line is matched back to its
+           own row's Success/Attempt/Retaliatory template
+```
+
 ## 299. Reading a live card: il2cpp runtime toolkit
 
 The static side is done: 878/878 card tables referenced, and the 57 `*-enc` files that remain are menus (294). What static work cannot answer is the text of a scenario that exists only as code -- the DLC subsystems, and the few base-game lanes left without a literal. This section is the runtime answer, and it needs no decompiler.
