@@ -23536,6 +23536,21 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 315. The ambient time-machine card: one invented family removed
+
+Section 310 recovered the real Time Machine as a snapshot engine: `UseTimeMachine` (0x73f32a73ec) and `SwitchToTimeMachineLife` (0x73f32a7814) swap a saved life in, and the `a16_time-machine-scenarios-enc` line is the *last* thing the restore prints. Nothing in the binary plays those lines as an ambient event -- there is no wheel or per-year caller, only the restore path.
+
+The port had one anyway. `Sim::timeMachineYear` sat in the wheel with two tickets and an `ambientRng_.below(8)` gate, so a hero who had never travelled could be told they had come back from the future. That is a fabricated feature, not a shortfall, so it is gone: the function is deleted from `fam/lover.cpp`, its `kFamilies` seat is deleted from `sim.cpp`, and the table is now read only by `useTimeMachine`.
+
+Removing a wheel seat changes every later draw, so the neighbours were re-measured against the new rotation:
+
+- `tools/test_report_tables.py` scans one report table instead of two; the time-machine rows are covered by `tools/test_time_machine.py` through a real restore.
+- `tools/test_horse_races.py` scans 200 lives instead of 120. The friends' invitation turns up in about a fifth of lives, and the old window reached only nine joins against a threshold of ten.
+- `tools/test_pools.py` scans 160 lives for the prayer pool instead of 80: the ambient gate is one in forty behind a single wheel ticket, so the lane is reached in roughly 7.5% of lives.
+- `tools/test_proposal.py` had been asserting that "Years Together" equals the hero's age, which is only true for the seeded fixture pair that starts at age 0; a lover the sim picks up later legitimately reads a shorter count, so the assertion now applies to the fixture lover only. Its two row parsers were also wrong for multi-word names ("Black opal", "gemstone watch"): they now anchor the split on a known category name.
+
+Verification: the full suite is 103 tests, 100 passing on the first run and the three re-tuned ones passing individually on the same binary (the machine's own sha256 was checked before and after the run). `tools/test_time_machine.py` still drives a genuine restore, including the prison and death flags.
+
 ## 314. My Stuff and the accessory tables: backend data, cosmetic indexes, nothing to port
 
 Three tables looked like a missing shop: `a16_mystuff-catalog-enc`, `a16_accessories-headwear-enc` and `a16_accessories-masks-enc`/`a16_accessories-sunglasses-enc`. Reading their consumers settles it -- there is no shipped shop to port.
@@ -23639,7 +23654,7 @@ Shortcuts, written down:
 - The narrative pick uses its own stream (`timeMachineRng_`, kept across the restore) instead of the shared `System.Random`; the uniform pick among matching rows has the retry loop's distribution.
 - Snapshot copying is opt-in for speed only; it changes no draw. A port snapshot is also stored for the birthday on which the hero then dies (native saves the death to the main file only); no destination can reach that age, so nothing reads it.
 - The prison line (#68766/#68767 "{0}\n\nYou've been in {1} for {2} {3}.") is not added: it needs the years already served, which the port does not keep. There is no graveyard to remove a grave from, no IAP, no unlimited-entitlement check, and the script's event list keeps the cards that were undone (the game rebuilds its log from the snapshot).
-- The old ambient `timeMachineYear` wheel card is still in the rotation. Native shows those lines only after a restore; taking it out moves every later wheel draw and is left for a re-tune pass.
+- The old ambient `timeMachineYear` wheel card was removed in 315: native shows those lines only after a restore.
 
 Test: `_re/tools/test_time_machine.py`. Seeds 1-30, five years back at card 20: 29 restores, every card has the exact strings and a table row with `Was Dead` clear and `Min Age` met, the next card is the year after the destination, and 288 of 332 later cards repeat the untouched run exactly (the rest diverge where the restore dropped a queued card or a narrative token drew from the restored main stream). Seeds 1-12 run to death and go back 20 years: 11 heroes revived with the death body and a `Was Dead` row. Forty forced sentences rewound one year at 20: 30 got a `Prison` row. Two years, 25 years, and 20 years at age 3 produce no card.
 ## 309. The honeypot's pronouns: the mark has a gender of their own

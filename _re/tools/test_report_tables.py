@@ -1,7 +1,9 @@
-"""Two report cards from tables with no entity tokens (REPORT.en.md 208).
+"""A report card from a table with no entity tokens (REPORT.en.md 208, 315).
 
-a16_surrogate-rejections-enc and a16_time-machine-scenarios-enc are pure Scenario
-tables; the only thing standing between them and the port was a filter each.
+a16_surrogate-rejections-enc is a pure Scenario table; the only thing standing
+between it and the port was a filter. a16_time-machine-scenarios-enc used to share
+this wheel seat and was removed, because native prints those lines only after a
+restore -- tools/test_time_machine.py covers that path.
 """
 import collections
 import json
@@ -11,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-TABLES = ("a16_surrogate-rejections-enc", "a16_time-machine-scenarios-enc")
+TABLES = ("a16_surrogate-rejections-enc",)
 
 
 def run(seed):

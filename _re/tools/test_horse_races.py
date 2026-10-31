@@ -51,7 +51,9 @@ broke = 0
 picks = 0
 wins = 0
 losses = 0
-for seed in range(1, 121):
+# The invite is one card among many on a rotating wheel; after 315 removed a seat it
+# shows up in about a fifth of lives, so scan twice the lives to keep the lanes fed.
+for seed in range(1, 201):
     doc = run(seed)
     events = doc["events"]
     picked = ""

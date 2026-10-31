@@ -311,9 +311,9 @@ class Sim {
   // Arrest and a child's refusal, REPORT.en.md 209.
   bool arrestScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   bool childPressureRejectionYear(Life& life, AgeUp& out, int forcedChoice);
-  // Two report cards with no entity tokens, REPORT.en.md 208.
+  // A report card with no entity tokens, REPORT.en.md 208. The time-machine lines are
+  // only ever printed by a real restore (useTimeMachine), never by the wheel (REPORT 315).
   bool surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice);
-  bool timeMachineYear(Life& life, AgeUp& out, int forcedChoice);
   // University application: ScenarioSchoolUniversity, REPORT.en.md 313.
   bool universityYear(Life& life, AgeUp& out, int forcedChoice);
   // A drink is offered, REPORT.en.md 204.

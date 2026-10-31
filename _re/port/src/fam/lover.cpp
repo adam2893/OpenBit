@@ -1237,34 +1237,9 @@ bool Sim::surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
-// a16_time-machine-scenarios-enc: Scenario, Min Age, Prison, Was Dead. A report for
-// a hero the machine has already visited: the Prison flag only offers itself while
-// the hero is locked up, and 'Was Dead' while the port's death flag is clear.
-bool Sim::timeMachineYear(Life& life, AgeUp& out, int forcedChoice) {
-  Hero& h = life.hero;
-  if (h.age < 12) return false;
-  if (!ensureTable("a16_time-machine-scenarios-enc")) return false;
-  if (forcedChoice < 0 && ambientRng_.below(8) != 0) return false;
-  hero_ = &h;
-  life_ = &life;
-  const Table& t = tbl("a16_time-machine-scenarios-enc");
-  std::vector<size_t> rows;
-  for (size_t r = 0; r < t.size(); ++r) {
-    if (trim(t.at(r, "Scenario")).empty()) continue;
-    if (t.flag(r, "Prison") && !h.inPrison) continue;
-    if (!t.flag(r, "Prison") && h.inPrison) continue;
-    if (t.flag(r, "Was Dead")) continue;   // the port never revives a hero
-    const double mn = t.num(r, "Min Age");
-    if (mn > 0 && h.age < mn) continue;
-    rows.push_back(r);
-  }
-  if (rows.empty()) return false;
-  const size_t row = rows[ambientRng_.below(uint32_t(rows.size()))];
-  out.table = "a16_time-machine-scenarios-enc";
-  out.row_id = std::to_string(row + 1);
-  out.body = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
-  return true;
-}
+// a16_time-machine-scenarios-enc is read only by useTimeMachine (REPORT.en.md 310):
+// native prints one of those lines after a real restore and never from a wheel seat,
+// so the old ambient card was removed in 315.
 // Two more tables, both blocked only on a token the port can answer (REPORT 209).
 //
 // a16_arrest-scenarios-enc: Scenario, Min/Max Attitude, Hero Gender, Serious Offense

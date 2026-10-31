@@ -57,8 +57,10 @@ assert not (crash_good & crash_bad)
 pray_table = table("a16_pray-wealth-scenarios-enc")
 crash_table = table("a16_crashout-scenario-enc")
 
+# The ambient prayer gate is one in forty on a single wheel ticket (REPORT.en.md 313,
+# 315), so the prayer pool needs twice the lives the other pools do.
 pray_cards = 0
-for seed in range(1, 81):
+for seed in range(1, 161):
     for event in run(seed)["events"]:
         if event.get("table") != "a16_pray-wealth-scenarios-enc":
             continue

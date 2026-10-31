@@ -4322,7 +4322,6 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::vehiclePurchaseYear, nullptr, 4},
         {&Sim::aircraftPurchaseYear, nullptr, 4},
         {&Sim::surrogateRejectionYear, nullptr, 2},
-        {&Sim::timeMachineYear, nullptr, 2},
         {&Sim::arrestScenarioYear, nullptr},
         {&Sim::childPressureRejectionYear, nullptr},
         {&Sim::notificationBaitYear, nullptr},
