@@ -88,6 +88,10 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
     const size_t row = weightedPickOf(people, "Commonness Score", pool, spyRng_);
     if (row != size_t(-1)) {
       spyTarget_ = resolve(trim(people.at(row, "Target")));
+      // The mark's own gender drives the honeypot pronouns; the table knows it
+      // ('mistress' female, 'a male stripper' male). Rows without a gender
+      // keep the opposite-of-hero fallback used below.
+      spyTargetFemale_ = lower(trim(people.at(row, "Target Gender"))) == "female";
       // The table holds either a relation ('<his/her> mistress') or a bare
       // description ('corrupt police officer'), so an article is only added
       // when the drawn text does not already carry one.
@@ -234,7 +238,7 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
     if (!preference.empty()) {
       briefing = "Meet " + (spyTarget_.empty() ? std::string("the mark") : spyTarget_) + " at the " +
                  (where.empty() ? std::string("usual place") : where) + " and work the fact that " +
-                 (h.female ? "he" : "she") + " cannot resist " + preference + ".";
+                 (spyTargetFemale_ ? "she" : "he") + " cannot resist " + preference + ".";
     } else {
       briefing = "Meet " + (spyTarget_.empty() ? std::string("the mark") : spyTarget_) + " at the " +
                  (where.empty() ? std::string("usual place") : where) + ".";
@@ -341,7 +345,7 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
     } else if (type == "honeypot") {
       const std::string hobby = spySnippet("a16_secret-agent-honeypot-target-hobbies-enc", "Hobby", "Commonness Score", "", "", "");
       const std::string place = spySnippet("a16_secret-agent-honeypot-date-locations-enc", "Date Location", "", "", "", "");
-      std::string sting = spySnippet("a16_secret-agent-honeypot-sting-actions-enc", "String", "Commonness Score", "", "", "");
+      std::string sting = spyRawSnippet("a16_secret-agent-honeypot-sting-actions-enc", "String", "Commonness Score", "", "", "");
       if (!hobby.empty()) briefing += " Their weak spot is " + hobby + ".";
       if (!place.empty())
         briefing += " Take " + (spyTarget_.empty() ? std::string("the mark") : spyTarget_) + " to " + place + ".";
@@ -349,10 +353,12 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
                                                 "String", "Commonness Score", "", "", "");
       if (!stingWhere.empty()) sting += (sting.empty() ? std::string() : " ") + stingWhere;
       if (!sting.empty()) {
-        // The sting strings address the mark, so the object pronoun is the
-        // mark's own: the opposite of the hero, as the target draw assumes.
-        sting = spySwap(sting, "<him/her>", h.female ? "him" : "her");
-        sting = spySwap(sting, "<his/her>", h.female ? "his" : "her");
+        // The sting strings address the mark, so the pronouns are the mark's
+        // own: swapped while the tokens are still raw (a post-resolve swap
+        // never fires, the resolver has already expanded them).
+        sting = spySwap(sting, "<him/her>", spyTargetFemale_ ? "him" : "her");
+        sting = spySwap(sting, "<his/her>", spyTargetFemale_ ? "his" : "her");
+        sting = resolve(sting);
         briefing += " Close with " + spyLowerFirst(sting) + ".";
       }
     } else {
@@ -740,6 +746,17 @@ std::string Sim::spySnippet(const std::string& table, const std::string& column,
                             const std::string& weightColumn, const std::string& filterColumn,
                             const std::string& filterValue, const std::string& flagColumn) {
   return pickSnippet(table, column, weightColumn, filterColumn, filterValue, flagColumn, spyRng_);
+}
+
+std::string Sim::spyRawSnippet(const std::string& table, const std::string& column,
+                               const std::string& weightColumn, const std::string& filterColumn,
+                               const std::string& filterValue, const std::string& flagColumn) {
+  // Identical draw to spySnippet (one pickRow), the row text just stays raw.
+  const size_t row = pickRow(table, weightColumn, filterColumn, filterValue, flagColumn, spyRng_);
+  if (row == size_t(-1)) return std::string();
+  const Table& t = tbl(table.c_str());
+  if (!t.has(column)) return std::string();
+  return trim(t.at(row, column));
 }
 
 size_t Sim::spyRow(const std::string& table, const std::string& weightColumn,

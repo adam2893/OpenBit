@@ -23536,6 +23536,49 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 309. The honeypot's pronouns: the mark has a gender of their own
+
+While re-reading the secret-agent family for its colour tables, two pronoun defects
+surfaced in the honeypot lane; both are provable from the port's own source.
+
+The target table `a16_secret-agent-mission-target-people-enc` carries a **Target
+Gender** column -- `<his/her> mistress` is female; `<his/her> husband's <best
+bro/gym buddy/fraternity brother>`, `a billionaire playboy` and `a male stripper` are
+male -- but the port never read it. The briefing hardcoded the mark as the opposite of
+the hero (`h.female ? "he" : "she"`), so a male agent sent after a male stripper was
+briefed `work the fact that she cannot resist`.
+
+The sting was worse: the pronoun swap ran **after** the resolver. `pickSnippet` expands
+`<him/her>`/`<his/her>` with the hero's gender the moment the row is drawn, so by
+the time `spySwap` touched the string no tokens were left -- the swap was dead code.
+
+Fix (src/fam/spy.cpp, include/bl/sim.h):
+
+- the target draw records `spyTargetFemale_` from the Target Gender column; rows
+  with a blank gender cell keep the opposite-of-hero fallback (shortcut: the native
+  handling of blank rows is not recovered).
+- the briefing's `cannot resist` pronoun follows that flag.
+- the sting row is drawn through a new `spyRawSnippet` -- the identical single `pickRow`
+  call, the text just stays raw -- so `<him/her>`/`<his/her>` become the mark's pronouns
+  while the tokens still exist, then the rest resolves. Draw count and token order are
+  unchanged, so no other family's sampling shifts.
+- one dependency consciously dropped: the hero-keyed `<his/her>` used to seed the
+  resolver's `<rb>` fallback; no secret-agent table uses `<rb>` (checked).
+
+Test `_re/tools/test_spy_pronouns.py`: 1500 seeds per hero gender with the spy flag on;
+every honeypot card's briefing pronoun and sting object pronoun is checked against the
+gender the drawn mark's own text implies (stripper/best bro/playboy male, mistress
+female). In-law rows are not Honeypot-flagged in the table, so they never appear here.
+
+```
+red   22/47 briefings wrong  (seed 395, age 59: male hero, "a male stripper",
+                              "work the fact that she cannot resist")
+green 47/47 briefings + stings agree with the mark  (32 male marks, 15 female)
+```
+
+Ceiling: card yield is ~0.115 honeypot cards per life, so the check needs thousands of
+lives; blank-gender targets remain the opposite-of-hero shortcut.
+
 ## 308. The witch doctor's medicine: one price, one roll, one risk table
 
 The vampire coven has its own approximation (src/fam/vampire.cpp 203), but the ordinary
