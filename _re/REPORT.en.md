@@ -23536,6 +23536,107 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 316. Twenty-six leisure tables: eighteen live, five unportable, three dead
+
+The unreferenced-table list had grown to 37 names, and a name in that list says nothing about
+whether the game uses the table. This section answers the question per table for the leisure
+cluster by reading the loaders rather than the names: every \`Load*Set\` here is a lazy init
+called **only** from its own DataHub getter (\`UnityEngine.Resources::Load\` 0x5579af0 on a Unity
+TextAsset, not file IO), so the chain loader -> \`DataHub+offset\` field -> getter -> BL caller is
+mechanical and can be walked to a real consumer. All addresses are 3.25.1 vaddrs.
+
+The split for the 26 tables examined:
+
+\`\`\`
+live, card the port lacks   18
+non-portable (OS / sprites)  5
+dead (no caller at all)      3
+\`\`\`
+
+**The three dead ones are dead, not merely unwired.**
+
+* \`a16_dirty-talk-enc\` (68 rows, 4316 B) has **no path literal at all** and no \`Load*\`/\`Get*\`
+  symbol in the 140,207-entry index; \`_dirtyTalkSet\` (DataHub+0x380) is never populated.
+* \`a16_clubupdateufldumb-enc\` (LIT#52185): \`LoadDataClubUpdateUFLDumbScenarioSet\` (0x288d130) is
+  called only from \`GetDataClubUpdateUFLDumbScenarioSet\` (0x288dcf4), which has **zero** BL
+  callers.
+* \`a16_black-market-auction-categories-enc\` (LIT#52086, 7 rows): \`LoadBlackMarketAuctionCategorySet\`
+  (0x2770ddc) has zero BL callers and \`_blackMarketAuctionCategorySet\` (DataHub+0xe80) is never
+  read. Its row class stores the category as \`Int32\` while the CSV column is text, so the table
+  would not even parse if it were loaded.
+
+**Three near-duplicate pairs are orphans.** The shipped table set carries both a truncated and a
+full form of the same name, and only one of each pair has a path literal:
+
+| literal in metadata | rows | shipped twin | rows | literal for the twin |
+|---|---|---|---|---|
+| \`a16_casino-casino-ledger-feedback-enc\` (LIT#52156) | 17 | \`a16_casino-ledger-feedback-enc\` | 2 | none |
+| \`a16_casino-casino-game-room-complaint-enc\` (LIT#52153) | 17 | \`a16_casino-game-room-complaint-enc\` | 2 | none |
+| \`a16_casino-celebrity-demand-enc\` (LIT#52166) | 22 | \`a16_casion-celebrity-demand-enc\` | 4 | none |
+
+The port already reads the loaded form in all three cases (\`src/fam/casino.cpp\`, the ledger at the
+"books" lane, the complaint at the gambler lane, the demand pool at the celebrity lane), so this is
+a note about three more filenames that will stay unreferenced by design, not a port bug.
+
+**The eighteen live tables belong to eighteen cards the port does not have.** Grouped by the
+subsystem the consumer lives in, with the getter and the consumer's own address:
+
+\`\`\`
+fame media  magazines         GetRandomMagazineForGender 0x2874498   SimPlace::RefreshAvailableFameOpportunities
+            youtube-channels  GetRandomYouTubeChannel 0x282f0c0      ScenarioFriendYouTube::RefreshScenario
+            biographies       GetRandomBiographyForGender 0x28742a8  ScenarioFameBook::RefreshScenario
+            compliments       GetRandomComplimentForGender 0x2808edc 83 Scenario*/FightClub sites
+            public-places     GetRandomPublicPlaceForAge 0x2871700   ScenarioSocialMediaTrollInvite::RefreshScenario
+            wealthy-persons   GetRandomWealthyPerson 0x280c4c0       17 Scenario*SellOffer classes
+            heirlooms         GetRandomHeirloom 0x281ef6c            HeirloomManager (flashlight minigame)
+            special-talent-filler GetSpecialTalentFiller 0x2872570   SimWorld::IncrementAgeAndSuppressLog
+world       animals           GetRandomAnimalForContinent 0x28151cc  8 verified sites, see below
+            ghosts            GetRandomGhostForCountryCode 0x282c3d0 SimGhost::set_Att_activeness
+            body-parts        GetRandomBodyPart 0x2890c14/0x2890c70/0x2890f2c  DataHub injury/death getters
+            car-parts         GetRandomCarPartToBreak 0x2804e4c     SimCar::IsRepairNeededAfterCheckForAnnualRepair
+            aircraft-parts    GetRandomAircraftPartToBreakForAircraft 0x28342b8 SimAircraft::IsRepairNeededAfterCheckForAnnualRepair
+casino      casino-game-room-complaint  GetRandomCasinoCasinoGameRoomComplaintForHappiness 0x26c6f20
+            casino-ledger-feedback      GetCasinoCasinoLedgerFeedbackForPopularity 0x26c7688
+            casion-celebrity-demand     GetRandomCasinoCelebrityDemand 0x26c8094
+fame        crashout-celebrity-friend-string GetRandomCrashoutCelebrityFriendString 0x26cd388
+company     company-name-type  GetRandomCompanyNameForCompanyTypeInCountryAndCity 0x27eb8d4
+\`\`\`
+
+Two of the earlier notes are corrected here: the game-room-complaint set is \`DataHub+0x160\`, not
+\`+0x148\`, and \`crashout-celebrity-friend-string\` is consumed by
+\`ScenarioFameCrashoutCelebrityFriend::.ctor+0x9c\` (0x373960c), not by the crashout card's
+\`RefreshScenario\`, so its line is chosen when the follow-up object is built, not when the card is
+drawn.
+
+Every getter picks a row with \`GameReference::GetRandomNumber(0, count)\` (0x2e112a8): \`w0\` is
+zero, \`w1\` is the ArrayList count, and the helper locks \`System.Threading.Monitor\` before a
+virtual dispatch through \`klass+0x198\`. Whether that bound is inclusive is **not** provable from
+the dump (the target is not statically resolvable), which matters for the four-row and
+seventeen-row tables where one row is a 6% slice and not for the others.
+
+**The five that cannot be ported are not a gap.** \`notification-heirlooms\` (LIT#57162),
+\`notification-voices\` (LIT#57163) and \`local-notification-v1-text\` (LIT#52527) feed
+\`LocalNotification::SetupNotification\` / \`NotificationCreator::AddNotification\`, i.e. Android
+notification payloads; \`voltron_componentFilenames\` (LIT#58234) and \`voltron_disguiseFilenames\`
+(LIT#58235) are newline-separated sprite filenames for the Voltron face pipeline
+(\`VoltronFaceAccessory::GetFilename\` 0x2f2e2b4). The port has no notification surface and no
+sprites.
+
+No code changed in this section: a table's consumer address is a map, not an implementation, and
+wiring any of the eighteen means recovering that card's own strings, gates and effects first. The
+eight animal sites are the exception worth naming now, because they are all one table and one
+getter: \`ScenarioOutdoorRideEncounterAnimal::RefreshScenario+0x118\` (0x2495e74),
+\`VampireHuntActivity::GetRandomAnimalToEncounter+0xa4\` (0x2969d68) and \`+0xcc\`
+(0x2969d90), \`ScenarioActorChallengeAnimal::RefreshScenario+0x340\` (0x33e0c3c),
+\`ScenarioCarDriveAnimal::RefreshScenario+0x138\` (0x3541b74),
+\`ScenarioEncounterAnimal::RefreshScenario+0x13c\` (0x372319c) and
+\`ScenarioIsEligibleForRandomPush+0x144\` (0x3724320), and
+\`ScenarioHustleAnimal::.ctor+0xa8\` (0x37fe778).
+
+Verification: this is a reading section, so the check is that the port still builds and the suite
+still runs unchanged — 103/103 as committed in 315, and \`tools/acceptance.py --no-tests\` keeps
+reporting the same card-table ratio (877/878) because no table reference moved.
+
 ## 315. The ambient time-machine card: one invented family removed
 
 Section 310 recovered the real Time Machine as a snapshot engine: `UseTimeMachine` (0x73f32a73ec) and `SwitchToTimeMachineLife` (0x73f32a7814) swap a saved life in, and the `a16_time-machine-scenarios-enc` line is the *last* thing the restore prints. Nothing in the binary plays those lines as an ambient event -- there is no wheel or per-year caller, only the restore path.
