@@ -708,6 +708,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
         robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
+      poolRng_(seed ^ 0x6a09e667f3bcc908ULL ^ 0x9e3779b97f4a7c15ULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),

@@ -1548,6 +1548,26 @@ bool Sim::crashoutYear(Life& life, AgeUp& out, int forcedChoice) {
   // it like every other stat (REPORT.en.md 228).
   out.fame = pointsForImpact(int(t.num(row, "Fame Impact")));
   out.happiness -= 4;
+  // The public's answer to the crashout (a16_crashout-public-response-string-enc,
+  // REPORT.en.md 305): 32 complete sentences, and the table's own Positive Reception
+  // column marks the half that cheers. The card's Fame Impact decides which side of
+  // the crowd answers; a row still carrying an alternative is skipped so the line
+  // costs no draw from the main stream (the slash pool would).
+  if (ensureTable("a16_crashout-public-response-string-enc")) {
+    const Table& f = tbl("a16_crashout-public-response-string-enc");
+    const bool positive = out.fame >= 0;
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < f.size(); ++r) {
+      const std::string text = trim(f.at(r, "String"));
+      if (text.empty() || text.find('<') != std::string::npos) continue;
+      if (f.flag(r, "Positive Reception") != positive) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t fr = weightedPickOf(f, "Commonness Score", pool, poolRng_);
+      out.extra.push_back(spyUpperFirst(trim(f.at(fr, "String"))));
+    }
+  }
   return true;
 }
 
@@ -1592,6 +1612,23 @@ bool Sim::prayWealthYear(Life& life, AgeUp& out, int forcedChoice) {
     h.money += amount;
   } else if (h.money > amount) {
     h.money -= amount;
+  }
+  // The prayer itself, in the hero's words (a16_pray-feedback-enc, REPORT.en.md 305):
+  // 21 journal lines, the Pray column marking the blessing rows and the Curse column
+  // the rows for a curse. Plain rows only, for the same reason as the crashout pool.
+  if (ensureTable("a16_pray-feedback-enc")) {
+    const Table& f = tbl("a16_pray-feedback-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < f.size(); ++r) {
+      const std::string text = trim(f.at(r, "Log"));
+      if (text.empty() || text.find('<') != std::string::npos) continue;
+      if (!f.flag(r, positive ? "Pray" : "Curse")) continue;
+      pool.push_back(r);
+    }
+    if (!pool.empty()) {
+      const size_t fr = weightedPickOf(f, "Commonness Score", pool, poolRng_);
+      out.extra.push_back(spyUpperFirst(trim(f.at(fr, "Log"))));
+    }
   }
   return true;
 }

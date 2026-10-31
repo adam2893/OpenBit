@@ -23536,6 +23536,94 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 305. Two flavour pools: the prayer and the crowd's answer
+
+The §304 audit left 50 tables in gamedata_plain that no port source names. Two of them
+were real card text with an obvious slot and no missing prompt, so they are wired here;
+the rest are triaged at the end of this section.
+
+**a16_pray-feedback-enc** (21 rows, Log | Pray | Curse | Commonness Score) is the
+prayer itself, printed the year a pray-wealth card fires. Ten rows carry no alternative
+slot; the Pray column marks the blessing rows ("I fell to my knees and prayed to the
+BitLife devs for succor.", "I closed my eyes, spread my arms wide, and uttered a
+lengthy prayer to the BitLife devs.") and the Curse column the rows for a curse ("I
+called the BitLife devs a profane name."). The card already knows which side it is on --
+its own a16_pray-wealth-scenarios-enc row has a Positive column -- so the pool line is
+drawn from the matching side, weighted by Commonness Score, and appended to the year's
+extra lines after the money moves.
+
+**a16_crashout-public-response-string-enc** (32 rows, String | Positive Reception |
+Commonness Score) is what the public makes of a famous hero's crashout: "Your fans wrote
+encouraging messages regarding their hope that you'll become less stressed soon." on the
+cheered side, "People commented that you're too famous to act like a child in public."
+on the other. Twenty-five rows are plain sentences; fifteen are flagged positive and ten
+are not. The card's own Fame Impact (through pointsForImpact, the §228 rule) decides
+which side of the crowd answers.
+
+Both lines share one new draw, **poolRng_**, declared beside Rng jewRng_ in
+include/bl/sim.h and seeded in the Sim constructor with seed ^ 0x6a09e667f3bcc908 ^
+0x9e3779b97f4a7c15. The flavour families had been sharing the ambient stream, and the
+new draws would have moved every family that comes after them -- the §282 lesson, paid
+for twice already.
+
+Two rules are written in the code and marked there:
+
+- a row whose text still carries a '<...>' alternative is skipped, not resolved. The
+  resolver draws from the main stream, and one extra draw per card would shift every
+  later family's sequence; the port's contract is that a flavour line must be free.
+- the pool line is pushed to out.extra, so it prints *before* the card's own journal
+  line (the runner writes the extras first). The test therefore scans the whole event,
+  not its tail -- the first version of test_pools.py failed on exactly that.
+
+**test_pools.py** (80 seeds x 40 ages, one pass plain and one with fame 80) reads both
+tables, splits each into its two sides, and asserts for every card that exactly one
+pool line is present, that it belongs to the side the row's own flag column names, and
+that it carries no token. Measured: 8 pray cards and 12 crashout cards; every one
+matched. The suite is 96 tests.
+
+acceptance: card tables 878/878 -- these two pools are journal lines, not cards, so the
+count does not move; the two wired tables leave the unreferenced set (50 -> 48).
+
+### The remaining 48, triaged
+
+- **9 secret-agent -color pools** (agency front, client mission terminated, hack
+  briefing, hack file, honeypot approach, honeypot meeting, honeypot briefing, potential
+  agent background check, stealth alarm). Every slot they would fill is already filled
+  from the non-color twin by fam/spy.cpp (front from
+  a16_secret-agent-agency-front-names-enc, files and briefings from the related
+  scenario tables), so wiring them is text variety, not a missing subsystem. Upgrade
+  path: swap one slot at a time, keeping the report's mission text stable.
+- **2 printer/asset filename lists** (voltron_componentFilenames 1381 png names,
+  voltron_disguiseFilenames 283). Asset names for a costume set, not text.
+- **3 notification-layer tables** (notification-heirlooms, notification-voices,
+  local-notification-v1-text). These are OS pushes ("It's time!", "You know I can't
+  play with myself, right?"), not in-life cards; the port models only the in-life
+  notification bait card it already has.
+- **2 legacy twins** (casino-ledger-feedback, casino-game-room-complaint). Same header
+  and a strict subset of the rows in the a16_casino-casino-* files the casino family
+  already reads; both shipped in the same bundle (same mtime), so only one version is
+  live. Classified, not wired twice.
+- **the catalogue layer** (accessories-headwear 245, accessories-masks 22,
+  accessories-sunglasses 242, aircraft-parts 31, car-parts 42, body-parts 78,
+  biographies 45, heirlooms, black-market-auction-categories 7, mystuff-catalog): item
+  lists behind the Assets/Belongings/IAP menus (§293), not scenario text.
+- **pools whose card lives in code, with no captured prompt** -- this is the real
+  evidence ceiling, and each needs one literal that the metadata dump does not carry:
+  assaults 228 (the school Attack card: the live card's button labels are composed at
+  runtime and its title 'Conflict' is not enough), back-to-school-titles 55 (house-party
+  and dance outcome variants), compliments 139, colleges 9 (the Education menu's
+  program picker), company-name-type 30, delinquent-activities, dirty-talk,
+  funeral-ash-locations, ghosts, horses, landlord-ghost-kill-tenant-color, magazines,
+  public-places 223, special-talent-filler 73, supervisor-warnings 31, wealthy-persons
+  58, youtube-channels 63, crashout-celebrity-friend-string 43 (a clause, not a
+  sentence: it describes someone else's reaction and has no name slot in the port),
+  casion-celebrity-demand 4 (note the table's own misspelling), clubupdateufldumb 44,
+  animals 73, witch-remedies 30 (the witch-doctor card's buttons are still unfound --
+  the only remedy literals are outcome fragments: #323, #391, #35642, #48267).
+
+The next section either captures one of those prompts off the running build or finds a
+table whose card text is complete, rather than inventing the sentence in between.
+
 ## 304. The jewelry shop: a purchase card from the same three tables
 
 The live build's Activities screen sends `Shopping` into a jeweller's list --

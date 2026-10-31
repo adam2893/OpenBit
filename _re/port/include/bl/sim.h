@@ -977,6 +977,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The proposal card's own draw (REPORT.en.md 303).
   Rng propRng_;
   Rng jewRng_;
+  // The flavour pools own draw (REPORT.en.md 305): the prayer feedback line
+  // and the public answer to a crashout, kept off every other families stream.
+  Rng poolRng_;
   // The book shelf's own draw (REPORT.en.md 289).
   Rng bookRng_;
   // The diet menu's own draw (REPORT.en.md 290).
