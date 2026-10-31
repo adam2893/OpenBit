@@ -82,6 +82,11 @@ struct Hero {
   int looks = 100;
   int karma = 0;
   int murders = 0;  // confirmed kills (REPORT.en.md 300)
+  // The hitman chain (REPORT.en.md 301): the name the found card quoted, the
+  // target, the quote and both genders, carried to the outcome card.
+  std::string hitmanName, hitmanTarget;
+  bool hitmanFemale = false, hitmanTargetFemale = false;
+  long long hitmanPrice = 0;
   int discipline = 0;
   // Fame is a float 0..100 at hero+0xb4 (REPORT.en.md 136):
   // SimPerson::ImpactFame @0x73f30e4d88 adds

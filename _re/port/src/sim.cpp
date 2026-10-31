@@ -704,6 +704,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       tryoutRng_(seed ^ 0x4f1bbcdc8e0a2d31ULL ^ 0x94d049bb133111ebULL),
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
       murderRng_(seed ^ 0x4b7f2d9a1c8e6350ULL ^ 0x9e3779b97f4a7c15ULL),
+      hitmanRng_(seed ^ 0x2d6f8a4c1b9e7350ULL ^ 0x94d049bb133111ebULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
@@ -3892,6 +3893,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingCrimeCharge) return crimeChargeYear(life, out, -1);
     if (kind == kPendingCrimePlea) return crimePleaYear(life, out, -1);
     if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
+    if (kind == kPendingHitmanOutcome) return hitmanOutcomeYear(life, out, -1);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -4130,6 +4132,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::pilotYear, nullptr, 2},
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::murderYear, nullptr, 2},
+        {&Sim::hitmanYear, nullptr, 2},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -24023,8 +24026,196 @@ bool Sim::murderYear(Life& life, AgeUp& out, int forcedChoice) {
   if (murderRng_.unit() * 10.0 < caught) {
     h.crimeName = killed ? "murder" : "attempted murder";
     h.crimeYears = killed ? 10 : 5;
+    // The same arrest step the ordinary crime path uses (REPORT.en.md 273): the
+    // outcome card becomes the arrest, and the charge follows as its own card.
+    out.body = out.narrative;
+    out.narrative = "I was arrested for " + h.crimeName + "!";
+    out.table = "registry:ScenarioCrimeArrest";
+    out.title = "Police";
+    out.options.clear();
+    out.choice.clear();
     life.pendingCards.push_back(kPendingCrimeCharge);
   }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The hitman chain (REPORT.en.md 301). Evidence: ScenarioCrimeHitman /
+// ScenarioCrimeHitmanFound / ScenarioCrimeHitmanThreat (il2cpp_dump.txt lines
+// 35870/35876/35885), a16_hitmen-enc (Name, Gender: Agent 47, Boba Fett, Arya
+// Stark, ...), and the literal chain #48483 (found: "You found a hitman going by
+// the name of {0} who is willing to pull off the hit on {1}."), #23812 (the
+// contact line with the quote), #50389/#50390/#50392/#50387 (the four outcomes),
+// #50388 (the threat) with #49090 (paid) and #47940 (the police), #47776 (no
+// hitman found), #50031 (the thought), #22976 "Hire {0}", #31255 "Never mind",
+// #33470 "Pay <him/her>", #14600 "Call the police".
+//
+// shortcut: the price is a port formula (2,500-75,000), because the real quote
+// is computed in the stripped class and no table carries it; the weapon phrase
+// in #50389 {2} is drawn from the black-market weapon catalogue's own article
+// columns; and the card auto-hires, the way the port's other activity cards
+// take their branch, so the "Never mind" button is display-only.
+// ---------------------------------------------------------------------------
+bool Sim::hitmanYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice >= 0) return false;
+  if (h.age < 18 || h.inPrison) return false;
+  if (!ensureTable("a16_hitmen-enc")) return false;
+  if (!hitmanRng_.chance(1.0 / 50.0)) return false;
+
+  struct Cand {
+    std::string label;
+    bool female = false;
+  };
+  std::vector<Cand> cands;
+  for (const Person& p : life.family) {
+    if (!p.alive || p.relation.empty()) continue;
+    Cand c;
+    c.label = p.name.empty() ? "my " + p.relation : p.name;
+    c.female = p.female;
+    cands.push_back(c);
+  }
+  if (cands.empty()) return false;
+  const Cand v = cands[hitmanRng_.below(uint32_t(cands.size()))];
+
+  const Table& names = tbl("a16_hitmen-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < names.size(); ++r) {
+    if (trim(names.at(r, "Name")).empty()) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  const size_t row = rows[hitmanRng_.below(uint32_t(rows.size()))];
+  const std::string name = trim(names.at(row, "Name"));
+  const bool nameFemale = lower(trim(names.at(row, "Gender"))) == "female";
+  // Port formula, see the shortcut above: the real quote is class-side, and the
+  // port's cash curve is far smaller than the shipped game's (a played-out life
+  // here ends with hundreds to low thousands), so a flat multi-thousand quote
+  // made the card unreachable. 5% of cash + 200 always fits the port economy.
+  const long long price = 200LL + std::max<long long>(0, h.money / 20);
+
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioCrimeHitmanFound";
+  out.title = "Hitman";  // #23006
+  out.body = "You found a hitman going by the name of " + name +
+             " who is willing to pull off the hit on " + v.label +
+             ".\n\nWhat will you do?";  // #48483
+  out.extra.push_back("I contacted a hitman named " + name +
+                      " to explore the possibility of wacking out " + v.label +
+                      ". " + (nameFemale ? "She" : "He") + " quoted me " +
+                      money(price) + " to get the job done.");  // #23812
+  out.options = {"Hire " + name, "Never mind"};  // #22976, #31255
+  out.choice = out.options[0];
+  h.money -= price;
+  h.hitmanName = name;
+  h.hitmanTarget = v.label;
+  h.hitmanTargetFemale = v.female;
+  h.hitmanFemale = nameFemale;
+  h.hitmanPrice = price;
+  life.pendingCards.push_back(kPendingHitmanOutcome);
+  out.karma = pointsForImpact(-1);  // ImpactKarmaForEvenConsideringIt
+  return true;
+}
+
+bool Sim::hitmanOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (forcedChoice >= 0 || h.hitmanName.empty()) return false;
+  const std::string name = h.hitmanName;
+  const std::string target = h.hitmanTarget;
+  const bool nameFemale = h.hitmanFemale;
+  const bool targetFemale = h.hitmanTargetFemale;
+  const long long price = h.hitmanPrice;
+  h.hitmanName.clear();
+  h.hitmanTarget.clear();
+  h.hitmanPrice = 0;
+
+  // The hit's weapon phrase (#50389 {2}): the black-market catalogue is the one
+  // table in the game that names weapons with their article.
+  std::string weapon = "a weapon";
+  if (ensureTable("a16_black-market-weapons-enc")) {
+    const Table& w = tbl("a16_black-market-weapons-enc");
+    std::vector<size_t> wr;
+    for (size_t r = 0; r < w.size(); ++r) {
+      if (trim(w.at(r, "Item Name")).empty()) continue;
+      wr.push_back(r);
+    }
+    if (!wr.empty()) {
+      const size_t row = wr[hitmanRng_.below(uint32_t(wr.size()))];
+      const std::string item = lower(trim(w.at(row, "Item Name")));
+      const bool vowel = !item.empty() && (item[0] == 'a' || item[0] == 'e' ||
+                                          item[0] == 'i' || item[0] == 'o' ||
+                                          item[0] == 'u');
+      weapon = (vowel ? "an " : "a ") + item;
+    }
+  }
+
+  const int roll = int(hitmanRng_.below(100));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioCrimeHitman";
+  out.title = "Hitman";  // #23006
+
+  if (roll < 40) {
+    // #50389, and the target dies.
+    for (Person& p : life.family) {
+      if (!p.alive) continue;
+      const std::string label = p.name.empty() ? "my " + p.relation : p.name;
+      if (label != target) continue;
+      p.alive = false;
+      break;
+    }
+    h.murders += 1;
+    out.narrative = "Your hitman, " + name + ", pulled off the hit on " +
+                    target + " using " + weapon + "!";  // #50389
+    out.karma = pointsForImpact(-4);
+  } else if (roll < 65) {
+    out.narrative = "Your hitman, " + name +
+                    ", ran off with your money without pulling off the hit on " +
+                    target + "!";  // #50390
+    out.karma = pointsForImpact(-1);
+  } else if (roll < 80) {
+    out.body = "Your hitman, " + name +
+               ", turned out to be an undercover cop!";  // #50392
+    out.narrative = "I was arrested for attempted murder!";
+    out.table = "registry:ScenarioCrimeArrest";
+    out.title = "Police";
+    h.crimeName = "attempted murder";
+    h.crimeYears = 5;
+    life.pendingCards.push_back(kPendingCrimeCharge);
+  } else if (roll < 90) {
+    out.narrative = "Your hitman, " + name +
+                    ", apologized and explained that " + target +
+                    " has difficulty behaving rationally sometimes.";  // #50387
+    h.money += price;  // the hit was called off
+  } else {
+    // #50388: the threat, and the card's two answers.
+    out.body = "Your hitman, " + name + ", is now threatening to kill you with " +
+               weapon + " too unless you pay " + (nameFemale ? "her" : "him") +
+               " another " + money(price) + "!\n\nWhat will you do?";  // #50388
+    out.options = {(nameFemale ? "Pay her" : "Pay him"),
+                   "Call the police"};  // #33470, #14600
+    if (h.money >= price) {
+      h.money -= price;
+      out.choice = out.options[0];
+      out.narrative = "You paid your hitman, " + name + ", an extra " +
+                      money(price) + " to leave you alone.";  // #49090
+    } else {
+      h.crimeName = "attempted murder";
+      h.crimeYears = 5;
+      life.pendingCards.push_back(kPendingCrimeCharge);
+      out.choice = out.options[1];
+      out.body = "You called the police on your hitman, " + name +
+                 "!\n\nThe police arrived and arrested both of you!";  // #47940
+      out.narrative = "I was arrested for attempted murder!";
+      out.table = "registry:ScenarioCrimeArrest";
+      out.title = "Police";
+    }
+    out.karma = pointsForImpact(-2);
+  }
+  (void)targetFemale;
   return true;
 }
 

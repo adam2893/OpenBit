@@ -23536,6 +23536,24 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 301. The hitman chain: the found card, the quote, four outcomes and the threat
+
+`ScenarioCrimeHitman`, `ScenarioCrimeHitmanFound` and `ScenarioCrimeHitmanThreat` are in `_re/obs_corpus/scenario-methods.json` (`.ctor`, `RefreshScenario`, `ChoiceSelectedAtIndex`; the first also carries `DismissSelected` and `ImpactKarmaForEvenConsideringIt`). The names come from `a16_hitmen-enc` (`Name,Gender`): Agent 47, Boba Fett, Jason Bourne, Deadpool, Arya Stark, Sweeney Todd, 20 rows in all. The text chain is literal #48483 ("You found a hitman going by the name of {0} who is willing to pull off the hit on {1}.\n\nWhat will you do?"), #23812 (contact line, "I contacted a hitman named {0} ... {2} quoted me {3} to get the job done."), #50389 success, #50390 ran off with the money, #50392 undercover cop, #50387 apology, #50388 the threat, #49090 paid, #47940 police; buttons #22976 "Hire {0}", #31255 "Never mind", #33470 "Pay <him/her>", #14600 "Call the police".
+
+`Sim::hitmanYear` is a wheel family (2 tickets, matching the other activity cards) and needs an adult who is not in prison. It rolls a 1-in-50 coin, picks a living relative as the target and a name from the hitman table, and rolls the quote from the target's cash: 200 plus 5% of the balance. The shipped quote is computed inside the stripped class and no table carries it, so this is a port formula marked as a shortcut in the source; a flat multi-thousand figure was tried first and made the card unreachable, because the port's played-out cash curve ends in the hundreds to low thousands. The card auto-hires, like the port's other activity cards, and queues `kPendingHitmanOutcome`.
+
+`Sim::hitmanOutcomeYear` runs as that pending card and rolls once: under 40 the hit lands (`#50389`, the target dies, `murders` rises, karma -30), under 65 the hitman runs off (`#50390`), under 80 it was an undercover cop (`#50392`), under 90 he apologises and refunds the money (`#50387`), otherwise the threat card (`#50388`) opens with "Pay her/him" and "Call the police". Paying costs the quote again and reads `#49090`; calling the police reads `#47940` and hands straight to the arrest. The weapon in `#50389`'s `{2}` is drawn from `a16_black-market-weapons-enc`, the one table that names weapons with their article.
+
+Caught murders and caught hits now share the arrest step: the outcome event becomes `registry:ScenarioCrimeArrest` with an "I was arrested for attempted murder!" last line, and the charge arrives as its own pending card. That is what keeps the 273 chain's order invariant (arrest, charge, plea, sentence) - a caught murder previously jumped straight to the charge card and `test_crime_chain` caught it. Section 300's murder card is amended in the same way.
+
+`_re/tools/test_hitman.py` scans seeds 1..120 at 80 ages: 22 hitman events, all six outcome texts across five arrests, every quoted name matched back to `a16_hitmen-enc`, every hire followed by its own outcome within two years, and every 273 arrest/charge of a hit naming `attempted murder` at 5 years. `test_murder` and `test_crime_chain` stay green.
+
+```
+test       test_hitman: found card, quote, four outcomes, threat card, arrest hand-off
+           cards 878/878 unchanged -- a16_hitmen-enc sits outside the card denominator
+```
+
+Skipped: the #50031 thought line and the #47776 "unable to find a hitman" line are evidence but not wired, because the port has no hitman-search activity menu for them to answer; add them when Activities is wired. The "Never mind" button is display-only, like the other auto-taking activity cards.
 ## 300. The murder card: a16_murders-enc
 
 The crime surface had an arrest lane (273) but no way to commit the crime. ```ScenarioCrimeMurder``` (il2cpp_dump.txt line 35908) is the missing card shell, and two of its methods name both inputs of the table: ```GetMurderAttemptOutcomeForTargetAndMethod(SimMurderTarget, DataMurder)``` and ```ImpactKarmaForEvenConsideringIt```.
