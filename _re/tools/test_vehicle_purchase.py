@@ -13,8 +13,12 @@ PORT = ROOT / "port" / "build" / "blsim"
 
 
 def run(seed):
+    # The cash has to outlive the college tuition (§317 spends the starting savings
+    # on a US education), or the hero is broke at the age the vehicles are offered
+    # and the sale count collapses -- that is an affordability effect, not the sale
+    # mechanic this test is about.
     spec = {"seed": seed, "country": "United States", "gender": "male", "ages": 45,
-            "cash": 60000, "relationship": True}
+            "cash": 300000, "relationship": True}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
         json.dump(spec, fh)
         path = fh.name

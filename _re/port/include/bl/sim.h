@@ -27,6 +27,11 @@ struct Country {
   // 67, which is why one retirement age for the whole port was wrong.
   int retirementAgeMale = 65;
   int retirementAgeFemale = 65;
+  // <FreeCollege>k__BackingField. The tuition screen's free lane only exists for a
+  // country that has one (REPORT.en.md 317); 28 of the 102 rows say true.
+  bool freeCollege = false;
+  // <Adjectival>k__BackingField, used by the free lane's own line.
+  std::string adjectival;
 };
 
 // One resolved age-up event, taken from a real table row.
@@ -127,6 +132,7 @@ enum PendingCard {
   kPendingFuneralAshes = 20,      // the urn the crematorium returns (REPORT.en.md 307)
   kPendingWitchResult = 21,       // a = native popup title, b = cure row or shortage
   kPendingWitchCure = 22,         // a = disease row; restores attributes on dismissal
+  kPendingUniversityFund = 23,    // the tuition screen behind an accepted application (REPORT.en.md 317)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -316,6 +322,13 @@ class Sim {
   bool surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice);
   // University application: ScenarioSchoolUniversity, REPORT.en.md 313.
   bool universityYear(Life& life, AgeUp& out, int forcedChoice);
+  // ScenarioSchoolFund, the card the accepted application hands to (REPORT.en.md 317).
+  bool universityFundYear(Life& life, AgeUp& out, int forcedChoice);
+  // SimLoan: the tuition a college year adds to the principal, the payback that starts
+  // when the hero leaves college, and the yearly instalments (REPORT.en.md 317).
+  void studentLoanLines(Life& life, std::vector<std::string>& lines);
+  static double studentLoanAnnualPayment(const Hero::StudentLoan& loan);
+  bool countryFreeCollege(const std::string& country) const;
   // A drink is offered, REPORT.en.md 204.
   bool alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero trolls back, REPORT.en.md 203.

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <map>
@@ -122,6 +123,16 @@ int intField(const std::string& s, const std::string& key, size_t from, size_t e
   return std::atoi(s.c_str() + p);
 }
 
+// A bare boolean field ("<FreeCollege>k__BackingField": true). Same shape as
+// intField, minus the number.
+bool boolField(const std::string& s, const std::string& key, size_t from, size_t end) {
+  const size_t i = findValue(s, key, from, end);
+  if (i == std::string::npos) return false;
+  size_t p = i;
+  while (p < end && s[p] == ' ') ++p;
+  return p + 4 <= end && s.compare(p, 4, "true") == 0;
+}
+
 std::vector<std::string> stringArrayField(const std::string& s, const std::string& key,
                                           size_t from, size_t end) {
   std::vector<std::string> out;
@@ -149,6 +160,10 @@ std::vector<Country> loadCountries(const std::string& path) {
     c.language = stringField(text, "<Language>k__BackingField", obj.first, obj.second);
     c.demonym = stringField(text, "<Demonym>k__BackingField", obj.first, obj.second);
     c.cities = stringArrayField(text, "Cities", obj.first, obj.second);
+    c.adjectival = stringField(text, "<Adjectival>k__BackingField", obj.first, obj.second);
+    // Which countries pay for a hero's tuition (REPORT.en.md 317): the free lane of
+    // ScenarioSchoolFund is only offered where DataCountry.FreeCollege is true.
+    c.freeCollege = boolField(text, "<FreeCollege>k__BackingField", obj.first, obj.second);
     // The retirement ages the country sets (REPORT.en.md 137):
     // DataCountry.GetRetirementAgeForGender reads these two columns.
     c.retirementAgeMale = intField(text, "<RetirementAgeMale>k__BackingField", obj.first, obj.second);
@@ -3645,6 +3660,17 @@ std::string Sim::regionForCity(const std::string& code, const std::string& city)
   return trim(t.at(pool[placeRng_.below(uint32_t(pool.size()))], "Region"));
 }
 
+// DataCountry.FreeCollege for the hero's country. The free lane of the tuition
+// screen (REPORT.en.md 317) hangs off this one flag; an unknown country answers
+// false, which is what the game does for a country row it cannot find.
+bool Sim::countryFreeCollege(const std::string& country) const {
+  const std::string want = lower(trim(country));
+  for (const Country& c : countries_) {
+    if (lower(trim(c.name)) == want) return c.freeCollege;
+  }
+  return false;
+}
+
 bool Sim::pinCountry(Life& life, const std::string& countryName) {
   const std::string want = lower(trim(countryName));
   const Country* found = nullptr;
@@ -4104,6 +4130,9 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
     if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
     if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
+    // The tuition screen is the one pending card the script harness can answer: its
+    // options are the four lanes, so a forced index picks the lane (REPORT.en.md 317).
+    if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
@@ -4133,6 +4162,11 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   const std::vector<std::string> workLines = overtimeLines(life);
   const std::vector<std::string> willLinesOut = willLines(life);
   const std::vector<std::string> schoolLines = schoolMilestoneLines(life);
+  // The student loan (REPORT.en.md 317): a college year adds its tuition to the
+  // principal and the payback years take an instalment, both on the hero's own
+  // yearly lines.
+  std::vector<std::string> loanLines;
+  studentLoanLines(life, loanLines);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
@@ -4152,6 +4186,10 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
                                           workLines.size() + willLinesOut.size() +
                                           schoolLines.size()),
+                  loanLines.begin(), loanLines.end());
+  ev.extra.insert(ev.extra.begin() + long(familyLines.size() + diseaseLines.size() +
+                                          workLines.size() + willLinesOut.size() +
+                                          schoolLines.size() + loanLines.size()),
                   fillerNarration.begin(), fillerNarration.end());
   // One last resolve over every string the card produced (REPORT.en.md 207). Cards render
   // rows in several ways and 367 call sites touch a table cell; this pass is the single
@@ -5432,16 +5470,13 @@ bool Sim::universityYear(Life& life, AgeUp& out, int forcedChoice) {
   out.title = "Education";
   out.options = {"Apply to university", "Get a job instead", "Take some time off"};
   if (accepted) {
-    h.universityStage = 1;
+    // The accepted application only buys the tuition screen (ScenarioSchoolFund,
+    // REPORT.en.md 317): the hero is enrolled by that card's own lane.
+    h.universityStage = 3;
     h.ageAtUniversityApplication = h.age;
+    life.pendingCards.push_back(kPendingUniversityFund);
     out.choice = "Apply to university";
     out.narrative = "I applied to university and was accepted.";
-    // The college rung starts here instead of on its own birthday: the port asked
-    // the question, so the line moves with the answer.
-    if (h.schoolAnnouncedLevel != 4) {
-      h.schoolAnnouncedLevel = 4;
-      out.extra.push_back("I started " + std::string(schoolLevelName(4)) + ".");
-    }
     return true;
   }
   // The rejection is its own native scenario (ScenarioUniversityRejectedOptions,
@@ -5454,6 +5489,198 @@ bool Sim::universityYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body = "Your application to university was rejected.";
   out.narrative = "I applied to university but my application was rejected.";
   return true;
+}
+
+// ---- The tuition screen and the student loan (REPORT.en.md 317) -------------
+// ScenarioSchoolFund::ChoiceSelectedAtIndex 0x73f2a5b090 is the card an accepted
+// application hands to. It dispatches on a lowercased substring of the clicked
+// label, in this order: 'free' (#59266), 'student loan' (#66302), 'ask' (#54429),
+// 'scholarship' (#65004), 'cash' (#55533); anything else enrols nobody. The buttons
+// are #20614 'Free public university', #11616 'Apply for a student loan', #11615
+// 'Apply for a scholarship', #12168 'Ask my {0} to pay' and #33501 'Pay with cash',
+// over the body #23261 'How will you pay for your {0} program?'.
+//
+// No money moves at the screen: the free, scholarship and parent lanes cost the
+// hero nothing, the cash lane pays annualTuition * Years up front, and the loan lane
+// only creates the SimLoan whose principal grows by one annual tuition per college
+// year (SimOccupationStudent::AddAnotherYearOfTuitionToStudentLoan 0x73f300cd14) and
+// whose payback starts when the hero leaves college (BeginStudentLoanPayback
+// 0x73f300cc4c, log #24386). The yearly instalments are MakeAnnualPayment
+// 0x73f2fc2f2c - twelve monthly payments of the annuity - and can take the bank
+// balance negative; the last one logs #24196.
+//
+// shortcut: the native ability score is unrecovered, so the port's own schoolGrades
+// stands in for EducationalAbilityScore, which drops the two parent-money tiers of
+// the scholarship lane (the game reads SimPerson.Att_money at +0xbc, a field the port
+// has no model for); the 'ask my parents' lane is not offered because
+// WillingnessToFundSchoolScore (Life+0xb8/+0xa8) is unrecovered; a refused lane ends
+// the application where the native screen rebuilds itself; the two criminal-record
+// rejections cannot be reached because the port keeps no record flag. The card
+// shows the four lanes it models and takes the cheapest one it can get.
+bool Sim::universityFundYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.universityStage != 3) return false;
+  if (!ensureTable("a16_colleges-enc")) return false;
+  const Table& t = tbl("a16_colleges-enc");
+  if (t.size() == 0) return false;
+  const std::string school = trim(t.at(0, "School"));
+  const long long annualTuition = t.num(0, "Tuition");
+  const int years = std::max(1, int(t.num(0, "Years")));
+  const long long total = annualTuition * years;
+  const bool free = countryFreeCollege(h.country);
+  enum Lane { kLaneFree = 0, kLaneLoan, kLaneScholarship, kLaneCash };
+  std::vector<std::string> opts;
+  std::vector<int> kinds;
+  if (free) { opts.push_back("Free public university"); kinds.push_back(kLaneFree); }
+  opts.push_back("Apply for a student loan"); kinds.push_back(kLaneLoan);
+  opts.push_back("Apply for a scholarship"); kinds.push_back(kLaneScholarship);
+  opts.push_back("Pay with cash"); kinds.push_back(kLaneCash);
+  // The simulated hero takes the cheapest lane it can get, in this order: the free
+  // one (only shown when the country pays), a scholarship it qualifies for, its own
+  // cash, and otherwise the loan.
+  int lane = -1;
+  if (forcedChoice >= 0 && forcedChoice < int(kinds.size())) {
+    lane = kinds[size_t(forcedChoice)];
+  } else {
+    const auto offers = [&](int kind) {
+      return std::find(kinds.begin(), kinds.end(), kind) != kinds.end();
+    };
+    if (offers(kLaneFree)) lane = kLaneFree;
+    else if (offers(kLaneScholarship) && h.schoolGrades >= 96) lane = kLaneScholarship;
+    else if (offers(kLaneCash) && h.money >= total) lane = kLaneCash;
+    else if (offers(kLaneLoan)) lane = kLaneLoan;
+  }
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioSchoolFund";
+  // shortcut: ScenarioSchoolFund's own ExteriorTitle was not recovered; the port
+  // keeps the education card's header.
+  out.title = "Education";
+  out.body = "How will you pay for your " + school + " program?";
+  out.options = opts;
+  const auto enrol = [&](const std::string& body, const std::string& narrative) {
+    h.universityStage = 1;
+    out.body = body;
+    out.narrative = narrative;
+    // The college rung starts here: the port asked the question, so the line moves
+    // with the answer (REPORT.en.md 313 kept the same line on the application card).
+    if (h.schoolAnnouncedLevel != 4) {
+      h.schoolAnnouncedLevel = 4;
+      out.extra.push_back("I started " + std::string(schoolLevelName(4)) + ".");
+    }
+  };
+  const auto refuse = [&](const std::string& table, const std::string& body,
+                          const std::string& narrative) {
+    h.universityStage = 2;
+    if (!table.empty()) out.table = table;
+    out.body = body;
+    out.narrative = narrative;
+  };
+  if (lane == kLaneFree) {
+    out.choice = "Free public university";
+    std::string adj;
+    const std::string want = lower(trim(h.country));
+    for (const Country& c : countries_) {
+      if (lower(trim(c.name)) == want) { adj = c.adjectival; break; }
+    }
+    if (adj.empty()) adj = h.country;
+    enrol("You are now enrolled in " + school + ".",
+          "I enrolled in university for free thanks to the " + adj +
+              " public education system.");
+    return true;
+  }
+  if (lane == kLaneScholarship) {
+    out.choice = "Apply for a scholarship";
+    if (h.schoolGrades >= 96) {
+      enrol("Your application for a scholarship to " + school + " has been awarded!",
+            "I was awarded a scholarship to " + school + ".");
+    } else {
+      refuse("", "Your application for a scholarship to " + school + " has been rejected.",
+             "My application for a scholarship to " + school + " was rejected.");
+    }
+    return true;
+  }
+  if (lane == kLaneCash) {
+    out.choice = "Pay with cash";
+    if (h.money >= total) {
+      h.money -= total;
+      // ImpactDiscipline(hero, 4) and the happiness nudge of the cash lane; the
+      // native bodies and logs of this branch were not recovered.
+      out.discipline = pointsForImpact(4);
+      out.happiness = 2;
+      enrol("", "");
+    } else {
+      refuse("registry:ScenarioInsufficientFinances",
+             "You don't have enough money to pay your " + school + " tuition.", "");
+    }
+    return true;
+  }
+  if (lane == kLaneLoan) {
+    out.choice = "Apply for a student loan";
+    // The native rejections are a criminal record in the place of residence
+    // (#30702/#50191) and an age of 50 or more (#30701); the port has neither state
+    // and the card only exists at 18/19, so the lane always accepts.
+    Hero::StudentLoan& loan = h.studentLoan;
+    loan = Hero::StudentLoan();
+    loan.exists = true;
+    loan.collegeYears = years;
+    loan.annualTuition = double(annualTuition);
+    loan.college = school;
+    loan.years = 10;
+    loan.yearsLeft = 10;
+    loan.rate = 0.05;
+    enrol("You took out a student loan to pay for your " + school + " tuition.",
+          "I took out a student loan to pay for my " + school + " tuition.");
+    return true;
+  }
+  return false;
+}
+
+// SimLoan.TermsForLoanType(1) is 5% over ten years with no down payment, and
+// SimLoan::GetYearlyPayment @0x73f2fc2fe8 is the annuity over 12 * Years months of
+// the financed amount, paid twelve times.
+double Sim::studentLoanAnnualPayment(const Hero::StudentLoan& loan) {
+  const double r = loan.rate / 12.0;
+  const double n = double(std::max(1, loan.years) * 12);
+  if (r <= 0.0) return loan.financed / double(std::max(1, loan.years));
+  const double grown = std::pow(1.0 + r, n);
+  return 12.0 * loan.financed * r * grown / (grown - 1.0);
+}
+
+// The loan's own yearly lines. A college year adds the tuition to the principal
+// (SimOccupationStudent::AddAnotherYearOfTuitionToStudentLoan), the first year out
+// of college starts the payback (BeginStudentLoanPayback), and every year after
+// takes MakeAnnualPayment out of the bank balance, negative allowed.
+void Sim::studentLoanLines(Life& life, std::vector<std::string>& lines) {
+  Hero& h = life.hero;
+  Hero::StudentLoan& loan = h.studentLoan;
+  if (!loan.exists) return;
+  const bool inCollege = h.universityStage == 1 && schoolLevelFor(h.age) == 4;
+  if (inCollege && loan.tuitionYears < loan.collegeYears) {
+    loan.tuitionYears += 1;
+    loan.financed += loan.annualTuition;
+    loan.balance += loan.annualTuition;
+  }
+  if (!loan.active) {
+    if (inCollege || loan.balance <= 0.0) return;
+    loan.active = true;
+    lines.push_back("I have to start paying back my student loan for " + loan.college + ".");
+  }
+  // shortcut: the native code pays twelve min(Balance, standard) months and books
+  // YearsCompleted/YearsLeft inside MakeAnnualPayment; the port takes the year's
+  // instalment in one step, which is the same arithmetic for a balance that only
+  // this loan moves.
+  const double standard = studentLoanAnnualPayment(loan);
+  const double pay = std::min(loan.balance, standard);
+  loan.balance = std::max(0.0, loan.balance - pay);
+  h.money -= (long long)(pay + 0.5);
+  loan.yearsCompleted += 1;
+  loan.yearsLeft -= 1;
+  if (loan.yearsLeft <= 0 || loan.balance <= 0.0) {
+    loan.active = false;
+    lines.push_back("I fully paid off my student loan for " + loan.college + ".");
+  }
 }
 // ---- Coming out (REPORT.en.md 274) ----------------------------------------
 // ScenarioSiblingComingOut, title 'Coming Out'. The prompt is #50695, the ignore

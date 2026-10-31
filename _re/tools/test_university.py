@@ -52,10 +52,14 @@ ev = offers[0]
 assert ev["age"] == 19, ev["age"]
 assert ev["title"] == "Education", ev["title"]
 assert ev["choice"] == "Apply to university", ev["choice"]
-# The accepted card's own line comes last; the college start line is the extra line
-# the port moves with the answer.
+# The accepted card's own line comes last; the college start line belongs to the
+# tuition screen that answers it (REPORT.en.md 317), which is a card of its own.
 assert ev["logLines"][-1] == ACCEPTED_LINE, ev["logLines"]
-assert "I started college." in ev["logLines"], ev["logLines"]
+fund = card(d, "registry:ScenarioSchoolFund")
+assert len(fund) == 1, fund
+college = [l for e2 in d["events"] for l in e2["logLines"] if l == "I started college."]
+assert len(college) == 1, college
+assert [e2["age"] for e2 in fund] == [19], fund
 assert not card(d, REJECTED), "accepted hero cannot also be rejected"
 
 # 2. A rejected hero: its own scenario, its own four ways out, no college.

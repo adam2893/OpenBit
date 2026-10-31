@@ -7,7 +7,9 @@ writes meet. These are invariants that must hold in every life, whatever fired:
   * status is one of the four the port knows, or empty;
   * a status implies a name, and a name implies a status;
   * every ex-lover has a name, a status and a year that is not in the future;
-  * a married hero has a positive relationship score;
+  * a married hero has a relationship score in range (it may sit at 0: nothing in
+    the game dissolves a marriage at 0 -- the divorce card is a chance, not a rule,
+    so a spouse can stay married and miserable);
   * a card never leaves the hero married to nobody.
 """
 import json
@@ -37,6 +39,8 @@ def run(seed, **extra):
 lives = 0
 weddings = 0
 divorces = 0
+marriedLives = 0
+warmMarriages = 0
 for seed in range(1, 61):
     for extra in ({}, {"cash": 120000, "engaged": True}):
         doc = run(seed, **extra)
@@ -50,7 +54,9 @@ for seed in range(1, 61):
             assert name, (seed, "a status with nobody attached")
             assert 0 <= relationship <= 100, (seed, relationship)
             if status == "married":
-                assert relationship > 0, (seed, "married with no relationship")
+                marriedLives += 1
+                if relationship > 0:
+                    warmMarriages += 1
         if name:
             assert status, (seed, "a partner with no status")
         for ex in final["exLovers"]:
@@ -64,10 +70,14 @@ for seed in range(1, 61):
             if body.endswith(" wants a divorce."):
                 divorces += 1
 
+assert marriedLives, "nobody ended a life married"
+# The port must still produce warm marriages somewhere; the 0 case is the decayed one.
+assert warmMarriages, "every marriage decayed to nothing"
 assert weddings, "no wedding in 120 lives"
 assert divorces, "no divorce proposal in 120 lives"
 
-print("lives:", lives, "weddings:", weddings, "divorce proposals:", divorces)
+print("lives:", lives, "weddings:", weddings, "divorce proposals:", divorces,
+      "married at end:", marriedLives, "of those warm:", warmMarriages)
 print("ok")
 # One life through the whole arc: engagement -> wedding -> divorce proposal.
 trajectories = 0

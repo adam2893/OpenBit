@@ -757,7 +757,10 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
       long long v = 0;
       const size_t next = readInt(json, p, v);
       if (next == std::string::npos) return fail("choices holds something that is not a number");
-      if (v < 0) return fail("choices entries are 0-based indexes and cannot be negative");
+      // -1 is the 'let the card answer itself' entry: a test that wants to force
+      // one late card pads the earlier ones with it, and the untouched cards keep
+      // exactly the answers an unforced run gives (REPORT.en.md 317).
+      if (v < -1) return fail("choices entries are 0-based indexes, or -1 to leave the card alone");
       spec.choices.push_back(int(v));
       p = next;
       skipWs(json, p);

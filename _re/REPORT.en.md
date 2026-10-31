@@ -23536,6 +23536,89 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 317. The tuition screen and the student loan
+
+An accepted university application hands the hero a card the port did not have:
+`ScenarioSchoolFund` (`ChoiceSelectedAtIndex` 0x73f2a5b090). This section recovers it, the
+four funding lanes it offers, and the `SimLoan` that one of those lanes creates. All addresses
+are 3.25.1 vaddrs.
+
+**The card.** Body `#23261 'How will you pay for your {0} program?'` over the five labels
+`#20614 'Free public university'`, `#11616 'Apply for a student loan'`, `#11615 'Apply for a
+scholarship'`, `#12168 'Ask my {0} to pay'`, `#33501 'Pay with cash'`. The dispatcher lowercases
+the clicked label and tests substrings in a fixed order — `#59266 'free'`, `#66302 'student
+loan'`, `#54429 'ask'`, `#65004 'scholarship'`, `#55533 'cash'` — then falls through to the
+enrolment for any other label. The `{0}` in the body is the college row's `School`, taken from
+`a16_colleges-enc` (row 0 is `Undergraduate`, `Years` 4, `Tuition` 15000).
+
+**No money moves at the screen except on the cash lane.**
+
+```
+free         log #24117  'I enrolled in university for free thanks to {0} public education system.'
+             body #47726 'You are now enrolled in {0}.'
+loan         log #25337  'I took out a student loan to pay for my {0} tuition.'
+             body #49557 'You took out a student loan to pay for your {0} tuition.'
+             rejects #30702 criminal record / #50191 generic, #30701 age
+scholarship  log #25614  'I was awarded a scholarship to {0}.'
+             body #50189 'Your application for a scholarship to {0} has been awarded!'
+             rejects #30700 / #50190
+ask-parent   log #30902 accept / #30936 refuse over #64443 'refused' / #56645 "couldn't afford"
+             / #55456 "can't afford", body #50558 accept / #50625 refuse
+cash         no body and no log recovered
+```
+
+The free lane exists only where the country pays for college. `a16_countries-enc` gained two
+fields in the port for this: `<FreeCollege>k__BackingField` (28 of the 102 countries set it —
+Argentina, Australia, Austria, Bolivia, Brazil, Croatia, Czech Republic, Denmark, Egypt, Finland,
+France, Germany, Greece, Hungary, Iran, Malaysia, New Zealand, Nicaragua and the rest) and
+`<Adjectival>k__BackingField`, which fills `{0}` in the free-lane log.
+
+**The loan.** `AddAnotherYearOfTuitionToStudentLoan` 0x73f300cd14 grows the principal by one
+annual tuition for every college year, `BeginStudentLoanPayback` 0x73f300cc4c starts the payback
+once the hero leaves college (log `#24386 'I have to start paying back my student loan for
+{0}.'`), and `MakeAnnualPayment` 0x73f2fc2f2c takes twelve monthly instalments of the annuity
+each year — `AdjustBankBalanceByAmount` with no floor, so the balance can go negative — with
+`#24196 'I fully paid off my student loan for {0}.'` on the last one. `SimLoan.TermsForLoanType(1)`
+is 5% over ten years with no down payment, so a 60,000 principal (four years at 15,000) costs
+about 7,640 a year and clears on the eighth payment.
+
+**What the port does.** `Sim::universityFundYear` (`_re/port/src/sim.cpp`) shows the lanes it
+models — free when the country pays, then loan, scholarship and cash — and takes the cheapest
+one the hero can get: free, else scholarship at 96 grades, else its own cash, else the loan. The
+card is queued by the accepted application (`kPendingUniversityFund`), so it lands on the
+application's own year; its answer is what enrols the hero (`universityStage` 1) or refuses him
+(2) and it owns the `'I started college.'` line the application card used to carry. The loan is
+four `Hero::StudentLoan` fields plus `Sim::studentLoanLines`, which adds the year's tuition, starts
+the payback, and takes the annuity out of the bank balance.
+
+**Verified.** `_re/tools/test_university_fund.py` pins every lane: the free lane in Germany
+(label, body, `German public education system` log, no debt), the loan lane's wording and its
+`start` line at 23, a `payoff` line eight payments later, the cash lane's exact
+`Tuition * Years` deduction (the year's own money is the one the card moves), the scholarship's
+awarded and rejected bodies, the broke path (`ScenarioInsufficientFinances` over
+`'You don't have enough money to pay your {0} tuition.'`, nothing charged, no college start), and
+one card per accepted life and none for a refused hero over ten seeds. `_re/tools/test_university.py`
+moved its `'I started college.'` assertion to the new card.
+
+**Ceilings, all marked in the source.**
+
+* The native ability score behind the scholarship decision was not recovered; the port's own
+  `schoolGrades` stands in, and the two parent-money tiers of that lane are dropped because the
+  game reads `SimPerson.Att_money` (+0xbc), a field the port has no model for.
+* The ask-parent lane is not offered at all: `WillingnessToFundSchoolScore` (Life +0xb8/+0xa8) was
+  not recovered, so its accept and refuse conditions are unknown.
+* A refused lane ends the application where the native card rebuilds itself and asks again.
+* The two loan rejections are unreachable in the port: it has no criminal-record flag and the card
+  only exists at 18/19, below the age-50 refusal.
+* The cash lane's body and log were not recovered; the port leaves the body empty rather than invent
+  one.
+* `ScenarioSchoolFund`'s own `ExteriorTitle` was not recovered; the port keeps the education header.
+
+**Harness note.** `--script` `choices[]` entries now accept `-1` as "let the card answer itself".
+A test that wants to force one late card pads the earlier ones with `-1` instead of guessing their
+answers, so the life up to that card is the unforced one — the tuition screen's odd lanes (a refused
+scholarship, an unaffordable cash payment) are only reachable this way.
+
 ## 316. Twenty-six leisure tables: eighteen live, five unportable, three dead
 
 The unreferenced-table list had grown to 37 names, and a name in that list says nothing about

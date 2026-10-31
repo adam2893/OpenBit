@@ -206,9 +206,31 @@ struct Hero {
   int schoolAnnouncedLevel = 0;  // the level whose start line has been written
   // University application (REPORT 313). Life+0x218 in the game is the age the
   // accepted application was written; universityStage is the port's own small
-  // state machine: 0 not offered, 1 accepted, 2 rejected.
+  // state machine: 0 not offered, 1 enrolled, 2 rejected, 3 accepted and waiting
+  // for the tuition screen (REPORT.en.md 317).
   int ageAtUniversityApplication = -1;
   int universityStage = 0;
+  // SimLoan (REPORT.en.md 317). The game's own layout is YearsCompleted +0x10,
+  // YearsLeft +0x14, LoanType +0x18, InterestRate +0x1c, Years +0x20,
+  // DownPaymentPercent +0x24, Active +0x28, DownPayment +0x2c, FinancedAmount +0x30,
+  // Balance +0x34; the port only ever creates the student loan (LoanType 1), whose
+  // TermsForLoanType default is 5% over 10 years with no down payment.
+  struct StudentLoan {
+    bool exists = false;
+    bool active = false;      // SimLoan.Active: set when the payback years begin
+    int years = 10;
+    int yearsCompleted = 0;
+    int yearsLeft = 10;
+    double rate = 0.05;       // InterestRate
+    double downPaymentPercent = 0.0;
+    double financed = 0.0;    // FinancedAmount
+    double balance = 0.0;     // Balance
+    int collegeYears = 4;     // the college row's Years, the cap on tuition adds
+    int tuitionYears = 0;     // how many annual tuitions have been added
+    double annualTuition = 0.0;
+    std::string college;      // the college row's School, named by the log lines
+  };
+  StudentLoan studentLoan;
   // The school each level is at (REPORT.en.md 282): the played life says
   // 'I started high school at Adams High School, a private school.', and the
   // named forms are 'Adams High School', 'Allure Middle School', 'Virgil
