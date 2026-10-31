@@ -6,6 +6,8 @@
 #include "bl/table.h"
 #include "bl/text.h"
 
+#include <cctype>
+#include <cstdlib>
 #include <string>
 
 namespace bl {
@@ -2106,4 +2108,236 @@ bool Sim::onlyfansTipYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness += 1;
   return true;
 }
+
+// The three jewellery tables describe one piece of jewellery (REPORT.en.md 303):
+// a16_jewelry-types-enc carries the type and its Cost Score, a16_jewelry-gemstones-enc
+// the carat range, the per-carat price and the cost bounds, a16_jewelry-metals-enc
+// the metal. The price itself is in no table: the live shop showed a 2.55-carat
+// sapphire bracelet at $19,400 and First Carat Price x carats x the type's Cost
+// Score gives $20,400 for it, so that product is the price, clamped to the
+// gemstone's own Min/Max Cost. (shortcut: the real formula carries a quality roll
+// the port does not reproduce.)
+std::string Sim::Jewel::caratLabel() const {
+  const long long hundredths = static_cast<long long>(carats * 100.0 + 0.5);
+  std::string frac = std::to_string(hundredths % 100);
+  if (frac.size() < 2) frac = "0" + frac;
+  return std::to_string(hundredths / 100) + "." + frac;
+}
+
+bool Sim::drawJewel(Life& life, const std::string& typeFilter, bool allowLuxury,
+                    Rng& rng, Jewel& jewel) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!ensureTable("a16_jewelry-types-enc")) return false;
+  if (!ensureTable("a16_jewelry-gemstones-enc")) return false;
+  if (!ensureTable("a16_jewelry-metals-enc")) return false;
+  const Table& types = tbl("a16_jewelry-types-enc");
+  const Table& gems = tbl("a16_jewelry-gemstones-enc");
+  const Table& metals = tbl("a16_jewelry-metals-enc");
+  auto number = [](std::string cell) -> double {
+    std::string clean;
+    for (char c : cell)
+      if (std::isdigit(static_cast<unsigned char>(c)) || c == '.') clean.push_back(c);
+    return clean.empty() ? 0.0 : std::atof(clean.c_str());
+  };
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < types.size(); ++r) {
+    if (!typeFilter.empty() && lower(trim(types.at(r, "Category"))) != typeFilter) continue;
+    if (!allowLuxury && types.flag(r, "Luxury Only")) continue;
+    pool.push_back(r);
+  }
+  const size_t trow = pickFrom(pool, rng);
+  if (trow == size_t(-1)) return false;
+  pool.clear();
+  for (size_t r = 0; r < gems.size(); ++r) {
+    if (!allowLuxury && gems.flag(r, "Luxury Only")) continue;
+    pool.push_back(r);
+  }
+  const size_t grow = weightedPickOf(gems, "Commonness Score", pool, rng);
+  if (grow == size_t(-1)) return false;
+  jewel.type = trim(types.at(trow, "Category"));
+  jewel.gem = trim(gems.at(grow, "Gemstone"));
+  const double lo = number(gems.at(grow, "Min Carats"));
+  const double hi = number(gems.at(grow, "Max Carats"));
+  jewel.carats = hi > lo ? lo + (hi - lo) * rng.unit() : lo;
+  double price = number(gems.at(grow, "First Carat Price")) * jewel.carats *
+                 number(types.at(trow, "Cost Score"));
+  const double minCost = number(gems.at(grow, "Min Cost"));
+  const double maxCost = number(gems.at(grow, "Max Cost"));
+  if (price < minCost) price = minCost;
+  if (maxCost > 0 && price > maxCost) price = maxCost;
+  jewel.price = static_cast<long long>(price + 0.5);
+  const size_t mrow = pickRow("a16_jewelry-metals-enc", "Cost Score", "", "", "", rng);
+  jewel.metal = mrow == size_t(-1) ? std::string("gold") : trim(metals.at(mrow, "Metal"));
+  return true;
+}
+
+// ScenarioLoverProposeInbound (REPORT.en.md 303): the partner proposes. The live
+// card read 'Your boyfriend, Arnaud, proposed to you with a 0.44-carat diamond ring
+// at a fish market!' over the detail rows 'Ring: Diamond Ring (0.44ct)',
+// 'Setting: Fish Market', 'Years Together: 8' and the two buttons alone.
+//
+// body     'Your {0}, {1}, proposed to you with {2} {3}!'                  #50749
+// rows     'Ring: {0} {1} ({2}ct)'  'Setting: {0}'  'Years Together: {0}'
+// options  'Accept {0} proposal' (#10553)  "I'm not ready for marriage" (#26026)
+// journals 'I accepted {0} proposal!' (#68934)  'I refused to accept {0}.' (#69160)
+//
+// The card fires while the pair are dating; accepting makes them engaged, where the
+// wedding family already picks them up. The hero-driven side
+// (ScenarioLoverProposeOutbound, with ShouldForceLoverAcceptsProposal and the #49138
+// body) is launched from the Relationships menu and is not ported.
+bool Sim::proposalYear(Life& life, AgeUp& out, int forcedChoice) {
+  hero_ = &life.hero;
+  life_ = &life;
+  Hero& h = life.hero;
+  if (forcedChoice < 0 && !h.relationshipOn) return false;
+  if (h.loverName.empty()) return false;
+  if (h.loverStatus != "dating") return false;
+  if (h.age < 18) return false;
+  if (h.relationship < 55) return false;
+  if (forcedChoice < 0 && propRng_.below(9) != 0) return false;
+  if (h.loverSinceAge < 0 || h.loverSinceName != h.loverName) {
+    h.loverSinceName = h.loverName;
+    h.loverSinceAge = h.age;
+  }
+  Jewel ring;
+  if (!drawJewel(life, "ring", h.money >= 100000, propRng_, ring)) return false;
+  if (!ensureTable("a16_proposal-settings-enc")) return false;
+  const Table& settings = tbl("a16_proposal-settings-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < settings.size(); ++r) {
+    const std::string minAge = trim(settings.at(r, "Min Age"));
+    if (!minAge.empty() && std::atoi(minAge.c_str()) > h.age) continue;
+    pool.push_back(r);
+  }
+  const size_t srow = weightedPickOf(settings, "Romance Score", pool, propRng_);
+  if (srow == size_t(-1)) return false;
+  const std::string place = trim(settings.at(srow, "Place"));
+  const std::string snippet = trim(settings.at(srow, "Snippet"));
+  if (place.empty() || snippet.empty()) return false;
+  auto titleWords = [](std::string text) {
+    bool start = true;
+    for (char& c : text) {
+      if (start && std::isalpha(static_cast<unsigned char>(c))) {
+        c = static_cast<char>(::toupper(static_cast<unsigned char>(c)));
+        start = false;
+      } else if (c == ' ') {
+        start = true;
+      }
+    }
+    return text;
+  };
+  const std::string word = h.loverFemale ? "girlfriend" : "boyfriend";
+  const std::string whom = h.loverFemale ? "her" : "his";
+  const int years = h.age - h.loverSinceAge;
+  out.table = "registry:ScenarioLoverProposeInbound";
+  out.row_id = "0";
+  out.title = "Proposal";
+  out.body = "Your " + word + ", " + h.loverName + ", proposed to you with a " +
+             ring.caratLabel() + "-carat " + ring.gem + " " + ring.type + " " + snippet + "!";
+  out.body += "\n\nRing: " + spyUpperFirst(ring.gem) + " " + spyUpperFirst(ring.type) +
+              " (" + ring.caratLabel() + "ct)";
+  out.body += "\nSetting: " + titleWords(place);
+  out.body += "\nYears Together: " + std::to_string(years);
+  out.body += "\n\nWhat will you do?";
+  out.options.clear();
+  out.options.push_back("Accept " + whom + " proposal");
+  out.options.push_back("I'm not ready for marriage");
+  const int lane = forcedChoice >= 0 ? forcedChoice : int(propRng_.below(2));
+  if (lane == 0) {
+    out.choice = "Accept " + whom + " proposal";
+    h.loverStatus = "engaged";
+    h.relationship = std::min(100, h.relationship + 15);
+    out.narrative = "I accepted " + whom + " proposal!";
+  } else {
+    out.choice = "I'm not ready for marriage";
+    h.relationship = std::max(0, h.relationship - 10);
+    out.narrative = "I refused to accept " + whom + " proposal.";
+  }
+  return true;
+}
+
+// The jewelry shop (REPORT.en.md 304). The live build opens a JEWELERS list whose
+// rows lead to a purchase card: title bar '#27900 Jewel', title '<Gem> <Type>',
+// body '#14339 Buy this {0} {1} {2} today!', rows Price / Gemstone / Carats /
+// Metal, one button '#14316 Buy it'. Port rows are AgeUp lines, so the card is
+// fired as a year event from the same three tables the proposal ring already
+// reads. The shop screen itself is a menu the port does not have.
+bool Sim::jewelShopYear(Life& life, AgeUp& out, int forcedChoice) {
+  hero_ = &life.hero;
+  life_ = &life;
+  Hero& h = life.hero;
+  if (h.inPrison) return false;
+  if (h.age < 18) return false;
+  if (forcedChoice < 0 && !jewRng_.chance(1.0 / 12.0)) return false;
+  if (!ensureTable("a16_jewelry-types-enc")) return false;
+  const Table& types = tbl("a16_jewelry-types-enc");
+  const bool luxury = h.money >= 100000;
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < types.size(); ++r) {
+    if (trim(types.at(r, "Category")).empty()) continue;
+    if (!luxury && types.flag(r, "Luxury Only")) continue;
+    // 'earrings' and 'chandelier earrings' are the only plural categories, and
+    // #14339 is written for one item ('Buy this ... today!'); no literal for the
+    // plural shape was found, so the port does not sell them rather than invent
+    // 'Buy these ...'.
+    if (types.flag(r, "Is Plural")) continue;
+    pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t tr = weightedPickOf(types, "Commonness Score", pool, jewRng_);
+  Jewel jewel;
+  if (!drawJewel(life, lower(trim(types.at(tr, "Category"))), luxury, jewRng_, jewel))
+    return false;
+  // A shop row is only offered at a price the hero can actually pay: the port
+  // has no 'Penniless' screen to fall back to (the live modal is #14317's lane).
+  if (h.money < jewel.price) return false;
+  // The card is Title Case on screen ('Sapphire Bracelet', 'Metal: 24K Gold'), so
+  // every word is raised there; the body line stays lowercase as the live card's
+  // is ('Buy this 2.55-carat sapphire bracelet today!').
+  auto titleCase = [](const std::string& text) {
+    std::string out2 = text;
+    bool start = true;
+    for (char& c : out2) {
+      if (c == ' ') {
+        start = true;
+      } else if (start) {
+        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+        start = false;
+      }
+    }
+    return out2;
+  };
+  const std::string gem = titleCase(jewel.gem);
+  const std::string type = titleCase(jewel.type);
+  const std::string item = gem + " " + type;
+  const bool carats = types.flag(tr, "Show Carats");
+  out.table = "registry:ScenarioJewelShop";
+  out.row_id = "0";
+  out.title = item;
+  if (carats) {
+      out.body = "Buy this " + jewel.caratLabel() + "-carat " + lower(gem) + " " +
+               lower(jewel.type) + " today!";
+  } else {
+    out.body = "Buy this " + lower(gem) + " " + lower(jewel.type) + " today!";
+  }
+  out.body += "\n\nPrice: " + money(jewel.price);
+  out.body += "\nGemstone: " + gem;
+  if (carats) out.body += "\nCarats: " + jewel.caratLabel();
+  out.body += "\nMetal: " + titleCase(jewel.metal);
+  out.options.clear();
+  // The live card carries only 'Buy it' (#14316); dismissing it is the screen's
+  // X, which a port card has no equivalent for.
+  out.options.push_back("Buy it");
+  out.choice = "Buy it";
+  // 'I bought a ' is the game's own log fragment (#23640); the rest of the line
+  // is written here because the item and the price are the port's own cells.
+  const bool vowel = !item.empty() && std::strchr("AEIOU", item[0]) != nullptr;
+  out.narrative = std::string("I bought ") + (vowel ? "an " : "a ") + item + " for " +
+                  money(jewel.price) + ".";
+  h.money -= jewel.price;
+  return true;
+}
+
 }  // namespace bl

@@ -80,6 +80,11 @@ struct ScriptSpec {
   bool finance = false;    // the market (REPORT.en.md 77)
   bool secret_agent = false;
   bool relationship = false;
+  // A partner already dating the hero at the start (REPORT.en.md 303). The
+  // proposal card only fires while the pair are dating and the wheel has to land
+  // on it twice, which a random life reaches about twice in forty; the fixture is
+  // how the test gets both buttons.
+  bool dating = false;
   bool spy = false;
   bool fight = false;
   bool black_market = false;

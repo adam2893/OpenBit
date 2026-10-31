@@ -367,6 +367,22 @@ class Sim {
   bool hitmanYear(Life& life, AgeUp& out, int forcedChoice);
   bool hitmanOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   bool robberyYear(Life& life, AgeUp& out, int forcedChoice);
+  // The proposal card (REPORT.en.md 303): ScenarioLoverProposeInbound, the partner
+  // proposing to the hero with a ring the three jewellery tables describe. The
+  // ring is also what the shop card (REPORT.en.md 304) sells, so both draw it
+  // through drawJewel.
+  bool proposalYear(Life& life, AgeUp& out, int forcedChoice);
+  bool jewelShopYear(Life& life, AgeUp& out, int forcedChoice);
+  struct Jewel {
+    std::string type;    // the type row's Category cell, e.g. 'ring'
+    std::string gem;     // the gemstone row's Gemstone cell, e.g. 'diamond'
+    std::string metal;   // the metal row's Metal cell, e.g. '24K gold'
+    double carats = 0;   // uniform in the gemstone's own Min/Max Carats
+    long long price = 0; // First Carat Price x carats x the type's Cost Score
+    std::string caratLabel() const;   // '0.44'
+  };
+  bool drawJewel(Life& life, const std::string& typeFilter, bool allowLuxury,
+                 Rng& rng, Jewel& jewel);
   bool robberyOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   bool bookYear(Life& life, AgeUp& out, int forcedChoice);
   bool dietYear(Life& life, AgeUp& out, int forcedChoice);
@@ -958,6 +974,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng murderRng_;
   Rng hitmanRng_;
   Rng robberyRng_;
+  // The proposal card's own draw (REPORT.en.md 303).
+  Rng propRng_;
+  Rng jewRng_;
   // The book shelf's own draw (REPORT.en.md 289).
   Rng bookRng_;
   // The diet menu's own draw (REPORT.en.md 290).

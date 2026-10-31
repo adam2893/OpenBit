@@ -23536,6 +23536,134 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 304. The jewelry shop: a purchase card from the same three tables
+
+The live build's Activities screen sends `Shopping` into a jeweller's list --
+`GIRARD BROTHERS JEWELERS` in the captured run -- whose rows read
+`Emerald Earrings (2.33ct)  $28,700`, `Sapphire Bracelet (2.99ct)  $23,800`,
+`Diamond Pendant (0.64ct)  $6,200`. Tapping a row opens a purchase card: title bar
+`#27900 "Jewel"`, card title `Sapphire Bracelet`, body
+`Buy this 2.55-carat sapphire bracelet today!` (`#14339 "Buy this {0} {1} {2} today!"`),
+the rows `Price: $19,400`, `Gemstone: Sapphire`, `Carats: 2.55`,
+`Metal: 24K Gold` (`#34534 "Price"`, `#21079 "Gemstone"`, `#15189 "Carats"`),
+a Quality bar (`#35021`) and the single button `#14316 "Buy it"`.
+
+**The card.** `Sim::jewelShopYear` reads the same three tables the proposal ring
+already uses (`a16_jewelry-types-enc`, `a16_jewelry-gemstones-enc`,
+`a16_jewelry-metals-enc`), picks a type by Commonness Score, then the gemstone by its
+own Commonness Score, carats uniform inside the gemstone's range and the metal by
+Cost Score -- `Sim::drawJewel`, shared with the ring in section 303. Each purchase
+uses its own `jewRng_` stream (the 282 lesson: one shared stream shifts the other
+families by a whole card).
+
+**Text.** The body follows the literal: `Buy this {carats}-carat {gem} {type} today!`,
+or the no-carat shape `#14338 "Buy this {0} today!"` for the three categories the
+table marks without carats (`charm`, `exotic watch`, `crown`). The rows are
+`Price: <money>`, `Gemstone: <Gem>`, `Carats: <carats>` (only when the category has
+them) and `Metal: <Metal>`. The screen is Title Case (`Sapphire Bracelet`,
+`Metal: 24K Gold`), so every word is raised there while the body line keeps the
+table's lowercase. The journal line is composed as
+`I bought a <Item> for <money>.` -- the game's own fragment `#23640 "I bought a "` is
+the only literal for the purchase, so the rest is the port's own sentence and is
+marked as such in the source. The card carries exactly one button, as the live card
+does; it is only offered for a price the hero can pay because the port has no
+`Penniless` screen to fall back to.
+
+**Left out on purpose.** `earrings` and `chandelier earrings` are the two categories
+the table marks `Is Plural`, and `#14339` is written for one item ("Buy this ...");
+no literal for the plural shape was found, so the port does not sell them rather
+than invent "Buy these". The Luxury-only rows are drawn only once the hero holds
+$100,000, matching the shop's own gate.
+
+**Price.** The table's own formula is followed: `First Carat Price x carats x the
+type's Cost Score`, clamped to the gemstone's Min Cost / Max Cost. A 2.55-carat
+sapphire bracelet comes out at $20,400 against the $19,400 the live shop asked; the
+clamp band and the formula are the table's, the exact number is a shortcut because
+the live game also rolls the metal's Cost Score into the price.
+
+**Test.** `_re/tools/test_jewelry.py` parses the three tables and runs forty lives of
+eighty years from a $500,000 cash fixture. Per card it asserts the title is the
+Title Case item, the body matches `#14339` (or `#14338`), the gemstone, metal and
+type are rows of their tables, the carats sit inside the gemstone's range and match
+the `Carats` row, the price sits inside the gemstone's Min Cost / Max Cost, the
+category is not a plural one, and the journal line names the same item and the same
+price with the right article. Measured: 25 cards over 40 lives.
+
+test       test_jewelry: the jewel's own cells, the price band and the buy line
+
+## 303. The proposal card: a ring from the three jewelry tables, a setting, and two lanes
+
+The live game (captured 2026-10-31 on the v3.25.3a build, Samantha Graham-Walker
+aged 20) shows a `Proposal` card the port had no family for. The screen reads:
+
+    Your boyfriend, Arnaud, proposed to you with a 0.44-carat diamond ring at a fish market!
+
+and under it a detail table `Ring: Diamond Ring (0.44ct)`, `Setting: Fish Market`,
+`Years Together: 8`, the relationship bar, then two buttons. The scenario class behind
+it is `ScenarioLoverProposeOutbound` with methods `.ctor`, `RefreshScenario`,
+`DismissSelected`, `ChoiceSelectedAtIndex` and `ShouldForceLoverAcceptsProposal`;
+no class in the dump carries the word "Proposal", which is why the earlier menu
+sweep missed it -- it is an inbound year card, not a menu screen.
+
+The literal templates are:
+
+- title `#34767 "Proposal"`;
+- body `#50749 "Your {0}, {1}, proposed to you with {2} {3}!"`, where {0} is
+  boyfriend/girlfriend, {1} the partner's first name, {2} `"a 0.44-carat diamond ring"`
+  and {3} `"at a fish market"` -- the two halves are produced separately, which is
+  why the port composes them from a jewel and a setting;
+- rows `#36219 "Ring"`, `#38727 "Setting"`, `#47454 "Years Together"`;
+- buttons `#10553 "Accept {0} proposal"` ({0} his/her) and
+  `#26026 "I'm not ready for marriage"`;
+- the journal lines `#68934 "{0}I accepted {1} proposal!"` and
+  `#69160 "{0}I refused to accept {1}."`.
+
+**Three new tables read.** `a16_jewelry-types-enc` (Category, Is Plural, Cost Score,
+Show Carats, Max Carats, Super Max Carats, Commonness Score, Luxury Only -- types
+`ring`, `pendant`, `bracelet`, `charm`, `earrings`), `a16_jewelry-gemstones-enc`
+(Gemstone, Min Carats, Max Carats, Super Max Carats, Show Carats, First Carat Price,
+Min Cost, Max Cost, Color, Commonness Score, Luxury Only) and `a16_jewelry-metals-enc`
+(Metal, Cost Score, Color). The port's `Sim::drawJewel` builds a jewel from them:
+the type is filtered to the asked category and to the affordable rows, the gemstone is
+weighted by its commonness, carats are uniform inside the gemstone's range, and the
+price is `First Carat Price x carats x the type's Cost Score` clamped to the gemstone's
+own Min Cost / Max Cost. A 2.55-carat sapphire bracelet comes out at $20,400 against
+the $19,400 the live shop asked for the same stone -- the clamp band is honoured but the
+exact number is a shortcut (the game also rolls the metal's own Cost Score into it).
+
+`a16_proposal-settings-enc` (Place, Snippet, Cost Score, Romance Score, Min Age) gives
+the `Setting` half: the port draws a row whose Min Age is empty or at most the hero's
+age, weighted by Romance Score, and prints the capitalised Place on the row and the
+Snippet ("at a fish market", "on a lakeside hike") in the body. That table was one of
+the 54 unreferenced ones in the 288 audit; it is referenced now.
+
+**The card.** `Sim::proposalYear` (its own `propRng_` stream -- the 282 lesson) fires
+only while the pair are `dating`, the relationship is at least 55, and the hero is 18 or
+over, on a one-in-nine coin a year, at two wheel tickets. Choosing the first button moves
+the pair to `engaged` and adds 15 relationship; the second takes 10 away. The second
+button is deliberately **not** the existing `loverCallOffEngagementYear` lane: refusing a
+proposal leaves the pair dating, which is what the game does, while calling off an
+engagement ends it.
+
+**Fixture and test.** A random life turns the lover subsystem on only when the spec says
+`"relationship": true`, lands the proposal family roughly twice in forty lives, and
+proves nothing about which button was offered. `_re/tools/test_proposal.py` therefore
+uses a new `"dating": true` fixture (the same shape as `"engaged"`: partner "Sam Ellery",
+status dating, relationship 75) and forty seeds of eighty years. It parses the three
+tables itself and asserts, per card, that the ring's gem, type and carats are a row of
+the tables and inside the gemstone's range, that the setting Place is a row, that
+`Years Together` equals the hero's age in the fixture, that the two buttons and both
+journal lines match the literals, and that both lanes are reached. Measured: 4 cards
+over 40 lives, 3 accepted and 1 refused.
+
+**What is not ported.** `ScenarioLoverProposeOutbound` -- the hero proposing through
+the Love menu -- needs a partner-facing menu the port does not have; its body literal
+`#49138` and `ShouldForceLoverAcceptsProposal` are recorded here for the day the menus
+arrive. The fake-ring rejection lane (`#68792`) depends on a jeweller appraising a ring
+the port never sells, so it is skipped with the rest of the appraisal chain.
+
+test       test_proposal: ring cells, setting, both buttons and both journal lines
+
 ## 302. The bank robbery card: three payload tables and the heist's two outcomes
 
 `ScenarioCrimeBankRobbery` is in `_re/obs_corpus/scenario-methods.json` with `.ctor`, `RefreshScenario`, `DismissSelected`, `ChoiceSelectedAtIndex` and `ImpactKarmaForEvenConsideringIt`, and no `PrepareParser` or `ScenarioIsEligibleForRandomPush` (the same is true of the train variant and of `ScenarioCustomAttack`, so the missing `PrepareParser` is not the dropdown signal). The card's own strings are the prompt #50033 ("You're thinking about robbing a bank."), the three pickers #33865 "Pick your disguise", #33962 "Pick your weapon", #33878 "Pick your getaway", the success #49432 ("You successfully robbed {0} with {1} while {2}!\n\nYou got away {3} with {4}.") with log form #69177, the catch #49758 ("You were caught trying to rob {0} with {1} while {2}!"), the titles #12792 "Bank Robbery" and #22802 "Heist: Successful", and the no-target line #47788 ("You are unable to rob {0} {1}.").

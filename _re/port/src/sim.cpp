@@ -706,6 +706,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       murderRng_(seed ^ 0x4b7f2d9a1c8e6350ULL ^ 0x9e3779b97f4a7c15ULL),
       hitmanRng_(seed ^ 0x2d6f8a4c1b9e7350ULL ^ 0x94d049bb133111ebULL),
         robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
+        propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
+      jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
@@ -4181,6 +4183,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::loverCallOffEngagementYear, nullptr},
         {&Sim::loverElopeYear, nullptr, 6},
         {&Sim::loverWeddingYear, nullptr, 2},
+        {&Sim::proposalYear, nullptr, 2},
+        {&Sim::jewelShopYear, nullptr, 1},
         {&Sim::loverLeavesYear, nullptr},
         {&Sim::exLoverSextYear, nullptr},
         {&Sim::exLoverMarriedNowYear, nullptr, 2},
@@ -22408,6 +22412,13 @@ bool Sim::relationshipYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.relationshipOn || h.age < 15) return false;
   if (h.loverStatus.empty() && !h.loverName.empty()) h.loverStatus = "dating";
+  // The proposal card prints how long the pair have been together (REPORT.en.md
+  // 303); the start age is stamped the first year this sees the partner, and again
+  // whenever the name changes, so no other family has to maintain it.
+  if (!h.loverName.empty() && h.loverSinceName != h.loverName) {
+    h.loverSinceName = h.loverName;
+    h.loverSinceAge = h.age;
+  }
   // The score and the partner's craziness move every year; the pools gate on
   // them, so they have to be settled before a row is picked.
   h.relationship += int(relRng_.below(9)) - 4;

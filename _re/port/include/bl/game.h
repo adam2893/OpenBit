@@ -652,6 +652,13 @@ struct Hero {
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether
   // the gate or the score is at fault.
   int relationshipLow = 100;
+  // Years together (REPORT.en.md 303): the proposal card prints 'Years Together', so
+  // the pair's start age has to be kept beside the score. Both cells are stamped
+  // lazily -- in relationshipYear and in the proposal card itself -- because a
+  // partner is created and replaced from a dozen places in the family files and
+  // none of them would remember to reset a counter.
+  int loverSinceAge = -1;
+  std::string loverSinceName;
   // The hero has questioned or changed their identity (REPORT.en.md 195). The table's
   // 'Transgender Identity' and 'Other Identity' columns are **flags**, not names, so the
   // port stores the fact rather than a string it would have had to invent.

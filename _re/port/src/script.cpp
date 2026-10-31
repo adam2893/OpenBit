@@ -683,6 +683,12 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (json.compare(p, 4, "true") == 0) spec.engaged = true;
     else if (json.compare(p, 5, "false") != 0) return fail("engaged is not a boolean");
   }
+  p = findValue(json, "dating");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '	')) ++p;
+    if (json.compare(p, 4, "true") == 0) spec.dating = true;
+    else if (json.compare(p, 5, "false") != 0) return fail("dating is not a boolean");
+  }
   p = findValue(json, "sexuality");
   if (p != std::string::npos) {
     while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
@@ -883,12 +889,16 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   // reads it. Each one is a person of the hero's own surname, born before the run.
   if (spec.cash >= 0) life.hero.money = spec.cash;
   life.hero.sexuality = spec.sexuality;
-  if (spec.engaged) {
+  if (spec.engaged || spec.dating) {
     life.hero.loverName = "Sam Ellery";
     life.hero.loverFemale = true;
-    life.hero.loverStatus = "engaged";
-    life.hero.relationship = 70;
+    life.hero.loverStatus = spec.engaged ? "engaged" : "dating";
+    life.hero.relationship = spec.engaged ? 70 : 75;
     life.hero.relationshipOn = true;
+    // The proposal card prints 'Years Together' (REPORT.en.md 303), so the
+    // fixture stamps the pair's start age where the sim would have.
+    life.hero.loverSinceName = life.hero.loverName;
+    life.hero.loverSinceAge = life.hero.age;
   }
   if (spec.ex) {
     bl::Hero::ExLover ended;

@@ -52,6 +52,7 @@ cards = 0
 wins = 0
 busts = 0
 charges = 0
+cut = 0
 for seed in range(1, 61):
     doc = run(seed)
     events = doc["events"]
@@ -98,6 +99,12 @@ for seed in range(1, 61):
             assert disguise in DISGUISES, (seed, disguise)
             assert (event.get("logLines") or [""])[-1] == "I was arrested for armed robbery!", seed
             # The 273 chain charges the prison table's own row for an armed robbery.
+            # The charge is the next pending card, so a heist caught on the last
+            # event of the run has no year left to serve it (the same cut
+            # test_crime_chain tolerates when a death ends a chain).
+            if index + 1 >= len(events):
+                cut += 1
+                continue
             charged = any("armed robbery" in ((e.get("body") or "") + " ".join(e.get("logLines") or []))
                           for e in events[index + 1:index + 4])
             assert charged, seed
@@ -106,6 +113,6 @@ for seed in range(1, 61):
 assert cards >= 8, cards
 assert wins >= 3, wins
 assert busts >= 2, busts
-assert charges == busts, (charges, busts)
+assert charges + cut == busts, (charges, cut, busts)
 print("picks:", cards, "wins:", wins, "caught:", busts)
 print("ok")
