@@ -65,6 +65,15 @@ struct AgeUp {
   std::vector<std::string> options;
 };
 
+// One God Mode edit (REPORT.en.md 312): "hero", "family:N" or "child:N", new names
+// (empty keeps the old one) and slider values by native attribute id (1 Happiness,
+// 2 Health, 3 Smarts, 4 Looks, 5 Sexuality, 10 Karma, 11 Discipline, ...).
+struct GodModeEdit {
+  std::string person;
+  std::string first, last;
+  std::map<int, int> attrs;
+};
+
 // One non-hero family member. The yearly lifecycle lines name these people
 // ("My little brother, Jimbo, has been diagnosed with mad cow disease."), so
 // each one carries the state those lines read: a relation word, a name, an age,
@@ -429,6 +438,7 @@ class Sim {
   void enableTimeMachine(bool on) { timeMachineOn_ = on; }
   bool timeMachineAvailable(const Life& life, int years) const;
   bool useTimeMachine(Life& life, AgeUp& out, int years);
+  bool godModeEdit(Life& life, AgeUp& out, const GodModeEdit& edit, std::string* error);
   // The year's own dispatch, without the counters, the family lines or the pending
   // queue: ageUp owns those and calls this (REPORT.en.md 135).
   bool dispatchYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1008,6 +1018,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The disposition and ashes cards' own draws (REPORT.en.md 307).
   Rng funeralRng_;
   Rng witchRng_;
+  Rng godRng_;  // God Mode's log-line pick (REPORT 312)
   Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
   bool timeMachineOn_ = false;
   std::map<int, std::shared_ptr<TimeSave>> timeSaves_;  // savedLife-age{N}.data

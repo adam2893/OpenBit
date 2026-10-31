@@ -787,6 +787,39 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
           else return fail("push array has a stray value");
           continue;
         }
+        q = findValue(elem, "godMode");
+        if (q != std::string::npos) {
+          ps.godMode = true;
+          skipWs(elem, q);
+          if (!readString(elem, q, ps.god.person) || ps.god.person.empty())
+            return fail("push \"godMode\" must name hero, family:N or child:N");
+          for (const char* key : {"godFirst", "godLast"}) {
+            size_t k = findValue(elem, key);
+            if (k == std::string::npos) continue;
+            skipWs(elem, k);
+            std::string v;
+            if (!readString(elem, k, v)) return fail(std::string("godMode \"") + key + "\" is not a string");
+            (key[3] == 'F' ? ps.god.first : ps.god.last) = v;
+          }
+          static const std::pair<const char*, int> kAttrs[] = {
+              {"godHappiness", 1}, {"godHealth", 2}, {"godSmarts", 3}, {"godLooks", 4}, {"godSexuality", 5},
+              {"godWillpower", 8}, {"godAthleticism", 9}, {"godKarma", 10}, {"godDiscipline", 11}};
+          for (const auto& a : kAttrs) {
+            size_t k = findValue(elem, a.first);
+            if (k == std::string::npos) continue;
+            long long v = 0;
+            if (readInt(elem, k, v) == std::string::npos)
+              return fail(std::string("godMode \"") + a.first + "\" is not an integer");
+            ps.god.attrs[a.second] = int(v);
+          }
+          spec.push.push_back(ps);
+          p = end + 1;
+          skipWs(json, p);
+          if (p < json.size() && json[p] == ',') ++p;
+          else if (p < json.size() && json[p] == ']') break;
+          else return fail("push array has a stray value");
+          continue;
+        }
         q = findValue(elem, "scenario");
         if (q != std::string::npos) {
           // Scripted-event form: the scenario class the game itself presented.
@@ -969,6 +1002,16 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     // A Time Machine entry is a card of its own, and the only one a dead hero still
     // gets (ScenarioTimeMachine's DEATH origin, REPORT.en.md 310).
     const int travel = i < int(spec.push.size()) ? spec.push[size_t(i)].timeMachine : 0;
+    if (i < int(spec.push.size()) && spec.push[size_t(i)].godMode && life.alive) {
+      AgeUp ev;
+      std::string why;
+      if (!sim.godModeEdit(life, ev, spec.push[size_t(i)].god, &why)) {
+        if (error) *error = "godMode: " + why;
+        return false;
+      }
+      events.push_back(eventJson(ev, life.hero.age));
+      continue;
+    }
     if (travel <= 0 && !((lived < spec.ages || !life.pendingCards.empty()) && life.alive)) break;
     if (travel > 0) {
       AgeUp ev;

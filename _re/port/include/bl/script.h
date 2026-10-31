@@ -44,6 +44,9 @@ struct PushSpec {
   int choice = -1;       // 0-based button index for that scenario, -1 = RNG
   // {"timeMachine": N}: this card is the Time Machine, N years back (REPORT 310).
   int timeMachine = 0;
+  // {"godMode": "hero", "godFirst": .., "godHappiness": 40, ...}: a God Mode edit (REPORT 312).
+  bool godMode = false;
+  GodModeEdit god;
 };
 
 struct ScriptSpec {

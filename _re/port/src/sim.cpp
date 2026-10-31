@@ -709,6 +709,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
         horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
         funeralRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0x9e3779b97f4a7c15ULL),
         witchRng_(seed ^ 0xd1310ba698dfb5acULL),
+        godRng_(seed ^ 0x6c62272e07bb0142ULL ^ 0x9e3779b97f4a7c15ULL),
         timeMachineRng_(seed ^ 0x0f1e2d3c4b5a6978ULL ^ 0x9e3779b97f4a7c15ULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
@@ -3964,6 +3965,99 @@ bool Sim::useTimeMachine(Life& life, AgeUp& out, int years) {
   out.table = "a16_time-machine-scenarios-enc";
   out.row_id = std::to_string(row + 1);
   out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  return true;
+}
+
+// God Mode (REPORT.en.md 312). GodModePersonConfig.SaveChangesAfterEditingPerson
+// (0x73f338e424) is a no-op unless the config was edited, applies the name, writes
+// every slider value raw into the person's attribute floats (no clamp; Sexuality is
+// converted back through the piecewise slider map and capped at 100, then the
+// orientation is recomputed: <=15 straight, <=40 bi, else gay), and logs one line
+// after a blank line. Ownership (MonetizationVars 0x13/0x14/0x15) has no per-edit
+// cost or cooldown; the script entry stands for an owned God Mode.
+bool Sim::godModeEdit(Life& life, AgeUp& out, const GodModeEdit& e, std::string* error) {
+  auto fail = [&](const std::string& m) { if (error) *error = m; return false; };
+  Hero& h = life.hero;
+  const bool self = e.person == "hero";
+  Person* person = nullptr;
+  Child* child = nullptr;
+  const auto index = [&](const char* prefix, size_t size) -> long {
+    const std::string p = prefix;
+    if (e.person.compare(0, p.size(), p) != 0) return -1;
+    const std::string n = e.person.substr(p.size());
+    if (n.empty() || n.find_first_not_of("0123456789") != std::string::npos) return -2;
+    const long i = std::stol(n);
+    return size_t(i) < size ? i : -2;
+  };
+  if (!self) {
+    const long f = index("family:", life.family.size());
+    const long c = index("child:", life.children.size());
+    if (f >= 0) person = &life.family[size_t(f)];
+    else if (c >= 0) child = &life.children[size_t(c)];
+    else return fail("godMode person must be hero, family:N or child:N with an existing index");
+    if ((person && !person->alive) || (child && !child->alive))
+      return fail("godMode person is dead");
+  }
+  if (e.attrs.empty() && e.first.empty() && e.last.empty()) return fail("godMode edits nothing");
+  // The attributes every person carries (ctor 0x73f3389040: Happiness, Health, Smarts,
+  // Looks, Sexuality, Willpower) plus the hero's Athleticism/Karma/Discipline.
+  // shortcut: the port keeps no attribute floats for relatives and no Willpower or
+  // Athleticism for the hero, so those edits are refused rather than dropped.
+  for (const auto& kv : e.attrs) {
+    const bool heroField = kv.first == 1 || kv.first == 2 || kv.first == 3 || kv.first == 4 ||
+                           kv.first == 5 || kv.first == 10 || kv.first == 11;
+    if (!self || !heroField) return fail("godMode attribute " + std::to_string(kv.first) +
+                                         " is not modelled for " + e.person);
+    if (kv.second < 0 || kv.second > 100) return fail("godMode slider values are 0-100");
+  }
+  if (self) {
+    if (!e.first.empty()) h.firstName = e.first;
+    if (!e.last.empty()) h.lastName = e.last;
+  } else if (person) {
+    if (!e.first.empty()) person->name = e.first;
+    if (!e.last.empty()) person->lastName = e.last;
+  } else {
+    if (!e.first.empty()) child->name = e.first;
+    if (!e.last.empty()) child->lastName = e.last;
+  }
+  for (const auto& kv : e.attrs) {
+    switch (kv.first) {
+      case 1: h.happiness = kv.second; break;
+      case 2: h.health = kv.second; break;
+      case 3: h.smarts = kv.second; break;
+      case 4: h.looks = kv.second; break;
+      case 10: h.karma = kv.second; break;
+      case 11: h.discipline = kv.second; break;
+      case 5: {
+        // ConvertToGameValueFromSliderValue (0x73f338e1e0), constants read from the
+        // binary: 0.45454547, 0.75757575, 1.8181819.
+        const float s = float(kv.second);
+        float g = s < 34 ? s * 0.45454547f : s < 68 ? (s - 33) * 0.75757575f + 15 : (s - 67) * 1.8181819f + 40;
+        const int homo = int(std::min(g, 100.0f));
+        h.sexuality = homo <= 15 ? "straight" : homo <= 40 ? "bi" : "gay";
+        break;
+      }
+    }
+  }
+  static const char* kSelf[] = {"I don't know who I am anymore.", "Something strange came over me.",
+                                "I may have been abducted by aliens."};
+  static const char* kOther[] = {"{0} seems different.", "There is something off about {0} lately.",
+                                 "{0} seems like a whole different person.", "Something happened to {0}.",
+                                 "I'm not sure what's gotten into {0} lately."};
+  std::string line;
+  if (self) {
+    line = kSelf[godRng_.below(3)];
+  } else {
+    // shortcut: RelationshipStatusStringForEditPersonInPointOfView(true) is not
+    // recovered; the port's own 'my <relation>' phrase stands in for it.
+    const std::string who = person ? "my " + person->relation
+                                   : std::string("my ") + (child->female ? "daughter" : "son");
+    line = kOther[godRng_.below(5)];
+    line.replace(line.find("{0}"), 3, who);
+    line[0] = char(std::toupper(static_cast<unsigned char>(line[0])));
+  }
+  out.title = "God Mode";
+  out.narrative = line;
   return true;
 }
 

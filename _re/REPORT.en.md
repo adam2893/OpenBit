@@ -23536,6 +23536,24 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 312. God Mode: raw sliders, one orientation map, one strange log line
+
+God Mode is a one-time purchase (MonetizationVars 0x13/0x14/0x15). Once owned it has no per-edit cost and no cooldown; the relationship list offers `Edit {0}` (#18536) under the title `God Mode` (#21980). The edit itself is `GodModePersonConfig.SaveChangesAfterEditingPerson` (0x73f338e424):
+
+- Nothing happens unless the config was marked edited.
+- Names are copied over. Every slider is written **raw** into the person's attribute float, with no clamp. Attribute ids: 1 Happiness, 2 Health, 3 Smarts, 4 Looks, 5 Sexuality, 8 Willpower for everybody; the hero adds 9 Athleticism, 10 Karma, 11 Discipline.
+- Sexuality goes back through `ConvertToGameValueFromSliderValue` (0x73f338e1e0): s<34 gives s*0.45454547, s<68 gives (s-33)*0.75757575+15, otherwise (s-67)*1.8181819+40. The constants were read from the binary at 0xfab3a0/0xfab3a4/0xfadd90. The result is capped at 100 and the orientation is recomputed: <=15 straight, <=40 bi, else gay. So slider 0-34 means straight, 35-67 bi, 68-100 gay.
+- After a blank line the life log gets one line. For the hero it is one of `I don't know who I am anymore.` (#24032), `Something strange came over me.` (#39488) or `I may have been abducted by aliens.` (#24655). For anyone else it is one of `{0} seems different.` (#70286), `There is something off about {0} lately.` (#42872), `{0} seems like a whole different person.` (#70287), `Something happened to {0}.` (#39485) or `I'm not sure what's gotten into {0} lately.` (#26032).
+- No cheat flag and no popup.
+
+Port: `Sim::godModeEdit(Life&, AgeUp&, const GodModeEdit&, std::string*)` plus a script push `{"godMode": "hero"|"family:N"|"child:N", "godFirst", "godLast", "godHappiness", ...}`. The keys carry a `god` prefix so the spec's top-level parser cannot mistake them for `sexuality`/`cash`-style fields. A God Mode push is applied before the year-limit check, so an edit after the final year still lands in `final`. The log pick uses its own `godRng_` stream.
+
+Shortcuts:
+- The port has no attribute floats for relatives and no Willpower/Athleticism for the hero. Those edits are **refused** with an error, not silently dropped. Hero ids 1-5, 10 and 11 work.
+- Slider input is limited to 0-100. The native slider ranges were not recovered.
+- The relationship phrase (`RelationshipStatusStringForEditPersonInPointOfView`) was not recovered, so the port's own `my <relation>` stands in for it. The child special-talent reroll is not modelled. Paywall/IAP and custom-life entry points are absent. The blank-line separator is not reproduced in `logLines`.
+
+`tools/test_god_mode.py` covers all 101 slider values: exact final stats, and orientation bands straight 0-34 / bi 35-67 / gay 68-100 against a float32 mirror of the native map. Over 40 seeds it checks family renames and sees all 5 other-person lines and all 3 hero lines. It also checks six refusals (willpower, relative health, slider 101, family:99, unknown person, empty edit) and a mid-life edit that keeps later years running.
 ## 311. Nine colour pools: what the secret-agent tables actually colour
 
 The nine `a16_secret-agent-*-color-enc` tables are not hue pickers. Eight of them are prose pools; the ninth is a wire puzzle. Each one is reached from a specific secret-agent screen, so the port wires them where the screen exists and leaves the ones with no port-side mechanic unwired.
