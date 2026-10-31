@@ -111,6 +111,8 @@ enum PendingCard {
   kPendingCrimeSentence = 14,      // the sentence
   kPendingHitmanOutcome = 15,      // the hired hit's result (REPORT.en.md 301)
   kPendingRobberyOutcome = 16,    // the heist's result (REPORT.en.md 302)
+  kPendingHorseBet = 17,          // the race field and the pick (REPORT.en.md 306)
+  kPendingHorseOutcome = 18,      // the race result (REPORT.en.md 306)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -384,6 +386,9 @@ class Sim {
   bool drawJewel(Life& life, const std::string& typeFilter, bool allowLuxury,
                  Rng& rng, Jewel& jewel);
   bool robberyOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool horseRacesYear(Life& life, AgeUp& out, int forcedChoice);
+  bool horseBetYear(Life& life, AgeUp& out, int forcedChoice);
+  bool horseOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   bool bookYear(Life& life, AgeUp& out, int forcedChoice);
   bool dietYear(Life& life, AgeUp& out, int forcedChoice);
   bool martialArtsYear(Life& life, AgeUp& out, int forcedChoice);
@@ -974,6 +979,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng murderRng_;
   Rng hitmanRng_;
   Rng robberyRng_;
+  Rng horseRng_;
   // The proposal card's own draw (REPORT.en.md 303).
   Rng propRng_;
   Rng jewRng_;

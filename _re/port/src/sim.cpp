@@ -706,6 +706,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       murderRng_(seed ^ 0x4b7f2d9a1c8e6350ULL ^ 0x9e3779b97f4a7c15ULL),
       hitmanRng_(seed ^ 0x2d6f8a4c1b9e7350ULL ^ 0x94d049bb133111ebULL),
         robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
+        horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
       poolRng_(seed ^ 0x6a09e667f3bcc908ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -3899,6 +3900,8 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
     if (kind == kPendingHitmanOutcome) return hitmanOutcomeYear(life, out, -1);
     if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
+    if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
+    if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -4139,6 +4142,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::murderYear, nullptr, 2},
         {&Sim::hitmanYear, nullptr, 2},
         {&Sim::robberyYear, nullptr, 1},
+        {&Sim::horseRacesYear, nullptr, 1},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -24334,6 +24338,132 @@ bool Sim::robberyOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = "I was arrested for armed robbery!";
     out.karma = pointsForImpact(-2);
   }
+  return true;
+}
+
+// The horse races (REPORT.en.md 306). The original runs the race as a
+// mini-game (ScenarioGameHorseRacing); the port rolls the field's Success
+// Score instead and splits the lane into three cards: the friends' invitation
+// (ScenarioOpportunityHorseTrack), the horse picker (ScenarioHorseRacesBet) and
+// the result (ScenarioHorseRacesOutcome).
+// shortcut: the wager and the odds are the port's -- the original's bet screen
+// is not in the metadata, only its outcome strings are.
+bool Sim::horseRacesYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return false;
+  if (!ensureTable("a16_horses-enc")) return false;
+  if (forcedChoice < 0 && !horseRng_.chance(1.0 / 25.0)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioOpportunityHorseTrack";
+  out.title = "Horse Races";  // #23121
+  out.body = "Some of your friends are going to the horse races.\n\nWill you join them?";  // #39447
+  out.options.push_back("Join them");             // #27968
+  out.options.push_back("I'd rather stay home");  // #25888
+  const int pick = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(horseRng_.below(2));
+  out.choice = out.options[size_t(pick)];
+  if (pick == 1) {
+    out.narrative = "I turned down an opportunity to go to the horse races with friends.";  // #25515
+    return true;
+  }
+  if (h.money < 100) {
+    out.narrative = "I didn't have enough money to go to the horse races.";  // #23997
+    return true;
+  }
+  out.narrative = "I went with some friends to the horse races.";  // #25790
+  life.pendingCards.push_back(kPendingHorseBet);
+  return true;
+}
+
+bool Sim::horseBetYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!ensureTable("a16_horses-enc")) return false;
+  const Table& t = tbl("a16_horses-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) rows.push_back(r);
+  if (rows.size() < 2) return false;
+  h.horseField.clear();
+  h.horseScores.clear();
+  const size_t fieldSize = rows.size() < 5 ? rows.size() : 5;
+  for (size_t i = 0; i < fieldSize; ++i) {
+    const size_t k = size_t(horseRng_.below(uint32_t(rows.size())));
+    h.horseField.push_back(trim(t.at(rows[k], "Horse")));
+    h.horseScores.push_back(int(t.num(rows[k], "Success Score")));
+    rows.erase(rows.begin() + long(k));
+  }
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_horses-enc";
+  out.title = "Horse Races";    // #23121
+  out.body = "Pick your horse";  // #33883: the picker label, used as the body
+  out.options = h.horseField;
+  const size_t pickIdx =
+      forcedChoice >= 0 && size_t(forcedChoice) < out.options.size()
+          ? size_t(forcedChoice)
+          : size_t(horseRng_.below(uint32_t(out.options.size())));
+  out.choice = out.options[pickIdx];
+  h.horsePicked = out.choice;
+  h.horseWager = std::max<long long>(100LL, h.money / 10);
+  if (h.horseWager > h.money) h.horseWager = h.money;
+  life.pendingCards.push_back(kPendingHorseOutcome);
+  return true;
+}
+
+bool Sim::horseOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.horseField.size() < 2 || h.horsePicked.empty()) {
+    h.horseField.clear();
+    h.horseScores.clear();
+    return false;
+  }
+  // Weighted by Success Score: a faster horse wins more often, but any runner
+  // can take the race -- the mini-game's wobble folds into this one roll.
+  double total = 0.0;
+  for (int s : h.horseScores) total += double(std::max(1, s));
+  const double roll = horseRng_.unit() * total;
+  size_t winner = h.horseField.size() - 1;
+  double acc = 0.0;
+  for (size_t i = 0; i < h.horseField.size(); ++i) {
+    acc += double(std::max(1, h.horseScores[i]));
+    if (roll <= acc) {
+      winner = i;
+      break;
+    }
+  }
+  size_t picked = 0;
+  for (size_t i = 0; i < h.horseField.size(); ++i)
+    if (h.horseField[i] == h.horsePicked) picked = i;
+  const std::string winnerName = h.horseField[winner];
+  const std::string pickedName = h.horsePicked;
+  long long wager = h.horseWager;
+  if (wager > h.money) wager = h.money;
+  if (wager < 0) wager = 0;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioHorseRacesOutcome";
+  out.title = "Horse Races";  // #23121
+  if (picked == winner) {
+    const int score = std::max(1, h.horseScores[picked]);
+    const long long odds = std::max<long long>(2LL, 12LL - 2LL * static_cast<long long>(score));
+    const long long payout = wager * odds;
+    h.money += payout;
+    out.body = winnerName + " won the race!\n\nYou won " + money(payout) + "!";  // #70414/#70416
+    out.narrative = "I won " + money(payout) + " after betting on " + winnerName + "!";  // #25829
+  } else {
+    h.money -= wager;
+    out.body = winnerName + " won the race!\n\nYou lost " + money(wager) + " by betting on " +
+               pickedName + ".";  // #70414/#70415
+    out.narrative = "I lost " + money(wager) + " after betting on a losing horse named " +
+                    pickedName + "!";  // #24621
+  }
+  h.horseField.clear();
+  h.horseScores.clear();
+  h.horsePicked.clear();
+  h.horseWager = 0;
   return true;
 }
 

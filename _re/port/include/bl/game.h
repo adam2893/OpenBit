@@ -91,6 +91,12 @@ struct Hero {
   // result card (REPORT.en.md 302).
   std::string robDisguise, robWeapon, robGetaway;
   int robPower = 0;
+  // The horse-races chain (REPORT.en.md 306): the picker stores the
+  // field and the pick, the result card settles them against the winner.
+  std::vector<std::string> horseField;
+  std::vector<int> horseScores;
+  std::string horsePicked;
+  long long horseWager = 0;
   int discipline = 0;
   // Fame is a float 0..100 at hero+0xb4 (REPORT.en.md 136):
   // SimPerson::ImpactFame @0x73f30e4d88 adds

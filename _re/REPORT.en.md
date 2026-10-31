@@ -23536,6 +23536,78 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 306. The horse races: three cards from a16_horses-enc
+
+The §305 audit left 48 tables in gamedata_plain that no port source names. The horse
+races are the first of them whose whole card text survives in the metadata -- the
+friends' invitation, the horse picker and both result lines, with both journals -- and
+the port had no horse, race, bet or tip code at all. It is wired here. a16_horses-enc
+leaves the unreferenced list (48 -> 47); the card denominator does not move, because a
+race payload table was never counted as a card table.
+
+**What the game runs.** Five Scenario classes carry the lane. ScenarioOpportunityHorseTrack
+(.ctor, RefreshScenario, ChoiceSelectedAtIndex, ScenarioIsEligibleForRandomPush) is the
+friends' invitation. ScenarioHorseRacesBet (.ctor, RefreshScenario, ChoiceSelectedAtIndex)
+is the picker. ScenarioGameHorseRacing (.ctor, MiniGameCompleted, ChoiceSelectedAtIndex)
+is the race itself. ScenarioHorseRacesOutcome (.ctor, RefreshScenario, DismissSelected) is
+the result card. ScenarioHorseRaces holds the entry point and a .cctor. No gamedata table
+carries the picker's body or the result body as a card row: the picker is a dropdown, the
+race is a mini-game, and the only text a card shows is the three strings below plus the
+two journals.
+
+**The table.** a16_horses-enc has 114 rows and two columns, Horse and Success Score
+(Adam Saddler 1, Air Mail 3, Aphrodite 4, Arm in Arm 2). No row names a track, a distance
+or a prize; the score is the only thing that can decide a result, so the port draws the
+winner from the field weighted by it and pays the picked horse's own weight back.
+
+**The literals.**
+
+- invitation body #39447: "Some of your friends are going to the horse races.\n\nWill you
+  join them?" (its siblings #39444 eating, #39445 casino, #39446 nightclub have the same
+  shape, so the body is a template the game fills per activity).
+- the two buttons #27968 "Join them", #25888 "I'd rather stay home".
+- picker label #33883 "Pick your horse".
+- results: #70414 "{0} won the race!", #70415 "{0} won the race!\n\nYou lost {1} by
+  betting on {2}.", #70416 "{0} won the race!\n\nYou won {1}!" (fragments #4128/#4129
+  are the same two strings split at the name).
+- journals: #25829 "I won {0} after betting on {1}!", #24621 "I lost {0} after betting
+  on a losing horse named {1}!", #25790 "I went with some friends to the horse races.",
+  #25515 "I turned down an opportunity to go to the horse races with friends.", #23997
+  "I didn't have enough money to go to the horse races.".
+- title #23121 "Horse Races" (the tip card is #23123, the track menu is #23124).
+
+**The port.** Three cards, chained through the pending list like the §301-§302 lanes.
+Sim::horseRacesYear is the wheel seat (1 ticket): age 18+, not in prison, one year in 25.
+It shows the invitation with the two buttons; "I'd rather stay home" journals #25515 and
+ends the lane; "Join them" with less than $100 journals #23997 and ends it; otherwise it
+journals #25790 and pushes kPendingHorseBet. Sim::horseBetYear, one year later, deals five
+distinct horses from the table, offers their names as the options, journals nothing, stores
+the pick and the wager, and pushes kPendingHorseOutcome. Sim::horseOutcomeYear draws the
+winner weighted by Success Score and shows one of the two result bodies: a win pays
+wager * max(2, 12 - 2*score) and journals #25829; a loss takes the wager and journals
+#24621. The lane has its own draw, horseRng_ (include/bl/sim.h, seeded in the Sim
+constructor), because the extra draws would otherwise move every family that comes after
+it -- the §282 lesson.
+
+**Shortcuts, marked in the source.**
+
+- the picker's body is the dropdown label #33883. The card in the game is a dropdown with
+  a label above it; AgeUp carries one text field, so the label becomes the body.
+- the wager (max($100, cash/10), capped at cash) and the odds (12 - 2*score, never below
+  2) are the port's. The metadata has the three result strings but no bet amount and no
+  odds table, and the wager has to be something the hero can always pay.
+- the "There are no horse races in {0} because gambling is illegal." gate (#42826) is not
+  modelled: the port has no country-level gambling legality flag.
+- the tip and psychic-dream lines (#48635, #48893, #24302, #24905, #10169, #10170) belong
+  to the Horse Tip card (#23123) and the menu's Race Tracks entry, not to this lane, so
+  they are left unwired rather than dressed as cards.
+
+**test_horse_races.py** parses the table's names, then runs 120 seeds x 80 ages with
+$500,000 in cash. It asserts the invitation body and both button labels; the picker's
+choice is always a table horse; each result card matches #70416 or #70415, its winner is
+a table horse, its journal matches #25829 or #24621 with the same amount, and the loser
+named on a loss is exactly the horse the picker showed one event earlier. Measured over those seeds: 31 invitations, 13 accepted, 18 declined, 13 horses picked, 5 wins and 8 losses -- both result bodies and both journals are reached.
+
 ## 305. Two flavour pools: the prayer and the crowd's answer
 
 The §304 audit left 50 tables in gamedata_plain that no port source names. Two of them
