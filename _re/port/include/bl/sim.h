@@ -133,6 +133,7 @@ enum PendingCard {
   kPendingWitchResult = 21,       // a = native popup title, b = cure row or shortage
   kPendingWitchCure = 22,         // a = disease row; restores attributes on dismissal
   kPendingUniversityFund = 23,    // the tuition screen behind an accepted application (REPORT.en.md 317)
+  kPendingCasinoBankrupt = 24,    // the casino's sixth losing year closes it (REPORT.en.md 320)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -519,6 +520,8 @@ class Sim {
   void makeFighter(Life& life);
   void makeBlackMarketeer(Life& life);
   void makeCasino(Life& life);
+  // The harness's "only" key: try just the named family in the wheel (319).
+  void setOnlyFamily(const std::string& name) { onlyFamily_ = name; }
   void makeCult(Life& life);
   void makeDealer(Life& life);
   void makeMafia(Life& life);
@@ -667,6 +670,11 @@ class Sim {
   std::string cultToken(const std::string& key);
   std::string cultHonorificPick();
   void ensureCasinoFields(Life& life);
+  // The casino's own books (REPORT.en.md 319): one silent pass per year before
+  // the cards are picked, and the tier rate its tax comes from.
+  void casinoRunYear(Life& life);
+  bool casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice);
+  double casinoTaxRate(double taxable) const;
   void ensureCultFields(Life& life);
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);
   std::string dealerToken(const std::string& key);
@@ -1078,6 +1086,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The chooser front seat rotates one family per year (REPORT.en.md 240), so every
   // family is first in turn instead of by luck of a draw.
   size_t dispatchCursor_ = 0;
+  std::string onlyFamily_;  // the "only" harness key: one family asked for by name
   // The wheel starts at a seed-drawn seat, not at zero: with a fixed start only the
   // first ~80 wheel seats ever led a life, so a family late in the list never did.
   bool wheelStarted_ = false;

@@ -437,6 +437,43 @@ struct Hero {
   int casinoCelebCraziness = 0;
   int casinoGamblerHappiness = 60;   // what the floor thinks of the house
   int casinoGamblerAddiction = 40;   // how deep in the regulars are
+  // The casino economy (REPORT.en.md 319). The native casino keeps one
+  // SimGameRoom per installed unit string -- a unit count, the bet band, the
+  // house win rate and a popularity of its own -- and a running ledger that the
+  // annual review card prints. casinoGames stays the list of names the older
+  // cards talk about; casinoRooms is the state behind it.
+  struct CasinoRoom {
+    std::string game;
+    std::string unitString;
+    int units = 0;
+    int baseCapacity = 0;
+    int costPerUnit = 0;
+    int installationCost = 0;
+    int houseWinRate = 0;   // percent, 0..100
+    int defaultHouseWinRate = 0;  // the row's Default House Win Rate, drift target
+    int minBet = 10;
+    int maxBet = 100;
+    int popularity = 50;
+    long long lastWagers = 0;
+    long long lastHouseWins = 0;
+  };
+  std::vector<CasinoRoom> casinoRooms;
+  long long casinoBank = 0;              // SimCasino bankBalance[0x28]
+  long long ledgerWagers = 0;
+  long long ledgerPayouts = 0;
+  long long ledgerGamblingRevenue = 0;
+  long long ledgerPerformanceRevenue = 0;
+  long long ledgerAmenityRevenue = 0;
+  long long ledgerTaxes = 0;
+  long long ledgerExpenses = 0;
+  long long ledgerNetIncome = 0;
+  int casinoType = 1;                    // 1..5, the structure's own rung in a16_casino-casino-structure-enc
+  long long casinoBaseMonthlyCost = 0;   // that structure's Base Monthly Cost
+  int casinoLedgerYear = -1;             // the last year the books were run
+  int casinoBankruptYears = 0;           // consecutive years the casino pot ended negative
+  std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
+  std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
+  std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for
 
   // The commune (report 62): the hero founds a cult and keeps it believing.
   bool cultLeader = false;

@@ -4134,6 +4134,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     // The tuition screen is the one pending card the script harness can answer: its
     // options are the four lanes, so a forced index picks the lane (REPORT.en.md 317).
     if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
+    if (kind == kPendingCasinoBankrupt) return casinoBankruptYear(life, out, -1);
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
@@ -4168,6 +4169,11 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   // yearly lines.
   std::vector<std::string> loanLines;
   studentLoanLines(life, loanLines);
+  // The casino's books run on the hero's own yearly tick, not on the casino
+  // family: SimCasino::IncrementAge (vaddr 0x2aac1cc) is part of the age-up
+  // itself, and the annual review card only reports what it stored (REPORT.en.md
+  // 319). The pass guards itself against a second run for the same age.
+  if (life.hero.ownsCasino && life.hero.age >= 18) casinoRunYear(life);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
@@ -4351,6 +4357,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
       // test even when its coin is 1, so the rare families buy reach here instead
       // of inflating a coin that the game states.
       int tickets = 1;
+      // The family's name, for the harness: a test that wants one family's card
+      // asks for it by name instead of waiting for the wheel to come round
+      // (spec key "only", REPORT.en.md 319).
+      const char* name = nullptr;
     };
     static const Family kFamilies[] = {
         {&Sim::aircraftDangerYear, nullptr},
@@ -4460,7 +4470,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::spyYear, nullptr},
         {&Sim::fightYear, nullptr},
         {&Sim::bmYear, nullptr},
-        {&Sim::casinoYear, nullptr},
+        {&Sim::casinoYear, nullptr, 1, "casino"},
         {&Sim::cultYear, nullptr},
         {&Sim::dealerYear, nullptr},
         {&Sim::mobsterSpendYear, nullptr},
@@ -4503,6 +4513,23 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     if (!wheelStarted_ && wn > 0) {
       dispatchCursor_ = size_t(dispatchRng_.below(uint32_t(wn)));
       wheelStarted_ = true;
+    }
+    // The harness can ask for one family by name (spec key "only", REPORT.en.md 319):
+    // the year's own events and the other families stay out of the way, so a card
+    // that the wheel reaches rarely can still be tested.
+    if (!onlyFamily_.empty()) {
+      for (size_t k = 0; k < wn; ++k) {
+        const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
+        const Family& f = kFamilies[idx];
+        if (f.name == nullptr || onlyFamily_ != f.name) continue;
+        if (f.ready != nullptr && !f.ready(life)) return false;
+        if ((this->*f.run)(life, out, forcedChoice)) {
+          dispatchCursor_ = (dispatchCursor_ + 1) % wn;
+          return true;
+        }
+        return false;
+      }
+      return false;
     }
     // A conviction and a prison year are year events, not cards: they take the year
     // ahead of the wheel, which used to starve both (30 lives gave one prison year, so
@@ -8688,6 +8715,10 @@ void Sim::ensureCasinoFields(Life& life) {
     }(t.size()), casinoRng_);
     if (r != size_t(-1)) {
       h.casinoStructure = trim(t.at(r, "Structure Type"));
+      // The structure ladder is the casino's tier: the table climbs one rung per
+      // structure and the revenue formulas switch on a 1..5 tier (section 319).
+      h.casinoType = int(r) + 1;
+      if (t.has("Base Monthly Cost")) h.casinoBaseMonthlyCost = (long long)t.num(r, "Base Monthly Cost");
       if (t.has("Amenity Capacity")) amenityCap = int(t.num(r, "Amenity Capacity"));
       if (t.has("Game Room Capacity")) gameCap = int(t.num(r, "Game Room Capacity"));
     }
@@ -8730,6 +8761,9 @@ void Sim::ensureCasinoFields(Life& life) {
       const std::string name = resolve(trim(t.at(r, "Amenity Name")));
       if (name.empty()) break;
       h.casinoAmenities.push_back(name);
+      // The amenity's own numbers, kept beside the name for the books (319).
+      h.casinoAmenityMonthly.push_back(t.has("Monthly Expenses") ? (long long)t.num(r, "Monthly Expenses") : 0);
+      h.casinoAmenityTheme.push_back(trim(t.at(r, "Theme")));
       used.push_back(lower(trim(t.at(r, "Category"))));
       if (t.has("Base Popularity Impact")) h.casinoPopularity += int(t.num(r, "Base Popularity Impact"));
     }
@@ -8740,8 +8774,24 @@ void Sim::ensureCasinoFields(Life& life) {
     for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
     for (int slot = 0; slot < gameCap && !pool.empty(); ++slot) {
       const size_t at = casinoRng_.below(uint32_t(pool.size()));
-      const std::string g = trim(t.at(pool[at], "Game"));
-      if (!g.empty()) h.casinoGames.push_back(g);
+      const size_t row = pool[at];
+      const std::string g = trim(t.at(row, "Game"));
+      if (!g.empty()) {
+        h.casinoGames.push_back(g);
+        // The room state behind the name (REPORT.en.md 319).
+        Hero::CasinoRoom room;
+        room.game = g;
+        room.unitString = t.has("Unit String") ? trim(t.at(row, "Unit String")) : "table";
+        room.baseCapacity = t.has("Base Unit Capacity") ? int(t.num(row, "Base Unit Capacity")) : 1;
+        room.costPerUnit = t.has("Cost Per Unit") ? int(t.num(row, "Cost Per Unit")) : 0;
+        room.installationCost = t.has("Installation Cost") ? int(t.num(row, "Installation Cost")) : 0;
+        room.houseWinRate = t.has("Default House Win Rate") ? int(t.num(row, "Default House Win Rate")) : 50;
+        room.defaultHouseWinRate = room.houseWinRate;
+        room.minBet = t.has("Min Bet") ? int(t.num(row, "Min Bet")) : 10;
+        room.maxBet = t.has("Max Bet") ? int(t.num(row, "Max Bet")) : 100;
+        room.units = room.baseCapacity;
+        h.casinoRooms.push_back(room);
+      }
       pool.erase(pool.begin() + static_cast<long>(at));
     }
   }

@@ -554,6 +554,20 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("casino is not a boolean");
   }
 
+  p = findValue(json, "only");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (!readString(json, p, spec.only)) return fail("only is not a string");
+  }
+
+  p = findValue(json, "casinoBank");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("casinoBank is not an integer");
+    spec.casino_bank = v;
+  }
+
   p = findValue(json, "pet");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -918,7 +932,13 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.spy) sim.makeSecretAgent(life);
   if (spec.fight) sim.makeFighter(life);
   if (spec.black_market) sim.makeBlackMarketeer(life);
-  if (spec.casino) sim.makeCasino(life);
+  if (spec.casino) {
+    sim.makeCasino(life);
+    // Harness hook: a seeded pot lets a test drive the bankruptcy counter
+    // without simulating decades of losing books (REPORT.en.md 320).
+    if (spec.casino_bank != 0) life.hero.casinoBank = spec.casino_bank;
+  }
+  if (!spec.only.empty()) sim.setOnlyFamily(spec.only);
   if (spec.cult) sim.makeCult(life);
   if (spec.dealer) sim.makeDealer(life);
   if (spec.mafia) sim.makeMafia(life);
@@ -1048,7 +1068,18 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     else sim.forceScenario(std::string(), 0);
     AgeUp ev;
     const int ageBefore = life.hero.age;
-    if (!sim.ageUp(life, ev, forced)) break;  // no real row matched this year
+    if (!sim.ageUp(life, ev, forced)) {  // no real row matched this year
+      // A script pinned to one family ("only") goes cardless most years; keep the
+      // life running instead of ending it on the first empty year. A dead hero can
+      // never produce another card, so his years are not worth advancing (the card
+      // counter would otherwise spin on a life that already ended).
+      // In "only" mode a cardless year still costs a year of the hero's life, so
+      // "ages" is read as his age cap there (the card index keeps its alignment).
+      if (spec.only.empty()) break;
+      if (!life.alive) break;
+      if (life.hero.age >= spec.ages) break;
+      continue;
+    }
     if (life.hero.age != ageBefore) ++lived;  // a pending card leaves the age alone
     // The first age-up also runs SimHero.SetupEverythingElseForNewHero, a real
     // state change that belongs to no scenario. It is reported once as the

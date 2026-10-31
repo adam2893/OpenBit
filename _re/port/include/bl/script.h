@@ -94,6 +94,12 @@ struct ScriptSpec {
   bool fight = false;
   bool black_market = false;
   bool casino = false;
+  // One family by name, for the harness: the year is handed to that family alone
+  // (REPORT.en.md 319).
+  std::string only;
+  // Seed the casino pot so a test can reach the bankruptcy counter without
+  // simulating decades of losing books (REPORT.en.md 320). 0 leaves it alone.
+  long long casino_bank = 0;
   bool cult = false;
   bool pet = false;
   // The outdoors (REPORT.en.md 71).

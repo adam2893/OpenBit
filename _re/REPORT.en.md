@@ -23536,6 +23536,205 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 320. The casino's bankruptcy: six losing years and a card that closes the house
+
+Section 319 gave the casino a pot (BankBalance, SimCasino+0x28) and a yearly pass that moves it. A
+house that bleeds money never closed: the pot simply went further negative. This section adds the
+native counter and the card that ends it.
+
+### The timer
+
+SimCasino::IncrementAge tests the pot at 0x2aac7d4. While it is negative an int counter at
+SimCasino+0x88 is incremented (store 0x2aac7e0, compare 0x2aac7e4); when the counter reaches 6
+(0x2aac7ec) the pass calls CancelAllCasinoScenarios (0x2aac7f0) and queues
+ScenarioCasinoAgeUpBankrupt (ctor 0x2aac80c), then resets the counter. The counter is not reset
+when the card is queued, so any later losing year starts the climb again - in practice the casino
+is gone by then.
+
+Port side: Hero::casinoBankruptYears, incremented at the tail of Sim::casinoRunYear
+(src/fam/casino.cpp) while casinoBank < 0, and at six it queues kPendingCasinoBankrupt and resets.
+The pass itself draws no RNG, so the casino stream order from section 319 is unchanged.
+
+### The card
+
+* ExteriorTitle #15240 "Casino", Title #12796 "Bankrupt".
+* Body #50267: "Your casino has been bankrupt for 5 years.\n\nYou were forced to close it for
+  good." The literal says five years while the code fires on the sixth consecutive negative year;
+  the port keeps both facts as they are.
+* No dismiss button; the only choice is #32661 "Ok" (Refresh 0x3564dbc, handler 0x3564f50).
+
+The handler (0x3564f50) calls ShutDownCasino (0x2ab3e10), logs, and refreshes the interface. It
+writes no hero money, no hero stat, no room, amenity or zone state - the strb at 0x73f39fef78 is an
+il2cpp class-init guard. ShutDownCasino moves the casino out of the live life, which the port models
+by clearing ownsCasino, the pot, the rooms, games, amenities and the gambler bookkeeping.
+
+### The zoo is not a mirror
+
+SimZoo::IncrementAge (0x2b592bc) keeps the same sort of counter (SimZoo+0x148, threshold 3) but the
+card it queues, ScenarioZooAgeUpBankrupt (ctor 0x29a3370), is a warning: body #41980, choices
+#27219 "Invest more money" and #28743 "Let it go", where investing spawns
+ScenarioZooAgeUpBankruptInvest with the shortfall in +0x180 and an amount input bounded by the
+hero's capital. That chain is a later unit, not this one.
+
+### Verified
+
+With the pot seeded at -1,000,000,000 through the harness key casinoBank (a pot that can never
+recover in the years a test can afford to run):
+
+* the card lands at age 23 with the sixth losing year, body and choice exactly as above, and no
+  stat deltas;
+* capping the life at age 22 shows no card;
+* after the closing card no Casino Ledger appears, and no life sees the card twice;
+* the hero's money is identical to a control run with a solvent pot (2,940,000 on seed 7 - the
+  missing 60,000 is the tuition of section 317, which both lives pay), because closing the casino
+  charges nothing;
+* a pot left at zero closes the house on seeds 2, 3 and 4 at age 23 and never closes it on seeds 1,
+  5 and 6: the default house is not always losing, so the card is a consequence of the books, not
+  of the harness.
+
+tools/test_casino_bankrupt.py covers all of it; the full 108-test suite passed on the same binary
+(bee47b9df9a7467de1df08952fa7eceee0c4515b6b0f76bae4fc0d30779adde3) that these sections describe.
+
+### Ceilings
+
+* The consumer order of the review card and the bankruptcy card in the same year is unrecovered;
+  the port drains pending cards in queue order.
+* The card frequency is the native counter, but the port's pass runs on the hero age-up only, so a
+  year that draws no casino card can still close the house - native does the same, the card just
+  arrives on the next pending drain.
+* The five-year wording against the six-year threshold is native behaviour, not a port typo.
+* Clearing the rooms and amenities approximates ShutDownCasino, whose exact field set was not
+  walked; the pot and the hero wallet are the parts the tests pin.
+* In "only" harness mode "ages" is the hero's age cap (see section 318's harness note), which is why
+  the boundary test uses 22 and 23.
+
+## 319. The casino's books: a silent yearly pass and the Casino Ledger card
+
+Every other casino card in the port was a menu: it drew a few state values and printed a
+sentence. The economy behind the casino was never modelled — buying a house paid for nothing,
+and the yearly age-up ran no books at all. This section adds the pass and the card that reports
+it.
+
+### The pass
+
+`SimCasino::IncrementAge` (vaddr 0x2aac1cc) runs once per hero age-up, whatever cards the year
+draws, and it is silent: no LifeLog, no hero stat, no hero money. The port calls the same pass
+from `Sim::casinoRunYear` (`src/fam/casino.cpp`), hooked into `Sim::ageUpYear` beside the
+student-loan pass, and guarded so it cannot run twice for one age.
+
+Draws happen in this order, and the order matters because a casino has its own stream:
+
+1. per act: no draw in `IncrementAge` itself (0x2aac568);
+2. per room: `SimCasinoGameRoom::SimulateAgeUpGames` (0x2abb0f8), four draws per installed
+   unit — RNG(5,10), the room popularity band, the casino type band, then RNG(0,100) for the
+   house-win roll — and two more per room afterwards;
+3. per amenity: no draw (0x2aac63c);
+4. `GetWagersPlaced` (0x2aad560): exactly one RNG(20,70), then a punter loop with no draw;
+5. `GetGameRoomRevenue`: no draw;
+6. `GetEntertainmentRevenue`: per act RNG(20,61) then RNG(60,101);
+7. `GetAnnualAmenitiesRevenue`: per amenity the popularity band, then the type-4/5 band;
+8. expenses and the tax rate: no draw;
+9. the scenario eligibility ladder for the year's cards.
+
+### Rooms
+
+Per installed unit the game counts bets like this: `w21 = RNG(5,10)`, plus RNG(30,70) at room
+popularity above 80, RNG(10,50) at 40–80 and RNG(5,30) at 40 or below, plus a type band —
+RNG(0,10) at casino type 1, RNG(10,15) at 2, RNG(15,20) at 3, RNG(20,25) at 4, RNG(25,30) at 5.
+The stake is `MinBetAmount * multiplier * w21` with multipliers 1.0, 1.1, 1.2, 1.25 and 2.0 for
+those types — no draw picks the multiplier. The house keeps the unit's wager when
+`HouseWinRate >= RNG(0,100)`. Afterwards the room draws RNG(1,3) twice: once for a signed
+popularity move inside 0..100, once to drift the house win rate.
+
+A room's capacity is `BaseUnitCapacity + 5 * (type - 1)` (0x2abb4fc), its yearly cost is the
+cost-of-living-adjusted `CostPerUnit * units` (0x2abb914), and a room's popularity is its own
+0..100 float, not the casino's.
+
+### Punters, amenities, expenses, tax
+
+The punter side is one RNG(20,70) and then a deterministic walk over the gambler list, so a
+punter's stake is a function of the floor's stats.
+
+An amenity scores `themeTerm + popBand + typeBand`: +200 when the amenity's Theme matches the
+casino's, otherwise −50; plus RNG(50,100) at casino popularity 40 or below, RNG(100,150) at
+40–80 and RNG(150,200) above; plus RNG(300,500) at type 5 or RNG(100,200) at type 4. The score is
+a percentage: `revenue = score / 100 * 12 * MonthlyExpenses`. An amenity's yearly cost is simply
+`12 * MonthlyExpenses`, and amenities carry no popularity of their own — their
+BasePopularityImpact feeds the casino's.
+
+`GetAnnualExpenses` (0x2aadef8) adds, in order: every amenity's 12 months, the celebrity's
+Salary, the celebrity's extra expenses, every act's Salary, every room's adjusted cost per unit
+times units, and finally the casino's own 12 months of `GetMonthlyExpenses`. That last one
+(0x2ab2d5c) cost-of-living adjusts the structure row's `Base Monthly Cost` with a floor of 100
+and rounds to 100. Only the rooms and the monthly cost carry the cost-of-living ratio.
+
+Then, in `IncrementAge` (0x2aac65c..0x2aac788):
+
+```
+payouts   = (roomWagers + gamblerWagers) - roomHouseWins - gamblerHouseWins
+gross     = gamblingRevenue + entertainmentRevenue + amenityRevenue
+taxable   = gross - expenses
+taxes     = max(0, taxable * rate(taxable))
+net       = gross - taxes - expenses + FirstYearGamblerProfits
+bank     += net
+```
+
+`BankBalance` at SimCasino+0x28 is the **casino's** pot, not the hero's wallet: nothing in
+`IncrementAge` credits `Hero.Money`. A casino that loses money pushes
+`ScenarioCasinoAgeUpBankrupt`; the port does not model bankruptcy yet (see the ceilings).
+
+The rate is `DataHub::GetTaxRateForUnadjustedIncomeInCountry`: the US ladder (10% to $9,325,
+15% to $37,950, 25% to $91,900, 28% to $191,650, 33% to $416,700, 35% to $418,400, 39.6% above)
+scaled by the country's Top Tax Rate against the US one. Measured: a $188,544 gross against
+$134,000 expenses taxes at 25% of $54,544 = $13,636.
+
+### The card
+
+`ScenarioCasinoAgeUpAnnualReview` (refresh 0x3564230) is pushed every year its gate passes:
+`ScenarioIsEligibleForRandomPush` (0x3564d24) tests hero age 18 or over and not in prison, with
+no RNG and no ownership check. Its exterior title is #15240 `Casino`, its title #15245
+`Casino Ledger`, it has no dismiss button, its choice handler (0x73f39fed20) is a bare `ret`,
+and its single choice is #32432 `OK`, so the card is pure reporting.
+
+The body is the ledger feedback line plus #41701 `The annual report for your casino is now
+available.` and the labelled rows — Wagers Placed, Payouts, Gambling Revenue, Performance
+Revenue, Amenity Revenue, Taxes, Annual Expenses, Net Income — with the empty-house variant
+#41702 `The annual report for your casino is now available.\n\nYour casino made no money.\n\nInstall
+game rooms and amenities, or hire performers in order for your casino to be profitable.` in
+place of the rows when no room, amenity, act or celebrity is installed. A bar labelled #34316
+`Popularity` shows the casino's popularity.
+
+The port renders that card with the same literals, the feedback window
+`a16_casino-casino-ledger-feedback-enc` (Min Casino Popularity / Max Casino Popularity) and a
+`My casino made {0} in revenue last year.` narrative line.
+
+```
+"only":"casino" seeds 1..24, ages 80:      26 Casino Ledger cards
+seed 1, age 55:  wagers $42,531  payouts $15,987  gambling $26,544
+                 amenity $162,000  taxes $13,636  expenses $134,000  net $40,908
+tests: tools/test_casino_ledger.py green
+```
+
+### Ceilings
+
+* How often the native casino card fires is not recovered: both the review card and the ordinary
+  casino dumb-scenario card are queued in the same year and the consumer of that queue was not
+  located. The port deals one casino card a year, so the ledger prints only in years where no
+  other casino card claimed the year — measured above as roughly one a life.
+* An act's salary and a celebrity's fee are runtime floats with no table column and no recovered
+  producer, so the port prices neither: entertainment revenue and its share of the expenses stay
+  at zero, and the act-side RNG(20,61)/RNG(60,101) pair is not drawn.
+* The punter loop has no recovered expression; the port spreads the single RNG(20,70) over the
+  punters by style, weights it by the room's popularity and lets HouseWinRate take its share.
+* The cost-of-living ratio needs a reference country whose string is not recovered; the port uses
+  the nominal amount with the native floor and rounding.
+* Room popularity and house-win-rate drift: the sign draw is native, the drift magnitude toward
+  the row's default is the port's.
+* The port keeps a casino's rooms as installed at purchase time at `BaseUnitCapacity` units; the
+  room-buying and upgrade cards (which change type and units) are not ported, so the type ladder
+  is only ever used at the type the purchase row gave.
+* Bankruptcy (`ScenarioCasinoAgeUpBankrupt`) is not implemented.
+
 ## 318. The mischief card: a friend, an activity, and a chance the police hear about it
 
 `ScenarioCrimeDelinquencyPush` is the one delinquency card the played lives kept showing

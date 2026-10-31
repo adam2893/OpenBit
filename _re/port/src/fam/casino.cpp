@@ -10,14 +10,228 @@
 
 namespace bl {
 
+// The casino's books (REPORT.en.md 319). SimCasino::IncrementAge runs one silent
+// pass a year -- the rooms' own games, then the punters' wagers, then the
+// amenities' take, then the expenses and the tax on what is left -- and the
+// annual review card only prints what that pass stored. The order of the draws is
+// the native order: rooms, punters, amenities; expenses and tax draw nothing.
+void Sim::casinoRunYear(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.casinoLedgerYear == h.age) return;
+  h.casinoLedgerYear = h.age;
+  // The punters. Native keeps one SimGambler per punter with a style 1..5 that
+  // picks his bet bands; the port keeps the styles only.
+  // shortcut: how a fresh punter's style is rolled is not recovered, so the port
+  // leans the floor towards the low rollers.
+  const size_t want = size_t(h.casinoGamblers < 0 ? 0 : h.casinoGamblers);
+  while (h.casinoGamblerStyles.size() < want) {
+    const uint32_t roll = casinoRng_.below(100);
+    int style = 1;
+    if (roll >= 97) style = 5;
+    else if (roll >= 88) style = 4;
+    else if (roll >= 70) style = 3;
+    else if (roll >= 40) style = 2;
+    h.casinoGamblerStyles.push_back(style);
+  }
+  if (h.casinoGamblerStyles.size() > want) h.casinoGamblerStyles.resize(want);
+
+  // ---- the rooms play their own hands ----
+  // SimCasinoGameRoom::SimulateAgeUpGames (vaddr 0x2abb0f8): one pass per
+  // installed unit, four draws each -- RNG(5,10), the room popularity band, the
+  // casino type band, then RNG(0,100) for the house-win roll -- and wager =
+  // MinBetAmount * type multiplier * that unit count. No draw picks the
+  // multiplier. Two more draws per room update its popularity (RNG(1,3) with a
+  // random sign) and drift its house win rate (RNG(1,3)).
+  long long roomWagers = 0, roomWins = 0;
+  for (size_t i = 0; i < h.casinoRooms.size(); ++i) {
+    Hero::CasinoRoom& room = h.casinoRooms[i];
+    double wagers = 0.0, wins = 0.0;
+    for (int unit = 0; unit < room.units; ++unit) {
+      int w21 = 5 + int(casinoRng_.below(5));
+      if (room.popularity > 80) w21 += 30 + int(casinoRng_.below(40));
+      else if (room.popularity > 40) w21 += 10 + int(casinoRng_.below(40));
+      else w21 += 5 + int(casinoRng_.below(25));
+      double bet = double(room.minBet);
+      switch (h.casinoType) {
+        case 2: w21 += 10 + int(casinoRng_.below(5)); bet *= 1.1; break;
+        case 3: w21 += 15 + int(casinoRng_.below(5)); bet *= 1.2; break;
+        case 4: w21 += 20 + int(casinoRng_.below(5)); bet *= 1.25; break;
+        case 5: w21 += 25 + int(casinoRng_.below(5)); bet *= 2.0; break;
+        default: w21 += int(casinoRng_.below(10)); break;
+      }
+      const double wager = bet * double(w21);
+      wagers += wager;
+      if (room.houseWinRate >= int(casinoRng_.below(100))) wins += wager;
+    }
+    room.lastWagers = (long long)wagers;
+    room.lastHouseWins = (long long)wins;
+    roomWagers += room.lastWagers;
+    roomWins += room.lastHouseWins;
+    int d = 1 + int(casinoRng_.below(3));
+    if (!casinoRng_.chance(0.5)) d = -d;
+    room.popularity += d;
+    const int drift = 1 + int(casinoRng_.below(3));
+    // shortcut: the house win rate drifts toward the row's Default House Win Rate
+    // by an unrecovered amount; the port moves it by the drawn steps, never past
+    // the default.
+    if (room.houseWinRate < room.defaultHouseWinRate)
+      room.houseWinRate = std::min(room.defaultHouseWinRate, room.houseWinRate + drift);
+    else if (room.houseWinRate > room.defaultHouseWinRate)
+      room.houseWinRate = std::max(room.defaultHouseWinRate, room.houseWinRate - drift);
+    if (room.popularity < 0) room.popularity = 0;
+    if (room.popularity > 100) room.popularity = 100;
+  }
+
+  // ---- the punters at the tables ----
+  // GetWagersPlaced (vaddr 0x2aad560) draws exactly ONE RNG(20,70) and then
+  // walks the punter list with no further draw, so a punter's stake is a
+  // function of the floor's own stats.
+  // shortcut: the per-punter expression is unrecovered; the port spreads the
+  // one drawn base over the punters by style, weights it by the room's
+  // popularity, and lets the room's house win rate take its share of each stake.
+  long long gamblerWagers = 0, gamblerHouseWins = 0;
+  if (!h.casinoRooms.empty()) {
+    const long long base = 20 + int(casinoRng_.below(50));
+    for (size_t g = 0; g < h.casinoGamblerStyles.size(); ++g) {
+      Hero::CasinoRoom& room = h.casinoRooms[g % h.casinoRooms.size()];
+      int stake = 15, spare = 125;   // midpoints of the style's two bet bands
+      switch (h.casinoGamblerStyles[g]) {
+        case 2: stake = 23; spare = 213; break;
+        case 3: stake = 33; spare = 300; break;
+        case 4: stake = 50; spare = 500; break;
+        case 5: stake = 80; spare = 750; break;
+        default: break;
+      }
+      long long n = (long long)stake + base;
+      if (room.popularity <= 40) n /= 4;
+      else if (room.popularity <= 80) n /= 2;
+      const long long wager = (long long)room.minBet * spare / 100 * n;
+      gamblerWagers += wager;
+      gamblerHouseWins += wager * room.houseWinRate / 100;
+    }
+  }
+
+  // ---- the amenities and the house's own running costs ----
+  long long amenityRevenue = 0, amenityExpenses = 0;
+  for (size_t i = 0; i < h.casinoAmenityMonthly.size(); ++i) {
+    const long long monthly = h.casinoAmenityMonthly[i];
+    amenityExpenses += monthly * 12;
+    // SimCasinoAmenity::GetAnnualRevenue (vaddr 0x2aba13c): theme match is worth
+    // +200 or -50, the casino popularity band adds RNG(50,100) / RNG(100,150) /
+    // RNG(150,200) at <=40 / <=80 / above, and type 4 or 5 adds its own band.
+    double x = i < h.casinoAmenityTheme.size() && lower(h.casinoAmenityTheme[i]) == lower(h.casinoTheme)
+                   ? 200.0 : -50.0;
+    if (h.casinoPopularity > 80) x += 150 + int(casinoRng_.below(50));
+    else if (h.casinoPopularity > 40) x += 100 + int(casinoRng_.below(50));
+    else x += 50 + int(casinoRng_.below(50));
+    if (h.casinoType == 5) x += 300 + int(casinoRng_.below(200));
+    else if (h.casinoType == 4) x += 100 + int(casinoRng_.below(100));
+    amenityRevenue += (long long)(x / 100.0) * (monthly * 12);
+  }
+  long long roomExpenses = 0;
+  for (size_t i = 0; i < h.casinoRooms.size(); ++i)
+    roomExpenses += (long long)h.casinoRooms[i].costPerUnit * h.casinoRooms[i].units;
+
+  const long long wagersPlaced = roomWagers + gamblerWagers;
+  const long long payouts = wagersPlaced - roomWins - gamblerHouseWins;
+  const long long gamblingRevenue = wagersPlaced - payouts;
+  // shortcut: an act's salary and a celebrity's fee have no table column and no
+  // recovered setter, so the port cannot price their share of the year's take.
+  const long long performanceRevenue = 0;
+  const long long gross = gamblingRevenue + performanceRevenue + amenityRevenue;
+  // SimCasino::GetMonthlyExpenses (vaddr 0x2ab2d5c) cost-of-living adjusts the
+  // structure row's Base Monthly Cost with a floor of 100 and rounds to 100.
+  // shortcut: the adjustment ratio is the hero country's Price Of Coke against
+  // the reference country's, and the reference country is not recovered, so the
+  // port charges the nominal amount.
+  long long monthly = h.casinoBaseMonthlyCost / 100 * 100;
+  if (monthly < 100) monthly = 100;
+  const long long expenses = amenityExpenses + roomExpenses + monthly * 12;
+  const double taxable = double(gross - expenses);
+  double taxes = casinoTaxRate(taxable) * taxable;
+  if (taxes < 0.0) taxes = 0.0;
+  const long long net = gross - (long long)taxes - expenses;
+
+  h.ledgerWagers = wagersPlaced;
+  h.ledgerPayouts = payouts;
+  h.ledgerGamblingRevenue = gamblingRevenue;
+  h.ledgerPerformanceRevenue = performanceRevenue;
+  h.ledgerAmenityRevenue = amenityRevenue;
+  h.ledgerTaxes = (long long)taxes;
+  h.ledgerExpenses = expenses;
+  h.ledgerNetIncome = net;
+  h.casinoBank += net;
+  // SimCasino::IncrementAge counts the losing years itself (REPORT.en.md 320): the
+  // counter at SimCasino+0x88 rises while BankBalance[0x28] is negative and fires
+  // the card at six, though the card's own text says five.
+  if (h.casinoBank < 0) {
+    ++h.casinoBankruptYears;
+    if (h.casinoBankruptYears >= 6) {
+      h.casinoBankruptYears = 0;
+      life.pendingCards.push_back(kPendingCasinoBankrupt);
+    }
+  } else {
+    h.casinoBankruptYears = 0;
+  }
+}
+
+// ScenarioCasinoAgeUpBankrupt (title #12796 "Bankrupt", body #50267). Its handler
+// calls ShutDownCasino and logs; it writes no money and no stats, so closing the
+// house costs the hero nothing beyond the casino itself (REPORT.en.md 320).
+bool Sim::casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino) return false;
+  const std::vector<std::string> prior = out.extra;
+  out = AgeUp();
+  out.extra = prior;
+  out.table = "registry:ScenarioCasinoAgeUpBankrupt";
+  out.title = "Bankrupt";
+  out.body = "Your casino has been bankrupt for 5 years.\n\nYou were forced to close it for good.";
+  out.options = {"Ok"};
+  out.choice = out.options[0];
+  // ShutDownCasino drops the casino (the pot, the rooms, the amenities) and leaves
+  // the hero's own money alone -- the bank balance was never hero money (319).
+  h.ownsCasino = false;
+  h.casinoBank = 0;
+  h.casinoRooms.clear();
+  h.casinoGames.clear();
+  h.casinoAmenities.clear();
+  h.casinoAmenityMonthly.clear();
+  h.casinoAmenityTheme.clear();
+  h.casinoGamblerStyles.clear();
+  h.casinoBankruptYears = 0;
+  return true;
+}
+
+// DataHub::GetTaxRateForUnadjustedIncomeInCountry is the US ladder scaled by the
+// owner country's TopTaxRate over the US one. DataCountry has no CSV export in
+// this build (no table carries a tax column), so the scale is 1.0 and the hero
+// pays the US marginal rate wherever he lives (shortcut).
+double Sim::casinoTaxRate(double taxable) const {
+  static const double kThreshold[] = {0.0, 9325.0, 37950.0, 91900.0, 191650.0, 416700.0, 418400.0};
+  static const double kRate[] = {0.10, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396};
+  if (taxable <= 0.0) return 0.0;
+  int band = 0;
+  for (int i = 0; i < 7; ++i)
+    if (taxable >= kThreshold[i]) band = i;
+  return kRate[band];
+}
+
 bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
   hero_ = &h;
   life_ = &life;
   if (!h.ownsCasino || h.age < 18) return false;
-  if (!casinoRng_.chance(0.50)) return false;
   ensureCasinoFields(life);
+  // The books are kept every year, whether or not a card comes up (319).
+  casinoRunYear(life);
+  if (!casinoRng_.chance(0.50)) return false;
   rndCache_.clear(); rbLast_.clear();        // the '<rb>' alternatives belong to one card
   casinoGambler_.clear();  // one punter per card
   casinoRoom_.clear();
@@ -595,6 +809,64 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
         }
       }
     }
+  }
+
+  // (18) The annual review: the ledger card prints what the year's pass stored
+  //      (REPORT.en.md 319). ScenarioIsEligibleForRandomPush (vaddr 0x3564d24)
+  //      is a plain gate -- hero age 18 or over and not in prison -- with no RNG,
+  //      so the native queue gets this card every year. shortcut: the port deals
+  //      one casino card a year, so the ledger only shows when no other casino
+  //      card claimed the year.
+  if (title.empty() && h.age >= 18 && !h.inPrison) {
+    const std::string pop = std::to_string(h.casinoPopularity);
+    const size_t fr = pickWindow("a16_casino-casino-ledger-feedback-enc", "", "", "", "Min Casino Popularity",
+                                 "Max Casino Popularity", double(h.casinoPopularity), casinoRng_);
+    std::string feedback;
+    if (fr != size_t(-1)) {
+      const Table& ft = tbl("a16_casino-casino-ledger-feedback-enc");
+      feedback = resolve(trim(ft.at(fr, "String")));
+      tableRef = ft.name();
+      rowRef = std::to_string(fr + 1);
+    }
+    // "HasItemsInstalled": a house with no room and no amenity reports the empty
+    // variant and lists its costs only.
+    const bool hasItems = !h.casinoRooms.empty() || !h.casinoAmenities.empty();
+    std::string rows;
+    auto row = [&rows](const std::string& label, const std::string& value) {
+      if (!rows.empty()) rows += "\n";
+      rows += label + ": " + value;
+    };
+    if (hasItems) {
+      row("Wagers Placed", money(h.ledgerWagers));
+      row("Payouts", money(h.ledgerPayouts));
+      row("Gambling Revenue", money(h.ledgerGamblingRevenue));
+      if (h.casinoRooms.size() > 1) {
+        size_t best = 0, worst = 0;
+        for (size_t i = 1; i < h.casinoRooms.size(); ++i) {
+          if (h.casinoRooms[i].popularity > h.casinoRooms[best].popularity) best = i;
+          if (h.casinoRooms[i].popularity < h.casinoRooms[worst].popularity) worst = i;
+        }
+        row("Most Popular Room", h.casinoRooms[best].game);
+        row("Least Popular Room", h.casinoRooms[worst].game);
+      }
+      row("Performance Revenue", money(h.ledgerPerformanceRevenue));
+      row("Amenity Revenue", money(h.ledgerAmenityRevenue));
+      row("Taxes", money(h.ledgerTaxes));
+    }
+    // shortcut: the native card shows the popularity as a bar graph, and the port
+    // has no bar in its card model, so the value goes into the body instead.
+    row("Annual Expenses", money(h.ledgerExpenses));
+    if (hasItems) row("Net Income", money(h.ledgerNetIncome));
+    title = "Casino Ledger";
+    body = feedback.empty() ? std::string() : feedback;
+    body += hasItems ? "\n\nThe annual report for your casino is now available.\n\n"
+                     : "\n\nThe annual report for your casino is now available.\n\nYour casino made no money.\n\n"
+                       "Install game rooms and amenities, or hire performers in order for your casino to be profitable.\n\n";
+    body += rows;
+    body += "\n\nPopularity: " + pop;
+    const long long revenue = h.ledgerGamblingRevenue + h.ledgerPerformanceRevenue + h.ledgerAmenityRevenue;
+    tell("My casino made " + money(revenue) + " in revenue last year.");
+    if (h.casinoPopularity > 100) h.casinoPopularity = 100;
   }
 
   if (title.empty() && body.empty() && line.empty()) return false;
