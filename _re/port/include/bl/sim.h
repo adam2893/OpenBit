@@ -110,6 +110,7 @@ enum PendingCard {
   kPendingCrimePlea = 13,          // the plea
   kPendingCrimeSentence = 14,      // the sentence
   kPendingHitmanOutcome = 15,      // the hired hit's result (REPORT.en.md 301)
+  kPendingRobberyOutcome = 16,    // the heist's result (REPORT.en.md 302)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -365,6 +366,8 @@ class Sim {
   bool murderYear(Life& life, AgeUp& out, int forcedChoice);
   bool hitmanYear(Life& life, AgeUp& out, int forcedChoice);
   bool hitmanOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool robberyYear(Life& life, AgeUp& out, int forcedChoice);
+  bool robberyOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   bool bookYear(Life& life, AgeUp& out, int forcedChoice);
   bool dietYear(Life& life, AgeUp& out, int forcedChoice);
   bool martialArtsYear(Life& life, AgeUp& out, int forcedChoice);
@@ -954,6 +957,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng hhRng_;
   Rng murderRng_;
   Rng hitmanRng_;
+  Rng robberyRng_;
   // The book shelf's own draw (REPORT.en.md 289).
   Rng bookRng_;
   // The diet menu's own draw (REPORT.en.md 290).

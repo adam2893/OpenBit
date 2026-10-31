@@ -705,6 +705,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       hhRng_(seed ^ 0x7a1c9d3e5f2b4a68ULL ^ 0xc6a4a7935bd1e995ULL),
       murderRng_(seed ^ 0x4b7f2d9a1c8e6350ULL ^ 0x9e3779b97f4a7c15ULL),
       hitmanRng_(seed ^ 0x2d6f8a4c1b9e7350ULL ^ 0x94d049bb133111ebULL),
+        robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
       bookRng_(seed ^ 0x1e3f5a7c9b2d4e6fULL ^ 0x9e3779b97f4a7c15ULL),
       dietRng_(seed ^ 0x2f8e4c6a1b3d5f70ULL ^ 0xbf58476d1ce4e5b9ULL),
       maRng_(seed ^ 0x5b7d3f1e9a2c4b68ULL ^ 0x94d049bb133111ebULL),
@@ -3894,6 +3895,7 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingCrimePlea) return crimePleaYear(life, out, -1);
     if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
     if (kind == kPendingHitmanOutcome) return hitmanOutcomeYear(life, out, -1);
+    if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -4133,6 +4135,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::headhunterYear, nullptr, 2},
         {&Sim::murderYear, nullptr, 2},
         {&Sim::hitmanYear, nullptr, 2},
+        {&Sim::robberyYear, nullptr, 1},
         {&Sim::podcastYear, [](const Life& l) { return l.hero.podcaster; }},
         {&Sim::sportsSeason, [](const Life& l) { return l.hero.athlete; }},
         {&Sim::boatYear, [](const Life& l) { return l.hero.boating; }},
@@ -24216,6 +24219,109 @@ bool Sim::hitmanOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
     out.karma = pointsForImpact(-2);
   }
   (void)targetFemale;
+  return true;
+}
+
+
+// Bank robbery (REPORT.en.md 302). The scenario is ScenarioCrimeBankRobbery: the
+// game's own card is one screen with three dropdowns -- 'Pick your disguise'
+// (#33865), 'Pick your weapon' (#33962) and 'Pick your getaway' (#33878) -- and
+// one AgeUp carries a single choice, so the disguise and the weapon are rolled
+// from their tables and the player picks the getaway (shortcut). Each picker is
+// a row of the matching a16_bank-robbery-*-enc table, and the outcome is the
+// three Effectiveness Scores against the 15-point scale.
+bool Sim::robberyYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return false;
+  if (!ensureTable("a16_bank-robbery-disguises-enc")) return false;
+  if (!ensureTable("a16_bank-robbery-weapons-enc")) return false;
+  if (!ensureTable("a16_bank-robbery-getaways-enc")) return false;
+  if (forcedChoice < 0 && !robberyRng_.chance(1.0 / 40.0)) return false;
+  const Table& dis = tbl("a16_bank-robbery-disguises-enc");
+  const Table& wea = tbl("a16_bank-robbery-weapons-enc");
+  const Table& get = tbl("a16_bank-robbery-getaways-enc");
+  std::vector<size_t> grows;
+  for (size_t r = 0; r < get.size(); ++r) {
+    if (trim(get.at(r, "Description")).empty()) continue;
+    grows.push_back(r);
+  }
+  if (grows.empty() || dis.size() == 0 || wea.size() == 0) return false;
+  const size_t drow = robberyRng_.below(uint32_t(dis.size()));
+  const size_t wrow = robberyRng_.below(uint32_t(wea.size()));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = get.name();
+  out.options.clear();
+  for (size_t r : grows) out.options.push_back(trim(get.at(r, "Description")));
+  const size_t pickIdx =
+      forcedChoice >= 0 && size_t(forcedChoice) < out.options.size()
+          ? size_t(forcedChoice)
+          : size_t(robberyRng_.below(uint32_t(out.options.size())));
+  out.choice = out.options[pickIdx];
+  out.row_id = std::to_string(grows[pickIdx] + 1);
+  out.title = "Bank Robbery";                          // #12792
+  out.body = "You're thinking about robbing a bank.";  // #50033
+  out.cta = "Pick your getaway";                       // #33878
+  h.robDisguise = trim(dis.at(drow, "Description"));
+  h.robWeapon = trim(wea.at(wrow, "Weapon"));
+  h.robGetaway = out.choice;
+  h.robPower = int(dis.num(drow, "Effectiveness Score")) +
+               int(wea.num(wrow, "Effectiveness Score")) +
+               int(get.num(grows[pickIdx], "Effectiveness Score"));
+  life.pendingCards.push_back(kPendingRobberyOutcome);
+  return true;
+}
+
+// The heist's own result card, one age after the pick (REPORT.en.md 302). The
+// haul has no table -- no a16_bank-robbery table carries an amount -- so it is a
+// small flat range rather than the game's unseen formula (shortcut). A caught
+// robbery folds into the 273 arrest chain as the prison table's own 'armed
+// robbery' row (seriousness 4 -> five years).
+bool Sim::robberyOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.robGetaway.empty()) return false;
+  const std::string disguise = h.robDisguise;
+  const std::string weapon = h.robWeapon;
+  // The weapon is a bare noun in the table, so the sentence gets its article here.
+  std::string weaponPhrase = weapon;
+  if (!weapon.empty()) {
+    const char c = weapon[0];
+    const bool vowel = c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
+    weaponPhrase = std::string(vowel ? "an " : "a ") + weapon;
+  }
+  const std::string getaway = h.robGetaway;
+  const int power = h.robPower;  // 3..15 across the three tables
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.robDisguise.clear();
+  h.robWeapon.clear();
+  h.robGetaway.clear();
+  h.robPower = 0;
+  if (robberyRng_.unit() * 15.0 < double(power)) {
+    const long long haul = 1000LL + 500LL * robberyRng_.below(10);
+    h.money += haul;
+    out.table = "registry:ScenarioCrimeBankRobbery";
+    out.title = "Heist: Successful";  // #22802
+    out.body = "You successfully robbed a bank with " + weaponPhrase + " while " +
+               disguise + "!\n\nYou got away " + getaway + " with " + money(haul) +
+               ".";  // #49432
+    out.narrative = "I robbed a bank with " + weaponPhrase + " while " + disguise +
+                    "! I got away " + getaway + " with " + money(haul) + ".";  // #69177
+    out.karma = pointsForImpact(-3);
+  } else {
+    h.crimeName = "armed robbery";
+    h.crimeYears = 5;
+    life.pendingCards.push_back(kPendingCrimeCharge);
+    out.table = "registry:ScenarioCrimeArrest";
+    out.title = "Police";
+    out.body = "You were caught trying to rob a bank with " + weaponPhrase +
+               " while " + disguise + "!";  // #49758
+    out.narrative = "I was arrested for armed robbery!";
+    out.karma = pointsForImpact(-2);
+  }
   return true;
 }
 

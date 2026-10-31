@@ -23536,6 +23536,25 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 302. The bank robbery card: three payload tables and the heist's two outcomes
+
+`ScenarioCrimeBankRobbery` is in `_re/obs_corpus/scenario-methods.json` with `.ctor`, `RefreshScenario`, `DismissSelected`, `ChoiceSelectedAtIndex` and `ImpactKarmaForEvenConsideringIt`, and no `PrepareParser` or `ScenarioIsEligibleForRandomPush` (the same is true of the train variant and of `ScenarioCustomAttack`, so the missing `PrepareParser` is not the dropdown signal). The card's own strings are the prompt #50033 ("You're thinking about robbing a bank."), the three pickers #33865 "Pick your disguise", #33962 "Pick your weapon", #33878 "Pick your getaway", the success #49432 ("You successfully robbed {0} with {1} while {2}!\n\nYou got away {3} with {4}.") with log form #69177, the catch #49758 ("You were caught trying to rob {0} with {1} while {2}!"), the titles #12792 "Bank Robbery" and #22802 "Heist: Successful", and the no-target line #47788 ("You are unable to rob {0} {1}.").
+
+The payload is three tables: `a16_bank-robbery-disguises-enc` (51 rows, `Disguise,Description,Effectiveness Score`, the description already a clause: "disguised as a nun", "wearing a Fortnite costume"), `a16_bank-robbery-weapons-enc` (41 rows, `Weapon,Plural,Effectiveness Score`, bare nouns including comedy ones: toy gun 5, silly string 3) and `a16_bank-robbery-getaways-enc` (25 rows, `Method,Description,Effectiveness Score`, where the description is the prepositional phrase: "on a bicycle", "using a rideshare app"). No table in the corpus carries a robbery amount or a train name.
+
+`Sim::robberyYear` is a one-ticket wheel family for an adult who is not in prison. It rolls a 1-in-40 coin, rolls a disguise and a weapon row, and offers the getaway rows as the card's options. The game's card is one screen with three dropdowns and one `AgeUp` carries one choice, so the port rolls the first two pickers and lets the player pick the third: that shortcut is marked in the source. `robPower` is the sum of the three Effectiveness Scores (3..15) and the result is a pending card.
+
+`Sim::robberyOutcomeYear` rolls the score against 15: success pays a haul of 1,000 to 5,500 (no table carries an amount, marked as a shortcut), credits it to the hero's cash, reads #49432 and logs #69177 with the picked weapon, disguise and getaway; failure reads #49758, folds into the 273 arrest chain as `registry:ScenarioCrimeArrest` with "I was arrested for armed robbery!", and the charge is the prison table's own `armed robbery` row (seriousness 4, five years) rather than an invented crime name.
+
+```
+60 lives:  15 robbery cards   8 heists   7 caught
+acceptance: card tables 878/878; 93 tests in the suite
+test       test_robbery: every pick, win and catch is matched back to its table
+```
+
+The audit changes with this section: `_re/gamedata_plain/menu-shell-tables.txt` lines 11-13 used to call the three tables "crime action payload: the robbery menu rolls the row" and REPORT.en.md 23720 repeated it. They are payload tables, not shells -- the card rolls them -- so the three lines now name the 302 card and the count of 57 stays as the audit's bookkeeping of tables outside the card denominator.
+
+The launcher was hunted on the running 3.25.3a build: a 19-year-old's Activities list (Favorites, Premium Activities, then the alphabetical free list from Lottery to Zoo Trip) has no Crime row, the Occupation list has no Crime row, and the main menu has none either. `#16008` "Commit a crime", `#16679` "Crime" and `#16682` "Criminal Activity" exist as labels but no reachable screen shows them on this build, and `ScenarioCrimeBankRobbery` appears in no gamedata table; the port therefore fires it as a year card, like the rest of its activity families.
 ## 301. The hitman chain: the found card, the quote, four outcomes and the threat
 
 `ScenarioCrimeHitman`, `ScenarioCrimeHitmanFound` and `ScenarioCrimeHitmanThreat` are in `_re/obs_corpus/scenario-methods.json` (`.ctor`, `RefreshScenario`, `ChoiceSelectedAtIndex`; the first also carries `DismissSelected` and `ImpactKarmaForEvenConsideringIt`). The names come from `a16_hitmen-enc` (`Name,Gender`): Agent 47, Boba Fett, Jason Bourne, Deadpool, Arya Stark, Sweeney Todd, 20 rows in all. The text chain is literal #48483 ("You found a hitman going by the name of {0} who is willing to pull off the hit on {1}.\n\nWhat will you do?"), #23812 (contact line, "I contacted a hitman named {0} ... {2} quoted me {3} to get the job done."), #50389 success, #50390 ran off with the money, #50392 undercover cop, #50387 apology, #50388 the threat, #49090 paid, #47940 police; buttons #22976 "Hire {0}", #31255 "Never mind", #33470 "Pay <him/her>", #14600 "Call the police".

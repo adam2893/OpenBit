@@ -87,6 +87,10 @@ struct Hero {
   std::string hitmanName, hitmanTarget;
   bool hitmanFemale = false, hitmanTargetFemale = false;
   long long hitmanPrice = 0;
+  // The current bank robbery's picks, held between the picker and the
+  // result card (REPORT.en.md 302).
+  std::string robDisguise, robWeapon, robGetaway;
+  int robPower = 0;
   int discipline = 0;
   // Fame is a float 0..100 at hero+0xb4 (REPORT.en.md 136):
   // SimPerson::ImpactFame @0x73f30e4d88 adds

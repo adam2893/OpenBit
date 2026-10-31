@@ -8,9 +8,9 @@ a16_aircraft-parts-enc	repair part list: the garage/shop browser draws it
 a16_animals-enc	attack payload: the wilderness roll reads the row, no card
 a16_assaults-enc	crime action payload: the crime menu rolls the row
 a16_back-to-school-titles-enc	prompt title pool: the school card draws a title
-a16_bank-robbery-disguises-enc	crime action payload: the robbery menu rolls the row
-a16_bank-robbery-getaways-enc	crime action payload: the robbery menu rolls the row
-a16_bank-robbery-weapons-enc	crime action payload: the robbery menu rolls the row
+a16_bank-robbery-disguises-enc	crime action payload: the 302 bank robbery card rolls the row
+a16_bank-robbery-getaways-enc	crime action payload: the 302 bank robbery card rolls the row
+a16_bank-robbery-weapons-enc	crime action payload: the 302 bank robbery card rolls the row
 a16_biographies-enc	title pool: the biography menu labels its entry
 a16_black-market-auction-categories-enc	auction category list: the auction browser draws it
 a16_body-parts-enc	repair part list: the garage/shop browser draws it

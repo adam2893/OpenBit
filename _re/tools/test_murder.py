@@ -42,7 +42,7 @@ def run(seed, ages=80):
 
 methods = rows()
 cards = success = failed = 0
-for seed in range(1, 41):
+for seed in range(1, 81):
     doc = run(seed)
     for event in doc["events"]:
         if event.get("title") != "Murder":
@@ -72,8 +72,10 @@ for seed in range(1, 41):
             assert deltas.get("karma") <= 0, (seed, deltas)
         assert deltas.get("health") in (0, -20, -30), (seed, deltas)
 
-assert cards >= 4, cards
-assert success >= 2, success
-assert failed >= 1, failed
+# The 302 robbery seat took one rotation slot, so the same lane now needs the
+# wider scan the hitman test already uses (14 cards over 80 seeds).
+assert cards >= 8, cards
+assert success >= 3, success
+assert failed >= 2, failed
 print("cards:", cards, "success:", success, "failed:", failed)
 print("ok")
