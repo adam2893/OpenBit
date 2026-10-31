@@ -130,6 +130,10 @@ struct ScriptSpec {
   // that begins with nothing can only ever afford the courthouse -- a fixture is how
   // the other eleven get exercised.
   long long cash = -1;
+  // Starting school grades (0-100, -1 = the usual draw). The university card's
+  // admission test is the only place the port reads them (REPORT.en.md 313), and a
+  // random draw never lands low enough to reach the rejection lane.
+  int grades = -1;
   int ages = 0;
   std::vector<int> choices;
   std::vector<PushSpec> push;

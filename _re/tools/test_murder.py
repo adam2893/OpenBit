@@ -64,13 +64,20 @@ for seed in range(1, 81):
                 landed.append(kind)
         assert landed, (seed, choice, line)
         deltas = event.get("deltas") or {}
+        # Points per impact score (REPORT.en.md 300): success -4 karma, retaliatory
+        # strike -2 karma and -3 health, a plain miss nothing at all.
         if "Success String" in landed:
             success += 1
             assert deltas.get("karma") == -30, (seed, deltas)
+            assert not deltas.get("health"), (seed, deltas)
+        elif "Retaliatory String" in landed:
+            failed += 1
+            assert deltas.get("karma") == -8, (seed, deltas)
+            assert deltas.get("health") == -16, (seed, deltas)
         else:
             failed += 1
-            assert deltas.get("karma") <= 0, (seed, deltas)
-        assert deltas.get("health") in (0, -20, -30), (seed, deltas)
+            assert deltas.get("karma") == 0, (seed, deltas)
+            assert deltas.get("health") == 0, (seed, deltas)
 
 # The 302 robbery seat took one rotation slot, so the same lane now needs the
 # wider scan the hitman test already uses (14 cards over 80 seeds).

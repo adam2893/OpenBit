@@ -204,6 +204,11 @@ struct Hero {
   int lastSchoolLevel = 0;
   bool graduatedHighSchool = false;
   int schoolAnnouncedLevel = 0;  // the level whose start line has been written
+  // University application (REPORT 313). Life+0x218 in the game is the age the
+  // accepted application was written; universityStage is the port's own small
+  // state machine: 0 not offered, 1 accepted, 2 rejected.
+  int ageAtUniversityApplication = -1;
+  int universityStage = 0;
   // The school each level is at (REPORT.en.md 282): the played life says
   // 'I started high school at Adams High School, a private school.', and the
   // named forms are 'Adams High School', 'Allure Middle School', 'Virgil

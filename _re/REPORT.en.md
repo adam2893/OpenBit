@@ -23536,6 +23536,28 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 313. University: one threshold table, four ways out of a rejection
+
+ScenarioSchoolUniversity (RefreshScenario 0x73f2a67ecc, ChoiceSelectedAtIndex 0x73f2a689a0) is the education card a hero sees after high school. Its buttons are matched by the *text* of the option, not by index: `String::Contains` looks for `apply`, `fund`, `job`, `military`, `not for me` and `time off`. Applying writes the age into `Life+0x218` and logs `I applied to university and was accepted.` (#23494). No money is charged there -- tuition lives on the separate `ScenarioSchoolFund` screen (0x73f2a5a944: `How will you pay for your {0} program?` #23261, `Free public university` #20614, `Apply for a student loan` #11616, `Apply for a scholarship` #11615, `Ask my {0} to pay` #12168, `Pay with cash` #33501).
+
+The admission test is `WillBeAccepted` (0x73f2a687ac). The school's Difficulty Score indexes `RequiredEducationalAbilityScoreForAdmission` (0x73f29bcae8), a five-entry table at .rodata 0xfc2e9c = **25, 45, 63, 73, 80**. A 30-point bonus is added when the hero has already completed school type 11, and the hero passes when `score + bonus >= need`, or unconditionally when royal. Independently the hero needs a completed high-school type (2 or 3), no expulsion in the last five years (`Life.AgeAtLastExpulsion` +0x400), and to be past `Country.SchoolGraduationAge`. There is **no money test** on admission.
+
+`DataHub::CollegeForSchoolType(int)` (0x73f2c91e44) is a linear scan for the first `a16_colleges-enc` row whose SchoolType matches, with no weighting and no RNG. The shipped table has no SchoolType column, and the only row with an empty prerequisite list is `Undergraduate` (4 years, tuition 15000, Difficulty Score 2, Commonness Score 5) -- that is the program a hero who has just left high school can apply to, so the port offers it.
+
+A rejected application is its own scenario, `ScenarioUniversityRejectedOptions` (.ctor 0x73f2a6936c): `Your application to university was rejected.` (#50200), the log line `I applied to university but my application was rejected.` (#23495), the reason labels `Reason`/`Rejected`/`Unqualified` (#35319/#35578/#45025), and four ways out: `Enlist in the military` (#18846), `Enroll in community college` (#18857), `Get a job` (#21322), `Take some time off` (#40898).
+
+Port: `Sim::universityYear(Life&, AgeUp&, int)`, tried in the dispatch ahead of the wheel for ages 18-19. The card is offered the year after the graduation card owns its own year, so a normal life sees `ScenarioSchoolGraduate` at 18 and `ScenarioSchoolUniversity` at 19. `Hero::universityStage` records 1 accepted / 2 rejected, and college only starts for stage 1: `schoolYear` refuses a college rung the hero was never admitted to, and the college start line is not written for a rejected hero.
+
+Shortcuts:
+- The native ability score is not recovered. The port uses its own `schoolGrades` and keeps the recovered 30-point bonus, so the undergraduate row's 45 means 15 grades; the fixture draw is 62-86 and always clears it.
+- The prerequisite school-type check, the five-year expulsion wait and the `Country.SchoolGraduationAge` gate are not modelled. Royalty admission is not modelled.
+- `ScenarioSchoolFund`, the student loan (`SimBankLoan`, `MaximumAgeForStudentLoanEligibility` 0x73f2c9244c) and scholarship/tuition are not modelled, so no debt is created. This is the same ceiling the port's college rung has always had.
+- The card's body text is unrecovered and stays empty. The other two initial buttons (`Get a job instead`, `Take some time off`) have no recovered scenario, so the port lists them and always takes the application; a script fixture `{"grades": N}` is the only way to reach the rejection lane.
+- College years do not stop the port's job line (the pre-existing `student = age < 18` shortcut in `dispatchYear`).
+
+`tools/test_university.py` pins the accepted and the rejected cards (table, title, body, choice, log lines), the 45-point boundary at 14/15 grades, one application per life at 18-19 only, no college lines for a rejected hero, and the two `grades` parse refusals.
+
+The card takes a wheel slot, so two neighbours were re-measured: `tools/test_murder.py` now asserts each outcome branch on its own points (-30 karma success, -8 karma / -16 health retaliation, nothing on a miss) instead of accepting any of three health values, and `tools/test_time_machine.py` rewinds from 21 rather than 20, because the arrest chain it used to enter at 19 now starts a year later. `tools/test_pray_wealth.py` scans 121 lives instead of 30: its ambient gate is one in forty with a single wheel ticket, so the lane is only reached in about 7.5% of lives and the old window was measuring luck.
 ## 312. God Mode: raw sliders, one orientation map, one strange log line
 
 God Mode is a one-time purchase (MonetizationVars 0x13/0x14/0x15). Once owned it has no per-edit cost and no cooldown; the relationship list offers `Edit {0}` (#18536) under the title `God Mode` (#21980). The edit itself is `GodModePersonConfig.SaveChangesAfterEditingPerson` (0x73f338e424):

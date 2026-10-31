@@ -24,8 +24,11 @@ def run(seed):
     return json.loads(proc.stdout)
 
 
+# The ambient gate is one in forty and the family holds one wheel ticket, so a life
+# only reaches this lane about 7.5% of the time; scan enough lives to see both row
+# classes after the wheel rotation shifted (REPORT.en.md 313).
 cards = 0
-for seed in range(1, 31):
+for seed in range(1, 122):
     for event in run(seed)["events"]:
         if event.get("table") != "a16_pray-wealth-scenarios-enc":
             continue

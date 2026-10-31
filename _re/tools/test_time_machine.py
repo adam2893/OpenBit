@@ -93,18 +93,20 @@ assert dead_cards >= 8, dead_cards
 # A prisoner gets a Prison row.
 prison_cards = 0
 for seed in range(1, 41):
-    spec = {"seed": seed, "ages": 22, "prison": True}
+    spec = {"seed": seed, "ages": 24, "prison": True}
     a = run(spec)["events"]
-    idx = next((i for i, e in enumerate(a) if e["age"] == 20), None)
+    idx = next((i for i, e in enumerate(a) if e["age"] == 21), None)
     if idx is None:
         continue
     b = run(dict(spec, push=[None] * (idx + 1) + [{"timeMachine": 1}]))["events"]
     tm = machine(b)
-    if not tm:
+    if not tm or b[tm[0]]["row"] is None:
         continue
-    # The script output keeps no prison field, so the row's own flag is counted:
-    # a forced sentence from 18 should still be running at 20.
-    check_narrative(b[tm[0]], 19, None, False)
+    # The script output keeps no prison field, so the row's own flag is counted: a
+    # forced sentence from 18 is still running when the restored life is at 20. The
+    # application card owns age 19 now, which pushes the arrest chain a year out, so
+    # the fixture rewinds from 21 instead of from 20 (REPORT.en.md 313).
+    check_narrative(b[tm[0]], 20, None, False)
     prison_cards += flag(ROWS[int(b[tm[0]]["row"]) - 1]["Prison"])
 assert prison_cards >= 10, prison_cards
 print("prison", prison_cards)

@@ -4197,6 +4197,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // takes the next year rather than being lost (REPORT.en.md 262).
   if (forcedChoice < 0 && life.hero.graduationPending) return graduationYear(life, out, forcedChoice);
   Hero& h = life.hero;
+  // The university application is the game's education card (REPORT.en.md 313):
+  // it takes the year after the graduation card so the two never fight for it.
+  if (forcedChoice < 0 && h.age >= 18 && h.age <= 19 && h.universityStage == 0 &&
+      universityYear(life, out, forcedChoice)) {
+    return true;
+  }
   if (getenv("BL_DBG")) fprintf(stderr, "[dbg] age %d family %zu extra %zu\n", h.age, life.family.size(), out.extra.size());
   const bool student = h.age < 18;
   h.employed = !student;
@@ -5381,6 +5387,75 @@ bool Sim::graduationYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---- University application (REPORT.en.md 313) ---------------------------
+// ScenarioSchoolUniversity (RefreshScenario 0x73f2a67ecc) is the education card:
+// ExteriorTitle 'Education' (#18550), the apply option 'Apply to university'
+// (#11629). Accepting writes Life+0x218 = the hero's age (0x25cedac) and logs
+// 'I applied to university and was accepted.' (#23494). WillBeAccepted
+// (0x73f2a687ac) is a score test, never a money test:
+// RequiredEducationalAbilityScoreForAdmission (0x73f29bcae8) is a five entry
+// table [25,45,63,73,80] indexed by the college row's DifficultyScore 1..5
+// (.rodata 0xfc2e9c), and a hero who already finished the prerequisite tier
+// gets +30. The refusal is ScenarioUniversityRejectedOptions (0x73f2a6936c):
+// 'Your application to university was rejected.' (#50200) with the log
+// 'I applied to university but my application was rejected.' (#23495), and its
+// own four ways out (#18846 / #18857 / #21322 / #40898).
+//
+// shortcut: the native ability score is not recovered, so the port's own
+// schoolGrades stands in for it; prerequisites, the expulsion wait and the
+// Country.SchoolGraduationAge gate are not modelled; the card is offered the
+// year after the graduation card has taken its own year (the native order of
+// the two cards in one year was not recovered); the card's body text is
+// unrecovered and left empty; ScenarioSchoolFund (the tuition/loan/scholarship
+// screen, 0x73f2a5a944) is not modelled, so an accepted hero starts college the
+// way the port always did.
+bool Sim::universityYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.universityStage != 0) return false;
+  if (h.age != 18 && h.age != 19) return false;
+  if (!h.graduatedHighSchool) return false;
+  if (!ensureTable("a16_colleges-enc")) return false;
+  const Table& t = tbl("a16_colleges-enc");
+  if (t.size() == 0) return false;
+  static const int kAdmission[] = {25, 45, 63, 73, 80};
+  const int difficulty = int(t.num(0, "Difficulty Score"));
+  const int need = difficulty >= 1 && difficulty <= 5 ? kAdmission[difficulty - 1] : 0;
+  const bool accepted = h.schoolGrades + 30 >= need;
+  // No coin and no player: the simulated hero always applies. The card's other two
+  // ways out ('Get a job instead', 'Take some time off') have no recovered scenario
+  // behind them, so the port lists their buttons and takes the application
+  // (shortcut).
+  (void)forcedChoice;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioSchoolUniversity";
+  out.title = "Education";
+  out.options = {"Apply to university", "Get a job instead", "Take some time off"};
+  if (accepted) {
+    h.universityStage = 1;
+    h.ageAtUniversityApplication = h.age;
+    out.choice = "Apply to university";
+    out.narrative = "I applied to university and was accepted.";
+    // The college rung starts here instead of on its own birthday: the port asked
+    // the question, so the line moves with the answer.
+    if (h.schoolAnnouncedLevel != 4) {
+      h.schoolAnnouncedLevel = 4;
+      out.extra.push_back("I started " + std::string(schoolLevelName(4)) + ".");
+    }
+    return true;
+  }
+  // The rejection is its own native scenario (ScenarioUniversityRejectedOptions,
+  // .ctor 0x73f2a6936c) with its own four ways out.
+  h.universityStage = 2;
+  out.table = "registry:ScenarioUniversityRejectedOptions";
+  out.options = {"Enlist in the military", "Enroll in community college",
+                 "Get a job", "Take some time off"};
+  out.choice = "Get a job";
+  out.body = "Your application to university was rejected.";
+  out.narrative = "I applied to university but my application was rejected.";
+  return true;
+}
 // ---- Coming out (REPORT.en.md 274) ----------------------------------------
 // ScenarioSiblingComingOut, title 'Coming Out'. The prompt is #50695, the ignore
 // lane #30968 and the ridicule lane #25017; the later announcement is #9380's
@@ -5772,7 +5847,8 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
   // The school's start and the hero's own activity lines belong to the year the
   // level changes (REPORT.en.md 261). makeSchool has already drawn the activity by
   // the time this runs, and the level it set is what schoolYear would have seen.
-  if (level > 0 && level != h.schoolAnnouncedLevel) {
+  const bool collegeOk = level < 4 || h.universityStage == 1;
+  if (level > 0 && level != h.schoolAnnouncedLevel && collegeOk) {
     h.schoolAnnouncedLevel = level;
     const int idx = std::max(0, std::min(2, level - 1));
     // College has no name evidence yet; the three school tiers do (REPORT 282).
@@ -5801,7 +5877,7 @@ std::vector<std::string> Sim::schoolMilestoneLines(Life& life) {
       }
       if (sport && tryoutRng_.chance(0.5)) {
         out.push_back("I tried out for my " + std::string(schoolLevelName(level)) + " " +
-                      lower(h.schoolActivity) + " but did not make the cut.");
+                      lower(h.schoolActivity) + " team but did not make the cut.");
       } else {
         out.push_back("I joined the " + h.schoolActivity + " at my " +
                       schoolLevelName(level) + ".");
@@ -15996,7 +16072,7 @@ void Sim::makeSchool(Life& life) {
   h.schoolFratLetters.clear();
   h.schoolFratNickname.clear();
   h.schoolPopularity = 42 + int(schoolRng_.below(17));
-  h.schoolGrades = 62 + int(schoolRng_.below(25));
+  h.schoolGrades = forcedGrades_ >= 0 ? forcedGrades_ : 62 + int(schoolRng_.below(25));
   h.schoolTeacher = personName("teacher");
   h.schoolTeacherFemale = schoolRng_.chance(0.5);
   h.schoolClassmate = personName("classmate");
@@ -16084,6 +16160,9 @@ bool Sim::schoolYear(Life& life, AgeUp& out, int forcedChoice) {
   life_ = &life;
   if (!h.schooling) return false;
   const int level = schoolLevelFor(h.age);
+  // College needs the university card's acceptance (REPORT.en.md 313): a hero who was
+  // rejected, or who let the offer go, is not a college student in those years.
+  if (level >= 4 && h.universityStage != 1) return false;
   // Before school age nothing happens; after college the pupil leaves.
   if (level == 0) { if (h.age > 22) h.schooling = false; return false; }
   if (!ensureTable("a16_school-activities-enc") || !ensureTable("a16_school-cliques-enc")) return false;

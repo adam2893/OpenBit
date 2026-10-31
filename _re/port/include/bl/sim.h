@@ -314,6 +314,8 @@ class Sim {
   // Two report cards with no entity tokens, REPORT.en.md 208.
   bool surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice);
   bool timeMachineYear(Life& life, AgeUp& out, int forcedChoice);
+  // University application: ScenarioSchoolUniversity, REPORT.en.md 313.
+  bool universityYear(Life& life, AgeUp& out, int forcedChoice);
   // A drink is offered, REPORT.en.md 204.
   bool alcoholScenarioYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero trolls back, REPORT.en.md 203.
@@ -455,6 +457,11 @@ class Sim {
   // reports on stderr and returns false, so the bench sees the gap instead of a
   // silent fallback.
   bool forceScenarioClass(const std::string& cls, int choice);
+  // Test hook (REPORT.en.md 313): a fixed school-grades value for every school the
+  // hero starts, instead of the usual 62-86 draw. Negative clears it. The university
+  // card's rejection lane is otherwise unreachable, because a random hero always
+  // clears the 45-point bar the undergraduate row asks for.
+  void setForcedGrades(int grades) { forcedGrades_ = grades; }
   // The age-0 log lines, in the order the game writes them: birth place and
   // circumstance, birthday and sign, name, mother, father, an optional sibling
   // and an optional family pet. Every sentence skeleton is a real table
@@ -1172,6 +1179,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // Scripted-event override: the registry class and its 0-based button index.
   std::string forcedClass_;
   int forcedClassChoice_ = -1;
+  int forcedGrades_ = -1;  // setForcedGrades(): fixed school grades, -1 = draw
   int dateMonth_ = 0;  // 1-12, 0 = no real-world date fixed
   int dateDay_ = 0;    // 1-31, 0 = no real-world date fixed
   std::vector<Country> countries_;
