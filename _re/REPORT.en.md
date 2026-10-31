@@ -23536,6 +23536,86 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 308. The witch doctor's medicine: one price, one roll, one risk table
+
+The vampire coven has its own approximation (src/fam/vampire.cpp 203), but the ordinary
+witch doctor -- the Healthcare stranger offering baby mouse soaked in rice wine -- is a
+different native object: ScenarioWitchDoctor with a DataWitchRemedy row, a price that
+moves with a random factor, and an outcome that can cure the worst disease or kill the
+hero outright. The whole contract is decoded from the 3.25.1 binary and wired here;
+a16_witch-remedies-enc (30 rows: Item, Effectiveness/Risk/Cost Score, Treats Disease)
+leaves the unreferenced list at 46 -> 45.
+
+The native contract, every clause disassembly-verified:
+- The offer caches on open (ctor @0x73f3bb5470): Life.AgeAtLastWitchRemedy and
+  Life.CurrentWitchRemedy keep one row and one price per year of age, so a second visit
+  at the same age offers the same item at the same price even after a dismiss or a
+  purchase. There is no cooldown and no consumption.
+- The price is 2 * Cost Score * factor, factor = Next(0,100)+1 (DataWitchRemedy.Cost
+  @0x73f2e61a40 is six instructions), i.e. 2..1,000 per cost point.
+- "Try it, why not?" (#44082) is the only choice. An unaffordable balance shows the
+  generic insufficient-finances popup ("You don't have enough money to pay the witch
+  doctor for {0}." + "You are {money} short." / "You are broke.", title drawn from
+  In the red / Flat broke / Penniless, or You're short / No funds / Not enough) and
+  nothing else happens: no debit, no outcome roll. An affordable take debits before any
+  roll and never refunds.
+- Targeting: the remedy's Treats Disease first -- any ailment matching it, diagnosed or
+  not, No Cure ignored; otherwise the first strict maximum Seriousness Score > 0, ties to
+  the earlier ailment. One cure roll only: Next(0,15) < Effectiveness for a specialty
+  match, Next(0,50) otherwise, and no second target after a failure.
+- A cure removes the ailment immediately and restores its positive impact columns
+  (health/appearance/intelligence at their positive scores only, happiness max(3, score)).
+  An undiagnosed disease restores silently; a diagnosed one queues the generic
+  "You took {0}." popup and then the "Cured" / "You are no longer suffering from {0}."
+  card, the pair of titles drawn from "Wait, did it..." / "No effing way...". Seriousness
+  >= 4 also adds the resilient obituary color.
+- Failure, or no target at all, rolls r = Next(0, 2*Risk), upper exclusive: 0 is neutral;
+  1..7 cost min(r,5) health and happiness, with a shared 1-in-3 roll adding the same loss
+  to looks and smarts; >= 8 is a direct death that zeroes health, looks and smarts but
+  not happiness. A health pool depleted by the impact also kills. Prison caps the
+  post-impact happiness at Next(51,54) before the optional looks/smarts roll. Both death
+  lanes set the FatalWitchRemedy cause, "I died after taking {0}.".
+- Every affordable take adds one obituary color: "Friends describe <obit-him/her> as a
+  questionable decision maker." or "a risk taker."
+
+What the port does:
+- Sim::witchDoctorVisit(life, out, take) renders the card -- the native Cost field is
+  flattened into the body until cards model a price (ponytail comment in the source) --
+  and either dismisses (offer log only, the native DismissSelected) or takes. The whole
+  subsystem runs on its own witchRng_ stream (seed ^ 0xd1310ba698dfb5ac) so it cannot
+  shift other years' card sequence; the native uses the shared System.Random, which is
+  the port's deliberate divergence.
+- The diagnosed cure chain is two pending cards (kPendingWitchResult, then
+  kPendingWitchCure) drained by the following ageUp calls before the age advances -- the
+  same queue the funeral chain uses.
+- checkDeath now holds the annual mortality roll while a witch result or cure is still
+  queued (src/sim.cpp 18691): the medical chain closes before the year can kill. The
+  guard was required here -- a diagnosed cure queued behind its generic popup could
+  otherwise die between the two cards -- and every other pending family inherits it.
+- The replay runner (--script) used to stop at its age limit the moment the final
+  advancing card was shown, leaving that year's followups queued (src/script.cpp 951).
+  The loop now drains pendingCards before exiting, so a forced visit in the last
+  requested year returns its result -- and the cure card -- at the same age. Found by
+  the section's independent review, reproduced red, fixed, and pinned by a boundary
+  assertion in the test.
+
+Shortcuts (not recovered from the artifact):
+- No annual encounter rate: the doctor is reachable only through the forced class
+  ScenarioWitchDoctor (push scripts and the test), because the Healthcare menu that owns
+  the native trigger is not ported. Nothing is invented in its place.
+- Holiday and unlock hooks, and the UI presentation, are not rendered; the stored
+  remedy history, obituary colors and ateSnake flag are kept on the hero but have no
+  viewer yet.
+
+Tests (tools/test_witch_doctor.py): a compiled oracle shadows the witchRng_ stream and
+asserts the exact roll order -- cache draws, cure roll, risk roll, optional stats roll,
+title draws, obituary draw, prison cap -- across 1,200 no-target visits (30 rows x 40
+seeds: 50 fatal, 306 neutral, 844 harm) and 400 target visits in four disease modes
+(79 cures, 43 deferred diagnosed restorations), plus the same-age cache (repeated visits
+reuse row and price, monkey ejaculate at 34 twice including the exact-balance edge), the
+prison cap order, the final-year replay boundary, and forced-choice validation (only
+-1/0). Full suite: 99/99 green on the fixed binary after the runner corrections.
+
 ## 307. The funeral chain: the disposition screen and the urn
 
 The death card (section 249) answers a parent's death with two trace-backed lines, but the

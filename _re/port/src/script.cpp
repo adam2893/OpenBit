@@ -948,7 +948,7 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   // `i` stays the card index, so choices[]/push[] keep their one-entry-per-card
   // alignment with the bench's traces.
   int lived = 0;
-  for (int i = 0; lived < spec.ages && life.alive; ++i) {
+  for (int i = 0; (lived < spec.ages || !life.pendingCards.empty()) && life.alive; ++i) {
     const int forced = i < int(spec.choices.size()) ? spec.choices[i] : -1;
     // push[i] (when present and non-empty) replays one exact real row; a clear
     // call keeps the override from leaking into later years.

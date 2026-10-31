@@ -708,6 +708,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
         robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
         horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
         funeralRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0x9e3779b97f4a7c15ULL),
+        witchRng_(seed ^ 0xd1310ba698dfb5acULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
       poolRng_(seed ^ 0x6a09e667f3bcc908ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -3905,6 +3906,8 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
+    if (kind == kPendingWitchResult || kind == kPendingWitchCure)
+      return witchDoctorFollowup(life, out, pending);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -4045,6 +4048,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     const int c = forcedClassChoice_;
     forcedClass_.clear();
     forcedClassChoice_ = -1;
+    if (cls == "ScenarioWitchDoctor") return witchDoctorVisit(life, out);
     if (renderScenarioClass(cls, life, out, c)) return true;
   }
 
@@ -4672,6 +4676,168 @@ std::string diseaseDisplayName(const Table& t, size_t r) {
   return name;
 }
 }  // namespace
+
+// ---- Ordinary witch doctor (REPORT.en.md 308) ---------------------------
+// Native 3.25.1: ScenarioWitchDoctor + DataWitchRemedy, not the vampire treatment.
+void Sim::witchImpact(const Hero& h, AgeUp& out, int health, int happiness, int looks, int smarts) {
+  auto move = [&](int value, int score) {
+    return std::max(0, std::min(100, value + pointsForImpact(score))) - value;
+  };
+  if (health) out.health += move(h.health, health);
+  if (happiness) {
+    int value = h.happiness + move(h.happiness, happiness);
+    if (h.inPrison && value > 51) value = 51 + int(witchRng_.below(3));
+    out.happiness += value - h.happiness;
+  }
+  if (looks) out.looks += move(h.looks, looks);
+  if (smarts) out.smarts += move(h.smarts, smarts);
+}
+
+void Sim::witchCureRestore(const Hero& h, AgeUp& out, size_t row) {
+  const Table& t = tbl("a16_disease-types-enc");
+  auto positive = [&](const char* column) { return std::max(0, int(t.num(row, column))); };
+  witchImpact(h, out, positive("Health Impact Score"),
+              std::max(3, int(t.num(row, "Happiness Impact Score"))),
+              positive("Appearance Impact Score"), positive("Intelligence Impact Score"));
+}
+
+bool Sim::witchDoctorVisit(Life& life, AgeUp& out, bool take) {
+  Hero& h = life.hero;
+  if (!life.alive || !h.witchDeathRemedy.empty()) return false;
+  for (const auto& p : life.pendingCards)
+    if (p.kind == kPendingWitchResult || p.kind == kPendingWitchCure) return false;
+  if (!ensureTable("a16_witch-remedies-enc") || !ensureTable("a16_disease-types-enc")) return false;
+  const Table& t = tbl("a16_witch-remedies-enc");
+  const Table& d = tbl("a16_disease-types-enc");
+  if (!t.size()) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.witchRemedyAge != h.age || h.witchRemedyRow < 0 ||
+      size_t(h.witchRemedyRow) >= t.size() || h.witchCostFactor < 1 || h.witchCostFactor > 100) {
+    h.witchRemedyRow = int(witchRng_.below(uint32_t(t.size())));
+    h.witchCostFactor = 1 + int(witchRng_.below(100));
+    h.witchRemedyAge = h.age;
+  }
+  const size_t row = size_t(h.witchRemedyRow);
+  const std::string item = trim(t.at(row, "Item"));
+  const int effect = int(t.num(row, "Effectiveness Score"));
+  const int risk = int(t.num(row, "Risk Score"));
+  const int costScore = int(t.num(row, "Cost Score"));
+  if (item.empty() || effect < 0 || effect > 5 || risk < 1 || risk > 5 ||
+      costScore < 1 || costScore > 5) return false;
+  const int cost = 2 * costScore * h.witchCostFactor;
+  const auto extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioWitchDoctor";
+  out.title = "Witch Doctor";
+  // ponytail: flatten the native Cost UI field into the body until card fields exist.
+  out.body = "The witch doctor has offered you " + item + ".\n\nCost: " + money(cost);
+  out.options = {"Try it, why not?"};
+  out.narrative = "A witch doctor offered me " + item + ".";
+  if (!take) return true;  // native DismissSelected: offer log, no other effects
+  out.choice = out.options[0];
+  if (h.money < cost) {
+    const bool broke = h.money <= 0;
+    life.pendingCards.emplace_back(kPendingWitchResult,
+      (broke ? 4 : 7) + int(witchRng_.below(3)), broke ? 0 : cost - int(h.money));
+    return true;
+  }
+  h.money -= cost;
+  out.narrative += "\nI took " + item + ".";
+  if (item.find("snake") != std::string::npos || item.find("cobra") != std::string::npos)
+    h.ateSnake = true;
+
+  std::vector<int> rows(h.ailments.size(), -1);
+  for (size_t i = 0; i < h.ailments.size(); ++i)
+    for (size_t r = 0; r < d.size(); ++r)
+      if (trim(d.at(r, "Disease")) == h.ailments[i].key) { rows[i] = int(r); break; }
+  int target = -1;
+  bool specialty = false;
+  const std::string treats = trim(t.at(row, "Treats Disease"));
+  if (!treats.empty()) for (size_t i = 0; i < h.ailments.size(); ++i)
+    if (h.ailments[i].key == treats && rows[i] >= 0) { target = int(i); specialty = true; break; }
+  if (target < 0) {
+    int best = 0;
+    for (size_t i = 0; i < rows.size(); ++i) if (rows[i] >= 0) {
+      const int score = int(d.num(size_t(rows[i]), "Seriousness Score"));
+      if (score > best) { best = score; target = int(i); }
+    }
+  }
+  const bool cured = target >= 0 && int(witchRng_.below(specialty ? 15 : 50)) < effect;
+  if (cured) {
+    const size_t diseaseRow = size_t(rows[size_t(target)]);
+    const Hero::Ailment disease = h.ailments[size_t(target)];
+    h.pastAilments.push_back(disease);
+    h.ailments.erase(h.ailments.begin() + target);
+    if (!disease.diagnosed) {
+      witchCureRestore(h, out, diseaseRow);
+    } else {
+      h.curedByWitchDoctor = true;
+      if (d.num(diseaseRow, "Seriousness Score") >= 4)
+        h.obituaryColors.push_back("A resilient individual, <obit-he/she> once won a battle with " +
+                                  diseaseDisplayName(d, diseaseRow) + ".");
+      life.pendingCards.emplace_back(kPendingWitchResult, int(witchRng_.below(2)), int(diseaseRow));
+    }
+  } else {
+    const int roll = int(witchRng_.below(uint32_t(2 * risk)));
+    if (roll >= 8) {
+      out.health = -h.health;
+      out.looks = -h.looks;
+      out.smarts = -h.smarts;
+      h.witchDeathRemedy = item;
+    } else {
+      if (roll) {
+        const int impact = -std::min(roll, 5);
+        witchImpact(h, out, impact, impact, 0, 0);
+        if (witchRng_.below(3) == 0) witchImpact(h, out, 0, 0, impact, impact);
+        if (h.health + out.health < 1) h.witchDeathRemedy = item;
+      }
+      if (h.witchDeathRemedy.empty())
+        life.pendingCards.emplace_back(kPendingWitchResult, 2 + int(witchRng_.below(2)));
+    }
+  }
+  h.obituaryColors.push_back(std::string("Friends describe <obit-him/her> as ") +
+    (witchRng_.below(2) ? "a risk taker." : "a questionable decision maker."));
+  return true;
+}
+
+bool Sim::witchDoctorFollowup(Life& life, AgeUp& out, const Life::PendingCard& pending) {
+  Hero& h = life.hero;
+  const auto extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  hero_ = &h;
+  life_ = &life;
+  if (pending.kind == kPendingWitchCure) {
+    const Table& d = tbl("a16_disease-types-enc");
+    if (pending.a < 0 || size_t(pending.a) >= d.size()) return false;
+    const std::string disease = diseaseDisplayName(d, size_t(pending.a));
+    out.table = "registry:ScenarioDiseaseCure";
+    out.title = "Cured";
+    out.body = "You are no longer suffering from " + disease + ".";
+    out.narrative = "I was cured of " + disease + ".";
+    witchCureRestore(h, out, size_t(pending.a));
+    return true;
+  }
+  if (pending.kind != kPendingWitchResult || pending.a < 0 || pending.a > 9) return false;
+  const Table& t = tbl("a16_witch-remedies-enc");
+  if (h.witchRemedyRow < 0 || size_t(h.witchRemedyRow) >= t.size()) return false;
+  const std::string item = trim(t.at(size_t(h.witchRemedyRow), "Item"));
+  const char* const titles[] = {"Wait, did it...", "No effing way...", "Oh my", "Practice safe hex",
+    "In the red", "Flat broke", "Penniless", "You're short", "No funds", "Not enough"};
+  out.title = titles[pending.a];
+  if (pending.a >= 4) {
+    out.table = "registry:ScenarioInsufficientFinances";
+    out.body = "You don't have enough money to pay the witch doctor for " + item + ".";
+    out.body += pending.b > 0 ? "\n\nYou are " + money(pending.b) + " short." : "\n\nYou are broke.";
+  } else {
+    out.table = "registry:ScenarioWitchDoctorResult";  // native generic Popup
+    out.body = "You took " + item + ".";
+    if (pending.a < 2) life.pendingCards.emplace_back(kPendingWitchCure, pending.b);
+  }
+  return true;
+}
 
 // ---- The working week (REPORT.en.md 248) --------------------------------
 // ScenarioJobOvertimeRequest and ScenarioOvertimeDone are one state change seen
@@ -6038,7 +6204,11 @@ bool Sim::forceScenarioClass(const std::string& cls, int choice) {
     forcedClassChoice_ = -1;
     return true;
   }
-  if (!findScenario(cls)) {
+  if (cls == "ScenarioWitchDoctor" && choice != -1 && choice != 0) {
+    std::fprintf(stderr, "forceScenarioClass: Witch Doctor has only choice 0\n");
+    return false;
+  }
+  if (cls != "ScenarioWitchDoctor" && !findScenario(cls)) {
     std::fprintf(stderr, "forceScenarioClass: unknown scenario class: %s\n", cls.c_str());
     return false;
   }
@@ -18475,6 +18645,11 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
   const Hero& h = life.hero;
   hero_ = &h;
   life_ = &life;
+  if (!h.witchDeathRemedy.empty()) {
+    type = "FatalWitchRemedy";
+    sentence = "I died after taking " + h.witchDeathRemedy + ".";  // #9508, hero pronoun
+    return true;
+  }
   // A card can hand the death system a cause of its own (REPORT.en.md 119):
   // ScenarioLightningStrike's DismissSelected lane calls
   // DeathManager::UpdateWithLightningStrike @0x73f2fb19d4, whose sentence is
@@ -18510,6 +18685,10 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
       }
     }
   }
+  // These are modal follow-ups in the same year, not additional annual death rolls.
+  // Explicit fatal causes above still win; the ordinary roll waits until the cure closes.
+  for (const auto& pending : life.pendingCards)
+    if (pending.kind == kPendingWitchResult || pending.kind == kPendingWitchCure) return false;
   // Port-side mortality rule (the real game spreads this over many systems, not
   // one table): a small annual risk that rises steeply after 55.
   const double annual = h.age < 55 ? 0.001 : 0.004 * double(h.age - 54);

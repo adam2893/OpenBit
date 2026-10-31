@@ -115,6 +115,8 @@ enum PendingCard {
   kPendingHorseOutcome = 18,      // the race result (REPORT.en.md 306)
   kPendingFuneralPlan = 19,       // the disposition of a parent's remains (REPORT.en.md 307)
   kPendingFuneralAshes = 20,      // the urn the crematorium returns (REPORT.en.md 307)
+  kPendingWitchResult = 21,       // a = native popup title, b = cure row or shortage
+  kPendingWitchCure = 22,         // a = disease row; restores attributes on dismissal
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -350,6 +352,8 @@ class Sim {
   bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
   bool funeralPlanningYear(Life& life, AgeUp& out, int forcedChoice);
   bool funeralAshesYear(Life& life, AgeUp& out, int forcedChoice);
+  bool witchDoctorVisit(Life& life, AgeUp& out, bool take = true);
+  bool witchDoctorFollowup(Life& life, AgeUp& out, const Life::PendingCard& pending);
   bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> willLines(Life& life);
   std::vector<std::string> schoolMilestoneLines(Life& life);
@@ -986,6 +990,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng horseRng_;
   // The disposition and ashes cards' own draws (REPORT.en.md 307).
   Rng funeralRng_;
+  Rng witchRng_;
+  void witchImpact(const Hero& h, AgeUp& out, int health, int happiness, int looks, int smarts);
+  void witchCureRestore(const Hero& h, AgeUp& out, size_t row);
   // The proposal card's own draw (REPORT.en.md 303).
   Rng propRng_;
   Rng jewRng_;

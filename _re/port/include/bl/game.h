@@ -692,8 +692,15 @@ struct Hero {
     int years = 0;      // how many age-ups it has lasted
     bool noCure = false;
     bool fatal = false;
+    bool diagnosed = true;  // native IsUndiagnosed is false for the existing diagnosis lane
   };
   std::vector<Ailment> ailments;
+  // Ordinary witch-doctor visits (REPORT.en.md 308): opening fixes this age's offer.
+  int witchRemedyAge = -1, witchRemedyRow = -1, witchCostFactor = 0;
+  bool curedByWitchDoctor = false, ateSnake = false;
+  std::string witchDeathRemedy;
+  std::vector<Ailment> pastAilments;
+  std::vector<std::string> obituaryColors;
   // The house the hero lives in (REPORT.en.md 218).
   std::string home;
   // The aircraft the hero owns (REPORT.en.md 222), 'Make Model' from a16_aircraft-enc.
