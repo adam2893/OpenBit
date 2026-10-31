@@ -707,6 +707,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       hitmanRng_(seed ^ 0x2d6f8a4c1b9e7350ULL ^ 0x94d049bb133111ebULL),
         robberyRng_(seed ^ 0x7c3a1f60b25d9e48ULL ^ 0x2545f4914f6cdd1dULL),
         horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
+        funeralRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0x9e3779b97f4a7c15ULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
       poolRng_(seed ^ 0x6a09e667f3bcc908ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -3902,6 +3903,8 @@ bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
     if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
     if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
+    if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
+    if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
 
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
@@ -4685,26 +4688,33 @@ bool Sim::funeralYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.pendingFuneral) return false;
   const bool female = h.funeralFemale;
   const std::string poss = female ? "her" : "his";
-  const int lane = forcedChoice >= 0 ? (forcedChoice == 0 ? 0 : 1) : int(familyRng_.below(2));
+  const int lane = forcedChoice >= 0 ? std::min(forcedChoice, 2) : int(familyRng_.below(3));
   const std::vector<std::string> extra = out.extra;
   out = AgeUp();
   out.extra = extra;
   out.table = "registry:ScenarioDeathRelative";
   // shortcut: the card's own prompt was not captured; the title is the registry's.
   out.title = "Death";
-  out.options = {"I couldn't be bothered", "Let someone else plan it"};
+  out.options = {"I couldn't be bothered", "Let someone else plan it",
+                 "Plan " + poss + " funeral"};
   if (lane == 0) {
     out.choice = "I couldn't be bothered";
     // The third played life at 23, at a sibling's funeral: the game says only
     // "I couldn't be bothered to attend his funeral." (#288 + the possessive).
     out.narrative = "I couldn't be bothered to attend " + poss + " funeral.";
-  } else {
+  } else if (lane == 1) {
     out.choice = "Let someone else plan it";
     out.narrative = "I let someone else plan " + poss +
                     " funeral but I found time to attend it.";
+  } else {
+    // The card's own option that opens the disposition screen (#34062). It logs
+    // nothing itself: the Funeral Planning card answers next (REPORT.en.md 307).
+    out.choice = "Plan " + poss + " funeral";
+    h.pendingFuneralPlan = true;
+    life.pendingCards.push_back(kPendingFuneralPlan);
   }
   h.pendingFuneral = false;
-  h.funeralRelation.clear();
+  if (lane != 2) h.funeralRelation.clear();
   return true;
 }
 
@@ -4760,6 +4770,161 @@ bool Sim::safeSexYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "Don't use a condom";
     out.narrative = "I practiced unsafe sex.";
   }
+  return true;
+}
+
+bool Sim::funeralPlanningYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.pendingFuneralPlan) return false;
+  h.pendingFuneralPlan = false;
+  const bool female = h.funeralFemale;
+  const std::string poss = female ? "her" : "his";
+  const std::string obj = female ? "her" : "him";
+  const std::string rel =
+      h.funeralRelation.empty() ? (female ? "mother" : "father") : h.funeralRelation;
+  // The four prices are the ones the live 3.25.3a card showed when a parent died
+  // (Burial 7,710 / Cremation 990 / Taxidermy 45,360 / Donate to Science 0). The
+  // game's own formula is class-side and was not recovered (shortcut).
+  const long long cost[4] = {7710, 990, 45360, 0};
+  const char* const lowerVerb[4] = {"bury", "cremate", "have taxidermied", "donate"};
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioFuneralPlanning";
+  out.title = "Funeral Planning";
+  out.body = "It's time to decide what to do with your " + rel + "'s remains.\n\n" +
+             (female ? "Her" : "His") + " wish was to be cremated.\n\n" +
+             "Burial: " + money(cost[0]) + "\nCremation: " + money(cost[1]) +
+             "\nTaxidermy: " + money(cost[2]) + "\nDonate to Science: " + money(cost[3]);
+  out.options = {"Bury " + obj, "Cremate " + obj, "Have " + obj + " taxidermied",
+                 "Donate " + poss + " body to science"};
+  const int lane = forcedChoice >= 0 ? std::min(forcedChoice, 3) : int(funeralRng_.below(4));
+  out.choice = out.options[size_t(lane)];
+  if (h.money < cost[lane]) {
+    // The live card answers an unaffordable button with the Penniless modal
+    // (#33550 / #48373 / #68721); the port folds it into the card's log line.
+    const std::string action = lane == 2 ? "have your " + rel + " taxidermied"
+                                         : std::string(lowerVerb[lane]) + " your " + rel;
+    out.narrative = "You don't have enough money to " + action + ".\n\nYou are broke.";
+    h.funeralRelation.clear();
+    return true;
+  }
+  h.money -= cost[lane];
+  if (lane == 0) {
+    out.narrative = "I planned " + poss + " funeral and arranged for " + obj +
+                    " to be buried.";
+  } else if (lane == 1) {
+    out.narrative = "I planned " + poss + " funeral and arranged for " + obj +
+                    " to be cremated.";
+    h.pendingFuneralAshes = true;
+    h.ashesRelation = rel;
+    h.ashesFemale = female;
+    life.pendingCards.push_back(kPendingFuneralAshes);
+  } else if (lane == 2) {
+    out.narrative = "I planned " + poss + " funeral and had " + obj + " taxidermied.";
+  } else {
+    out.narrative = "I planned " + poss + " funeral and donated " + poss +
+                    " body to science.";
+  }
+  h.funeralRelation.clear();
+  return true;
+}
+
+bool Sim::funeralAshesYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.pendingFuneralAshes) return false;
+  h.pendingFuneralAshes = false;
+  const bool female = h.ashesFemale;
+  const std::string rel =
+      h.ashesRelation.empty() ? (female ? "mother" : "father") : h.ashesRelation;
+  const std::string myPoss = "my " + rel + "'s";
+  const std::string poss = female ? "her" : "his";
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioFuneralAshes";
+  out.title = "Ashes";
+  out.body = "You've received your " + rel +
+             "'s ashes back from the crematorium.\n\nWhat will you do?";
+  out.options = {"Sprinkle them somewhere special", "Keep them in an urn",
+                 "Throw them in the trash"};
+  const int lane = forcedChoice >= 0 ? std::min(forcedChoice, 2) : int(funeralRng_.below(3));
+  out.choice = out.options[size_t(lane)];
+  if (lane == 0) {
+    std::string place;
+    if (ensureTable("a16_funeral-ash-locations-enc")) {
+      const Table& t = tbl("a16_funeral-ash-locations-enc");
+      // The row names the deceased ("at his favorite strip club"), so the gender
+      // column filters the dead, not the hero. The age window uses the hero's
+      // age; the game's choice of age subject is unrecovered (shortcut).
+      const std::string want = female ? "female" : "male";
+      std::vector<size_t> pool, loose;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (trim(t.at(r, "Place")).empty()) continue;
+        loose.push_back(r);
+        if (t.has("Gender")) {
+          const std::string g = lower(trim(t.at(r, "Gender")));
+          if (!g.empty() && g != "both" && g != "all" && g != want) continue;
+        }
+        if (t.has("Min Age") && t.num(r, "Min Age") > 0 &&
+            double(h.age) < t.num(r, "Min Age"))
+          continue;
+        if (t.has("Max Age") && t.num(r, "Max Age") > 0 &&
+            double(h.age) > t.num(r, "Max Age"))
+          continue;
+        pool.push_back(r);
+      }
+      if (pool.empty()) pool.swap(loose);
+      if (!pool.empty()) {
+        const size_t row = pickFrom(pool, funeralRng_);
+        if (row != size_t(-1)) {
+          place = trim(t.at(row, "Place"));
+          // a16_funeral-ash-locations-enc writes four token shapes in Place
+          // (<his/her>, <he/she> and two slash lists). They are filled here
+          // rather than through resolve(): the resolver draws from the main
+          // stream and would shift every family after it (the section 282
+          // lesson).
+          size_t at = 0;
+          while ((at = place.find('<', at)) != std::string::npos) {
+            const size_t close = place.find('>', at + 1);
+            if (close == std::string::npos) break;
+            const std::string body = place.substr(at + 1, close - at - 1);
+            std::string pick;
+            if (body == "his/her") {
+              pick = poss;
+            } else if (body == "he/she") {
+              pick = female ? "she" : "he";
+            } else {
+              std::vector<std::string> alts;
+              size_t start = 0;
+              while (true) {
+                const size_t slash = body.find('/', start);
+                alts.push_back(body.substr(
+                    start, slash == std::string::npos ? std::string::npos : slash - start));
+                if (slash == std::string::npos) break;
+                start = slash + 1;
+              }
+              pick = alts[size_t(funeralRng_.below(alts.size()))];
+            }
+            place = place.substr(0, at) + pick + place.substr(close + 1);
+            at += pick.size();
+          }
+        }
+      }
+    }
+    if (place.empty()) {
+      // No row survived the filter: the fallback is the plain sentence, not an
+      // invented location (the test treats a missing one as a failure).
+      out.narrative = "I sprinkled " + myPoss + " ashes.";
+    } else {
+      out.narrative = "I sprinkled " + myPoss + " ashes " + place + ".";
+    }
+  } else if (lane == 1) {
+    out.narrative = "I put " + myPoss + " ashes in an urn and stored it in a safe place.";
+  } else {
+    out.narrative = "I threw " + myPoss + " ashes in the trash.";
+  }
+  h.ashesRelation.clear();
   return true;
 }
 

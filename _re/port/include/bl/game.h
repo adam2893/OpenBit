@@ -190,6 +190,9 @@ struct Hero {
   // A relative died this year and the funeral card is owed (REPORT.en.md 249).
   // The trace writes the death line and the funeral line in the same year.
   bool pendingFuneral = false;
+  // The death card's "Plan his funeral" option hands the year to the
+  // disposition screen, so its card is owed (REPORT.en.md 307).
+  bool pendingFuneralPlan = false;
   // The hero offered to take an ex-lover's paternity test (REPORT.en.md 251): the
   // result card then names the ex and the child the way the trace does.
   bool paternityProactive = false;
@@ -231,6 +234,11 @@ struct Hero {
   std::string safeSexWith;
   std::string funeralRelation;   // "father" / "mother" / "big sister"
   bool funeralFemale = false;
+  // Cremation queues a same-year ashes card, asking what to do with them
+  // before the next annual increment (REPORT.en.md 307).
+  bool pendingFuneralAshes = false;
+  std::string ashesRelation;   // "father": "my father's ashes"
+  bool ashesFemale = false;
   int schoolLevel = 0, schoolYears = 0;
   std::string schoolTeacher, schoolClassmate, schoolPrincipal, schoolActivity;
   std::string schoolActivityRef, schoolClique, schoolFrat, schoolFratLetters, schoolFratNickname;

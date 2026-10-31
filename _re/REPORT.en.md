@@ -23536,6 +23536,86 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 307. The funeral chain: the disposition screen and the urn
+
+The death card (section 249) answers a parent's death with two trace-backed lines, but the
+live 3.25.3a game puts a second screen behind a third button: when the hero chooses to plan
+the funeral himself, the disposition card opens. The played life captured it whole at 19 --
+"It's time to decide what to do with your father's remains. His wish was to be cremated."
+with Burial 7,710 / Cremation 990 / Taxidermy 45,360 / Donate to Science 0 and the four
+buttons "Bury him", "Cremate him", "Have him taxidermied", "Donate his body to science" --
+and then, after a cremation, the crematorium returns the ashes and a third card asks what to
+do with them. Both screens and the urn are wired here, and a16_funeral-ash-locations-enc
+leaves the unreferenced list (47 -> 46). The card denominator does not move: the ash table
+feeds a screen, it is not a card table.
+
+**What the game runs.** ScenarioDeathRelative carries the whole branch in its method names:
+ShowPlanFuneralScenario, ShouldPlanFuneral, ShowAttendFuneral, ShowAbroadFuneral,
+ShowPrisonFuneralFeedback, then DismissSelected and ChoiceSelectedAtIndex. The disposition
+itself is ScenarioFuneralPlanning (.ctor x5, RefreshScenario, ChoiceSelectedAtIndex), the
+ashes are ScenarioFuneralAshes (.ctor x5, RefreshScenario, ChoiceSelectedAtIndex), travel
+and mourning are ScenarioFuneralTravel and ScenarioMournDeath. So the chain is: death card ->
+disposition -> urn, and nothing in it is a table row.
+
+**The chain in the port.** funeralYear gains the third option, the label from #34062
+"Plan {0} funeral" with the possessive filled in, and it only opens the door: the card's own
+line stays empty and the disposition answers next. The two trace lanes are untouched and
+still log #23836 and #24573. funeralPlanningYear then reads the relation and sex the death
+card stored and builds the disposition screen; cremation pushes a pending card and
+funeralAshesYear answers it the next age-up.
+
+**The literals.**
+
+- disposition title #20840 "Funeral Planning"; body #27798 "It's time to decide what to do
+  with {0} remains." (the captured screen fills {0} with "your father's") and the wish line
+  #70505 "{0} {1} wish was to be cremated.".
+- the four cost rows #14177 "Burial", #16675 "Cremation", #41045 "Taxidermy", #18102
+  "Donate to Science".
+- the four logs #24803 "I planned {0} funeral and arranged for {1} to be buried{2}.",
+  #24804 "... cremated{2}.", #24805 "... donated {1} body to science{2}", #24806 "... had
+  {1} taxidermied{2}." ({0} and {1} are the deceased's possessives, {2} is empty in every
+  capture).
+- the ashes card #50095 "You've received {0} ashes back from the crematorium.\n\nWhat will
+  you do?" (title #12127 "Ashes") and its three buttons #39747 "Sprinkle them somewhere
+  special", #28218 "Keep them in an urn", #43542 "Throw them in the trash".
+- the ashes logs #25138 "I sprinkled {0} ashes {1}.", #24867 "I put {0} ashes in an urn and
+  stored it in a safe place.", #25244 "I threw {0} ashes in the trash." and the second
+  person twin #49357 "You sprinkled {0} ashes {1}.".
+- the broke answer, which the live screen showed as a "Penniless" modal over the card:
+  #33550 "Penniless", #48373 "You don't have enough money {0}." and #68721 "{0}\n\nYou are
+  broke.".
+
+**The table.** a16_funeral-ash-locations-enc is one page: Place, Gender, Min Age, Max Age,
+with places already written as phrases ("at his favorite strip club", male, 21). The Gender
+column names the dead, so the port filters it with the deceased's sex; the age window is
+read against the hero as a shortcut; its native age subject has not been recovered. A row that survives the
+filter supplies the whole tail of "I sprinkled my father's ashes at his favorite strip
+club.".
+
+**The shortcuts.** The four prices are the numbers the live card printed once (Burial 7,710,
+Cremation 990, Taxidermy 45,360, Donate 0); the game's own formula is class-side and was not
+recovered, and the port's economy has no funeral-cost table to derive them from. An
+unaffordable button does not reopen the menu: the card logs the Penniless sentence and the
+parent is laid to rest with no disposition record, which is the smallest honest answer given
+the modal is not modelled. The captured cremation wish is reused rather than modelling
+individual burial wishes. Prices keep the captured numeric values in the hero's currency,
+without region scaling. If the eligible ash pool is empty, the implementation falls
+back to all nonempty places; the current seeded check does not exercise that fallback.
+AgeUp carries one card per call: planning and ashes are pending
+follow-ups drained before the age/year increment, so the whole chain stays in the same year.
+
+**The test.** tools/test_funeral.py runs 40 lives to 90 with an initial 50,000 balance
+and 40 with an initial zero balance; later spending and earnings can change either. It
+checks the captured body, exact choice/journal pairing, deceased pronouns, queued planning
+and ashes linkage, and ash locations against gender/age-filtered table rows. A compiled
+public-API assertion also forces the third death-card option and checks the unaffordable
+taxidermy wording for both parents. Measured: 56 planning screens, 9 burials, 6 cremations,
+2 taxidermies, 17 donations and 22 unaffordable choices; 6 ashes cards (1 scattered, 2 kept,
+3 discarded). The existing relative-death check remains green: 74 deaths, 46 old funeral
+lanes. Post-change regression: 98/98 green across a host interruption (61 checks before
+the crash, the remaining 37 resumed against the unchanged binary). The funeral and
+relative-death checks were also rerun after recovery and passed with the same counts.
+
 ## 306. The horse races: three cards from a16_horses-enc
 
 The §305 audit left 48 tables in gamedata_plain that no port source names. The horse

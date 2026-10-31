@@ -113,6 +113,8 @@ enum PendingCard {
   kPendingRobberyOutcome = 16,    // the heist's result (REPORT.en.md 302)
   kPendingHorseBet = 17,          // the race field and the pick (REPORT.en.md 306)
   kPendingHorseOutcome = 18,      // the race result (REPORT.en.md 306)
+  kPendingFuneralPlan = 19,       // the disposition of a parent's remains (REPORT.en.md 307)
+  kPendingFuneralAshes = 20,      // the urn the crematorium returns (REPORT.en.md 307)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -346,6 +348,8 @@ class Sim {
   bool overtimeYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> overtimeLines(Life& life);
   bool funeralYear(Life& life, AgeUp& out, int forcedChoice);
+  bool funeralPlanningYear(Life& life, AgeUp& out, int forcedChoice);
+  bool funeralAshesYear(Life& life, AgeUp& out, int forcedChoice);
   bool exPaternityYear(Life& life, AgeUp& out, int forcedChoice);
   std::vector<std::string> willLines(Life& life);
   std::vector<std::string> schoolMilestoneLines(Life& life);
@@ -980,6 +984,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng hitmanRng_;
   Rng robberyRng_;
   Rng horseRng_;
+  // The disposition and ashes cards' own draws (REPORT.en.md 307).
+  Rng funeralRng_;
   // The proposal card's own draw (REPORT.en.md 303).
   Rng propRng_;
   Rng jewRng_;
