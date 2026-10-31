@@ -20,6 +20,16 @@ for name in ("a16_prisoner-crimes-enc", "a16_prisoner-juvenile-crimes-enc"):
             if c:
                 crimes.add(c)
 
+# The mischief card (§318) gets the hero charged without an arrest card: the push
+# splices the charge straight in. Those charges name crimes from the delinquency
+# table, not the prisoner table, so the chain starts at the charge itself.
+MISCHIEF = "registry:ScenarioCrimeDelinquencyPush"
+cartoony = set()
+with open(ROOT / "gamedata_plain" / "a16_delinquent-activities-enc", newline="") as fh:
+    for row in csv.DictReader(fh):
+        c = (row.get("Crime") or "").strip()
+        if c:
+            cartoony.add(c)
 
 def run(seed, ages=80):
     spec = {"seed": seed, "country": "United States", "gender": "male", "ages": ages}
@@ -38,19 +48,30 @@ acquittals = 0
 for seed in range(1, 41):
     doc = run(seed)
     pending = None
+    mischief = False
     for event in doc["events"]:
         lines = event.get("logLines") or []
         text = chr(10).join(lines)
+        if event.get("table") == MISCHIEF and event.get("choice") == "Sure, why not?":
+            mischief = True
+            continue
         m = ARREST.match(lines[-1]) if lines else None
         if m:
             assert pending is None, (seed, "second arrest before the first ended", event)
             assert m.group(1) in crimes, (seed, m.group(1))
             pending = {"crime": m.group(1), "age": event["age"], "stage": 0}
+            mischief = False
             continue
         if event.get("title") == "Criminal Charges":
-            assert pending, (seed, "charge without an arrest", event)
             m = CHARGE.search(event.get("body") or "")
             assert m, (seed, event.get("body"))
+            if pending is None:
+                # The card can come from the mischief push, which has no arrest card
+                # in front of it (the native code splices the charge in directly).
+                assert mischief, (seed, "charge without an arrest", event)
+                assert m.group(1) in cartoony, (seed, m.group(1))
+                pending = {"crime": m.group(1), "age": event["age"], "stage": 0}
+                mischief = False
             assert m.group(1) == pending["crime"], (seed, m.group(1), pending)
             pending["stage"] = 1
             continue

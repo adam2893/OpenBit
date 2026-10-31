@@ -724,6 +724,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
         horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
         funeralRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0x9e3779b97f4a7c15ULL),
         witchRng_(seed ^ 0xd1310ba698dfb5acULL),
+        mischiefRng_(seed ^ 0x5f3759df2b1c8a46ULL ^ 0x94d049bb133111ebULL),
         godRng_(seed ^ 0x6c62272e07bb0142ULL ^ 0x9e3779b97f4a7c15ULL),
         timeMachineRng_(seed ^ 0x0f1e2d3c4b5a6978ULL ^ 0x9e3779b97f4a7c15ULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
@@ -4486,6 +4487,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::partTimeYear, nullptr, 5},
         {&Sim::parentsCarYear, nullptr, 4},
         {&Sim::failingEyesightYear, nullptr, 2},
+        {&Sim::mischiefYear, nullptr, 3},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket
@@ -5682,6 +5684,119 @@ void Sim::studentLoanLines(Life& life, std::vector<std::string>& lines) {
     lines.push_back("I fully paid off my student loan for " + loan.college + ".");
   }
 }
+// ---- Mischief (REPORT.en.md 318) --------------------------------------------
+// ScenarioCrimeDelinquencyPush: a friend asks the hero out to raise some hell.
+// ScenarioIsEligibleForRandomPush @0x73f360f7ac gates it on Age >= 8, the hero not
+// being in prison, an accomplice in the friendship graph and fewer than three
+// presented cards; the push driver itself is reflective, so the class carries no
+// rate. The port has no friend entities (the friend token is a generated name), so
+// the accomplice is always there and the identity gates are not modelled
+// (shortcut), and the coin below is the port's.
+bool Sim::mischiefYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 8 || h.inPrison || life.mischiefPresented >= 3) return false;
+  if (forcedChoice < 0 && !mischiefRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_delinquent-activities-enc")) return false;
+  hero_ = &life.hero;
+  life_ = &life;
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+
+  // GetRandomDelinquentActivityForAgeAndHasAccomplice(age, 1): the age window
+  // columns, minus the rows marked Acts Alone (the hero has company here).
+  const Table& t = tbl("a16_delinquent-activities-enc");
+  std::vector<size_t> pool;
+  for (size_t i = 0; i < t.size(); ++i) {
+    const int lo = int(t.num(i, "Min Age"));
+    const int hi = int(t.num(i, "Max Age"));
+    if (lo > 0 && h.age < lo) continue;
+    if (hi > 0 && h.age > hi) continue;
+    if (t.at(i, "Acts Alone") == "x") continue;
+    pool.push_back(i);
+  }
+  if (pool.empty()) return false;
+
+  ++life.mischiefPresented;
+  out.table = "registry:ScenarioCrimeDelinquencyPush";
+  out.title = "Mischief";
+  // Push Refresh @0x73f360eb10: body #70378 '{0} wants to get up to some mischief
+  // with you.\n\nWhat will you do?' with the accomplice's name, choices #40427
+  // 'Sure, why not?' and #31851 "No, I'm not a troublemaker".
+  out.body = friendName + " wants to get up to some mischief with you.\n\nWhat will you do?";
+  out.options = {"Sure, why not?", "No, I'm not a troublemaker"};
+  const int pick = forcedChoice >= 0 ? std::min(forcedChoice, 1) : int(mischiefRng_.below(2));
+  out.choice = out.options[size_t(pick)];
+
+  if (pick == 1) {
+    // Choice @0x73f360ed74, the 'troublemaker' branch: ImpactDiscipline(+3) and
+    // ImpactKarma(+3), and log #69215 '{0}\nI told {1} that I am no troublemaker.'
+    // -- the {0} tag block has no home in the port, so the line is the second half.
+    out.discipline = pointsForImpact(3);
+    out.karma = pointsForImpact(3);
+    out.narrative = "I told " + friendName + " that I am no troublemaker.";
+    return true;
+  }
+
+  // The accept branch: relationship +3 on the accomplice (no friend entity to move,
+  // shortcut), ImpactDiscipline(-3), ImpactKarma(-3), then the activity row.
+  out.discipline = pointsForImpact(-3);
+  out.karma = pointsForImpact(-3);
+  const size_t row = pool[size_t(mischiefRng_.below(uint32_t(pool.size())))];
+  // The row's own alternative tokens ('<cheese sticks/Twinkies/...>', '<your/my>')
+  // draw here, on the card's stream, before the resolver sees the text, so a seeded
+  // run does not move any other family's sequence.
+  rndCache_.clear();
+  rbLast_.clear();
+  std::string activity = t.at(row, "Activity");
+  for (size_t i = activity.find('<'); i != std::string::npos; i = activity.find('<', i + 1)) {
+    const size_t close = activity.find('>', i);
+    if (close == std::string::npos) break;
+    const std::string inner = activity.substr(i + 1, close - i - 1);
+    std::string genderValue;
+    if (inner.find('/') == std::string::npos || genderToken(inner, genderValue)) continue;
+    std::vector<std::string> parts;
+    splitOn(inner, '/', parts);
+    if (parts.empty()) continue;
+    const std::string drawn = parts[mischiefRng_.below(uint32_t(parts.size()))];
+    activity.replace(i, close - i + 1, drawn);
+    i += drawn.size() - 1;
+  }
+  activity = resolve(activity);
+
+  // Accept body #47630 'You and {0} {1}.' (the activity is the verb phrase) and the
+  // journal half of #69225 '{0}\nI told {1} that sounds great.'.
+  out.body = "You and " + friendName + " " + activity + ".";
+  out.narrative = "I told " + friendName + " that sounds great.";
+
+  // The charge roll: the row's Charge Likeliness Score indexes 0xfc76cc
+  // {10, 7, 5, 4, 2} (a higher score means a likelier charge); a row with no crime
+  // column rolls the flat twenty instead. Only a row that names a crime counts as
+  // an attempt.
+  const std::string crime = trim(t.at(row, "Crime"));
+  const int tier = std::max(1, std::min(5, int(t.num(row, "Charge Likeliness Score"))));
+  static const int kChance[] = {10, 7, 5, 4, 2};
+  if (!crime.empty()) {
+    ++h.crimesAttempted;
+    if (mischiefRng_.below(uint32_t(kChance[tier - 1])) != 0) return true;
+    // Caught (0x73f360ed74). GetCrimeScenarioForCrimeType splices the arrest card
+    // in; the port queues its own crime chain instead (section 273), so the charge
+    // renders as the next card. shortcut: the sentence ladder by tier is the port's
+    // (1/1/2/3/5), since the spliced scenario's own length is not recovered.
+    static const int kYears[] = {1, 1, 2, 3, 5};
+    if (h.age > 16) {
+      h.crimeName = crime;
+      h.crimeYears = kYears[tier - 1];
+      life.pendingCards.push_back(kPendingCrimeCharge);
+    }
+    // The under-17 branch splices ScenarioRelationshipArgueInbound or the
+    // parent-punishment variant of the same crime card, keyed on the local criminal
+    // record; the port has neither, so being caught as a child changes no state.
+    return true;
+  }
+  if (mischiefRng_.below(20) == 0) return true;  // caught, but the row names no crime
+  return true;
+}
+
 // ---- Coming out (REPORT.en.md 274) ----------------------------------------
 // ScenarioSiblingComingOut, title 'Coming Out'. The prompt is #50695, the ignore
 // lane #30968 and the ridicule lane #25017; the later announcement is #9380's

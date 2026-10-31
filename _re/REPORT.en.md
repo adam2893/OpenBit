@@ -23536,6 +23536,89 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 318. The mischief card: a friend, an activity, and a chance the police hear about it
+
+`ScenarioCrimeDelinquencyPush` is the one delinquency card the played lives kept showing
+(`{name} wants to get up to some mischief with you.`) and the port had no family for it. This
+section recovers both halves — the push card (`RefreshScenario` 0x360eb10, `ChoiceSelectedAtIndex`
+0x360ed74, `ScenarioIsEligibleForRandomPush` 0x360f7ac) and the menu-side pull (`Ctor` 0x360bf3c,
+`RefreshScenario` 0x360cabc, `ChoiceSelectedAtIndex` 0x360cf28) — and wires the push into the port.
+All addresses are 3.25.1 vaddrs.
+
+**Who the friend is.** `GetAccomplice` 0x360e0d0 is deterministic: friends first (same place as the
+hero, `SimPerson` +0xc0 outside a band, total hero relationship strength above a threshold, the
+strongest kept), then the lover, then a sibling. The card formats that person into
+`#70378 '{0} wants to get up to some mischief with you.\n\nWhat will you do?'` and offers
+`#40427 'Sure, why not?'` / `#31851 "No, I'm not a troublemaker"`. The choice dispatches on
+`ToLower(title)` containing `#66382 'sure'` or `#67261 'troublemaker'`.
+
+**Refusing** is the whole payload of the polite branch: relationship -4, `ImpactDiscipline(+3)`,
+`ImpactKarma(+3)`, and `#69215 '{0}\nI told {1} that I am no troublemaker.'` where `{0}` is a life
+tag (one of `#39775 'Square alert'`, `#22120 'Goody two-shoes'`, `#29008 'Live a
+little'`, `#31459 'Next time'`, `#40141 'Straight-laced lackey'`).
+
+**Accepting** takes relationship +3, `ImpactDiscipline(-3)`, `ImpactKarma(-3)`, stamps the
+accomplice's age field, logs `#69225 '{0}\nI told {1} that sounds great.'`, then draws one row from
+`a16_delinquent-activities-enc` with
+`DataHub::GetRandomDelinquentActivityForAgeAndHasAccomplice(age, hasAccomplice=1)`. The activity
+text goes into `#47630 'You and {0} {1}.'` (duo) or `#49904 'You {0}.'` (solo) and the log form
+`#69354 '{0}\n{1} and I {2}.'`. Life then keeps a mischief counter and a tag from the duo pool
+`#26454 In deep together`, `#17481 Delinquent duo`, `#44049 Troublemaking`, `#30209 Mischief makers`,
+`#33041 Our dirty secret`.
+
+**Getting caught.** A row whose `Crime` cell is non-empty increments `Life.crimesAttempted` and
+rolls `GetRandomNumber(0, chance[tier])` with the int table at 0xfc76cc = `[10, 7, 5, 4, 2]`
+indexed by the row's `Charge Likeliness Score` tier; a row with no crime rolls a flat 20. A zero
+means caught, and caught at 17 or older splices `GetCrimeScenarioForCrimeType` — the port's own
+`kPendingCrimeCharge` card, i.e. the 273 chain. Caught at 16 or under, with no criminal record in
+the place of residence, splices `ScenarioRelationshipArgueInbound(arg2=8)` or a parent-punishment
+variant instead.
+
+**The port's card** (`Sim::mischiefYear`, own `mischiefRng_`) fires from the wheel with a 6% coin,
+is gated on `age >= 8`, not in prison and `mischiefPresented < 3`, and requires the table. Both
+branches are reachable because a forced choice bypasses the coin, exactly like the eye-exam and
+sibling families. The accomplice comes from the existing `resolve("<friend>")` name pool, so the
+identity gates of `GetAccomplice` are not modelled. The accept body is
+`You and <name> <activity>.` and the refuse body keeps the native prompt shape.
+
+Measured on the built binary (`tools/test_mischief.py`): seed 7, US male, cash 500, ages 40,
+`choices[-1]*23 + [0]` → age 23 accept, friend `Mack D`, body `You and Mack D sold some pirated
+copies of "Bohemian Rhapsody" at a local farmers market.`, karma and discipline -16 each; the same
+padding with `[1]` → the prompt body and karma and discipline +16. Over 20 unforced lives the card
+appeared 3 times in total, never more than once per life, youngest age 15. Seeds 1..40 with every
+choice forced to `0` produce one catch: seed 27, age 34, `Criminal Mischief`, 2 years — the charge
+card lands in the same year and names the table crime.
+
+**The pull (menu card) is not ported.** `SimPlace` builds it from the Crime menu
+`LifeInterface::GetCrimeList` 0x312a624, which shows a `#30205 'Mischief'` /
+`#18805 Engage in some mischief` row at 8+. Accepting builds the accomplice array with up to five
+entries (`DataHub::GetRandomStreetPersonAndMustBeInNeed`, `#10175 'A random {0}'`, then a
+friend/child/lover/sibling pick), the prompt is `#50032 "You're thinking about possible accomplices
+for your mischief.\n\nWho will you pick?"`, the dropdown label `#33826 'Pick your accomplice'` with
+`#10673 'Act alone'` as its first row, and the single choice `#21491 'Get up to it'`. The commit
+then re-rolls the crime chance on a second, different ladder (float table at 0xfc76b8 =
+`[16, 12, 9, 7, 3]`, multiplied by wiliness: above 90 ×2, above 80 ×1.5, and halved below 5 or cut
+to 0.3 below 10 attempted crimes). The port has no Crime menu and no accomplice selection, so none
+of that is reachable and none of it was invented.
+
+**Ceilings** (all of them visible in the code comments beside `Sim::mischiefYear`):
+
+* No friend entities: the accomplice is always a generated name, so the relationship +3/-4, the
+  `[p+0xc0]` bands and the "back out" gate of the pull are unmodelled.
+* The `{0}` tag block of `#69225` / `#69215` has no home in the port, which models no life tags, so
+  only the second half of each log line is rendered.
+* `GetCrimeScenarioForCrimeType`'s own sentence length was not recovered; the port reuses the 273
+  charge card and takes `crimeYears` from `{1, 1, 2, 3, 5}` by tier — a labelled shortcut.
+* The caught-under-17 splice is unimplemented: neither target card exists in the port.
+* The pull card, the juvenile branch, `Crime::get_Mischief`/`Scenario::PushBack`, and whoever queues
+  the push (zero direct callers; the push catalogue is reflection-dispatched) stay unrecovered.
+* The 6% coin is the port's own: no push rate was recovered. It is drawn on `mischiefRng_` so no
+  other family's sequence moves for a given seed.
+
+**Harness note.** A forced step skips that year's priority chain, so a padding length found in an
+unforced run lands on a different card. Both test branches search the padding for the first step
+whose `table` is `registry:ScenarioCrimeDelinquencyPush`.
+
 ## 317. The tuition screen and the student loan
 
 An accepted university application hands the hero a card the port did not have:

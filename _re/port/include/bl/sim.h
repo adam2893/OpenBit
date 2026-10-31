@@ -197,6 +197,9 @@ struct Life {
   // 104): its gate reads the count and pushes only at zero, so that card is the
   // family's one-shot.
   int loverPresented = 0;
+  // The mischief card's PresentedCountForScenario counter (REPORT.en.md 318):
+  // ScenarioCrimeDelinquencyPush paints at most three times in one life.
+  int mischiefPresented = 0;
   // The four coworker cards' own PresentedCountForScenario counters (REPORT.en.md
   // 105). Their gates read the count and withhold the card once it has been
   // shown N+1 times, with N = 4 (annoyance), 3 (inappropriate behaviour),
@@ -755,6 +758,11 @@ class Sim {
   // an excuse. Its floor is five rather than eighteen and it carries no
   // presented cap either; it draws on its own stream (partyRng_).
   bool friendPartyYear(Life& life, AgeUp& out, int forcedChoice);
+  // The mischief card (REPORT.en.md 318): ScenarioCrimeDelinquencyPush -- a friend
+  // asks the hero out to raise hell. The hero says yes or no, a row of
+  // a16_delinquent-activities-enc decides what they did, and the charge roll reads
+  // the row's Charge Likeliness Score. Draws on its own stream (mischiefRng_).
+  bool mischiefYear(Life& life, AgeUp& out, int forcedChoice);
   // The friend-lover card (REPORT.en.md 104): the hero meets a lover of a
   // friend's -- a person the card generates at push time -- out of
   // a16_friend-lover-scenarios-enc and hooks up with them, ignores them, reports
@@ -1038,6 +1046,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The disposition and ashes cards' own draws (REPORT.en.md 307).
   Rng funeralRng_;
   Rng witchRng_;
+  // The mischief card's own draws (REPORT.en.md 318): the activity row, its
+  // alternative tokens and the charge roll.
+  Rng mischiefRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)
   Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
   bool timeMachineOn_ = false;

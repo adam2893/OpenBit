@@ -148,6 +148,9 @@ struct Hero {
   // Prison life (REPORT.en.md 82): the nickname the yard gives you, the gang,
   // the inmate across the yard, the letters, the canteen gifts and the parole
   // board. The sentence itself (inPrison / prisonYearsLeft) is section 45's.
+  // Mischief (REPORT.en.md 318): SimHero.IncrementCrimesAttempted. Only the
+  // pull half's wiliness ladder reads it; the push half just increments it.
+  int crimesAttempted = 0;
   bool prisonPrompt = false;    // the script asked for a sentence, as a probe hook
   bool prisonServed = false;    // the forced sentence has been served
   std::string prisonNickname;
