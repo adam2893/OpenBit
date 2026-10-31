@@ -5,13 +5,14 @@
 #include "bl/table.h"
 #include "bl/text.h"
 
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace bl {
 
 bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
-  (void)forcedChoice;
   Hero& h = life.hero;
   hero_ = &h;
   life_ = &life;
@@ -72,6 +73,50 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   static const char* kTypes[] = {"stealth", "assassination", "honeypot", "hacking", "intel"};
   const std::string type = kTypes[spyRng_.below(5)];
+
+  // The secret-agent colour tables (REPORT.en.md 311). resolve() draws its
+  // '<a/b>' alternatives, names and pool tokens from the main rng_, so the two
+  // streams trade places for each colour: every new draw lands on spyRng_ and
+  // the main stream is left exactly where it was. Spy tokens (which draw from
+  // spyRng_ by name) are swapped in before the call for that reason.
+  const auto colourResolve = [this](const std::string& raw, bool female) {
+    const bool savedSet = pronounOtherSet_, savedFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;  // the parser's gender: target or client, never the hero
+    pronounOtherFemale_ = female;
+    std::swap(rng_, spyRng_);
+    const std::string s = resolve(raw);
+    std::swap(rng_, spyRng_);
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    return s;
+  };
+  // Native getters weight by Commonness Score copies and draw Next(0, count).
+  const auto colourPick = [this](const char* name, auto keep) {
+    if (!ensureTable(name)) return size_t(-1);
+    const Table& t = tbl(name);
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < t.size(); ++r)
+      if (keep(t, r)) pool.push_back(r);
+    return weightedPickOf(t, "Commonness Score", pool, spyRng_);
+  };
+  // SimSecretAgentMission.Client {Type, PersonName, PersonGender}: drawn once per
+  // card, only when a colour names the client.
+  // shortcut: the port has no client record; name and gender are drawn here.
+  std::string clientName;
+  bool clientFemale = false;
+  const auto client = [&]() -> const std::string& {
+    if (clientName.empty()) {
+      clientFemale = spyRng_.chance(0.5);
+      std::swap(rng_, spyRng_);
+      clientName = drawFirstName(clientFemale) + " " + drawSurname();
+      std::swap(rng_, spyRng_);
+    }
+    return clientName;
+  };
+  std::string honeypotWhere;  // mission.Location, keys the meeting-scenario colour
+  std::string wireLine;       // the stealth alarm's 'Correct' report
+  std::vector<std::string> wireOptions;
+  std::string wireChoice;
 
   spyTarget_.clear();
   int risk = 2;
@@ -235,6 +280,7 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
       const size_t row = weightedPickOf(loc, "Commonness Score", pool, spyRng_);
       if (row != size_t(-1)) where = trim(loc.at(row, "Location"));
     }
+    honeypotWhere = where;
     if (!preference.empty()) {
       briefing = "Meet " + (spyTarget_.empty() ? std::string("the mark") : spyTarget_) + " at the " +
                  (where.empty() ? std::string("usual place") : where) + " and work the fact that " +
@@ -246,6 +292,34 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
     const std::string approach = spySnippet("a16_secret-agent-honeypot-agent-approach-style-enc",
                                             "Approach", "Commonness Score", "", "", "");
     if (!approach.empty()) briefing += " Approach: " + spySentence(approach);
+    // honeypot-misssion-briefing colour: ScenarioSecretAgentHoneypotMissionBriefing::
+    // RefreshScenario @0x73f2a9ba48, GetRandomSecretAgentHoneypotMissionBriefingColor
+    // 0x73f2c5dc2c (unfiltered, weighted), parsed with the target's gender.
+    const size_t hb = colourPick("a16_secret-agent-honeypot-misssion-briefing-color-enc",
+                                 [](const Table&, size_t) { return true; });
+    if (hb != size_t(-1)) {
+      const std::string want = colourResolve(
+          trim(tbl("a16_secret-agent-honeypot-misssion-briefing-color-enc").at(hb, "Snippet")), spyTargetFemale_);
+      // shortcut: Client.BriefingDescriptor() is the client's name and
+      // mission.TargetDescription() the port's own target text; joined by ' '
+      // rather than the native '\n\n'. Pronoun types 5/0 read as He/he [I].
+      briefing += " Your client, " + client() + ", wants you to seduce " +
+                  (spyTarget_.empty() ? std::string("the target") : spyTarget_) + ".";
+      briefing += std::string(" ") + (clientFemale ? "She" : "He") + " says " +
+                  (clientFemale ? "she" : "he") + " wants " + want + ".";
+    }
+    // honeypot-approach colour: ScenarioSecretAgentHoneypotMissionMeetDecisions::
+    // RefreshScenario @0x73f2a9f3b8, GetRandomSecretAgentHoneypotApproachColor
+    // 0x73f2c617cc (unfiltered, weighted), parsed with the target's gender.
+    // shortcut: the native approach dropdown (+25 when it matches the row's
+    // Compatible Approach Styles) has no port counterpart; the port's own drawn
+    // approach above stands, and the outcome roll is unchanged.
+    const size_t ha = colourPick("a16_secret-agent-honeypot-approach-color-enc",
+                                 [](const Table&, size_t) { return true; });
+    if (ha != size_t(-1))
+      briefing += " According to your client, " + client() + ", the target prefers lovers who " +
+                  colourResolve(trim(tbl("a16_secret-agent-honeypot-approach-color-enc").at(ha, "Snippet")),
+                                spyTargetFemale_) + ".";
   } else if (type == "hacking") {
     std::string file, kind, drive;
     if (ensureTable("a16_secret-agent-hack-mission-file-name-enc")) {
@@ -268,6 +342,41 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
     if (file.empty()) return false;
     briefing = "Pull the " + file + (kind.empty() ? std::string() : " " + kind) + " file off the " +
                (drive.empty() ? std::string("agency") : drive) + " drive and leave no trace.";
+    // Client.Type, enum civilian 1 / corporation 2 / government 3.
+    // shortcut: the native client generator was not traced; the type is uniform.
+    static const char* kClientTypes[] = {"civilian", "corporation", "government"};
+    const std::string clientType = kClientTypes[spyRng_.below(3)];
+    // hack-mission-file colour: SimSecretAgentHackingMission::.ctor @0x73f2f9c00c,
+    // GetRandomHackMissionFileColorForType 0x73f2c55a70: (file type matches) and
+    // (blank Client Type or match); '<client>' -> 'your client, ' + name (L68392);
+    // parsed with the client's gender. Native keeps it as mission.FileColor.
+    const size_t hf = colourPick("a16_secret-agent-hack-mission-file-color-enc", [&](const Table& t, size_t r) {
+      const std::string ct = lower(trim(t.at(r, "Client Type")));
+      return (kind.empty() || lower(trim(t.at(r, "File Type"))) == kind) && (ct.empty() || ct == clientType);
+    });
+    if (hf != size_t(-1)) {
+      const std::string raw = spySwap(trim(tbl("a16_secret-agent-hack-mission-file-color-enc").at(hf, "Snippet")),
+                                      "<client>", "your client, " + client());
+      const std::string fileColour = colourResolve(raw, clientFemale);
+      // shortcut: the native drive/file browser (one (FileName, FileColor) list
+      // item per file, decoys from GenerateUniqueFileAndColor) has no port
+      // screen; the mission's own file is shown inline as 'name: colour.'.
+      if (!fileColour.empty()) briefing += " " + file + ": " + fileColour + ".";
+    }
+    // hack-mission-briefing colour: ScenarioSecretAgentHackingMissionBriefing::
+    // RefreshScenario @0x73f2a97b20, GetRandomHackMissionBriefingColorForType
+    // 0x73f2c53df8: exact Client Type, matching File Type; client's gender.
+    // shortcut: the native first sentence needs mission.ComputerType and
+    // FileAction, which the port does not draw; only the colour sentence (L109
+    // ... L6312) is kept, joined by ' ' rather than '\n\n'.
+    const size_t hbr = colourPick("a16_secret-agent-hack-mission-briefing-color-enc", [&](const Table& t, size_t r) {
+      return lower(trim(t.at(r, "Client Type"))) == clientType &&
+             (kind.empty() || lower(trim(t.at(r, "File Type"))) == kind);
+    });
+    if (hbr != size_t(-1))
+      briefing += " Reportedly, the file contains " +
+                  colourResolve(trim(tbl("a16_secret-agent-hack-mission-briefing-color-enc").at(hbr, "Snippet")),
+                                clientFemale) + ".";
   } else {  // intel: no physical job, just the tail
     briefing = "Tail " + (spyTarget_.empty() ? std::string("the mark") : spyTarget_) + ".";
   }
@@ -328,6 +437,72 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
         if (!encounters.empty()) briefing += " Expect " + spySentence(encounters);
         if (!hiding.empty()) briefing += " Hiding place: " + spySentence(hiding);
         if (!noise.empty()) briefing += " Cover the noise with " + spySentence(noise);
+        // stealth-alarm colour: ScenarioSecretAgentStealthMissionDisableSecurity::
+        // RefreshScenario @0x73f2aa780c, GetRandomSecretAgentStealthAlarmColor
+        // 0x73f2c58fa0: uniform row, door and correct wire Next(0,count), two
+        // incorrect wires OrderBy(random).Take(2) plus the correct one, reshuffled.
+        if (ensureTable("a16_secret-agent-stealth-alarm-color-enc") &&
+            tbl("a16_secret-agent-stealth-alarm-color-enc").size()) {
+          const Table& al = tbl("a16_secret-agent-stealth-alarm-color-enc");
+          const size_t ar = spyRng_.below(uint32_t(al.size()));
+          std::vector<std::string> doors, rights, wrongs;
+          splitOn(al.at(ar, "Door Color"), ',', doors);
+          splitOn(al.at(ar, "Correct Wire Colors"), ',', rights);
+          splitOn(al.at(ar, "Incorrect Wire Colors"), ',', wrongs);
+          // shortcut: OrderBy's random key lambda is not traced; one unit() key per
+          // element, stable-sorted, stands in for it.
+          const auto shuffled = [this](const std::vector<std::string>& in) {
+            std::vector<std::pair<double, std::string>> keyed;
+            for (const std::string& s : in) keyed.emplace_back(spyRng_.unit(), trim(s));
+            std::stable_sort(keyed.begin(), keyed.end(),
+                             [](const auto& a, const auto& b) { return a.first < b.first; });
+            std::vector<std::string> out;
+            for (const auto& k : keyed) out.push_back(k.second);
+            return out;
+          };
+          if (!doors.empty() && !rights.empty() && wrongs.size() >= 2) {
+            const std::string door = trim(doors[spyRng_.below(uint32_t(doors.size()))]);
+            const std::string correct = trim(rights[spyRng_.below(uint32_t(rights.size()))]);
+            std::vector<std::string> wires{correct};
+            const std::vector<std::string> wrong = shuffled(wrongs);
+            wires.push_back(wrong[0]);
+            wires.push_back(wrong[1]);
+            wires = shuffled(wires);
+            const bool fem = h.female;
+            const std::string he = fem ? "she" : "he", He = fem ? "She" : "He";
+            // Info row 'Door Color' (L18123) with CapitalizeAllMajorWordsInString.
+            // shortcut: the native first sentence ('Your <relationship>, <titled code
+            // name>, is reporting <pronoun> standing in front of <a door> door ...')
+            // has an untraced pronoun form and a relationship string the hero
+            // lacks; the door shows as its info row instead.
+            std::string doorShown = door;
+            for (size_t k = 0; k < doorShown.size(); ++k)
+              if (k == 0 || doorShown[k - 1] == ' ')
+                doorShown[k] = static_cast<char>(toupper(static_cast<unsigned char>(doorShown[k])));
+            briefing += " Door Color: " + doorShown + ".";
+            briefing += " " + He + " informed you that " + he +
+                        " removed the access point's protective covering and sees three wires: " +
+                        wires[0] + ", " + wires[1] + ", and " + wires[2] + ". Which should " + he + " cut?";
+            for (const std::string& w : wires) wireOptions.push_back("The " + spyUpperFirst(w) + " wire");
+            const size_t lane = (forcedChoice >= 0 && forcedChoice < 3) ? size_t(forcedChoice)
+                                                                         : size_t(spyRng_.below(3));
+            wireChoice = wireOptions[lane];
+            // ChoiceSelectedAtIndex 0x73f2aa7ea0: correct iff the lower-cased choice
+            // text contains the correct colour.
+            if (lower(wireChoice).find(lower(correct)) != std::string::npos && !h.spyCodeName.empty()) {
+              // shortcut: 'Your <relationship>, <titled code name>, ' becomes the
+              // hero's code name (the hero is the agent); the snipped wire is
+              // written as '<colour> wire' (the native argument is untraced); the
+              // native '\n\n' between the two sentences is a space here.
+              wireLine = h.spyCodeName + " reported that the security system died the moment " + he +
+                         " snipped the " + correct + " wire. " + He + " gave the all-clear before resuming " +
+                         (fem ? "her" : "his") + " mission.";
+            }
+            // shortcut: a wrong wire leads natively to an interruption fight or
+            // gadget feedback whose narrative is unknown; the port writes nothing
+            // and the mission roll above stands.
+          }
+        }
       } else {
         const size_t row = spyRow("a16_secret-agent-infiltration-passwords-enc", "Commonness Score", "", "", "");
         if (row != size_t(-1)) {
@@ -429,6 +604,43 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
       line += (line.empty() ? std::string() : " ") + std::string("I ") + method +
               (where.empty() ? std::string() : " " + where) + ".";
   }
+  // honeypot-meeting-scenario colour: MeetDecisions::ChoiceSelectedAtIndex
+  // @0x73f2aa0238, success branch only; GetRandomSecretAgentHoneypotMeetingScenario-
+  // ColorForLocation 0x73f2c607cc: Location OrdinalIgnoreCase match or blank row;
+  // parsed with the target's gender.
+  if (success && type == "honeypot") {
+    const size_t mr = colourPick("a16_secret-agent-honeypot-meeting-scenario-color-enc", [&](const Table& t, size_t r) {
+      const std::string loc = lower(trim(t.at(r, "Location")));
+      return loc.empty() || loc == lower(honeypotWhere);
+    });
+    if (mr != size_t(-1)) {
+      const std::string met = colourResolve(
+          trim(tbl("a16_secret-agent-honeypot-meeting-scenario-color-enc").at(mr, "Snippet")), spyTargetFemale_);
+      // shortcut: the sentence ends before ' disguised as <disguise>' (the port
+      // has no disguise pick) and the opening 'Your <relationship>, <code name>,
+      // made contact ...' sentence is dropped; agent pronouns are the hero's.
+      line += (line.empty() ? std::string() : " ") + "According to " + (h.female ? "her" : "his") +
+              " report, " + (h.female ? "she" : "he") + " caught the target's eye " + met + ".";
+    }
+  }
+  // client-mission-terminated colour: ScenarioSecretAgentMissionFailure::
+  // RefreshScenario @0x73f2a95ce0, GetRandomSecretAgentClientMissionTerminatedColor
+  // 0x73f2c56308: exact Mission Type (blank rows never match a real mission);
+  // '<client-spy>' -> 'Your client, ' + name + ', ' (L50286, L5282); client's gender.
+  // shortcut: native shows it only when the agent returns (IsSuccessfulMissionAction()
+  // or a double agent); the hero always comes home, so every failure qualifies.
+  // 'intel' is not a native specialization and has no rows.
+  if (!success) {
+    const size_t tr = colourPick("a16_secret-agent-client-mission-terminated-color-enc", [&](const Table& t, size_t r) {
+      return lower(trim(t.at(r, "Mission Type"))) == type;
+    });
+    if (tr != size_t(-1)) {
+      const std::string raw = spySwap(trim(tbl("a16_secret-agent-client-mission-terminated-color-enc").at(tr, "Snippet")),
+                                      "<client-spy>", "Your client, " + client() + ", ");
+      const std::string said = colourResolve(raw, clientFemale);
+      if (!said.empty()) line += (line.empty() ? std::string() : " ") + said;
+    }
+  }
   if (!success && spyRng_.chance(0.35)) {
     const size_t row = spyRow("a16_secret-agent-rival-agency-names-enc", "Commonness Score", "", "", "");
     if (row != size_t(-1)) {
@@ -491,7 +703,12 @@ bool Sim::spyYear(Life& life, AgeUp& out, int forcedChoice) {
   out.title = spyToken("operation");
   if (out.title.empty()) out.title = "Mission briefing";
   out.body = briefing;
+  if (!wireLine.empty()) line = wireLine + (line.empty() ? std::string() : " " + line);
   if (!line.empty()) out.extra.push_back(line);
+  if (!wireOptions.empty()) {
+    out.options = wireOptions;
+    out.choice = wireChoice;
+  }
   if (!summary.empty()) out.narrative = summary;
   h.happiness += success ? 2 : -2;
   return true;

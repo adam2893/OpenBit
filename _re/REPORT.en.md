@@ -23536,6 +23536,35 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 311. Nine colour pools: what the secret-agent tables actually colour
+
+The nine `a16_secret-agent-*-color-enc` tables are not hue pickers. Eight of them are prose pools; the ninth is a wire puzzle. Each one is reached from a specific secret-agent screen, so the port wires them where the screen exists and leaves the ones with no port-side mechanic unwired.
+
+| table | native reader | filter | what it produced |
+|---|---|---|---|
+| honeypot-misssion-briefing-color | 0x73f2c5dc2c | none, weighted | ` Your client, NAME, wants you to seduce TARGET. He/She says he/she wants X.` |
+| honeypot-approach-color | 0x73f2c617cc | none, weighted | ` According to your client, NAME, the target prefers lovers who X.` |
+| hack-mission-briefing-color | 0x73f2c53df8 | exact Client Type + File Type | ` Reportedly, the file contains X.` |
+| hack-mission-file-color | 0x73f2c55a70 | File Type match && (blank Client Type or match) | ` FILE: X.` with `<client>` -> `your client, NAME` |
+| stealth-alarm-color | 0x73f2c58fa0 | uniform row | door colour, the correct wire, two wrong wires, `The <W> wire` choices |
+| honeypot-meeting-scenario-color | 0x73f2c607cc | Location == the meeting place, or blank | `According to his/her report, he/she caught the target's eye X.` |
+| client-mission-terminated-color | 0x73f2c56308 | exact Mission Type | `<client-spy>` -> `Your client, NAME, ` appended when the mission fails |
+
+Two tables stay unwired because the port has no mechanic behind them: `potential-agent-background-check-color` needs candidate recruitment, and `agency-front-color` needs a front identity the port keeps (its front token is redrawn on each use).
+
+Stealth is the one mechanical pool. The native scenario picks a row, takes its Door Color and one Correct Wire, adds two shuffled Incorrect Wire Colors and shuffles the three, then `ChoiceSelectedAtIndex` (0x73f2aa7ea0) accepts a choice iff the lowercased choice text *contains* the correct colour. The snip line only prints when the chosen wire was the correct one.
+
+Port: all seven readers live in `Sim::spyYear` (_re/port/src/fam/spy.cpp). Every new draw uses `spyRng_`; the local name draws and token resolution swap `rng_` for `spyRng_` around themselves, so the main stream is untouched and no earlier card sequence moves. Colour picks are the Commonness Score weighted pick over the filtered rows.
+
+Shortcuts:
+- There is no client record. The client is a name drawn from the first/last name tables plus a 0.5 gender chance on `spyRng_`.
+- The hack client type is drawn uniformly from civilian/corporation/government; the native generator was not traced.
+- No approach dropdown and no +25 style scoring, no drive/file browser, no decoy files, and the hack briefing's first sentence (ComputerType/FileAction) is dropped.
+- Stealth shuffling approximates .NET `OrderBy(random)` with one unit key per element plus a stable sort; the door-colour info row is folded into the briefing; the wrong-wire interruption narrative was not recovered, so a wrong choice only reports the failure.
+- Meeting drops ` disguised as <disguise>` and the contact sentence.
+- Terminated only qualifies when the agent returns in the native flow; the port's hero always returns, so every failure qualifies.
+
+Tests: `tools/test_spy_colors.py` runs 1200 seeds over 80 ages with the spy path on and asserts the shape of every wired pool: 1859 mission cards (351 hack, 379 honeypot, 236 meeting, 379 stealth, 121 snip, 543 terminated). A mutation pass (`/tmp/qdir/s311_mut.py`, 79 seeds) breaks the file type, the chosen wire and the mission type in turn, and the test reports `hack filter`, `stealth choice`/`snip wire`, and `terminated filter` respectively, so the filters are load-bearing. The full suite is green.
 ## 310. The Time Machine: twenty birthdays on disk and a wholesale restore
 
 The port's only time machine used to be an ambient wheel card (`fam/lover.cpp` `timeMachineYear`) that printed an "I arrived from the future..." line to a hero who had never travelled. The game's feature is a snapshot engine, and the narrative is only the last line of a restore. Native reading of 3.25.1 (`/tmp/qdir/time_machine_recovery2_findings.txt`):
