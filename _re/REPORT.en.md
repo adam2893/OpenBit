@@ -23536,6 +23536,30 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 310. The Time Machine: twenty birthdays on disk and a wholesale restore
+
+The port's only time machine used to be an ambient wheel card (`fam/lover.cpp` `timeMachineYear`) that printed an "I arrived from the future..." line to a hero who had never travelled. The game's feature is a snapshot engine, and the narrative is only the last line of a restore. Native reading of 3.25.1 (`/tmp/qdir/time_machine_recovery2_findings.txt`):
+
+- **Snapshots.** `SaveGameManager`'s save coroutine (0x73f3320410) writes `savedLife-age{N}.data` at the end of `Life.TiAge` on every birthday and deletes `savedLife-age{0..Age-21}.data`, so the newest 20 years are kept. The birth file `savedLife-start.data` is never read by the lookup.
+- **Request.** `GameManager.RequestTimeMachineWithGoBackYears` (0x73f32a7270) caches the year count, `WasInPrison` and `WasDead`; the unlimited entitlement goes straight on, otherwise the IAP runs, and both `TimeMachinePurchased` and `UnlimitedTimeMachinePurchased` tail into `UseTimeMachine` whatever their bool says.
+- **Restore.** `UseTimeMachine` (0x73f32a73ec) loads the file for `Hero.Age - years`; a missing file is a silent return. `SwitchToTimeMachineLife` (0x73f32a7814) keeps the life id, calls `GenesisController.ResetScenarios`, swaps the whole saved `Life` graph in (RNG, decks and log included), and on a death removes the last grave and sets `Life.WasResurrected` (+0x470).
+- **Narrative.** `DataHub.GetRandomTimeMachineScenarioForAgeAndWasInPrisonAndWasDead` draws rows uniformly until one has `Min Age` <= the restored age and `Prison`/`Was Dead` equal to the cached flags, and logs it.
+- **Card.** `ScenarioTimeMachine.RefreshScenario`: "Travel back in time today!" (#43981) or "Undo death by traveling back in time!" (#44728), "Pick your destination" (#33863), "1 year ago (Age {0})" (#7653) always, "3/5/10/15/20 years ago (Age {0})" (#7974, #8140, #7788, #7835, #7924) only while that file exists, and "Send me back" (#38578). The feature name is "Time Machine" (#43572).
+
+The port now does the same:
+
+- `Sim::ageUp` wraps the old body (`ageUpYear`) and, when the age moved, stores a `TimeSave{Life, Sim}` under that age and drops ages `<= age-21`. The copy leaves out the loaded tables, the country list and the snapshots themselves (data, not state); everything else in the simulator, every RNG stream and cache, is in it, which is the port's counterpart of the saved graph carrying its RNG and decks.
+- `Sim::useTimeMachine(life, out, years)` accepts only 1/3/5/10/15/20 with an existing snapshot (otherwise returns false: the native silent return), caches the prison and death flags, restores simulator and life, clears `pendingCards`, sets `Life::wasResurrected` on a death, and writes the card (title, body, CTA, the chosen "N years ago (Age X)" label) with the narrative row as its log line.
+- Scripts get a push entry `{"timeMachine": N}`: that card index is the machine, and it is the one card a dead hero still receives, after which the life goes on from the restored birthday. Snapshots are only taken when a script contains such an entry.
+
+Shortcuts, written down:
+
+- The narrative pick uses its own stream (`timeMachineRng_`, kept across the restore) instead of the shared `System.Random`; the uniform pick among matching rows has the retry loop's distribution.
+- Snapshot copying is opt-in for speed only; it changes no draw. A port snapshot is also stored for the birthday on which the hero then dies (native saves the death to the main file only); no destination can reach that age, so nothing reads it.
+- The prison line (#68766/#68767 "{0}\n\nYou've been in {1} for {2} {3}.") is not added: it needs the years already served, which the port does not keep. There is no graveyard to remove a grave from, no IAP, no unlimited-entitlement check, and the script's event list keeps the cards that were undone (the game rebuilds its log from the snapshot).
+- The old ambient `timeMachineYear` wheel card is still in the rotation. Native shows those lines only after a restore; taking it out moves every later wheel draw and is left for a re-tune pass.
+
+Test: `_re/tools/test_time_machine.py`. Seeds 1-30, five years back at card 20: 29 restores, every card has the exact strings and a table row with `Was Dead` clear and `Min Age` met, the next card is the year after the destination, and 288 of 332 later cards repeat the untouched run exactly (the rest diverge where the restore dropped a queued card or a narrative token drew from the restored main stream). Seeds 1-12 run to death and go back 20 years: 11 heroes revived with the death body and a `Was Dead` row. Forty forced sentences rewound one year at 20: 30 got a `Prison` row. Two years, 25 years, and 20 years at age 3 produce no card.
 ## 309. The honeypot's pronouns: the mark has a gender of their own
 
 While re-reading the secret-agent family for its colour tables, two pronoun defects

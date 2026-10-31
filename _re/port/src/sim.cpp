@@ -709,6 +709,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
         horseRng_(seed ^ 0x48a1c0ffee123457ULL ^ 0x9e3779b97f4a7c15ULL),
         funeralRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0x9e3779b97f4a7c15ULL),
         witchRng_(seed ^ 0xd1310ba698dfb5acULL),
+        timeMachineRng_(seed ^ 0x0f1e2d3c4b5a6978ULL ^ 0x9e3779b97f4a7c15ULL),
         propRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x27d4eb2f165667c5ULL),
       jewRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x2545f4914f6cdd1dULL),
       poolRng_(seed ^ 0x6a09e667f3bcc908ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -3861,7 +3862,112 @@ bool Sim::pickDumbScenario(const Life& life, std::string* table, size_t* row) {
 static int schoolLevelFor(int age);
 static const char* schoolLevelName(int level);
 
+// The Time Machine (REPORT.en.md 310). SaveGameManager writes savedLife-age{N}.data
+// at the end of Life.TiAge on every birthday (0x73f3320410) and deletes
+// savedLife-age{0..Age-21}.data, so the newest 20 years are always on disk.
+// GameManager.UseTimeMachine (0x73f32a73ec) loads the file for Hero.Age - years
+// (missing: a silent return) and SwitchToTimeMachineLife (0x73f32a7814) swaps the
+// whole Life graph in, RNG and decks included, clears the pending scenarios, and on
+// a death removes the last grave and sets Life.WasResurrected. The narrative row is
+// DataHub.GetRandomTimeMachineScenarioForAgeAndWasInPrisonAndWasDead(restored age,
+// prison and death flags cached before the switch).
+struct TimeSave {
+  Life life;
+  Sim sim;
+};
+
 bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
+  const int before = life.hero.age;
+  const bool ok = ageUpYear(life, out, forcedChoice);
+  if (ok && timeMachineOn_ && life.hero.age != before) saveTimeMachine(life);
+  return ok;
+}
+
+namespace {
+// What a snapshot leaves out and a restore leaves alone: the loaded tables (data, not
+// state), the snapshots themselves (files on disk outlive the life they hold), the
+// script's per-card override and the machine's own narrative dice.
+struct TimeKeep {
+  std::vector<std::pair<std::string, Table>> tables;
+  std::vector<std::string> loaded;
+  std::vector<Country> countries;
+  std::map<int, std::shared_ptr<TimeSave>> saves;
+};
+}  // namespace
+
+void Sim::saveTimeMachine(const Life& life) {
+  const int age = life.hero.age;
+  for (auto it = timeSaves_.begin(); it != timeSaves_.end();)
+    it = it->first <= age - 21 ? timeSaves_.erase(it) : std::next(it);
+  TimeKeep k;
+  k.tables.swap(tables_); k.loaded.swap(loaded_);
+  k.countries.swap(countries_); k.saves.swap(timeSaves_);
+  auto snap = std::make_shared<TimeSave>(TimeSave{life, *this});
+  k.tables.swap(tables_); k.loaded.swap(loaded_);
+  k.countries.swap(countries_); k.saves.swap(timeSaves_);
+  timeSaves_[age] = std::move(snap);
+}
+
+// The destination list (ScenarioTimeMachine.RefreshScenario): 1, 3, 5, 10, 15 and 20
+// years, each only while that age's file exists.
+bool Sim::timeMachineAvailable(const Life& life, int years) const {
+  static const int kYears[] = {1, 3, 5, 10, 15, 20};
+  if (std::find(std::begin(kYears), std::end(kYears), years) == std::end(kYears)) return false;
+  return timeSaves_.count(life.hero.age - years) != 0;
+}
+
+bool Sim::useTimeMachine(Life& life, AgeUp& out, int years) {
+  if (!timeMachineAvailable(life, years)) return false;  // native: a silent return
+  const bool wasDead = !life.alive;
+  const bool wasInPrison = life.hero.inPrison;
+  const int target = life.hero.age - years;
+  // The card (#43572 'Time Machine', #43981/#44728, #33863, #7653.. and #38578).
+  // shortcut: the prison line (#68766/#68767 "You've been in {1} for {2} {3}.")
+  // needs the years already served, which the port does not keep.
+  out.title = "Time Machine";
+  out.body = wasDead ? "Undo death by traveling back in time!" : "Travel back in time today!";
+  out.cta = "Pick your destination";
+  out.choice = std::to_string(years) + (years == 1 ? " year" : " years") + " ago (Age " +
+               std::to_string(target) + ")";
+  std::shared_ptr<TimeSave> snap = timeSaves_.at(target);
+  TimeKeep k;
+  k.tables.swap(tables_); k.loaded.swap(loaded_);
+  k.countries.swap(countries_); k.saves.swap(timeSaves_);
+  const std::string forcedTable = forcedTable_, forcedClass = forcedClass_;
+  const long long forcedRow = forcedRow_;
+  const int forcedClassChoice = forcedClassChoice_;
+  const Rng machineDice = timeMachineRng_;
+  *this = snap->sim;
+  k.tables.swap(tables_); k.loaded.swap(loaded_);
+  k.countries.swap(countries_); k.saves.swap(timeSaves_);
+  forcedTable_ = forcedTable; forcedClass_ = forcedClass;
+  forcedRow_ = forcedRow; forcedClassChoice_ = forcedClassChoice;
+  timeMachineRng_ = machineDice;
+  life = snap->life;
+  life.pendingCards.clear();  // GenesisController.ResetScenarios
+  if (wasDead) life.wasResurrected = true;  // shortcut: the port keeps no graveyard
+  hero_ = &life.hero;
+  life_ = &life;
+  if (!ensureTable("a16_time-machine-scenarios-enc")) return true;
+  const Table& t = tbl("a16_time-machine-scenarios-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario")).empty()) continue;
+    if (t.flag(r, "Prison") != wasInPrison || t.flag(r, "Was Dead") != wasDead) continue;
+    if (t.num(r, "Min Age") > life.hero.age) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return true;
+  // Native retries uniform rows until one matches; a uniform pick among the matches
+  // has the same distribution.
+  const size_t row = rows[timeMachineRng_.below(uint32_t(rows.size()))];
+  out.table = "a16_time-machine-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.narrative = spyUpperFirst(resolve(trim(t.at(row, "Scenario"))));
+  return true;
+}
+
+bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &life.hero;
   life_ = &life;
   rndCache_.clear(); rbLast_.clear();  // one scenario per year: the '<rbN>' cache starts empty

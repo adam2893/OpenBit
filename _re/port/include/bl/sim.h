@@ -5,6 +5,7 @@
 #include "bl/table.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -156,6 +157,8 @@ struct Life {
   Hero hero;
   int year = 0;
   bool alive = true;
+  // Life.WasResurrected (+0x470): set when the Time Machine undoes a death (REPORT 310).
+  bool wasResurrected = false;
   std::vector<Person> family;
   std::vector<Child> children;
   // Cards the current year still owes the player, oldest first. ageUp drains one
@@ -218,6 +221,8 @@ struct Life {
   // keeps the hero's age at the last such request.
   int bestFriendAge = 0;
 };
+
+struct TimeSave;  // one Time Machine snapshot (REPORT.en.md 310)
 
 class Sim {
  public:
@@ -418,6 +423,12 @@ class Sim {
   // fame >= 75.0f (0x42960000) or the developer's testing flag.
   bool isFamous(const Hero& h) const { return h.fame >= 75.0f; }
   bool ageUp(Life& life, AgeUp& out, int forcedChoice = -1);
+  // The Time Machine (REPORT.en.md 310): a snapshot of the whole life after every
+  // birthday, the newest 20 years kept, and a wholesale restore. Off by default:
+  // copying the simulator every year is a cost only a time-travelling run pays.
+  void enableTimeMachine(bool on) { timeMachineOn_ = on; }
+  bool timeMachineAvailable(const Life& life, int years) const;
+  bool useTimeMachine(Life& life, AgeUp& out, int years);
   // The year's own dispatch, without the counters, the family lines or the pending
   // queue: ageUp owns those and calls this (REPORT.en.md 135).
   bool dispatchYear(Life& life, AgeUp& out, int forcedChoice);
@@ -997,6 +1008,11 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The disposition and ashes cards' own draws (REPORT.en.md 307).
   Rng funeralRng_;
   Rng witchRng_;
+  Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
+  bool timeMachineOn_ = false;
+  std::map<int, std::shared_ptr<TimeSave>> timeSaves_;  // savedLife-age{N}.data
+  bool ageUpYear(Life& life, AgeUp& out, int forcedChoice);
+  void saveTimeMachine(const Life& life);
   void witchImpact(const Hero& h, AgeUp& out, int health, int happiness, int looks, int smarts);
   void witchCureRestore(const Hero& h, AgeUp& out, size_t row);
   // The proposal card's own draw (REPORT.en.md 303).

@@ -42,6 +42,8 @@ struct PushSpec {
   long long row = 0;  // 1-based data row in that table
   std::string scenario;  // real il2cpp scenario class, e.g. "ScenarioFriendMeet"
   int choice = -1;       // 0-based button index for that scenario, -1 = RNG
+  // {"timeMachine": N}: this card is the Time Machine, N years back (REPORT 310).
+  int timeMachine = 0;
 };
 
 struct ScriptSpec {

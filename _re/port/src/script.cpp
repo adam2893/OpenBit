@@ -772,7 +772,22 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
         if (end == std::string::npos) return fail("push entry is not a closed object");
         const std::string elem = json.substr(p, end - p + 1);
         PushSpec ps;
-        size_t q = findValue(elem, "scenario");
+        size_t q = findValue(elem, "timeMachine");
+        if (q != std::string::npos) {
+          // The Time Machine card (REPORT.en.md 310): N years back.
+          long long years = 0;
+          if (readInt(elem, q, years) == std::string::npos || years <= 0)
+            return fail("push \"timeMachine\" must be a positive year count");
+          ps.timeMachine = int(years);
+          spec.push.push_back(ps);
+          p = end + 1;
+          skipWs(json, p);
+          if (p < json.size() && json[p] == ',') ++p;
+          else if (p < json.size() && json[p] == ']') break;
+          else return fail("push array has a stray value");
+          continue;
+        }
+        q = findValue(elem, "scenario");
         if (q != std::string::npos) {
           // Scripted-event form: the scenario class the game itself presented.
           skipWs(elem, q);
@@ -948,7 +963,22 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
   // `i` stays the card index, so choices[]/push[] keep their one-entry-per-card
   // alignment with the bench's traces.
   int lived = 0;
-  for (int i = 0; (lived < spec.ages || !life.pendingCards.empty()) && life.alive; ++i) {
+  for (const PushSpec& ps : spec.push)
+    if (ps.timeMachine > 0) sim.enableTimeMachine(true);
+  for (int i = 0;; ++i) {
+    // A Time Machine entry is a card of its own, and the only one a dead hero still
+    // gets (ScenarioTimeMachine's DEATH origin, REPORT.en.md 310).
+    const int travel = i < int(spec.push.size()) ? spec.push[size_t(i)].timeMachine : 0;
+    if (travel <= 0 && !((lived < spec.ages || !life.pendingCards.empty()) && life.alive)) break;
+    if (travel > 0) {
+      AgeUp ev;
+      if (sim.useTimeMachine(life, ev, travel)) {
+        deathType.clear();
+        deathSentence.clear();
+        events.push_back(eventJson(ev, life.hero.age));
+      }
+      continue;
+    }
     const int forced = i < int(spec.choices.size()) ? spec.choices[i] : -1;
     // push[i] (when present and non-empty) replays one exact real row; a clear
     // call keeps the override from leaking into later years.
