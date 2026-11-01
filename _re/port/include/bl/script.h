@@ -113,6 +113,8 @@ struct ScriptSpec {
   // Harness hook: pin the act in residence so the two act cards can be walked
   // without waiting for a booking (REPORT.en.md 350).
   std::string casino_act;
+  // Harness hook: pin an amenity so the two amenity cards can be walked (REPORT.en.md 351).
+  std::string casino_amenity;
   long long zoo_bank = 0;
   bool cult = false;
   bool pet = false;

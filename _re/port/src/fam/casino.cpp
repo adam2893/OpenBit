@@ -1460,6 +1460,166 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The amenity cards: ScenarioCasinoAgeUpGamblerComplaintAmenity (.ctor 0x356c074,
+// RefreshScenario 0x356b0d8, ChoiceSelectedAtIndex 0x356b5c4,
+// ScenarioIsEligibleForRandomPush 0x356beb4, pushed at 0x2aad250) and
+// ScenarioCasinoAgeUpGamblerComplimentAmenity (.ctor 0x35701a8, RefreshScenario
+// 0x356f7ac, ChoiceSelectedAtIndex 0x356fda8, ScenarioIsEligibleForRandomPush
+// 0x356ffe8, pushed at 0x2aad288).
+//
+// The pair works the same way as the act cards next door, but the amenity's theme is
+// weighed the other way round: the complaint wants an amenity that does NOT match the
+// house theme, the compliment wants one that does. The compliment writes no journal
+// either, and its 'give' answer raises the punter's addiction instead of lowering it -
+// an inconsistency in the shipped card, kept here. REPORT 351.
+bool Sim::casinoAmenityComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoGamblers <= 0) return false;
+  if (h.casinoAmenityComplaintAge >= 0 && h.age - h.casinoAmenityComplaintAge <= 2)
+    return false;
+  // The native searches the amenity list for one whose theme differs from the house's.
+  size_t which = size_t(-1);
+  for (size_t i = 0; i < h.casinoAmenities.size(); ++i) {
+    if (i < h.casinoAmenityTheme.size() &&
+        lower(h.casinoAmenityTheme[i]) != lower(h.casinoTheme)) {
+      which = i;
+      break;
+    }
+  }
+  if (which == size_t(-1)) return false;
+  if (forcedChoice < 0 && !casinoAmenityRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string tier = casinoTierWord(h, casinoAmenityRng_);
+  const std::string punter = resolve("<casino-gambler>");
+  const bool female = casinoGamblerFemale_;
+  const std::string them = female ? "her" : "him";
+  const std::string amenity = h.casinoAmenities[which];
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplaintAmenity";
+  out.title = "Complaint";  // #16066
+  out.body = "Your casino's " + tier + ", " + punter +
+             ", is complaining that your casino is tacky.\n\n" +
+             (female ? "she" : "he") + " saying your casino's " + amenity +
+             " is the worst part.";
+  out.cta = "What will you do?";
+  out.options = {"Ban " + them + " from my casino", "Apologize for the inconvenience",
+                 "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoAmenityRng_.below(3));
+  out.choice = out.options[size_t(pick)];
+  h.casinoAmenityComplaintAge = h.age;
+
+  if (pick == 0) {
+    h.casinoGamblers -= 1;
+    if (h.casinoGamblers < 0) h.casinoGamblers = 0;
+    h.casinoPopularity -= 2;
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+    // The native spells the pronoun into the literal, as its twin cards do.
+    out.narrative = "I banned my casino's gambler, " + punter +
+                    ", from my casino after she complained about my casino's " +
+                    amenity + ".";
+  } else if (pick == 1) {
+    h.casinoGamblerAddiction += 2;
+    if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
+    h.casinoGamblerHappiness += 1;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+    out.narrative = "I apologized to my casino's gambler, " + punter +
+                    ", for having a " + amenity + " in my casino.";
+  } else {
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    h.casinoPopularity += 2;
+    if (h.casinoPopularity > 100) h.casinoPopularity = 100;
+    out.narrative = "I ignored my casino's gambler, " + punter +
+                    "'s, complaint about my casino's " + amenity + ".";
+  }
+  return true;
+}
+
+bool Sim::casinoAmenityComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoGamblers <= 0) return false;
+  if (h.casinoAmenityComplimentAge >= 0 && h.age - h.casinoAmenityComplimentAge <= 4)
+    return false;
+  // This one wants an amenity that matches the house theme (String::Equals, no negation).
+  size_t which = size_t(-1);
+  for (size_t i = 0; i < h.casinoAmenities.size(); ++i) {
+    if (i < h.casinoAmenityTheme.size() &&
+        lower(h.casinoAmenityTheme[i]) == lower(h.casinoTheme)) {
+      which = i;
+      break;
+    }
+  }
+  if (which == size_t(-1)) return false;
+  if (forcedChoice < 0 && !casinoAmenityRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string tier = casinoTierWord(h, casinoAmenityRng_);
+  const std::string punter = resolve("<casino-gambler>");
+  const bool female = casinoGamblerFemale_;
+  const std::string them = female ? "her" : "him";
+  std::string game = resolve("<casino-game>");
+  if (game.empty()) game = "blackjack";
+  const std::string amenity = h.casinoAmenities[which];
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplimentAmenity";
+  out.title = "Compliment";  // #16100
+  out.body = "Your casino's " + tier + ", " + punter +
+             ", is complimenting you on the quality of your casino's " + amenity + ".";
+  out.body += std::string("\n\n") + (female ? "She" : "He") + " says it's " +
+              (female ? "her" : "his") + " favorite place to go when " +
+              (female ? "she's" : "he's") + " not playing " + game + ".";
+  out.cta = "What will you do?";
+  out.options = {"Thank " + them, "Give " + them + " some free games", "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoAmenityRng_.below(3));
+  out.choice = out.options[size_t(pick)];
+  h.casinoAmenityComplimentAge = h.age;
+
+  if (pick == 0) {
+    h.casinoGamblerAddiction -= 1;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    h.casinoGamblerHappiness += 1;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+  } else if (pick == 1) {
+    // Up, not down: the shipped card raises addiction on the 'some free games' answer.
+    h.casinoGamblerAddiction += 2;
+    if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
+    h.casinoGamblerHappiness += 2;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+  } else {
+    h.casinoPopularity -= 2;
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+  }
+  // No narrative: this card's narrative slot is never written either.
+  return true;
+}
+
+void Sim::seedCasinoAmenity(Life& life, bool sameTheme) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  ensureCasinoFields(life);
+  if (h.casinoGamblers <= 0) h.casinoGamblers = 3;
+  if (!ensureTable("a16_casino-casino-amenity-enc")) return;
+  const Table& t = tbl("a16_casino-casino-amenity-enc");
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string theme = trim(t.at(r, "Theme"));
+    const std::string name = resolve(trim(t.at(r, "Amenity Name")));
+    if (name.empty()) continue;
+    if ((lower(theme) == lower(h.casinoTheme)) != sameTheme) continue;
+    h.casinoAmenities.push_back(name);
+    h.casinoAmenityMonthly.push_back(0);
+    h.casinoAmenityTheme.push_back(theme.empty() ? h.casinoTheme : theme);
+    return;
+  }
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");

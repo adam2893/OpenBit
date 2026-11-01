@@ -23536,6 +23536,104 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 351. The casino's two amenity cards
+
+The floor's amenities get the same treatment as its act: one punter calls the place tacky
+over an amenity that does not fit the house theme, another praises one that does. The
+theme test runs the *opposite* way round here - the complaint wants a mismatch, the
+compliment wants a match - so a house that builds only matching amenities can still be
+praised, but never called tacky.
+
+### The native side
+
+ScenarioCasinoAgeUpGamblerComplaintAmenity (.ctor `0x356c074`, RefreshScenario
+`0x356b0d8`, ChoiceSelectedAtIndex `0x356b5c4`, ScenarioIsEligibleForRandomPush
+`0x356beb4`) is pushed from `SimCasino::IncrementAge` at `0x2aad250`. Its fields are 0x170
+the narrative, 0x178 the casino, 0x180 the gambler and 0x188 the amenity. Eligibility:
+the casino exists, its amenity list 0xb0 holds an amenity whose 0x28 theme is *not*
+`String::Equals`(casino 0x38 theme, OrdinalIgnoreCase), the casino has a gambler, the
+hero is 18, is not in prison, and YearsSinceScenario is greater than 2.
+
+RefreshScenario takes a random non-mafia gambler and the first mismatched amenity, sets
+the title to `#16066` "Complaint" and builds the body from `#50268` "Your casino's ", the
+punter's relationship status, `#5282` ", ", the punter's name and `#5668` ", is complaining
+that your casino is tacky.", a blank line, the punter's subject pronoun (type 9), `#3306`
+" saying your casino's ", the amenity's 0x10 name and `#2620` " is the worst
+part.\n\nWhat will you do?".
+
+The three answers are the act cards' own: `#12770` "Ban " plus the object pronoun plus
+`#2104` " from my casino", `#11554` "Apologize for the inconvenience", `#26366` "Ignore "
+plus the pronoun. Ban removes the punter, draws the craziness snippet, chains a "You're
+outta here" follow-up and drops popularity two; its journal is `#23602` plus the name,
+`#5567` ", from my casino after she complained about my casino's ", the amenity and a full
+stop. Apologize writes `#23453` plus the name, `#5555` ", for having a ", the amenity and
+`#2395` " in my casino.", and moves addiction +2, the mood slot -2 and the opinion slot
++1. Ignore writes `#24467` plus the name, `#4921` "'s, complaint about my casino's ", the
+amenity and a full stop, and moves addiction -2, mood +2 and opinion -1.
+
+ScenarioCasinoAgeUpGamblerComplimentAmenity (.ctor `0x35701a8`, RefreshScenario
+`0x356f7ac`, ChoiceSelectedAtIndex `0x356fda8`, ScenarioIsEligibleForRandomPush
+`0x356ffe8`) is pushed at `0x2aad288`. It keeps no amenity field - the amenity and the
+punter's favourite game are locals - and its eligibility asks for an amenity whose theme
+*does* match, plus YearsSinceScenario greater than 4.
+
+The body is `#50268`, the relationship status, `#5282`, the punter's name and `#5671` ", is
+complimenting you on the quality of your casino's ", the amenity and a full stop, then a
+blank line, the punter's capitalised subject pronoun (type 5), `#3315` " says it's ", the
+possessive pronoun (type 1), `#1954` " favorite place to go when ", the type-8 pronoun
+("she's"/"he's"), `#2839` " not playing ", the favourite game's name and a full stop. The
+game comes from the punter's own favourite game through the game-name table, not from the
+house's list.
+
+Answers and dispatch are the act compliment's: `#41215` "Thank ", `#21649` "Give " plus the
+object pronoun plus `#3411` " some free games", `#26366` "Ignore ". Thank moves addiction
+-1, mood -1 and opinion +1; ignore drops popularity two and touches no punter. Give moves
+mood -2, opinion +2 and addiction **+2** - up, where the act card's same answer moves
+addiction down. That asymmetry is in the shipped card and is kept.
+
+Like its act twin, this card writes no narrative: 0x170 is never stored, so the shared
+tail skips both the log line and the UI refresh while the effects apply.
+
+### The port
+
+`Sim::casinoAmenityComplaintYear` and `Sim::casinoAmenityComplimentYear` in
+_re/port/src/fam/casino.cpp, registered as casino-amenity-complaint and
+casino-amenity-compliment with one ticket each. Both walk the port's amenity list
+(`h.casinoAmenities` with the parallel `h.casinoAmenityTheme`, which the casino already
+keeps for its monthly expenses) for the first entry whose theme differs from / matches the
+house theme, and both keep their own cooldown stamps. The draws come from a new stream,
+casinoAmenityRng_, so neither the act cards nor any earlier casino card shifts.
+
+A harness hook, `casino_amenity` "same"/"diff", pins one amenity from
+`a16_casino`-casino-amenity-enc and gives the casino punters, the same way `casino_act`
+pins an act (REPORT 350): a port casino only builds what the patron visit rolls, so the
+cards would otherwise be rare in a test.
+
+### Ceilings
+
+The favourite game in the compliment is resolved through the port's `<casino-game>`
+token rather than the punter's own favourite-game field, because a port punter is a name
+and a style, not a record. The type-8 pronoun is spelled as "she's"/"he's": the native
+type table's entry for it is not recovered, and every sentence it appears in reads that
+way. The ban's snippet, its chained follow-up and the bar graphs are not pushed, as on the
+act cards. Popularity, happiness and addiction are the hero-side stand-ins recorded in
+REPORT 322 and 347, and the punter's relationship status is the tier word list.
+
+### Verified
+
+`_re/tools/test_casino_amenity.py` pins the amenity both ways over twenty lives.
+Measured: `complaint lanes: {'ban': 10, 'apologize': 16, 'ignore': 11} | complaints: 37 |
+praise: 35`. Every complaint body and journal name the same amenity and the same punter;
+all three lanes appear; the complaint keeps a three-year gap and the compliment five; the
+compliment writes no log line; a pinned matching amenity never draws the complaint; and a
+mismatched one never draws the compliment unless the casino has also built a matching
+amenity of its own, which the port's own ageing can do - hence that direction is not used
+as a control.
+
+The full 139-test suite ran on the binary these notes describe (d8e8c8ff...,
+139 PASS / 0 FAIL): `_re/tools/test_casino_amenity.py` exercises both cards, all
+three complaint lanes and the praise lanes, and nothing else moved.
+
 ## 350. The casino's two act cards
 
 The act in residence can please a punter or annoy one. Both cards read the act's own
