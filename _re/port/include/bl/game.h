@@ -800,6 +800,18 @@ struct Hero {
   std::string home;
   // The aircraft the hero owns (REPORT.en.md 222), 'Make Model' from a16_aircraft-enc.
   std::string aircraft;
+  // SimAircraft's own state (REPORT.en.md 334): the a16_aircraft-enc row, Age, Condition,
+  // AgeAtLastRepair, the open repair (ActiveRepair) and NeedsToBeScrapped.
+  int aircraftRow = -1;
+  int aircraftAge = 0;
+  double aircraftCondition = 100.0;
+  int aircraftAgeAtLastRepair = 0;
+  int aircraftTickAge = -1;
+  bool aircraftRepairPending = false;
+  bool aircraftScrapPending = false;
+  long long aircraftRepairCost = 0;
+  std::string aircraftPart, aircraftBrokenTerm;
+  int aircraftPartRow = -1;
   // An OnlyFans channel (REPORT.en.md 225): the subscribers it has, and whether the
   // channel exists at all. The tip-response table is the only card the channel owns.
   bool onlyfans = false;

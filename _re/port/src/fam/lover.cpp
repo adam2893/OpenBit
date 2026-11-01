@@ -1960,8 +1960,8 @@ bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
   for (size_t r = 0; r < t.size(); ++r) {
     if (trim(t.at(r, "Model")).empty()) continue;
     if (t.flag(r, "Luxury Only") && !h.luxury) continue;
-    const double mn = t.num(r, "Min Age");
-    if (mn > 0 && h.age < mn) continue;
+    // 'Min Age' is the aircraft's own age floor (SimAircraft::.ctor reads it as the base
+    // of a used aircraft's age, REPORT.en.md 334), not the buyer's age.
     const long long price = static_cast<long long>(t.num(r, "Cost"));
     if (price <= 0 || price > h.money) continue;
     rows.push_back(r);
@@ -1979,6 +1979,7 @@ bool Sim::aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice) {
     out.choice = "Buy it";
     h.money -= price;
     h.aircraft = name;
+    aircraftSetup(h, row);
     // The first flight is the danger card, next year: a family behind the chooser is
     // reached rarely, and a crash that waits for its own turn may never happen.
     life.pendingCards.push_back(kPendingAircraftDanger);
@@ -2480,6 +2481,234 @@ bool Sim::jewelShopYear(Life& life, AgeUp& out, int forcedChoice) {
   out.narrative = std::string("I bought ") + (vowel ? "an " : "a ") + item + " for " +
                   money(jewel.price) + ".";
   h.money -= jewel.price;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// The aircraft's life after purchase (REPORT.en.md 334): SimAircraft ages and wears
+// every year, costs its monthly expense twelve times over, breaks (ScenarioAircraftRepair)
+// and is finally scrapped (ScenarioAircraftScrapPush). Native: SimAircraft::.ctor 0x2b0f490,
+// IncrementAge 0x2b0f7c4, MonthlyExpense 0x2b0fbc4, ScrapValue 0x2b0fcf4,
+// IsRepairNeededAfterCheckForAnnualRepair 0x2b10284, GetRandomAircraftPartToBreakForAircraft
+// 0x28342b8. GetRandomNumber(a,b) is Random.Next, so every 'below(n)' here is rand(0,n).
+
+namespace {
+
+double aircraftMonthlyExpense(double cost) {
+  const double div = cost > 10000000.0 ? 863.0 : cost > 1000000.0 ? 663.0
+                   : cost > 500000.0 ? 313.0 : 253.0;
+  const double m = cost / div;
+  return m < 500.0 ? 500.0 : m;  // ponytail: the economy scale M (GameRef..+0x1d4) is 1
+}
+
+std::vector<std::string> commaList(const std::string& cell) {
+  std::vector<std::string> out;
+  std::string cur;
+  for (char c : cell + ",") {
+    if (c == ',') { const std::string s = trim(cur); if (!s.empty()) out.push_back(s); cur.clear(); }
+    else cur += c;
+  }
+  return out;
+}
+
+}  // namespace
+
+// SimAircraft::GenericDescriptionString 0x2b0f6a4: the override or 'Make Model', then the
+// suffix after a space ('Robinson R22 helicopter').
+std::string Sim::aircraftDescription(const Hero& h) {
+  if (h.aircraftRow < 0 || !ensureTable("a16_aircraft-enc")) return h.aircraft;
+  const Table& t = tbl("a16_aircraft-enc");
+  const size_t r = size_t(h.aircraftRow);
+  std::string s = trim(t.at(r, "Descriptive Name Override"));
+  if (s.empty()) s = trim(t.at(r, "Make")) + " " + trim(t.at(r, "Model"));
+  const std::string suffix = trim(t.at(r, "Descriptive Name Suffix"));
+  if (!suffix.empty()) s += " " + suffix;
+  return s;
+}
+
+// SimAircraft::.ctor(data, true), the dealership's call: a row with Min Age 0 is brand new,
+// any other row draws one of three used-age modes (the fourth arm is rand(0,3)'s dead 3),
+// and the condition follows the age tier.
+void Sim::aircraftSetup(Hero& h, size_t row) {
+  const Table& t = tbl("a16_aircraft-enc");
+  Rng& g = aircraftRng_;
+  h.aircraftRow = int(row);
+  h.aircraftAgeAtLastRepair = 0;
+  h.aircraftRepairPending = false;
+  h.aircraftScrapPending = false;
+  const int minAge = int(t.num(row, "Min Age"));
+  const int life = int(t.num(row, "Lifespan Years"));
+  if (minAge == 0) { h.aircraftAge = 0; h.aircraftCondition = 100.0; return; }
+  const int mode = int(g.below(3));
+  if (mode == 0) h.aircraftAge = minAge + int(g.below(5)) + 1;
+  else if (mode == 1) h.aircraftAge = minAge + int(g.below(10)) + 1;
+  else h.aircraftAge = minAge + int(g.below(uint32_t(std::max(1, life - minAge)))) + 1;
+  if (h.aircraftAge <= 4) h.aircraftCondition = 61 + int(g.below(40));
+  else if (h.aircraftAge <= 9) h.aircraftCondition = 20 + int(g.below(81));
+  else h.aircraftCondition = 1 + int(g.below(100));
+}
+
+// The yearly tick: SimAircraft::IncrementAge, the living-expense charge and the repair
+// check, in that order (the two native callers' relative order is unrecovered: shortcut).
+void Sim::aircraftRunYear(Life& life) {
+  Hero& h = life.hero;
+  if (h.aircraft.empty() || h.aircraftRow < 0 || h.aircraftTickAge == h.age) return;
+  if (!ensureTable("a16_aircraft-enc")) return;
+  h.aircraftTickAge = h.age;
+  const Table& t = tbl("a16_aircraft-enc");
+  const size_t row = size_t(h.aircraftRow);
+  Rng& g = aircraftRng_;
+  const double lifespan = std::max(1.0, t.num(row, "Lifespan Years"));
+  const double cost = t.num(row, "Cost");
+  // IncrementAge: Age++, then the wear. Maintenance is not ported, so NumMaint stays 0.
+  ++h.aircraftAge;
+  if (double(h.aircraftAge) >= lifespan) {
+    h.aircraftCondition *= 0.9;
+  } else {
+    const double cand = 100.0 * (1.0 - double(h.aircraftAge) / lifespan + 0.05 -
+                                 double(g.below(10)) / 100.0);
+    if (cand < h.aircraftCondition) h.aircraftCondition = cand;  // unclamped, as native
+  }
+  // IncurAnnualLivingExpenses 0x2a75944: twelve months of MonthlyExpense.
+  h.money -= static_cast<long long>(12.0 * aircraftMonthlyExpense(cost));
+  if (h.aircraftScrapPending) return;
+  // IsRepairNeeded G2: an aircraft a quarter past its lifespan and in ruins is scrapped.
+  // The maintenance gap is always >= 2 here (the port has no maintenance card) and the
+  // port's aircraft never carries a loan.
+  if (double(h.aircraftAge) >= 1.25 * lifespan && h.aircraftCondition < 2.0) {
+    h.aircraftScrapPending = true;
+    life.pendingCards.push_back(kPendingAircraftScrap);
+    return;
+  }
+  // G3: a repair still open blocks the check, and so does a break in the last four years.
+  if (h.aircraftRepairPending) return;
+  if (h.aircraftAge - h.aircraftAgeAtLastRepair < 4) return;
+  const double age = double(h.aircraftAge);
+  const int max = age > lifespan ? 100 : age > 0.8 * lifespan ? 70
+                : age > 0.6 * lifespan ? 50 : age > 0.4 * lifespan ? 25 : 5;
+  const int a = int(g.below(uint32_t(max)));
+  const int b = int(g.below(20));
+  if (h.aircraftCondition + b >= a) return;
+  h.aircraftAgeAtLastRepair = h.aircraftAge;
+  // The part: uniform over the parts flagged for this aircraft's kind (Only One Per
+  // Aircraft is loaded and never read).
+  if (!ensureTable("a16_aircraft-parts-enc")) return;
+  const Table& p = tbl("a16_aircraft-parts-enc");
+  const std::string type = trim(t.at(row, "Type"));
+  std::string col;
+  if (type == "Helicopter") col = "Helicopter";
+  else if (type == "Airplane") col = trim(t.at(row, "Airplane Propulsion Type")) == "Jet" ? "Jet" : "Propeller";
+  else if (type == "Glider") col = "Glider";
+  else if (type == "Blimp") col = "Blimp";
+  // Airship, Seaplane and Hot Air Balloon rows: their Type enum value is unrecovered and
+  // the picker returns no candidate for any other kind, so the port draws no break.
+  if (col.empty()) return;
+  std::vector<size_t> parts;
+  for (size_t r = 0; r < p.size(); ++r)
+    if (!trim(p.at(r, "Part")).empty() && p.flag(r, col)) parts.push_back(r);
+  if (parts.empty()) return;
+  const size_t part = parts[g.below(uint32_t(parts.size()))];
+  h.aircraftPart = trim(p.at(part, "Part"));
+  const std::vector<std::string> terms = commaList(p.at(part, "Broken Terms"));
+  h.aircraftBrokenTerm = terms.empty() ? "broken" : terms[g.below(uint32_t(terms.size()))];
+  static const double kFactor[] = {0.8, 2.0, 4.0, 7.0, 12.0};
+  int score = int(p.num(part, "Part Cost Score"));
+  score = score < 1 ? 1 : score > 5 ? 5 : score;
+  h.aircraftRepairCost = static_cast<long long>(aircraftMonthlyExpense(cost) * kFactor[score - 1]);
+  h.aircraftRepairPending = true;
+  h.aircraftPartRow = int(part);
+  life.pendingCards.push_back(kPendingAircraftRepair);
+}
+
+bool Sim::aircraftRepairYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.aircraft.empty() || !h.aircraftRepairPending) return false;
+  hero_ = &h;
+  life_ = &life;
+  Rng& g = aircraftRng_;
+  const std::string desc = aircraftDescription(h);
+  const std::string broken = h.aircraftBrokenTerm + " " + h.aircraftPart;  // #70426
+  out.table = "registry:ScenarioAircraftRepair";
+  out.title = h.aircraft;
+  // The pushed card's body: half the time (rand(0,3) <= 1) one of the part's own
+  // Optional Descriptions under #50593, otherwise #50577; #68715 wraps both.
+  std::vector<std::string> optional;
+  if (h.aircraftPartRow >= 0 && ensureTable("a16_aircraft-parts-enc"))
+    optional = commaList(tbl("a16_aircraft-parts-enc").at(size_t(h.aircraftPartRow), "Optional Descriptions"));
+  std::string body;
+  if (!optional.empty() && g.below(3) <= 1)
+    body = "Your " + desc + " needs a repair.\n\n" + optional[g.below(uint32_t(optional.size()))];
+  else
+    body = "Your " + desc + " has " + articleFor(broken) + broken + ".";
+  out.body = body + "\n\nWhat will you do?\n\nRepair: " + money(h.aircraftRepairCost);
+  // The Golden Wrench button (#45180) is an in-app purchase this port does not carry; an
+  // unaffordable repair would open ScenarioInsufficientFinances, so the port only offers
+  // the free lane then.
+  const bool afford = h.money >= h.aircraftRepairCost;
+  out.options = afford ? std::vector<std::string>{"Repair it", "I might fix it later"}
+                       : std::vector<std::string>{"I might fix it later"};
+  // With one option the list index cannot stand in for the lane (an unaffordable repair
+  // would read as index 0 and be repaired for free), so the lane is decided first.
+  const bool doRepair = afford && (forcedChoice < 0 ? g.chance(0.6) : forcedChoice == 0);
+  out.choice = out.options[size_t(doRepair ? 0 : out.options.size() - 1)];
+  const std::string pushed = "My " + desc + " has " + articleFor(broken) + broken + ".";  // #30911
+  if (doRepair) {
+    h.money -= h.aircraftRepairCost;
+    h.aircraftRepairPending = false;
+    out.narrative = pushed + "\nI repaired the " + broken + " on my " + desc + ".";  // #70735
+    static const char* kFixed[] = {"Fixed up", "Ready for liftoff", "No problem too big",
+                                   "Repairs: Complete"};
+    out.body += "\n\n" + std::string(kFixed[g.below(4)]) + "\nYour " + desc + " is back in service.";
+    h.aircraftRepairCost = 0;
+  } else {
+    // #69029; the pushed card's decline costs ImpactDiscipline(-2). The repair stays open,
+    // so this aircraft draws no new break until it is fixed.
+    out.narrative = pushed + "\nI decided not to repair it.";
+    out.discipline = pointsForImpact(-2);
+    static const char* kLater[] = {"Forcing my hand", "I'll fix it later", "No flight zone",
+                                   "Flight's cancelled"};
+    out.body += "\n\n" + std::string(kLater[g.below(4)]) + "\nYour " + desc +
+                " is out of commission until you fix it.";
+  }
+  return true;
+}
+
+bool Sim::aircraftScrapYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.aircraft.empty() || !h.aircraftScrapPending) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string desc = aircraftDescription(h);
+  const double cost = h.aircraftRow >= 0 ? tbl("a16_aircraft-enc").num(size_t(h.aircraftRow), "Cost") : 0.0;
+  out.table = "registry:ScenarioAircraftScrapPush";
+  out.title = h.aircraft;
+  const std::string line = "Your " + desc + " will no longer fly and is beyond repair.";  // #50617
+  out.body = line + "\n\nAge: " + std::to_string(h.aircraftAge) + " Years";  // #10954 / #69718
+  out.options = {"Scrap it"};  // #38269, the card's only button
+  out.choice = "Scrap it";
+  // ScrapValue 0x2b0fcf4: nothing at or under $1,000,000; otherwise Cost/250M*150000,
+  // truncated to a multiple of 100 above 1000 and of 10 below.
+  long long scrap = 0;
+  if (cost > 1000000.0) {
+    const long long x = static_cast<long long>(cost / 250000000.0 * 150000.0);
+    const long long step = x > 1000 ? 100 : 10;
+    scrap = x / step * step;
+  }
+  if (scrap > 0) {
+    h.money += scrap;
+    out.narrative = line + "\nThe scrapyard gave me " + money(scrap) + " for it.";  // #69322
+    static const char* kLoot[] = {"I'll take the loot", "Plane for parts", "Worth more this way",
+                                  "One man's trash..."};
+    out.body += "\n\n" + std::string(kLoot[aircraftRng_.below(4)]) + "\nThe scrapyard gave you " +
+                money(scrap) + " for it.";  // #42451
+  } else {
+    out.narrative = line;
+  }
+  h.aircraft.clear();
+  h.aircraftRow = -1;
+  h.aircraftScrapPending = false;
+  h.aircraftRepairPending = false;
   return true;
 }
 

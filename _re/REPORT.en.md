@@ -23536,6 +23536,137 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard
+
+The aircraft the hero buys in 222 was only ever a name in the port. In the native game it is
+a `SimAircraft` object with its own age and condition, it costs money every year, it breaks
+and it ends up scrapped; the repair card's price is not a table column but a formula over the
+row's Cost. This section ports that object's whole life, so the aircraft the purchase card
+sells behaves the way the game's does.
+
+### The native side
+
+`SimAircraft` fields: `+0x10 Age` (int), `+0x18 Condition` (float), `+0x1c YearsOwned`,
+`+0x28 Loan`, `+0x30 AgeAtLastRepair` (an Age), `+0x40 ActiveRepair`,
+`+0x48 NeedsToBeScrapped`, `+0x4c AgeAtLastMaintenance` (a game YEAR despite the name),
+`+0x50 NumAnnualMaintenancesPerformed`.
+
+`SimAircraft::.ctor 0x2b0f490` takes the row and a bool. The dealership passes true, and a row
+whose `Min Age` is 0 comes out brand new (Age 0, Condition 100); every other combination rolls
+`rand(0,3)` for one of three used-age modes — `MinAge + rand(0,5) + 1`,
+`MinAge + rand(0,10) + 1`, or `MinAge + rand(0, LifespanYears - MinAge) + 1` — and then sets
+Condition from the age tier: age 4 or less `61 + rand(0,40)`, 5 to 9 `20 + rand(0,81)`,
+10 or more `1 + rand(0,100)`. AgeAtLastRepair and AgeAtLastMaintenance stay 0, so a fresh
+aircraft cannot break for four years and its first maintenance-gap test is already satisfied.
+
+`SimAircraft::MonthlyExpense 0x2b0fbc4` is `Cost / div` with the divisor picked by cost —
+863 above 10M, 663 above 1M, 313 above 500k, 253 otherwise — floored at `500 * M`, where M is
+the economy scale at `GameReference::Inst[+0xb8] -> [0] -> [+0x20] -> [+0x1d4]`.
+`SimHero::IncrementAge` charges twelve of those per year through
+`IncurAnnualLivingExpenses 0x2a75944`.
+
+`SimAircraft::IncrementAge 0x2b0f7c4` ages it (Age, YearsOwned, the special feature's own
+years) and then wears it: when `Age - NumAnnualMaintenancesPerformed` has reached
+`LifespanYears` the Condition is multiplied by 0.9, otherwise it becomes
+`100 * (1 - (Age - NumMaint)/Lifespan + 0.05 - rand(0,10)/100)`, whichever is lower, and it is
+never clamped — so an aircraft near the end of its life can dip below zero and break more
+often. The Golden Wrench pins Condition at 100 and skips the wear entirely.
+
+`SimAircraft::IsRepairNeededAfterCheckForAnnualRepair 0x2b10284` has exactly one caller,
+`SimHero::IncrementAge @0x2a6ca6c`, so the card is pushed once per aircraft per year. Gates
+in order: the Golden Wrench means never; an aircraft at or past `1.25 * LifespanYears` whose
+Condition is under 2.0, whose last maintenance is at least 2 years back and which carries no
+loan sets NeedsToBeScrapped instead; an open ActiveRepair skips; and `Age - AgeAtLastRepair`
+under 4 skips. Then the ladder gives the roll's ceiling by age against the lifespan — 100 past
+it, 70 past 0.8 of it, 50 past 0.6, 25 past 0.4, 5 below — and the break happens when
+`Condition + rand(0,20) < rand(0, max)`, the ladder roll drawn first. A break stamps
+AgeAtLastRepair, picks a part and a broken term, and its cost is
+`MonthlyExpense * {0.8, 2.0, 4.0, 7.0, 12.0}[PartCostScore - 1] * M`.
+
+The part is uniform over `a16_aircraft-parts-enc` rows flagged for the aircraft's kind —
+Helicopter, Jet or Propeller by the row's `Airplane Propulsion Type`, Glider, Blimp, Balloon;
+an Airship, Seaplane or Hot Air Balloon row has no flag column and draws no break. The broken
+term is a random element of the row's `Broken Terms`. `Only One Per Aircraft` is loaded and
+never read.
+
+`ScenarioAircraftRepair`: `.ctor 0x34202c8`, `RefreshScenario 0x3422dd8`,
+`ChoiceSelectedAtIndex 0x34233c0`. Title is the make and model; the body is
+`Format(#50577 'Your {0} has {1}.', GenericDescriptionString, AddIndefiniteArticle +
+DescriptiveString)` wrapped by `Format(#68715 '{0}\n\nWhat will you do?', ...)`, and a
+pushed card swaps in `Format(#50593 'Your {0} needs a repair.\n\n{1}', desc, random
+OptionalDescriptions item)` when the part has any and `rand(0,3) <= 1`. The table dictionary
+carries one row, key `#35747 'Repair'`, value the formatted cost. Buttons in stored order:
+`#45180 'Use the Golden Wrench'` (an in-app purchase, so wrench owners only), `#35752
+'Repair it'`, `#24668 'I might fix it later'`, dispatched by `Contains 'use'`,
+`Contains 'later'` and otherwise paying. Paying debits the cost, clears ActiveRepair and logs
+`#30911 'My {0} has {1}.'` followed by `#70735 '{0}I repaired the {1} on my {2}.'` with a
+follow-up card whose title is one of four fixed lines and whose body is `#50579 'Your {0} is
+back in service.'`; it touches no Condition and no repair counter. An unaffordable repair
+opens `ScenarioInsufficientFinances`. Declining logs `#69029 '{0}\nI decided not to repair
+it.'`, costs `ImpactDiscipline(-2)` only on a pushed card, and leaves the repair open — the
+same aircraft never breaks again until it is fixed.
+
+`ScenarioAircraftScrapPush`: `.ctor 0x3423fdc`, `RefreshScenario 0x3424070`,
+`ChoiceSelectedAtIndex 0x342424c`. Title make-and-model, body
+`Format(#50617 'Your {0} will no longer fly and is beyond repair.', desc)` with a table row
+`#10954 'Age'` / `Format(#69718 '{0} Years', Age)`, and one button `#38269 'Scrap it'`.
+`SimAircraft::ScrapValue 0x2b0fcf4` is 0 at or below \$1,000,000; above it the value is
+`Cost / 250,000,000 * 150,000 * M`, truncated to a multiple of 100 above 1000 and of 10 below.
+A positive value is credited and logs `#50617` plus `#69322 '{0}\nThe scrapyard gave me {1}
+for it.'` with a four-line follow-up title pool and the body `#42451 'The scrapyard gave you
+{0} for it.'`; a zero value credits nothing and logs the body line alone. Both remove the
+aircraft from the life.
+
+### The port
+
+`Hero` carries the object's state (`aircraftRow`, `aircraftAge`, `aircraftCondition`,
+`aircraftAgeAtLastRepair`, `aircraftTickAge`, the open repair's part, term and cost, and the
+two pending flags). `Sim::aircraftSetup` runs the ctor at purchase, `Sim::aircraftRunYear`
+runs on the hero's own yearly tick — the same place the casino's and the zoo's books run —
+and does the aging, the wear, the twelve months of MonthlyExpense, the scrap gate and the
+break roll; `Sim::aircraftDescription` is GenericDescriptionString with the row's
+Descriptive Name Override and Suffix. Breaks and scraps queue as `kPendingAircraftRepair` and
+`kPendingAircraftScrap` and are answered by `Sim::aircraftRepairYear` and
+`Sim::aircraftScrapYear`. All of it draws on one `aircraftRng_`, so no other family's
+sequence moves.
+
+The purchase card no longer filters on `Min Age`: that column is the aircraft's own age floor,
+which the ctor reads to place a used aircraft's age, not a requirement on the buyer.
+
+### Ceilings
+
+The economy multiplier M is 1 — the object it lives in is not modelled, so MonthlyExpense's
+500 floor and the repair and scrap formulas all run unscaled. The maintenance card is not
+ported, so `NumAnnualMaintenancesPerformed` stays 0: wear follows plain age, and the
+maintenance-gap gate is always satisfied for an aircraft whose row was bought used. The two
+native callers' relative order (wear before or after the yearly expenses) is unrecovered and
+the port wears first. The Golden Wrench is an in-app purchase and is not modelled, so no
+aircraft is wrench-immune and the gated button is not offered. The repair card's table row is
+rendered inline in the body (`Repair: $…`) because the port's card type has no table
+dictionary. A repair still open at the hero's death, the InsufficientFinances card, the
+follow-up cards' screen furniture and the achievements/obits are not modelled.
+
+### Verified
+
+`_re/tools/test_aircraft_life.py` over 40 funded lives (seeds 1-40, ages 70): 22 repair
+cards, 13 paid, 9 declined and 2 scrapyard pushes. Every repair card names a model that is a
+`a16_aircraft-enc` Descriptive Name and a broken term and part that are cells of the same
+`a16_aircraft-parts-enc` row, quotes a `Repair: $…` price and offers `Repair it` /
+`I might fix it later`; a paid repair's log reads `My … has a broken …\nI repaired the
+broken … on my ….`, a refusal's log reads `…I decided not to repair it.` and moves discipline
+down, and the scrap push's body is the beyond-repair line plus `Age: N Years` with the single
+`Scrap it` button, after which the aircraft is gone from the life. `_re/tools/test_aircraft.py`
+(purchase and the danger card) still passes: 9 purchases, 56 danger cards.
+
+Aircraft repair and the scrap pull were the two cards this section was expected to deliver;
+the scrap pull (`ScenarioAircraftScrapPull`, `.ctor 0x3423c90`) is a buy-back card the yearly
+tick never pushes and is not ported.
+
+The full 122-test suite ran on the binary these notes describe (64075db9..., 122 PASS / 0 FAIL):
+_re/tools/test_aircraft_life.py is the new test (22 repair cards, 13 paid, 9 declined, 2 scrapped
+over 40 lives), _re/tools/test_aircraft.py still finds 9 purchases and 56 danger cards, and
+nothing else moved even though the aircraft now takes money out of the hero's purse every year.
+
 ## 333. The vampire hunt's animal
 
 A vampire's solo hunt can turn up an animal instead of a person. The port's hunt was one
@@ -23630,7 +23761,7 @@ non-vampire never sees the card.
 The full 121-test suite ran on the binary these notes describe (915ad0d2...). One test,
 test_witch_doctor, failed on its first pass with an abort before any assertion of its own:
 its probe is compiled against port/include while the archive it links had been built before
-the aircraft work in the next section touched those headers, so probe and library disagreed
+the aircraft work of section 334 touched those headers, so probe and library disagreed
 about the hero's layout - which is exactly what the aircraft's new fields change. Re-run
 against the archive built from the same headers the probe compiles against, it passes:
 121 PASS / 0 FAIL, the witch probe reporting 30 remedy rows, 50 fatal, 306 neutral, 844 harm,

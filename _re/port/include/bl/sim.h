@@ -139,6 +139,8 @@ enum PendingCard {
   kPendingEmployeeRecognize = 27, // the recognition card behind its second button
   kPendingEmployeeWarn = 28,      // the warning card behind its third button
   kPendingEmployeeBonus = 29,     // the bonus card behind its first button
+  kPendingAircraftRepair = 30,    // the yearly tick's breakdown card (REPORT.en.md 334)
+  kPendingAircraftScrap = 31,     // the scrap push for a worn-out aircraft (REPORT.en.md 334)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -313,6 +315,12 @@ class Sim {
   // Aircraft ownership and a flight that goes wrong, REPORT.en.md 222.
   bool aircraftPurchaseYear(Life& life, AgeUp& out, int forcedChoice);
   bool aircraftDangerYear(Life& life, AgeUp& out, int forcedChoice);
+  // The aircraft's wear, expenses, breakdowns and scrapping (REPORT.en.md 334).
+  void aircraftSetup(Hero& h, size_t row);
+  void aircraftRunYear(Life& life);
+  std::string aircraftDescription(const Hero& h);
+  bool aircraftRepairYear(Life& life, AgeUp& out, int forcedChoice);
+  bool aircraftScrapYear(Life& life, AgeUp& out, int forcedChoice);
   // The custody chain, REPORT.en.md 223.
   bool custodyCaseYear(Life& life, AgeUp& out, int forcedChoice);
   bool custodyTrialYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1046,6 +1054,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng discRng_;  // the discipline card's own stream
   Rng animalRng_;  // the animal encounter's own stream
   Rng huntAnimalRng_;  // the vampire hunt animal card's own stream
+  Rng aircraftRng_;    // the aircraft's age, wear, breakdowns and its cards (REPORT.en.md 334)
   Rng agentCompRng_;  // ScenarioAgentCompliment's own stream (REPORT.en.md 327)
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)
