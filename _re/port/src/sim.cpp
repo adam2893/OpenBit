@@ -695,6 +695,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       flRng_(seed ^ 0x8ebc6af09c88c6e3ULL ^ 0xc2b2ae3d27d4eb4fULL),
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
+      discRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x1d8e4e27c47d124fULL),
+      animalRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3f84d5b5b5470917ULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
       lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
@@ -4430,6 +4432,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::friendLoverYear, nullptr},
         {&Sim::coworkerYear, nullptr},
         {&Sim::supervisorYear, nullptr},
+        {&Sim::workplaceDisciplineYear, nullptr, 2, "workplace-discipline"},
+        {&Sim::animalEncounterYear, nullptr, 1, "animal-encounter"},
         {&Sim::teamBuildingYear, nullptr},
         {&Sim::afterHoursYear, nullptr},
         {&Sim::lightningYear, nullptr},
@@ -19483,6 +19487,16 @@ bool Sim::checkDeath(const Life& life, std::string& type, std::string& sentence)
       }
     }
   }
+  // The walk's animal (REPORT.en.md 326): the card itself builds
+  // ScenarioDeathHero through DeathManager::UpdateWithKillerAnimal, and the
+  // death system words it as an animal attack (#9457 '<pronoun> died after
+  // being <attack> by <animal>.').
+  if (!h.animalKill.empty()) {
+    type = "AnimalAttack";
+    sentence = "I died after being " + h.animalKillVerb + " by " +
+               articleFor(h.animalKill) + h.animalKill + ".";
+    return true;
+  }
   if (h.lightWillDie) {
     const Table& dt = tbl("a16_death-types-enc");
     for (size_t r = 0; r < dt.size(); ++r) {
@@ -22413,6 +22427,403 @@ bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
 // sentence out of four objects -- the supervisor's full name, his relationship
 // label, the workplace's name and a pastime -- and the two buttons are il2cpp
 // literals, so the card is code-built.
+// ScenarioWorkplaceDisciplineSupervisor (REPORT.en.md 325): a coworker incident card
+// pushes this one in the native game -- the supervisor calls the hero into his office
+// over an allegation, the hero picks one of four reactions, and the reaction's severity,
+// the supervisor's strictness and the hero's relationship strength with him then decide
+// between a warning and the termination card.
+//
+// The port has none of the eight incident cards that push it, so this family draws the
+// allegation and its seriousness itself (shortcut). Choices come from the card's own
+// literals (Apologize #11553, Defend #17416, Insult #26846, Try to seduce #44151) and
+// the warning lane appends a16_supervisor-warnings-enc's row.
+//
+// Ceilings: the supervisor's strictness (+0x244) and professionalism (+0x240) and the
+// hero's relationship strength with him (SimPerson::GetTotalHeroRelationshipStrength)
+// have no port model, so a supervisor's first card draws both from this family's own
+// stream and keeps the relationship in its own field; the seduce lane's success roll,
+// the workplace-performance hit on a rejected seduction, the insult sentence variants
+// and the second card the native game queues (ScenarioJobTermination(8) or
+// ScenarioSupervisorSeduceSuccess) are folded into this year.
+bool Sim::workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18) return false;
+  if (!h.employed && !h.military) return false;
+  if (h.inPrison) return false;
+  // A cooldown stands in for Life::YearsSinceScenario over the eight incident cards
+  // that push the card in the native game.
+  if (h.disciplineAge >= 0 && h.age - h.disciplineAge < 4) return false;
+  if (forcedChoice < 0 && !discRng_.chance(0.06)) return false;
+  hero_ = &h;
+  life_ = &life;
+  if (h.supName.empty()) {
+    h.supName = resolve("<supervisor>");
+    if (h.supName.empty()) return false;
+    h.supFemale = discRng_.chance(0.5);
+  }
+  if (h.supStrictness < 0) {
+    // PersonGenerator::GenerateRandomCoworkerInCompanyAndHeroCareerAndInPlaceAndIsSupervisor
+    // (0x3382940) draws the supervisor's attributes flat, right after the relationship:
+    // strictness +0x244 is GetRandomNumber(0,101); professionalism +0x240 is 0..20 on one
+    // draw in three and 0..100 otherwise; coolness +0x23c (0..100, re-rolled to 0..20 half
+    // the time when professionalism came out below 20) then decides the relationship tier.
+    h.supProfessionalism = discRng_.below(3) == 0 ? int(discRng_.below(21))
+                                                 : int(discRng_.below(101));
+    int coolness = int(discRng_.below(101));
+    if (h.supProfessionalism < 20 && discRng_.below(2) == 0) coolness = int(discRng_.below(21));
+    h.supStrictness = int(discRng_.below(101));
+    const int bonus = coolness < 30 ? 20 : (coolness > 70 ? 50 : 40);
+    h.supRelation = int(discRng_.below(11)) + bonus;
+  }
+  if (h.cwName.empty()) {
+    h.cwName = resolve("<coworker>");
+    if (h.cwName.empty()) return false;
+    h.cwFemale = discRng_.chance(0.5);
+  }
+  const std::string sup = h.supName;
+  const std::string them = h.supFemale ? "her" : "him";
+  const std::string poss = h.supFemale ? "her" : "his";
+  // The allegations whose placeholders all resolve. {0} is the relation word the card
+  // reads off the incident, {1} the coworker's name; the gift and the insult carry a
+  // third placeholder the native pools fill with the gift's name and the insult phrase,
+  // and this family reads those two from a16_gifts-enc and a16_insults-enc (shortcut:
+  // the native getters and their filters are unrecovered). Seriousness is the recovered
+  // value each incident card feeds the decision.
+  struct Allegation { const char* text; int seriousness; int third; };
+  static const Allegation kAllegations[] = {
+      {"made a sexual advance on your {0}, {1}", 4, 0},   // #62015
+      {"started an untrue rumor about your {0}, {1}", 2, 0},  // #66088
+      {"attacked your {0}, {1}", 4, 0},                   // #54544
+      {"called your {0}, {1}, {2}", 2, 2},                // #55436
+      {"tried to give your {0}, {1}, {2}", 1, 1},         // #67236
+  };
+  const size_t which = size_t(discRng_.below(5));
+  const Allegation& al = kAllegations[which];
+  std::string third;
+  if (al.third == 2) {
+    third = insultToken();
+    if (third.empty()) return false;
+  } else if (al.third == 1) {
+    if (!ensureTable("a16_gifts-enc")) return false;
+    const Table& gt = tbl("a16_gifts-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < gt.size(); ++r) {
+      if (trim(gt.at(r, "Gift")).empty()) continue;
+      if (gt.has("Can Be Shoplifted") && gt.flag(r, "Can Be Shoplifted")) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) return false;
+    third = trim(gt.at(pool[discRng_.below(uint32_t(pool.size()))], "Gift"));
+  }
+  std::string reason = al.text;
+  substAll(reason, "{0}", "coworker");
+  substAll(reason, "{1}", h.cwName);
+  substAll(reason, "{2}", third);
+  out.table = "registry:ScenarioWorkplaceDisciplineSupervisor";
+  out.title = "Workplace Discipline";  // #47160
+  out.body = "Your supervisor, " + sup + ", has called you into " + poss +
+             " office to discuss allegations that you " + reason + ".";
+  out.cta = "How will you react?";  // #68658's tail
+  out.options = {"Apologize for my actions",  // #11553
+                 "Defend my actions",         // #17416
+                 "Insult " + them,            // #26846
+                 "Try to seduce " + them + " so " +
+                     (h.supFemale ? "she" : "he") + " forgets"};  // #44151
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 3 ? 3 : forcedChoice)
+                                     : int(discRng_.below(4));
+  out.choice = out.options[pick];
+  h.disciplineAge = h.age;
+  // Every one of the four reactions feeds its seriousness into the workplace's trouble
+  // points (SimWorkplace+0x24) before the decision reads them.
+  h.troublePoints += al.seriousness;
+  // (shortcut) The seduce lane's success is decided by the card's own roll; the port
+  // has no seduction model for a supervisor, so the relationship check stands in for it.
+  const bool seduced = pick == 3 && discRng_.chance(0.35);
+  int sev = 0;  // the reaction's own severity, the decision's s8
+  if (pick == 0) {
+    sev = -5;
+    out.narrative = "I apologized for my actions.";  // #68956
+  } else if (pick == 1) {
+    sev = 5;
+    out.narrative = "I defended my actions to " + sup + ".";  // #69053
+  } else if (pick == 2) {
+    sev = 0;
+    h.supRelation -= 6;
+    if (h.supRelation < 0) h.supRelation = 0;
+    ++h.supInsulted;
+    // The lane's own journal line lives on the follow-up card the native game queues
+    // (one of five titles the recovery could not map to a condition), which the port
+    // does not reproduce, so this year writes no line for it (ceiling).
+  } else if (seduced) {
+    // The success lane pushes ScenarioSupervisorSeduceSuccess -- the same dismiss-only
+    // card the supervisor-seduction family queues (REPORT.en.md 123). The follow-up
+    // recovery found its title is a uniform pick over eight lines (#26059, #28820,
+    // #11401, #24702, #26346, #28825, #38375, #31896) and its body is "You seduced your
+    // {rel}, {name}!" (#49284) against the seduced-by-them wording (#48933); the port's
+    // morning card splits that title pool in two by who moved first, which is left as
+    // it was (ceiling, REPORT.en.md 325).
+    sev = 0;
+    out.narrative = "I seduced my supervisor, " + sup + "!";  // #69181
+    h.morningWith = sup;
+    h.morningByHero = true;
+    h.morningPrevLover = !h.loverStatus.empty();
+    life.pendingCards.push_back(kPendingMorningAfter);
+  } else {
+    sev = 20;
+    h.supRelation -= 5;
+    if (h.supRelation < 0) h.supRelation = 0;
+    out.body = "Your supervisor, " + sup + ", rejected your attempt to seduce " +
+               them + "!";  // #50762
+    out.narrative = "I attempted to seduce my supervisor, " + sup +
+                    ", but failed.";  // #68978
+    // The lane's ImpactWorkplacePerformance(-4) has no port model (ceiling).
+  }
+  const bool skipsDecision = pick == 3 && seduced;
+  if (skipsDecision) return true;
+  // The decision, as recovered from ChoiceSelectedAtIndex: the seriousness picks a
+  // multiplier for the supervisor's strictness (seriousness 4 carries none), the score
+  // adds half of the strictness term and half of the missing relationship strength, and
+  // the two thresholds decide.
+  const int R = h.supRelation < 0 ? 0 : (h.supRelation > 100 ? 100 : h.supRelation);
+  bool hasStrictness = true;
+  double mult = 0.0;
+  switch (al.seriousness) {
+    case 1: mult = 0.25; break;
+    case 2: mult = 0.5; break;
+    case 3: mult = 1.1; break;
+    case 5: mult = 204.0; break;
+    default: hasStrictness = false; break;
+  }
+  const double strictnessTerm = hasStrictness ? double(h.supStrictness) * mult : 0.0;
+  const double score = double(sev) + 0.5 * (strictnessTerm + double(100 - R));
+  bool terminate = false;
+  if (score > 85.0) {
+    terminate = R < 95;
+  } else if (score > 70.0) {
+    terminate = (100 - R) > int(discRng_.below(201));
+  }
+  if (!terminate) {
+    // The lenient sub-branch the recovery found: a professional supervisor with a good
+    // relationship lets it go with the lenient line. Otherwise the warning table's own
+    // row is appended and the log's second line is fixed.
+    if (R > 80 && h.supProfessionalism < int(discRng_.below(25))) {
+      out.body += "\n\n" + sup + " told you not to worry about it.";  // #70336
+      out.narrative = sup + " told you not to worry about it.";
+      return true;
+    }
+    if (!ensureTable("a16_supervisor-warnings-enc")) return true;
+    const Table& wt = tbl("a16_supervisor-warnings-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < wt.size(); ++r) {
+      const std::string w = trim(wt.at(r, "Warning"));
+      // The rows with slash alternatives need the pool walker the family does not have
+      // here; they are skipped rather than printed with their slashes (shortcut).
+      if (w.empty() || w.find('/') != std::string::npos) continue;
+      pool.push_back(r);
+    }
+    if (pool.empty()) return true;
+    const size_t row = pool[discRng_.below(uint32_t(pool.size()))];
+    std::string warn = trim(wt.at(row, "Warning"));
+    substAll(warn, "<supervisor>", "your supervisor, " + sup + ",");
+    const bool savedSet = pronounOtherSet_;
+    const bool savedFemale = pronounOtherFemale_;
+    pronounOtherSet_ = true;
+    pronounOtherFemale_ = h.supFemale;
+    const std::string warning = spyUpperFirst(resolve(warn));
+    pronounOtherSet_ = savedSet;
+    pronounOtherFemale_ = savedFemale;
+    if (!warning.empty()) {
+      out.body += "\n\n" + warning;
+      out.narrative = warning + "\nI received a warning.";  // #69156
+      out.table = "a16_supervisor-warnings-enc";
+      out.row_id = std::to_string(row + 1);
+    }
+    return true;
+  }
+  // Termination. The native game pushes ScenarioJobTermination(8) or, in the military,
+  // ScenarioMilitaryTermination(8); the port resolves the same outcome in this year.
+  // Before the push the card appends one of five reaction lines, drawn uniformly
+  // (GetRandomNumber(0,5) at 0x299d5b4). Four of the five render from the supervisor and
+  // the pronouns; the fifth ("{0} {1} you!", #70509) needs a random-verb pool the
+  // recovery could not reach, so this family draws among the four it can print
+  // (shortcut).
+  const int nReaction = int(discRng_.below(4));
+  const char* reaction =
+      nReaction == 0 ? "{0} shook {1} head and sighed."                                 // #70292
+      : nReaction == 1 ? "{0} asked what's wrong with you!"                             // #69859
+      : nReaction == 2 ? "{0} told you to collect your belongings and get out of {1} sight!"  // #70341
+                       : "{0} called security to escort you out of the building!";      // #69884
+  std::string reactionLine = reaction;
+  substAll(reactionLine, "{0}", sup);
+  substAll(reactionLine, "{1}", poss);
+  if (h.military) {
+    out.body = reactionLine + "\n\n" + "You have been dishonorably discharged from the " +
+               h.employer + ".";  // #48660
+    out.narrative = "I was dishonorably discharged from the " + h.employer + ".";
+    h.military = false;
+    h.employer.clear();
+  } else {
+    out.body = reactionLine + "\n\n" + "You have been let go from your position as " +
+               h.job + " for " + h.employer + " for disciplinary issues.";  // #48756
+    out.narrative = "I was let go from my job as " + h.job + " for " + h.employer +
+                    " for disciplinary issues.";  // #25739
+    h.employed = false;
+    h.job.clear();
+  }
+  out.happiness -= 6;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// REPORT.en.md 326. The walk's animal encounter.
+//
+// ScenarioEncounterAnimal is the only animal card the game pushes at random: the
+// walk activity (ScenarioWalk::ChoiceSelectedAtIndex, case 9) rolls once and, when
+// the roll lands, asks DataHub::GetRandomAnimalForContinent for a DataAnimal and
+// builds the card. The port has no walk activity, so the card arrives as its own
+// annual family (shortcut) - the same shape the port's other activity cards take.
+//
+// The animal's four numbers are the whole mechanic: Danger, Aggression,
+// Skittishness and Rabid. Every draw and comparison below is the native one; the
+// attack kills, so the card hands checkDeath a cause instead of writing the death
+// itself (DeathManager::UpdateWithKillerAnimal / ScenarioDeathHero).
+bool Sim::animalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.animalEncounterAge >= 0 && h.age - h.animalEncounterAge < 4) return false;
+  if (forcedChoice < 0 && !animalRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_animals-enc")) return false;
+  const Table& t = tbl("a16_animals-enc");
+  if (t.size() == 0) return false;
+  // The continent cell is either a comma-separated list of continents or the
+  // literal 'all 7 continents'; the hero's own continent is the filter.
+  const std::string cont = lower(trim(h.continent));
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string cell = lower(trim(t.at(r, "Continent")));
+    if (cell.find("all 7 continents") != std::string::npos) {
+      pool.push_back(r);
+      continue;
+    }
+    size_t pos = 0;
+    while (pos <= cell.size()) {
+      const size_t comma = cell.find(',', pos);
+      const size_t len = comma == std::string::npos ? std::string::npos : comma - pos;
+      if (trim(cell.substr(pos, len)) == cont) {
+        pool.push_back(r);
+        break;
+      }
+      if (comma == std::string::npos) break;
+      pos = comma + 1;
+    }
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[int(animalRng_.below(uint32_t(pool.size())))];
+  const std::string animal = trim(t.at(row, "Animal"));
+  const int danger = int(t.num(row, "Danger Score"));
+  const int aggression = int(t.num(row, "Aggression Score"));
+  const int skittish = int(t.num(row, "Skittishness Score"));
+  const int rabid = int(t.num(row, "Rabid Score"));
+  const std::string attackCell = trim(t.at(row, "Attack String"));
+  // The card's own words are AddIndefiniteArticleToString(animal); the log lines
+  // take the bare name with the article this time, so both shapes are kept.
+  const std::string withArt = articleFor(animal) + animal;
+  h.animalEncounterAge = h.age;
+
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_animals-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Encounter";  // #18740
+  // #70590 '{0}, you encounter {1}.\n\nWhat will you do?' with #46721 the
+  // circumstance the card always carries.
+  out.body = "While on your walk, you encounter " + withArt + ".\n\nWhat will you do?";
+  out.cta = "What will you do?";
+  const std::string them = animal;
+  out.options = {"Run for my life", "Retreat slowly", "Try to rescue it", "Pet it"};
+  const int lane = forcedChoice >= 0 ? (forcedChoice > 3 ? 3 : forcedChoice)
+                                     : int(animalRng_.below(4));
+
+  // The two escape lanes roll against Aggression; a chase hands the hero to the
+  // attack below, which is where the card's death lives.
+  if (lane == 0) {
+    out.choice = "Run for my life";  // #36406
+    const bool chased = aggression >= 4 && animalRng_.below(2) == 0;
+    if (!chased) {
+      out.narrative = "I encountered " + withArt + " and ran for my life. I evaded it.";  // #24097
+      return true;
+    }
+    out.narrative = "I encountered " + withArt + " and ran for my life but it chased me!";  // #24096
+  } else if (lane == 1) {
+    out.choice = "Retreat slowly";  // #36124
+    const bool chased = int(animalRng_.below(31)) + 1 <= aggression;
+    if (!chased) {
+      out.narrative = "I encountered " + withArt + " but retreated carefully.";  // #24106
+      return true;
+    }
+    out.narrative = "I encountered " + withArt + " and tried to retreat but it chased me!";  // #24101
+  } else {
+    const bool rescue = lane == 2;
+    out.choice = rescue ? "Try to rescue it" : "Pet it";  // #44143 / #33638
+    const std::string attempt = rescue ? "rescue" : "pet";
+    const std::string done = rescue ? "successfully rescued" : "gently caressed";  // #66340 / #59500
+    // Both hands-on lanes need the animal to be dangerous AND aggressive before
+    // the attempt is offered at all; the native code jumps straight past the two
+    // rolls when it is not, which the port writes as a plain unsuccessful try
+    // (shortcut: the native destination of that jump was not recovered).
+    if (danger < 2 || aggression < 2) {
+      out.narrative = "I encountered " + withArt + " and tried unsuccessfully to " + attempt + " it.";  // #24104
+      return true;
+    }
+    if (int(animalRng_.below(21)) + 1 < 5 - skittish) {
+      out.narrative = "I encountered " + withArt + " and " + done + " it.";  // #24105
+      // #49867 'You {0} the {1}!' with {0} the same verb, except at Danger 4 and
+      // above where the card calls the hero crazy instead (#11716).
+      out.body += "\n\nYou " + (danger > 3 ? std::string("are freaking crazy") : done) +
+                  " the " + animal + "!";
+      out.karma += 3;  // SimPerson::ImpactKarma(hero, 3)
+      return true;
+    }
+    // A failed attempt that the animal does not answer is only embarrassing.
+    if (int(animalRng_.below(9)) + 1 >= aggression) {
+      out.narrative = "I encountered " + withArt + " and tried unsuccessfully to " + attempt + " it.";  // #24104
+      return true;
+    }
+    out.narrative = "I encountered " + withArt + " and tried to " + attempt + " it.";  // #24102
+  }
+
+  // The attack: the animal's own Attack String column fills the line, and the
+  // hero dies of it.
+  out.narrative += " The " + animal + " " + attackCell + " me!";  // #69707 tail
+  // Rabies rides the attack (roll(0,15)+1 < Rabid Score), skipped for a vampire
+  // and for a hero who already has it; the diagnosis card is the port's ordinary
+  // ailment lane.
+  if (!h.vampire && int(animalRng_.below(16)) + 1 < rabid) {
+    bool held = false;
+    for (const Hero::Ailment& a : h.ailments)
+      if (a.key == "rabies") held = true;
+    if (!held && ensureTable("a16_disease-types-enc")) {
+      const Table& dt = tbl("a16_disease-types-enc");
+      for (size_t r = 0; r < dt.size(); ++r) {
+        if (trim(dt.at(r, "Disease")) != "rabies") continue;
+        Hero::Ailment a;
+        a.name = diseaseDisplayName(dt, r);
+        a.key = "rabies";
+        a.health = int(dt.num(r, "Health Impact Score"));
+        a.cures = int(dt.num(r, "Cures Organically Score"));
+        a.noCure = !trim(dt.at(r, "No Cure")).empty();
+        a.fatal = !trim(dt.at(r, "Can Be Fatal")).empty();
+        h.ailments.push_back(a);
+        break;
+      }
+    }
+  }
+  h.animalKill = animal;
+  h.animalKillVerb = attackCell;
+  return true;
+}
+
 bool Sim::teamBuildingYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;

@@ -87,7 +87,11 @@ for seed in range(1, 201):
             choice = event.get("choice") or ""
             assert choice in HORSES, (seed, choice)
             picked = choice
-            follow = events[index + 1] if index + 1 < len(events) else {}
+            # A life that ends on the picker's own year has no outcome card: the pick
+            # is the year's last event when the hero dies, so there is nothing after it.
+            if index + 1 >= len(events):
+                continue
+            follow = events[index + 1]
             assert (follow.get("title") or "") == "Horse Races", (seed, follow.get("title"))
             assert (follow.get("table") or "") == "registry:ScenarioHorseRacesOutcome", seed
             continue

@@ -1021,6 +1021,23 @@ struct Hero {
   std::string supName;   // the workplace supervisor the unprofessional card is about
   bool supFemale = false;
   int supPresented = 0;  // ScenarioSupervisorUnprofessional's own presented cap
+  // ScenarioWorkplaceDisciplineSupervisor (REPORT.en.md 325). The supervisor's two
+  // personality values are -1 until the discipline card first draws them (ceiling: the
+  // native game generates them with the coworker), and the relationship strength the
+  // warning-or-termination decision reads is kept here because the port has no
+  // SimPerson relationship model for a supervisor.
+  int supStrictness = -1;
+  int supProfessionalism = -1;
+  int supRelation = -1;
+  int supInsulted = 0;      // times the discipline card's insult lane ran
+  int troublePoints = 0;    // SimWorkplace's own counter, fed by the card's seriousness
+  int disciplineAge = -1;   // the last year the discipline card fired
+  // The walk's animal encounter (REPORT.en.md 326). The kill is handed to
+  // checkDeath as a cause rather than written here, the way the other card-owned
+  // deaths are.
+  int animalEncounterAge = -1;  // the last year the encounter card fired
+  std::string animalKill;       // the animal whose attack killed the hero
+  std::string animalKillVerb;   // that row's Attack String
   // ScenarioSupervisorTeamBuilding (REPORT.en.md 117) keeps a supervisor slot of
   // its own, so its lazy name draw never moves the unprofessional card's stream,
   // and the workplace flag both of its lanes set, which the port keeps per life

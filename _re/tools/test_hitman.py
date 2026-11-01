@@ -35,7 +35,13 @@ assert hitmen, "the hitman table is empty"
 
 
 def run(seed, ages=80):
-    spec = {"seed": seed, "country": "United States", "gender": "male", "ages": ages}
+    # The hero is funded on purpose: the threat card is about 1% of the hitman
+    # cards, and its "Pay him" answer only exists when the hero can afford the
+    # second payment. The sweep is wide for the same reason -- the same family
+    # list change that added the workplace discipline card (REPORT.en.md 325)
+    # turned the wheel, so an eightieth year no longer lands a hitman often.
+    spec = {"seed": seed, "country": "United States", "gender": "male",
+            "ages": ages, "cash": 2000000}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
         json.dump(spec, fh)
         path = fh.name
@@ -50,7 +56,7 @@ kinds = {}
 found_cards = 0
 arrests = 0
 arrested = {}
-for seed in range(1, 121):
+for seed in range(1, 241):
     doc = run(seed)
     cards = {}   # age -> target, so the outcome can be checked against its hire
     arrested = {k: v for k, v in arrested.items() if False}  # per seed state
@@ -101,6 +107,9 @@ for seed in range(1, 121):
             m = CHARGE.search(body)
             assert m and m.group(1) == "attempted murder", (seed, body)
             assert m.group(2) == "5", (seed, body)
+            # Only this arrest's charge is the hitman one; a hero who murders
+            # somebody later in life must not be read as the hitman charge.
+            arrested[seed] = -2
 
 assert found_cards >= 4, found_cards
 assert arrests >= 1, "no arrest reached"

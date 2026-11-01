@@ -23536,6 +23536,260 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 326. The walk's animal encounter
+
+The animals table has been sitting on disk unused since the vampire hunt (306) turned out to
+draw its own pool: a16_animals-enc is the DataAnimal set behind the one animal card the game
+pushes at random. The walk activity rolls for it, and the card is where the hero can be chased,
+mauled and killed by an alligator. This section ports ScenarioEncounterAnimal.
+
+### The native card
+
+* The table is a16_animals-enc: Animal, Danger Score, Aggression Score, Skittishness Score,
+  Attack String, Rabid Score, Continent, Vampire Essence Gain - 72 rows. DataHub::LoadAnimalSet
+  (0x26d0cc4) fills it, and DataHub::GetRandomAnimalForContinent (0x28151cc) filters it by the
+  hero's country continent and returns one uniformly.
+* Class ScenarioEncounterAnimal: `.ctor` 0x372303c, RefreshScenario 0x3723060,
+  ChoiceSelectedAtIndex 0x37233b8, ScenarioIsEligibleForRandomPush 0x37241dc. Fields
+  `+0x16a` `_happenedOnWalk` (the constructor sets it) and `+0x170` `_animal`.
+* Title #18740 "Encounter". Body #70590 "{0}, you encounter {1}.\n\nWhat will you do?" with
+  #46721 "While on your walk" and the animal's name through AddIndefiniteArticleToString.
+* Choices in stored order: #36406 "Run for my life", #36124 "Retreat slowly", #44143 "Try to
+  rescue it", #33638 "Pet it". The handler dispatches on the lowercased label (Contains "run",
+  "retreat", "rescue", "pet"), not on the index.
+* Run: an animal with Aggression 4 or more rolls GetRandomNumber(0,2) and chases on a zero;
+  anything else is evaded (#24097 "I encountered {0} and ran for my life. I evaded it."). A
+  chase logs #24096 "I encountered {0} and ran for my life but it chased me!".
+* Retreat: GetRandomNumber(0,30)+1 against Aggression - inside it the animal chases (#24101
+  "I encountered {0} and tried to retreat but it chased me!"), outside it the hero gets away
+  (#24106 "I encountered {0} but retreated carefully.").
+* Rescue and pet share one lane. Both need Danger 2 or more and Aggression 2 or more before the
+  attempts are offered. The first roll is GetRandomNumber(0,20)+1 against 5-Skittishness: under
+  it succeeds, and the success line is #24105 "I encountered {0} and {1} it." with {1} #66340
+  "successfully rescued" or #59500 "gently caressed". A success also writes #49867
+  "You {0} the {1}!", pays SimPerson::ImpactKarma(hero, 3) and fires the rescue achievements.
+  Over it, GetRandomNumber(0,8)+1 against Aggression decides whether the failure is only
+  embarrassing (#24104 "I encountered {0} and tried unsuccessfully to {1} it.") or the animal
+  answers (#24102 "I encountered {0} and tried to {1} it.").
+* The answer is the attack: #69707 "{0} The {1} {2} me!" with the row's own Attack String column
+  and the hero's death through DeathManager::UpdateWithKillerAnimal (0x2b16ecc) and
+  ScenarioDeathHero (0x3700fd0), described afterwards by #9457 "{pronoun} died after being
+  {attack} by {animal}.".
+* Rabies rides the attack: GetRandomNumber(0,15)+1 under the row's Rabid Score contracts the
+  disease (skipped for a vampire or a hero who already carries it), through
+  SimHero::ContractDiseaseTypeAndShouldBeDiagnosedImmediately (0x2a846c4) and the
+  ScenarioDiseaseContract card.
+* The push is the walk's ninth outcome: ScenarioWalk::ChoiceSelectedAtIndex (0x239d9fc) rolls
+  GetRandomNumber(0,24/32/40) depending on the walk, and case 9 builds the card when the hero
+  is 18 or over, has not seen it three times, has an animal for his continent and is not in
+  prison. The other animal cards (outdoor ride, car drive, actor challenge, hustle) can never be
+  random-pushed: their base eligibility is false and only this class and the zoo pregnancy card
+  override it.
+
+### The port
+
+`Sim::animalEncounterYear` (src/sim.cpp) is its own family, gated on an adult hero who is not
+in prison, with its own RNG (`animalRng_`) and tickets 1. The port has no walk activity, so the
+card arrives as an annual family rather than out of the walk's roll (shortcut); the continent
+filter, the four lanes and every roll and comparison are the native ones. The kill is handed to
+`checkDeath` as an `AnimalAttack` cause with the row's Attack String in the sentence, which is
+the shape the other card-owned deaths use.
+
+### Ceilings
+
+* The card's trigger is a family coin of 1 in 20 rather than the walk's ninth outcome, because
+  the port has no walk activity; the native per-walk probability was not computed either (the
+  roll's upper bound varies by walk).
+* The "#69707" attack line keeps only its tail: the "
+
+" prefix the {0} argument carries was not
+  recovered, so the log line starts at "The {1} {2} me!".
+* The pet-and-rescue gate's native jump destination (when Danger or Aggression is under 2) was
+  not recovered; the port writes the plain unsuccessful line there (#24104) instead of whatever
+  the game does.
+* The achievement manager is not modelled, so the rescue achievements and "acKilledByHippo" fire
+  nowhere.
+* The hippopotamus special case (a String::Equals against #60315 that completes its own
+  achievement) is not reproduced.
+* #49867's crazy branch puts #11716 "Are you freaking crazy" where the verb goes, which reads
+  oddly in a sentence; it is what the literal and the argument do, and the port keeps it.
+* Which subset of the rescue achievements a given success fires was not decoded, so none do.
+* The walk's own narrative lines around the card (and the three-presented limit) are not
+  modelled: the port's card can fire more than three times in a life, four years apart.
+
+### Verified (test_animal_encounter.py, US male)
+
+    card:          "While on your walk, you encounter a swan.\n\nWhat will you do?", title
+                   "Encounter", four labels, residue empty
+    the row:       the animal named in the body is an a16_animals-enc row whose Continent cell
+                   lists the hero's own continent (or says "all 7 continents"), and the event's
+                   row is that row
+    lanes:         "Run for my life", "Retreat slowly", "Try to rescue it", "Pet it"
+    escapes:       "I evaded it." and "but retreated carefully." both appear in the sweeps, and
+                   the chase lines appear too
+    hands-on:      a rescue and a pet success each write "and successfully rescued it." /
+                   "and gently caressed it.", the card appends "You ... the <animal>!", and the
+                   year's karma delta is +3
+    kill:          a chase ends in the animal's own Attack String (" The swan bit me!") and the
+                   hero dies with the AnimalAttack cause
+    cooldown:      two cards in one life are at least four years apart
+    minor:         no card at 17
+
+The full 114-test suite ran on the binary these notes describe (7a2419d4..., 113 PASS /
+1 FAIL). The failure was test-side and was fixed here without a code change: a hero whose
+horse-racing picker comes up on the last event of his life has no outcome card to follow it,
+so that check now skips a picker with nothing after it instead of demanding a next event. It
+was re-run green.
+
+## 325. The workplace discipline card
+
+The coworker family (113, 114) gave the hero a supervisor and eight incident cards, and the
+supervisor card (117) gave him a team-building day, but the card the incident cards exist to
+produce - the supervisor calling the hero in over an allegation, then warning or firing him -
+was still missing. This section ports ScenarioWorkplaceDisciplineSupervisor.
+
+### The native card
+
+* Class ScenarioWorkplaceDisciplineSupervisor: `.ctor` 0x2992cac, RefreshScenario 0x299c290,
+  ChoiceSelectedAtIndex 0x299c6ac.
+* Title #47160 "Workplace Discipline".
+* Body #50694 "Your {0}, {1}, has called you into {2} office to discuss allegations that you
+  {3}." wrapped by #68658 "{0}\n\nHow will you react?". {3} is the allegation the pushing
+  incident card recorded, {1} the coworker's name and {2} the supervisor's possessive pronoun.
+* The eight incident cards that push it, with the seriousness each feeds the decision:
+  an untrue rumour #66088 "started an untrue rumor about your {0}, {1}" (2), an insult
+  #55436 "called your {0}, {1}, {2}" (2; the {2} is DataInsult's own Insult column, filtered by
+  the hero's gender and the vampire flag), a hookup advance #62015 "made a sexual advance on
+  your {0}, {1}" (4), a gift #67236 "tried to give your {0}, {1}, {2}" (1; the {2} is
+  DataGift::GetNameWithArticle over a16_gifts-enc), and four cards
+  that share #54544 "attacked your {0}, {1}" (4). Their shared gate is a workplace and a
+  supervisor, a coworker who is not the hero's current lover, and GetRandomNumber(0,2)==0.
+* Choices in stored order: #11553 "Apologize for my actions", #17416 "Defend my actions",
+  #26846 "Insult {0}", #44151 "Try to seduce {0} so {0} forgets". The handler dispatches on
+  the lowercased label (Contains "apologize", "defend", "insult", "seduce").
+* Every reaction adds its seriousness to SimWorkplace+0x24 first. Apologize: severity -5 and
+  #68956 "{0}\nI apologized for my actions.". Defend: severity +5 and #69053
+  "{0}\nI defended my actions to {1}.". Insult: supervisor -6, Life+0x3a8 (the insulted
+  counter) incremented, one of three insult sentences (#47966/#49529/#49527 - details under
+  the ceilings) and a plain follow-up card titled one of #39989 "Stay classy", #40899 "Take
+  that", #41445 "That's right" or #48825 "You heard me". The other lanes push their own plain
+  follow-up card, titled one of #46403 "What happened now?", #15516 "Chewed out", #40840 "Tail
+  between your legs", #16200 "Consequences" or #32904 "Oooh someone's in trouble". Seduce,
+  success: ScenarioSupervisorSeduceSuccess is pushed and the
+  decision is skipped. Seduce, rejected: #50762 "Your {0}, {1}, rejected your attempt to
+  seduce {2}!", #68978 "{0}\nI attempted to seduce {1} but failed.", supervisor -5,
+  ImpactWorkplacePerformance(-4) and severity +20.
+* The decision, all of it in ChoiceSelectedAtIndex: the seriousness picks a multiplier for
+  the supervisor's strictness (SimCoworker+0x244; 0.25, 0.5, 1.1 and about 204 for
+  seriousness 1, 2, 3 and 5; seriousness 4 carries no strictness term), then
+  score = severity + 0.5 * (strictness * multiplier + (100 - relationship strength)), with
+  the strength from SimPerson::GetTotalHeroRelationshipStrength (0x2c46f14). The follow-up
+  pass showed that getter sums no family graph at all: it reads the one float field
+  SimPerson+0x118 (clamped 0-100), adding 50 only while the AuraRing perk is enabled and the
+  person is not the hero's current lover, and returning a flat 150 when the hero is. Over 85 with strength under
+  95 terminates, over 85 with 95 or better warns, at or below 70 warns, and in between
+  terminates only when (100 - strength) beats GetRandomNumber(0,200).
+* The warning lane: a supervisor whose professionalism (SimCoworker+0x240) is below a 0-25
+  draw while the relationship is above 80 gives the lenient #70336 "{0} told you not to
+  worry about it.". Otherwise a row of a16_supervisor-warnings-enc (31 rows, "<supervisor>"
+  and "<he/she>" tokens) is appended and the journal is #69156 "{row}\nI received a
+  warning.". No repeat-offence counter exists anywhere in the class.
+* Before a termination the card files a reaction line drawn with GetRandomNumber(0,5): #70292
+  "{0} shook {1} head and sighed.", #70509 "{0} {1} you!", #69859 "{0} asked what's wrong
+  with you!", #70341 "{0} told you to collect your belongings and get out of {1} sight!" and
+  #69884 "{0} called security to escort you out of the building!".
+* Termination: ScenarioJobTermination(8) in a job - body #48756 "You have been {0} from your
+  position as {1} for {2} for disciplinary issues.", journal #25739, reason row "Disciplinary
+  Issues" #17783 - or ScenarioMilitaryTermination(8) in the military, whose title is
+  "Dishonorable Discharge" and whose body is #48660 "You have been dishonorably discharged
+  from the {0}.".
+
+### The port
+
+Sim::workplaceDisciplineYear (src/sim.cpp) is a wheel family named "workplace-discipline"
+that sits beside the supervisor family, draws from its own stream (discRng_) and needs a
+job or military service, age 18, no prison and a four-year gap. Because the port has none of
+the eight incident cards, the family draws the allegation itself: the five reasons above,
+with the gift and the insult filling their third placeholder from a16_gifts-enc and
+insultToken(). It renders the recovered sentence and the four labels, adds the seriousness to
+a trouble-points field, applies the reaction's severity and relationship move, then runs the
+recovered decision and writes either the warning row (with the table and row named) or the
+termination, prefixed by one of the reaction lines. Each supervisor's strictness,
+professionalism, coolness and starting relationship are drawn on his first discipline card
+the way PersonGenerator::GenerateRandomCoworkerInCompanyAndHeroCareerAndInPlaceAndIsSupervisor
+(0x3382940) draws them: professionalism 0 to 20 on one draw in three and 0 to 100 otherwise,
+strictness 0 to 100, coolness 0 to 100 (re-rolled to 0 to 20 half the time when the
+professionalism came out under 20), and the relationship from
+SetRandomHeroRelationshipStrength(0, 11, 20 or 40 or 50) tiered on that coolness - under 30
+gives 20 to 30, up to 70 gives 40 to 50, above 70 gives 50 to 60.
+
+### Ceilings, all deliberate
+
+* The supervisor's personality is created here rather than by a workplace refresh, because the
+  port has no SimWorkplace coworker array to generate him into: the first discipline card
+  draws strictness, professionalism, coolness and the starting relationship exactly as
+  PersonGenerator does (below). The decision reads them like the native one.
+* A successful seduction queues the morning-after card the port already has (REPORT 123)
+  instead of ScenarioSupervisorSeduceSuccess' own text, and the rejected-seduction lane's
+  ImpactWorkplacePerformance(-4) has no port model.
+* Insulting the supervisor still writes no journal line. The follow-up recovery found the aim:
+  the lane picks one of three sentences uniformly - #47966 "You called your {0}, {1}, {2}."
+  with journal #69007 "{0}\nI called {1} {2}.", #49529 "You told your {0}, {1}, that {2}
+  {3}." and #49527 "You told your {0}, {1}, that you think {2} {3}." - and then a plain
+  follow-up card titled one of #39989 "Stay classy", #40899 "Take that", #41445 "That's
+  right" or #48825 "You heard me". The argument chains of the two "told" variants were not
+  recovered, so the port writes neither the line nor the follow-up card.
+* The HR discipline card (ScenarioWorkplaceDisciplineHR, 0x298d34c) is not ported. Its own
+  body was not recovered, but its arithmetic was: it adds its seriousness to the same
+  trouble-points field and then fires the job or military termination when
+  int(strictness * multiplier + troublePoints * (10 in the military, else 5)) reaches 26 and
+  GetRandomNumber(0,200) comes in under that score. Because the supervisor card now keeps the
+  same trouble-points field, a ported HR card would inherit the accumulator as it stands.
+* Trouble points are written but never read by the port's own decision, which is the native
+  supervisor arithmetic; in the game they are read only by that HR card.
+* The termination's reaction line is drawn among four of the five native lines: the middle
+  one, #70509 "{0} {1} you!", needs a random-verb pool the recovery could not reach.
+* The warning table's rows with slash alternatives ("<lenient/forgiving/...>") are skipped
+  rather than printed with their slashes, since the family has no pool walker.
+* The termination card's own buttons and the two follow-up cards are folded into the same
+  year: the warning-or-firing decision resolves here and the job is cleared here.
+* The reaction journal lines keep only the literal's tail: #68956 and #69053 open with a {0}
+  the native code fills, and that prefix is not plumbed.
+* #44151 dumps "Try to seduce {0} so {0} forgets" with the same placeholder twice while the
+  native code formats two arguments (the object pronoun and then the subject pronoun). The
+  port prints "Try to seduce him so he forgets", the shape the two arguments imply; a strict
+  single-index Format would print "him so him forgets".
+
+### Verified (test_workplace_discipline.py, US male, a job)
+
+    card:          "Your supervisor, Duke Combs, has called you into his office to discuss
+                    allegations that you attacked your coworker, Beyawnce Gnolls."
+                   title "Workplace Discipline", residue empty
+    allegations:   every drawn sentence matches one of the five templates with {0}, {1} and
+                   {2} filled
+    lanes:         "Apologize for my actions", "Defend my actions", "Insult him",
+                   "Try to seduce him so he forgets"
+    warning:       the appended paragraph matches a cell of a16_supervisor-warnings-enc with
+                   its tokens wildcarded and opens with a capital, and the journal's second
+                   line is "I received a warning."
+    seduce lane:   the successful branch writes "I seduced my supervisor, ..." and the
+                   morning-after card follows
+    cooldown:      two cards in one life are at least four years apart
+    minor:         no card at 17
+    termination:   one seed in the sweep loses the job with "... for disciplinary issues."
+                   in body and journal, a reaction line ahead of it, and the card's happiness
+                   delta -6; the military arm (the dishonorable-discharge line) runs the same
+                   decision and is not measured - it needs the same rare roll with military
+                   service set
+    personality:   drawn on the first card only, from the rates PersonGenerator uses (checked
+                   by eye over the sweep, not asserted) - the decision needs them to exist
+
+The full 114-test suite ran on the binary these notes describe (7a2419d4..., 113 PASS /
+1 FAIL). The failure was test-side and was fixed here without a code change: a hero whose
+horse-racing picker comes up on the last event of his life has no outcome card to follow it,
+so that check now skips a picker with nothing after it instead of demanding a next event. It
+was re-run green.
+
 ## 324. The casino's complimenting gambler
 
 The complaint card (322) got a punter with a grievance; the positive twin - a punter telling the hero the
