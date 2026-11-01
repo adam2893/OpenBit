@@ -50,6 +50,12 @@ for seed in range(1, 41):
         for event in doc["events"]:
             title = event.get("title") or ""
             log = " ".join(event.get("logLines") or [])
+            # A successful seduction of the supervisor inside the workplace
+            # discipline card queues the same morning card (REPORT.en.md 325).
+            if title == "Workplace Discipline" and (event.get("choice") or "").startswith(
+                    "Try to seduce"):
+                pending.append(event["age"])
+                continue
             if title in HOOKUP:
                 if event.get("choice") in ADVANCE or "I seduced my supervisor" in log:
                     pending.append(event["age"])

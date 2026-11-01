@@ -16,8 +16,10 @@ PORT = ROOT / "port" / "build" / "blsim"
 # The engaged partner says fiance/fiancee: RelationshipStatusString covers every
 # status, and the birth card now uses the same word ladder as the other lover cards
 # (REPORT.en.md 338).
+# A single birth, or the multiple the same card reports after its 1-in-50 roll
+# (REPORT.en.md 340): "twin boys", "triplet girls".
 BODY = re.compile(r"^Your (wife|husband|girlfriend|boyfriend|fiance|fiancee), ([^,]+), "
-                   r"just gave birth to a baby (girl|boy)!$")
+                   r"just gave birth to (a baby (?:girl|boy)|(?:twin|triplet) (?:girls|boys))!$")
 
 
 def run(seed, **extra):
@@ -65,7 +67,7 @@ for seed in range(1, 31):
         kid = next((c for c in found if c["age"] == want_age), found[0])
         assert kid["otherParent"] == partner, (seed, kid, partner)
         assert kid["age"] == doc["final"]["age"] - event["age"], (seed, kid, event["age"])
-        assert (kind == "girl") == kid["female"], (seed, kid, kind)
+        assert kind.rstrip("s").endswith("girl") == kid["female"], (seed, kid, kind)
         assert kid["isHeroes"] is True, (seed, kid)
 
 assert births, "no birth in 30 lives with partners"

@@ -23536,6 +23536,63 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 348. The zoo's cleanliness card
+
+One more card the zoo's own age-up pass can deal: the operations manager reports that
+the guests are grumbling about the state of the park.
+
+### The native side
+
+`ScenarioZooAgeUpCleanliness`: `.ctor 0x29a4430`, `RefreshScenario 0x29a443c`,
+`ChoiceSelectedAtIndex 0x29a470c`, `ScenarioIsEligibleForRandomPush 0x29a48b4`,
+pushed from `SimZoo::IncrementAge` at `0x2b59e44`. The zoo pass is an else-if chain, not
+a set of independent tests like the casino's, so a zoo sees at most one of its age-up
+cards a year; this one sits after pregnancy, the employee resignation and bankruptcy and
+before customer service, theft and the merchandise order.
+
+Eligibility, in order: the zoo exists, the hero is 18, the operations manager
+(`SimZoo::GetOperationsManager 0x2b64768`) exists, and
+`SimZoo::GetZooCustodialScore 0x2b65a90` reads under 20.0. Then
+`YearsSinceScenario(#38122 'ScenarioZooAgeUpCleanliness') > 3`. There is no RNG
+anywhere in the card - not in eligibility, not in the refresh, not in the choice - so it
+deals every year the score stays low and the cooldown allows.
+
+Refresh stores the zoo, clears the dismiss button, sets the exterior title to
+`#50857 'Zoo'` and the title to `#15699 'Cleanliness'`. The body is
+`#50431 'Your operations manager, '` + the manager's full name + `#5711 ', is reporting
+that your guests are complaining about the cleanliness of the park.\n\n'` + the
+manager's capitalized subject pronoun + `#3490 " suggests increasing your zoo's
+custodial team to improve things.\n\nWhat will you do?"`. The two labels are
+`#35307 'Reallocate labor resources'` and `#26366 'Ignore '` + the manager's object
+pronoun. Reallocating hands off to `ScenarioZooEmployeeManagerStaffManagement
+0x29e17b0`, the division-of-labor minigame; ignoring does nothing. Whichever answer is
+taken, the journal is the same fixed line, written at the end of the refresh:
+`#30820 'My operations manager suggested I assign more of my work force to custodial
+tasks.'` No money or stat moves.
+
+### The port
+
+`Sim::zooCleanlinessYear` in `src/sim.cpp`, registered as `zoo-cleanliness` with one
+ticket and gated on `ownsZoo`, age 18, not in prison. Because the port has no staff
+roster, the custodial score is a proxy: every hand counts as custodial at five points,
+so a founding park of two never reaches the native threshold of twenty, and only the
+reallocation minigame the port does not have could raise it. The four-year cooldown is
+the native `> 3` read on the hero's own `zooCleanAge` stamp. The card draws nothing from
+any stream, so no new RNG was added and no other family's sequence moved.
+
+Ceilings: the port has no division-of-labor minigame, so both answers end at the same
+journal line and the custodial score never actually rises - the card keeps coming every
+four years the way an ignored native card would. The exterior title is not modelled on
+any port card. The manager is the keeper the park is already given rather than a
+separate operations-manager role.
+
+### Verified
+
+`_re/tools/test_zoo_cleanliness.py` walks fifteen zoo lives and the card deals 183
+times, with four-or-more-year gaps, the two labels, the fixed journal line and no stat
+movement on either answer. A hero without a zoo never sees it.
+The full 136-test suite ran on the binary these notes describe (3f363c95..., 134 PASS / 2 FAIL). Both failures are test-side and were fixed here without a code change: the birth card's sentence check knew only the single-birth wording, but the same card reports twins and triplets after its 1-in-50 roll (REPORT 340), so the check now accepts the multiple forms; and the morning-after check counted only the supervisor hookup cards as earning a morning card, while a successful seduction inside the workplace discipline card queues the same card (REPORT 325), so that check now counts it too. Both were re-run green.
+
 ## 347. The casino's three punter cards
 
 The casino's age-up pass keeps a small cast of regulars, and three of the cards it can

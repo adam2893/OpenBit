@@ -4542,6 +4542,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooYear, nullptr, 1, "zoo"},
         {&Sim::zooLifecycleYear, [](const Life& l) { return l.hero.ownsZoo; }, 2, "zoo-lifecycle"},
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
+        {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-cleanliness"},
         {&Sim::landlordYear, nullptr},
         {&Sim::petYear, nullptr},
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
@@ -11326,6 +11328,48 @@ bool Sim::zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice) {
 // SimZoo::IncrementAge 0x2b59f5c). Someone sneaks into the park and takes one
 // animal: the hero either files a report - a third of which get the animal back -
 // or writes the loss off.
+// ScenarioZooAgeUpCleanliness (.ctor 0x29a4430, RefreshScenario 0x29a443c,
+// ChoiceSelectedAtIndex 0x29a470c, ScenarioIsEligibleForRandomPush 0x29a48b4,
+// pushed at 0x2b59e44). The operations manager reports that the guests are
+// grumbling about the park's cleanliness. There is no RNG anywhere in the card: it
+// deals whenever the zoo is old enough and the custodial score sits under twenty.
+// 'Reallocate labor resources' hands off to the staff-management menu card, which the
+// port has no menu layer for, so both answers only write the journal (REPORT 348).
+bool Sim::zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooEmployee.empty()) ensureZooFields(life);
+  // The native asks SimZoo::GetZooCustodialScore 0x2b65a90 for a value under 20.0.
+  // The port has no staff roster, so every hand counts as custodial: five points a
+  // hand, which a founding park (two hands) never reaches (shortcut).
+  if (double(h.zooStaff) * 5.0 >= 20.0) return false;
+  if (h.zooCleanAge >= 0 && h.age - h.zooCleanAge <= 3) return false;  // YearsSinceScenario > 3
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string manager = h.zooEmployee;
+  const bool managerFemale = h.zooEmployeeFemale;
+  const std::string them = managerFemale ? "her" : "him";
+
+  out.table = "registry:ScenarioZooAgeUpCleanliness";
+  out.title = "Cleanliness";  // #15699
+  out.body = "Your operations manager, " + manager +
+             ", is reporting that your guests are complaining about the cleanliness of the "
+             "park.\n\n" +
+             (managerFemale ? "She" : "He") +
+             " suggests increasing your zoo's custodial team to improve things.";
+  out.cta = "What will you do?";
+  out.options = {"Reallocate labor resources", "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
+                                     : 1;  // the native card is a single yes/no hand-off
+  out.choice = out.options[size_t(pick)];
+  // The journal is one fixed line, written whichever answer is taken (#30820).
+  out.narrative =
+      "My operations manager suggested I assign more of my work force to custodial tasks.";
+  h.zooCleanAge = h.age;
+  return true;
+}
+
 bool Sim::zooTheftYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;
