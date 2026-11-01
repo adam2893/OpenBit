@@ -117,6 +117,14 @@ struct Hero {
   // the port keeps the two facts its own birth card needs.
   bool loverPregnant = false;
   bool loverPregnantByHero = false;
+  // A resolved pregnancy keeps loverPregnant until its own card drains, so no second
+  // pregnancy can start behind a queued birth; this says that card is already owed
+  // (REPORT.en.md 338).
+  bool loverBirthQueued = false;
+  // The partner's fertility, drawn once (REPORT.en.md 338). The native roll reads the
+  // mother's SimPerson+0xa4 float; the port's lover has no person model, so the draw
+  // stands in for it and stays fixed for that partner.
+  int loverFertility = -1;
   // The partner is owed an argue card (REPORT.en.md 153): set when the hero cheats
   // and the partner finds out, drained by the next age-up.
   bool loverArguesCheating = false;

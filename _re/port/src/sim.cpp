@@ -4165,6 +4165,9 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingAircraftScrap) return aircraftScrapYear(life, out, -1);
     if (kind == kPendingMagazineOffer) return fameMagazineYear(life, out, forcedChoice);
     if (kind == kPendingBookOffer) return fameBookYear(life, out, forcedChoice);
+    if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
+    if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
+    if (kind == kPendingBirth) return birthYear(life, out, -1);
     return false;
   }
   ++life.year;
@@ -4207,6 +4210,11 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   magazineOpportunityYear(life);
   // The publisher's offer is rebuilt on the same tick (REPORT.en.md 336).
   bookOpportunityYear(life);
+  // The pregnancy chain (REPORT.en.md 338). The resolution tick runs before the
+  // conception tick so a pregnancy conceived this year cannot resolve in it, and
+  // both push pending cards that the same age-up drains.
+  pregnancyTick(life);
+  conceptionTick(life);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
@@ -4481,7 +4489,6 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::loverBirthControlYear, nullptr, 3},
         {&Sim::loverStopsBirthControlYear, nullptr},
         {&Sim::paternityCourtOrderYear, nullptr, 4},
-        {&Sim::birthYear, nullptr, 6},
         {&Sim::loverCounselingPushYear, nullptr, 4},
         {&Sim::loverCallOffEngagementYear, nullptr},
         {&Sim::loverElopeYear, nullptr, 6},

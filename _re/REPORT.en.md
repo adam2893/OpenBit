@@ -23536,6 +23536,133 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 338. The pregnancy card and the miscarriage
+
+A pregnancy in this game is not a stat: it is a SimPregnancy object on the mother, and it is
+played out over three beats. The conception roll happens on the hero's own yearly tick, the
+card asks about it, and only on the *next* age-up does the game decide whether the baby
+survives. The port had the last beat (REPORT.en.md 151) behind a shortcut coin and no card
+before it. This section takes the roll, the card and the loss.
+
+### The native side
+
+The roll is `SimPregnancy::GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother`
+(vaddr `0x2b3a438`). Its two gates are the mother's age and her fertility: the age
+probability comes from `GetNaturalConceptionAgeProbability` (`0x2b3a730`), whose table is
+read straight out of `.rodata` -- 0% under 13, 45% for 13-17, 70% for 18-34, then 40%, 20%,
+6% and 3% for the next four bands, and 0% from 55. `HasBasePregnancyEligibility`
+(`0x2b3a604`) adds the rest: the mother is female, the father is not, the mother is 13 to 55,
+she is not already pregnant (`SimPerson+0x48` is null), she is not on birth control
+(`+0x50`), and neither parent is a vampire. The arithmetic itself is two draws:
+`GetRandomNumber(0,100)` against the age percentage, then `GetRandomNumber(0,120)` against
+the mother's `Att_fertility` (`+0xa4`). Any of the fifteen creation sites may call it, and
+the hero's own lover pair is one of them, on `SimHero::IncrementAge`.
+
+`ScenarioPregnancy` (`RefreshScenario 0x2573b04`, `ChoiceSelectedAtIndex 0x2574344`) sets
+only three fields: the body, the journal and the choice array. The body is a sentence chosen
+by the pregnancy's relation flags -- `You are pregnant!` (`#47766`) for the hero-mother and
+the mother-type ids 2 and 3, `Your {0}, {1}, is pregnant with your baby!` (`#50740`) when the
+mother is the current lover, `... is pregnant with someone else's baby!` (`#50739`) when she
+is not the father's, and `You are pregnant with your {0}, {1}, baby!` (`#47765`) for a
+hero-mother whose partner is the father. The sentence goes into the standard wrapper
+`{0}\n\nWhat will you do?` (`#68715`). The journal is the matching first-person line -- for
+the lover-mother branch `{0} became pregnant with my baby!` (`#69869`) -- and the choice
+array is stored in construction order: `Keep the baby` (`#28214`), `Don't keep the baby`
+(`#18038`), and only when the pregnancy type is 1 and a monetization flag is set, `Use the
+Golden Pacifier` (`#45179`). Nothing is randomized.
+
+The classifier lowercases the chosen label and looks for `don't`; everything else that does
+not contain `pacifier` is the keep lane. The decline clears the pregnancy object on both
+parents, fires an unnamed `-6` impact through the person vtable slot `+0x508`, and logs one
+of four lines: `You chose not to keep the baby!` (`#48177`) or `We chose not to keep the
+baby!` (`#46097`), each with a `{0} ` prefix variant (`#69542` / `#69716`). The pacifier
+lane is a paywall: without the entitlement the game opens
+`ScenarioMiniPaywall(Scenario_Pregnancy)` (`#38206`) and rebuilds the card; with it, the card
+logs `{0} insisted on keeping the baby!` (`#70059`) under the follow-up title `Overruled`
+(`#33103`).
+
+On the next age-up the game calls the virtual `ShouldSufferMiscarriage`
+(`SimPerson::ShouldSufferMiscarriage`, vaddr `0x2c47514`) -- which is why no direct BL
+reaches it -- and pushes `ScenarioMiscarriage` (`0x2a6378c`) when it answers true,
+`ScenarioBirth` (`0x2a637b8`) when it answers false. The two are mutually exclusive and the
+miscarriage is tested first. The base rate comes from the mother's age: 15% under 18, 7% up
+to 29, 8% up to 34, and `3*age-105+8` percent from 35 on (23% at 40, 53% at 50). Her stat
+average multiplies it -- doubling below 20, `x1.5` below 40, `x0.75` below 80, `x0.5` above
+it -- and `GetRandomNumber(0,101)` is compared against the product. The Golden Pacifier is
+consulted here too: with it, the answer is forced to false.
+
+`ScenarioMiscarriage` (`RefreshScenario 0x25730a8`, `DismissSelected 0x25739c0`) has no
+choice override at all: it is a dismiss-only card, and its effects fire in the refresh. The
+title is `Miscarriage` (`#30203`) with the exterior `Baby` (`#12664`), and the sentence
+family follows the same relation split as the pregnancy card: `You suffered a {0} miscarriage
+and lost the baby!` (`#49447`) for the hero-mother and `Your {0}, {1}, suffered a {2}
+miscarriage and lost the baby!` (`#50784`) for the lover-mother. The `{2}` slot is a
+descriptor: `first-trimester` (`#58959`) or `second-trimester` (`#65123`) on a 1-in-4 draw,
+and a further 1-in-21 replaces it with `blighted ovum` (`#55036`). One draw in ten takes the
+rare branch instead: the title becomes `Pregnancy Loss` (`#34482`) and the sentence names a
+typed loss drawn from `ectopic pregnancy` (`#58054`), `molar pregnancy` (`#62496`),
+`stillbirth` (`#66149`) or `chemical pregnancy` (`#55704`), with the indefinite article
+added and the body `... had {0} and lost the baby!` (`#50683`). The father who is the current
+lover takes a `-2` impact, and the mother's fertility is multiplied by `0.8`.
+
+### The port
+
+`src/fam/birth.cpp` now plays the whole chain instead of one coin. `Sim::conceptionTick` runs
+on the yearly tick: an adult hero with a partner of 13 to 55, no pregnancy in flight and no
+birth control is rolled on `loverRng_` -- the age percentage first, then the partner's
+fertility, which is drawn once as `0..100` and stored on the hero because the port's partner
+has no person model. On success it pushes `kPendingPregnancy`. `Sim::pregnancyYear` renders
+the card: title `Pregnancy` (`#34481`), the lover-mother sentence with the port's own
+relationship word (girlfriend, boyfriend, fiancee, fiance, wife, husband), the wrapper, the
+journal and the two buttons. `Sim::pregnancyTick`, which runs *before* the conception tick,
+applies the recovered miscarriage arithmetic on the next age-up and queues either
+`kPendingMiscarriage` or `kPendingBirth`; the pregnancy itself stays in flight until that
+card drains, because the native object lives until the birth card is built and a second
+conception behind a queued card would misread whose child was born. `Sim::miscarriageYear`
+renders the dismiss-only card with both the trimester and the rare typed-loss branch;
+`Sim::birthYear` is the arrival from REPORT.en.md 151, now reached as a pending card rather
+than a family of its own, and its old 1-in-12 coin is gone.
+
+The decline lane costs the hundred-point step of the impact scale, which is what `-6` maps
+to, and appends `We chose not to keep the baby!` to the year's log.
+
+### Ceilings
+
+The mother is always the partner: the hero-mother lane needs the port's own pregnancy state,
+its journals and its birth card, none of which exist here, so the conception tick only runs
+for a male hero with a female partner. The partner's fertility, her stats (for the
+miscarriage multiplier) and her birth-control flag are not modelled, so her fertility is
+drawn once at 0-100, the hero's stat average stands in for hers, and the hero's
+`onBirthControl` stands for the couple's. The Golden Pacifier is left out of the card: its
+gate reads a monetization flag through `GameState`, which the simulation does not hold.
+Multiples are not modelled: the native birth card rolls a denominator of 50 (8 for donor or
+surrogate pregnancies) for twins and triplets, and the port always delivers one child. The
+naming dialogue is a pair of dropdowns fed by the country's name arrays; the port names the
+child from its own pool instead, which is the same shortcut REPORT.en.md 151 already
+recorded. The five `GetRandomNumber` calls the native classifier makes below the labels, the
+`Life::GetAllChildrenWithLoverAndMustBeNatural` filter and the relationship-strength
+arithmetic are not reproduced, and neither are the achievements the three cards award.
+
+### Verified
+
+`_re/tools/test_pregnancy.py` walks sixty fifty-age lives on the binary these notes describe.
+It measures 81 pregnancy cards (43 kept, 38 declined), 37 births, 4 miscarriages and no rare
+typed loss -- that branch is implemented but the sweep did not draw it. Every card body
+matches `Your <word>, <name>, is pregnant with your baby!\n\nWhat will you do?`, its journal
+is the same partner's name in `{0} became pregnant with my baby!`, and no card carries a
+pacifier option. A kept card moves no stat; a declined card moves exactly the hundred
+happiness points and logs `We chose not to keep the baby!`. The test walks each life as a
+state machine: a kept card opens a pregnancy, no second card may open while one is open, and
+every birth body and every miscarriage (with its trimester sentence and matching
+first-person line) closes the one that is. No card fires below eighteen, and a hero with no
+partner conceives nothing.
+
+The full 126-test suite ran on the binary these notes describe (fe46c41e..., 125 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the wheel has
+turned wider as the newer families joined, so an ambush elopement card is rarer per life and
+test_lover_elope now sweeps sixty seeds instead of twenty (re-run: 16 wedding plans and 6
+elopements over seeds 1-60).
+
 ## 337. The hero's own attack
 
 Every card in these notes so far has had somebody else do something to the hero. This

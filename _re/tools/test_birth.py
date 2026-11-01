@@ -13,8 +13,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-BODY = re.compile(r"^Your (wife|husband|girlfriend|boyfriend), ([^,]+), just gave "
-                   r"birth to a baby (girl|boy)!$")
+# The engaged partner says fiance/fiancee: RelationshipStatusString covers every
+# status, and the birth card now uses the same word ladder as the other lover cards
+# (REPORT.en.md 338).
+BODY = re.compile(r"^Your (wife|husband|girlfriend|boyfriend|fiance|fiancee), ([^,]+), "
+                   r"just gave birth to a baby (girl|boy)!$")
 
 
 def run(seed, **extra):

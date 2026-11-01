@@ -32,7 +32,9 @@ def run(seed, **extra):
 
 
 lanes = collections.Counter()
-for seed in range(1, 21):
+# 60 seeds, not 20: the wheel turned wider as the newer families joined (the pregnancy
+# chain of REPORT 338 among them), so an ambush elopement card is rarer per life.
+for seed in range(1, 61):
     doc = run(seed)
     for event in doc["events"]:
         body = event.get("body") or ""
