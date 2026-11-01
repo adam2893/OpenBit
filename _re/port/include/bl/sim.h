@@ -725,6 +725,13 @@ class Sim {
   // ScenarioCasinoAgeUpGamblerComplimentGame (REPORT.en.md 324), the complaint
   // card's positive twin.
   bool casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice);
+  // The casino's mob favours (REPORT.en.md 345): a made man who owns a house
+  // gets asked to launder take and to lend out a storage room for an
+  // interrogation. Both draw their member and their money on their own stream.
+  void casinoMobDraw(std::string& name, std::string& first, std::string& nick,
+                     bool& female);
+  bool casinoMafiaLaunderYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoMafiaInterrogYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
   bool carRepairYear(Life& life, AgeUp& out, int forcedChoice);
   void ensureCarFields(Life& life);
@@ -1164,6 +1171,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino gambler complaint card's own draws (REPORT.en.md 322): the gambler's
   // tier, sex and the coin that decides whether the card fires.
   Rng casinoCardRng_;
+  Rng casinoMobRng_;  // the mob favour cards' own stream (REPORT.en.md 345)
   // The car's damage roll, its part pick and the repair card's own draw (REPORT.en.md 323).
   Rng carRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)

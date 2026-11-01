@@ -71,9 +71,20 @@ for seed in range(1, 61):
             assert lines[-2] == "Bank Robbery: You're thinking about robbing a bank.", seed
             assert lines[-1].startswith("Pick your getaway -> "), seed
             assert lines[-1].endswith(choice), (seed, lines)
-            # The result card answers the pick before the wheel gets another year.
-            follow = events[index + 1] if index + 1 < len(events) else {}
-            assert (follow.get("title") or "") in ("Heist: Successful", "Police"), (seed, follow.get("title"))
+            # The result card answers the pick in the same year, but a pending card
+            # can be drained between the two (REPORT 342, 345), so walk forward
+            # over this age's events instead of trusting the very next one.
+            follow = None
+            for later in events[index + 1:]:
+                if later.get("age") != event.get("age"):
+                    break
+                if (later.get("title") or "") in ("Heist: Successful", "Police"):
+                    follow = later
+                    break
+            if follow is None:
+                # The card can be the last card of the life: the hero's death ends
+                # the run before the result card is dealt.
+                assert index == len(events) - 1, (seed, event.get("age"))
             continue
         if title == "Heist: Successful":
             wins += 1

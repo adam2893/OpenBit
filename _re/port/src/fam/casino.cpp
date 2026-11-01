@@ -442,6 +442,196 @@ bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// --------------------------------------------- the casino's mob favour cards --
+// ScenarioCasinoAgeUpMafiaMemberLaunder and ...MafiaMemberInterrogation
+// (REPORT.en.md 345). Both are pushed from SimCasino::IncrementAge when the house
+// has a mob member attached and the hero has already used one to lean on a
+// punter (SimCasino+0x99). The port keeps no per-casino member list, so the hero
+// being made and owning the house stands for the attachment (shortcut), and the
+// member is a colleague of the hero's family with a nickname out of the mob's
+// own table.
+void Sim::casinoMobDraw(std::string& name, std::string& first, std::string& nick,
+                        bool& female) {
+  female = casinoMobRng_.chance(0.5);
+  name = mafiaToken("mafia-colleague");
+  // The colleague token already scoped the pronoun of the cards' own person; make
+  // sure the gender the cards print and the gender the token picked agree.
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = female;
+  if (name.empty()) name = "a man from the family";
+  const size_t space = name.find(' ');
+  first = space == std::string::npos ? name : name.substr(0, space);
+  const std::string last = space == std::string::npos ? std::string() : name.substr(space + 1);
+  nick.clear();
+  if (ensureTable("a16_mafia-nicknames-enc")) {
+    const Table& t = tbl("a16_mafia-nicknames-enc");
+    const std::string country = hero_ == nullptr ? std::string() : hero_->mafiaCountry;
+    const auto gather = [&](bool useCountry) {
+      std::vector<size_t> out;
+      for (size_t i = 0; i < t.size(); ++i) {
+        const std::string c = trim(t.at(i, "Mob Country"));
+        if (useCountry && !c.empty() && !country.empty() && c != country) continue;
+        const std::string g = trim(t.at(i, "Gender"));
+        const bool saysFemale = g.find("emale") != std::string::npos;
+        const bool saysMale = g.find("ale") != std::string::npos && !saysFemale;
+        if (g.empty() || (!saysFemale && !saysMale) || saysFemale == female) out.push_back(i);
+      }
+      return out;
+    };
+    // The nicknames are keyed on the mob countries (it, ru, ie, jp, mx, cn), so a
+    // hero whose family has no rows there falls back to the whole gender-matched
+    // pool rather than to no nickname at all (shortcut).
+    std::vector<size_t> pool = gather(true);
+    if (pool.empty()) pool = gather(false);
+    if (!pool.empty()) {
+      const size_t r = pool[size_t(casinoMobRng_.below(uint32_t(pool.size())))];
+      std::string cell = trim(t.at(r, "Nickname"));
+      // The nickname cells carry the member's own first and last name, so fill
+      // both here rather than letting the card's resolver answer them with some
+      // other person's name.
+      const auto fill = [&](const std::string& token, const std::string& value) {
+        size_t at = cell.find(token);
+        while (at != std::string::npos) {
+          cell.replace(at, token.size(), value);
+          at = cell.find(token, at + value.size());
+        }
+      };
+      fill("<first-name>", first);
+      fill("<last-name>", last.empty() ? first : last);
+      if (cell.find('<') != std::string::npos) cell.clear();  // a token the table does not define
+      nick = cell;
+    }
+  }
+  if (nick.empty()) nick = first;
+}
+
+bool Sim::casinoMafiaLaunderYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || !h.mafia || h.age < 18 || h.inPrison) return false;
+  // Life::YearsSinceScenario('ScenarioCasinoAgeUpMafiaMemberLaunder') > 1.
+  if (h.casinoLaunderAge >= 0 && h.age - h.casinoLaunderAge <= 1) return false;
+  if (forcedChoice < 0 && !casinoMobRng_.chance(0.12)) return false;
+  hero_ = &h;
+  life_ = &life;
+  std::string name, first, nick;
+  bool female = false;
+  casinoMobDraw(name, first, nick, female);
+  // The offer is a localised 100k-500k band rounded to ten and the cut is 10-20%
+  // of it, also rounded to ten. The port has no country pricing, so the dollar
+  // band is used as it stands (shortcut).
+  const long long amount = (100000 + (long long)casinoMobRng_.below(400001)) / 10 * 10;
+  const int pct = 10 + int(casinoMobRng_.below(11));
+  const long long cut = ((amount * pct) / 100) / 10 * 10;
+
+  h.casinoLaunderAge = h.age;
+  const std::string poss = female ? "her" : "his";
+  const std::string subj = female ? "She" : "He";
+  out.table = "registry:ScenarioCasinoAgeUpMafiaMemberLaunder";
+  out.title = "Favor";  // #19974
+  out.body = "\"" + nick + "\" " + name + " is asking for a favor on behalf of " +
+             poss + " Mafia family.";  // #2517 #898
+  out.body += "\n\n" + subj +
+              " asks if you could launder some money through your casino and "
+              "promises to give you a cut if you agree.";  // #1352
+  out.cta = "What will you do?";
+  out.options = {"Do it", "Refuse"};  // #17913 #35505
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
+                                     : int(casinoMobRng_.below(2));
+  out.choice = out.options[pick];
+  // The refresh's journal. Its relationship-status slot (member vtable +0x4f8) is
+  // unrecovered, so the punter tier of the floor's own table stands in (shortcut).
+  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
+                                 "High Roller"};
+  int style = 3;
+  if (!h.casinoGamblerStyles.empty()) {
+    style = h.casinoGamblerStyles[size_t(casinoMobRng_.below(
+        uint32_t(h.casinoGamblerStyles.size())))];
+  }
+  if (style < 1) style = 1;
+  if (style > 5) style = 5;
+  out.narrative = std::string("My casino's ") + kTiers[style - 1] + ", \"" + nick +
+                  "\" " + name + ", asked me to launder $" + std::to_string(amount) +
+                  " through my casino and offered me $" + std::to_string(cut) +
+                  " to do so.";
+
+  if (pick == 0) {
+    h.money += cut;
+    h.casinoBank += amount;
+    h.casinoMobMood += 2;   // member slot +0x508
+    if (h.casinoMobMood > 100) h.casinoMobMood = 100;
+    h.casinoMobView -= 2;   // member slot +0x738
+    if (h.casinoMobView < 0) h.casinoMobView = 0;
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    out.narrative += "\nI accepted the bribe.";  // #238
+  } else {
+    h.casinoMobMood -= 3;
+    if (h.casinoMobMood < 0) h.casinoMobMood = 0;
+    h.casinoMobView += 2;
+    if (h.casinoMobView > 100) h.casinoMobView = 100;
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    out.narrative += "\nI refused the bribe.";  // #390
+  }
+  return true;
+}
+
+bool Sim::casinoMafiaInterrogYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || !h.mafia || h.age < 18 || h.inPrison) return false;
+  // Life::YearsSinceScenario('ScenarioCasinoAgeUpMafiaMemberInterrogation') > 1.
+  if (h.casinoInterrogAge >= 0 && h.age - h.casinoInterrogAge <= 1) return false;
+  if (forcedChoice < 0 && !casinoMobRng_.chance(0.12)) return false;
+  hero_ = &h;
+  life_ = &life;
+  std::string name, first, nick;
+  bool female = false;
+  casinoMobDraw(name, first, nick, female);
+  const long long offer = (100000 + (long long)casinoMobRng_.below(400001)) / 10 * 10;
+
+  h.casinoInterrogAge = h.age;
+  const std::string poss = female ? "her" : "his";
+  const std::string subj = female ? "She" : "He";
+  const std::string obj = female ? "her" : "him";
+  out.table = "registry:ScenarioCasinoAgeUpMafiaMemberInterrogation";
+  out.title = "Favor";  // #19974
+  out.body = name + " is asking for a favor on behalf of " + poss +
+             " Mafia family.";  // #2517 #898
+  out.body += "\n\n" + subj + " asks if " + poss +
+              " Mafia family members could \"interrogate\" someone in one of your "
+              "casino's empty storage rooms and offers you some cash if you "
+              "agree.";  // #1350 #897
+  out.cta = "What will you do?";
+  out.options = {"Do it", "Refuse"};  // #17913 #35505
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
+                                     : int(casinoMobRng_.below(2));
+  out.choice = out.options[pick];
+  out.narrative = name + " asked me to let " + obj +
+                  " interrogate someone in my casino's empty storage room. " +
+                  subj + " offered me $" + std::to_string(offer) + " to let " +
+                  obj + ".";
+
+  if (pick == 0) {
+    h.money += offer;
+    h.casinoMobMood += 2;   // member slot +0x508
+    if (h.casinoMobMood > 100) h.casinoMobMood = 100;
+    h.casinoMobView -= 2;   // member slot +0x738
+    if (h.casinoMobView < 0) h.casinoMobView = 0;
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    out.narrative += "\n\nI accepted the bribe";  // #71
+  } else {
+    h.casinoMobMood -= 3;
+    if (h.casinoMobMood < 0) h.casinoMobMood = 0;
+    h.casinoMobView += 2;
+    if (h.casinoMobView > 100) h.casinoMobView = 100;
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    out.narrative += "\n\nI refused the bribe";  // #83
+  }
+  return true;
+}
+
 // DataHub::GetTaxRateForUnadjustedIncomeInCountry is the US ladder scaled by the
 // owner country's TopTaxRate over the US one. DataCountry has no CSV export in
 // this build (no table carries a tax column), so the scale is 1.0 and the hero

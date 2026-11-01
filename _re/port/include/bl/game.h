@@ -493,6 +493,14 @@ struct Hero {
   int casinoLedgerYear = -1;             // the last year the books were run
   int casinoBankruptYears = 0;           // consecutive years the casino pot ended negative
   int casinoComplimentAge = -1;          // age the compliment card last fired (5-year cooldown)
+  // The mob's man at the house (REPORT.en.md 345). The native cards hold one
+  // SimCasinoMafiaMember with its own person record; the port has no member
+  // entity, so the two stats his virtual slots carry (0x508 and 0x738) live on
+  // the hero, and the two cards keep their own one-year cooldowns.
+  int casinoMobMood = 50;                // the member's own mood, +0x508
+  int casinoMobView = 50;                // how the member sees the hero, +0x738
+  int casinoLaunderAge = -1;             // the launder card last fired
+  int casinoInterrogAge = -1;            // the interrogation card last fired
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
   std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for

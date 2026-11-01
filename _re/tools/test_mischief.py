@@ -50,14 +50,23 @@ BASE = {"country": "United States", "gender": "male", "ages": 40, "cash": 500}
 PROMPT_TAIL = " wants to get up to some mischief with you.\n\nWhat will you do?"
 
 
-def card_at(spec, choice, limit=60):
-    """Force `choice` on the first step of a run that shows the mischief card."""
-    for pad in range(1, limit):
-        doc = run(dict(spec, choices=[-1] * pad + [choice]))
-        events = doc["events"]
-        if pad < len(events) and events[pad].get("table") == CARD:
-            return pad, events[pad]
-    raise AssertionError("no mischief card in %d steps" % limit)
+def card_at(spec, choice, seeds=40, limit=80):
+    """A life in which the mischief card is answered with `choice`.
+
+    `choices[k]` answers the k-th card of the life (script.cpp keeps one entry per
+    card), so a forced answer can move the cards after it. The seed and the forced
+    position are both searched: every family added to the wheel changes which
+    lives ever see this card (REPORT 285, 345), and the auto-policy answers the
+    refusal itself, so only the accept lane proves the force took.
+    """
+    want = ACCEPT if choice == 0 else REFUSE
+    for seed in [spec["seed"]] + [s for s in range(1, seeds + 1) if s != spec["seed"]]:
+        for pad in range(1, limit):
+            doc = run(dict(spec, seed=seed, choices=[-1] * pad + [choice]))
+            for event in doc["events"]:
+                if event.get("table") == CARD and event.get("choice") == want:
+                    return pad, event
+    raise AssertionError("no forced mischief card over %d lives" % seeds)
 
 
 def asked_name(body):

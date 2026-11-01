@@ -23536,6 +23536,145 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 345. The casino's two mob favours
+
+A made man who owns a casino gets asked for things. The native game pushes two
+cards from the house's own age-up queue: the family wants a cut of its take
+laundered through the casino's books, and the family wants an empty storage room
+and a free hand for an hour. Both sit behind a flag of their own - the hero must
+have already leant a mafia member out to rough up a gambler - so a hero who only
+joined the family and bought a casino never sees either.
+
+### The native side
+
+**Laundering.** `ScenarioCasinoAgeUpMafiaMemberLaunder` (ctor `0x35775a4`,
+`RefreshScenario 0x3576890`, `ChoiceSelectedAtIndex 0x3576fcc`,
+`ScenarioIsEligibleForRandomPush 0x357749c`; fields `+0x170` narrative,
+`+0x178` casino, `+0x180` cut, `+0x188` member, `+0x190` amount) is pushed from
+`SimCasino::IncrementAge` at `0x2aad298` (eligibility) and `0x2aad2b8` (ctor).
+The gate runs in this order: a casino exists; `SimCasino::GetMafiaMembers` has at
+least one member; `SimCasino+0x99` is set; the hero is 18 or older; the hero is
+not in prison; and `Life::YearsSinceScenario` against the class-name literal
+#37058 is greater than one.
+
+`RefreshScenario` draws one member at random and, in local currency, an amount
+between 100,000 and 500,000 rounded to the nearest ten
+(`DataCountry::GetLocalCostForAmountWithMinimumCostAndRoundTo` then
+`GameReference::GetRoundedNumber(..., -1.0)`), then the cut as
+`amount * GetRandomNumber(10, 21) / 100` rounded the same way - so 10 to 20% of
+the amount. The title is #19974 "Favor", the exterior title is never written, and
+the body is built from literals:
+
+> " #4259, the member's own nickname, " #4262, #2517
+> " is asking for a favor on behalf of ", `PronounStringForType(member, 1)`,
+> #898 " Mafia family.", #46, `PronounStringForType(member, 5)`, #1352
+> " asks if you could launder some money through your casino and promises to give
+> you a cut if you agree.\n\nWhat will you do?"
+
+The two figures also go into a table dictionary under #11284 "Amount" and #50123
+"Your Cut", in that order. The journal, #30741 on the front, is
+`"My casino's " + <status> + ', "' + nickname + '" ' + <name> + ", asked me to
+launder " + <amount> + " through my casino and offered me " + <cut> + " to do so."`
+(#5283, #5395, #3575, #3658). The choices are stored in order - #17913 "Do it",
+#35505 "Refuse" - and dispatch on a lowercased `Contains` of "do" (#57641) and
+"refuse" (#64441).
+
+Doing it moves the member's `+0x508` up two, calls
+`SimCasinoGambler::ImpactAddictionlevel(member, -2)`, moves `+0x738` down two,
+pays the cut into the hero's bank balance, puts the full amount into the casino's
+bank balance, and appends #238 "\nI accepted the bribe." to the journal.
+Refusing puts a feedback card in front of the next scenario - a title drawn from
+#25931 "I'll remember that...", a body of #3281 and #2190 with the member's own
+pronouns, and a relationship bar graph - then moves `+0x508` down three, calls
+`ImpactAddictionlevel(-2)`, moves `+0x738` up two, and appends #390
+"\nI refused the bribe.".
+
+**The interrogation.** `ScenarioCasinoAgeUpMafiaMemberInterrogation` (ctor
+`0x3576884`, `RefreshScenario 0x3575c08`, `ChoiceSelectedAtIndex 0x357627c`,
+eligibility `0x357677c`; fields `+0x170` narrative, `+0x178` casino, `+0x180`
+member, `+0x188` offer) is pushed at `0x2aad328` / `0x2aad360` through the same
+gate, against its own class-name literal #37057. The offer is the same localized
+100,000 to 500,000 rounded to ten, the title is the same "Favor", and the body
+leaves the nickname out:
+
+> <name> + #2517 + `PronounStringForType(member, 1)` + #898 + #46 +
+> `PronounStringForType(member, 5)` + #1350 " asks if " +
+> `PronounStringForType(member, 1)` + #897 " Mafia family members could
+> \"interrogate\" someone in one of your casino's empty storage rooms and offers
+> you some cash if you agree.\n\nWhat will you do?"
+
+Its journal is <name> + #1344 " asked me to let " + `Pronoun(2)` + #2466
+" interrogate someone in my casino's empty storage room. " + `Pronoun(5)` +
+#2884 " offered me " + <offer> + #3717 " to let " + `Pronoun(2)` + #6312 ".";
+the choices are the same two. Doing it pays the offer into the hero's bank
+balance, moves `+0x508` up two, calls `ImpactAddictionlevel(-2)`, moves `+0x738`
+down two, and appends #71 "\n\nI accepted the bribe" (no full stop). Refusing is
+the launder refusal's shape again: `+0x508` down three, addiction down two,
+`+0x738` up two, journal #83 "\n\nI refused the bribe".
+
+Both accepted branches then roll `GetRandomNumber(0, 101)` and, on 20 or less
+(about 20.8% of the time), chain a police-investigation card in front of the next scenario with
+the member and the money as its fields. That card's identity is inferred from its
+field shape and the shared follow-up, not from a proven literal.
+
+### The port
+
+`Sim::casinoMafiaLaunderYear` and `Sim::casinoMafiaInterrogYear` live in
+`src/fam/casino.cpp` beside the other two casino cards. They gate on
+`h.ownsCasino && h.mafia`, need the hero 18 and out of prison, keep their own
+cooldowns (`h.casinoLaunderAge`, `h.casinoInterrogAge`, at least two years
+between asks) and coin 12% a year each off a stream of their own,
+`casinoMobRng_`, because `casinoCardRng_` already drives the complaint and
+compliment cards and extra draws there would move their sequences.
+
+The member is drawn by `mafiaToken("mafia-colleague")` for the name and gender,
+and the nickname from `a16_mafia-nicknames-enc` filtered by the hero's own
+`Mob Country` and then by gender; the table's `<first-name>` and `<last-name>`
+tokens are filled from the drawn member, and a country with no rows in the table
+falls back to the whole gender-matched pool. The member's relationship-status
+getter (`+0x4f8`) is not recovered, so the journal uses one of the casino's own
+five tier words, Beginner through High Roller, where the native prints that
+string. Money prints as a dollar sign and digits where the native runs
+`CurrencyStringForAmountWithBigNumberShorthand`, and the two table rows ("Amount",
+"Your Cut") are not carried because a port card has no table surface. The two
+stat slots the native moves live on the hero as `h.casinoMobMood` and
+`h.casinoMobView`.
+
+### Ceilings
+
+- The two vtable slots behave as a mood and as an opinion of the hero (+2/-3 and
+  -2/+2); neither is a named method in the dump, so the port keeps them as two
+  hero-side counters that no other card reads.
+- The member's `+0x4f8` status string, the nickname's pool order when the hero's
+  mob country has no rows, and the police follow-up card are all unrecovered or
+  inferred. The follow-up is not pushed.
+- The refusal's feedback card and its relationship bar graph are not reproduced;
+  the port writes the journal line and moves the two counters only.
+- The gate's `SimCasino+0x99` (hero has already used a member to rough up a
+  gambler) has no port equivalent, so membership of the family stands in for it.
+- Amounts are drawn flat in dollars; the native converts them with the hero's
+  country cost table first.
+
+### Verified
+
+`_re/tools/test_casino_mob.py` walks twenty lives with a casino and the family.
+Measured: `cards: {'launder': 14, 'interrog': 10} | lanes: {'Do it': 13, 'Refuse': 11}`.
+Every card is checked for the title "Favor", the two choices, an empty residue,
+all-zero stat deltas, the body's own wording, the journal line's name and
+nickname agreeing with the body, the answer's tail line, and a two-year gap
+before the same favour returns. Controls: a hero with a casino and no family, and
+a hero in the family with no casino, get neither card. Same seed, answering "Do
+it" leaves the hero richer than answering "Refuse".
+The full 133-test suite ran on the binary these notes describe (ca4a5271..., 131 PASS /
+2 FAIL). Both failures are test-side and were fixed here without a code change: the
+mischief card's helper pinned one seed and assumed the card would sit at the step whose
+answer it forced, but a life's choices are indexed by card, so it now searches lives for
+a forced card that really carries the forced answer; and the robbery card's result can
+now be separated from the pick by a drained pending card, or never arrive at all when
+the pick is the last card of the life, so that check walks forward over the age's own
+events. Both were re-run green.
+
+
 ## 344. The zoo's animals, pregnant and dead
 
 Every card in the park's life cycle names one animal: the vet reports that a
