@@ -1077,7 +1077,8 @@ struct Hero {
   int supRelation = -1;
   int supInsulted = 0;      // times the discipline card's insult lane ran
   int troublePoints = 0;    // SimWorkplace's own counter, fed by the card's seriousness
-  int disciplineAge = -1;   // the last year the discipline card fired
+  int disciplineAge = -1;
+  int attackAge = -1;   // the last year the hero attacked somebody (REPORT 337)   // the last year the discipline card fired
   // The walk's animal encounter (REPORT.en.md 326). The kill is handed to
   // checkDeath as a cause rather than written here, the way the other card-owned
   // deaths are.

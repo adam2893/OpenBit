@@ -871,6 +871,8 @@ class Sim {
   bool supervisorYear(Life& life, AgeUp& out, int forcedChoice);
   // The supervisor discipline card, REPORT.en.md 325.
   bool workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice);
+  // The hero attacking somebody (REPORT.en.md 337): ScenarioCustomAttack.
+  bool customAttackYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioAgentCompliment: the agent's dismiss-only feedback card (REPORT.en.md 327).
   bool agentComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   // REPORT.en.md 326: the walk's animal encounter, the one animal card the game
@@ -1060,7 +1062,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The coworker family's own stream (REPORT.en.md 105).
   Rng cwRng_;
   Rng supRng_;
-  Rng discRng_;  // the discipline card's own stream
+  Rng discRng_;
+  // The attack card's own stream (REPORT.en.md 337).
+  Rng atkRng_;  // the discipline card's own stream
   Rng animalRng_;  // the animal encounter's own stream
   Rng huntAnimalRng_;  // the vampire hunt animal card's own stream
   Rng aircraftRng_;    // the aircraft's age, wear, breakdowns and its cards (REPORT.en.md 334)

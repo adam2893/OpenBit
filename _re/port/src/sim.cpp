@@ -701,6 +701,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       discRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x1d8e4e27c47d124fULL),
+      atkRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3c6ef372fe94f82bULL),
       animalRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3f84d5b5b5470917ULL),
       huntAnimalRng_(seed ^ 0xbb67ae8584caa73bULL ^ 0x510e527fade682d1ULL),
       aircraftRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0xa54ff53a5f1d36f1ULL),
@@ -4457,6 +4458,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::coworkerYear, nullptr},
         {&Sim::supervisorYear, nullptr},
         {&Sim::workplaceDisciplineYear, nullptr, 2, "workplace-discipline"},
+        {&Sim::customAttackYear, nullptr, 2, "custom-attack"},
         {&Sim::animalEncounterYear, nullptr, 1, "animal-encounter"},
         {&Sim::vampireHuntAnimalYear, [](const Life& l) { return l.hero.vampire; }, 1, "vampire-hunt-animal"},
         {&Sim::teamBuildingYear, nullptr},
@@ -27279,4 +27281,128 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+
+// The token forms a16_assaults-enc writes inline ('<you/I> tugged on <his/her>
+// earlobes'). They are not bracket tokens (no dictionary fills them): each one is a
+// pair of forms the sentence needs, one for the card body and one for the journal,
+// and the pair also carries the gender of the person at the other end. REPORT 337.
+static std::string attackFill(const std::string& text, bool narrative, bool victimFemale) {
+  const std::string you = narrative ? "I" : "You";
+  const std::string your = narrative ? "my" : "your";
+  std::string s;
+  s.reserve(text.size());
+  for (size_t i = 0; i < text.size();) {
+    if (text[i] != '<') { s += text[i++]; continue; }
+    const size_t close = text.find('>', i);
+    if (close == std::string::npos) { s += text.substr(i); break; }
+    const std::string token = text.substr(i + 1, close - i - 1);
+    if (token == "you/I") s += you;
+    else if (token == "your/my") s += your;
+    else if (token == "his/her") s += victimFemale ? "her" : "his";
+    else if (token == "him/her") s += victimFemale ? "her" : "him";
+    else if (token == "he/she") s += victimFemale ? "she" : "he";
+    else if (token == "himself/herself") s += victimFemale ? "herself" : "himself";
+    else s += text.substr(i, close - i + 1);  // a token this sentence has no form for
+    i = close + 1;
+  }
+  return s;
+}
+
+// The hero attacking somebody (REPORT.en.md 337): ScenarioCustomAttack. The native
+// card is two drop-downs -- 'Pick your target' (#33947) and 'Pick your move'
+// (#33897) -- over one button, 'Attack {0}' (#12347); the port has no drop-downs, so
+// the family picks the target itself from the people the hero actually has and
+// draws the sentence the card would have drawn after the move was picked. Title
+// 'Attack' (#12341); the exterior title is 'Conflict' (#16174), which the port does
+// not render. The body is #23258 'How will you attack {0}?' with {0} the person.
+bool Sim::customAttackYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return false;
+  // YearsSinceScenario on the card's own class: the native card only opens from the
+  // relationship menus, so the port gives it a cooldown instead (the family's
+  // whichever-year pattern, REPORT 326).
+  if (h.attackAge >= 0 && h.age - h.attackAge < 3) return false;
+  if (forcedChoice < 0 && !atkRng_.chance(0.04)) return false;
+
+  struct Target {
+    std::string desc;   // 'your big sister, Ali'
+    bool female = false;
+  };
+  std::vector<Target> cands;
+  for (const Person& p : life.family) {
+    if (!p.alive || p.relation.empty()) continue;
+    Target t;
+    t.desc = "your " + p.relation;
+    if (!p.name.empty()) t.desc += ", " + p.name;
+    t.female = p.female;
+    cands.push_back(t);
+  }
+  for (const Child& c : life.children) {
+    if (!c.alive) continue;
+    Target t;
+    t.desc = (c.female ? "your daughter, " : "your son, ") + c.name;
+    t.female = c.female;
+    cands.push_back(t);
+  }
+  if (h.relationshipOn && !h.loverName.empty()) {
+    Target t;
+    t.desc = (h.loverFemale ? "your girlfriend, " : "your boyfriend, ") + h.loverName;
+    t.female = h.loverFemale;
+    cands.push_back(t);
+  }
+  if (h.employed && !h.supName.empty()) {
+    Target t;
+    t.desc = "your supervisor, " + h.supName;
+    t.female = h.supFemale;
+    cands.push_back(t);
+  }
+  if (cands.empty()) return false;
+
+  if (!ensureTable("a16_assaults-enc")) return false;
+  const Table& assaults = tbl("a16_assaults-enc");
+  // The 'Clean' column marks the rows the game will print: the rest are crude
+  // variants the setting filters out. The outbound sentence is the hero's half.
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < assaults.size(); ++r) {
+    if (!assaults.flag(r, "Clean")) continue;
+    const std::string& sentence = assaults.at(r, "Outbound Scenario");
+    if (sentence.empty()) continue;
+    // A handful of rows write a move list or a body part as an inline token
+    // ('<a knee/an elbow strike/...>'); those are the drop-down's own choices and the
+    // card never prints them in a sentence, so the row is skipped.
+    bool plain = true;
+    for (size_t i = sentence.find('<'); i != std::string::npos && plain;
+         i = sentence.find('<', i + 1)) {
+      const size_t close = sentence.find('>', i);
+      if (close == std::string::npos) { plain = false; break; }
+      const std::string token = sentence.substr(i + 1, close - i - 1);
+      if (token != "you/I" && token != "your/my" && token != "his/her" &&
+          token != "him/her" && token != "he/she" && token != "himself/herself") {
+        plain = false;
+      }
+    }
+    if (!plain) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+
+  const Target& tgt = cands[atkRng_.below(uint32_t(cands.size()))];
+  const size_t row = rows[atkRng_.below(uint32_t(rows.size()))];
+  const std::string them = tgt.female ? "her" : "him";
+
+  out = AgeUp();
+  out.table = "a16_assaults-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Attack";  // #12341
+  out.body = "How will you attack " + tgt.desc + "?";  // #23258
+  out.choice = "Attack " + them;                        // #12347
+  out.narrative = attackFill(assaults.at(row, "Outbound Scenario"), true, tgt.female);
+  // ImpactKarma(-5), ImpactDiscipline(-5) and then the attitude hit on the target
+  // (+0x408, -2); the port keeps no relationship scale on a person, so the two stat
+  // impacts are all the card moves (ceiling in the report).
+  out.karma = pointsForImpact(-5);
+  out.discipline = pointsForImpact(-5);
+  h.attackAge = h.age;
+  return true;
+}
 }  // namespace bl

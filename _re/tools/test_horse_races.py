@@ -53,7 +53,9 @@ wins = 0
 losses = 0
 # The invite is one card among many on a rotating wheel; after 315 removed a seat it
 # shows up in about a fifth of lives, so scan twice the lives to keep the lanes fed.
-for seed in range(1, 201):
+# 300 seeds, not 200: the wheel turned wider when the hero's own attack and the other
+# families joined the list (REPORT 337), so a given life meets the races less often.
+for seed in range(1, 301):
     doc = run(seed)
     events = doc["events"]
     picked = ""

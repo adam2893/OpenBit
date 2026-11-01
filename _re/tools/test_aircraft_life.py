@@ -58,7 +58,9 @@ repairs = 0
 scraps = 0
 repaired = 0
 declined = 0
-for seed in range(1, 41):
+# 80 seeds, not 40: the wheel turned wider when the hero's own attack joined the family
+# list (REPORT 337), so an owned aircraft meets the repair and scrap cards less often.
+for seed in range(1, 81):
     data = run(seed)
     owned = None
     for event in data["events"]:

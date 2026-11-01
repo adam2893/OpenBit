@@ -23536,6 +23536,93 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 337. The hero's own attack
+
+Every card in these notes so far has had somebody else do something to the hero. This
+one is the other direction: `ScenarioCustomAttack` (`_re/il2cpp_dump.txt:41714`) is the
+card the relationship menus open when the player picks Attack on a person, and it is
+the same class the supervisor's "Attack" button chains into and the one a vampire
+hunter shows when they come for the hero.
+
+### The native side
+- `RefreshScenario 0x3841f64`: exterior title #16174 'Conflict', title #12341
+  'Attack'. The card carries two drop-downs, "Pick your target" (#33947) over the
+  people the hero actually has and "Pick your move" (#33897) over the moves and
+  weapons available to them; the rows are formatted #69467 '{0} ({1})' and #69459
+  '{0} (Weapon)'. There is exactly one button, "Attack {0}" (#12347) with the object
+  pronoun, and the card dispatches on the two drop-down selections, not on the label.
+- Nineteen constructor overloads carry the target: parent, sibling, lover, child,
+  friend, troll, communard, street person, vampire, fight-club fighter, supervisor,
+  generic `SimPerson` and a handful more. The class also holds the target's gender
+  (+0x16c), whether they can fight back (+0x170), whether the hero can get busted
+  (+0x1fa) and the four name strings the card and the obituary use (+0x1d0 to
+  +0x1f0).
+- The button's tail is short. `SimPerson::ImpactKarma(-5)` at 0x3846cc0,
+  `ImpactDiscipline(-5)` at 0x3846ce4, then the target's attitude down two through a
+  vtable slot, then the sentence: `DataHub::GetRandomColorAssault` at 0x3846d44 draws
+  a row of `a16_assaults-enc` with the `Clean` filter on, and its Outbound Scenario
+  column (+0x18) is printed with the inline token pairs replaced for the hero and for
+  the target's gender.
+- What happens next depends on the target. `WillRelativeFightBack` at 0x3847d2c hands
+  a relative or lover the port's own assault card (`ScenarioAttackInbound`, section
+  113); `SimHero::GetCrimeScenarioForCrimeType` at 0x384798c starts the crime chain
+  when the attack can be reported; `HandleDeathOfRelative` at 0x3847704 runs when a
+  family member is killed, and the achievement manager is told at 0x3847740.
+- The table: `a16_assaults-enc`, header `Body Part, Outbound Scenario, Inbound
+  Scenario, Clean`, 228 data rows. 217 carry a `Clean` outbound sentence; the other
+  eleven are the impolite variants the content setting filters out. The tokens in the
+  sentences are `<you/I>`, `<your/my>`, `<his/her>`, `<him/her>`, `<he/she>` and
+  `<himself/herself>`: pairs of forms rather than dictionary tokens. The first of the
+  pair is the card's own second person, the second is the journal's first person, and
+  the possessive forms follow the victim's gender.
+
+### The port
+`Sim::customAttackYear` is its own family with its own stream (`atkRng_`, tickets 2)
+because the native card has no yearly push: it opens from a menu the port has no UI
+for. The family offers it when the hero is eighteen and out of prison, at most once
+every three years, takes a target from the people the port actually keeps -- the
+living family, the children, the partner and the workplace supervisor -- and then
+draws one of the 209 usable sentences and renders the card:
+
+- title Attack (#12341), body "How will you attack your big sister, Ali?" (#23258),
+  one button "Attack her" (#12347);
+- the journal is the same sentence in the first person, which is what the token pairs
+  are for: "I tugged on her earlobes, bruising them badly!";
+- karma and discipline both move five points down: -50 each.
+
+### Ceilings
+The port has no drop-downs, so the target and the sentence are drawn rather than
+picked; the move list is the drop-down's own content, and the port draws the sentence
+the card prints once a move has been chosen. Eight of the 217 clean rows are skipped
+because their sentence carries the move list or a body part as an inline token
+(`<a knee/an elbow strike/a headbutt/...>`), which belongs in the drop-down and not in
+a sentence. The target's attitude (-2 through vtable +0x408) is not modelled because
+the port keeps no relationship scale on a person, so the two stat impacts are the
+whole effect. The fight-back counterattack, the crime chain, the target's death, the
+achievement and the obituary are left out: each needs a subsystem the port does not
+have yet, and section 113's inbound card only renders for the friend-weapon encounter
+that queues it. The card also only fires at eighteen and up, while the native menus
+allow it at any age where a target exists.
+
+### Verified
+Sixty attack cards over forty lives (seeds 1-40), each with a body of the shape "How
+will you attack your ...?" and the button "Attack him" or "Attack her". The targets
+the port offered: mother, father, big brother, little sister, little brother, nephew
+and niece. Every journal line is a row of ~a16_assaults-enc~ with its tokens filled
+("I ripped off her pointer finger!", "I give her a karate chop to the gullet, bruising
+her larynx!") and no bracket token left behind, and every card moves karma and
+discipline by fifty points down. Two cards are never closer than three years (the
+shortest gap measured is 3). A seventeen-year-old never sees one even with every
+choice forced, and forcing every choice across a seventy-year life yields eighteen
+cards.
+
+The full 125-test suite ran on the binary these notes describe (3c0bd533..., 122 PASS /
+3 FAIL). All three failures are test-side and were fixed here without a code change: the
+family this section adds widened the wheel, so a funded life meets the aircraft's annual
+repair check and the horse racing invite fewer times, and their thresholds now sweep more
+lives (re-run: 41 repairs with 7 scraps, 64 invites with 5 wins); the witch doctor's probe
+aborted on its first run and was green when re-run (30 remedy rows, 79 cures).
+
 ## 336. The book deal
 
 A famous hero can pay a publisher to bring out a book, and the sales decide how it is
