@@ -5,6 +5,7 @@
 #include "bl/table.h"
 #include "bl/text.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -680,6 +681,205 @@ std::string Sim::vampireNpcName() {
   const size_t f = firsts[vampireRng_.below(uint32_t(firsts.size()))];
   const size_t s = surnames[vampireRng_.below(uint32_t(surnames.size()))];
   return trim(t.at(f, "Name")) + " " + trim(t.at(s, "Name"));
+}
+
+// ---------------------------------------------------------------------------
+// REPORT.en.md 333. The vampire hunt's animal (ScenarioVampireHuntAnimal).
+//
+// Native: the solo hunt's location card (ScenarioVampireHuntLocation) hands its
+// sentence to VampireHuntActivity::SelectScenarioByLocation (0x2969b8c), which sorts
+// the location's three appearance likelihoods (animal / human / vampire) in descending
+// order and walks them with GetRandomNumber(0,100) < 50 (VampireBalancing
+// HuntLikelihoodPercent), falling to the last one. An animal builds this card over a
+// DataHub::GetRandomAnimalForContinent row (Europe when the hero's continent has none).
+// The port has no hunt activity, so the hunt arrives as its own annual family for a
+// vampire (shortcut) and the location is drawn uniformly instead of being picked by the
+// player (shortcut). Human and vampire appearances are other classes and end the turn.
+std::string allMajorWords(const std::string& text);
+
+namespace {
+// DataHub::GetTitleForVampire: one of the tag row's six cells, uniformly.
+std::string vampireTitleFor(const Table& t, const std::string& tag, Rng& rng) {
+  static const char* kCols[] = {"Og Title", "Option 1", "Option 2", "Option 3", "Option 4", "Option 5"};
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Scenario Tag")) != tag) continue;
+    std::vector<std::string> cells;
+    for (const char* c : kCols) {
+      const std::string v = trim(t.at(r, c));
+      if (!v.empty()) cells.push_back(v);
+    }
+    if (cells.empty()) return std::string();
+    return cells[rng.below(uint32_t(cells.size()))];
+  }
+  return std::string();
+}
+}  // namespace
+
+bool Sim::vampireHuntAnimalYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.vampire || h.age < 18 || h.inPrison) return false;
+  if (forcedChoice < 0 && !huntAnimalRng_.chance(0.15)) return false;
+  if (!ensureTable("a16_vampire-solo-hunt-location-enc") || !ensureTable("a16_animals-enc") ||
+      !ensureTable("a16_vampire-titles-enc"))
+    return false;
+  hero_ = &h;
+  life_ = &life;
+  Rng& g = huntAnimalRng_;
+  const Table& lt = tbl("a16_vampire-solo-hunt-location-enc");
+  std::vector<size_t> locs;
+  for (size_t r = 0; r < lt.size(); ++r)
+    if (!trim(lt.at(r, "String Version")).empty()) locs.push_back(r);
+  if (locs.empty()) return false;
+  const size_t lr = locs[g.below(uint32_t(locs.size()))];
+  const std::string inLoc = trim(lt.at(lr, "String Version"));
+  struct App { int like; int kind; };
+  App apps[3] = {{int(lt.num(lr, "Animal Appearance Likelihood")), 1},
+                 {int(lt.num(lr, "Human Appearance Likelihood")), 2},
+                 {int(lt.num(lr, "Vampire Appearance Likelihood")), 3}};
+  // ponytail: native Array.Sort is unstable, so tied likelihoods have no fixed order;
+  // the port keeps table order for ties.
+  std::stable_sort(apps, apps + 3, [](const App& a, const App& b) { return a.like > b.like; });
+  int kind = apps[2].kind;
+  for (const App& a : apps) {
+    if (int(g.below(100)) < 50) {
+      kind = a.kind;
+      break;
+    }
+  }
+  if (kind != 1) return false;
+
+  const Table& t = tbl("a16_animals-enc");
+  auto poolFor = [&](const std::string& want) {
+    std::vector<size_t> pool;
+    const std::string cont = lower(trim(want));
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string cell = lower(trim(t.at(r, "Continent")));
+      // Same reading as the walk's card (REPORT 326): 'all 7 continents' matches all.
+      if (cell.find("all 7 continents") != std::string::npos) {
+        pool.push_back(r);
+        continue;
+      }
+      size_t pos = 0;
+      while (true) {
+        const size_t comma = cell.find(',', pos);
+        const size_t len = comma == std::string::npos ? std::string::npos : comma - pos;
+        if (trim(cell.substr(pos, len)) == cont) {
+          pool.push_back(r);
+          break;
+        }
+        if (comma == std::string::npos) break;
+        pos = comma + 1;
+      }
+    }
+    return pool;
+  };
+  std::vector<size_t> pool = poolFor(h.continent);
+  if (pool.empty()) pool = poolFor("Europe");  // #19103 fallback
+  if (pool.empty()) return false;
+  const size_t row = pool[g.below(uint32_t(pool.size()))];
+  const std::string animal = trim(t.at(row, "Animal"));
+  const int danger = int(t.num(row, "Danger Score"));
+  const int aggression = int(t.num(row, "Aggression Score"));
+  const int skittish = int(t.num(row, "Skittishness Score"));
+  const int gain = int(t.num(row, "Vampire Essence Gain"));
+  const std::string verb = trim(t.at(row, "Attack String"));
+  const std::string ind = articleFor(animal) + animal;  // <animal-indefinite>
+  const Table& titles = tbl("a16_vampire-titles-enc");
+
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "a16_animals-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = allMajorWords(animal);  // #8533 <animal-title>
+  out.body = "A juicy-looking " + animal + " you discovered while hunting " + inLoc +
+             " is tempting you.\n\nWhat will you do?";  // #10080
+  out.cta = "What will you do?";
+  out.options = {"Feed on it", "Let it go", "Attempt to rescue it"};  // #20004 #28743 #12363
+  const int lane = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice) : int(g.below(3));
+  out.choice = out.options[size_t(lane)];
+  out.narrative = "I encountered " + ind + ".";  // #24092, logged by RefreshScenario
+  // The follow-up cards the native choice pushes are appended to this card's body as
+  // a title line and a body (shortcut: the port shows one card per year).
+  auto follow = [&](const std::string& title, const std::string& body) {
+    out.body += "\n\n" + title + "\n" + body;
+  };
+  // IsAnimalAttacking / IsAnimalFleeing: GetRandomNumber(0,100) below
+  // 100 * clamp(score / 5, 0, 1) (both multipliers 1.0).
+  auto rolls = [&](int score) {
+    const double c = score <= 0 ? 0.0 : (score >= 5 ? 100.0 : 20.0 * score);
+    return c > double(g.below(100));
+  };
+  // <body-part>: the parser's SelectedBodyPart is never set in this build, so the
+  // native token source is unrecovered; the port draws a16_body-parts-enc (shortcut).
+  auto bodyPart = [&]() {
+    if (!ensureTable("a16_body-parts-enc")) return std::string("arm");
+    const Table& b = tbl("a16_body-parts-enc");
+    std::vector<size_t> ok;
+    for (size_t r = 0; r < b.size(); ++r) {
+      const std::string gd = lower(trim(b.at(r, "Gender")));
+      if (gd == "both" || gd == (h.female ? "female" : "male")) ok.push_back(r);
+    }
+    if (ok.empty()) return std::string("arm");
+    return trim(b.at(ok[g.below(uint32_t(ok.size()))], "Body Part"));
+  };
+
+  if (lane == 1) return true;  // let it go: no narrative of its own, no deltas
+  if (lane == 0) {
+    if (!rolls(aggression)) {
+      follow(vampireTitleFor(titles, "BLOOD_IS_BLOOD_1", g),
+             "You drained " + ind + " " + inLoc + " and discarded its carcass.");  // #48404
+      h.vampireEssence += gain;  // SimVampire::AdjustEssence(Vampire Essence Gain)
+      h.vampireNotoriety -= 1;   // ImpactNotoriety(-1)
+      out.happiness = pointsForImpact(1);
+      out.narrative += "\nI fed on it for some essence.";  // #24154
+      return true;
+    }
+    // Attacking: a second attack roll, then a flee roll, decide fled vs hit.
+    if (!rolls(aggression) || rolls(skittish)) {
+      follow(vampireTitleFor(titles, "LATER", g), "It fled the scene after you attacked.");  // #27507
+      out.narrative += "\nIt fled after I failed to attack it.";  // #27506
+      return true;
+    }
+    // AnimalAttackHero(max 2): 1 + clamp(Danger/5) truncated, so 2 only at Danger 5.
+    const int damage = danger >= 5 ? 2 : 1;
+    const std::string part = bodyPart();
+    follow(vampireTitleFor(titles, "BLOOD_IS_BLOOD_2", g),
+           "You tried to attack the " + animal + ", but missed!");  // #49619
+    follow("Ouch", "The " + animal + " charged you!\n\nIt " + verb + " your " + part + ".");  // #33037 #41507
+    out.health = pointsForImpact(-damage);
+    out.happiness = pointsForImpact(-2);
+    h.vampireEssence -= damage;  // SimVampire::ImpactEssence(-damage)
+    out.narrative += "\nI attacked and missed.\nIt " + verb + " my " + part + ".";  // #23577
+    return true;
+  }
+  // Attempt to rescue it.
+  if (int(g.below(20)) + 1 < 5 - skittish) {
+    static const char* kWin[] = {"Big heart", "Jane Goodall mode", "Star citizen",
+                                 "It lives to see another day"};  // #13463 #27886 #39831 #27549
+    follow(kWin[g.below(4)], "You successfully rescued the " + animal + "!");  // #49430
+    out.happiness = pointsForImpact(3);
+    out.karma += 3;  // SimPerson::ImpactKarma(hero, 3)
+    return true;
+  }
+  if (int(g.below(8)) + 1 >= aggression) {
+    static const char* kMiss[] = {"Big heart", "Animal magnetism", "Brave but naive",
+                                  "Hands to yourself"};  // #13463 #11440 #13976 #22480
+    const std::string title = danger > 3 ? std::string("Are you freaking crazy") : kMiss[g.below(4)];  // #11716
+    follow(title, "Your attempt to rescue the " + animal + " was unsuccessful.");  // #50215
+    out.narrative = "I encountered " + ind + " and tried unsuccessfully to rescue it.";  // #24091
+    return true;
+  }
+  out.narrative = "I encountered " + ind + " and tried to rescue it. The " + animal + " " + verb +
+                  " me!";  // #24090 + #966
+  out.health = pointsForImpact(-(danger + 1));
+  if (h.health + out.health < 1) {
+    h.animalKill = animal;  // SimDeath::UpdateWithKillerAnimal
+    h.animalKillVerb = verb;
+    return true;
+  }
+  follow("Help!", "The " + animal + " " + verb + " you!");  // #22821 #41506
+  return true;
 }
 
 }  // namespace bl

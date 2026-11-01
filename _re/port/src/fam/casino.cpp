@@ -336,7 +336,6 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
 // keeps -- popularity takes the positive slot, the floor's happiness the negative one
 // -- so 'thank' ends popularity +1 and happiness -1, 'give' popularity +2 and
 // happiness -2, 'ignore' popularity -2 on its own. That pairing is the port's.
-namespace {
 // GameReference::CapitalizeAllMajorWordsInString: the game names sit mid-sentence,
 // so the card title-cases them itself.
 std::string allMajorWords(const std::string& text) {
@@ -355,7 +354,6 @@ std::string allMajorWords(const std::string& text) {
   }
   return s;
 }
-}  // namespace
 
 bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;

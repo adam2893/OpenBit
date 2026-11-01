@@ -23536,6 +23536,106 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 333. The vampire hunt's animal
+
+A vampire's solo hunt can turn up an animal instead of a person. The port's hunt was one
+narrative line (REPORT 70); this section adds the animal card the hunt pushes,
+ScenarioVampireHuntAnimal, with its three answers and their follow-up cards.
+
+### The native side
+
+- Class: ScenarioVampireHuntAnimal, .ctor 0x29639e8, RefreshScenario 0x2963a2c,
+  ChoiceSelectedAtIndex 0x2963c44; fields +0x170 activity, +0x178 DataAnimal, +0x180 narrative.
+- Push: ScenarioVampireHuntLocation::ChoiceSelectedAtIndex (0x29650b0) hands the chosen
+  location sentence to VampireHuntActivity::SelectScenarioByLocation (0x2969b8c). That
+  builds {Animal, Human, Vampire} with the location row's three appearance likelihoods
+  (a16_vampire-solo-hunt-location-enc), sorts them descending (Array.Sort, comparator
+  0x296aca0) and walks them: the first entry whose GetRandomNumber(0,100) < 50
+  (VampireBalancing.HuntLikelihoodPercent) wins, the last one if none does - 50% / 25% /
+  25% in likelihood order. An animal builds this card; GetScenarioByHuntAppearance
+  (0x296aae4) sends human and vampire to their own classes.
+- The animal: DataHub::GetRandomAnimalForContinent (0x28151cc), uniform over the
+  a16_animals-enc rows whose continent list holds the hero's continent, retried with
+  'Europe' (#19103) when none does.
+- Card: exterior title #45527 'Vampire'; title #8533 '<animal-title>' (the name title-cased);
+  body #10080 'A juicy-looking <animal> you discovered while hunting <in-location> is
+  tempting you.\n\nWhat will you do?', <in-location> being the location row's String Version.
+  Choices in stored order, not shuffled, no dismiss: #20004 'Feed on it', #28743 'Let it go',
+  #12363 'Attempt to rescue it'. RefreshScenario logs #24092 'I encountered <animal-indefinite>.'
+- IsAnimalAttacking (0x29640e0) / IsAnimalFleeing (0x29641c4): GetRandomNumber(0,100)
+  below 100 * clamp(score/5, 0, 1) of Aggression / Skittishness (multipliers 1.0), so 20%
+  per point. Each call is a fresh draw.
+- Feed: attack roll. No attack - the feed: title from the vampire title pool row
+  BLOOD_IS_BLOOD_1 (DataHub::GetTitleForVampire, one of six cells), body #48404 'You drained
+  <animal-indefinite> <in-location> and discarded its carcass.', essence + the row's Vampire
+  Essence Gain (SimVampire::AdjustEssence), notoriety -1, happiness +1, journal #24154 'I fed
+  on it for some essence.' Attack - a second attack roll and then a flee roll: a missed
+  second roll or a landed flee roll is the runaway (title row LATER, body #27507 'It fled the
+  scene after you attacked.', journal #27506); otherwise the animal hits back
+  (AnimalAttackVampire 0x29642a8 -> AnimalAttackHero 0x2964b8c with HuntAnimalMaxDamage 2):
+  damage 1 + clamp(Danger/5) truncated, health -damage, essence -damage, happiness -2, an
+  'Ouch' card (#33037, body #41507 'The <animal> charged you!\n\nIt <attack-string> your
+  <body-part>.') under a BLOOD_IS_BLOOD_2 card (#49619 'You tried to attack the <animal>, but
+  missed!'), journal #23577. No notoriety in the attack.
+- Let it go: no follow-up, no delta; only the encounter line stands.
+- Rescue (AttemptRescue 0x2964350): success iff GetRandomNumber(0,20)+1 < 5 - Skittishness:
+  happiness +3, karma +3 (SimPerson::ImpactKarma), title one of #13463 'Big heart' / #27886
+  'Jane Goodall mode' / #39831 'Star citizen' / #27549 'It lives to see another day', body
+  #49430, achievement acRescueAnimal, obit line #10221. Failure rolls GetRandomNumber(0,8)+1
+  against Aggression: at or above, a harmless miss (journal #24091, body #50215, title #11716
+  'Are you freaking crazy' when Danger > 3, else one of #13463 / #11440 / #13976 / #22480);
+  below, the animal attacks (journal #24090 + #966 ' The <animal> <attack-string> me!',
+  health -(Danger+1)); a hero left under 1 health dies through SimDeath::UpdateWithKillerAnimal,
+  otherwise a 'Help!' card (#22821, body #41506 'The <animal> <attack-string> you!') with
+  Scenario.Damage max(Danger-1, 1) and obit line #20693.
+- No disease, rabies, money or career change anywhere in the class.
+
+### The port
+
+Sim::vampireHuntAnimalYear (src/fam/vampire.cpp) on its own huntAnimalRng_ stream, a
+family offered to a vampire hero. It draws a location, walks the three sorted
+likelihoods with the native 50% steps and builds the card only on an animal; the animal
+pool, the attack/flee rolls, every branch's text and the numbers above are the native
+ones. Stat moves go through pointsForImpact (health -damage, happiness +1 / -2 / +3,
+health -(Danger+1)); the rescue attack kills through the walk card's animal death
+(REPORT 326) when it would leave the hero under 1 health.
+
+### Ceilings
+
+- No hunt activity: the hunt arrives as an annual family (15% coin, no cooldown) and the
+  location is drawn uniformly instead of being picked by the player.
+- Human and vampire appearances end the turn; their classes are not part of this section.
+- One card a year: the follow-up cards are appended to the encounter card's body as a
+  title line and a body, in the native stacking order.
+- <body-part> has no native source in this build (the parser's SelectedBodyPart accessors
+  have no callers), so the port draws a gender-matching row of a16_body-parts-enc.
+- Tied likelihoods keep table order (the native sort is unstable).
+- The rescue gate's vtable slot +0x438 (-2 at Danger >= 2 and Aggression >= 2), the
+  'Help!' card's Scenario.Damage, achievements and obituary lines are not modelled;
+  notoriety and essence move by their raw native amounts on the port's bars.
+- The 'all 7 continents' cell matches every continent, as on the walk card; the native
+  loader's normalisation of that cell is unrecovered.
+
+### Verified
+
+_re/tools/test_vampire_hunt_animal.py over 80 vampire lives (seeds 1-80): every card's
+animal is a North American (or all-continent) row, title the title-cased name, location a
+String Version cell; outcome counts let go 63, fed 24, fled 28, hit 6, rescued 8, missed
+45, attacked 15. Feed titles come from BLOOD_IS_BLOOD_1, runaway titles from LATER, hit
+titles from BLOOD_IS_BLOOD_2 over an 'Ouch' card whose body part is a body-parts row;
+deltas match (feed happiness +4, hit health -4 or -8 by Danger and happiness -8, rescue
+karma +3 and happiness +16, rescue attack health by Danger), let go moves nothing, and a
+non-vampire never sees the card.
+
+The full 121-test suite ran on the binary these notes describe (915ad0d2...). One test,
+test_witch_doctor, failed on its first pass with an abort before any assertion of its own:
+its probe is compiled against port/include while the archive it links had been built before
+the aircraft work in the next section touched those headers, so probe and library disagreed
+about the hero's layout - which is exactly what the aircraft's new fields change. Re-run
+against the archive built from the same headers the probe compiles against, it passes:
+121 PASS / 0 FAIL, the witch probe reporting 30 remedy rows, 50 fatal, 306 neutral, 844 harm,
+79 cures, 43 delayed.
+
 ## 332. The back-to-school title pool
 
 Every back-to-school card's headline - the field trip, the dance, the house party, the

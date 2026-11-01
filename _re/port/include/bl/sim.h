@@ -859,6 +859,7 @@ class Sim {
   // REPORT.en.md 326: the walk's animal encounter, the one animal card the game
   // pushes at random. The port has no walk activity, so it is its own family.
   bool animalEncounterYear(Life& life, AgeUp& out, int forcedChoice);
+  bool vampireHuntAnimalYear(Life& life, AgeUp& out, int forcedChoice);
   // The team-building card (REPORT.en.md 117) is the workplace family's third
   // card, code-built rather than table-driven, with a once-per-life gate.
   bool teamBuildingYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1044,6 +1045,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng supRng_;
   Rng discRng_;  // the discipline card's own stream
   Rng animalRng_;  // the animal encounter's own stream
+  Rng huntAnimalRng_;  // the vampire hunt animal card's own stream
   Rng agentCompRng_;  // ScenarioAgentCompliment's own stream (REPORT.en.md 327)
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)
