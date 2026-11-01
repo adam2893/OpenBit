@@ -27,7 +27,9 @@ def run(seed):
 
 
 cards = 0
-for seed in range(1, 31):
+# 60 seeds, not 30: the wheel turned wider when the publisher's book deal joined the
+# family list (REPORT 336), so a famous life meets the crashout card less often.
+for seed in range(1, 61):
     for event in run(seed)["events"]:
         if event.get("table") != "a16_crashout-scenario-enc":
             continue

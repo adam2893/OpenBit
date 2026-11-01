@@ -23536,6 +23536,84 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 336. The book deal
+
+A famous hero can pay a publisher to bring out a book, and the sales decide how it is
+remembered. This section ports that deal — the offer the place builds, the fee that comes
+out of the hero's book appeal, the proceeds roll, and the ten-step ladder that turns them
+into one clause of the sales line.
+
+### The native side
+
+`SimBookOpportunity 0x2b109d4`: `+0x10 PublisherName`, `+0x18 Cost`,
+`+0x20 BookTitle`, `+0x28 Proceeds`, `+0x2c HeroAge`. The ctor fills the cost, the
+proceeds and the hero's age and leaves the title for the player to choose.
+`HeroBookAppealScore 0x2b10bd8` is `0.25 * (ageBand + 2 * Att_fame + Att_intelligence)`,
+with the age band 100 below 18, 30 below 25, then 40, 50, 60, 70, 80 and 90 at the decade
+marks and 0 from 60 up. `GetCostAmount 0x2b10a54` is
+`20000 + (1 - appeal/100) * 80000` through
+`DataCountry::GetLocalCostForAmountWithMinimumCostAndRoundTo(amount, 1000, 100)`.
+`GetProceedsAmount 0x2b10b14` is `GetRandomNumber(0, (int)(2 * base * (1 + appeal/100)))`
+with `base` 250000, or 500000 once the appeal reaches 70.
+
+The place builds the offer in `RefreshAvailableFameOpportunities`, after the fame gate:
+`Att_fame >= 10`, no more than four books in `SimFame.BookArray`, at least three years
+since the last one, and only when the appeal beats `rand(0,100)`. The publisher is a random
+company of the Publisher type and its name is formatted into the opportunity.
+
+`ScenarioFameBook`: `.ctor 0x3735c60`, `RefreshScenario 0x3735cdc`,
+`DismissSelected 0x37365cc`, `ChoiceSelectedAtIndex 0x3736638`. Title `#13887 'Book'`,
+body `Format(#69989 '{0} has agreed to edit and publish your book.', publisher)`, a
+drop-down of five biography titles drawn from `a16_biographies-enc` (its
+`<hero-name>`-style tokens parsed before they reach the list), and one button
+`#47246 'Write it'`. Accepting takes the drop-down's title, pays the cost, credits the
+proceeds, appends the book to the fame array, clears the place's offer slot and logs
+`#24772 'I paid {0} to {1} to publish my book, "{2}". It {3} and grossed {4} in sales.'`
+with the outcome clause from `OutcomeString 0x2b10cdc`: proceeds against cost in ten
+steps — over 800000 overnight bestseller, over 3x bestseller, over 2x commercial success,
+over 1.5x well-received, over 1x mixed reviews, over 0.9x poor reviews, over 0.7x not
+well-received, over 0.5x commercial failure, over 0.25x terrible reviews, else absolute
+flop. The follow-up card's title is one of `#23143 'Hot off the press'`,
+`#20425 'Flying off the shelves'` and `#32803 'One for the book'` over the body
+`#50244 'Your book, "{0}", {1}.'`. Dismissing logs
+`#69994 '{0} has agreed to publish my book for {1}.'`, which is the literal the card
+carries as its narrative.
+
+### The port
+
+`Sim::bookOpportunityYear` runs the same gates on the hero's own yearly tick (fame at
+least 10, at most four books, three years since the last, and `appeal > rand(0,100)`),
+draws the publisher through the port's own `companyName("Publisher")`, fixes the cost and
+rolls the proceeds, and queues `kPendingBookOffer`; `Sim::fameBookYear` renders the card
+and answers it. Titles come from `a16_biographies-enc` filtered by the hero's gender and
+resolved through the port's bracket parser. The book's own stream is `pubRng_` — the name
+`bookRng_` already belonged to the reading card over `a16_books-enc`.
+
+### Ceilings
+
+The five-title drop-down is a random draw from those five instead of the player's choice, so
+the card cannot be steered. The two vtable impacts the accept lane makes (one on the
+proceeds and one on the cost side) are unnamed in the source and their amounts are
+unrecovered, so the port records the money and the sales line without a stat move — a
+ceiling, not an omission of recovered behaviour. The dismissal's narrative literal is
+carried verbatim even though it reads like an acceptance. The place's offer slot, the
+cult/politician/royal side cards, the obituary line, the Apollo16 flags and the achievements
+are not modelled, and neither is the book's own shelf beyond the count the gates read.
+
+### Verified
+
+`_re/tools/test_fame_book.py` over 30 famous lives (seeds 1-30): 277 offers, 128 accepted,
+149 refused and 7 distinct outcome clauses. Every offer names one publisher twice and quotes
+a fee that is a multiple of 100 and at least 1000 and that pins an appeal inside 0-100; every
+acceptance pays exactly the quoted fee, quotes the same publisher, grosses a figure inside
+the proceeds ceiling the fee implies, and its outcome clause appears in both the log and the
+card body; every refusal repeats the fee and the publisher. A hero with no fame is never
+offered a deal, and the biography titles reach the log parsed, with no leftover token.
+
+The full 124-test suite ran on the binary these notes describe (ad014e34..., 123 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: test_crashout
+asserted at least two crashout cards over thirty famous lives, and the family this section
+adds widened the wheel enough to leave one; the test now walks sixty seeds (re-run: 2 cards).
 ## 335. The magazine photo shoot
 
 A famous hero is offered a magazine shoot: a title from `a16_magazines-enc`, a pose the

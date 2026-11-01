@@ -227,4 +227,126 @@ bool Sim::fameMagazineYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// The book deal (REPORT.en.md 336): SimPlace::RefreshAvailableFameOpportunities builds a
+// SimBookOpportunity (GetCostAmount 0x2b10a54, GetProceedsAmount 0x2b10b14,
+// HeroBookAppealScore 0x2b10bd8, OutcomeString 0x2b10cdc) and ScenarioFameBook
+// (.ctor 0x3735c60, RefreshScenario 0x3735cdc, DismissSelected 0x37365cc,
+// ChoiceSelectedAtIndex 0x3736638) sells it.
+
+namespace {
+
+// HeroBookAppealScore: a quarter of the hero's age band plus twice the fame plus the
+// intelligence attribute.
+double bookAppealOf(const Hero& h) {
+  int band = 0;
+  const int age = h.age;
+  if (age < 18) band = 100;
+  else if (age < 25) band = 30;
+  else if (age < 30) band = 40;
+  else if (age < 35) band = 50;
+  else if (age < 40) band = 60;
+  else if (age < 45) band = 70;
+  else if (age < 50) band = 80;
+  else if (age < 60) band = 90;
+  return 0.25 * (double(band) + 2.0 * double(h.fame) + double(h.smarts));
+}
+
+// ScenarioFameBook::RefreshScenario's outcome ladder: Proceeds against Cost.
+const char* bookOutcome(long long proceeds, long long cost) {
+  if (proceeds > 800000) return "became an overnight bestseller";       // #54852
+  if (proceeds > 3 * cost) return "became a bestseller";                // #54851
+  if (proceeds > 2 * cost) return "was a commercial success";           // #67949
+  if (proceeds > cost * 3 / 2) return "was generally well-received";    // #67953
+  if (proceeds > cost) return "was received with mixed reviews";        // #67958
+  if (double(proceeds) > double(cost) * 0.9) return "received poor reviews";       // #64334
+  if (double(proceeds) > double(cost) * 0.7) return "was not well-received";       // #67955
+  if (double(proceeds) > double(cost) * 0.5) return "was a commercial failure";    // #67948
+  if (double(proceeds) > double(cost) * 0.25) return "received terrible reviews";  // #64335
+  return "was an absolute flop";                                        // #67951
+}
+
+}  // namespace
+
+void Sim::bookOpportunityYear(Life& life) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return;
+  if (h.bookPending) return;
+  Rng& g = pubRng_;
+  // The place's gates: some fame, at most four books already written, and three years
+  // since the last one.
+  if (h.fame < 10.0f) return;
+  if (h.bookCount > 4) return;
+  if (h.age - h.lastBookAge < 3) return;
+  const double appeal = bookAppealOf(h);
+  if (!(appeal > double(g.below(100)))) return;  // offered only when the appeal beats the roll
+  if (!ensureTable("a16_biographies-enc")) return;
+  const Table& t = tbl("a16_biographies-enc");
+  std::vector<std::string> titles;
+  for (size_t r = 0; r < t.size() && titles.size() < 5; ++r) {
+    const std::string title = trim(t.at(r, "Title"));
+    if (title.empty()) continue;
+    const std::string gender = trim(t.at(r, "Gender"));
+    if (gender == "male" || gender == "female") {
+      if ((gender == "female") != h.female) continue;
+    }
+    // The biography titles carry tokens: the native runs them through Format and the
+    // bracket parser before the drop-down, so '<hero-name>' becomes the hero's name.
+    titles.push_back(resolve(title));
+  }
+  if (titles.empty()) return;
+  h.bookTitles = titles;
+  // GetCostAmount: 20000 plus the missing appeal, through the country's minimum and
+  // rounding helper.
+  const long long rawCost = static_cast<long long>(20000.0 + (1.0 - appeal / 100.0) * 80000.0 + 0.5);
+  h.bookCost = (rawCost + 50) / 100 * 100;
+  if (h.bookCost < 1000) h.bookCost = 1000;
+  // GetProceedsAmount: a random share of twice the base, the base doubling past appeal 70.
+  const double base = appeal < 70.0 ? 250000.0 : 500000.0;
+  const int ceiling = static_cast<int>(2.0 * base * (1.0 + appeal / 100.0));
+  h.bookProceeds = ceiling > 0 ? static_cast<long long>(g.below(uint32_t(ceiling))) : 0;
+  h.bookPublisher = companyName("Publisher", life);
+  if (h.bookPublisher.empty()) h.bookPublisher = "the publisher";
+  h.bookPending = true;
+  life.pendingCards.push_back(kPendingBookOffer);
+}
+
+bool Sim::fameBookYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.bookPending) return false;
+  hero_ = &h;
+  life_ = &life;
+  Rng& g = pubRng_;
+  out.table = "registry:ScenarioFameBook";
+  out.title = "Book";  // #13887
+  out.body = h.bookPublisher + " has agreed to edit and publish your book.";  // #69989
+  out.body += "\n\nPublisher: " + h.bookPublisher + "\nCost: " + money(h.bookCost);
+  // The native card has one button and a dismiss; the dismiss logs its narrative.
+  out.options = {"Write it", "Not now"};
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : g.chance(0.5);
+  out.choice = out.options[accept ? 0 : 1];
+  if (!accept) {
+    out.narrative = h.bookPublisher + " has agreed to publish my book for " + money(h.bookCost) + ".";
+    h.bookPending = false;
+    return true;
+  }
+  // The title is the player's to pick from the five the card offers; with no drop-down in
+  // the port it is drawn from those same five.
+  const std::string title = h.bookTitles[g.below(uint32_t(h.bookTitles.size()))];
+  h.money -= h.bookCost;
+  h.money += h.bookProceeds;
+  ++h.bookCount;
+  h.lastBookAge = h.age;
+  const char* const outcome = bookOutcome(h.bookProceeds, h.bookCost);
+  out.narrative = "I paid " + money(h.bookCost) + " to " + h.bookPublisher + " to publish my book, \"" +
+                  title + "\". It " + outcome + " and grossed " + money(h.bookProceeds) +
+                  " in sales.";  // #24772
+  static const char* const kFlavor[] = {"Hot off the press", "Flying off the shelves",
+                                        "One for the book"};
+  out.body += "\n\n" + std::string(kFlavor[g.below(3)]) + "\nYour book, \"" + title + "\", " +
+              outcome + ".";  // #50244
+  h.bookPending = false;
+  return true;
+}
+
 }  // namespace bl

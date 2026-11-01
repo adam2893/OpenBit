@@ -705,6 +705,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       huntAnimalRng_(seed ^ 0xbb67ae8584caa73bULL ^ 0x510e527fade682d1ULL),
       aircraftRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0xa54ff53a5f1d36f1ULL),
       magRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0xcbbb9d5dc1059ed8ULL),
+      pubRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
       agentCompRng_(seed ^ 0xb5c0fbcfec4d3b2fULL ^ 0xe9b5dba58189dbbcULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
@@ -4162,6 +4163,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingAircraftRepair) return aircraftRepairYear(life, out, forcedChoice);
     if (kind == kPendingAircraftScrap) return aircraftScrapYear(life, out, -1);
     if (kind == kPendingMagazineOffer) return fameMagazineYear(life, out, forcedChoice);
+    if (kind == kPendingBookOffer) return fameBookYear(life, out, forcedChoice);
     return false;
   }
   ++life.year;
@@ -4202,6 +4204,8 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!life.hero.aircraft.empty()) aircraftRunYear(life);
   // The magazine's offer is rebuilt on the hero's own tick too (REPORT.en.md 335).
   magazineOpportunityYear(life);
+  // The publisher's offer is rebuilt on the same tick (REPORT.en.md 336).
+  bookOpportunityYear(life);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);

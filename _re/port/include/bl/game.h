@@ -833,6 +833,15 @@ struct Hero {
   long long magPayment = 0;
   std::string magTitle;
   int magMonthNI = 1;
+  // The book deal (REPORT.en.md 336): the open offer, the five title candidates the
+  // card offers, and the two counters the free offers are paced by.
+  bool bookPending = false;
+  int bookCount = 0;
+  int lastBookAge = -100;
+  long long bookCost = 0;
+  long long bookProceeds = 0;
+  std::string bookPublisher;
+  std::vector<std::string> bookTitles;
   std::string loverGenre;      // the career row's Genre, Platform, Sport or Model Type
   std::string loverSkin;       // the names row's Skin, 1-6
   int loverFameScore = 0;      // the career row's Fame Score
