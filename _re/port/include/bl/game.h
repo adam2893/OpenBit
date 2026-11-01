@@ -509,7 +509,10 @@ struct Hero {
   int casinoInterrogAge = -1;            // the interrogation card last fired
   int casinoGamblerLostAge = -1;        // the year a regular stopped coming
   int casinoCelebComplaintAge = -1;     // the year the guest act drew a complaint
-  int casinoCelebComplimentAge = -1;    // ... and the year it drew a compliment
+  int casinoCelebComplimentAge = -1;
+  std::string casinoActTheme;           // the act in residence's own theme
+  int casinoActComplaintAge = -1;        // the year the act drew a complaint
+  int casinoActComplimentAge = -1;       // ... and the year it drew a compliment    // ... and the year it drew a compliment
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
   std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for

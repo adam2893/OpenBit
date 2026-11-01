@@ -110,6 +110,9 @@ struct ScriptSpec {
   // cards without waiting for a visit (REPORT.en.md 347). "same" gives the act a
   // genre equal to the house theme, "diff" a genre that does not match.
   std::string casino_guest;
+  // Harness hook: pin the act in residence so the two act cards can be walked
+  // without waiting for a booking (REPORT.en.md 350).
+  std::string casino_act;
   long long zoo_bank = 0;
   bool cult = false;
   bool pet = false;

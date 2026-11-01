@@ -719,8 +719,17 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
           } else {
             h.casinoAct = actName.empty() ? std::string("an unknown act") : actName;
             h.casinoActType = actCat;
+            // The act's own theme, which the two act cards weigh against the house:
+            // a singer's act brings the genre row's theme (already the house's, since
+            // only matching rows are booked), any other act draws one (shortcut;
+            // REPORT 350).
+            h.casinoActTheme.clear();
             const size_t bp = pickRow("a16_casino-casino-performance-act-enc", "", "Act Type", actCat, "", casinoRng_);
             if (bp != size_t(-1)) h.casinoActPopularity = int(tbl("a16_casino-casino-performance-act-enc").num(bp, "Base Popularity"));
+            if (h.casinoActTheme.empty()) {
+              h.casinoActTheme = pickSnippet("a16_casino-casino-theme-enc", "Theme",
+                                             "Popularity Score", "", "", "", casinoFloorRng_);
+            }
             // A singer act brings a genre with it, and the genre's match against
             // the house's theme is what the popularity impact is for.
             if (h.casinoActType.find("sing") != std::string::npos ||
@@ -732,6 +741,7 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
                 const double match = g.num(gr, "Match Popularity Impact");
                 h.casinoPopularity += int(match > 0 ? match : g.num(gr, "Base Popularity Impact"));
               }
+              h.casinoActTheme = h.casinoTheme;
               h.casinoSong = pickSnippet("a16_casino-casino-singer-song-enc", "Song Title", "Commonness Score", "", "", "", casinoRng_);
             }
             h.casinoPopularity += h.casinoActPopularity * 2;
@@ -1330,6 +1340,126 @@ void Sim::makeCasino(Life& life) {
   h.casinoGamblers = 20 + int(casinoRng_.below(80));
 }
 
+namespace {
+std::string casinoTierWord(const Hero& h, Rng& rng);  // defined below
+}
+
+// The act cards: ScenarioCasinoAgeUpGamblerComplaintEntertainmentAct (.ctor
+// 0x356e0fc, RefreshScenario 0x356d134, ChoiceSelectedAtIndex 0x356d688,
+// ScenarioIsEligibleForRandomPush 0x356df38, pushed at 0x2aacfd4) and
+// ScenarioCasinoAgeUpGamblerComplimentEntertainmentAct (.ctor 0x35712c0,
+// RefreshScenario 0x3570a00, ChoiceSelectedAtIndex 0x3570ec4,
+// ScenarioIsEligibleForRandomPush 0x3571104, pushed at 0x2aad1a0).
+//
+// Both cards look for an act whose own theme is NOT the house theme - the complaint
+// because the act does not fit, the compliment because ... the shipped eligibility
+// says the same thing - and both work the same punter. The complaint keeps three
+// answers and a journal each; the compliment writes no journal at all (the native
+// shared tail skips LifeLog and the UI refresh when the narrative is null), which the
+// port reproduces. REPORT 350.
+bool Sim::casinoActComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoAct.empty() || h.casinoGamblers <= 0) return false;
+  if (lower(h.casinoActTheme) == lower(h.casinoTheme)) return false;
+  if (h.casinoActComplaintAge >= 0 && h.age - h.casinoActComplaintAge <= 2) return false;
+  if (forcedChoice < 0 && !casinoFloorRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string tier = casinoTierWord(h, casinoFloorRng_);
+  const std::string punter = resolve("<casino-gambler>");
+  const bool female = casinoGamblerFemale_;
+  const std::string them = female ? "her" : "him";
+  const std::string who = female ? "she" : "he";
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplaintEntertainmentAct";
+  out.title = "Complaint";  // #16066
+  out.body = "Your casino's " + tier + ", " + punter + ", is complaining that " +
+             h.casinoAct + "'s performances ruin your casino's vibe.\n\n" + who +
+             " saying their " + h.casinoActTheme + "-themed act doesn't fit the " +
+             h.casinoTheme + " theme you're trying to establish.";
+  out.cta = "What will you do?";
+  out.options = {"Ban " + them + " from my casino", "Apologize for the inconvenience",
+                 "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoFloorRng_.below(3));
+  out.choice = out.options[size_t(pick)];
+  h.casinoActComplaintAge = h.age;
+
+  if (pick == 0) {
+    h.casinoGamblers -= 1;
+    if (h.casinoGamblers < 0) h.casinoGamblers = 0;
+    h.casinoPopularity -= 2;
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+    // The native spells the pronoun into the literal, as the guest-complaint card does.
+    out.narrative = "I banned my casino's gambler, " + punter +
+                    ", from my casino after she complained about " + h.casinoAct + ".";
+  } else if (pick == 1) {
+    h.casinoGamblerAddiction += 2;
+    if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
+    h.casinoGamblerHappiness += 1;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+    out.narrative = "I apologized to my casino's gambler, " + punter + ", for having booked " +
+                    h.casinoAct + ".";
+  } else {
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    h.casinoPopularity += 2;
+    if (h.casinoPopularity > 100) h.casinoPopularity = 100;
+    out.narrative = "I ignored my casino's gambler, " + punter + "'s, complaint about " +
+                    h.casinoAct + ".";
+  }
+  return true;
+}
+
+bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoAct.empty() || h.casinoGamblers <= 0) return false;
+  if (lower(h.casinoActTheme) == lower(h.casinoTheme)) return false;
+  if (h.casinoActComplimentAge >= 0 && h.age - h.casinoActComplimentAge <= 4) return false;
+  if (forcedChoice < 0 && !casinoFloorRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string tier = casinoTierWord(h, casinoFloorRng_);
+  const std::string punter = resolve("<casino-gambler>");
+  const bool female = casinoGamblerFemale_;
+  const std::string them = female ? "her" : "him";
+  const std::string who = female ? "she" : "he";
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplimentEntertainmentAct";
+  out.title = "Compliment";  // #16100
+  out.body = "Your casino's " + tier + ", " + punter + ", is complimenting you on booking " +
+             h.casinoAct + " to perform at your casino.\n\n" + who +
+             " says it's her favorite attraction.";
+  out.cta = "What will you do?";
+  out.options = {"Thank " + them, "Give " + them + " some free games", "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoFloorRng_.below(3));
+  out.choice = out.options[size_t(pick)];
+  h.casinoActComplimentAge = h.age;
+
+  if (pick == 0) {
+    h.casinoGamblerAddiction -= 1;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    h.casinoGamblerHappiness += 1;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+  } else if (pick == 1) {
+    h.casinoGamblerAddiction -= 2;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    h.casinoGamblerHappiness += 2;
+    if (h.casinoGamblerHappiness > 100) h.casinoGamblerHappiness = 100;
+  } else {
+    h.casinoPopularity -= 2;
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+  }
+  // No narrative: the native card writes none, and its shared tail then skips both
+  // the log line and the UI refresh.
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");
@@ -1366,6 +1496,34 @@ void Sim::seedCasinoGuest(Life& life, bool sameTheme) {
   // hands the guest the theme word as its theme so the comparison still works
   // (harness hook only).
   h.casinoCelebrityGenreTheme = pick.empty() ? h.casinoTheme : pickTheme;
+}
+
+void Sim::seedCasinoAct(Life& life, bool sameTheme) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  ensureCasinoFields(life);
+  if (h.casinoGamblers <= 0) h.casinoGamblers = 3;
+  if (!ensureTable("a16_casino-casino-performance-act-name-enc")) return;
+  const Table& t = tbl("a16_casino-casino-performance-act-name-enc");
+  std::string name;
+  std::string theme;
+  std::string type;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string rowTheme = trim(t.at(r, "Theme"));
+    const std::string rowName = resolve(trim(t.at(r, "Name")));
+    if (rowName.empty()) continue;
+    if ((lower(rowTheme) == lower(h.casinoTheme)) != sameTheme) continue;
+    name = rowName;
+    theme = rowTheme;
+    type = trim(t.at(r, "Act Type"));
+    break;
+  }
+  if (name.empty()) return;
+  h.casinoAct = name;
+  h.casinoActType = type;
+  h.casinoActTheme = theme.empty() ? (sameTheme ? h.casinoTheme : std::string("medieval")) : theme;
+  if (sameTheme) h.casinoActTheme = h.casinoTheme;
 }
 
 std::string Sim::casinoToken(const std::string& key) {

@@ -23536,6 +23536,117 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 350. The casino's two act cards
+
+The act in residence can please a punter or annoy one. Both cards read the act's own
+theme against the house's and both only ever fire when the two do *not* match - the
+complaint because the act does not fit, the compliment because the shipped eligibility
+tests the same inequality - so a house that books only matching acts never sees either.
+
+### The native side
+
+`ScenarioCasinoAgeUpGamblerComplaintEntertainmentAct` (.ctor 0x356e0fc,
+`RefreshScenario` `0x356d134, `ChoiceSelectedAtIndex` `0x356d688,
+`ScenarioIsEligibleForRandomPush` 0x356df38) is pushed from `SimCasino::IncrementAge`
+at `0x2aacfd4. Its fields are `0x170 the narrative, `0x178 the casino, `0x180 the
+gambler and `0x188 the act. Eligibility is: the casino exists, its act list `0xb8 holds
+at least one act, `FirstOrDefault` finds an act whose 0x10 theme is *not*
+`String::Equals(casino 0x38 theme, OrdinalIgnoreCase)`, the casino has at least one
+gambler, the hero is 18, is not in prison, and `YearsSinceScenario` is greater than 2.
+
+`RefreshScenario` takes a random non-mafia gambler and the first act whose theme differs
+from the house's, sets the title to `#16066 "Complaint" and builds the body from `#50268
+"Your casino's ", the punter's relationship status, #5282 ", ", the punter's name,
+`#5666 ", is complaining that ", the act's name and `#4890 "'s performances ruin your
+casino's vibe.", then a blank line, the punter's subject pronoun (type 9), #3305
+" saying their ", the act's theme, #6280 "-themed act doesn't fit the ", the casino's
+theme and #3556 " theme you're trying to establish.\n\nWhat will you do?".
+
+The three buttons are `#12770 "Ban " plus the punter's object pronoun plus `#2104
+" from my casino", `#11554 "Apologize for the inconvenience", and `#26366 "Ignore " plus
+the same pronoun; dispatch is `Contains` "ban"/"apologize"/"ignore". Ban removes the
+punter from the casino's list, draws a banned-gambler snippet keyed on the punter's
+craziness, writes `#23602 "I banned my casino's gambler, ", the name, `#5566 ", from my
+casino after she complained about ", the act's name and a full stop, chains the snippet's
+narrative and a "You're outta here" follow-up, and drops popularity by two. Apologize
+writes `#23453 "I apologized to my casino's gambler, ", the name, `#5556 ", for having
+booked ", the act's name, and moves addiction +2, the mood slot -2 and the opinion slot
++1. Ignore writes `#24467 "I ignored my casino's gambler, ", the name, `#4920 "'s,
+complaint about ", the act's name, and moves addiction -2, the mood slot +2 and the
+opinion slot -1.
+
+`ScenarioCasinoAgeUpGamblerComplimentEntertainmentAct` (.ctor 0x35712c0,
+`RefreshScenario` `0x3570a00, `ChoiceSelectedAtIndex` `0x3570ec4,
+`ScenarioIsEligibleForRandomPush` `0x3571104) is pushed at `0x2aad1a0. It has no act
+field; the act is used only to build the strings. Its eligibility repeats the same
+"act theme differs from the house theme" test and asks for `YearsSinceScenario` greater
+than 4. The body is `#50268 plus the relationship status, `#5282, the punter's name,
+`#5670 ", is complimenting you on booking ", the act's name and `#3732 " to perform at
+your casino.", a blank line, the punter's subject pronoun and #3319 " says it's her
+favorite attraction.\n\nWhat will you do?".
+
+The buttons are `#41215 "Thank ", `#21649 "Give " plus the object pronoun plus #3411
+" some free games", and #26366 "Ignore "; dispatch is "thank"/"games"/"ignore". Thank
+moves addiction -1, the mood slot -1 and the opinion slot +1; give moves addiction -2,
+mood -2 and opinion +2; ignore drops popularity by two and touches no gambler.
+
+This card writes **no narrative at all**: 0x170 is never stored by the constructor,
+`RefreshScenario` or the choice handler, and the shared tail tests it and returns early,
+so both the log line and the UI refresh are skipped while the effects still apply. That
+is shipped behaviour, recorded here as such.
+
+### The port
+
+`Sim::casinoActComplaintYear` and `Sim::casinoActComplimentYear` in
+`_re/port/src/fam/casino.cpp`, registered as `casino-act-complaint` and
+`casino-act-compliment` with one ticket each and the same casino gate. Both read the
+single act the port keeps in residence, `h.casinoAct`, and its new theme field
+`h.casinoActTheme`; both require the act to exist, the casino to have at least one
+punter, and the act's theme to differ from the house theme, and both keep their own
+cooldown stamps (`casinoActComplaintAge` and `casinoActComplimentAge`). The draws come
+from a new stream, `casinoFloorRng_`, so no existing casino card shifts.
+
+The theme is stamped when an act is booked: a singer's act takes the genre row's theme,
+which is always the house theme because only matching rows are booked, and any other act
+draws one from `a16_casino-casino-theme-enc`. Both cards reproduce the literals above,
+including the lower-case pronoun that opens the complaint's second paragraph, the
+hard-coded "her" in the compliment's line, and the compliment's missing journal.
+
+A port casino books an act only now and then - the booking lives in the patron visit,
+which is itself a roll - so the tests pin the act through a harness hook, `casino_act`
+"same"/"diff", the same way REPORT 347 pins a celebrity. The hook seeds the act from
+`a16_casino-casino-performance-act-name-enc`, gives the casino three punters and forces
+the theme to match or differ.
+
+### Ceilings
+
+The act is one, not a list: the native searches its acts for a mismatched theme, while
+the port keeps whatever act was last booked, so a second booking overwrites the first.
+The gambler's two mood and opinion slots are kept on the hero as
+`casinoGamblerHappiness` and `casinoGamblerAddiction`, and popularity stands in for
+`SimCasino::ImpactPopularity`. The ban's craziness snippet, its chained follow-up card
+and the relationship bar graphs are not pushed; the journal keeps the banned gambler's
+line only. The punter's relationship status is the port's tier word list (REPORT 322).
+The booking itself is unmodelled beyond what REPORT 61 already did: a port act has no
+last-interaction age, so the resignation card that reads it is still out of reach.
+
+### Verified
+
+`_re/tools/test_casino_act.py` pins the act both ways over twenty lives. Measured:
+`complaint lanes: {'apologize': 8, 'ignore': 13, 'ban': 9} | complaints: 30 | praise: 27`.
+Every complaint body names an act theme that differs from the house theme and every
+journal names the same punter and the same act as the body; all three lanes appear; each
+card keeps its gap (three years for the complaint, five for the compliment); the
+compliment writes no log line; and an act that matches the house theme produces neither
+card.
+
+The full 138-test suite ran on the binary these notes describe (bd01d067...,
+137 PASS / 1 FAIL). The failure is test-side and was fixed here without a code
+change: a crime chain can stall when the year's cards run out before the verdict is
+dealt, so a later arrest now opens a fresh chain instead of being read as a second
+live one (measured seed 23: a not-guilty plea at 60, a new arrest at 62). It was
+re-run green.
+
 ## 349. The zoo's customer service card
 
 The next step in the zoo's own age-up ladder: the operations manager says the park's
