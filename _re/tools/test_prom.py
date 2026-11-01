@@ -28,10 +28,15 @@ cards = wins = loses = declines = 0
 for seed in range(1, 41):
     doc = run(seed)
     for event in doc["events"]:
-        if event.get("title") not in ("Prom king", "Prom queen"):
+        # The port folds nomination and outcome into one event, and the outcome draws its
+        # headline from the back-to-school title pool (REPORT 332), so the card is found by
+        # its registry class and the crown by its nomination body.
+        if event.get("table") != "registry:ScenarioBackToSchoolAgeUpPromRoyal":
             continue
         cards += 1
-        crown = event["title"].split()[1]
+        cm = re.match(r"^You've been nominated for prom (king|queen)", event.get("body") or "")
+        assert cm, (seed, event.get("body"))
+        crown = cm.group(1)
         assert 16 <= event["age"] <= 18, (seed, event["age"])
         body = event.get("body") or ""
         assert body.startswith("You've been nominated for prom " + crown), (seed, body)

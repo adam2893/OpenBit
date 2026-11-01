@@ -23536,6 +23536,79 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 332. The back-to-school title pool
+
+Every back-to-school card's headline - the field trip, the dance, the house party, the
+sleepover, the prom, and eleven other cards - is drawn from one table whose rows are
+alternate wordings of the same title. The port had those headlines hardcoded; this section
+takes the pool instead.
+
+### The native side
+
+* DataHub.LoadBackToSchoolTitlesSet (0x28f09f4) reads data/a16_back-to-school-titles-enc,
+  splits it and, per row, parses the first cell into a BACK_TO_SCHOOL_TITLES enum with
+  System.Enum::TryParse (0x28f0cec) and puts **every remaining cell** - the original title and
+  all five option columns - into one list. The row object stores the enum at +0x10 and the
+  list at +0x18.
+* DataHub.GetTitleForBackToSchool(BACK_TO_SCHOOL_TITLES) (0x28f0e84) is a static getter with
+  one enum argument. It finds the row with System.Enum::Equals (0x29cd054) and nothing else -
+  no string compare, no Contains - then returns GameReference::PickRandomFromStringArray over
+  that row's list. The returned string is **one of the row's six cells at random**, never
+  necessarily the original title.
+* 47 BL call sites, all with constant tags, across 16 classes: the four age-up cards
+  (expulsion, field trip, prom royalty, sleepover), the dance cards, the
+  activity cards (SchoolDanceActivity, HousePartyActivity, SleepOver), the school-change
+  request, the scholarship card and SafeSex. Three sites pick between two tags with a csel
+  (30/35, 31/36); the rest pass one enum. Every site writes the result into
+  Scenario.Title (+0x38) or passes it as the title argument of Scenario::.ctor - 36 and 11
+  respectively - and no site uses it as body text, a journal line or a choice label.
+* 55 rows, no duplicate tags. Seven of them are never requested by any code path:
+  WELCOME_TO_THE_SQUAD, ALREADY_WENT_TO_A_DANCE, NO_FRIENDS, FRIENDS_TIL_THE_END,
+  PAJAMA_PARTY, I_HAVE_TO_WALK_MY_FISH and SLUMBER_PARTY_HEARTY; they can only surface
+  through the getter's not-found fallback, which returns a random row's original title.
+* The option columns are alternate headlines, not choice labels; no code reads them
+  individually.
+
+### The port
+
+* `Sim::b2sTitle(tag)` reads the row by its index - the CSV order is the enum order - and
+  draws uniformly from its six title cells on its own stream, `b2sTitleRng_`.
+* Tags the port's own cards now use: the field trip's learning, socializing and goofing-off
+  outcomes take 51, 52 and 53; a classmate turning the hero down takes 8; the dance takes 19
+  when the hero goes alone, 9 with a partner and 18 with a classmate; the house party's wild,
+  lively and chill rows take 2, 3 and 4; a sleepover refusal takes 40 when the hero did the
+  asking and 28 when the classmate asked; and the prom takes 49 when the hero is crowned, 47
+  when he loses and 50 when he declines to run.
+* The sleepover's accept card and the rest of the port's cards keep their own titles: which
+  tag, if any, their native cards request is not mapped here, so they are left unchanged.
+
+### Ceilings
+
+* The port maps each of its own outcomes onto one tag; the native cards often have more
+  outcomes than the port models (the dance has thirteen tags, the party six), so the tags
+  without a port outcome - the cancelled dance, the party that was already thrown three
+  times this year, both sleepover excuse paths - are unused.
+* The seven dead rows stay in the table but no port card draws them, which is the native
+  behaviour too.
+* The prom's nomination card keeps its own "Prom queen"/"Prom king" title; the native
+  royalty card takes the pool's title only on the four outcome cards.
+* Graduating from school has no native consumer for this table, so the port's graduation
+  card keeps its own title.
+
+### Verified
+
+* 36 distinct headlines over 120 lives (seeds 1-120), each one a cell of the row for the tag
+  the card's outcome selects: checked for the field trip's three focuses, the dance's three
+  companions, the party's three rowdiness levels, both sleepover refusals, the dance refusal
+  and the prom's three lanes (8 crowned, 7 robbed, 10 declined).
+* The table still holds 55 rows and the suite's other cards' titles are unchanged.
+
+The full 120-test suite ran on the binary these notes describe (e0012097..., 119 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the prom test
+found its card by the fixed "Prom king"/"Prom queen" headline, which the outcome now draws
+from this pool, so it finds the card by its registry class and the crown by the nomination
+body instead (re-run: 11 prom cards, 3 won, 4 lost, 4 declined).
+
 ## 331. The coworker's compliment card
 
 The peer next to the hero has his own compliment card, and it is not a copy of the agent's
@@ -23546,11 +23619,11 @@ list's payoff row and the generic compliment blueprint.
 
 ### The native card
 
-* ScenarioCoworkerCompliment: \`.ctor\` 0x297f990, RefreshScenario 0x297f9bc (997 instructions),
-  DismissSelected 0x2980950. Fields \`+0x170\` the coworker, \`+0x178\` the narrative; no
-  ChoiceSelectedAtIndex, no random-push gate, and \`+0x132\`/\`+0x133\` are both set, so it is a
+* ScenarioCoworkerCompliment: `.ctor` 0x297f990, RefreshScenario 0x297f9bc (997 instructions),
+  DismissSelected 0x2980950. Fields `+0x170` the coworker, `+0x178` the narrative; no
+  ChoiceSelectedAtIndex, no random-push gate, and `+0x132`/`+0x133` are both set, so it is a
   dismiss-only information card with one button.
-* \`RefreshScenario\` caches the hero's age on the coworker (\`SimPerson+0x144\`), takes a dead
+* `RefreshScenario` caches the hero's age on the coworker (`SimPerson+0x144`), takes a dead
   GetRandomNumber(0, 95) whose result is overwritten, and computes the magnitude as
   GetRandomNumber(0, bound) + bonus in three branches:
   - normally, when the relationship R is above 15: bonus = trunc((R + connection + coolness) /
@@ -23592,7 +23665,7 @@ list's payoff row and the generic compliment blueprint.
 
 ### The port
 
-* \`Sim::coworkerComplimentYear\` is offered from \`Sim::coworkerYear\`, because the port has no
+* `Sim::coworkerComplimentYear` is offered from `Sim::coworkerYear`, because the port has no
   relationship list to click and the native card has no random push. The coworker's
   professionalism, coolness and relationship are drawn on the first card about him
   (coolness and professionalism 0-100, the relationship from the 40-60 tier the company
@@ -23600,7 +23673,7 @@ list's payoff row and the generic compliment blueprint.
   with the recovered tiers.
 * The card writes a16_compliments-enc as its table and the drawn row, so a test can check the
   compliment against the row the card reports.
-* \`Sim::complimentRow\` (added for section 327) supplies the compliment; the pronoun comes
+* `Sim::complimentRow` (added for section 327) supplies the compliment; the pronoun comes
   from the coworker's stored gender, and the hero's own compliment for the warm reply from
   the hero's.
 
@@ -23628,7 +23701,7 @@ list's payoff row and the generic compliment blueprint.
 ### Verified
 
 * 41 coworker compliment cards over 80 lives (seeds 1-80): every one is dismiss-only
-  (\`choice\` null), on a16_compliments-enc, at age 18 or later, with every stat delta zero and
+  (`choice` null), on a16_compliments-enc, at age 18 or later, with every stat delta zero and
   a title from the recovered five.
 * All three frames fire - 16 "called", 12 "told", 13 "that you think" - and each body's
   compliment equals the Compliment cell of the row the card reports, with the journal mirror

@@ -686,6 +686,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       officeCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
       employeeCardRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x510e527fade682d1ULL),
       cwCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x5be0cd19137e2179ULL),
+      b2sTitleRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x1f83d9abfb41bd6bULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
@@ -26756,6 +26757,27 @@ bool Sim::headhunterYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+std::string Sim::b2sTitle(int tag) {
+  // a16_back-to-school-titles-enc, ordered as the enum: the loader parses the tag into the
+  // row's own enum cell and then reads every remaining cell into one list - the original
+  // title and all five options - and the getter returns one of them at random. Every one
+  // of the forty-seven call sites uses the result as the card's title and nothing else
+  // (REPORT.en.md 332).
+  if (!ensureTable("a16_back-to-school-titles-enc")) return std::string();
+  const Table& t = tbl("a16_back-to-school-titles-enc");
+  if (tag < 0 || size_t(tag) >= t.size()) return std::string();
+  static const char* kCols[] = {"Og Title", "Option 1", "Option 2",
+                              "Option 3", "Option 4", "Option 5"};
+  std::vector<std::string> pool;
+  for (const char* c : kCols) {
+    if (!t.has(c)) continue;
+    const std::string v = trim(t.at(size_t(tag), c));
+    if (!v.empty()) pool.push_back(v);
+  }
+  if (pool.empty()) return std::string();
+  return pool[b2sTitleRng_.below(uint32_t(pool.size()))];
+}
+
 bool Sim::promYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.b2sPromDone || !h.schooling) return false;
@@ -26790,6 +26812,7 @@ bool Sim::promYear(Life& life, AgeUp& out, int forcedChoice) {
   out.options = {"Run for prom " + crown, "I don't care"};
   if (!run) {
     out.choice = "I don't care";
+    out.title = b2sTitle(50);
     out.narrative = "You decided you didn't care about being nominated for prom " +
                     crown + ".";  // #48258
     return true;
@@ -26804,12 +26827,14 @@ bool Sim::promYear(Life& life, AgeUp& out, int forcedChoice) {
   const std::string colour = r == size_t(-1) ? std::string() : resolve(t.at(r, "String"));
   if (!colour.empty()) out.extra.push_back(spyUpperFirst(colour));
   if (win) {
+    out.title = b2sTitle(49);
     out.happiness = pointsForImpact(4);
     out.looks = pointsForImpact(1);
     out.narrative = "I was elected prom " + crown + ".";  // #25645
     if (t.size() > 0 && r != size_t(-1) && t.has("Gave Speech") && t.flag(r, "Gave Speech"))
       out.extra.push_back("I gave the class a speech they will not forget.");
   } else {
+    out.title = b2sTitle(47);
     out.happiness = pointsForImpact(-2);
     const std::string winner = fullName();
     out.narrative = "I was nominated for prom " + crown +
@@ -26930,13 +26955,12 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
     const size_t cr = pickFrom(rows, relRng_);
     const std::string focus = lower(trim(col.at(cr, "Focus")));
     mark("a16_backtoschool-field-trip-color-enc", int(cr));
-    title = "A field trip";
     body = spyUpperFirst(resolve(col.at(cr, "String")));
     ++h.b2sTrips;
     // The row's own Focus column is the only outcome signal in the family.
-    if (focus == "learning") { smarts += 2; happy += 1; }
-    else if (focus == "socializing") { happy += 3; relD += 1; }
-    else { happy += 4; disc -= 2; }  // goofing off
+    if (focus == "learning") { smarts += 2; happy += 1; title = b2sTitle(51); }
+    else if (focus == "socializing") { happy += 3; relD += 1; title = b2sTitle(52); }
+    else { happy += 4; disc -= 2; title = b2sTitle(53); }  // goofing off
     tell("My class went to " + place + " on a field trip.");
     add("That was field trip number " + std::to_string(h.b2sTrips) + " to " + place + ".");
   } else if (kind == 1) {
@@ -26971,7 +26995,7 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
       mark("a16_backtoschool-school-dance-rejection-color-enc", int(r));
       pronounOtherFemale_ = whoFemale;
       body = spyUpperFirst(resolve(rj.at(r, "String")));
-      title = "The school dance";
+      title = b2sTitle(8);
       tell(who + " turned me down for the school dance.");
       happy -= int(hurt);
       if (hasLover) relD -= int(hurt);
@@ -26997,7 +27021,9 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
       mark("a16_backtoschool-school-dance-event-feedback-enc", int(r));
       pronounOtherFemale_ = whoFemale;
       body = spyUpperFirst(resolve(fb.at(r, "String")));
-      title = "The school dance";
+      if (ct == "none") title = b2sTitle(19);
+      else if (hasLover) title = b2sTitle(9);
+      else title = b2sTitle(18);
       happy += int(numOf(fb, r, "Hero Enjoyment Score"));
       if (hasLover) relD += int(numOf(fb, r, "NPC Enjoyment Score (if applicable)"));
       if (ct == "none") tell("I went to the school dance on my own.");
@@ -27074,7 +27100,7 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
     }
     const size_t cr = pickFrom(rows, relRng_);
     mark("a16_backtoschool-house-party-color-enc", int(cr));
-    title = "A house party";
+    title = b2sTitle(level == "wild" ? 2 : (level == "lively" ? 3 : 4));
     // The colour row's own inline list is what its Log Version points at, so
     // the feed line has to resolve first (REPORT.en.md 88).
     body = spyUpperFirst(resolve(col.at(cr, "String")));
@@ -27148,7 +27174,7 @@ bool Sim::backToSchoolYear(Life& life, AgeUp& out, int forcedChoice) {
     if (turnedDown) {
       const size_t rr = weightedPick(rej, "Commonness Score", relRng_);
       mark("a16_backtoschool-sleepover-invitation-rejection-color-enc", int(rr));
-      title = "A sleepover invitation";
+      title = b2sTitle(heroAsks ? 40 : 28);
       pronounOtherFemale_ = palFemale;
       body = spyUpperFirst(resolve(rej.at(rr, heroAsks ? "String - NPC" : "String - Hero")));
       tell(heroAsks ? "I asked " + pal + " to sleep over, and " + pal + " said no."

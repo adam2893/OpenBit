@@ -409,6 +409,7 @@ class Sim {
   bool parentsPetYear(Life& life, AgeUp& out, int forcedChoice);
   bool partTimeYear(Life& life, AgeUp& out, int forcedChoice);
   bool parentsCarYear(Life& life, AgeUp& out, int forcedChoice);
+  std::string b2sTitle(int tag);
   bool promYear(Life& life, AgeUp& out, int forcedChoice);
   bool headhunterYear(Life& life, AgeUp& out, int forcedChoice);
   bool murderYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1205,6 +1206,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng officeCompRng_;  // the employee compliment card's own stream
   Rng employeeCardRng_;  // the respect card and its chain's own stream
   Rng cwCompRng_;  // ScenarioCoworkerCompliment's own stream (REPORT.en.md 331)
+  Rng b2sTitleRng_;  // the back-to-school title pool's own stream (REPORT.en.md 332)
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;
