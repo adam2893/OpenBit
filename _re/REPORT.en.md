@@ -23536,6 +23536,67 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 343. The insult's comeback card
+
+The workplace discipline card's insult button (REPORT 325) left its own aftermath out:
+the native game pushes a second, dismiss-only card that titles itself with a comeback and
+repeats the sentence the button wrote. This section ports that card and, with it, fixes
+whose gender the insult word is drawn for.
+
+### The native side
+
+The insult branch of `ScenarioWorkplaceDisciplineSupervisor::ChoiceSelectedAtIndex`
+(0x299cbb0) builds a four-entry ArrayList of comebacks and then picks the card's two
+strings: `PickRandomFromStringArray` (0x2e165f8) takes #39989 `Stay classy`, #40899
+`Take that`, #41445 `That's right` or #48825 `You heard me` for the title, and
+`GameReference::GetRandomNumber(0,3)` (0x299cc84) chooses one of three sentence forms.
+Only the first form's fields are established — #47966 `You called your {0}, {1}, {2}.`
+over the supervisor's relationship status, the supervisor's full name and the insult word
+— so that is the sentence the port writes. The card itself is a plain
+`Scenario::.ctor(title, body, next)` (0x2a25500) with no choices: its only effect is the
+journal line #69007 `{0}\nI called {1} {2}.`, which repeats the sentence and then says who
+was called what.
+
+The insult word comes from `DataHub::GetRandomInsultForGender` (0x2808570), and the
+argument is the *insulted person's* gender, not the hero's. The port's `insultToken` was
+filtering `a16_insults-enc` by the hero's own gender, which only showed when the
+supervisor's gender differed from the hero's; the new `insultTokenForGender(bool)` takes
+the gender to filter for and both workplace cards now pass their own subject's — the
+supervisor for the discipline card's allegation and for this card.
+
+### The port
+
+The insult lane now draws the comeback (`discRng_.below(4)` over the four lines) and the
+insult word, writes #47966 over `"your supervisor, " + name` and pushes
+`kPendingInsultComeback`. `Sim::insultComebackYear` renders it with the comeback as the
+title, the sentence as the body and #69007 as the narrative, then clears the three hero
+fields (`insultComeback`, `insultSentence`, `insultWord`) so the card cannot reappear.
+One card per year-up is the port's idiom, so the card arrives in a later year than the
+discipline card that caused it rather than immediately after the dismissal (ceiling).
+
+### Ceilings
+
+- Two of the three sentence forms (#49529 and #49527, both `You told your {0}, {1}, that
+  ...`) are recovered as templates but their argument slots are not established, so the
+  card always uses the `called` form.
+- The card arrives one age-up later than it does in the game, because the port drains one
+  pending card per year (the same shape as every other follow-up card here).
+- The work-performance, achievement and Apollo16 people-insulted tracker writes that ride
+  the button are not modelled; the port keeps its own `supInsulted` counter (REPORT 325).
+
+### Verified
+
+`_re/tools/test_insult_comeback.py` drives thirty lives with the insult lane forced and
+asserts, for all 276 comeback cards: the body is #47966 over a supervisor name and an
+insult word with no bracket tokens left; the card has no choice and moves no stat; the
+journal repeats the same word with the supervisor's own object pronoun; the word belongs
+to `a16_insults-enc`'s pool for the gender that pronoun implies; and a workplace
+discipline card was seen earlier in the same age-up. All four comebacks appeared.
+Measured: `comeback cards: 276 | titles: 4` over seeds 1-30.
+
+The full 131-test suite ran on the binary these notes describe (6bd5433c..., 131 PASS /
+0 FAIL).
+
 ## 342. The hero's own pregnancy
 
 The pregnancy card of REPORT 338 only ever arrives when the hero is the father. The

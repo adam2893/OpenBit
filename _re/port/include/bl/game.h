@@ -1093,6 +1093,12 @@ struct Hero {
   int supInsulted = 0;      // times the discipline card's insult lane ran
   int troublePoints = 0;    // SimWorkplace's own counter, fed by the card's seriousness
   int disciplineAge = -1;
+  // The insult's own comeback card (REPORT.en.md 343): the sentence the button wrote, the
+  // comeback line that titles the card, and the insult word its journal repeats. The
+  // discipline card fills them and the pending card renders and clears them.
+  std::string insultSentence;
+  std::string insultComeback;
+  std::string insultWord;
   // The HR investigation (REPORT.en.md 339): the reason literal its caller passed,
   // the seriousness that came with it, the workplace's management strictness its
   // termination score reads (drawn once, since the port keeps no workplace object

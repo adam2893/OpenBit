@@ -3301,10 +3301,17 @@ int Sim::retirementAge(const Hero& h) const { return h.retirementAge; }
 // the pool is filtered on his gender. The Vampire column marks the rows the
 // vampire family draws for itself, and those are skipped here.
 std::string Sim::insultToken() {
+  return insultTokenForGender(hero_ != nullptr && hero_->female);
+}
+
+// DataHub::GetRandomInsultForGender (0x2808570) filters the pool by the gender it is given,
+// which is the gender of the person being insulted rather than the hero has, so the two
+// workplace cards that insult a supervisor pass the supervisor has (REPORT.en.md 343).
+std::string Sim::insultTokenForGender(bool female) {
   if (!ensureTable("a16_insults-enc")) return std::string();
   const Table& t = tbl("a16_insults-enc");
   if (!t.has("Insult")) return std::string();
-  const std::string want = (hero_ != nullptr && hero_->female) ? "female" : "male";
+  const std::string want = female ? "female" : "male";
   std::vector<size_t> pool;
   for (size_t r = 0; r < t.size(); ++r) {
     if (trim(t.at(r, "Insult")).empty()) continue;
@@ -4160,6 +4167,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingHeroPregnancy) return heroPregnancyYear(life, out, forcedChoice);
     if (kind == kPendingHeroMiscarriage) return heroMiscarriageYear(life, out, -1);
     if (kind == kPendingHeroBirth) return heroBirthYear(life, out, -1);
+    if (kind == kPendingInsultComeback) return insultComebackYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
@@ -23040,7 +23048,7 @@ bool Sim::workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
   const Allegation& al = kAllegations[which];
   std::string third;
   if (al.third == 2) {
-    third = insultToken();
+    third = insultTokenForGender(h.supFemale);
     if (third.empty()) return false;
   } else if (al.third == 1) {
     if (!ensureTable("a16_gifts-enc")) return false;
@@ -23090,9 +23098,19 @@ bool Sim::workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
     h.supRelation -= 6;
     if (h.supRelation < 0) h.supRelation = 0;
     ++h.supInsulted;
-    // The lane's own journal line lives on the follow-up card the native game queues
-    // (one of five titles the recovery could not map to a condition), which the port
-    // does not reproduce, so this year writes no line for it (ceiling).
+    // The button also queues a dismiss-only card of its own: Scenario::.ctor(title, body,
+    // next) at 0x299cc9c, with the title a uniform pick over four comeback lines (#39989,
+    // #40899, #41445, #48825) and the body one of three sentences. Only the 'called'
+    // sentence's slots are established (#47966, with the insult word the DataHub draw
+    // returns), so that is the form written here (ceiling, REPORT.en.md 343).
+    static const char* kComebacks[] = {"Stay classy", "Take that", "That's right",
+                                       "You heard me"};
+    h.insultComeback = kComebacks[size_t(discRng_.below(4))];
+    h.insultWord = insultTokenForGender(h.supFemale);
+    if (!h.insultWord.empty()) {
+      h.insultSentence = "You called your supervisor, " + sup + ", " + h.insultWord + ".";
+      life.pendingCards.push_back(kPendingInsultComeback);
+    }
   } else if (seduced) {
     // The success lane pushes ScenarioSupervisorSeduceSuccess -- the same dismiss-only
     // card the supervisor-seduction family queues (REPORT.en.md 123). The follow-up
@@ -23655,6 +23673,25 @@ bool Sim::hrDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
   ++h.timesReportedToHR;
   h.hrSeriousness = 0;
   h.hrReason.clear();
+  return true;
+}
+
+// The insult's comeback card (REPORT.en.md 343). The discipline card's insult button hands
+// the follow-up card its own sentence and a comeback title; the card has no choice of its
+// own, so all it does is show the sentence and log it with #69007.
+bool Sim::insultComebackYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.insultSentence.empty()) return false;
+  const std::string them = h.supFemale ? "her" : "him";
+  out.table = "registry:Scenario";
+  out.title = h.insultComeback;
+  out.body = h.insultSentence;
+  // #69007 '{0}\nI called {1} {2}.'
+  out.narrative = h.insultSentence + "\nI called " + them + " " + h.insultWord + ".";
+  h.insultSentence.clear();
+  h.insultComeback.clear();
+  h.insultWord.clear();
   return true;
 }
 
