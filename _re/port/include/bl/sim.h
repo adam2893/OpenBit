@@ -849,6 +849,7 @@ class Sim {
   // them draws a random number, so the coin is the port's; they share one
   // coworker and draw on their own stream (cwRng_).
   bool coworkerYear(Life& life, AgeUp& out, int forcedChoice);
+  bool coworkerComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   bool supervisorYear(Life& life, AgeUp& out, int forcedChoice);
   // The supervisor discipline card, REPORT.en.md 325.
   bool workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1203,6 +1204,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng officeCompRng_;  // the employee compliment card's own stream
   Rng employeeCardRng_;  // the respect card and its chain's own stream
+  Rng cwCompRng_;  // ScenarioCoworkerCompliment's own stream (REPORT.en.md 331)
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;

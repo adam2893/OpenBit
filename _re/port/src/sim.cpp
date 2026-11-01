@@ -685,6 +685,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
       officeCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
       employeeCardRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x510e527fade682d1ULL),
+      cwCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x5be0cd19137e2179ULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
@@ -22454,6 +22455,11 @@ bool Sim::coworkerYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.age < 18) return false;
   if (!h.employed && !h.military) return false;
 
+  // The coworker's compliment card (REPORT.en.md 331) is a row on his relationship
+  // list, not a wheel card: the list has no button here, so the coworker family
+  // offers it before its own cards.
+  if (coworkerComplimentYear(life, out, forcedChoice)) return true;
+
   struct CwCard {
     const char* table;
     const char* title;       // the .ctor's own title cell
@@ -23348,6 +23354,114 @@ bool Sim::agentComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   out.narrative = narrative;
   return true;
 }
+bool Sim::coworkerComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  if (forcedChoice >= 0) return false;
+  Hero& h = life.hero;
+  // ScenarioCoworkerCompliment (REPORT.en.md 331). The native card has no random
+  // push at all: it is a row on the coworker's relationship list, so the port
+  // offers it from the coworker family's own turn (the list has no button here).
+  if (h.age < 18) return false;
+  if (!h.employed && !h.military) return false;
+  if (h.inPrison || h.cwName.empty()) return false;
+  if (!cwCompRng_.chance(0.12)) return false;
+
+  // The coworker's personality comes from PersonGenerator with the rest of the
+  // roster; the port draws one coworker and keeps his three values from the
+  // first card about him (ceiling: the native refreshes a whole roster).
+  if (h.cwProfessionalism < 0) {
+    h.cwProfessionalism = int(cwCompRng_.below(101));
+    h.cwCoolness = int(cwCompRng_.below(101));
+    h.cwRelation = 40 + int(cwCompRng_.below(21));  // SetRandomHeroRelationshipStrength(0,11,40)
+  }
+
+  // The magnitude is rand(0,bound) + bonus, and the bonus is the average of the
+  // relationship, the coworker's connection and his coolness - a divide by three
+  // in the binary. The port keeps no connection score (shortcut: it stands in as
+  // the middle of the range). A coworker the hero hardly knows falls back to the
+  // willpower branch, which the port does not model, so it takes that branch's
+  // other side: bonus 5 and a bound of the relationship itself.
+  const double rel = double(h.cwRelation);
+  const double connection = 50.0;
+  int bonus = 5;
+  uint32_t bound = uint32_t(rel);
+  if (rel > 15.0) {
+    bonus = int((rel + connection + double(h.cwCoolness)) / 3.0);
+    bound = 30;
+  }
+  if (bound < 1) bound = 1;
+  const int score = int(cwCompRng_.below(bound)) + bonus;
+
+  // Warm only when the magnitude clears 51 and the coworker is that unimpressed
+  // by both professionalism and coolness; the draws happen either way.
+  const bool warm = score >= 51 && h.cwProfessionalism < int(cwCompRng_.below(100)) &&
+                    h.cwCoolness > int(cwCompRng_.below(100));
+
+  const size_t row = complimentRow(h.cwFemale, cwCompRng_);
+  if (row == size_t(-1)) return false;
+  const std::string line = trim(tbl("a16_compliments-enc").at(row, "Compliment"));
+
+  static const char* kTitles[] = {"A joy to be around", "Office butterfly",
+                                  "Compliments to the office", "There's that smile",
+                                  "Good natured"};
+  const std::string title = kTitles[cwCompRng_.below(5)];
+  const std::string role = "co-worker";
+  const std::string shes = h.cwFemale ? "she's" : "he's";
+  const std::string she = h.cwFemale ? "She" : "He";
+
+  std::string body, narrative;
+  switch (int(cwCompRng_.below(3))) {
+    case 0:
+      body = "You called your " + role + ", " + h.cwName + ", " + line + ".";
+      narrative = "I called my " + role + ", " + h.cwName + ", " + line + ".";
+      break;
+    case 1:
+      body = "You told your " + role + ", " + h.cwName + ", that " + shes + " " + line + ".";
+      narrative = "I told my " + role + ", " + h.cwName + ", that " + shes + " " + line + ".";
+      break;
+    default:
+      body = "You told your " + role + ", " + h.cwName + ", that you think " + shes + " " +
+             line + ".";
+      narrative = "I told my " + role + ", " + h.cwName + ", that " + shes + " " + line + ".";
+      break;
+  }
+
+  // Once a year at most: the native compares the stored year with the hero's age
+  // before it moves the coworker's relationship, then remembers the year.
+  if (h.cwLastComplimentAge != h.age) {
+    int delta = 0;
+    if (score >= 91) delta = 5;
+    else if (score >= 81) delta = 4;
+    else if (score >= 41) delta = 3;
+    else if (score >= 21) delta = 2;
+    else if (score >= 11) delta = 1;
+    h.cwRelation += delta;
+    if (h.cwRelation > 100) h.cwRelation = 100;
+    h.cwLastComplimentAge = h.age;
+  }
+
+  if (warm) {
+    // The native can chain a hookup card here when the hero has no lover and the
+    // coworker's feelings are high enough; ScenarioCoworkerHookup's internals are
+    // unrecovered, so the port stops at the reply (ceiling).
+    const size_t back = complimentRow(h.female, cwCompRng_);
+    if (back != size_t(-1)) {
+      const std::string reply = trim(tbl("a16_compliments-enc").at(back, "Compliment"));
+      const std::string sentence =
+          cwCompRng_.below(2) == 0 ? she + " called me " + reply + "." : she + " told me that I'm " + reply + ".";
+      narrative += "\n" + sentence;
+    }
+  } else if (score <= 14 && h.cwCoolness < int(cwCompRng_.below(100))) {
+    body += "\n\n" + she + " ignored you.";
+  }
+
+  out.table = "a16_compliments-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = narrative;
+  return true;
+}
+
 bool Sim::teamBuildingYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;

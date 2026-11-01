@@ -23536,6 +23536,111 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 331. The coworker's compliment card
+
+The peer next to the hero has his own compliment card, and it is not a copy of the agent's
+or the employee's: it draws a magnitude from the coworker's personality, moves the
+relationship once a year at most, and can land a cold "ignored you" instead of a warm reply.
+It is also unreachable from a random push - the only two constructors are the relationship
+list's payoff row and the generic compliment blueprint.
+
+### The native card
+
+* ScenarioCoworkerCompliment: \`.ctor\` 0x297f990, RefreshScenario 0x297f9bc (997 instructions),
+  DismissSelected 0x2980950. Fields \`+0x170\` the coworker, \`+0x178\` the narrative; no
+  ChoiceSelectedAtIndex, no random-push gate, and \`+0x132\`/\`+0x133\` are both set, so it is a
+  dismiss-only information card with one button.
+* \`RefreshScenario\` caches the hero's age on the coworker (\`SimPerson+0x144\`), takes a dead
+  GetRandomNumber(0, 95) whose result is overwritten, and computes the magnitude as
+  GetRandomNumber(0, bound) + bonus in three branches:
+  - normally, when the relationship R is above 15: bonus = trunc((R + connection + coolness) /
+    3) - the divide-by-three in the binary - and bound 30;
+  - when R <= 15 and the coworker's willpower is under 30: bonus 30, bound 31;
+  - otherwise: bonus 5, bound (int)R.
+* Warm only when the magnitude clears 51 and the coworker is unimpressed by both counts:
+  professionalism < GetRandomNumber(0, 100) and coolness > GetRandomNumber(0, 100). Both
+  draws happen whatever the outcome.
+* The bar graph is titled #69489 '{0} Appreciation' with PronounStringForType 6 and the
+  magnitude clamped to 100.
+* The relationship moves once per age-year, when the stored year differs from the hero's:
+  +5 at 91 and above, +4 at 81, +3 at 41, +2 at 21, +1 at 11, nothing below.
+* Body and journal come from a 3-way roll: #47966 'You called your {0}, {1}, {2}.' / #23686
+  'I called my {0}, {1}, {2}.'; #49529 'You told your {0}, {1}, that {2} {3}.' / #25271 'I
+  told my {0}, {1}, that {2} {3}.'; #49527 'You told your {0}, {1}, that you think {2} {3}.'
+  / the same #25271 journal. {0} is the relationship word, {1} the coworker's name, {2} the
+  compliment drawn for the coworker's gender from a16_compliments-enc, {3} the he's/she's
+  pronoun. Title from #10079 'A joy to be around', #32583 'Office butterfly', #16115
+  'Compliments to the office', #42929 "There's that smile", #22091 'Good natured'.
+* A warm card continues: when the hero has no lover and the coworker's feelings for him are
+  at least 81, the card chains ScenarioCoworkerHookup; then the hero's own compliment is
+  drawn for the hero's gender and a journal sentence is appended - #69883 '{0} called me
+  {1}.' or #70323 "{0} told me that I'm {1}." with PronounStringForType 5 - and the card
+  chains a plain follow-up titled from #23233 'How nice', #30537 'Much appreciated', #43692
+  "Today's gonna be a good day", #15211 'Careful now ;)', #18853 'Enough love to go around'
+  whose body is the reply sentence (#69888 '{0} called you {1}!' / #70338 "{0} told you that
+  you're {1}!").
+* A cold card - magnitude at most 14 and coolness below GetRandomNumber(0, 100) - appends
+  #68842 '{0}\n\n{1} ignored you.' to the body and chains nothing.
+* The supervisor case: a coworker whose Type is SUPERVISOR takes a different bonus branch
+  (professionalism above 85 in a job, 50 in the military, falls through to the relationship
+  branch) and costs a relationship point with every coworker through
+  SimWorkplace::ImpactRelationshipWithAllCoworkers(-1).
+* The two constructor sites are LifeInterface::RelationshipItemArrayForCoworker (the list's
+  'Pay {0} a compliment' row, pronoun 2, one card per click) and
+  BluePrintCompliment::GetNextScenario (hero 6 or older, target older than 2, target not an
+  abandoned child, one card per call).
+
+### The port
+
+* \`Sim::coworkerComplimentYear\` is offered from \`Sim::coworkerYear\`, because the port has no
+  relationship list to click and the native card has no random push. The coworker's
+  professionalism, coolness and relationship are drawn on the first card about him
+  (coolness and professionalism 0-100, the relationship from the 40-60 tier the company
+  generator uses), the magnitude follows the recovered branches, and the relationship moves
+  with the recovered tiers.
+* The card writes a16_compliments-enc as its table and the drawn row, so a test can check the
+  compliment against the row the card reports.
+* \`Sim::complimentRow\` (added for section 327) supplies the compliment; the pronoun comes
+  from the coworker's stored gender, and the hero's own compliment for the warm reply from
+  the hero's.
+
+### Ceilings
+
+* The push is a coin (0.12) on the coworker family's yearly turn; the native card has no
+  random push at all, so its real frequency is whatever the player clicks in a relationship
+  list the port does not have.
+* A relationship starts in the recovered 40-60 tier and only grows, so the branches that need
+  a relationship at or below 15 - and with it the "ignored you" arm - are implemented but
+  cannot be reached in a port life, while the native roster can hold a thoroughly disliked
+  coworker. The cold arm is kept because its arithmetic is recovered.
+* The port keeps no connection score, so the average uses 50 in its place; the willpower
+  branch (only reachable below 15 anyway) is not modelled and that case takes the fallback.
+* The supervisor variant of the card is not offered - the port's supervisor has his own
+  cards - so the different threshold and ImpactRelationshipWithAllCoworkers(-1) are
+  recorded but unused.
+* The bar graph is not modelled, so the magnitude only survives through the relationship
+  tiers.
+* ScenarioCoworkerHookup's internals are unrecovered, so the warm card stops at the reply;
+  the plain follow-up card is not reproduced, and its reply sentence is written into the
+  journal instead.
+* The native counts the compliment on Life+0x3ac; the port keeps no such counter.
+
+### Verified
+
+* 41 coworker compliment cards over 80 lives (seeds 1-80): every one is dismiss-only
+  (\`choice\` null), on a16_compliments-enc, at age 18 or later, with every stat delta zero and
+  a title from the recovered five.
+* All three frames fire - 16 "called", 12 "told", 13 "that you think" - and each body's
+  compliment equals the Compliment cell of the row the card reports, with the journal mirror
+  naming the same coworker.
+* 5 warm cards carried the return-compliment journal sentence ("He called me ...", "He told
+  me that I'm ..."); no card carried both a reply and an "ignored you" paragraph.
+* A run with no job produced no coworker cards (control over seeds 1-20).
+
+The full 119-test suite ran on the binary these notes describe (a30b176b..., 119 PASS /
+0 FAIL): _re/tools/test_coworker_compliment.py exercises the card, its three frames, the
+warm reply and the per-year relationship tiers, and nothing else moved.
+
 ## 330. The employee respect card and its chain
 
 The office has one more card the employee's own feedback card can hand to: ScenarioEmployeeRespect,

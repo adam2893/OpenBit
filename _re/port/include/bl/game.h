@@ -1030,6 +1030,12 @@ struct Hero {
   // hero takes a job, and the four cards share it for the whole career.
   std::string cwName;    // the coworker a card is about
   bool cwFemale = false;
+  // ScenarioCoworkerCompliment (REPORT.en.md 331): the coworker's personality and the
+  // relationship the card moves, drawn once on the first card about him.
+  int cwProfessionalism = -1;
+  int cwCoolness = -1;
+  int cwRelation = 50;
+  int cwLastComplimentAge = -1;
   std::string supName;   // the workplace supervisor the unprofessional card is about
   bool supFemale = false;
   int supPresented = 0;  // ScenarioSupervisorUnprofessional's own presented cap
