@@ -10,6 +10,7 @@
 #include "bl/table.h"
 #include "bl/text.h"
 
+#include <algorithm>
 #include <string>
 
 namespace bl {
@@ -153,37 +154,81 @@ bool Sim::miscarriageYear(Life& life, AgeUp& out, int forcedChoice) {
 
 // ScenarioBirth (RefreshScenario 0x256c9f8): the arrival, and the port names the
 // child from the game's own pool because there is no text entry (ceiling).
+
 bool Sim::birthYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
   if (h.loverName.empty()) return false;
   hero_ = &h;
   life_ = &life;
-  const bool girl = loverRng_.chance(0.5);
+  // Multiples: the game rolls a lifetime denominator of 50 (8 for a surrogate or
+  // donor pregnancy, which the port has no flags for) and, when that lands, a
+  // 1-in-10 roll that makes three children instead of two
+  // (PersonGenerator::GenerateHeroChildArrayInPlaceWithParentsAndGeneration
+  // @0x337c1c8 and @0x337c1f4). Every child of a multiple birth shares the roll's
+  // gender, which the same generator copies from the first child at 0x337c3a8.
+  int kids = 1;
+  if (birthRng_.below(50) == 0) kids = birthRng_.below(10) == 0 ? 3 : 2;
+  const bool girl = birthRng_.chance(0.5);
   const std::string word = loverWord(h);
-  Child born;
-  born.female = girl;
-  born.name = drawFirstName(girl);
-  born.lastName = h.lastName;
-  born.age = 0;
-  born.bornAtHeroAge = h.age;
-  born.otherParent = h.loverName;
-  born.isHeroes = h.loverPregnantByHero;
-  born.withCurrentLover = true;
-  born.city = h.city;
   out.table = "relationship";
   out.row_id = "0";
-  // Body: the class's own sentence (#70148), cut before the naming question the
-  // port cannot ask -- there is no text entry, and the child is named from the
-  // game's pool instead.
-  out.body = "Your " + word + ", " + h.loverName + ", just gave birth to a baby " +
-             (girl ? "girl" : "boy") + "!";
-  out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
-  out.narrative = "My " + word + ", " + h.loverName + " gave birth to a baby " +
-                  (girl ? "girl" : "boy") + " named " + born.name + ".";
-  out.extra.push_back("I named " + (girl ? std::string("her ") : std::string("him ")) +
-                       born.name + ".");
-  life.children.push_back(born);
+  if (kids == 1) {
+    Child born;
+    born.female = girl;
+    born.name = drawFirstName(girl);
+    born.lastName = h.lastName;
+    born.age = 0;
+    born.bornAtHeroAge = h.age;
+    born.otherParent = h.loverName;
+    born.isHeroes = h.loverPregnantByHero;
+    born.withCurrentLover = true;
+    born.city = h.city;
+    // Body: the class's own sentence (#70148), cut before the naming question the
+    // port cannot ask -- there is no text entry, and the child is named from the
+    // game's pool instead.
+    out.body = "Your " + word + ", " + h.loverName + ", just gave birth to a baby " +
+               (girl ? "girl" : "boy") + "!";
+    out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+    out.narrative = "My " + word + ", " + h.loverName + " gave birth to a baby " +
+                    (girl ? "girl" : "boy") + " named " + born.name + ".";
+    out.extra.push_back("I named " + (girl ? std::string("her ") : std::string("him ")) +
+                         born.name + ".");
+    life.children.push_back(born);
+  } else {
+    // The multiple-birth body (#70149): '{0} just gave birth to {1} {2}{3}!', with
+    // {1} the twin/triplet word and {2} 'boys' or 'girls'. The port names each child
+    // itself and never repeats a name, the way the game's own name prompt does.
+    const char* kind = kids == 3 ? "triplet" : "twin";     // #67250 / #67315
+    const char* plural = girl ? "girls" : "boys";          // #59794 / #55180
+    out.body = "Your " + word + ", " + h.loverName + ", just gave birth to " +
+               kind + " " + plural + "!";
+    out.body[0] = static_cast<char>(::toupper(static_cast<unsigned char>(out.body[0])));
+    out.narrative = "My " + word + ", " + h.loverName + " gave birth to " +
+                    kind + " " + plural + ".";
+    std::vector<std::string> names;
+    for (int i = 0; i < kids; ++i) {
+      Child born;
+      born.female = girl;
+      born.name = drawFirstName(girl);
+      for (int guard = 0; guard < 8 && std::find(names.begin(), names.end(), born.name) != names.end(); ++guard) {
+        born.name = drawFirstName(girl);
+      }
+      names.push_back(born.name);
+      born.lastName = h.lastName;
+      born.age = 0;
+      born.bornAtHeroAge = h.age;
+      born.otherParent = h.loverName;
+      born.isHeroes = h.loverPregnantByHero;
+      born.withCurrentLover = true;
+      born.city = h.city;
+      // SimChild.Twins (+0x1fc) holds the number of siblings the birth produced.
+      born.twins = kids - 1;
+      life.children.push_back(born);
+      out.extra.push_back("I named " + (girl ? std::string("her ") : std::string("him ")) +
+                          born.name + ".");
+    }
+  }
   h.loverPregnant = false;
   h.loverPregnantByHero = false;
   h.loverBirthQueued = false;

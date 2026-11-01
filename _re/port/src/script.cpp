@@ -240,6 +240,7 @@ std::string childrenJson(const Life& life) {
       << ", \"paternityAsked\": " << c.paternityAsked
       << ", \"bornAtHeroAge\": " << c.bornAtHeroAge
       << ", \"isHeroes\": " << (c.isHeroes ? "true" : "false")
+      << ", \"twins\": " << c.twins
       << ", \"city\": " << jsonOrNull(c.city)
       << ", \"city\": " << jsonOrNull(c.city) << "}";
   }

@@ -180,6 +180,8 @@ struct Child {
   // there. The port keeps the answer instead, so a fixture child that belongs to the
   // ex stays hers and the roll's outcome is reproducible.
   bool isHeroes = false;
+  // SimChild.Twins (+0x1fc): how many siblings a multiple birth produced (REPORT.en.md 340).
+  int twins = 0;
 };
 
 struct Life {
@@ -1246,6 +1248,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng employeeCardRng_;  // the respect card and its chain's own stream
   Rng cwCompRng_;  // ScenarioCoworkerCompliment's own stream (REPORT.en.md 331)
   Rng b2sTitleRng_;  // the back-to-school title pool's own stream (REPORT.en.md 332)
+  Rng birthRng_;  // the birth card's own stream (REPORT.en.md 340)
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;

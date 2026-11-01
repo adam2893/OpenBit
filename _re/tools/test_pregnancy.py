@@ -31,8 +31,11 @@ MISC_LOG = re.compile(
 LOSS_LOG = re.compile(
     r"^(?P<name>.+?) had (?:a|an) "
     r"(?:ectopic pregnancy|molar pregnancy|stillbirth|chemical pregnancy) and lost the baby!$")
+# The multiple-birth form ("just gave birth to twin boys!") is REPORT 340; both forms
+# close the pregnancy, so both must clear the flag this walk keeps.
 BIRTH_BODY = re.compile(
-    r"^(?P<word>[A-Za-z]+) (?P<name>.+?), just gave birth to a baby (?:girl|boy)!$")
+    r"^(?P<word>[A-Za-z]+) (?P<name>.+?), just gave birth to "
+    r"(?:a baby (?:girl|boy)|(?:twin|triplet) (?:boys|girls))!$")
 
 CHOICES = ("Keep the baby", "Don't keep the baby")
 DECLINE = "We chose not to keep the baby!"

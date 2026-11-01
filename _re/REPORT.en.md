@@ -23536,6 +23536,83 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 340. Twins and triplets
+
+The birth card has always been able to deliver more than one child. The port
+delivered one.
+
+### The native side
+
+`PersonGenerator::GenerateHeroChildArrayInPlaceWithParentsAndGeneration`
+(0x337bed0, 0x638 bytes) builds the whole batch in `ScenarioBirth::RefreshScenario`
+rather than in a choice handler:
+
+- the multiples roll at 0x337c1c8 is `GetRandomNumber(0, denominator)` with the
+  denominator 50 for an ordinary pregnancy and 8 when the pregnancy is a donor or
+  surrogate one (mother "Anonymous", father "Donor"); a zero means more than one
+  child, anything else means the single-child path;
+- a second roll at 0x337c1f4 is `GetRandomNumber(0, 10)` and the class materialises
+  three children when it lands on zero, two otherwise (`cinc` on the compare);
+- the loop at 0x337c310 takes the count, so a multiple birth is 2 or 3 children and
+  never more;
+- gender is decided once, in `GenerateChildInPlaceWithParentsAndGeneration`
+  (0x337adcc): a gender argument of 2 draws `GetRandomNumber(0,2)` and stores the
+  result, and the twin copy at 0x337c3a8 writes the same `Gender` and
+  `GenderAtBirth` into every extra child, so a multiple birth is all boys or all
+  girls;
+- each extra child copies the first child's inherited stats (0x337c3c8) and shares
+  its emoji through `PersonEmojiScript::GetDuplicateEmojiScript` (0x337c388);
+- `SimChild.Twins` (+0x1fc) is written on every child as the number of siblings the
+  birth produced (0x337c34c for the first child, 0x337c378 for the rest), so one
+  value describes the whole batch.
+
+The card's two bodies follow: a single child gets #70148 `{0} just gave birth to a
+baby {1}{2}!` and a multiple birth gets #70149 `{0} just gave birth to {1} {2}{3}!`
+with `{1}` the twin or triplet word (#67315 / #67250) and `{2}` "boys" or "girls"
+(#55180 / #59794). The naming widgets differ too -- 'Select name' #38475 against
+'Select names' #38476 -- and the multiple-birth naming rows label each child with
+#69434 `{0} #{1}`.
+
+### The port
+
+`Sim::birthYear` now runs both rolls on its own `birthRng_` stream (so the extra
+draws cannot shift any other card's sequence), shares the single gender draw across
+the batch, and pushes every child with `twins = kids - 1`. The port has no text
+entry, so the naming prompt is still replaced by the game's own name pool, but a
+multiple birth draws a fresh name per child and re-draws on a collision, the way the
+game's prompt does; the journal names every child and the body uses the multiple
+form. `script.cpp` exposes the new field so the test can see it.
+
+### Ceilings
+
+- The donor/surrogate denominator of 8 never applies: the port has no surrogate or
+  anonymous-donor pregnancy, so every pregnancy rolls against 50.
+- The port draws names from `drawFirstName` instead of the game's name prompt, and
+  it does not apply the game's same-first-letter rule
+  (`GetRandomFirstNameForGenderAndTryToStartWithSameLetterAsName`) to the later
+  children.
+- The inherited-stat copy and the shared emoji are not modelled: the port's children
+  carry no stats or art.
+- `SimChild.Twins` is written and exported but no port card reads it yet; the
+  'Twins'/'Triplets' labels on the game's own family screen (#44280 / #44030) are
+  not modelled either.
+
+### Verified
+
+`_re/tools/test_birth_multiples.py` walks 120 funded lives with partners and asserts,
+for every multiple birth it finds, that the body uses the twin/triplet form with the
+right plural, that the child array gains exactly two or three children at that age
+with the same gender, distinct names, the right `twins` count and the right other
+parent, and that the journal names the birth and every child; singles keep their own
+body. Measured: `births: 92 | singles: 90 | multiples: 2 | triplets: 0` over the
+120 lives (each birth rolls 1-in-50, so the sample is thin by construction: the
+run does reach the multiple path, but a triplet birth is rarer still).
+
+The full 128-test suite ran on the binary these notes describe (d9811a72..., 127 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the birth regex
+in test_pregnancy only matched the single-child body, so a multiple birth never cleared the
+one-at-a-time flag that walk keeps and the next pregnancy card tripped its assertion; the
+regex now matches both bodies (re-run: 75 pregnancy cards, 42 births).
 ## 339. The HR investigation
 
 The workplace cards have an escalation behind them. When the hero attacks the

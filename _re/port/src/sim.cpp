@@ -687,6 +687,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       employeeCardRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x510e527fade682d1ULL),
       cwCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x5be0cd19137e2179ULL),
       b2sTitleRng_(seed ^ 0x9b05688c2b3e6c1fULL ^ 0x1f83d9abfb41bd6bULL),
+      birthRng_(seed ^ 0x428a2f98d728ae22ULL ^ 0x7137449123ef65cdULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
