@@ -147,6 +147,9 @@ enum PendingCard {
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
   kPendingHrDiscipline = 37,      // the HR investigation a workplace card opens (339)             // the birth card that follows a kept pregnancy (338)
+  kPendingHeroPregnancy = 38,     // the hero's own pregnancy card (342)
+  kPendingHeroMiscarriage = 39,   // her pregnancy lost (342)
+  kPendingHeroBirth = 40,         // her birth card (342)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -479,6 +482,10 @@ class Sim {
   void pregnancyTick(Life& life);
   bool pregnancyYear(Life& life, AgeUp& out, int forcedChoice);
   bool miscarriageYear(Life& life, AgeUp& out, int forcedChoice);
+  // The hero-as-mother lane of the same three beats (REPORT.en.md 342).
+  bool heroPregnancyYear(Life& life, AgeUp& out, int forcedChoice);
+  bool heroMiscarriageYear(Life& life, AgeUp& out, int forcedChoice);
+  bool heroBirthYear(Life& life, AgeUp& out, int forcedChoice);
   // The fame impact (REPORT.en.md 136): the game's SimPerson::ImpactFame, which
   // moves hero+0xb4 by the standard impact mapping and clamps to [0, 100].
   void impactFame(Hero& h, int impact);

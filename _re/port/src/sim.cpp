@@ -4157,6 +4157,9 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
     if (kind == kPendingHrDiscipline) return hrDisciplineYear(life, out, -1);
+    if (kind == kPendingHeroPregnancy) return heroPregnancyYear(life, out, forcedChoice);
+    if (kind == kPendingHeroMiscarriage) return heroMiscarriageYear(life, out, -1);
+    if (kind == kPendingHeroBirth) return heroBirthYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 

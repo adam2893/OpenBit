@@ -23536,6 +23536,101 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 342. The hero's own pregnancy
+
+The pregnancy card of REPORT 338 only ever arrives when the hero is the father. The
+game's other half of that chain — the hero carrying the baby herself — was missing: a
+female life could not conceive, and no card asked her about it.
+
+### The native side
+
+The pregnancy lives on SimPerson+0x48 whoever carries it. When the hero is the mother,
+SimHero::IncrementAge calls
+`SimPregnancy::GetResultingPregnancyForMotherAndFatherAndTypeAndAssignToMother`
+(0x2b3a438) with the hero as the mother and her current lover as the father, after
+`HasBasePregnancyEligibility` (0x2b3a604) checks the mother's gender, the absence of an
+existing pregnancy, her `OnBirthControl` flag (+0x50), that neither parent is a vampire,
+and her age (13 to 55, `IsEligibleForDeterministicConception` 0x2b3a8cc). The two rolls
+are the ones the lover lane already uses: `GetNaturalConceptionAgeProbability` over the
+mother's age (0/45/70/40/20/6/3/0 for the bands under 13, 13-17, 18-34, 35-39, 40-44,
+45-49, 50-54 and over 54), then her own fertility (`SimPerson+0xa4`) against a draw from
+0 to 119.
+
+`ScenarioPregnancy` then picks its body by who is carrying it (IsMotherHero at
+0x2573c24): when the pregnancy's Type is 2 or 3 (`and w8,#0xfffffffe; cmp #2` at
+0x2573c38) the card says #47766 `You are pregnant!` and journals #26043 `I'm pregnant!`;
+otherwise, when the father is the current lover (0x2573c7c/0x2573c88), it says #47765
+`You are pregnant with your {0}, {1}, baby!` over the lowercased relationship string and
+his name, and journals #23614 `I became pregnant with my {0}, {1}, baby!` Both sit over
+the #68715 `{0}\n\nWhat will you do?` wrapper with the same two stored choices, 'Keep the
+baby' (#28214) and "Don't keep the baby" (#18038); the Golden Pacifier option (#45179)
+is offered on top when the pregnancy's Type is 1 and the monetization flag is set.
+
+The decline clears the hero's own +0x48 slot (0x2574a54), fires the same unnamed -6
+impact through the person's vtable slot +0x508 (0x25745c8), and logs #48177 `You chose not
+to keep the baby!` with a flavour title picked from #32116/#19874/#47091.
+
+Resolution is the next age-up: SimHero::IncrementAge makes the virtual
+`ShouldSufferMiscarriage` call (0x2c47514) and pushes `ScenarioMiscarriage` (0x2573044 at
+0x2a6378c) when it says yes and `ScenarioBirth` (0x256c9cc at 0x2a637b8) otherwise. With
+the hero carrying it, the miscarriage speaks in her own voice: #49447 `You suffered a {0}
+miscarriage and lost the baby!` over the trimester descriptor, journal #25197 `I suffered a
+{0} miscarriage!`, and for the 1-in-10 typed loss #48616 `You had {0} and lost the baby!`
+with journal #24334, at a -5 impact and a fertility multiplier of 0.8. The birth card's
+#70148 takes 'You' (#47521) as its {0}, so it reads `You just gave birth to a baby girl!`,
+and the journal is the hero-mother line #24209 `I gave birth to {0} named {1}{2}.`
+
+### The port
+
+`Sim::conceptionTick` now runs a hero-as-mother branch before the lover's: a female hero
+with a living male lover, off birth control, between 13 and 55, draws her fertility once
+(`heroFertility`, a 0-100 draw in the shape of `SimPerson+0xa4`) and rolls the same two
+checks. A success sets `heroPregnant` and remembers the father's name.
+`Sim::pregnancyTick` then makes her own `ShouldSufferMiscarriage` decision — her own age
+band and her own three stats, since the carrying person really is the hero this time —
+and queues the new `kPendingHeroMiscarriage` or `kPendingHeroBirth`.
+`Sim::heroPregnancyYear`, `Sim::heroMiscarriageYear` and `Sim::heroBirthYear` are the
+three cards, on the same literals: the father-aware and generic pregnancy bodies with
+their journals, the two choices, the -6 decline with #48177, the hero-mother miscarriage
+sentences with the -5 impact, and the birth with 'You' as the parent, #24209 as the
+journal, and the children pushed with `isHeroes` true and the father as their other
+parent. Multiples reuse the birth card's own rolls (REPORT 340).
+
+### Ceilings
+
+- Only the natural lane exists. The game's other creation paths — IVF, fertility
+  treatment, a surrogate, the threesome paths and the Golden Pacifier override — are not
+  modelled, so the Type 2/3 generic body (#47766) is reachable here only when the father
+  has no name.
+- The Golden Pacifier choice (#45179), its paywall and the `DoesUserHaveAccessToGoldenPacifier`
+  branch are not offered; the IAP entitlement exists in the store table and nothing reads it.
+- Fertility is a one-off draw rather than `Att_fertility`, the hero's birth-control flag
+  stands in for the couple's, and the vampire exclusion is not modelled because the port's
+  lover is not a person.
+- The naming prompt is replaced by the game's own pool (REPORT 340's ceiling), so the
+  children are named from `drawFirstName` with no repeats rather than by the player.
+- The decline's flavour title list (#32116/#19874/#47091), the achievements
+  (acMother25 #53411, acTriplets #53571, acParent100 #53454, acHaveChildren10 #53331), the
+  zodiac and easter eggs, #47769 `You are the {0}{1} of {2}...` and the legal-guardian
+  branch are not modelled.
+
+### Verified
+
+`_re/tools/test_hero_pregnancy.py` walks twenty female lives with a partner and asserts,
+for every hero pregnancy card, the father-aware body and the choice set; that a keep is
+followed within the year by either the hero-mother birth body or the hero's own
+miscarriage sentence; that every birth's journal matches #24209, adds exactly the twins or
+triplets the body names, names each child distinctly, marks them `isHeroes` and gives them
+the father as their other parent; that a decline moves happiness by the -6 step and logs
+#48177; and that a male hero never sees the card.
+Measured: `cards: 18 | keeps: 8 | declines: 10 | births: 8 | losses: 0` over seeds 1-20.
+
+The full 130-test suite ran on the binary these notes describe (ab581fa3..., 129 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the break-up
+announcement's guard looked only at the single event immediately before it, and a hero
+pregnancy card can now drain in the same age-up, so that check walks back over the age's
+own events instead. It was re-run green.
+
 ## 341. The friend's YouTube card
 
 The relationship menu has its own cards, and one of them is watching a video with a

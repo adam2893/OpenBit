@@ -59,10 +59,19 @@ for seed in range(1, 61):
             # The announcement belongs to the same age-up as the break-up card
             # (REPORT.en.md 133), so the card immediately before it has to be the
             # break-up row of that same age.
-            prev = doc["events"][doc["events"].index(event) - 1] if doc["events"].index(event) else None
-            # Two cards end a pair now: the break-up pool and the partner-leaves card (§164).
-            assert prev and prev.get("table") in ("a16_breakup-scenarios-enc", "relationship"), (seed, prev)
-            assert prev.get("age") == event.get("age"), (seed, prev.get("age"), event.get("age"))
+            # A pending card can drain in the same age-up between the row and the
+            # announcement -- the hero's own pregnancy card does now (REPORT 342) -- so walk
+            # back over this age's events instead of insisting on the immediate predecessor.
+            idx = doc["events"].index(event)
+            prev = None
+            for earlier in reversed(doc["events"][:idx]):
+                if earlier.get("age") != event.get("age"):
+                    break
+                # Two cards end a pair: the break-up pool and the partner-leaves card (§164).
+                if earlier.get("table") in ("a16_breakup-scenarios-enc", "relationship"):
+                    prev = earlier
+                    break
+            assert prev, (seed, doc["events"][max(0, idx - 3):idx])
             hits = [entry for entry in event.get("logLines") or []
                     if entry.startswith("I broke up with ")]
             assert hits, (seed, event.get("logLines", [])[-3:])

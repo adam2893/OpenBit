@@ -121,6 +121,13 @@ struct Hero {
   // pregnancy can start behind a queued birth; this says that card is already owed
   // (REPORT.en.md 338).
   bool loverBirthQueued = false;
+  // The hero as the mother (REPORT.en.md 342). The game carries the hero's own pregnancy
+  // on the same SimPerson+0x48 slot the lover's uses, so the port needs a second lane for
+  // the case where the hero is the one carrying it.
+  bool heroPregnant = false;
+  bool heroBirthQueued = false;
+  int heroFertility = -1;      // drawn once: the hero has no Att_fertility field
+  std::string heroPregFather;  // the lover who fathered it
   // The partner's fertility, drawn once (REPORT.en.md 338). The native roll reads the
   // mother's SimPerson+0xa4 float; the port's lover has no person model, so the draw
   // stands in for it and stays fixed for that partner.
