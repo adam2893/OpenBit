@@ -26,7 +26,7 @@ def run(seed):
 
 
 cards = 0
-for seed in range(1, 31):
+for seed in range(1, 91):
     for event in run(seed)["events"]:
         if event.get("table") != "a16_social-media-troll-outbounds-enc":
             continue
@@ -42,8 +42,9 @@ for seed in range(1, 31):
 # Two in forty lives is what the current card mix gives: the family wheel fills most
 # years and the dumb pool -- where this card lives -- is squeezed (REPORT.en.md 267).
 # The bar stays low on purpose; the composition fix is its own section.
-# The dumb pool is squeezed by every family added (REPORT 285); one card in
-# forty lives is the current floor.
+# The dumb pool is squeezed by every family added (REPORT 285); the zoo lifecycle
+# family's two tickets (REPORT 344) put the first card at seed 41, so the sweep runs
+# ninety lives. Measured 4 cards over seeds 1-90.
 assert cards >= 1, cards
 print("cards:", cards)
 print("ok")

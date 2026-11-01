@@ -667,6 +667,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
+      zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
       landlordRng_(seed ^ 0x6a09e667f3bcc909ULL),
       petRng_(seed ^ 0xbb67ae8584caa73bULL),
@@ -4536,6 +4537,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::mobsterSpendYear, nullptr},
         {&Sim::mafiaYear, nullptr},
         {&Sim::zooYear, nullptr, 1, "zoo"},
+        {&Sim::zooLifecycleYear, [](const Life& l) { return l.hero.ownsZoo; }, 2, "zoo-lifecycle"},
         {&Sim::landlordYear, nullptr},
         {&Sim::petYear, nullptr},
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
@@ -10251,6 +10253,9 @@ void Sim::makeZoo(Life& life) {
   life_ = &life;
   ensureZooFields(life);
   zooDrawAnimal(life);
+  // The herd the lifecycle cards act on (REPORT.en.md 344).
+  h.zooOwnedSince = h.age;
+  zooSeedHerd(life);
   h.money -= 25000;   // the park is bought, not inherited
 }
 
@@ -11060,6 +11065,292 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   out.happiness += happy;
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// The zoo's animals as individuals (REPORT.en.md 344). The native park keeps a
+// SimZooAnimal per animal -- its own age, pregnancy and health -- and the three
+// lifecycle cards all name one animal. The port kept a single animal triple for
+// the cards' tokens, so the herd and its ages live here.
+// ---------------------------------------------------------------------------
+std::string allMajorWords(const std::string& text);
+
+namespace {
+
+// Reference and native both append the possessive to the breed, not the name:
+// "X the snake's eggs" (DataHub::AddPossessionToNameString on the breed cell).
+std::string zooPossessiveBreed(const std::string& breed) {
+  if (breed.empty()) return breed;
+  return breed[breed.size() - 1] == 's' ? breed + "'" : breed + "'s";
+}
+
+std::string zooObjPronoun(bool female) { return female ? "her" : "him"; }
+
+}  // namespace
+
+bool Sim::zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooOwnedSince < 0) h.zooOwnedSince = h.age;
+  if (!h.zooHerdSeeded) {
+    zooSeedHerd(life);
+    h.zooHerdSeeded = h.zooHerd.size() > 0;
+  }
+  if (h.zooHerd.empty()) return false;
+  const int yearsOwned = h.zooOwnedSince < 0 ? 0 : h.age - h.zooOwnedSince;
+  pronounOtherSet_ = false;
+
+  // One row of a16_zoo-animals-enc, found by breed: Maturity Age, Average
+  // Lifespan and Lays Eggs are the three columns this family reads.
+  const auto dataRow = [&](const std::string& breed) -> size_t {
+    if (!ensureTable("a16_zoo-animals-enc")) return size_t(-1);
+    const Table& animals = tbl("a16_zoo-animals-enc");
+    for (size_t r = 0; r < animals.size(); ++r) {
+      if (lower(trim(animals.at(r, "Breed"))) == lower(breed)) return r;
+    }
+    return size_t(-1);
+  };
+  const auto animalNum = [&](size_t row, const char* col, double fallback) -> double {
+    if (row == size_t(-1)) return fallback;
+    const Table& animals = tbl("a16_zoo-animals-enc");
+    const double v = animals.num(row, col);
+    return v > 0.0 ? v : fallback;
+  };
+  const auto laysEggs = [&](size_t row) -> bool {
+    if (row == size_t(-1)) return false;
+    return tbl("a16_zoo-animals-enc").flag(row, "Lays Eggs");
+  };
+
+  // The animals age first, the way SimZooAnimal::IncrementAge runs before its
+  // own cards: the birth and the death both read the age they just reached.
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) ++h.zooHerd[i].age;
+
+  // 1. A pregnancy from last year resolves into one of the three native cards.
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) {
+    if (!h.zooHerd[i].pregnant) continue;
+    const Hero::ZooHerdAnimal parent = h.zooHerd[i];
+    const size_t dr = dataRow(parent.breed);
+    const bool eggs = laysEggs(dr);
+    const double lifespan = animalNum(dr, "Average Lifespan", 20.0);
+    h.zooHerd[i].pregnant = false;
+    // The complication ladder of SimZooAnimal::IncrementAge: a young park never
+    // loses a birth; a park six years old or more checks the mother's health,
+    // then her age against 0.7 of the breed's average lifespan, then rolls
+    // GetRandomNumber(0,100) and keeps the birth only above 15.
+    bool complication = false;
+    if (yearsOwned >= 6) {
+      if (double(parent.health) <= 40.0) {
+        complication = true;
+      } else if (lifespan * 0.7 <= double(parent.age)) {
+        complication = true;
+      } else if (int(zooLifeRng_.below(100)) <= 15) {
+        complication = true;
+      }
+    }
+    if (complication) {
+      // The Golden Pacifier arm is gated on DoesUserHaveAccessToGoldenPacifier,
+      // and the port models no in-app purchase, so the complication always ends
+      // in ScenarioZooAgeUpAnimalBirthFailure.
+      out.table = "registry:ScenarioZooAgeUpAnimalBirthFailure";
+      out.title = eggs ? "Duds" : "Death";
+      out.body = eggs ? "None of " + parent.name + " the " + parent.breed + "'s eggs hatched."
+                      : parent.name + " the " + parent.breed + "'s newborn " + parent.breed +
+                            " died during childbirth.";
+      out.narrative = eggs ? "I discovered that all of " + parent.name + " the " + parent.breed +
+                                 "'s eggs were duds."
+                           : "I discovered that " + parent.name + " the " + parent.breed +
+                                 "'s baby was stillborn.";
+      out.options = {"OK"};
+      out.choice = out.options[0];
+      return true;
+    }
+    Hero::ZooHerdAnimal baby;
+    baby.species = parent.species;
+    baby.breed = parent.breed;
+    baby.female = zooLifeRng_.chance(0.5);
+    baby.age = 0;
+    baby.health = 90;
+    baby.name = zooAnimalNameFor(parent.breed, baby.female);
+    const std::string genderWord = baby.female ? "female" : "male";
+    const std::string objPron = zooObjPronoun(baby.female);
+    h.zooHerd.push_back(baby);
+    ++h.zooAnimals;
+    out.table = "registry:ScenarioZooAgeUpAnimalBirth";
+    out.title = "Baby " + allMajorWords(baby.breed);
+    out.body = eggs ? "A newborn " + genderWord + " " + baby.breed + " just hatched from one of " +
+                          parent.name + " the " + parent.breed + "'s eggs.\n\nWhat will you name " +
+                          objPron + "?"
+                    : parent.name + " the " + parent.breed + " just gave birth to a baby " +
+                          genderWord + " " + baby.breed + "!\n\nWhat will you name " + objPron + "?";
+    out.narrative = eggs ? "A baby " + genderWord + " " + baby.breed + " hatched from one of " +
+                               parent.name + " the " + zooPossessiveBreed(parent.breed) +
+                               " eggs. I named " + objPron + " \"" + baby.name + "\"."
+                         : parent.name + " the " + parent.breed + " gave birth to a " + genderWord +
+                               " " + baby.breed + ", whom I named \"" + baby.name + "\".";
+    // The native card carries an input field whose default suggestion is the
+    // name drawn above; the port has no text entry and keeps the suggestion.
+    out.options = {"OK"};
+    out.choice = out.options[0];
+    (void)forcedChoice;
+    return true;
+  }
+
+  // 2. An animal past the breed's average lifespan may die of old age, at the
+  // 60% the native roll gives it (GetRandomNumber(0,100), death on 40 and up).
+  // The park has to be six years old before it loses anybody.
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) {
+    const Hero::ZooHerdAnimal animal = h.zooHerd[i];
+    const size_t dr = dataRow(animal.breed);
+    if (dr == size_t(-1)) continue;
+    if (yearsOwned < 6) continue;
+    if (double(animal.age) <= animalNum(dr, "Average Lifespan", 20.0)) continue;
+    if (int(zooLifeRng_.below(100)) < 40) continue;
+    // A death-scenario row of this species, filtered the way
+    // DataHub::GetRandomZooAnimalDeathScenarioForAnimalAndType filters it.
+    std::string sentence;
+    std::string deathTable;
+    std::string deathRow;
+    if (ensureTable("a16_zoo-animal-death-scenarios-enc")) {
+      const Table& t = tbl("a16_zoo-animal-death-scenarios-enc");
+      std::vector<size_t> rows;
+      for (size_t r = 0; r < t.size(); ++r) {
+        if (lower(trim(t.at(r, "Type"))) != "natural") continue;
+        const std::string a = lower(trim(t.at(r, "Animal")));
+        if (!a.empty() && a != lower(animal.species) && a != lower(animal.breed)) continue;
+        rows.push_back(r);
+      }
+      if (!rows.empty()) {
+        const size_t r = rows[size_t(zooLifeRng_.below(uint32_t(rows.size())))];
+        deathTable = "a16_zoo-animal-death-scenarios-enc";
+        deathRow = std::to_string(r);
+        pronounOtherSet_ = true;
+        pronounOtherFemale_ = animal.female;
+        sentence = resolve(trim(t.at(r, "Sentence")));
+      }
+    }
+    const std::string deathString =
+        animal.name + " the " + animal.breed + " died from natural causes.";
+    out.table = "registry:ScenarioZooAnimalDeath";
+    out.title = "Death";
+    out.body = animal.name + " the " + animal.breed + " died at the age of " +
+               std::to_string(animal.age) + ".\n\n" + deathString;
+    out.narrative = sentence.empty() ? deathString : sentence;
+    h.zooHerd.erase(h.zooHerd.begin() + std::ptrdiff_t(i));
+    if (h.zooAnimals > 0) --h.zooAnimals;
+    // The native refresh ends on hero vtable +0x408 with -2; the slot's identity
+    // is unrecovered, and every other use of it in this port is happiness.
+    out.happiness += pointsForImpact(-2);
+    out.options = {"Hold a memorial for " + zooObjPronoun(animal.female),
+                   "Have " + zooObjPronoun(animal.female) + " taxidermied"};
+    const int pick = forcedChoice < 0 ? 0 : (forcedChoice > 1 ? 1 : forcedChoice);
+    out.choice = out.options[size_t(pick)];
+    // Neither branch moves a stat: the memorial hands the animal to
+    // ScenarioZooAnimalDeath and the taxidermy hands it to
+    // ScenarioZooAnimalTaxidermy, whose price formula is unrecovered, so the
+    // port stops at the choice.
+    (void)deathTable;
+    (void)deathRow;
+    return true;
+  }
+
+  // 3. With the herd alive, the vet may report a pregnancy. The native card has
+  // no chance of its own: it is queued whenever a candidate exists and the
+  // card has not been seen for four years (YearsSinceScenario > 3).
+  if (h.zooPregAge >= 0 && h.age - h.zooPregAge <= 3) return false;
+  // The candidate list is built once a year by
+  // SimZoo::CreateAgeUpPregnancyPossibleFemaleAnimals: a mature female that is
+  // not already pregnant, in a park that also holds a mature male of her breed,
+  // and only if her breed's Breeding Likelihood (1-5 -> 20/40/60/80/90 percent)
+  // passes a GetRandomNumber(0,100) roll. The list being non-empty is the whole
+  // gate; the card itself has no further roll.
+  static const int kBreedChance[5] = {20, 40, 60, 80, 90};
+  std::vector<size_t> candidates;
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) {
+    if (!h.zooHerd[i].female || h.zooHerd[i].pregnant) continue;
+    const size_t dr = dataRow(h.zooHerd[i].breed);
+    if (dr == size_t(-1)) continue;
+    const double maturity = animalNum(dr, "Maturity Age", 2.0);
+    if (double(h.zooHerd[i].age) < maturity) continue;
+    bool male = false;
+    for (size_t j = 0; j < h.zooHerd.size() && !male; ++j) {
+      if (h.zooHerd[j].female) continue;
+      if (lower(h.zooHerd[j].breed) != lower(h.zooHerd[i].breed)) continue;
+      if (double(h.zooHerd[j].age) >= maturity) male = true;
+    }
+    if (!male) continue;
+    const int bl = int(animalNum(dr, "Breeding Likelihood", 0.0));
+    const int chance = bl >= 1 && bl <= 5 ? kBreedChance[bl - 1] : 0;
+    if (int(zooLifeRng_.below(100)) >= chance) continue;
+    candidates.push_back(i);
+  }
+  if (candidates.empty()) return false;
+  const size_t pick = candidates[size_t(zooLifeRng_.below(uint32_t(candidates.size())))];
+  const Hero::ZooHerdAnimal mother = h.zooHerd[pick];
+  const bool eggs = laysEggs(dataRow(mother.breed));
+  h.zooHerd[pick].pregnant = true;
+  h.zooPregAge = h.age;
+  const std::string vet = resolve("<zoo-veterinarian>");
+  out.table = "registry:ScenarioZooAgeUpAnimalPregnancy";
+  out.title = eggs ? "Eggs" : "Pregnancy";
+  out.body = "Your zoo's veterinarian, " + vet + ", is reporting that " + mother.name + " the " +
+             mother.breed + (eggs ? " laid some eggs!" : " is pregnant!");
+  out.narrative = "I discovered " + mother.name + " the " + mother.breed +
+                  (eggs ? " laid some eggs." : " is pregnant.");
+  out.options = {"OK"};
+  out.choice = out.options[0];
+  (void)forcedChoice;
+  return true;
+}
+
+std::string Sim::zooAnimalNameFor(const std::string& breed, bool female) {
+  if (!ensureTable("a16_zoo-animal-names-enc")) return breed;
+  const Table& t = tbl("a16_zoo-animal-names-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (lower(trim(t.at(r, "Breed"))) != lower(breed)) continue;
+    const std::string g = lower(resolve(trim(t.at(r, "Gender"))));
+    if (!g.empty() && g != (female ? "female" : "male")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return breed;
+  const size_t r = rows[size_t(zooLifeRng_.below(uint32_t(rows.size())))];
+  std::string nm = resolve(trim(t.at(r, "Name")));
+  if (nm.empty()) nm = breed;
+  return nm;
+}
+
+void Sim::zooSeedHerd(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo) return;
+  if (!ensureTable("a16_zoo-animal-names-enc")) return;
+  const Table& names = tbl("a16_zoo-animal-names-enc");
+  if (names.size() == 0) return;
+  int want = h.zooAnimals > 0 ? h.zooAnimals : 3;
+  if (want > 8) want = 8;
+  h.zooHerd.clear();
+  h.zooHerdSeeded = true;
+  for (int i = 0; i < want; ++i) {
+    const size_t r = pickRow("a16_zoo-animal-names-enc", "Commonness Score", "", "", "", zooLifeRng_);
+    if (r == size_t(-1)) break;
+    Hero::ZooHerdAnimal a;
+    a.species = resolve(trim(names.at(r, "Animal")));
+    a.breed = resolve(trim(names.at(r, "Breed")));
+    const std::string g = lower(resolve(trim(names.at(r, "Gender"))));
+    a.female = g == "female" ? true : (g == "male" ? false : zooLifeRng_.chance(0.5));
+    std::string nm = resolve(trim(names.at(r, "Name")));
+    if (nm.empty()) nm = a.breed.empty() ? a.species : a.breed;
+    a.name = nm;
+    // The park's animals arrive from trade aged; the trade screen is not
+    // modelled, so the herd is seeded young (0-5) with full health.
+    a.age = int(zooLifeRng_.below(6));
+    a.health = 90;
+    h.zooHerd.push_back(a);
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // The rental property (REPORT.en.md 66). One house, one tenant, and the tables

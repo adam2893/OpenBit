@@ -576,6 +576,23 @@ struct Hero {
   int zooLedgerYear = -1;
   bool zooBankruptQueued = false;
 
+  // The zoo's animals as individuals (REPORT.en.md 344): the herd the lifecycle
+  // cards act on, the age the park was bought (SimZoo+0x20 YearsOwned) and the
+  // age of the last pregnancy card (its four-year cooldown).
+  struct ZooHerdAnimal {
+    std::string species;
+    std::string breed;
+    std::string name;
+    bool female = false;
+    int age = 0;
+    bool pregnant = false;
+    int health = 90;
+  };
+  std::vector<ZooHerdAnimal> zooHerd;
+  bool zooHerdSeeded = false;   // the park's animals are only put there once
+  int zooOwnedSince = -1;
+  int zooPregAge = -1;
+
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.
   bool landlord = false;

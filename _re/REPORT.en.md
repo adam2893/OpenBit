@@ -23536,6 +23536,139 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 344. The zoo's animals, pregnant and dead
+
+Every card in the park's life cycle names one animal: the vet reports that a
+particular female is pregnant, a particular mother hatches a particular chick, a
+particular animal dies at a particular age. The port kept the park's animals as a
+count plus one animal triple for the cards' tokens, so none of these stories had
+anywhere to live. This section gives the park a herd, and the three cards that
+act on it.
+
+### The native side
+
+``SimZoo`` keeps a ``List<SimZooAnimal>`` (``zoo+0x100`` is the pregnancy
+candidate list, ``zoo+0x130`` the zoo's own card queue, ``zoo+0x20`` the park's
+years owned). Each ``SimZooAnimal`` carries its own age (``+0x30``), health,
+pregnancy flag (``+0x44``), death type (``+0x3c``) and the row of
+``a16_zoo-animals-enc`` it belongs to: ``Breed``, ``Maturity Age``,
+``Average Lifespan``, ``Breeding Likelihood`` (1-5), ``Lays Eggs``.
+
+**Pregnancy.** ``ScenarioZooAgeUpAnimalPregnancy`` (``.ctor 0x29a2318``,
+``RefreshScenario 0x29a2324``, ``ChoiceSelectedAtIndex 0x29a2824``,
+``ScenarioIsEligibleForRandomPush 0x29a28c8``) is pushed from
+``SimZoo::IncrementAge`` at ``0x2b59c64``, and only when the zoo's own queue holds
+at most one card. There is no chance roll on the card itself. The candidate list
+is built by ``SimZoo::CreateAgeUpPregnancyPossibleFemaleAnimals 0x2b5b2a8``: a
+mature female who is not already pregnant, in a park that also holds a mature male
+of her breed, admitted when ``GetRandomNumber(0,100)`` comes in under her breed's
+``Breeding Likelihood`` mapped through the table at ``0xfc52f0``
+(``{20,40,60,80,90}`` for 1-5). The eligibility gate adds age 18, a veterinarian
+on the staff, a non-empty list, and ``YearsSinceScenario > 3``. ``RefreshScenario``
+draws one of the candidates and calls ``SimZooAnimal::Impregnate 0x2b6a2f0``.
+
+The card is titled ``#18563 'Eggs'`` when the breed lays eggs and ``#34481
+'Pregnancy'`` when it does not, with the park as its exterior title. Its body is
+``#50545 "Your zoo's veterinarian, "`` + the vet's name + ``#5707 ', is reporting
+that '`` + the animal's name + ``#3532 ' the '`` + its breed + ``#2679 ' laid some
+eggs!'`` or ``#2609 ' is pregnant!'``. The journal line is ``#24006 'I discovered '``
++ name + ``#3532`` + breed + ``#2680 ' laid some eggs.'`` or ``#2610 ' is
+pregnant.'``. One button, ``#32432 'OK'``.
+
+**Birth.** One year later``SimZooAnimal::IncrementAge 0x2b67aac`` resolves the
+pregnancy into one of three cards: the birth at ``0x2b67d44``
+(``ScenarioZooAgeUpAnimalBirth``, ``.ctor 0x299dd5c``), the failure at
+``0x2b67d20`` (``.ctor 0x299ea48``) or the Golden Pacifier at ``0x2b67cfc``
+(``.ctor 0x299ef8c``). The ladder is: a park younger than six years always gets
+the plain birth; after that a complication is forced by the mother's health at or
+below 40, or by her age reaching 0.7 of the breed's average lifespan, or else by
+``GetRandomNumber(0,100)`` landing at 15 or below; the complication becomes the
+Golden Pacifier only when ``DoesUserHaveAccessToGoldenPacifier`` says so, and the
+failure card otherwise.
+
+The birth card's title is ``#12665 'Baby '`` + ``CapitalizeAllMajorWordsInString``
+of the baby's breed; its body branches on whether the breed lays eggs
+(``#10146 'A newborn '`` + gender + breed + ``#2654 ' just hatched from one of '``
++ the mother + ``#4867 "'s eggs.\n\nWhat will you name "`` + pronoun + ``#9923
+'?'``) and otherwise reads mother + ``#2653 ' just gave birth to a baby '`` +
+gender + breed + ``#4230 '!\n\nWhat will you name '`` + pronoun + ``#9923``. The
+name comes from an input field whose default suggestion is
+``DataHub::GetRandomZooAnimalNameForBreedAndGender 0x27d21a4``; the journal is
+``#2304/#1895`` (eggs) or ``#2168/#6030`` (live). The failure card is titled
+``#18277 'Duds'`` for eggs and ``#17288 'Death'`` for live births, with ``#31950
+'None of '`` + mother + ``#4864 "'s eggs hatched."`` or the newborn dying in
+childbirth, and journals ``#24009/#4866`` and ``#24008/#4849``.
+
+**Death.** ``ScenarioZooAnimalDeath`` (``.ctor 0x29b3530``, ``RefreshScenario
+0x29b3614``, ``ChoiceSelectedAtIndex 0x29b398c``) is pushed from four places:
+natural old age in ``SimZooAnimal::IncrementAge 0x2b67f30``, a predator in
+``SimZoo::IncrementAge 0x2b5a6d8``, disease in ``SimZooAnimal::ProcessDiseases
+0x2b68ad0``, and the vet's own cards. The natural case needs a park six years old,
+an animal already past its breed's average lifespan, and
+``GetRandomNumber(0,100)`` at 40 or above. The refresh removes the animal from the
+zoo first, titles the card ``#17288 'Death'`` and sets the body as
+``#70317 '{0} the {1} died at the age of {2}.\n\n{3}'`` over the name, the breed,
+the age and the death sentence. Two buttons: ``#23017 'Hold a memorial for '`` +
+object pronoun, and ``#22584 'Have '`` + object pronoun + ``#3505 '
+taxidermied'``. The memorial branch moves no stat and no money at all; the
+taxidermy branch hands the animal to ``ScenarioZooAnimalTaxidermy``
+(``.ctor 0x29b3b40``), whose prices are the animal's market price times 0.33 for
+the good taxidermist and times 0.165 for the cheap one.
+
+### The port
+
+``bl::Hero`` gains a herd (``ZooHerdAnimal``: species, breed, name, female, age,
+pregnant, health), the age the park was bought (``zooOwnedSince``), the age of the
+last pregnancy card (``zooPregAge``, the four-year cooldown) and a
+``zooHerdSeeded`` flag so the animals are only put there once.
+``Sim::zooSeedHerd`` fills it from ``a16_zoo-animal-names-enc`` when the park is
+bought; ``Sim::zooAnimalNameFor`` is the default name suggestion of a breed and
+gender; ``Sim::zooLifecycleYear`` is the family, registered with two tickets and
+its own stream (``zooLifeRng_``) so nothing else moved.
+
+The family ages the herd first, then resolves a pregnancy from last year (birth or
+failure), then offers a death, then reports a new pregnancy, so a life never gets
+two of these cards in one year even when the native queue would have carried two.
+The candidate list follows the native builder exactly: mature female, no existing
+pregnancy, a mature male of her breed in the herd, and her breed's Breeding
+Likelihood under a 0-99 roll. The cards carry the same titles, bodies and journal
+lines, and the death card's own -2 impact rides the port's impact conversion
+(``pointsForImpact(-2)``, eight happiness).
+
+### Ceilings
+
+- The Golden Pacifier arm needs the in-app purchase, which the port does not model,
+  so every complication takes the failure lane.
+- The vet is a name from the zoo's token cache, not an employee entity, so the
+  pregnancy card needs no hire; the native card needs a veterinarian on staff.
+- Only one lifecycle card a year; the native queue can carry a pregnancy, a birth
+  and a death in the same pass.
+- Predator murder (5% a year, one kill per habitat), the disease pass, the vet's
+  check-up menu cards, the euthanasia chain and the taxidermy card with its two
+  prices are not modelled.
+- The birth card's habitat and overflow follow-ups are not modelled; the baby
+  simply joins the herd and the park's animal count.
+- The herd is seeded young (0-5) with full health, and the health arm of the
+  complication ladder therefore never fires; the age arm and the 0-99 roll do.
+- The death-scenario row's brackets are parsed against the dead animal's gender,
+  not against an "other animal" as some rows expect.
+
+### Verified
+
+``_re/tools/test_zoo_lifecycle.py`` walks sixty lives with a zoo and reads every
+lifecycle card: the four card kinds, the eggs/live branch of each of them against
+the breed's ``Lays Eggs`` cell, the titles, the full body and journal forms, the
+death body's ``died at the age of`` line, the two death buttons, the -8 happiness of
+a death and the four-year cooldown of the pregnancy card. Measured: birth 12, death
+131, eggs 10, failure 3, live 6, pregnancy 16. A hero without a zoo never gets one
+of these cards, and neither does a minor.
+
+The full 132-test suite ran on the binary these notes describe (c93b4405...,
+131 PASS / 1 FAIL). The failure is test-side and was fixed here without a code change:
+the troll-outbound card lives in the dumb pool, and the two tickets this family added
+pushed its first appearance from below seed 31 to seed 41, so that sweep now walks ninety
+lives (measured 4 cards over seeds 1-90). It was re-run green.
+
 ## 343. The insult's comeback card
 
 The workplace discipline card's insult button (REPORT 325) left its own aftermath out:
