@@ -684,6 +684,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
       officeCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
+      employeeCardRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x510e527fade682d1ULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
@@ -4148,6 +4149,10 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
+    if (kind == kPendingEmployeeRespect) return employeeRespectYear(life, out, -1, true);
+    if (kind == kPendingEmployeeRecognize) return employeeRecognizeYear(life, out, -1);
+    if (kind == kPendingEmployeeWarn) return employeeWarnYear(life, out, -1);
+    if (kind == kPendingEmployeeBonus) return employeeBonusYear(life, out, forcedChoice);
     if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
     return false;
   }
@@ -16362,6 +16367,245 @@ bool Sim::employeeComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 
 
 
+// The employee's own sentence with the card family's token dictionary filled the way the native
+// cards fill it: '<employee>' reads 'your employee, NAME,' in a body and 'my employee, NAME,' in a
+// journal line, and the possessive and the pronouns follow the employee's gender (REPORT.en.md 330).
+std::string Sim::employeeCell(std::string text, bool body) {
+  const Hero& h = *hero_;
+  substAll(text, "<employee-possessive>", h.ofcEmployee + "'s");
+  substAll(text, "<employee>", (body ? "your employee, " : "my employee, ") + h.ofcEmployee + ",");
+  const std::string company = !h.ofcCompany.empty() ? h.ofcCompany : h.employer;
+  substAll(text, "<company>", company.empty() ? "the company" : company);
+  substAll(text, "<he/she>", h.ofcEmployeeFemale ? "she" : "he");
+  substAll(text, "<his/her>", h.ofcEmployeeFemale ? "her" : "his");
+  substAll(text, "<him/her>", h.ofcEmployeeFemale ? "her" : "him");
+  // A cell can also carry a slash list ("Employee of the <Day/Month/Week>"): the native bracket
+  // parser picks one alternative, drawing from the card's own stream, so the walk uses
+  // employeeCardRng_ rather than resolve(), which would shift the main stream (section 282).
+  size_t at = 0;
+  while ((at = text.find('<', at)) != std::string::npos) {
+    const size_t close = text.find('>', at + 1);
+    if (close == std::string::npos) break;
+    const std::string body = text.substr(at + 1, close - at - 1);
+    if (body.find('/') == std::string::npos) {
+      at = close + 1;
+      continue;
+    }
+    std::vector<std::string> alts;
+    size_t start = 0;
+    while (true) {
+      const size_t slash = body.find('/', start);
+      alts.push_back(body.substr(start, slash == std::string::npos ? std::string::npos : slash - start));
+      if (slash == std::string::npos) break;
+      start = slash + 1;
+    }
+    const std::string pick = alts[size_t(employeeCardRng_.below(uint32_t(alts.size())))];
+    text = text.substr(0, at) + pick + text.substr(close + 1);
+    at += pick.size();
+  }
+  return spyUpperFirst(trim(text));
+}
+
+// The respect card (REPORT.en.md 330). ScenarioEmployeeRespect is pushed every year by the business
+// annual report, so it is offered from the office family's turns; its four buttons chain the three
+// cards this section also ports, plus the one lane with no card at all.
+bool Sim::employeeRespectYear(Life& life, AgeUp& out, int forcedChoice, bool chained) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ofcManager || h.age < 18 || h.inPrison) return false;
+  if (h.ofcEmployee.empty()) return false;
+  if (!chained && !employeeCardRng_.chance(0.10)) return false;
+  if (!ensureTable("a16_employee-respect-scenarios-enc")) return false;
+  const Table& t = tbl("a16_employee-respect-scenarios-enc");
+  // The row is drawn in a bucket on the employee's bond with the hero
+  // (DataHub::GetRandomEmployeeRespectScenarioForPushOrReaction).
+  const int bond = h.ofcEmpRel < 0 ? 0 : (h.ofcEmpRel > 100 ? 100 : h.ofcEmpRel);
+  const int bucket = bond <= 20 ? 1 : bond <= 40 ? 2 : bond <= 60 ? 3 : bond <= 80 ? 4 : 5;
+  std::vector<size_t> pool, any;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Can Be Push")).empty()) continue;
+    any.push_back(r);
+    if (int(t.num(r, "Score")) == bucket) pool.push_back(r);
+  }
+  if (any.empty()) return false;
+  if (pool.empty()) pool = any;
+  const size_t row = pool[employeeCardRng_.below(uint32_t(pool.size()))];
+  const std::string him = h.ofcEmployeeFemale ? "her" : "him";
+  out.table = "a16_employee-respect-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = "Respect";
+  out.body = employeeCell(t.at(row, "Scenario"), true);
+  out.narrative = employeeCell(t.at(row, "Log Version"), false);
+  out.cta = "What will you do?";
+  out.options = {"Give " + him + " a bonus", "Recognize " + him, "Warn " + him, "Take no action"};
+  // The native card is a menu of four buttons; the port draws a lane when nothing forces one.
+  int lane = forcedChoice >= 0 ? (forcedChoice > 3 ? 3 : forcedChoice)
+                              : int(employeeCardRng_.below(4));
+  // A respect card that arrived from the bonus chain may not chain another bonus: the native
+  // chain has no depth limit and the port would loop (shortcut).
+  if (chained && lane == 0) lane = 3;
+  if (lane == 0) {
+    life.pendingCards.push_back(kPendingEmployeeBonus);
+  } else if (lane == 1) {
+    life.pendingCards.push_back(kPendingEmployeeRecognize);
+  } else if (lane == 2) {
+    life.pendingCards.push_back(kPendingEmployeeWarn);
+  } else {
+    // "Take no action" is the one lane whose effects the card itself carries.
+    out.narrative += "\nI ignored " + him + ".";
+    out.karma -= 1;
+    h.ofcEmpRespect -= 1 + int(employeeCardRng_.below(2));
+    if (h.ofcEmpRespect < 0) h.ofcEmpRespect = 0;
+    h.ofcMorale += pointsForImpact(-3);
+    if (h.ofcMorale < 0) h.ofcMorale = 0;
+    if (h.ofcMorale > 100) h.ofcMorale = 100;
+  }
+  return true;
+}
+
+// The recognition card behind the respect card's second button (ScenarioEmployeeRecognize,
+// REPORT.en.md 330). It is feedback: a title, a row of the recognition table and the one-time stat
+// movement the employee only gets once an age.
+bool Sim::employeeRecognizeYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.ofcEmployee.empty()) return false;
+  if (!ensureTable("a16_employee-recognition-scenarios-enc")) return false;
+  const Table& t = tbl("a16_employee-recognition-scenarios-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  if (pool.empty()) return false;
+  static const char* kTitles[] = {"Employee spotlight!", "Much deserved recognition",
+                                  "Everyone take notes", "Star team member", "Keep it up!"};
+  const size_t row = weightedPickOf(t, "Commonness Score", pool, employeeCardRng_);
+  out.table = "a16_employee-recognition-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = kTitles[employeeCardRng_.below(5)];
+  out.body = employeeCell(t.at(row, "Scenario"), true);
+  out.narrative = "I recognized my employee, " + spyUpperFirst(h.ofcEmployee) + ", for " +
+                  (h.ofcEmployeeFemale ? "her" : "his") + " hard work and effort.";
+  // The card's effects carry the age stamp: a second recognition in the same year moves nothing.
+  if (h.ofcEmpLastRecognizeAge != h.age) {
+    h.ofcEmpLastRecognizeAge = h.age;
+    h.ofcEmpRespect += 3;
+    if (h.ofcEmpRespect > 100) h.ofcEmpRespect = 100;
+    h.ofcPerf += pointsForImpact(1);
+    h.ofcMorale += pointsForImpact(2);
+    if (h.ofcPerf < 0) h.ofcPerf = 0;
+    if (h.ofcPerf > 100) h.ofcPerf = 100;
+    if (h.ofcMorale < 0) h.ofcMorale = 0;
+    if (h.ofcMorale > 100) h.ofcMorale = 100;
+  }
+  return true;
+}
+
+// The warning card behind the respect card's third button (ScenarioEmployeeWarn, REPORT.en.md 330):
+// the row's Risk Score sets how much the employee loses, and a boss who already warned them twice or
+// shouted three times takes a second bite.
+bool Sim::employeeWarnYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.ofcEmployee.empty()) return false;
+  if (!ensureTable("a16_employee-warn-scenarios-enc")) return false;
+  const Table& t = tbl("a16_employee-warn-scenarios-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
+  if (pool.empty()) return false;
+  static const char* kTitles[] = {"Playing hardball", "Make my day", "You ready to go?!",
+                                  "I WILL end you", "My turn"};
+  const size_t row = weightedPickOf(t, "Commonness Score", pool, employeeCardRng_);
+  out.table = "a16_employee-warn-scenarios-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = kTitles[employeeCardRng_.below(5)];
+  out.body = employeeCell(t.at(row, "Scenario"), true);
+  out.narrative = "I warned my employee, " + spyUpperFirst(h.ofcEmployee) + ".";
+  // Risk Score 1..5: the respect slot, competence and morale each take their own step.
+  const int risk = int(t.num(row, "Risk Score"));
+  int respect = 0, comp = 0, morale = 0;
+  if (risk == 1) { respect = -1; comp = -1; morale = -2; }
+  else if (risk == 2) { respect = -2; comp = -1; morale = -3; }
+  else if (risk == 3) { respect = -2; comp = -1; morale = -4; }
+  else if (risk == 4) { respect = -3; comp = -1; morale = -5; }
+  else if (risk == 5) { respect = -3; comp = -2; morale = -6; }
+  h.ofcEmpRespect += respect;
+  h.ofcPerf += pointsForImpact(comp);
+  h.ofcMorale += pointsForImpact(morale);
+  // A boss with a history takes a second bite.
+  if (h.ofcEmpWarned > 2 || h.ofcEmpYelledAt >= 3) {
+    h.ofcEmpRespect -= 1;
+    h.ofcPerf += pointsForImpact(-1);
+    h.ofcMorale += pointsForImpact(-2);
+  }
+  h.ofcEmpWarned += 1;
+  if (h.ofcEmpRespect < 0) h.ofcEmpRespect = 0;
+  if (h.ofcPerf < 0) h.ofcPerf = 0;
+  if (h.ofcPerf > 100) h.ofcPerf = 100;
+  if (h.ofcMorale < 0) h.ofcMorale = 0;
+  if (h.ofcMorale > 100) h.ofcMorale = 100;
+  return true;
+}
+
+// The bonus card behind the respect card's first button (ScenarioEmployeeBonus, REPORT.en.md 330).
+// The native card is a mini-game: the amount starts at a tenth of the largest bonus the business can
+// pay and the player moves it before pressing give. The amount the port can prove is that starting
+// figure, so the card offers the two buttons the registry holds and pays that amount.
+bool Sim::employeeBonusYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.ofcEmployee.empty()) return false;
+  const std::string him = h.ofcEmployeeFemale ? "her" : "him";
+  // max(1, min(average employee salary, working capital)); a working capital above 2^24 pays 99%.
+  const long long wc = h.bizCash > 0 ? h.bizCash : h.money;
+  const double wcPart = wc > (1LL << 24) ? double(wc) * 0.99 : double(wc);
+  const long long salary = h.bizSalary > 0 ? h.bizSalary : (h.jobSalary > 0 ? h.jobSalary : 0);
+  double maxBonus = salary > 0 ? std::min(double(salary), wcPart) : wcPart;
+  if (maxBonus < 1.0) maxBonus = 1.0;
+  long long bonus = (long long)(maxBonus * 0.1);
+  if (bonus < 1) bonus = 1;
+  out.table = "registry:ScenarioEmployeeBonus";
+  out.row_id = "0";
+  out.title = "Bonus";
+  out.body = "Give your employee, " + h.ofcEmployee + ", a bonus today!";
+  out.cta = "What will you do?";
+  out.options = {"Actually, never mind", "Give " + him + " a bonus"};
+  const int lane = forcedChoice >= 0 ? (forcedChoice > 0 ? 1 : 0) : int(employeeCardRng_.below(2));
+  if (lane == 0) {
+    out.narrative = "I considered giving my employee, " + h.ofcEmployee +
+                     ", a bonus and then decided not to.";
+    return true;
+  }
+  // Paying it: the money leaves the business's books when the hero owns one, the hero's own when not.
+  if (h.ownsBusiness && h.bizCash > 0) h.bizCash -= bonus;
+  else h.money -= bonus;
+  if (h.money < 0) h.money = 0;
+  if (h.bizCash < 0) h.bizCash = 0;
+  out.narrative = "I gave my employee, " + h.ofcEmployee + ", a bonus in the amount of " +
+                   money(bonus) + ".";
+  // ratio = bonus / maxBonus; the smallest bucket is the one this amount lands in.
+  const int compStep = int(employeeCardRng_.below(2));
+  if (compStep > 0) h.ofcPerf += pointsForImpact(compStep);
+  h.ofcMorale += pointsForImpact(2);
+  h.ofcEmpRel += 1;
+  if (h.ofcEmpRel > 100) h.ofcEmpRel = 100;
+  if (h.ofcPerf > 100) h.ofcPerf = 100;
+  if (h.ofcMorale > 100) h.ofcMorale = 100;
+  // The bonus card can chain the respect card: (step + morale) / 2 beats a draw of the card's own.
+  const int step = 10;
+  const int morale = h.ofcMorale;
+  if ((double(step) + double(morale)) * 0.5 > double(employeeCardRng_.below(101))) {
+    life.pendingCards.push_back(kPendingEmployeeRespect);
+  }
+  if (h.ofcEmpLastBonusAge != h.age) h.ofcEmpLastBonusAge = h.age;
+  return true;
+}
+
+
 bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ofcManager) return false;
@@ -16373,6 +16617,8 @@ bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
   officeLive_ = true;
   // The employee's card (329) rides this family's turns; the native card is a menu row.
   if (employeeComplimentYear(life, out, forcedChoice)) return true;
+  // The respect card (330) rides the same turns; the annual report pushes it natively.
+  if (employeeRespectYear(life, out, forcedChoice, false)) return true;
   // Every pool in the family speaks about somebody else: "<employee> has been
   // half-assing <his/her> work", "You told <employee> ... <he/she>'s out of
   // here". The pair is the employee's, not the hero's.

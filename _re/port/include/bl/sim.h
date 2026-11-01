@@ -135,6 +135,10 @@ enum PendingCard {
   kPendingUniversityFund = 23,    // the tuition screen behind an accepted application (REPORT.en.md 317)
   kPendingCasinoBankrupt = 24,    // the casino's sixth losing year closes it (REPORT.en.md 320)
   kPendingZooBankrupt = 25,       // the inspector's warning after three losing years (REPORT.en.md 321)
+  kPendingEmployeeRespect = 26,   // the yearly employee respect card (REPORT.en.md 330)
+  kPendingEmployeeRecognize = 27, // the recognition card behind its second button
+  kPendingEmployeeWarn = 28,      // the warning card behind its third button
+  kPendingEmployeeBonus = 29,     // the bonus card behind its first button
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -948,6 +952,12 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
   // The employee's feedback card (REPORT.en.md 329).
   bool employeeComplimentYear(Life& life, AgeUp& out, int forcedChoice);
+  // The employee respect card and the three cards its buttons chain (REPORT.en.md 330).
+  std::string employeeCell(std::string text, bool body);
+  bool employeeRespectYear(Life& life, AgeUp& out, int forcedChoice, bool chained);
+  bool employeeRecognizeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool employeeWarnYear(Life& life, AgeUp& out, int forcedChoice);
+  bool employeeBonusYear(Life& life, AgeUp& out, int forcedChoice);
   bool officeYear(Life& life, AgeUp& out, int forcedChoice);
   std::string officeToken(const std::string& token);
   bool schoolYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1192,6 +1202,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooRng_;
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng officeCompRng_;  // the employee compliment card's own stream
+  Rng employeeCardRng_;  // the respect card and its chain's own stream
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;

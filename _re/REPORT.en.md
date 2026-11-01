@@ -23536,6 +23536,128 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 330. The employee respect card and its chain
+
+The office has one more card the employee's own feedback card can hand to: ScenarioEmployeeRespect,
+which the business annual report pushes every year. It is the only card in the family with buttons,
+and three of the four buttons open a card of their own. This section ports the respect card, the
+three chain cards, and the one lane that stays on the respect card and only writes a line.
+
+### The native respect card
+
+* ScenarioEmployeeRespect: `.ctor` 0x73f39d6df0, RefreshScenario 0x73f39d6e2c, ChoiceSelectedAtIndex
+  0x73f39d76e0, DismissSelected 0x73f39d7a68. Fields `+0x170` the employee, `+0x178` the narrative,
+  `+0x180` is-reaction, ColorScheme 5. Three callers, all recovered: SimBusiness::CreateAnnualReport
+  (0x73f30706c8, the yearly push, is-reaction false), ScenarioEmployeeBonus::MiniGameCompleted and
+  ScenarioEmployeeCompliment::RefreshScenario (both is-reaction true).
+* Title: #36052 "Respect" on the yearly push. A card chained behind another card instead picks from
+  #34362 "Positive reinforcement", #28812 "Let's keep this up, huh?", #30537 "Much appreciated",
+  #10093 "A little CEO appreciation", #27547 "It just warms ya heart up".
+* Body and journal are the two cells of a a16_employee-respect-scenarios-enc row (Scenario and Log
+  Version) run through the bracket parser, with the `<employee>` token filled as "your employee,
+  <name>," in the body and "my employee, <name>," in the journal.
+* The row is drawn by DataHub::GetRandomEmployeeRespectScenarioForPushOrReaction (0x73f2c884a0) in
+  five bands on the employee's bond with the hero - 1 up to 20, 2 up to 40, 3 up to 60, 4 up to 80,
+  5 above - keeping the rows whose Score matches the band and whose Can Be Push flag is set (Can Be
+  Reaction on the chained path), and falling back to the whole set when a band holds nothing.
+* Four choices, in the order the card stores them: #21649 "Give " + Pronoun(2) + #1000 " a bonus",
+  #35385 "Recognize ", #45990 "Warn ", #40891 "Take no action". The handler lowercases the label and
+  matches by Contains, in that order; every arm ends with the journal line and a UI refresh.
+* "Take no action" is the only arm that keeps the card: it appends #348 "\nI ignored ", Pronoun(2),
+  "." to the journal, takes a karma point, docks the employee's `+0x408` slot by
+  GetRandomNumber(1, 3), and drops their morale by 3.
+* The other three arms chain a card: ScenarioEmployeeBonus, ScenarioEmployeeRecognize and
+  ScenarioEmployeeWarn. The two plain ones are built inline (a Scenario with the employee at
+  `+0x170` and ColorScheme 5); their type names are not exposed in the metadata and are identified
+  by their byte-identical constructors and their adjacency to the bonus type in the type table.
+
+### The three chain cards
+
+* ScenarioEmployeeRecognize (`.ctor` 0x73f39d67c4, RefreshScenario 0x73f39d67f8, DismissSelected
+  0x73f39d6cb8). Title picked from #18690 "Employee spotlight!", #30541 "Much deserved recognition",
+  #19158 "Everyone take notes", #39835 "Star team member", #28197 "Keep it up!". Body is a row of
+  a16_employee-recognition-scenarios-enc (Scenario, Commonness Score) with `<employee>` as "your
+  employee, <name>," and `<company>` as the business name. Journal #24922 "I recognized my employee,
+  " + the capitalised name + #5547 ", for " + Pronoun(1) + #2216 " hard work and effort." Effects,
+  paid once per age: the employee's `+0x408` slot +3, competence +1, morale +2.
+* ScenarioEmployeeWarn (`.ctor` 0x73f39d7a34, RefreshScenario 0x73f39d7afc, DismissSelected
+  0x73f39d814c). Title picked from #34181 "Playing hardball", #29582 "Make my day", #49186 "You
+  ready to go?!", #23365 "I WILL end you", #30882 "My turn". Body is a row of
+  a16_employee-warn-scenarios-enc (Scenario, Risk Score, Commonness Score) with `<employee>` and
+  `<employee-possessive>` tokens, the possessive built the same way as a person's name. Journal
+  #25593 "I warned my employee, " + the capitalised name + ".". The row's Risk Score 1-5 sets the
+  bite on the `+0x408` slot, competence and morale: -1/-1/-2, -2/-1/-3, -2/-1/-4, -3/-1/-5, -3/-2/-6;
+  a warning when the employee has already been warned more than twice or shouted at three times
+  bites once more (-1/-1/-2). The card then counts the warning and remembers the hero's age.
+* ScenarioEmployeeBonus (`.ctor` 0x73f39cd850, RefreshScenario 0x73f39cdac8, MiniGameCompleted
+  0x73f39cdddc) is a minigame card, not a choice card: a slider over the business's available
+  capital, with a registry of five strings (#10716 "Actually, never mind", #21648 "Give", #51762
+  "a bonus", #12531 "Available Capital", #13882 "Bonus"). Body either #23227 "How much of a bonus
+  will you give your employee, " + name + "?" or #21729 "Give your employee, " + name + #5328
+  ", a bonus today!". The largest bonus is max(1, min(average industry salary, working capital,
+  the capital times 0.99 when it is over 2^24)) and the slider opens at a tenth of that. The award
+  is decided by the registry key the player picked - "bonus" - and nothing else. A decline writes
+  #284 "\nI considered giving my employee, " + name + #5326 ", a bonus and then decided not to."
+  and moves nothing. An award writes #342 "\nI gave my employee, " + name + #5327 ", a bonus in the
+  amount of " + the amount + "." and brackets the ratio: up to a quarter pays competence +0..1,
+  morale +2 and the `+0x508` slot +1; up to a half the same for a step of 25; up to three quarters
+  competence +1, morale +3 and `+0x508` +1..3; above that competence +1, morale +3 and `+0x508`
+  +1..4. The bonus is debited from the business, the employee's appreciation bar is redrawn, a
+  result card titled from #10089 "A lil something for you", #18071 "Don't spend it all in one
+  place", #34971 "Put a smile on their face", #39427 "Some cheese to keep em runnin" reports
+  #48508 "You gave your employee, " + name + #5329 ", a bonus.", and the card can chain the respect
+  card back when half of the step plus the employee's morale beats GetRandomNumber(0, 101).
+
+### The port
+
+* `Sim::employeeRespectYear` (src/sim.cpp) is offered from `Sim::officeYear`, after the employee's
+  compliment card: the yearly push is the business report, which the port does not run, so an office
+  year is sometimes this card. A card chained behind the bonus card is dispatched through the
+  pending-card queue in the same year, so a chain keeps showing its cards at one age.
+* Bond bands, table, flags and Score come from a16_employee-respect-scenarios-enc; the token filler
+  is `Sim::employeeCell`, which also resolves the slash lists the cells carry ("Employee of the
+  <Day/Month/Week>") from the card's own stream.
+* The `+0x408` slot the native moves has no recovered identity, so the hero keeps it as
+  `ofcEmpRespect` (0-100, starting at 60); warnings also count `ofcEmpWarned`, and the bonus and
+  the recognition remember the age they last paid so they pay once per age.
+* The bonus amount is the recoverable part: working capital and the average salary come from the
+  business block when the hero owns one, otherwise from the hero's own money and salary; the
+  starting tenth of the ceiling is what the card pays, and the result is written into the journal
+  instead of a second card.
+
+### Ceilings
+
+* The card's frequency is a coin (0.10 per office-family turn); the native frequency is the yearly
+  business report, which the port does not model.
+* The bonus minigame's slider is unrecovered: the port offers the two recovered buttons and always
+  pays the ceiling's tenth, so the higher ratio bands are only reachable through money the port
+  cannot raise. The result card, the analytics event and the Bitizenship check are not reproduced.
+* A respect card that arrived from the bonus chain cannot chain another bonus card: the native chain
+  has no depth limit and the port would loop.
+* `pointsForImpact(0)` would draw from the main stream, so the competence step on the smallest
+  bonus band is an explicit coin instead.
+* Achievements are not modelled, so the native "spat" achievement on a warning is skipped, and the
+  bonus's own result card is replaced by the journal line.
+* The three chain cards' effects are applied at the age they show; the native recognition and bonus
+  effects are gated on the hero's age matching the one stored on the employee, which the port only
+  needs for its own repeat guard.
+
+### Verified
+
+* 15 respect cards over 25 office lives (seeds 1-25): each carries a16_employee-respect-scenarios-enc,
+  a row flagged Can Be Push with a Score of 1-5, a body naming the employee, and a journal line
+  naming the same employee; every card is at age 18 or later.
+* The chain fires: 7 bonus cards, 3 recognition cards and 2 warning cards appeared in the same year
+  as their respect card.
+* 5 respect cards took the ignore lane: the journal ends "I ignored him." and the card's karma delta
+  is -1.
+* 3 bonus cards paid out, each writing "a bonus in the amount of $" into its journal.
+* A hero with no office job drew no respect card (control run, seed 3).
+
+The full 118-test suite ran on the binary these notes describe (5c806646..., 118 PASS /
+0 FAIL): the respect card, its three chain cards and the ignore lane are exercised by
+_re/tools/test_employee_respect.py, and nothing else moved.
+
 ## 329. The employee's feedback card
 
 The boss's own compliment card: ScenarioEmployeeCompliment is the business employee's version of the
@@ -24777,29 +24899,29 @@ scholarship, an unaffordable cash payment) are only reachable this way.
 
 The unreferenced-table list had grown to 37 names, and a name in that list says nothing about
 whether the game uses the table. This section answers the question per table for the leisure
-cluster by reading the loaders rather than the names: every \`Load*Set\` here is a lazy init
-called **only** from its own DataHub getter (\`UnityEngine.Resources::Load\` 0x5579af0 on a Unity
-TextAsset, not file IO), so the chain loader -> \`DataHub+offset\` field -> getter -> BL caller is
+cluster by reading the loaders rather than the names: every `Load*Set` here is a lazy init
+called **only** from its own DataHub getter (`UnityEngine.Resources::Load` 0x5579af0 on a Unity
+TextAsset, not file IO), so the chain loader -> `DataHub+offset` field -> getter -> BL caller is
 mechanical and can be walked to a real consumer. All addresses are 3.25.1 vaddrs.
 
 The split for the 26 tables examined:
 
-\`\`\`
+```
 live, card the port lacks   18
 non-portable (OS / sprites)  5
 dead (no caller at all)      3
-\`\`\`
+```
 
 **The three dead ones are dead, not merely unwired.**
 
-* \`a16_dirty-talk-enc\` (68 rows, 4316 B) has **no path literal at all** and no \`Load*\`/\`Get*\`
-  symbol in the 140,207-entry index; \`_dirtyTalkSet\` (DataHub+0x380) is never populated.
-* \`a16_clubupdateufldumb-enc\` (LIT#52185): \`LoadDataClubUpdateUFLDumbScenarioSet\` (0x288d130) is
-  called only from \`GetDataClubUpdateUFLDumbScenarioSet\` (0x288dcf4), which has **zero** BL
+* `a16_dirty-talk-enc` (68 rows, 4316 B) has **no path literal at all** and no `Load*`/`Get*`
+  symbol in the 140,207-entry index; `_dirtyTalkSet` (DataHub+0x380) is never populated.
+* `a16_clubupdateufldumb-enc` (LIT#52185): `LoadDataClubUpdateUFLDumbScenarioSet` (0x288d130) is
+  called only from `GetDataClubUpdateUFLDumbScenarioSet` (0x288dcf4), which has **zero** BL
   callers.
-* \`a16_black-market-auction-categories-enc\` (LIT#52086, 7 rows): \`LoadBlackMarketAuctionCategorySet\`
-  (0x2770ddc) has zero BL callers and \`_blackMarketAuctionCategorySet\` (DataHub+0xe80) is never
-  read. Its row class stores the category as \`Int32\` while the CSV column is text, so the table
+* `a16_black-market-auction-categories-enc` (LIT#52086, 7 rows): `LoadBlackMarketAuctionCategorySet`
+  (0x2770ddc) has zero BL callers and `_blackMarketAuctionCategorySet` (DataHub+0xe80) is never
+  read. Its row class stores the category as `Int32` while the CSV column is text, so the table
   would not even parse if it were loaded.
 
 **Three near-duplicate pairs are orphans.** The shipped table set carries both a truncated and a
@@ -24807,18 +24929,18 @@ full form of the same name, and only one of each pair has a path literal:
 
 | literal in metadata | rows | shipped twin | rows | literal for the twin |
 |---|---|---|---|---|
-| \`a16_casino-casino-ledger-feedback-enc\` (LIT#52156) | 17 | \`a16_casino-ledger-feedback-enc\` | 2 | none |
-| \`a16_casino-casino-game-room-complaint-enc\` (LIT#52153) | 17 | \`a16_casino-game-room-complaint-enc\` | 2 | none |
-| \`a16_casino-celebrity-demand-enc\` (LIT#52166) | 22 | \`a16_casion-celebrity-demand-enc\` | 4 | none |
+| `a16_casino-casino-ledger-feedback-enc` (LIT#52156) | 17 | `a16_casino-ledger-feedback-enc` | 2 | none |
+| `a16_casino-casino-game-room-complaint-enc` (LIT#52153) | 17 | `a16_casino-game-room-complaint-enc` | 2 | none |
+| `a16_casino-celebrity-demand-enc` (LIT#52166) | 22 | `a16_casion-celebrity-demand-enc` | 4 | none |
 
-The port already reads the loaded form in all three cases (\`src/fam/casino.cpp\`, the ledger at the
+The port already reads the loaded form in all three cases (`src/fam/casino.cpp`, the ledger at the
 "books" lane, the complaint at the gambler lane, the demand pool at the celebrity lane), so this is
 a note about three more filenames that will stay unreferenced by design, not a port bug.
 
 **The eighteen live tables belong to eighteen cards the port does not have.** Grouped by the
 subsystem the consumer lives in, with the getter and the consumer's own address:
 
-\`\`\`
+```
 fame media  magazines         GetRandomMagazineForGender 0x2874498   SimPlace::RefreshAvailableFameOpportunities
             youtube-channels  GetRandomYouTubeChannel 0x282f0c0      ScenarioFriendYouTube::RefreshScenario
             biographies       GetRandomBiographyForGender 0x28742a8  ScenarioFameBook::RefreshScenario
@@ -24837,41 +24959,41 @@ casino      casino-game-room-complaint  GetRandomCasinoCasinoGameRoomComplaintFo
             casion-celebrity-demand     GetRandomCasinoCelebrityDemand 0x26c8094
 fame        crashout-celebrity-friend-string GetRandomCrashoutCelebrityFriendString 0x26cd388
 company     company-name-type  GetRandomCompanyNameForCompanyTypeInCountryAndCity 0x27eb8d4
-\`\`\`
+```
 
-Two of the earlier notes are corrected here: the game-room-complaint set is \`DataHub+0x160\`, not
-\`+0x148\`, and \`crashout-celebrity-friend-string\` is consumed by
-\`ScenarioFameCrashoutCelebrityFriend::.ctor+0x9c\` (0x373960c), not by the crashout card's
-\`RefreshScenario\`, so its line is chosen when the follow-up object is built, not when the card is
+Two of the earlier notes are corrected here: the game-room-complaint set is `DataHub+0x160`, not
+`+0x148`, and `crashout-celebrity-friend-string` is consumed by
+`ScenarioFameCrashoutCelebrityFriend::.ctor+0x9c` (0x373960c), not by the crashout card's
+`RefreshScenario`, so its line is chosen when the follow-up object is built, not when the card is
 drawn.
 
-Every getter picks a row with \`GameReference::GetRandomNumber(0, count)\` (0x2e112a8): \`w0\` is
-zero, \`w1\` is the ArrayList count, and the helper locks \`System.Threading.Monitor\` before a
-virtual dispatch through \`klass+0x198\`. Whether that bound is inclusive is **not** provable from
+Every getter picks a row with `GameReference::GetRandomNumber(0, count)` (0x2e112a8): `w0` is
+zero, `w1` is the ArrayList count, and the helper locks `System.Threading.Monitor` before a
+virtual dispatch through `klass+0x198`. Whether that bound is inclusive is **not** provable from
 the dump (the target is not statically resolvable), which matters for the four-row and
 seventeen-row tables where one row is a 6% slice and not for the others.
 
-**The five that cannot be ported are not a gap.** \`notification-heirlooms\` (LIT#57162),
-\`notification-voices\` (LIT#57163) and \`local-notification-v1-text\` (LIT#52527) feed
-\`LocalNotification::SetupNotification\` / \`NotificationCreator::AddNotification\`, i.e. Android
-notification payloads; \`voltron_componentFilenames\` (LIT#58234) and \`voltron_disguiseFilenames\`
+**The five that cannot be ported are not a gap.** `notification-heirlooms` (LIT#57162),
+`notification-voices` (LIT#57163) and `local-notification-v1-text` (LIT#52527) feed
+`LocalNotification::SetupNotification` / `NotificationCreator::AddNotification`, i.e. Android
+notification payloads; `voltron_componentFilenames` (LIT#58234) and `voltron_disguiseFilenames`
 (LIT#58235) are newline-separated sprite filenames for the Voltron face pipeline
-(\`VoltronFaceAccessory::GetFilename\` 0x2f2e2b4). The port has no notification surface and no
+(`VoltronFaceAccessory::GetFilename` 0x2f2e2b4). The port has no notification surface and no
 sprites.
 
 No code changed in this section: a table's consumer address is a map, not an implementation, and
 wiring any of the eighteen means recovering that card's own strings, gates and effects first. The
 eight animal sites are the exception worth naming now, because they are all one table and one
-getter: \`ScenarioOutdoorRideEncounterAnimal::RefreshScenario+0x118\` (0x2495e74),
-\`VampireHuntActivity::GetRandomAnimalToEncounter+0xa4\` (0x2969d68) and \`+0xcc\`
-(0x2969d90), \`ScenarioActorChallengeAnimal::RefreshScenario+0x340\` (0x33e0c3c),
-\`ScenarioCarDriveAnimal::RefreshScenario+0x138\` (0x3541b74),
-\`ScenarioEncounterAnimal::RefreshScenario+0x13c\` (0x372319c) and
-\`ScenarioIsEligibleForRandomPush+0x144\` (0x3724320), and
-\`ScenarioHustleAnimal::.ctor+0xa8\` (0x37fe778).
+getter: `ScenarioOutdoorRideEncounterAnimal::RefreshScenario+0x118` (0x2495e74),
+`VampireHuntActivity::GetRandomAnimalToEncounter+0xa4` (0x2969d68) and `+0xcc`
+(0x2969d90), `ScenarioActorChallengeAnimal::RefreshScenario+0x340` (0x33e0c3c),
+`ScenarioCarDriveAnimal::RefreshScenario+0x138` (0x3541b74),
+`ScenarioEncounterAnimal::RefreshScenario+0x13c` (0x372319c) and
+`ScenarioIsEligibleForRandomPush+0x144` (0x3724320), and
+`ScenarioHustleAnimal::.ctor+0xa8` (0x37fe778).
 
 Verification: this is a reading section, so the check is that the port still builds and the suite
-still runs unchanged — 103/103 as committed in 315, and \`tools/acceptance.py --no-tests\` keeps
+still runs unchanged — 103/103 as committed in 315, and `tools/acceptance.py --no-tests` keeps
 reporting the same card-table ratio (877/878) because no table reference moved.
 
 ## 315. The ambient time-machine card: one invented family removed
