@@ -4544,6 +4544,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
+        {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-customer-service"},
         {&Sim::landlordYear, nullptr},
         {&Sim::petYear, nullptr},
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
@@ -11367,6 +11369,42 @@ bool Sim::zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice) {
   out.narrative =
       "My operations manager suggested I assign more of my work force to custodial tasks.";
   h.zooCleanAge = h.age;
+  return true;
+}
+
+// ScenarioZooAgeUpCustomerService (.ctor 0x29a49b0, RefreshScenario 0x29a49bc,
+// ChoiceSelectedAtIndex 0x29a4bf8, ScenarioIsEligibleForRandomPush 0x29a4da0,
+// pushed at 0x2b59f30, the else-if step right after cleanliness). The operations
+// manager says ticket sales would improve with more customer service staff. Handing
+// off opens the division-of-labor minigame; the journal is one fixed line. No RNG
+// anywhere in the card, and the native body carries its own typo (REPORT 349).
+bool Sim::zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooEmployee.empty()) ensureZooFields(life);
+  // The native asks GetCustomerRelationsTicketSalesBumpPercentage 0x2b65ba4 for
+  // zero: no division-of-labor minigame in the port, so the bump is never raised.
+  if (h.zooCustAge >= 0 && h.age - h.zooCustAge <= 3) return false;  // YearsSinceScenario > 3
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string manager = h.zooEmployee;
+  const bool managerFemale = h.zooEmployeeFemale;
+  const std::string them = managerFemale ? "her" : "him";
+
+  out.table = "registry:ScenarioZooAgeUpCustomerService";
+  out.title = "Customer Service";  // #16900
+  out.body = "Your operations manager, " + manager +
+             ", is reporting that your park's ticket sales could improve if you addded "
+             "more customer service representatives.";  // #5712, typo kept
+  out.cta = "What will you do?";
+  out.options = {"Reallocate labor resources", "Ignore " + them};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice) : 1;
+  out.choice = out.options[size_t(pick)];
+  out.narrative =  // #30821
+      "My operations manager suggested I assign more of my work force to customer "
+      "service-related tasks.";
+  h.zooCustAge = h.age;
   return true;
 }
 

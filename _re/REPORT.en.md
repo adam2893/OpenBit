@@ -23536,6 +23536,61 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 349. The zoo's customer service card
+
+The next step in the zoo's own age-up ladder: the operations manager says the park's
+ticket sales could improve with more customer service staff.
+
+### The native side
+
+`ScenarioZooAgeUpCustomerService`: `.ctor 0x29a49b0`, `RefreshScenario 0x29a49bc`,
+`ChoiceSelectedAtIndex 0x29a4bf8`, `ScenarioIsEligibleForRandomPush 0x29a4da0`,
+pushed at `0x2b59f30` - the else-if step immediately after cleanliness, so the two
+cards never deal in the same year.
+
+Eligibility, in order: the zoo exists, the hero is 18, the operations manager
+(`SimZoo::GetOperationsManager 0x2b64768`) exists, and
+`SimZoo::GetCustomerRelationsTicketSalesBumpPercentage 0x2b65ba4` reads exactly zero
+(a park whose customer relations have been raised is never nagged again). Then
+`YearsSinceScenario(#38123 'ScenarioZooAgeUpCustomerService') > 3`. There is no RNG in
+the card at all.
+
+Refresh stores the zoo, clears the dismiss button, sets the exterior title to
+`#50857 'Zoo'` and the title to `#16900 'Customer Service'`. The body is
+`#50431 'Your operations manager, '` + the manager's full name + `#5712 ", is reporting
+that your park's ticket sales could improve if you addded more customer service
+representatives.\n\nWhat will you do?"` - the doubled d in "addded" is the shipped
+string and is kept. The labels are the same pair as the cleanliness card:
+`#35307 'Reallocate labor resources'` and `#26366 'Ignore '` + the manager's object
+pronoun. Reallocating hands off to `ScenarioZooEmployeeManagerStaffManagement
+0x29e17b0`, the division-of-labor minigame; ignoring does nothing. Both branches write
+the same fixed journal line `#30821 'My operations manager suggested I assign more of my
+work force to customer service-related tasks.'` No money or stat moves.
+
+### The port
+
+`Sim::zooCustomerServiceYear` in `src/sim.cpp`, registered as `zoo-customer-service`
+with one ticket, gated on `ownsZoo`, age 18 and not in prison, with the same four-year
+cooldown stamp on the hero (`zooCustAge`). The bump percentage the native reads has no
+port equivalent - there is no division-of-labor minigame to raise it - so the port's
+card keeps dealing every four years, which is what an ignored native park sees. Like
+cleanliness it draws nothing from any stream, so no new RNG was added and no other
+family's sequence moved.
+
+Ceilings: the minigame is absent, so "Reallocate labor resources" ends at the same
+journal line as ignoring; the exterior title is not modelled; the manager is the park's
+existing keeper rather than a separate operations-manager role.
+
+### Verified
+
+`_re/tools/test_zoo_customer_service.py` walks fifteen zoo lives: the card deals 183
+times, four-or-more years apart, with both labels, the fixed journal and no stat
+movement on either answer. A hero without a zoo never sees it.
+
+The full 137-test suite ran on the binary these notes describe (298192f9...,
+137 PASS / 0 FAIL): _re/tools/test_zoo_customer_service.py exercises the card, both
+labels and the journal line, and nothing else moved.
+
 ## 348. The zoo's cleanliness card
 
 One more card the zoo's own age-up pass can deal: the operations manager reports that

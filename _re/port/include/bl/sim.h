@@ -762,6 +762,7 @@ class Sim {
   bool zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooTheftYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedHerd(Life& life);
   std::string zooAnimalNameFor(const std::string& breed, bool female);
   std::string zooToken(const std::string& key);
