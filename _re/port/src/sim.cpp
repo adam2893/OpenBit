@@ -669,6 +669,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
+      zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
       landlordRng_(seed ^ 0x6a09e667f3bcc909ULL),
       petRng_(seed ^ 0xbb67ae8584caa73bULL),
@@ -4539,6 +4540,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::mafiaYear, nullptr},
         {&Sim::zooYear, nullptr, 1, "zoo"},
         {&Sim::zooLifecycleYear, [](const Life& l) { return l.hero.ownsZoo; }, 2, "zoo-lifecycle"},
+        {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
         {&Sim::landlordYear, nullptr},
         {&Sim::petYear, nullptr},
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
@@ -11310,6 +11312,96 @@ bool Sim::zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioZooAgeUpTheft (ctor 0x29a9424, RefreshScenario 0x29a9430,
+// ChoiceSelectedAtIndex 0x29a9e08, eligibility 0x29aa4a8, pushed from
+// SimZoo::IncrementAge 0x2b59f5c). Someone sneaks into the park and takes one
+// animal: the hero either files a report - a third of which get the animal back -
+// or writes the loss off.
+bool Sim::zooTheftYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  // SimZoo+0x20 YearsOwned >= 6: a young park has nothing worth stealing yet.
+  if (h.zooOwnedSince < 0 || h.age - h.zooOwnedSince < 6) return false;
+  if (!h.zooHerdSeeded) zooSeedHerd(life);
+  if (h.zooHerd.empty()) return false;
+  if (h.zooTheftAge >= 0 && h.age - h.zooTheftAge <= 3) return false;  // YearsSinceScenario > 3
+  if (forcedChoice < 0 && !zooTheftRng_.chance(0.10)) return false;
+
+  // GetRandomAnimalToSteal 0x29a990c: a weighted pick over every habitat's
+  // animals, rare breeds excluded, each animal repeated by its value band.
+  if (!ensureTable("a16_zoo-animals-enc")) return false;
+  const Table& breeds = tbl("a16_zoo-animals-enc");
+  std::vector<size_t> pool;
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) {
+    const Hero::ZooHerdAnimal& a = h.zooHerd[i];
+    bool rare = false;
+    long long value = 0;
+    for (size_t r = 0; r < breeds.size(); ++r) {
+      if (lower(trim(breeds.at(r, "Breed"))) != lower(a.breed)) continue;
+      rare = !trim(breeds.at(r, "Rare")).empty();
+      value = std::atoll(trim(breeds.at(r, "Maximum Animal Value")).c_str());
+      break;
+    }
+    if (rare) continue;
+    const int weight = value >= 1000001LL ? 10 : (value >= 500001LL ? 5 : (value >= 50001LL ? 3 : (value >= 1001LL ? 2 : 1)));
+    for (int w = 0; w < weight; ++w) pool.push_back(i);
+  }
+  if (pool.empty()) return false;
+  const size_t pick = pool[size_t(zooTheftRng_.below(uint32_t(pool.size())))];
+  const Hero::ZooHerdAnimal animal = h.zooHerd[pick];
+
+  // SimZoo::GetChanceOfSecurityBreach 0x2b65cb4 divides the custodial staff by a
+  // plot-size divisor ({10,20,40}) and bands the percentage. The port keeps no
+  // staff assignment and no plot size, so every hand counts as custodial and the
+  // plot is read off the attractions (shortcut).
+  const int plot = h.zooAttractions < 3 ? 1 : (h.zooAttractions < 6 ? 2 : 3);
+  const double divider = plot == 1 ? 10.0 : (plot == 2 ? 20.0 : 40.0);
+  const double weightPct = double(h.zooStaff) / divider * 100.0;
+  double breach = 0.0;
+  if (weightPct > 75.0) breach = 0.0;
+  else if (weightPct > 48.0) breach = double(5 + int(zooTheftRng_.below(6)));
+  else if (weightPct > 25.0) breach = double(10 + int(zooTheftRng_.below(11)));
+  else breach = double(20 + int(zooTheftRng_.below(11)));
+  if (forcedChoice < 0 && !(breach > double(zooTheftRng_.below(101)))) return false;
+
+  if (h.zooEmployee.empty()) ensureZooFields(life);
+  const std::string manager = h.zooEmployee;
+  const bool managerFemale = h.zooEmployeeFemale;
+  const std::string animalThem = animal.female ? "her" : "him";
+
+  out.table = "registry:ScenarioZooAgeUpTheft";
+  out.title = "Theft";
+  out.body = "Your operations manager, " + manager + ", is reporting that someone snuck into " +
+             h.zooName + " and stole " + animal.name + " the " + animal.breed + "!\n\n" +
+             (managerFemale ? "She" : "He") +
+             " suggests increasing your zoo's security team to avoid further thefts.";
+  out.cta = "What will you do?";
+  out.options = {"File a police report", "Accept the loss"};
+  const int pickOption = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice) : int(zooTheftRng_.below(2));
+  out.choice = out.options[size_t(pickOption)];
+  h.zooTheftAge = h.age;
+
+  std::string journal = "An animal burglar stole " + animal.name + " the " + animal.breed + " from my zoo.";
+  if (pickOption == 1) {
+    journal += "\nI decided they could keep " + animalThem + ".";
+    h.zooHerd.erase(h.zooHerd.begin() + long(pick));
+  } else if (zooTheftRng_.below(3) == 0) {
+    // The police get the animal back (1 in 3): it is never removed.
+    journal += "\nI filed a police report and they apprehended the criminals and returned " +
+               animalThem + " safely to my care.";
+  } else {
+    // The feedback card's own title and body are recorded in REPORT.en.md 346 as
+    // known-but-unmodelled (a port card carries no follow-up scenario).
+    journal += "\nI filed a police report, but they couldn't recover " + animalThem + " safely to my care.";
+    h.zooHerd.erase(h.zooHerd.begin() + long(pick));
+  }
+  h.zooAnimals = int(h.zooHerd.size());
+  out.narrative = journal;
+  return true;
+}
+
 std::string Sim::zooAnimalNameFor(const std::string& breed, bool female) {
   if (!ensureTable("a16_zoo-animal-names-enc")) return breed;
   const Table& t = tbl("a16_zoo-animal-names-enc");
@@ -11345,6 +11437,22 @@ void Sim::zooSeedHerd(Life& life) {
     Hero::ZooHerdAnimal a;
     a.species = resolve(trim(names.at(r, "Animal")));
     a.breed = resolve(trim(names.at(r, "Breed")));
+    if (a.breed.empty()) {
+      // The names table leaves the breed blank for its generic species (Bird,
+      // Bear, Elephant): the animals table knows that species' breeds, so the
+      // lowest one is taken and the animal reads as a real breed. No draw is
+      // made here, so the seeding stream is unchanged.
+      std::string best;
+      if (ensureTable("a16_zoo-animals-enc")) {
+        const Table& at = tbl("a16_zoo-animals-enc");
+        for (size_t r2 = 0; r2 < at.size(); ++r2) {
+          if (lower(trim(at.at(r2, "Animal"))) != lower(a.species)) continue;
+          const std::string b2 = resolve(trim(at.at(r2, "Breed")));
+          if (!b2.empty() && (best.empty() || lower(b2) < lower(best))) best = b2;
+        }
+      }
+      a.breed = best.empty() ? a.species : best;
+    }
     const std::string g = lower(resolve(trim(names.at(r, "Gender"))));
     a.female = g == "female" ? true : (g == "male" ? false : zooLifeRng_.chance(0.5));
     std::string nm = resolve(trim(names.at(r, "Name")));

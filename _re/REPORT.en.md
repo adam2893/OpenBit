@@ -23536,6 +23536,132 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 346. The zoo's theft card
+
+The park's animals can be stolen. This is the last of the zoo's own age-up cards; the
+triage of all `244 `ScenarioCasino*` / `ScenarioZoo*` classes is in this section too,
+because it is what decided the ordering of the rest.
+
+### The triage
+
+244 classes carry a `ScenarioCasino` or `ScenarioZoo` name: 121 casino, 123 zoo. Only
+37 of their constructors are called from an age-up pipeline at all - 22 from
+`SimCasino::IncrementAge` (`0x2aac1cc`), 11 from `SimZoo::IncrementAge` (`0x2b592bc`)
+and 4 from `SimZooAnimal::IncrementAge` (`0x2b67aac`). The other `207 are menu-only:
+they are opened from a management screen the port does not have, so they cannot fire in
+a life at all. Of the 37, this section takes the zoo's theft card; the zoo cleanliness
+card, the casino's new/lost/celebrity gamblers and the twelve further age-up cards whose
+addresses are recorded in `/tmp/qdir/az_methods.txt` wait for their own sections. The
+eight unported table games stay on the list for the same reason as the menu cards.
+
+### The native side
+
+`ScenarioZooAgeUpTheft` - `.ctor 0x29a9424`, `RefreshScenario 0x29a9430`,
+`ChoiceSelectedAtIndex 0x29a9e08`, `ScenarioIsEligibleForRandomPush 0x29aa4a8` - is
+pushed from `SimZoo::IncrementAge`.
+
+Eligibility, in order: the zoo; the hero; `hero.Age >= 0x12`; `zoo.YearsOwned (+0x20)
+>= 6`; `GetRandomAnimalToSteal(zoo)` returns something; then a chance roll - `chance =
+SimZoo::GetChanceOfSecurityBreach 0x2b65cb4`, `roll = GetRandomNumber(0, 0x65)`, and
+`if (chance <= (float)roll) return false`; finally `YearsSinceScenario(ScenarioZooAgeUpTheft)
+> 3`.
+
+`GetChanceOfSecurityBreach` divides the park's custodial staff (`+0xd4`) by a plot-size
+divisor - `w9 = PlotSize (+0x18) - 1` into `floatTable[0xfc5328] = {10.0, 20.0, 40.0}` -
+times 100, and bands the result: above 75 it is `0.0f`, above 48 it is
+`GetRandomNumber(5, 0xb)`, above 25 `GetRandomNumber(0xa, 0x15)`, otherwise
+`GetRandomNumber(0x14, 0x1f)`. The breach percentage is compared against a uniform roll
+of 0-100, so a well-staffed park on a big plot is very nearly safe and a small park with
+no custodial staff is nearly always hit.
+
+`GetRandomAnimalToSteal 0x29a990c` builds a weighted list over every habitat's animals:
+rare breeds (`+0x55`) are skipped, and each remaining animal is appended N times where N
+follows `MaximumAnimalValue (+0x58)` - 1,000,001 and up is 10, 500,001 is 5, 50,001 is 3,
+1,001 is 2, and anything cheaper is 1. One uniform draw over that list picks the victim.
+
+Text. Exterior title `#50857 'Zoo'`, title `#42786 'Theft'`, dismiss button on. The body
+is `#50431 'Your operations manager, '` + the manager's full name + `#5709 ', is reporting
+that someone snuck into '` + the zoo's name + `#1236 ' and stole '` + the animal's name +
+`#3532 ' the '` + the breed + `#4218 '!'`, then `#46 '\n\n'` + `PronounStringForType(5)` +
+`#3491 " suggests increasing your zoo's security team to avoid further thefts.\n\nWhat
+will you do?"`. The no-manager fallback body is #10273 / #1235 / #3532 / #4229. The
+journal is `#11308` + `#3532` + `#2115 ' from my zoo.'`. Two buttons: `#20125 'File a
+police report'` and `#10543 'Accept the loss'`, dispatched on `Contains('police'
+#63774)` and `Contains('loss' #61914)`.
+
+Accepting the loss calls `SimZoo::RemoveAnimal 0x2b5dc80` and appends `#307 '\nI decided
+they could keep '` + `PronounStringForType(2)` + `#6312 '.'` to the journal. There is no
+money and no feedback card.
+
+Reporting it rolls `GetRandomNumber(0, 3)`. On 0 - one time in three - the animal comes
+back and is *never removed*: the card is titled from a pool of `#34225 'Poached the
+poacher'`, `#50888 'Zoonapper case: Solved'`, `#46111 "We got 'em boys"`, its body is
+`#42269` / `#3532` / `#4218 '!'` + `#135 '\n\nThey returned '` + `PronounStringForType(2)`
++ `#1256 " and warned you to improve your zoo's security."`, and the journal gets `#336`.
+On 1 or 2 the animal is removed: the pool is `#50887 'Zoonapped!'`, `#21062 'Gather a
+search party?'`, `#21056 'Gary Come Home~'`, the body is `#42305` / `#3532` / `#6312 '.'`
++ `#141 "\n\nThey warned you to improve your zoo's security."`, and the journal gets
+`#337`. Either way the whole thing costs no money and moves no stat, so the card is
+report-and-choice only.
+
+### The port
+
+`Sim::zooTheftYear` sits with the other zoo functions (`_re/port/src/sim.cpp`) and is
+registered as `"zoo-theft"` behind `l.hero.ownsZoo` with one ticket and its own stream
+`zooTheftRng_`.
+
+The gate is the native one: a zoo, age 18, not in prison, `h.age - h.zooOwnedSince >= 6`,
+a non-empty herd, and `h.zooTheftAge` at least four years back. A ten percent coin
+replaces the native randomness entirely for the push (the native card has no roll of its
+own at push - it is the breach chance that decides), and the breach is then computed from
+the hero's staff count and attractions.
+
+Because the port has no staff assignment and no plot size, every hand counts as custodial
+and the plot size is read off the attractions - fewer than three is a plot of 1, fewer
+than six is 2, otherwise 3 - which feeds the same dividers and bands. The breach is
+compared against `below(101)` exactly as native.
+
+The victim is drawn from `h.zooHerd` (REPORT 344) with the native value bands, rare
+breeds excluded. The manager is the park's keeper, `h.zooEmployee`. The body, the journal
+and both button labels are the port's own strings in the native wording; the police roll
+is `below(3) == 0` for the animal's return, and the herd entry is erased on both loss
+paths and the count left in `h.zooAnimals` updated.
+
+### Ceilings
+
+The manager is the keeper the park already has rather than a separate operations manager,
+because the port staffs one role.
+
+There is no follow-up card. The police success and failure cards - both title pools and
+both bodies above - are transcribed here but not pushed; the journal sentence has to
+carry the outcome instead.
+
+Plot size is a function of the attractions, not of a plot the hero can size; every member
+of staff counts as custodial. Both matter only through the band arithmetic.
+
+The herd is seeded from the names table, which leaves its breed blank for a generic
+species - `Bird`, `Bear`, `Elephant` - so those animals take the lowest breed the
+animals table lists for that species instead of a random one, which keeps the seeding
+stream unchanged.
+
+The card carries no money and no stat change at all, which is why its `deltas` are all
+zero: the native effects are the animal's removal and a journal sentence.
+
+### Verified
+
+Measured by `_re/tools/test_zoo_theft.py` over seeds 1-40:
+
+`cards: 43 | lanes: {'File a police report': 22, 'Accept the loss': 21} | tails: {'keep': 21, 'back': 11, 'lost': 11}`
+
+The test asserts the body and the journal name the same animal, that the breed is a real
+row of `a16_zoo-animals-enc`, both choices and all three journal tails, that the card
+moves no money and no stat, that consecutive cards for one hero are at least four years
+apart, and that a hero without a park never sees it.
+
+The full 134-test suite ran on the binary these notes describe (acfb4814...,
+134 PASS / 0 FAIL): _re/tools/test_zoo_theft.py exercises the card, both choices and
+all three journal tails, and nothing else moved.
+
 ## 345. The casino's two mob favours
 
 A made man who owns a casino gets asked for things. The native game pushes two

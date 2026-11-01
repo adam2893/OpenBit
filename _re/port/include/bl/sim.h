@@ -752,6 +752,7 @@ class Sim {
   bool zooComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   // The zoo's animals as individuals (REPORT.en.md 344).
   bool zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooTheftYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedHerd(Life& life);
   std::string zooAnimalNameFor(const std::string& breed, bool female);
   std::string zooToken(const std::string& key);
@@ -1268,6 +1269,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooRng_;
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng zooLifeRng_;    // the zoo lifecycle cards' own stream
+  Rng zooTheftRng_;    // the zoo theft card's own stream
   Rng officeCompRng_;  // the employee compliment card's own stream
   Rng employeeCardRng_;  // the respect card and its chain's own stream
   Rng cwCompRng_;  // ScenarioCoworkerCompliment's own stream (REPORT.en.md 331)

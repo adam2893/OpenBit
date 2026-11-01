@@ -600,6 +600,7 @@ struct Hero {
   bool zooHerdSeeded = false;   // the park's animals are only put there once
   int zooOwnedSince = -1;
   int zooPregAge = -1;
+  int zooTheftAge = -1;    // the year the park was last burgled
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.
