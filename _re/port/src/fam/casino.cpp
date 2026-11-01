@@ -208,6 +208,90 @@ bool Sim::casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioCasinoAgeUpGamblerComplaintGame (REPORT.en.md 322): a punter corners the
+// hero about a game the floor does not run.
+//
+// The card's text is recovered as concatenated literals: "Your casino's " #50268, the
+// gambler's tier, ', ' #5282, the name, ", is complaining that your casino doesn't have "
+// #5667, the possessive, ' favorite game, ' #1953, the game, and a full stop. Title
+// #16066 'Complaint'. The three choices are #12770 'Ban ', #11554 'Apologize for the
+// inconvenience' and #26366 'Ignore '; the two short labels end in a space because the
+// native card appends the gambler's name to them.
+//
+// Ceiling: the tier ladder the card's {relationship} slot names is not recovered. The port
+// has five gambler styles already (319) and five rank words exist in the literal table
+// (Beginner #13333, Amateur #11239, Novice #32248, Regular #35559, High Roller #22919), so
+// style N is called by rank word N. Nothing here is invented text; only the pairing is.
+bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (forcedChoice < 0 && !casinoCardRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
+                                 "High Roller"};
+  int style = 3;
+  if (!h.casinoGamblerStyles.empty()) {
+    const size_t pick = casinoCardRng_.below(uint32_t(h.casinoGamblerStyles.size()));
+    style = h.casinoGamblerStyles[pick];
+  }
+  if (style < 1) style = 1;
+  if (style > 5) style = 5;
+  const bool female = casinoCardRng_.chance(0.5);
+  std::string gambler = resolve("<casino-gambler>");
+  if (gambler.empty()) gambler = female ? "Jane Doe" : "John Doe";
+  std::string game = resolve("<casino-game>");
+  if (game.empty()) game = "blackjack";
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplaintGame";
+  out.title = "Complaint";
+  out.body = std::string("Your casino's ") + kTiers[style - 1] + ", " + gambler +
+             ", is complaining that your casino doesn't have " +
+             (female ? "her" : "his") + " favorite game, " + game + ".";
+  out.options = {"Ban " + gambler, "Apologize for the inconvenience",
+                 "Ignore " + gambler};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoCardRng_.below(3));
+  out.choice = out.options[pick];
+
+  if (pick == 1) {
+    // Apologising buys the punter a little more appetite for the floor.
+    h.casinoGamblerAddiction += 2;
+    if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
+    return true;
+  }
+  // Banning and ignoring both cost the house standing; a ban also reports what the
+  // gambler did, banded by how crazy the floor already thinks he is. The native band
+  // column is Gambler Craziness, which this port does not track, so the floor's
+  // happiness is used for the band instead (ceiling).
+  h.casinoPopularity -= 2;
+  if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+  if (pick == 0 && ensureTable("a16_casino-banned-gambler-snippet-enc")) {
+    const size_t r = pickWindow("a16_casino-banned-gambler-snippet-enc", "", "", "",
+                                "Min Gambler Craziness", "Max Gambler Craziness",
+                                h.casinoGamblerHappiness, casinoCardRng_);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_casino-banned-gambler-snippet-enc");
+      const std::string who = female ? "She " : "He ";
+      // The snippet's <his/her> tokens follow the gambler, not the hero.
+      const bool savedSet = pronounOtherSet_;
+      const bool savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      const std::string why = resolve(trim(t.at(r, "Snippet")));
+      if (!why.empty()) out.body += "\n\n" + spySentence(who + why);
+      const std::string logv = resolve(trim(t.at(r, "Log Version")));
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+      if (!logv.empty()) out.extra.push_back(spySentence(who + spySentence(logv)));
+      out.table = "a16_casino-banned-gambler-snippet-enc";
+      out.row_id = std::to_string(r + 1);
+    }
+  }
+  return true;
+}
+
 // DataHub::GetTaxRateForUnadjustedIncomeInCountry is the US ladder scaled by the
 // owner country's TopTaxRate over the US one. DataCountry has no CSV export in
 // this build (no table carries a tax column), so the scale is 1.0 and the hero

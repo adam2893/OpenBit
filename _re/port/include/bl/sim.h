@@ -675,6 +675,8 @@ class Sim {
   // the cards are picked, and the tier rate its tax comes from.
   void casinoRunYear(Life& life);
   bool casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice);
+  // ScenarioCasinoAgeUpGamblerComplaintGame (REPORT.en.md 322).
+  bool casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice);
   // The zoo's own books and the inspector's warning (REPORT.en.md 321).
   void zooRunYear(Life& life);
   bool zooBankruptYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1061,6 +1063,9 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The mischief card's own draws (REPORT.en.md 318): the activity row, its
   // alternative tokens and the charge roll.
   Rng mischiefRng_;
+  // The casino gambler complaint card's own draws (REPORT.en.md 322): the gambler's
+  // tier, sex and the coin that decides whether the card fires.
+  Rng casinoCardRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)
   Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
   bool timeMachineOn_ = false;

@@ -23536,6 +23536,67 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 322. The casino's complaining gambler
+
+The casino had an economy (319), a bankruptcy (320) and a zoo (321) but no card about a punter with a
+grievance, even though the native game ships one with three buttons. This section ports
+ScenarioCasinoAgeUpGamblerComplaintGame.
+
+### The native card
+
+* Title #16066 "Complaint" (exterior title #15240 "Casino").
+* Body: concatenated literals, not a format template — #50268 "Your casino's " + the gambler's
+  relationship word + #5282 ", " + the name + #5667 ", is complaining that your casino doesn't have "
+  + the possessive + #1953 " favorite game, " + the game + "."
+* Choices: #12770 "Ban ", #11554 "Apologize for the inconvenience", #26366 "Ignore ". The two short
+  labels end in a space because the native card appends the gambler's name.
+* Effects: a ban costs the house two popularity points and reports what the gambler did, drawn from
+  a16_casino-banned-gambler-snippet-enc banded by gambler craziness (Snippet, Log Version, Min/Max
+  Gambler Craziness); apologising raises the floor's addiction by two points; ignoring costs two
+  popularity points. The card consumes no other state.
+* Eligibility: hero age 18 or over, not in prison, a casino owned, at least two years since the last
+  one (0x3564f24's ladder).
+
+### The port
+
+Sim::casinoComplaintYear (src/fam/casino.cpp) is a wheel family named "casino-complaint" whose ready
+gate is the casino's ownership, with its own stream (casinoCardRng_, REPORT.en.md 322) so the card
+cannot move another family's draws for the seed. On firing it renders the recovered body, offers the
+three native labels, appends the banned-gambler snippet for a ban and pushes its Log Version as a log
+line.
+
+Ceilings, all deliberate:
+
+* The relationship word's ladder is unrecovered. Five rank words exist in the literal table
+  (Beginner #13333, Amateur #11239, Novice #32248, Regular #35559, High Roller #22919) and the port
+  already models five gambler styles (319), so style N is called rank word N. The words are native, the
+  pairing is the port's.
+* Gambler craziness is not tracked, so the banned-gambler snippet is banded by the floor's happiness
+  instead.
+* The card's fire rate is the port's (one in ten eligible years); the native card is queued by the
+  scenario eligibility ladder, whose own rate is not recovered.
+* The gambler's name comes from the existing <casino-gambler> token, which draws from the main stream,
+  so a firing card moves later draws; the card's own choices do not.
+* The popularity and addiction effects are wired to the port's hero fields but the script harness
+  exposes neither, so the test pins the text and the labels rather than the numbers.
+
+### Verified
+
+tools/test_casino_complaint.py, casino seeded solvent so the bankruptcy card cannot close the floor
+first:
+
+* the card fires on a solvent casino, body matches the recovered concatenation (tier, name, "is
+  complaining that your casino doesn't have", possessive, "favorite game", game), and the choice is
+  one of the three native labels;
+* a forced ban appends one snippet paragraph and at most one, that snippet is a row of the
+  banned-gambler table, and the event carries no stat deltas;
+* forced apologize and forced ignore render the two-button bodies without a snippet;
+* a hero without a casino never sees the card, and a casino closed by the bankruptcy card never draws
+  one afterwards.
+
+The full 110-test suite passed on the binary these notes describe
+(3d0c204ac99ec1f62bb70804ac8ed5b84d0c0668cdfd5701572a21096b0aa93e).
+
 ## 321. The zoo's books and the federal inspector
 
 Section 320 modelled a casino that drowns. The zoo has the same shape and, unlike the casino, it
