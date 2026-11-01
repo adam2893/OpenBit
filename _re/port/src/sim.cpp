@@ -662,6 +662,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       bmRng_(seed ^ 0x8f1bbcdc9e3779b1ULL),
       casinoRng_(seed ^ 0xd1b54a32d192ed03ULL),
       casinoCardRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x9e3779b97f4a7c15ULL),
+      carRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
@@ -4505,6 +4506,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::mischiefYear, nullptr, 3},
         {&Sim::casinoComplaintYear, [](const Life& l) { return l.hero.ownsCasino; }, 2,
          "casino-complaint"},
+        {&Sim::carRepairYear, [](const Life& l) { return l.hero.ownsCar; }, 3, "car"},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
     // The wheel is the rotation order with the rare families repeated by their ticket

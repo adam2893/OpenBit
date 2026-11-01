@@ -23536,6 +23536,35 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 323. The car's condition, the repair card and the scrap push
+
+Every other vehicle in this port is a purchase lane (car, boat, aircraft) with no state behind it: the hero pays and the money is gone. The native game keeps a real car object, runs a breakage check on it every age-up and hands the hero a repair card when something falls off, so this section gives the port its first structured car and ports ScenarioCarRepair and the car scrap push.
+
+The check lives in SimHero::IncrementAge (0x2b12b1c, called from 0x2a6c5f4). It reads the model's Reliability Score and turns it into a ceiling: 100 for a score of 1 down to 5 for a score of 5, so a score of 1 is the most breakable car and 5 the least. It draws A = GetRandomNumber(0, ceiling) and B = GetRandomNumber(0, 20), and the car needs work when Condition + B < A. A car with work outstanding queues ScenarioCarRepair; a car whose condition is gone queues the *ScrapPush lane instead, and the repair card is not offered.
+
+The part is picked from a16_car-parts-enc (0x2804e4c) by appending each row's Break Commonness Score to a candidate list and drawing one entry, so a part with a score of 5 comes up five times as often as one with a score of 1. The row carries the part's name, its Base Cost and the Broken Terms the card quotes. The price (0x2804f88) is part.BaseCost * (model.Cost / 30000) once the model costs 30000 or more, times a multiplier M this port has not recovered (M = 1 here, the only ceiling that changes a number).
+
+The card is ScenarioCarRepair (ctor 0x3557134, Refresh 0x3559384, Choice 0x3559924). Its title is the car itself, Format(#70426 '{0} {1}', make, model); its body is #50813 'Your {0}car has {1}.' with the make and model in {0} (plus the word #66160 'stolen ' when the car has been stolen, a state this port does not model) and the part's Broken Terms in {1}, wrapped by #68715 "{0}\n\nWhat will you do?". Two rows sit above the buttons: #35747 'Repair' and #45558 'Vehicle Condition'. The buttons are #35752 'Repair it', #45180 'Use the Golden Wrench' and #24668 'I might fix it later'; the handler dispatches on the lowercased label (Contains "use" and Contains "later"), which is why the Golden Wrench lane can be left out without moving the other two.
+
+Repairing charges the row's price through AdjustBankBalanceByAmount(-cost) (0x3559fec) and writes exactly one piece of state: the car's ActiveRepair is cleared. It does not move the condition, does not restamp AgeAtLastRepair and does not touch the scrap flag, and it logs #70735 '{0}I repaired the {1} on my {2}.'. Declining charges nothing, leaves ActiveRepair set (so the card comes back next year) and logs #69029 '{0}\nI decided not to repair it.'. When the balance will not cover the row the native game opens ScenarioInsufficientFinances (0x37c6e98) instead of charging, with #67050 'to repair your {0}' as its item.
+
+The scrap push (0x355a730) is the end of the line: #50259 'Your car will no longer start and is beyond repair.', a row pair #10954 'Age' / #69718 '{0} Years', the single button #38269 'Scrap it' and the log #24329 'I had to scrap my {0} {1}.'. It pays nothing - the car is gone and no money changes hands.
+
+The port keeps the car on the Hero rather than in a SimCar array. carMake/carModel/carCondition were already there for the racing lane, so this section adds ownsCar, carCost (the model's Cost, the price scale), carReliability, carNeedsRepair, carPart, carBrokenTerms, carRepairCost, carYearAtLastRepair and carYearsOwned. Sim::ensureCarFields draws make/model/cost/reliability out of a16_car-models-enc once; Sim::carRepairYear runs the check, picks the part, prices it and renders one of the two cards. The family sits in the wheel with three tickets and its own carRng_ stream, so the roll cannot shift another family's sequence. The harness grew three keys for it: "car" gives the hero a car, "carCondition" and "carReliability" seed the two numbers the roll reads.
+
+The Golden Wrench button is an in-app purchase this port does not carry, so a car the hero cannot afford shows one lane only ("I might fix it later") instead of the native two, and the insufficient-funds card is folded into that: the port never opens a repair card it cannot pay for. Three further ceilings: the condition drifts down by one on a quarter of quiet years (the native accidents and race damage that move it are not ported); the damage roll and the part pick happen once per break rather than the native per-check; and a car is scrapped when its condition reaches 0, which no ported lane can cause on its own, so the scrap card is reached through the "carCondition" fixture.
+
+Verified (test_car_repair.py, seed 7, US male, cash 50000):
+
+    repair card:  age 16   title 'Mazda CX-3'   $500   condition 50
+    charge:      500 exactly, stopping both lives at the card's year
+    decline:     'I decided not to repair it.'  nothing charged
+    broke hero:  3 cards, every one offering only 'I might fix it later'
+    scrap card:  age 16   'I had to scrap my Mazda CX-3.'   money unchanged, never twice
+    no car:      no repair card and no scrap card on seeds 1..5
+
+The full 111-test suite passed on the binary these notes describe (c40a628d..., 111 PASS / 0 FAIL).
+
 ## 322. The casino's complaining gambler
 
 The casino had an economy (319), a bankruptcy (320) and a zoo (321) but no card about a punter with a

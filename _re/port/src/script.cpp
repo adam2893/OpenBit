@@ -560,6 +560,24 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     if (!readString(json, p, spec.only)) return fail("only is not a string");
   }
 
+  p = findValue(json, "car");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.car = true;
+    else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.car = false;
+    else return fail("car is not a boolean");
+  }
+
+  for (const char* key : {"carCondition", "carReliability"}) {
+    p = findValue(json, key);
+    if (p == std::string::npos) continue;
+    skipWs(json, p);
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos)
+      return fail(std::string(key) + " is not an integer");
+    (std::string(key) == "carCondition" ? spec.car_condition : spec.car_reliability) = int(v);
+  }
+
   p = findValue(json, "casinoBank");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -914,6 +932,13 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.sports) sim.makeAthlete(life);
   if (spec.business) sim.makeBusiness(life);
   if (spec.racing) sim.makeRacing(life);
+  if (spec.car) {
+    sim.makeCar(life);
+    // Harness hook: seed the car's condition and reliability so a test reaches the repair
+    // card without waiting for the damage roll (REPORT.en.md 323).
+    if (spec.car_condition >= 0) life.hero.carCondition = spec.car_condition;
+    if (spec.car_reliability >= 0) life.hero.carReliability = spec.car_reliability;
+  }
   if (spec.actor) sim.makeActor(life);
   if (spec.finance) sim.makeFinance(life);
   if (spec.model) sim.makeModel(life);
@@ -1060,7 +1085,12 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
       events.push_back(eventJson(ev, life.hero.age));
       continue;
     }
-    if (travel <= 0 && !((lived < spec.ages || !life.pendingCards.empty()) && life.alive)) break;
+    // In "only" mode "ages" is the hero's age cap (a pinned family is cardless most
+    // years, so counting carded years would run the life far past the asked age).
+    const bool more = spec.only.empty()
+                          ? (lived < spec.ages || !life.pendingCards.empty())
+                          : (life.hero.age < spec.ages || !life.pendingCards.empty());
+    if (travel <= 0 && !(more && life.alive)) break;
     if (travel > 0) {
       AgeUp ev;
       if (sim.useTimeMachine(life, ev, travel)) {

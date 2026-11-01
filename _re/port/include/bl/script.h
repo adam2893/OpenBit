@@ -70,6 +70,12 @@ struct ScriptSpec {
   bool astronaut = false;
   // The car and the races (REPORT.en.md 75).
   bool racing = false;
+  // A car of the hero's own, without the races (REPORT.en.md 323). The repair card only
+  // fires on a car that has already broken, and the damage roll is spread over years, so
+  // the fixture also seeds the condition and the reliability score (1 = most breakable).
+  bool car = false;
+  int car_condition = -1;
+  int car_reliability = -1;
   bool landlord = false;
   bool zoo = false;
   bool model = false;

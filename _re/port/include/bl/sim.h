@@ -521,6 +521,8 @@ class Sim {
   void makeFighter(Life& life);
   void makeBlackMarketeer(Life& life);
   void makeCasino(Life& life);
+  // The harness's "car" key: the hero owns a car from a16_car-models-enc (323).
+  void makeCar(Life& life);
   // The harness's "only" key: try just the named family in the wheel (319).
   void setOnlyFamily(const std::string& name) { onlyFamily_ = name; }
   void makeCult(Life& life);
@@ -677,6 +679,9 @@ class Sim {
   bool casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCasinoAgeUpGamblerComplaintGame (REPORT.en.md 322).
   bool casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice);
+  // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
+  bool carRepairYear(Life& life, AgeUp& out, int forcedChoice);
+  void ensureCarFields(Life& life);
   // The zoo's own books and the inspector's warning (REPORT.en.md 321).
   void zooRunYear(Life& life);
   bool zooBankruptYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1066,6 +1071,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino gambler complaint card's own draws (REPORT.en.md 322): the gambler's
   // tier, sex and the coin that decides whether the card fires.
   Rng casinoCardRng_;
+  // The car's damage roll, its part pick and the repair card's own draw (REPORT.en.md 323).
+  Rng carRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)
   Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
   bool timeMachineOn_ = false;

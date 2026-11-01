@@ -594,6 +594,20 @@ struct Hero {
   // six activities of the a16_outdoor family.
   bool outdoors = false;
   std::string outdoorVehicle;    // a16_outdoor-vehicle-enc, "Make Model"
+  // The car the hero owns (REPORT.en.md 323): make/model from a16_car-models-enc, the
+  // reliability score the damage roll reads (1 = most breakable), the condition, and the
+  // part that is currently broken (a16_car-parts-enc).
+  // (make/model/condition are shared with the racing car below, which also draws a car
+  // out of a16_car-models-enc.)
+  bool ownsCar = false;
+  int carCost = 0;               // the model's own Cost, the scale for part prices
+  int carReliability = 3;        // Reliability Score, 1..5
+  bool carNeedsRepair = false;
+  std::string carPart;
+  std::string carBrokenTerms;
+  long long carRepairCost = 0;
+  int carYearAtLastRepair = -1;
+  int carYearsOwned = 0;
   std::string outdoorBike;
   std::string outdoorPlace;      // the destination's Location
   std::string outdoorHabitat;    // its Habitat, lowercased

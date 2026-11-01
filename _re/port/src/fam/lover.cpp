@@ -1733,6 +1733,137 @@ bool Sim::spouseHouseReactionYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The car's condition and its repair card (REPORT.en.md 323).
+//
+// SimHero::IncrementAge runs a car check every year (0x2b12b1c): A = GetRandomNumber(0, max)
+// where max is the model's Reliability Score ladder (100/70/50/25/5 for scores 1..5, so a
+// score of 1 is the most breakable), B = GetRandomNumber(0, 20), and the car needs work when
+// Condition + B < A. A broken car queues ScenarioCarRepair; when the condition is gone the
+// *ScrapPush lane replaces it. The card's own text is recovered (see the report): the body
+// is #50813 'Your {0}car has {1}.' wrapped by #68715 "{0}\n\nWhat will you do?", the rows are
+// #35747 'Repair' and #45558 'Vehicle Condition', and the buttons #35752 'Repair it',
+// #45180 'Use the Golden Wrench' and #24668 'I might fix it later'.
+//
+// The port keeps the car's own state on the Hero (no SimCar array), uses the parts table's
+// Break Commonness Score for the part pick, and calls the model's own Cost the price scale.
+void Sim::makeCar(Life& life) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  h.ownsCar = true;
+  h.carCondition = 100;
+  h.carModel.clear();  // ensureCarFields draws one
+  ensureCarFields(life);
+}
+
+void Sim::ensureCarFields(Life& life) {
+  Hero& h = life.hero;
+  if (!h.ownsCar || !ensureTable("a16_car-models-enc")) return;
+  if (!h.carModel.empty()) return;
+  const Table& t = tbl("a16_car-models-enc");
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (trim(t.at(r, "Model")).empty()) continue;
+    if (t.flag(r, "Unavailable") || t.flag(r, "Race Car Dealership Only")) continue;
+    rows.push_back(r);
+  }
+  if (rows.empty()) return;
+  const size_t row = rows[carRng_.below(uint32_t(rows.size()))];
+  h.carMake = trim(t.at(row, "Make"));
+  h.carModel = trim(t.at(row, "Model"));
+  h.carCost = int(t.num(row, "Cost"));
+  const int rel = int(t.num(row, "Reliability Score"));
+  h.carReliability = rel < 1 ? 1 : rel > 5 ? 5 : rel;
+  if (h.carCondition <= 0) h.carCondition = 100;
+  if (h.outdoorVehicle.empty()) h.outdoorVehicle = h.carMake + " " + h.carModel;
+}
+
+bool Sim::carRepairYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCar) return false;
+  if (h.age < 16) return false;
+  hero_ = &h;
+  life_ = &life;
+  ensureCarFields(life);
+  ++h.carYearsOwned;
+
+  const std::string car = h.carMake.empty() ? "car" : h.carMake + " " + h.carModel;
+  if (!h.carNeedsRepair) {
+    // The damage roll. A score of 1 breaks the car often, a score of 5 almost never.
+    static const int kMax[] = {100, 70, 50, 25, 5};
+    const int rel = h.carReliability < 1 ? 1 : h.carReliability > 5 ? 5 : h.carReliability;
+    const int a = int(carRng_.below(uint32_t(kMax[rel - 1] + 1)));
+    const int b = int(carRng_.below(21));
+    if (h.carCondition + b >= a) {
+      // Nothing broke this year; the condition still drifts down with age.
+      if (carRng_.chance(0.25) && h.carCondition > 0) --h.carCondition;
+      return false;
+    }
+    // Something broke: pick the part by its Break Commonness Score, price it from the
+    // parts table and remember the broken terms the card quotes.
+    if (!ensureTable("a16_car-parts-enc")) return false;
+    const Table& p = tbl("a16_car-parts-enc");
+    std::vector<size_t> pool;
+    for (size_t r = 0; r < p.size(); ++r) {
+      if (trim(p.at(r, "Part")).empty()) continue;
+      const size_t weight = size_t(std::max(1.0, p.num(r, "Break Commonness Score")));
+      for (size_t k = 0; k < weight; ++k) pool.push_back(r);
+    }
+    if (pool.empty()) return false;
+    const size_t part = pool[carRng_.below(uint32_t(pool.size()))];
+    h.carPart = trim(p.at(part, "Part"));
+    const std::string terms = trim(p.at(part, "Broken Terms"));
+    h.carBrokenTerms = terms.empty() ? "broken" : terms;
+    // 0x2804f88: price = part Base Cost * (model Cost / 30000 when the model costs 30000
+    // or more). The native multiplier M is unrecovered, so the port uses 1 (ceiling).
+    double price = p.num(part, "Base Cost");
+    if (h.carCost >= 30000) price *= double(h.carCost) / 30000.0;
+    h.carRepairCost = static_cast<long long>(price);
+    if (h.carRepairCost < 1) h.carRepairCost = 1;
+    h.carNeedsRepair = true;
+    h.carYearAtLastRepair = h.age;
+  }
+
+  // The car is past saving: the scrap card replaces the repair card.
+  if (h.carCondition <= 0) {
+    out.table = "registry:ScenarioCarScrapPush";
+    out.title.clear();  // the scrap push's own title literal is not recovered
+    out.body = "Your car will no longer start and is beyond repair.\n\nAge: " +
+               std::to_string(h.carYearsOwned) + " Years";
+    out.options = {"Scrap it"};
+    out.choice = "Scrap it";
+    out.narrative = "I had to scrap my " + car + ".";
+    h.ownsCar = false;
+    h.carNeedsRepair = false;
+    return true;
+  }
+
+  out.table = "registry:ScenarioCarRepair";
+  out.title = car;  // Title = Format(#70426 '{0} {1}', make, model)
+  out.body = "Your " + car + " car has " + h.carBrokenTerms + ".\n\nRepair: " +
+             money(h.carRepairCost) + "\nVehicle Condition: " +
+             std::to_string(h.carCondition) + "\n\nWhat will you do?";
+  const bool afford = h.money >= h.carRepairCost;
+  // The native third button is the Golden Wrench, an in-app purchase this port does not
+  // carry, so the port offers the two free lanes. The declined card is not cleared in the
+  // native game, which is why a declined car comes back next year.
+  out.options = afford ? std::vector<std::string>{"Repair it", "I might fix it later"}
+                       : std::vector<std::string>{"I might fix it later"};
+  int pick = 0;
+  if (forcedChoice >= 0) pick = forcedChoice == 0 && afford ? 0 : int(out.options.size()) - 1;
+  else pick = (afford && carRng_.chance(0.6)) ? 0 : int(out.options.size()) - 1;
+  out.choice = out.options[size_t(pick)];
+  if (pick == 0) {
+    h.money -= h.carRepairCost;
+    h.carNeedsRepair = false;
+    h.carRepairCost = 0;
+    out.narrative = "I repaired the " + h.carPart + " on my " + car + ".";
+  } else {
+    out.narrative = "I decided not to repair it.";
+  }
+  return true;
+}
+
 // ScenarioVehiclePurchase (REPORT.en.md 220): the hero buys a car.
 //
 // a16_outdoor-vehicle-enc: Make, Model, Type, Cost, ... The sibling of the home purchase
