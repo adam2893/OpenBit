@@ -100,6 +100,7 @@ struct ScriptSpec {
   // Seed the casino pot so a test can reach the bankruptcy counter without
   // simulating decades of losing books (REPORT.en.md 320). 0 leaves it alone.
   long long casino_bank = 0;
+  long long zoo_bank = 0;
   bool cult = false;
   bool pet = false;
   // The outdoors (REPORT.en.md 71).

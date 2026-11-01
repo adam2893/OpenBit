@@ -568,6 +568,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     spec.casino_bank = v;
   }
 
+  p = findValue(json, "zooBank");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("zooBank is not an integer");
+    spec.zoo_bank = v;
+  }
+
   p = findValue(json, "pet");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -942,7 +950,12 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.cult) sim.makeCult(life);
   if (spec.dealer) sim.makeDealer(life);
   if (spec.mafia) sim.makeMafia(life);
-  if (spec.zoo) sim.makeZoo(life);
+  if (spec.zoo) {
+    sim.makeZoo(life);
+    // Harness hook: a seeded pot lets a test drive the inspector's ladder without
+    // simulating years of losing books (REPORT.en.md 321).
+    if (spec.zoo_bank != 0) life.hero.zooBank = spec.zoo_bank;
+  }
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);
   if (spec.outdoor) sim.makeOutdoor(life);

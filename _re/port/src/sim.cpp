@@ -4135,6 +4135,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     // options are the four lanes, so a forced index picks the lane (REPORT.en.md 317).
     if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
     if (kind == kPendingCasinoBankrupt) return casinoBankruptYear(life, out, -1);
+    if (kind == kPendingZooBankrupt) return zooBankruptYear(life, out, forcedChoice);
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
@@ -4174,6 +4175,9 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   // itself, and the annual review card only reports what it stored (REPORT.en.md
   // 319). The pass guards itself against a second run for the same age.
   if (life.hero.ownsCasino && life.hero.age >= 18) casinoRunYear(life);
+  // The zoo's books are the same shape (REPORT.en.md 321): a silent pass on the
+  // hero's own tick, before the year's card is picked.
+  if (life.hero.ownsZoo && life.hero.age >= 18) zooRunYear(life);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
   const bool got = dispatchYear(life, ev, forcedChoice);
@@ -4475,7 +4479,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::dealerYear, nullptr},
         {&Sim::mobsterSpendYear, nullptr},
         {&Sim::mafiaYear, nullptr},
-        {&Sim::zooYear, nullptr},
+        {&Sim::zooYear, nullptr, 1, "zoo"},
         {&Sim::landlordYear, nullptr},
         {&Sim::petYear, nullptr},
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
@@ -10231,6 +10235,111 @@ std::string Sim::zooToken(const std::string& key) {
   return std::string();
 }
 
+// The zoo's own books (REPORT.en.md 321). SimZoo::IncrementAge settles the year
+// against the zoo's pot before any card is picked; the port runs the same pass on the
+// hero's age-up, so a year that draws no zoo card still pays its way.
+//
+// Ceiling: the native profit formula is not recovered, so the pass reuses the two
+// numbers section 65 already models -- the gate take and the upkeep -- and calls their
+// difference the year's profit.
+void Sim::zooRunYear(Life& life) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo || h.zooLedgerYear == h.age) return;
+  h.zooLedgerYear = h.age;
+  const long long gate = static_cast<long long>(h.zooTicket)
+                       * (h.zooAnimals + h.zooAttractions) * 900;
+  const long long upkeep = static_cast<long long>(h.zooAnimals) * 2500
+                         + static_cast<long long>(h.zooAttractions) * 5000;
+  h.zooMoney = gate;
+  h.zooBank += gate - upkeep;
+  if (h.zooBank >= 0) {
+    h.zooNegativeYears = 0;
+    h.zooBankruptQueued = false;
+    return;
+  }
+  // The native card is queued again every year the pot stays negative; the port keeps
+  // one request open at a time so a second drain cannot show the warning twice.
+  if (h.zooBankruptQueued) return;
+  if (++h.zooNegativeYears < 3) return;
+  life.pendingCards.push_back(kPendingZooBankrupt);
+  h.zooBankruptQueued = true;
+}
+
+bool Sim::zooBankruptYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  const long long needed = -h.zooBank;
+  const bool afford = needed > 0 && h.money >= needed;
+  const bool female = zooRng_.chance(0.5);
+  const auto shutdown = [&h]() {
+    // ShutDownZoo moves the park out of the live life and leaves the hero's money
+    // alone; the pot was never hero money.
+    h.ownsZoo = false;
+    h.zooBank = 0;
+    h.zooNegativeYears = 0;
+    h.zooBankruptQueued = false;
+    h.zooName.clear();
+    h.zooStreet.clear();
+    h.zooSupplier.clear();
+    h.zooHabitat.clear();
+    h.zooAnimalSpecies.clear();
+    h.zooAnimalBreed.clear();
+    h.zooAnimalName.clear();
+    h.zooEmployee.clear();
+    h.zooEmployeeRole.clear();
+    h.zooStaff = 0;
+    h.zooAnimals = 0;
+    h.zooAttractions = 0;
+    h.zooEngagement = 50;
+    h.zooMoney = 0;
+  };
+
+  out.table = "registry:ScenarioZooAgeUpBankrupt";
+  out.title = "Bankrupt";
+  std::string body = "The federal inspector is informing you that your zoo has accrued "
+                     "too much debt to keep it operational.";
+  if (!afford) {
+    // Ceiling: the recovered concatenation joins the inspector's pronoun, the funds
+    // clause, the contraction and the confiscation clause in that order (#41980,
+    // #46, #22743 or #38849, #3283, #60155 or #65541, #2351). It reads awkwardly, but
+    // these are the native literals; nothing here is paraphrased.
+    body += "\n\n";
+    body += female ? "She" : "He";
+    body += " said because you don't have the funds in your bank account to bring it "
+            "out of debt, ";
+    body += female ? "she's" : "he's";
+    body += " immediately confiscating your zoo.";
+    out.body = body;
+    out.options = {"OK"};
+    out.choice = "OK";
+    shutdown();
+    return true;
+  }
+
+  body += "\n\nThey said if you don't do something about it right now, the government "
+          "will confiscate your zoo.\n\nWhat will you do?";
+  out.body = body;
+  out.options = {"Invest more money", "Let it go"};
+  // The script harness has nobody to press a button: the default answer lets the zoo
+  // go, and a forced index picks the investment.
+  const int pick = forcedChoice == 0 ? 0 : 1;
+  out.choice = out.options[pick];
+  if (pick == 1) {
+    shutdown();
+    return true;
+  }
+  // Shortcut: the native card opens an amount input (minimum the shortfall plus one,
+  // maximum the hero's capital); a script cannot type, so the port invests exactly the
+  // shortfall and renders the native follow-up line in the same card instead of
+  // chaining a second one.
+  h.money -= needed;
+  h.zooBank += needed;
+  h.zooNegativeYears = 0;
+  h.zooBankruptQueued = false;
+  out.narrative = "I invested " + money(needed) + " to save my zoo.";
+  out.body += "\n\nYour investment kept your zoo afloat for at least another year!";
+  return true;
+}
+
 bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
@@ -10285,10 +10394,10 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   };
   const std::string species = lower(h.zooAnimalSpecies);
 
-  // The year's costs come off the books before anything else happens.
+  // The year's upkeep. The zoo's own books settle it against the zoo's pot
+  // (REPORT.en.md 321); this function only needs the number for its report line.
   const long long upkeep = static_cast<long long>(h.zooAnimals) * 2500
                          + static_cast<long long>(h.zooAttractions) * 5000;
-  h.money -= upkeep;
   h.zooEngagement = h.zooEngagement > 1 ? h.zooEngagement - 1 : 0;
 
   // 1. An animal dies. The table's rows are either species-bound or open.
@@ -10754,8 +10863,6 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   if (title.empty() && line.empty() && body.empty()) {
     const long long gate = static_cast<long long>(h.zooTicket)
                          * (h.zooAnimals + h.zooAttractions) * 900;
-    h.money += gate;
-    h.zooMoney += gate;
     title = "A year at the gate";
     body = "The zoo took " + money(gate) + " with " + std::to_string(h.zooAnimals) +
            " animals on the books, against " + money(upkeep) + " of upkeep.";

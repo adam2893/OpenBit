@@ -546,6 +546,12 @@ struct Hero {
   int zooEngagement = 50;        // 0-100, what the patrons make of it
   int zooTicket = 20;            // gate price
   long long zooMoney = 0;        // the takings this year
+  // The zoo's own books (REPORT.en.md 321): a pot the takings and the upkeep are
+  // settled against, the run of losing years, and the age whose pass already ran.
+  long long zooBank = 0;
+  int zooNegativeYears = 0;
+  int zooLedgerYear = -1;
+  bool zooBankruptQueued = false;
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.

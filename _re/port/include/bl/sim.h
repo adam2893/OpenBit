@@ -134,6 +134,7 @@ enum PendingCard {
   kPendingWitchCure = 22,         // a = disease row; restores attributes on dismissal
   kPendingUniversityFund = 23,    // the tuition screen behind an accepted application (REPORT.en.md 317)
   kPendingCasinoBankrupt = 24,    // the casino's sixth losing year closes it (REPORT.en.md 320)
+  kPendingZooBankrupt = 25,       // the inspector's warning after three losing years (REPORT.en.md 321)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -674,6 +675,9 @@ class Sim {
   // the cards are picked, and the tier rate its tax comes from.
   void casinoRunYear(Life& life);
   bool casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice);
+  // The zoo's own books and the inspector's warning (REPORT.en.md 321).
+  void zooRunYear(Life& life);
+  bool zooBankruptYear(Life& life, AgeUp& out, int forcedChoice);
   double casinoTaxRate(double taxable) const;
   void ensureCultFields(Life& life);
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);

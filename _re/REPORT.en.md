@@ -23536,6 +23536,90 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 321. The zoo's books and the federal inspector
+
+Section 320 modelled a casino that drowns. The zoo has the same shape and, unlike the casino, it
+does not close on a timer: the inspector warns first, and the hero can buy the park another year.
+This section adds the zoo's pot, its losing-year counter and the warning card.
+
+### The counter
+
+SimZoo+0x148 is NumYearsZooHasNegativeBankBalance. The annual pass adds the year's profit to
+BankBalance (SimZoo+0x28) and resets the counter when the pot is no longer negative (the single
+store at 0x2b599b0, the reset at 0x2b599a8). At three consecutive losing years the pass compares
+(0x2b5a0bc) and queues ScenarioZooAgeUpBankrupt (ctor 0x29a3370, Refresh 0x29a337c, Choice
+0x29a3780) - and, unlike the casino, it does not reset the counter, so the warning returns every
+year the books stay red.
+
+### The warning card
+
+* ExteriorTitle #50857 "Zoo", Title #12796 "Bankrupt", no dismiss button.
+* Body #41980: "The federal inspector is informing you that your zoo has accrued too much debt to
+  keep it operational."
+* Affordable branch: body += #137 ("\n\nThey said if you don't do something about it right now,
+  the government will confiscate your zoo.\n\nWhat will you do?"), choices #27219 "Invest more
+  money" and #28743 "Let it go".
+* Unaffordable branch: one choice #32432 "OK". Body = Concat(#41980, #46 "\n\n", the inspector's
+  pronoun He #22743 or She #38849, #3283 " said because you don't have the funds in your bank
+  account to bring it out of debt, ", #60155 "he's" or #65541 "she's", #2351 " immediately
+  confiscating your zoo."). The recovered order reads awkwardly; the literals are transcribed, not
+  paraphrased.
+
+"Let it go" and the single OK both run ShutDownZoo (0x2b623f4): the park leaves the live life for
+SimPast.ZooList, with no log line and no hero money (the pot was never hero money). "Invest more
+money" spawns ScenarioZooAgeUpBankruptInvest (ctor 0x29a3b40): title #27203 "Invest", body #27214
+"Invest in your zoo today!", an amount input bounded by the shortfall plus one and the hero's
+capital, and its action debits the wallet into the zoo pot and the park's total investment, then
+chains body #50400 "Your investment kept your zoo afloat for at least another year!". The narrative
+is Concat(#24498 "I invested ", the amount, #3761 " to save my zoo.").
+
+### The port
+
+* Hero gains zooBank, zooNegativeYears, zooLedgerYear and zooBankruptQueued (game.h); pending kind
+  25 is the inspector's card (sim.h).
+* Sim::zooRunYear runs from Sim::ageUpYear on the hero's own tick beside the casino pass, guarded so
+  it cannot run twice for one age, and settles the year against the pot. Three losing years queue the
+  card, one request at a time.
+* Sim::zooBankruptYear renders both branches, and the invest lane charges exactly the shortfall and
+  renders the native follow-up line in the same card.
+* The harness key zooBank seeds the pot, exactly like casinoBank in section 320.
+* Section 65's money handling moved: the zoo function no longer charges upkeep straight to the
+  wallet or credits the gate take, because the books now own both numbers.
+
+Ceiling: the native profit formula is not recovered, so the pass calls the difference between the
+port's own gate take (ticket * (animals + attractions) * 900) and its upkeep (2500 per animal, 5000
+per attraction) the year's profit. Those two numbers were already this port's model of the park.
+
+### Verified
+
+tools/test_zoo_bankrupt.py, with the pot seeded through zooBank:
+
+* a debt of a billion: one single-button card, body exactly the recovered concatenation above, no
+  stat deltas, the park closed and no zoo card after it, and the card never arrives twice;
+* the wallet matches a life with a far smaller debt, because closing charges nothing and the depth
+  of the debt never reaches the wallet;
+* an affordable debt: the two-button body exactly as above, the harness default "Let it go", and no
+  zoo card afterwards;
+* the investment lane (forced through the padding recipe): body ends with the native follow-up, the
+  log reads "I invested $901,000 to save my zoo.", the park keeps drawing zoo cards afterwards, and
+  the hero ends poorer than the life that let the zoo go;
+* a debt the books can clear (five thousand) never calls the inspector in, over six seeds.
+
+The full 109-test suite passed on the binary these notes describe
+(62b33fd3f1bd67d34bf47bdd8bb55067cebce38f699f6ddb93e9fe13cc94b955).
+
+### Ceilings
+
+* The profit formula is the port's pair of numbers, not the native arithmetic.
+* The native amount input cannot be typed in a script: the port invests exactly the shortfall, and
+  the native follow-up card is folded into the same card instead of being chained.
+* The native pass re-queues the warning every losing year; the port keeps one request open, so a
+  second drain cannot show it twice.
+* The recovered unaffordable sentence is literal-by-literal and reads awkwardly; it is not smoothed.
+* Shutting the zoo down clears the port's park fields; the native move to SimPast.ZooList (and what
+  the past list keeps) is not modelled.
+* In "only" harness mode "ages" is the hero's age cap (the section 318 note).
+
 ## 320. The casino's bankruptcy: six losing years and a card that closes the house
 
 Section 319 gave the casino a pot (BankBalance, SimCasino+0x28) and a yearly pass that moves it. A
