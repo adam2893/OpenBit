@@ -929,6 +929,11 @@ struct Hero {
   bool actorWorking = false;
   int actorReputation = 20;
   int actorAgentReputation = 40;
+  // The agent's own gender and opinion of the hero (REPORT.en.md 327). The hire card
+  // never stored a gender, so -1 means "not read yet"; the opinion is the card's
+  // relationship slot and starts neutral.
+  int actorAgentFemale = -1;
+  int actorAgentOpinion = 50;
   int actorPerformance = 40;
   int actorImpression = 40;
   int actorSmugness = 40;

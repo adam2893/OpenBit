@@ -23536,6 +23536,114 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 327. The agent's feedback card
+
+Actors can hire an agent (325's neighbour code), and the adult game has exactly one card where
+that agent talks back: a dismiss-only compliment. It is not a wheel family - the relationship
+list builds it - so it has no visible push roll; what it does have is a readable body, a
+relationship band and a second compliment the agent pays the hero back. This section ports
+ScenarioAgentCompliment.
+
+### The native card
+
+* Class ScenarioAgentCompliment: `.ctor` 0x73f38629f4, RefreshScenario 0x73f3862a20,
+  DismissSelected 0x73f3863418. Fields `+0x170` `_agent` and `+0x178` `_narrative`. The
+  constructor passes 0 to Scenario::.ctor, so the card is not undoable, and writes only the agent
+  field - unlike the employee card it never touches a colour scheme.
+* It is a feedback-style card: RefreshScenario sets `+0x132` and `+0x133` (collapse any
+  open lists on dismiss), so it carries no buttons at all. DismissSelected logs `_narrative`
+  through the same designer-line path as 325 and 326.
+* Only two callers construct it - LifeInterface::RelationshipItemArrayForAgent and
+  BluePrintCompliment::GetNextScenario - and neither draws for it; RefreshScenario and
+  DismissSelected have no callers at all in the binary, which is what a base-class virtual
+  dispatch looks like.
+* RefreshScenario, in order:
+  1. year cache sync against the agent's `+0x144` field (one card per agent per year);
+  2. a GetRandomNumber(0, 95) draw whose result is thrown away - it exists to advance the stream;
+  3. the magnitude: `w20` is 80..99 when the agent's WillGiveHeroTimeOfDay() says yes,
+     otherwise 10..39, and `w24 = min(w20, 100)`;
+  4. the compliment: DataHub::GetRandomComplimentForGender over the AGENT's EffectiveGender from
+     a16_compliments-enc (Compliment, Gender - 138 rows, 107 of them open to both genders);
+  5. the title, picked uniformly: #10079 "A joy to be around", #42929 "There's that smile",
+     #22091 "Good natured";
+  6. one of three (body, journal) frames on GetRandomNumber(0, 3):
+     #47950 "You called your agent, {0}, {1}." with #23675 "I called my agent, {0}, {1}.";
+     #49496 "You told your agent, {0}, that {1} {2}." with #25260 "I told my agent, {0}, that {1} {2}.";
+     #49495 "You told your agent, {0}, that you think {1} {2}." over the same #25260. The {1}
+     pronouns are PronounStringForType(8) - he's/she's;
+  7. a word-boundary bar graph: #69489 "{0} Appreciation" off PronounStringForType(6) with the value
+     w24 loaded into it;
+  8. an ignored line when w20 is 14 or below and GetRandomNumber(0, 100) comes out above the
+     agent's `+0x330` field: #68842 "{0}\n\n{1} ignored you." with PronounStringForType(5);
+  9. the relationship band, applied only on the years the card is new: w20 of 91+ moves the agent's
+     relationship slot (vslot `+0x508`) by 5, 81-90 by 4, 41-80 by 3, 21-40 by 2, 11-20 by 1,
+     and 10 or below by none;
+  10. the return compliment, gated on the same WillGiveHeroTimeOfDay answer: c2 =
+      DataHub::GetRandomComplimentForGender over the HERO's gender, then GetRandomNumber(0, 2) -
+      zero gives #69883 "{0} called me {1}.", one gives #70323 "{0} told me that I'm {1}.", and both
+      replace the journal line the body frame chose.
+* The table is a16_compliments-enc; its Gender column reads "male", "female" or blank, and the
+  blank rows belong to everybody.
+* One dead arm, and it matters for a port: the tick-three arm of the GetRandomNumber(0, 2) at
+  step 10 cannot be reached, because GetRandomNumber is System.Random.Next and Next(min, max) never
+  returns max (REPORT.en.md 23.4). That arm would have built a six-title card - #16377 "Cordial
+  business", #32611 "Oh Stop! No, you!", #18853 "Enough love to go around", #11718 "Are you just
+  saying that?", #30537 "Much appreciated", #11307 "An agent of love" - and stamped the hero's
+  stat slot (vslot `+0x408`) by +2. The formats #69888 and #70338 are consumed only by it. It
+  is dead code in 3.25.1 and is not implemented here.
+* Step 11, a counter: `life[0x3ac] += 1` after the card. What the field it increments belongs to
+  is unrecovered, so the port does not write it.
+
+### The port
+
+* `Sim::agentComplimentYear` (src/sim.cpp) runs on the actor family's turns: the native card is
+  pushed by the relationship list, and the port has no such list, so `Sim::actorYear` offers the
+  card before its own. Its own stream is `agentCompRng_`, so it cannot shift the actor
+  family's sampling.
+* The hero has to be an actor with an agent: `h.actorAgent` is set by the actor family's hire card.
+* The agent's gender is not stored by the hire card, but the name it drew came from
+  a16_casino-casino-celebrity-name-enc, which carries a Gender column: the card reads the gender
+  back by name, and only falls back to a coin when the name is not in the table (a fallback name).
+* The three frames, the three titles, the two journal forms, the ignored line, the return
+  compliment and the gender filters are transcribed. The band moves
+  `h.actorAgentOpinion` - the port's stand-in for the agent's relationship slot - by the same amounts,
+  clamped at 100.
+
+### Ceilings
+
+* The card's frequency is a coin, not a copied roll: nothing in the binary pushes the card with a
+  GetRandomNumber, so there is no rate to transcribe. The port uses 0.35 per actor-family turn
+  that finds an agent.
+* WillGiveHeroTimeOfDay is modelled as GetRandomNumber(0, 100) below the agent's opinion, its style
+  being unrecovered; the `+0x330` field the ignored line compares against is the same field the port treats
+  as that opinion, so the two readings of it are one number here.
+* The bar graph has no meaning outside the card's own UI: the value is computed and dropped, the
+  label literal is not printed.
+* There is no year cache and no cooldown in the port: one card per year is trivially true when a
+  year can hold only one card.
+* The opinion change is not visible to the scripted run, so the bands are only checkable by reading
+  this section's arithmetic beside the code.
+* The dead third arm of the return-compliment roll (and its six titles, both formats and the hero
+  stat stamp) is not implemented.
+* `life[0x3ac]` is not incremented, its owner being unrecovered.
+
+### Verified
+
+* 22 cards over 80 acting lives (seeds 1-80, actor hero): every card is dismiss-only
+  (`choice` null), titled from the three-title pool, at age 18 or later, with all stat deltas zero,
+  and its table is a16_compliments-enc. Recorded rows: the compliment the body pays the agent.
+* The three frames all appear (8 called, 7 told, 7 think), and the parenthesis-split sentence
+  matches exactly one frame.
+* The agent's name is a celebrity-name row, and its Gender agrees with the pronoun in the body -
+  "he's" for a male row, "she's" for a female one.
+* 12 of the 22 cards pay the hero back: "He called me a stud.", "He told me that I'm a god." -
+  with the returning compliment a row of the same table open to the hero's gender.
+* 1 card ignores the hero: the appended paragraph starts with the agent's pronoun.
+* A hero who never acts draws no card at all (control run, seed 26).
+
+The full 115-test suite passed on the binary these notes describe (48f0c97d..., 115 PASS /
+0 FAIL).
+
 ## 326. The walk's animal encounter
 
 The animals table has been sitting on disk unused since the vampire hunt (306) turned out to

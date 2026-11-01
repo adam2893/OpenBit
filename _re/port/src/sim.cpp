@@ -697,6 +697,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       discRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x1d8e4e27c47d124fULL),
       animalRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3f84d5b5b5470917ULL),
+      agentCompRng_(seed ^ 0xb5c0fbcfec4d3b2fULL ^ 0xe9b5dba58189dbbcULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
       lightRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0xd6e8feb86659fd93ULL),
@@ -13822,6 +13823,10 @@ std::string Sim::actorToken(const std::string& token) {
 bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = *const_cast<Hero*>(hero_);
   if (!h.actor || h.age < 14) return false;
+  // The agent's feedback card (REPORT.en.md 327) rides the actor family's wheel slot:
+  // the native card is pushed by the agent's relationship list, and the port has no
+  // such UI, so the actor family offers it before its own card.
+  if (agentComplimentYear(life, out, forcedChoice)) return true;
   if (!ensureTable("a16_actor-films-enc") || !ensureTable("a16_actor-film-genres-enc")) return false;
   if (!actorRng_.chance(0.55)) return false;
   life_ = &life;
@@ -22824,6 +22829,113 @@ bool Sim::animalEncounterYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The agent's feedback card (REPORT.en.md 327). ScenarioAgentCompliment is a
+// dismiss-only card: it writes a title, a body and a first-person narrative, and the
+// only effect is the agent's opinion of the hero. Nothing here is a button.
+bool Sim::agentComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison || h.actorAgent.empty()) return false;
+  // The native card is built by the agent's relationship list and by a BluePrint, both
+  // of which are silent: no push roll exists to copy, so the card gets a coin of its
+  // own on the years the actor family is asked for one.
+  if (!agentCompRng_.chance(0.35)) return false;
+  if (!ensureTable("a16_compliments-enc")) return false;
+  const Table& t = tbl("a16_compliments-enc");
+  // The agent's gender is not stored by the hire card, but its name came from the
+  // celebrity-name table, which carries one: read it back so the pronouns agree with
+  // the name. A name that table does not hold (a fallback) gets a drawn gender.
+  if (h.actorAgentFemale < 0 && ensureTable("a16_casino-casino-celebrity-name-enc")) {
+    const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+    for (size_t r = 0; r < names.size(); ++r) {
+      if (names.at(r, "First Name") + " " + names.at(r, "Last Name") == h.actorAgent) {
+        h.actorAgentFemale = trim(names.at(r, "Gender")) == "female" ? 1 : 0;
+        break;
+      }
+    }
+  }
+  if (h.actorAgentFemale < 0) h.actorAgentFemale = agentCompRng_.chance(0.5) ? 1 : 0;
+  const bool af = h.actorAgentFemale != 0;
+  // PronounStringForType: 0 he/she, 5 He/She, 6 His/Her, 8 he's/she's. The pool holds
+  // #60153 'he', #60155 "he's", #65539 'she', #65541 "she's", #22743 'He', #22746 "He's",
+  // #38849 'She', #38862 "She's", #22979 'His' and #22825 'Her'.
+  const std::string shes = af ? "she's" : "he's";
+  const std::string She = af ? "She" : "He";
+  auto complimentRow = [&](bool female) -> size_t {
+    std::vector<size_t> pool;
+    const std::string want = female ? "female" : "male";
+    for (size_t r = 0; r < t.size(); ++r) {
+      const std::string g = trim(t.at(r, "Gender"));
+      if (g.empty() || g == want || g == "both") pool.push_back(r);
+    }
+    if (pool.empty()) return size_t(-1);
+    return pool[size_t(agentCompRng_.below(uint32_t(pool.size())))];
+  };
+  // The card opens with GetRandomNumber(0, 95) whose result it throws away; the draw is
+  // kept so this stream's sequence stays the native one.
+  (void)agentCompRng_.below(95);
+  // WillGiveHeroTimeOfDay() decides whether the agent is warm (80..99) or cool (10..39);
+  // its own test is unrecovered, so the port weighs the agent's opinion instead.
+  const bool will = agentCompRng_.below(100) < uint32_t(h.actorAgentOpinion < 1 ? 1 : h.actorAgentOpinion);
+  const int w20 = will ? 80 + int(agentCompRng_.below(20)) : 10 + int(agentCompRng_.below(30));
+  const size_t row = complimentRow(af);
+  if (row == size_t(-1)) return false;
+  const std::string compliment = t.at(row, "Compliment");
+  static const char* kTitles[] = {"A joy to be around", "There's that smile", "Good natured"};
+  const std::string title = kTitles[agentCompRng_.below(3)];
+  const int roll = int(agentCompRng_.below(3));
+  const std::string who = h.actorAgent;
+  std::string body;
+  std::string narrative;
+  if (roll == 0) {
+    body = "You called your agent, " + who + ", " + compliment + ".";
+    narrative = "I called my agent, " + who + ", " + compliment + ".";
+  } else if (roll == 1) {
+    body = "You told your agent, " + who + ", that " + shes + " " + compliment + ".";
+    narrative = "I told my agent, " + who + ", that " + shes + " " + compliment + ".";
+  } else {
+    body = "You told your agent, " + who + ", that you think " + shes + " " + compliment + ".";
+    narrative = "I told my agent, " + who + ", that " + shes + " " + compliment + ".";
+  }
+  // The opinion delta is the band the card's own w20 falls in (step 9 of the native
+  // refresh); the card applies it to the agent's relationship slot +0x508, which the
+  // port carries as the agent's opinion of the hero.
+  int delta = 0;
+  if (w20 >= 91) delta = 5;
+  else if (w20 >= 81) delta = 4;
+  else if (w20 >= 41) delta = 3;
+  else if (w20 >= 21) delta = 2;
+  else if (w20 >= 11) delta = 1;
+  if (delta != 0) {
+    h.actorAgentOpinion += delta;
+    if (h.actorAgentOpinion > 100) h.actorAgentOpinion = 100;
+  }
+  // A cool courtesy the agent does not return (w20 <= 14): the body gains a second
+  // paragraph only when the agent's own stat beats the draw.
+  if (w20 <= 14 && int(agentCompRng_.below(100)) > h.actorAgentOpinion) {
+    body += "\n\n";
+    body += She;
+    body += " ignored you.";
+  }
+  // A warm agent compliments the hero back, and the returned line replaces the journal
+  // entry. The third arm of GetRandomNumber(0, 2) is unreachable (next() is exclusive).
+  if (w20 >= 51) {
+    const size_t back = complimentRow(h.female);
+    if (back != size_t(-1)) {
+      const std::string c2 = t.at(back, "Compliment");
+      if (agentCompRng_.below(2) == 0) narrative = She + " called me " + c2 + ".";
+      else narrative = She + " told me that I'm " + c2 + ".";
+    }
+  }
+  // The native card also bumps a counter on the life object ([life+0x3ac]); its owner is
+  // unrecovered, so nothing is written for it here.
+  out.table = "a16_compliments-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = narrative;
+  return true;
+}
 bool Sim::teamBuildingYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice >= 0) return false;
   Hero& h = life.hero;
