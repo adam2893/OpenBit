@@ -141,6 +141,7 @@ enum PendingCard {
   kPendingEmployeeBonus = 29,     // the bonus card behind its first button
   kPendingAircraftRepair = 30,    // the yearly tick's breakdown card (REPORT.en.md 334)
   kPendingAircraftScrap = 31,     // the scrap push for a worn-out aircraft (REPORT.en.md 334)
+  kPendingMagazineOffer = 32,     // the magazine's photo-shoot offer (REPORT.en.md 335)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -321,6 +322,10 @@ class Sim {
   std::string aircraftDescription(const Hero& h);
   bool aircraftRepairYear(Life& life, AgeUp& out, int forcedChoice);
   bool aircraftScrapYear(Life& life, AgeUp& out, int forcedChoice);
+  // The magazine photo shoot (REPORT.en.md 335).
+  int magazinePoseFor(const Hero& h);
+  void magazineOpportunityYear(Life& life);
+  bool fameMagazineYear(Life& life, AgeUp& out, int forcedChoice);
   // The custody chain, REPORT.en.md 223.
   bool custodyCaseYear(Life& life, AgeUp& out, int forcedChoice);
   bool custodyTrialYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1055,6 +1060,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng animalRng_;  // the animal encounter's own stream
   Rng huntAnimalRng_;  // the vampire hunt animal card's own stream
   Rng aircraftRng_;    // the aircraft's age, wear, breakdowns and its cards (REPORT.en.md 334)
+  Rng magRng_;         // the magazine offer's own stream (REPORT.en.md 335)
   Rng agentCompRng_;  // ScenarioAgentCompliment's own stream (REPORT.en.md 327)
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)

@@ -23536,6 +23536,94 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 335. The magazine photo shoot
+
+A famous hero is offered a magazine shoot: a title from `a16_magazines-enc`, a pose the
+magazine wants, and a fee the pose and the hero's appeal decide. This section ports that
+offer and the shoot's outcome.
+
+### The native side
+
+The offer is not a random push — it is furniture on the hero's place of residence.
+`SimPlace::RefreshAvailableFameOpportunities 0x2a431d4` runs on the yearly refresh (the only
+gate is the age-equality check against `SimPlace+0x60 AgeAtLastFameOpportunityRefresh`, with
+no numeric cooldown), clears the previous commercial offer, and rebuilds the magazine
+opportunity into `place+0x220`. `LifeInterface::GetT4List 0x30f850c` turns a non-null
+opportunity into a list item once the hero is 18 and out of prison.
+
+The appeal is the hero's fame, adjusted: appearance above 90 makes it
+`(fame + 200) / 3`, above 70 `(fame + 100) * 0.5`, and it is cut to a third for each of a
+criminal record in the place, karma under 10 and appearance under 30. The pose ladder then
+runs: fame over 80 asks for a topless shoot (pose 3) and falls back to swimsuit (pose 2) when
+`appeal > 80`; fame at or under 80 rolls twice, swimsuit first and then clothed (pose 1).
+Poses 4 (nude) and 5 (centerfold) have decodable strings but no producer — nothing assigns
+them in this build.
+
+`SimMagazineOpportunity::GetPaymentAmount 0x2b29464` reads a per-pose `{A, B}` pair —
+15000/100000, 50000/150000, 50000/250000, 250000/1000000, 750000/2500000 — quarters both ends
+for a male hero, cuts `B` to a third under appeal 70 and halves it under 90, then moves along
+the line `A + (B - A) * appeal / 100` and rounds it through
+`DataCountry::GetLocalCostForAmountWithMinimumCostAndRoundTo(amount, 1000, 100)`.
+
+`ScenarioFameMagazine`: `.ctor 0x373c358`, `RefreshScenario 0x373c414`,
+`ChoiceSelectedAtIndex 0x373c864`. Title `#29487 'Magazine'`, body
+`Format(#70159 '{0} magazine has offered you a deal to appear {1} in its {2} issue.\n\nWhat
+will you do?', title, AppearAsString, month)`, with the appearance strings `#55827 'clothed'`,
+`#60870 'in a swimsuit'`, `#67124 'topless'`, `#63041 'nude'`, `#54422 'as the nude
+centerfold'`. The month comes from `_monthNI`, bumped by `rand(0,4)` on every refresh and
+read through a twelve-entry table of month names. The two buttons are stored `#23729 "I can't
+do that"` then `#39046 'Sign me up'`, and the accept lane is the one whose label contains
+`sign`.
+
+Accepting credits the fee, rolls a `SuccessScore` (`rand(0,101)` one time in four, otherwise
+`rand(0,61)+40`), makes one virtual stat call with 4, 3 or 2 by the score against 91 and 51,
+costs `ImpactDiscipline(-2)` and `ImpactKarma(-2)`, logs
+`#24080 'I earned {0} by appearing {1} in the {2} issue of {3} magazine.'` and opens a
+follow-up card titled from the pose's own three-line headline pool over the body
+`#48418 'You earned {0} by appearing {1} in the {2} issue of {3} magazine.'`. Refusing costs
+`ImpactDiscipline(+4)` and logs
+`#25508 'I turned down an opportunity to appear {0} in the {1} issue of {2} magazine.'`.
+
+### The port
+
+The port has no place object, so `Sim::magazineOpportunityYear` rebuilds the same opportunity
+on the hero's own yearly tick — the appeal, the pose ladder, the row and the fee — and queues
+it as `kPendingMagazineOffer`; `Sim::fameMagazineYear` renders the card and answers it.
+`a16_magazines-enc` is 44 rows of `Title, Gender` (22 male, 22 female) and the row is drawn
+uniformly from the hero's own half. Everything draws on one `magRng_`.
+
+### Ceilings
+
+The month counter starts at January and is not wrapped — the native index runs past the twelve
+names and the body then quotes no month at all, which the port reproduces by leaving the cell
+empty rather than inventing a rollover. Poses 4 and 5 are reachable in the port's ladder only
+through the fame branch that returns 3, so their fee and appearance strings are carried but the
+port never offers them; that mirrors the build's own single producer. The stat the virtual call
+moves is read as fame (its name is unproven). The follow-up card is appended to the same year's
+body because the port's age-up returns one card. The Reception bar graph, the obituary line for
+a topless shoot and the `acPoseWank` achievement are not modelled, and the place's own
+opportunity slot — so a coincidence of two offers, and the commercial and talk-show offers that
+share the refresh — are not ported.
+
+### Verified
+
+`_re/tools/test_fame_magazine.py` drives 30 famous lives (seeds 1-30) and 25 plainer ones at
+fame 45: 471 cards, 294 accepted and 177 refused. Every card names a row of
+`a16_magazines-enc` that carries the hero's own gender, quotes one of the three reachable
+appearance strings and a month from the twelve-name table, and offers `I can't do that` /
+`Sign me up`. A refusal costs discipline and moves nothing else; an acceptance credits exactly
+the fee the log quotes (a multiple of 100, at least 1000, inside the pose's `A..B` band once
+its worst-case penalties are applied), moves fame up and discipline and karma down by
+`pointsForImpact(2)`, and appends the follow-up headline. The famous lives only ever see the
+topless shoot, the fame-45 lives only the clothed and swimsuit ones, and no life is offered a
+shoot at fame 0.
+The full 123-test suite ran on the binary these notes describe (c268c99f..., 122 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: test_paparazzi
+asserted that a life started at fame 74 never sees the paparazzi card, but this section's
+shoot pays fame, so a 74-fame life can cross the card's own fame >= 75 gate mid-life; the
+test now tracks the running fame and asserts the card only appears once it is over the line
+(re-run: 19 paparazzi cards, all three lanes, 5 of 10 lives at fame 75).
+
 ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard
 
 The aircraft the hero buys in 222 was only ever a name in the port. In the native game it is

@@ -826,6 +826,13 @@ struct Hero {
   // the fame the game's own SimCelebrityLover keeps beside the relationship.
   bool loverCelebrity = false;
   std::string loverFameType;   // actor / musician / athlete / influencer / ceo / model
+  // The magazine photo shoot (REPORT.en.md 335): the open offer, the month counter the
+  // card draws its issue from, and the payment the offer quotes.
+  int magPose = 0;
+  int magRow = -1;
+  long long magPayment = 0;
+  std::string magTitle;
+  int magMonthNI = 1;
   std::string loverGenre;      // the career row's Genre, Platform, Sport or Model Type
   std::string loverSkin;       // the names row's Skin, 1-6
   int loverFameScore = 0;      // the career row's Fame Score

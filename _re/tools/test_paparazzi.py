@@ -87,8 +87,14 @@ assert set(lanes) == set(TAILS), dict(lanes)
 for fame in (0, 74):
     for seed in range(1, 11):
         doc = run(seed, fame)
-        hits = [e for e in doc["events"] if e.get("table") == TABLE]
-        assert not hits, (seed, fame, hits[:1])
+        # The card's own gate is fame >= 75. A life that starts below it can still reach
+        # it: the magazine shoot (REPORT.en.md 335) pays fame, so the running score is
+        # tracked and the card may only appear once it is over the line.
+        running = float(fame)
+        for e in doc["events"]:
+            if (e.get("table") or "") == TABLE:
+                assert running >= 75.0, (seed, fame, running, e)
+            running += float((e.get("deltas") or {}).get("fame") or 0)
 at75 = sum(1 for seed in range(1, 11)
            if any(e.get("table") == TABLE for e in run(seed, 75)["events"]))
 assert at75, "fame 75 never produced the card"
