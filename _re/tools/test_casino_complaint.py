@@ -69,15 +69,26 @@ def main():
     ban_doc, ban = forced(7, "Ban ")
     name = BODY.match(first_line(ban)).group("name")
     assert ban["body"].startswith("Your casino's "), ban["body"]
-    assert ban["body"].count("\n\n") <= 1, ban["body"]
-    # A ban reports what the gambler did from the banned-gambler table and logs it.
-    if "\n\n" in ban["body"]:
-        snippet = ban["body"].split("\n\n", 1)[1]
+    # The mood table's own line always follows the sentence; a ban adds the
+    # banned-gambler snippet after it.
+    paras = ban["body"].split("\n\n")
+    assert len(paras) in (2, 3), ban["body"]
+    mood = [r["String"] for r in
+            csv.DictReader(open(DATA / "a16_casino-casino-game-room-complaint-enc",
+                                newline=""))]
+    # The cells carry <he/she> and <a/b/c> tokens; the card resolves them, so each
+    # token becomes a wildcard and the rest of the cell must match verbatim.
+    def cell_hits(cell, text):
+        parts = re.split(r"<[^>]+>", cell)
+        pattern = r"\S+".join(re.escape(part) for part in parts)
+        return re.fullmatch(pattern, text) is not None
+    assert any(cell_hits(r, paras[1]) for r in mood), paras[1]
+    assert paras[1][:1].isupper(), paras[1]
+    if len(paras) == 3:
+        snippet = paras[2]
         assert re.match(r"^(She|He) .+\.$", snippet), snippet
         table = list(csv.DictReader(open(DATA / "a16_casino-banned-gambler-snippet-enc",
                                           newline="")))
-        # The cells carry <his/her> tokens; the card resolves them, so the stem
-        # comparison strips the tokens before it compares.
         stems = {re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", r["Snippet"]).strip())
                  .lower()[:16] for r in table}
         assert any(stem in snippet.lower() for stem in stems), snippet

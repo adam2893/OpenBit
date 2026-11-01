@@ -5,6 +5,7 @@
 #include "bl/table.h"
 #include "bl/text.h"
 
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -244,13 +245,42 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   std::string game = resolve("<casino-game>");
   if (game.empty()) game = "blackjack";
 
+  // The row's own line follows the sentence, and the picker filters the table by
+  // the floor's mood first (GetRandomCasinoGameRoomComplaintForHappiness): a happy
+  // floor never hears the grievance about the missing game.
+  std::string rowText;
+  {
+    const size_t r = pickBandRow("a16_casino-casino-game-room-complaint-enc",
+                                 "Min Gambler Happiness", "Max Gambler Happiness",
+                                 h.casinoGamblerHappiness, casinoCardRng_);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_casino-casino-game-room-complaint-enc");
+      rndCache_.clear();
+      rbLast_.clear();
+      const bool savedSet = pronounOtherSet_;
+      const bool savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      // The row reads as its own sentence after the blank line, so it opens
+      // capitalised (the same treatment the joined banner and sting sentences get).
+      rowText = spyUpperFirst(resolve(trim(t.at(r, "String"))));
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+    }
+  }
+
   out.table = "registry:ScenarioCasinoAgeUpGamblerComplaintGame";
   out.title = "Complaint";
   out.body = std::string("Your casino's ") + kTiers[style - 1] + ", " + gambler +
              ", is complaining that your casino doesn't have " +
              (female ? "her" : "his") + " favorite game, " + game + ".";
-  out.options = {"Ban " + gambler, "Apologize for the inconvenience",
-                 "Ignore " + gambler};
+  if (!rowText.empty()) out.body += "\n\n" + rowText;
+  out.cta = "What will you do?";  // #146
+  // The two short labels carry the punter's pronoun (#12770 'Ban ' and #26366
+  // 'Ignore '), and a ban adds the tail #2104 ' from my casino'.
+  const std::string them = female ? "her" : "him";
+  out.options = {"Ban " + them + " from my casino",
+                 "Apologize for the inconvenience", "Ignore " + them};
   const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
                                      : int(casinoCardRng_.below(3));
   out.choice = out.options[pick];
@@ -288,6 +318,128 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
       out.table = "a16_casino-banned-gambler-snippet-enc";
       out.row_id = std::to_string(r + 1);
     }
+  }
+  return true;
+}
+
+// ScenarioCasinoAgeUpGamblerComplimentGame (REPORT.en.md 324) is the complaint
+// card's positive twin: a punter who likes the floor names his favourite game and
+// the hero answers. The sentence is the same nine-part concatenation, with
+// 'is complimenting your casino for having ' #5672 in place of the grievance,
+// and the row's own line follows it, picked by the floor's mood.
+//
+// Choices: 'Thank ' #41215, 'Give ' #21649 ... ' some free games' #3411, 'Ignore '
+// #26366, each with the punter's object pronoun appended. Title #16100 'Compliment'.
+//
+// Ceilings: the two casino vtable slots the handler moves (+0x738 and +0x508, both
+// integers) are not identified in the dump. The port pairs them with the two bars it
+// keeps -- popularity takes the positive slot, the floor's happiness the negative one
+// -- so 'thank' ends popularity +1 and happiness -1, 'give' popularity +2 and
+// happiness -2, 'ignore' popularity -2 on its own. That pairing is the port's.
+namespace {
+// GameReference::CapitalizeAllMajorWordsInString: the game names sit mid-sentence,
+// so the card title-cases them itself.
+std::string allMajorWords(const std::string& text) {
+  std::string s = text;
+  bool start = true;
+  for (char& c : s) {
+    const unsigned char u = static_cast<unsigned char>(c);
+    if (u == ' ' || u == '\t' || u == '\n') {
+      start = true;
+      continue;
+    }
+    if (start) {
+      c = static_cast<char>(::toupper(u));
+      start = false;
+    }
+  }
+  return s;
+}
+}  // namespace
+
+bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  // Life::YearsSinceScenario('ScenarioCasinoAgeUpGamblerComplimentGame') > 4.
+  if (h.casinoComplimentAge >= 0 && h.age - h.casinoComplimentAge <= 4) return false;
+  if (forcedChoice < 0 && !casinoCardRng_.chance(0.10)) return false;
+  hero_ = &h;
+  life_ = &life;
+  casinoGambler_.clear();  // one punter per card
+  casinoRoom_.clear();
+  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
+                                 "High Roller"};
+  int style = 3;
+  if (!h.casinoGamblerStyles.empty()) {
+    const size_t pick = casinoCardRng_.below(uint32_t(h.casinoGamblerStyles.size()));
+    style = h.casinoGamblerStyles[pick];
+  }
+  if (style < 1) style = 1;
+  if (style > 5) style = 5;
+  const bool female = casinoCardRng_.chance(0.5);
+  std::string gambler = resolve("<casino-gambler>");
+  if (gambler.empty()) gambler = female ? "Jane Doe" : "John Doe";
+  std::string game = resolve("<casino-game>");
+  if (game.empty()) game = "blackjack";
+  game = allMajorWords(game);
+
+  std::string rowText;
+  {
+    const size_t r = pickBandRow("a16_casino-gambler-game-room-compliment-enc",
+                                 "Min Gambler Happiness", "Max Gambler Happiness",
+                                 h.casinoGamblerHappiness, casinoCardRng_);
+    if (r != size_t(-1)) {
+      const Table& t = tbl("a16_casino-gambler-game-room-compliment-enc");
+      rndCache_.clear();
+      rbLast_.clear();
+      const bool savedSet = pronounOtherSet_;
+      const bool savedFemale = pronounOtherFemale_;
+      pronounOtherSet_ = true;
+      pronounOtherFemale_ = female;
+      rowText = spyUpperFirst(resolve(trim(t.at(r, "String"))));
+      pronounOtherSet_ = savedSet;
+      pronounOtherFemale_ = savedFemale;
+    }
+  }
+
+  h.casinoComplimentAge = h.age;
+  const std::string his = female ? "her" : "his";
+  const std::string them = female ? "her" : "him";
+  const std::string subj = female ? "she" : "he";
+  out.table = "registry:ScenarioCasinoAgeUpGamblerComplimentGame";
+  out.title = "Compliment";  // #16100
+  out.body = std::string("Your casino's ") + kTiers[style - 1] + ", " + gambler +
+             ", is complimenting your casino for having " + his +
+             " favorite game, " + game + ".";  // #50268 #5282 #5672 #1953 #6312
+  if (!rowText.empty()) out.body += "\n\n" + rowText;  // #46
+  out.cta = "What will you do?";                          // #146
+  out.options = {"Thank " + them, "Give " + them + " some free games",
+                 "Ignore " + them};  // #41215 #21649 #3411 #26366
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
+                                     : int(casinoCardRng_.below(3));
+  out.choice = out.options[pick];
+  // The refresh's default journal line, which every branch keeps.
+  out.narrative = "I thanked my casino's gambler, " + gambler + ", for " + his +
+                  " compliment about my casino.";  // #25215 #5547 #1659
+
+  if (pick == 0) {
+    h.casinoGamblerAddiction -= 1;
+    if (h.casinoGamblerAddiction < 0) h.casinoGamblerAddiction = 0;
+    if (h.casinoPopularity > 0) h.casinoPopularity -= 1;   // slot A (shortcut)
+    if (h.casinoPopularity < 100) h.casinoPopularity += 1; // slot B (shortcut)
+  } else if (pick == 1) {
+    h.casinoGamblerAddiction += 2;
+    if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
+    if (h.casinoPopularity > 1) h.casinoPopularity -= 2;   // slot A (shortcut)
+    if (h.casinoPopularity < 99) h.casinoPopularity += 2;  // slot B (shortcut)
+    out.narrative += "\nI gave my casino's gambler, " + gambler +
+                     ", some free games after " + subj +
+                     " complimented my casino.";  // #341 #5857 #1660
+  } else {
+    out.narrative += "\nI ignored my casino's gambler, " + gambler + ", after " +
+                     subj + " complimented my casino.";  // #351 #5350 #1660
+    h.casinoPopularity -= 2;  // ImpactPopularity(-2)
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
   }
   return true;
 }

@@ -29,7 +29,10 @@ def run(seed, **extra):
 
 
 lanes = collections.Counter()
-for seed in range(1, 21):
+# 40 seeds, not 20: the wheel's rotation shifted when the casino's compliment card
+# joined the family list (REPORT 324) and the first "Wish them well" branch now
+# lands at seed 26 (measured: Beg 14 / Wish 9 over seeds 1-60).
+for seed in range(1, 41):
     for event in run(seed)["events"]:
         body = event.get("body") or ""
         if not (body.endswith(" wants a divorce.") or body.endswith(" wants to break up with you.")):

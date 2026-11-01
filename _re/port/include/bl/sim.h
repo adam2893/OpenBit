@@ -679,6 +679,9 @@ class Sim {
   bool casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCasinoAgeUpGamblerComplaintGame (REPORT.en.md 322).
   bool casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice);
+  // ScenarioCasinoAgeUpGamblerComplimentGame (REPORT.en.md 324), the complaint
+  // card's positive twin.
+  bool casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
   bool carRepairYear(Life& life, AgeUp& out, int forcedChoice);
   void ensureCarFields(Life& life);
@@ -724,6 +727,12 @@ class Sim {
                     const std::string& filterColumn, const std::string& filterValue,
                     const std::string& loColumn, const std::string& hiColumn,
                     double value, Rng& rng);
+  // A band pick with no retries: every row whose lo/hi cells bracket the value
+  // is eligible at once (a blank cell is unbounded) and one is drawn, which is
+  // how the casino mood getters filter before their single draw. Returns -1 when
+  // no row brackets the value.
+  size_t pickBandRow(const std::string& table, const std::string& loColumn,
+                     const std::string& hiColumn, double value, Rng& rng);
   size_t spyRow(const std::string& table, const std::string& weightColumn,
                 const std::string& filterColumn, const std::string& filterValue,
                 const std::string& flagColumn);

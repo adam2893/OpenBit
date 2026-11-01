@@ -471,6 +471,7 @@ struct Hero {
   long long casinoBaseMonthlyCost = 0;   // that structure's Base Monthly Cost
   int casinoLedgerYear = -1;             // the last year the books were run
   int casinoBankruptYears = 0;           // consecutive years the casino pot ended negative
+  int casinoComplimentAge = -1;          // age the compliment card last fired (5-year cooldown)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
   std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for

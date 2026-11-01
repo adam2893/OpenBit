@@ -4506,6 +4506,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::mischiefYear, nullptr, 3},
         {&Sim::casinoComplaintYear, [](const Life& l) { return l.hero.ownsCasino; }, 2,
          "casino-complaint"},
+        {&Sim::casinoComplimentYear, [](const Life& l) { return l.hero.ownsCasino; }, 2,
+         "casino-compliment"},
         {&Sim::carRepairYear, [](const Life& l) { return l.hero.ownsCar; }, 3, "car"},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
@@ -7750,6 +7752,30 @@ size_t Sim::pickWindow(const std::string& table, const std::string& weightColumn
     return r;
   }
   return pickRow(table, weightColumn, filterColumn, filterValue, "", rng);
+}
+
+// The casino mood getters (GetRandomCasinoGameRoomComplaintForHappiness and its
+// compliment twin) filter the table by the floor's mood FIRST and draw once from
+// what is left, so a band that no row brackets yields nothing rather than a
+// near miss.
+size_t Sim::pickBandRow(const std::string& table, const std::string& loColumn,
+                        const std::string& hiColumn, double value, Rng& rng) {
+  if (!ensureTable(table)) return size_t(-1);
+  const Table& t = tbl(table.c_str());
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    if (t.has(loColumn)) {
+      const double lo = t.num(r, loColumn);
+      if (lo > 0.0 && value < lo) continue;
+    }
+    if (t.has(hiColumn)) {
+      const double hi = t.num(r, hiColumn);
+      if (hi > 0.0 && value > hi) continue;
+    }
+    pool.push_back(r);
+  }
+  if (pool.empty()) return size_t(-1);
+  return pool[rng.below(uint32_t(pool.size()))];
 }
 
 size_t Sim::pickRow(const std::string& table, const std::string& weightColumn,
@@ -22325,10 +22351,11 @@ bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
   pronounOtherFemale_ = savedOtherFemale;
 
   // Four buttons, in the order RefreshScenario adds them: 'Attack {0}' (#12347),
-  // 'Have a talk with {0}' (#22687), "It doesn't bother me" (#27502) and the
-  // report button -- 'Report {0} to HR' (#35787), or 'Report {0} misconduct'
-  // (#35788) when the supervisor's own 0x1f4 field is 1, a field the port does
-  // not carry (shortcut), so the port always uses the HR wording.
+  // 'Have a talk with {0}' (#22687), "It doesn't bother me" (#27502) and
+  // 'Report {0} to HR' (#35788). The '#35787 Report {0} misconduct' literal is
+  // the military discipline card's own label (below), not a variant of this
+  // one: the native RefreshScenario stores the four labels unconditionally and
+  // reads no supervisor field to choose between them.
   // ChoiceSelectedAtIndex @0x73f2e35338 lowers the chosen label and tests it
   // with String.Contains in a fixed order -- attack #54542, report #64521, talk
   // #66580, doesn't #57652 -- and a label matching none changes nothing at all.
@@ -22359,7 +22386,7 @@ bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
   } else if (pick == 1) {
     // The report lane @0x73f2e35664: a bare Scenario carrying the row's own
     // reason string is pushed and linked, and no hero stat moves.
-    out.choice = "Report " + them + " to HR";  // #35787
+    out.choice = "Report " + them + " to HR";  // #35788
   } else if (pick == 2) {
     // The talk lane @0x73f2e356b8: ScenarioCoworkerTalkingTo is pushed with the
     // reason the class makes up ('why you don't appreciate {0} behavior'

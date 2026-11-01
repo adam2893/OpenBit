@@ -23536,6 +23536,115 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 324. The casino's complimenting gambler
+
+The complaint card (322) got a punter with a grievance; the positive twin - a punter telling the hero the
+floor is wonderful - shipped with the same expansion and was still missing. This section ports
+ScenarioCasinoAgeUpGamblerComplimentGame and, in passing, closes two fidelity gaps in 322.
+
+### The native card
+
+* Class ScenarioCasinoAgeUpGamblerComplimentGame: `.ctor` 0x3572578 (tail-calls Scenario::.ctor(false),
+  so no dismiss button), RefreshScenario 0x3571344, ChoiceSelectedAtIndex 0x3571cf8,
+  ScenarioIsEligibleForRandomPush 0x3572134. Fields: 0x170 the assembled narrative, 0x178 the casino,
+  0x180 the gambler.
+* SimCasino::IncrementAge queues it at 0x2aacf04 (eligibility call), 0x2aacf08 (skip when not eligible)
+  and 0x2aacf24 (constructor). The push draws no RNG at all: every casino card in that chain is gated by
+  its ScenarioIsEligibleForRandomPush override and the first eligible one wins the year.
+* Title #16100 "Compliment". The exterior title is never written, so it keeps the class default.
+* Body = Concat(sentence, #46 "\n\n", the parsed row, #146 "\n\nWhat will you do?"), where the sentence
+  is #50268 "Your casino's " + the gambler's relationship word + #5282 ", " + the full name + #5672
+  ", is complimenting your casino for having " + the possessive + #1953 " favorite game, " + the game
+  name run through CapitalizeAllMajorWordsInString + #6312 ".". The row comes from
+  DataHub::GetRandomCasinoGamblerGameRoomComplimentForHappiness (0x26c89bc) over
+  a16_casino-gambler-game-room-compliment-enc (String, Min Gambler Happiness, Max Gambler Happiness),
+  banded by the punter's happiness; the parser is handed the gambler as its person and the class registers
+  no bracket dictionary, so the row's own <he/she> tokens resolve against that punter only.
+* RefreshScenario also stores the default journal line: #25215 "I thanked my casino's gambler, " + the
+  name + #5547 ", for " + the possessive + #1659 " compliment about my casino.".
+* Choices, in stored order: #41215 "Thank " + object pronoun, #21649 "Give " + object pronoun + #3411
+  " some free games", #26366 "Ignore " + object pronoun. The handler dispatches on the lowercased label
+  (Contains "thank" #66726, "games" #59394, "ignore" #60762).
+* Effects. Thank: addiction -1, then the casino's negative vtable slot at -1 and its positive slot at +1,
+  and the default journal line stands. Give: addiction +2, the same two slots at -2 and +2, and the line
+  is extended with #341 "\nI gave my casino's gambler, " + name + #5857 ", some free games after " + the
+  subject pronoun + #1660 " complimented my casino.". Ignore: the line is extended with #351
+  "\nI ignored my casino's gambler, " + name + #5350 ", after " + the subject pronoun + #1660, and
+  SimCasino::ImpactPopularity(-2) is applied. Every branch ends by logging the narrative through
+  LifeLog::Log and refreshing the UI; nothing else is written - no money, no follow-up scenario, no table
+  snippet lookup.
+* Gates: a casino is owned, the gambler list is not empty, a favourite-game pre-check passes (hard AND,
+  the predicate is the complaint card's shape: a punter's favourite game that the casino does not install),
+  hero age 18 or over, not in prison, and Life::YearsSinceScenario of this class is greater than 4.
+* Draw order inside the card: the gambler, the favourite game, then the compliment row. The choice handler
+  and the push site draw nothing.
+
+### The port
+
+Sim::casinoComplimentYear (src/fam/casino.cpp) is a wheel family named "casino-compliment" whose ready
+gate is casino ownership, sitting beside "casino-complaint" and drawing from the same casino card stream
+(casinoCardRng_), so this card cannot shift any other family's sequence. It keeps the punter, the game and
+the row in per-card state that is cleared on entry (one card, one punter - without the clear the previous
+card's punter leaked into the next), renders the recovered sentence and row, offers the three native
+labels with the recovered pronouns, applies the two slot moves and the addiction change, and writes the
+same three journal shapes. The five-year cooldown is a value on the Hero (casinoComplimentAge) rather than
+a native scenario clock. Sim::pickBandRow (src/sim.cpp) was added for it: the native band table is filtered
+first and one row drawn, where the older pickWindow retried three times and could fall out of band.
+
+The same edit set closes two gaps in the complaint card: its body now carries the mood row from
+a16_casino-casino-game-room-complaint-enc banded by the floor's happiness (before it printed the sentence
+only, dropping what the native Concat appends), and its two short labels now carry the punter's pronoun
+plus, for a ban, the #2104 " from my casino" tail, so a ban reads "Ban her from my casino" as the native
+label builds it rather than the punter's name.
+
+Ceilings, all deliberate:
+
+* The two casino vtable slots the native code moves (+0x738 and +0x508) are still unidentified, so the
+  port pairs one with the floor's popularity and the other with its gambler happiness, and the complaint
+  card's refusal-crazy band (gambler craziness) is approximated by that happiness value, as in 322.
+* The native picks a random punter and a favourite game the casino installs from live game objects; the
+  port has no gambler entities, so the name and game come from the same resolve tokens the complaint card
+  uses.
+* The native queues at most one casino card a year and the first eligible one wins; the port lets each
+  family draw its own coin, so both casino cards can land in the same year.
+* SimCasino::IncrementAge's own yearly books (319) run first, so the card always quotes a casino that has
+  already aged that year.
+* The card never moves money natively, so neither does the port; a hero who is skint still gets it.
+* CapitalizeAllMajorWordsInString is reproduced with a small local helper (src/fam/casino.cpp), and
+  <a/b/c> alternatives inside a row are drawn from the casino card stream rather than a card-local RNG.
+
+### Corrections to 322
+
+* The complaint card's body carries the mood row as well; the earlier section described the sentence only.
+* The complaint buttons carry the punter's pronoun (#12770 "Ban " / #26366 "Ignore "), and a ban appends
+  #2104 " from my casino"; the earlier section said the labels append the gambler's name.
+
+### Verified (test_casino_compliment.py, seed 7, US male, a casino with a funded pot)
+
+    default card:  age 25   "Your casino's Amateur, Tank Maya, is complimenting your casino for having
+                            her favorite game, Slots."
+                   choice "Thank her", narrative "I thanked my casino's gambler, Tank Maya, for her
+                            compliment about my casino."
+    row check:     the second paragraph matches a cell of a16_casino-gambler-game-room-compliment-enc
+                   with its <he/she> tokens wildcarded, and opens with a capital
+    give lane:     choice "Give her some free games", line "I gave my casino's gambler, ..., some free
+                   games after she complimented my casino."
+    ignore lane:   choice "Ignore her", line "I ignored my casino's gambler, ..., after she complimented
+                   my casino."
+    thank lane:    choice "Thank her", no ignore line
+    deltas:        every stat 0 - the card is narrative only
+    cooldown:      two cards in one life are more than four years apart
+    no casino:     no compliment card on a 60-year life
+
+The full 112-test suite ran on the binary these notes describe (10584fa3..., 110 PASS /
+2 FAIL). Both failures are test-side and were fixed here without a code change: the new
+family's wheel ticket moved the first "Wish them well" branch of the lover-leaves card
+from below seed 21 to seed 26, so that test now walks 40 seeds instead of 20 (measured
+Beg 14 / Wish 9 over seeds 1-60), and a hero who dies in prison has no time-machine row
+to draw because the table carries no row flagged both Prison and Was Dead, so that check
+now asserts the table really has none instead of indexing a row that cannot exist. Both
+were re-run green.
+
 ## 323. The car's condition, the repair card and the scrap push
 
 Every other vehicle in this port is a purchase lane (car, boat, aircraft) with no state behind it: the hero pays and the money is gone. The native game keeps a real car object, runs a breakage check on it every age-up and hands the hero a repair card when something falls off, so this section gives the port its first structured car and ports ScenarioCarRepair and the car scrap push.
@@ -23577,8 +23686,12 @@ ScenarioCasinoAgeUpGamblerComplaintGame.
 * Body: concatenated literals, not a format template — #50268 "Your casino's " + the gambler's
   relationship word + #5282 ", " + the name + #5667 ", is complaining that your casino doesn't have "
   + the possessive + #1953 " favorite game, " + the game + "."
+* Body, second half (added in 324): Concat also appends #46, the parsed row of
+  a16_casino-casino-game-room-complaint-enc banded by the floor's gambler happiness, and #146
+  "\n\nWhat will you do?".
 * Choices: #12770 "Ban ", #11554 "Apologize for the inconvenience", #26366 "Ignore ". The two short
-  labels end in a space because the native card appends the gambler's name.
+  labels end in a space because the native card appends the punter's pronoun, and a ban appends
+  #2104 " from my casino" as well (corrected in 324).
 * Effects: a ban costs the house two popularity points and reports what the gambler did, drawn from
   a16_casino-banned-gambler-snippet-enc banded by gambler craziness (Snippet, Log Version, Min/Max
   Gambler Craziness); apologising raises the floor's addiction by two points; ignoring costs two

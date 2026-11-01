@@ -31,6 +31,14 @@ def machine(ev):
 
 
 def check_narrative(e, age, prison, dead):
+    if e["row"] is None:
+        # A hero who dies in prison has no row to draw: the table carries no row
+        # flagged both Prison and Was Dead (asserted below), so the port emits the
+        # card with its plain body and no narrative, which is what an exhausted
+        # rejection retry leaves behind.
+        assert dead and not [r for r in ROWS
+                             if flag(r["Prison"]) and flag(r["Was Dead"])], e
+        return
     row = ROWS[int(e["row"]) - 1]
     assert e["table"] == "a16_time-machine-scenarios-enc", e
     assert prison is None or flag(row["Prison"]) == prison, (row, prison)
