@@ -763,7 +763,8 @@ Sim::Sim(std::string reDir, uint64_t seed)
       unrOutRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x6a09e667f3bcc909ULL),
       fwRng_(seed ^ 0x9fb21c651e98df25ULL ^ 0x6a09e667f3bcc909ULL),
       aiRng_(seed ^ 0xbf58476d1ce4e5b9ULL ^ 0x6a09e667f3bcc909ULL),
-      ftRng_(seed ^ 0x94d049bb133111ebULL ^ 0x6a09e667f3bcc909ULL) {}
+      ftRng_(seed ^ 0x94d049bb133111ebULL ^ 0x6a09e667f3bcc909ULL),
+      ytRng_(seed ^ 0x3d9f2b6e1c4a8f57ULL ^ 0x7feb352d3a2ba1f3ULL) {}
 
 const Table& Sim::tbl(const char* name) const {
   for (const auto& entry : tables_) if (entry.first == name) return entry.second;
@@ -4481,6 +4482,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::morningYear, nullptr},
         {&Sim::jobReferralYear, nullptr},
         {&Sim::friendSpendTimeYear, nullptr},
+        {&Sim::friendYouTubeYear, nullptr, 1, "friend-youtube"},
         {&Sim::friendRumorOutYear, nullptr},
         {&Sim::friendUnfriendYear, nullptr},
         {&Sim::friendUnfriendOutYear, nullptr},
@@ -22064,6 +22066,75 @@ bool Sim::friendStatusYear(Life& life, AgeUp& out, int forcedChoice) {
 // assault the hero has just talked their way out of, or walked into. shortcut: the
 // port has no friend object to move a relationship on and pushes no child scenario,
 // the two side effects this section drops.
+// ScenarioFriendYouTube (REPORT.en.md 341). A relationship-menu activity, not a random
+// push: LifeInterface::RelationshipItemArrayForFriend offers it for any friend who lives
+// in the same place once the hero is six (0x30e1c04 age gate, 0x30e1c1c
+// LivesInSamePlaceAsHero), and the card is titled 'YouTube' by its own constructor. The
+// port has no relationship menu and no friend entities, so the friend family offers the
+// card on its own stream and the friend is a drawn name, as in the other friend cards.
+bool Sim::friendYouTubeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 6 || h.inPrison) return false;
+  if (forcedChoice < 0 && !ytRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_youtube-channels-enc")) return false;
+  const Table& yt = tbl("a16_youtube-channels-enc");
+  const size_t rows = yt.size();
+  if (rows == 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  const std::string friendName = resolve("<friend>");
+  if (friendName.empty()) return false;
+  const bool friendFemale = ytRng_.chance(0.5);
+  const std::string him = friendFemale ? "her" : "him";
+  // RefreshScenario fills a dropdown with up to five distinct channel names (deduped by
+  // name) and ChoiceSelectedAtIndex reads the selected one through
+  // DataHub::GetYouTubeChannel (0x282f534). With no dropdown the port draws one row from
+  // the same table; the getter's Commonness weighting is not decoded, so the draw is uniform.
+  const size_t pick = size_t(ytRng_.below(uint32_t(rows)));
+  const std::string channel = yt.at(pick, "Channel");
+  const int enjoyment = int(yt.num(pick, "Enjoyment Score"));
+  const bool channelFemale = yt.at(pick, "Gender") == "female";
+  // ACCEPT iff the friend's stored relationship strength is over 20.0, or the channel is a
+  // favourite (EnjoymentScore 5); otherwise REFUSE. It is a threshold, not a roll (0x37c1f34
+  // fcmp 20.0, 0x37c1f50 cmp EnjoymentScore,#5). The port keeps no friend entity, so the
+  // strength is drawn here on the card's own stream.
+  const bool accept = int(ytRng_.below(101)) > 20 || enjoyment == 5;
+  out.table = "a16_youtube-channels-enc";
+  out.row_id = std::to_string(pick + 1);
+  out.title = "YouTube";  // #50104, written by the constructor
+  out.body = "Watch YouTube with your friend, " + friendName + ", today!";  // #46030
+  out.options = {"Watch it with " + him};  // #46046, the card's only choice
+  out.choice = out.options[0];
+  if (accept) {
+    // I watched {0} on YouTube with my {1}, {2}.  (#25746; the game logs it before the
+    // follow-up card is chained, so the happiness and friendship moves only happen when the
+    // friend has not already been watched with at this age -- the port's family fires once
+    // a year, which is that guard's effect without the per-friend stamp.)
+    out.narrative = "I watched " + channel + " on YouTube with my friend, " + friendName + ".";
+    out.happiness = pointsForImpact(1);
+    // The accept chains a follow-up card titled by a gender-flavoured quip of the channel's
+    // own presenter list with body #47624; the port folds it into this card's body the way
+    // the magazine shoot folds its follow-up (REPORT 335). Its two enjoyment bar graphs, the
+    // reused hookup sound and the 'acBijuuMike' / Jacksepticeye hooks are REPORT 341 ceilings.
+    static const char* kMaleQuips[] = {"He's great!", "His editing is clean", "Man's a legend",
+                                       "That's my guy", "I need his merch"};
+    static const char* kFemaleQuips[] = {"She's great!", "Love her style", "She's hilarious",
+                                         "She has a stan in me", "I need her merch"};
+    const std::string quip = (channelFemale ? kFemaleQuips : kMaleQuips)[int(ytRng_.below(5))];
+    out.body += "\n\n" + quip + "\nYou and your friend, " + friendName + ", watched " + channel +
+                " together on YouTube.";
+  } else {
+    // My {0}, {1}, refused to watch {2} with me on YouTube.  (#30994)
+    out.narrative = "My friend, " + friendName + ", refused to watch " + channel +
+                    " with me on YouTube.";
+    out.happiness = pointsForImpact(-2);
+    // Follow-up card 'Seriously?' (#38651) with body #50758, folded as above.
+    out.body += "\n\nSeriously?\nYour friend, " + friendName + ", refused to watch " + channel +
+                " with you on YouTube.";
+  }
+  return true;
+}
+
 bool Sim::friendWeaponYear(Life& life, AgeUp& out, int forcedChoice) {
   if (forcedChoice > 3) return false;
   Hero& h = life.hero;

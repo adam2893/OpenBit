@@ -840,6 +840,7 @@ class Sim {
   // only card without buttons (DismissSelected writes the line it built) and it
   // draws on its own stream (fstRng_).
   bool friendSpendTimeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool friendYouTubeYear(Life& life, AgeUp& out, int forcedChoice);
   // The unfriend card (REPORT.en.md 108): a friend gives the hero up, and the
   // hero can try to salvage the friendship, let the friend go or insult them one
   // last time. It is the family's only card with three buttons and the only one
@@ -1264,6 +1265,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   bool astroLive_ = false;
   Rng studioRng_;
   Rng tradeRng_;
+  Rng ytRng_;  // the friend's YouTube card's own stream (REPORT.en.md 341)
   std::string spyTarget_;      // '<target>' / '<target-assassination>' of this card
   bool spyTargetFemale_ = false;  // Target Gender of this card's mark (blank rows keep the opposite-of-hero fallback)
   std::string spyColleague_;   // the other agent a train/warning row names

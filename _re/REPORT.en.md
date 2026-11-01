@@ -23536,6 +23536,125 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 341. The friend's YouTube card
+
+The relationship menu has its own cards, and one of them is watching a video with a
+friend. The port has never had it: the friend families offer advice, pranks, rumours,
+parties and a few darker cards, but no video.
+
+### The native side
+
+`ScenarioFriendYouTube` is a single-shot `Scenario` subclass (`.ctor` 0x37c1a0c,
+`RefreshScenario` 0x37c1a80, `ChoiceSelectedAtIndex` 0x37c1cf4, `_friend` at +0x170).
+The constructor alone writes the title 'YouTube' (#50104) into +0x38 and sets
+HasDismissButton (+0x28); `RefreshScenario` writes no title.
+
+It is not a random push. The card is one item of the relationship menu built by
+`LifeInterface::RelationshipItemArrayForFriend` (0x30e021c): the item is offered when
+the hero is at least six (`hero.Age` +0x20 against 6 at 0x30e1c04/0x30e1c08) and the
+friend `LivesInSamePlaceAsHero` (0x2c4cb28 at 0x30e1c1c). There is no cooldown and no
+relationship-status condition on the menu item; the item's title is 'Watch YouTube'
+(#46029) and its label 'Watch YouTube with {0}' (#46031) over the friend's object
+pronoun.
+
+`RefreshScenario` writes only the body, a dropdown and a choice:
+
+- the body is #46030 `Watch YouTube with your {0}, {1}, today!` with {0} the friend
+  relationship string (`FriendRelationshipStatusString` 0x2c4769c: 'friend' #59280,
+  'best friend' #54905, 'enemy' #58371) and {1} the friend's first name;
+- the dropdown (+0xc8) is one `ScenarioDropDown` titled 'Pick your channel' (#33846)
+  whose contents are up to five distinct channel names (the loop at 0x37c1b88-0x37c1bfc
+  re-draws while the name is already in the list) with default index 0;
+- the choice array holds one choice, green-styled, labelled 'Watch it with {him/her}'
+  (#46046).
+
+`ChoiceSelectedAtIndex` discards its choice index: the selection it acts on is the
+dropdown's `get_Item(0)` (0x37c1e94), resolved to a row through
+`DataHub::GetYouTubeChannel` (0x282f534). The accept is a threshold, not a roll: the
+friend's `GetTotalHeroRelationshipStrength` (0x2c3884c) above 20.0 (fcmp at 0x37c1f34,
+b.le at 0x37c1f3c) accepts, and so does any channel whose EnjoymentScore is 5
+(0x37c1f4c/0x37c1f50); everything else refuses.
+
+On the accept:
+
+- the game logs #25746 `I watched {0} on YouTube with my {1}, {2}.` with the channel, the
+  relationship string and the first name;
+- the impacts are guarded by a per-friend stamp: `friend+0x15c
+  HeroAgeAtLastWatchedYouTube` against the hero's age (0x37c20a4-0x37c20b0) — when they
+  are equal only the log happens. Otherwise the stamp is written and the friend gains +4
+  when the channel's EnjoymentScore is 5 and +2 otherwise (csel at 0x37c20d4 into the
+  person's vtable slot +0x508), and the hero gains one happiness point (vtable +0x408);
+- two enjoyment bars are rolled: 70 + `GetRandomNumber(0,31)` each
+  (0x37c1fc0/0x37c1fd4), except that an enemy friend (FriendStatus 3) stays on 0..30,
+  and a 1-in-6 roll (0x37c2038) together with a channel whose EnjoymentScore is at most 4
+  re-rolls both bars over 0..100 (0x37c2068/0x37c207c);
+- a follow-up `Scenario` is chained at +0x128 whose title is drawn from the channel
+  presenter's own gender list — male "He's great!" #22747, 'His editing is clean' #22985,
+  "Man's a legend" #29643, "That's my guy" #41418, 'I need his merch' #24699; female
+  "She's great!" #38866, 'Love her style' #29247, "She's hilarious" #38867, 'She has a
+  stan in me' #38853, 'I need her merch' #24698 — and whose body is #47624 `You and your
+  {0}, {1}, watched {2} together on YouTube.`, with two bar graphs ('Your Enjoyment'
+  #50126 and '{His/Her} Enjoyment' #69502) and the reused hookup sound
+  (a16_sndHookupMale.aiff #52901 for a male hero, the female file #52900 otherwise);
+- two channel hooks ride the accept: 'Jacksepticeye' (#27880) sets the challenge byte
+  `Apollo16ChallengeTracker+0x28` and 'Bijuu Mike' (#13477) grants the achievement
+  'acBijuuMike' (#53220).
+
+The refusal moves the hero's happiness down 2 (vtable +0x408 with -2), logs #30994 `My
+{0}, {1}, refused to watch {2} with me on YouTube.` and chains a follow-up titled
+'Seriously?' (#38651) whose body is #50758 `Your {0}, {1}, refused to watch {2} with you
+on YouTube.` Both branches end on `LifeLog::Log` and a UI refresh.
+
+The channels themselves are `a16_youtube-channels-enc` (63 rows: Channel, Commonness
+Score, Enjoyment Score 2..5, Gender), loaded by `DataHub::LoadYouTubeChannelSet`
+(0x26f7250) into DataHub+0x580 and read back by `GetRandomYouTubeChannel` (0x282f0c0,
+the dropdown draw) and `GetYouTubeChannel` (0x282f534, the by-name lookup). The card
+never touches the table itself.
+
+### The port
+
+`Sim::friendYouTubeYear` takes the shape of the other friend cards. The menu does not
+exist, so the friend family offers the card itself on `ytRng_` with one wheel ticket and
+a 6% coin; the gate the game states is kept (six and up, and not in prison), and the
+friend is a `<friend>` draw plus a coin for the pronoun. The channel is drawn uniformly
+from the table's 63 rows, the friend's relationship strength — which the port has
+nowhere to store — is drawn on the same stream, and the accept applies when that
+strength is over 20 or the channel's EnjoymentScore is 5. The body, the one choice, the
+two journals and the follow-up bodies are the literals above; the accept moves happiness
+up one point through the port's impact conversion and the refusal down two.
+
+### Ceilings
+
+- The port has no relationship menu, so the card fires from the friend family on a coin
+  instead of being offered per friend; and it has no friend entities, so the name and
+  gender are drawn, the relationship string is always 'friend', the +2/+4 friendship move
+  has nowhere to land, and the per-friend `HeroAgeAtLastWatchedYouTube` stamp is replaced
+  by the family's once-a-year cadence.
+- The dropdown became a uniform row draw: the five-name dedupe, the stored pick order and
+  the default index are not modelled, and `GetRandomYouTubeChannel`'s CommonnessScore
+  weighting is not decoded, so the draw is uniform over the 63 rows.
+- The card's own HasDismissButton lane (closing the card without choosing) is not
+  modelled; the port's single option is the green choice.
+- The two enjoyment bar graphs, the follow-up card's own title, the reused hookup sound,
+  the 'acBijuuMike' achievement and the Jacksepticeye challenge byte are not modelled:
+  the follow-up is folded into this card's body as a title line and a body line, the way
+  the magazine shoot folds its follow-up (REPORT 335).
+- 'best friend' and 'enemy' never appear because the port's drawn friend carries no
+  status, so the enemy branch of the bar roll is unreachable here.
+
+### Verified
+
+`_re/tools/test_friend_youtube.py` walks forty funded lives with the card enabled,
+resolves every card's `row` back to the channel table and asserts the body's three parts
+against that row (the card's own body, the quip from the gender list the channel's Gender
+column names, and the follow-up body naming the friend and the channel), the choice
+label, the journal shape with the channel and the friend's name, the happiness delta (+4
+on the accept and -8 on the refusal, both through the port's impact conversion), one card
+per age, no residue, and that a five-year-old never sees the card.
+Measured: `cards: 71 | accepts: 49 | refuses: 22` over seeds 1-40.
+
+The full 129-test suite passed on the binary these notes describe (e982b98e..., 129 PASS /
+0 FAIL), the new test included.
 ## 340. Twins and triplets
 
 The birth card has always been able to deliver more than one child. The port
