@@ -701,6 +701,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       cwRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0x8ebc6af09c88c6e3ULL),
       supRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       discRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x1d8e4e27c47d124fULL),
+      hrRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x5be0cd19137e2179ULL),
       atkRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3c6ef372fe94f82bULL),
       animalRng_(seed ^ 0x6a09e667f3bcc909ULL ^ 0x3f84d5b5b5470917ULL),
       huntAnimalRng_(seed ^ 0xbb67ae8584caa73bULL ^ 0x510e527fade682d1ULL),
@@ -4153,6 +4154,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingZooBankrupt) return zooBankruptYear(life, out, forcedChoice);
     if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
     if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
+    if (kind == kPendingHrDiscipline) return hrDisciplineYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
@@ -22852,9 +22854,13 @@ bool Sim::supervisorYear(Life& life, AgeUp& out, int forcedChoice) {
     // ScenarioCustomAttack (both pushed and both linked at [self+0x128]), and an
     // obituary colour line is added ('Friends say the most pleasure {0} ever
     // derived from life was from assaulting {1} {2}.' #20716). The port keeps no
-    // supervisor bar and pushes no card (shortcut), so the hero's own stats never
-    // move.
+    // supervisor bar, so the -6 never lands, and it opens the HR investigation
+    // with the row that caller passes (seriousness 5, #54546 'attacking
+    // <your/my> {0}') instead of chaining ScenarioCustomAttack behind it.
     out.choice = "Attack " + them;  // #12347
+    h.hrReason = "attacking <your/my> supervisor";
+    h.hrSeriousness = 5;
+    life.pendingCards.push_back(kPendingHrDiscipline);
   } else if (pick == 1) {
     // The report lane @0x73f2e35664: a bare Scenario carrying the row's own
     // reason string is pushed and linked, and no hero stat moves.
@@ -23121,10 +23127,13 @@ bool Sim::workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
     h.military = false;
     h.employer.clear();
   } else {
+    // #48756 is 'You have been let go from your position as {1} for {2} for
+    // disciplinary issues.' and {2} is the reason row's own label, 'Disciplinary
+    // Issues' (#17783), so the slot would repeat the sentence's own tail; the port
+    // folds it in once.
     out.body = reactionLine + "\n\n" + "You have been let go from your position as " +
-               h.job + " for " + h.employer + " for disciplinary issues.";  // #48756
-    out.narrative = "I was let go from my job as " + h.job + " for " + h.employer +
-                    " for disciplinary issues.";  // #25739
+               h.job + " for disciplinary issues.";  // #48756
+    out.narrative = "I was let go from my job as " + h.job + " for disciplinary issues.";  // #25739
     h.employed = false;
     h.job.clear();
   }
@@ -23484,6 +23493,93 @@ bool Sim::coworkerComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   out.title = title;
   out.body = body;
   out.narrative = narrative;
+  return true;
+}
+
+
+// The HR investigation (REPORT.en.md 339). ScenarioWorkplaceDisciplineHR is the
+// escalation card the workplace cards push when the hero has crossed a line: it
+// has no choices at all (.ctor 0x298d34c with a reason string and a seriousness,
+// RefreshScenario 0x299ba04, DismissSelected 0x299c224 tail-calling LifeLog::Log
+// with the narrative), so its whole decision happens while it is built.
+bool Sim::hrDisciplineYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (h.hrSeriousness <= 0) return false;
+  hero_ = &h;
+  life_ = &life;
+  // The termination score reads the workplace's own ManagementStrictness
+  // (SimWorkplace+0x14). The port keeps no workplace object, so the number is
+  // drawn once and stands in for it (shortcut).
+  if (h.mgmtStrictness < 0) h.mgmtStrictness = int(hrRng_.below(101));
+  const int seriousness = h.hrSeriousness;
+  const bool military = h.military;
+  // Every call site Format's a reason literal and the card itself rewrites the
+  // '<your/my>' token (String::Replace at 0x299bc50 for the body, 0x299bdd0 for
+  // the narrative), so only the body gets 'your' and only the journal gets 'my'.
+  const auto replaceToken = [](std::string text, const char* word) {
+    static const std::string token = "<your/my>";
+    for (size_t at = text.find(token); at != std::string::npos; at = text.find(token, at)) {
+      text.replace(at, token.size(), word);
+    }
+    return text;
+  };
+  static const char* kMilitaryTitles[] = {"Must tread lightly", "On thin ice",
+                                          "Being watched", "Under the microscope"};
+  static const char* kCivilianTitles[] = {"Really? HR?", "Who's the narc",
+                                          "A whole investigation?",
+                                          "It's not that serious",
+                                          "These people are so touchy"};
+  out = AgeUp();
+  out.table = "registry:ScenarioWorkplaceDisciplineHR";
+  // Two pools, one draw: the military card and the civilian card each build their
+  // own ArrayList of titles and take one (PickRandomFromStringArray @0x2e16608).
+  out.title = military ? std::string(kMilitaryTitles[size_t(hrRng_.below(4))])
+                       : std::string(kCivilianTitles[size_t(hrRng_.below(5))]);
+  out.body = military ? ("Your chain of command has formally reprimanded you for " +
+                         replaceToken(h.hrReason, "your") + "!")            // #50274
+                      : ("HR has launched an investigation into you for " +
+                         replaceToken(h.hrReason, "your") + "!");           // #22392
+  out.narrative = military ? ("I was reprimanded by my chain of command for " +
+                              replaceToken(h.hrReason, "my") + "!")         // #25711
+                           : ("HR investigated me for " +
+                              replaceToken(h.hrReason, "my") + "!");        // #22394
+  // TroublePoints always absorb the seriousness (SimWorkplace+0x24), and then the
+  // score is strictness*multiplier + points*(10 in the military, 5 otherwise); the
+  // multipliers come from the class's own switch: 0.25, 0.5, 1.1, 1.0, and the
+  // 204 that makes the top seriousness certain.
+  h.troublePoints += seriousness;
+  const double mult = seriousness == 1   ? 0.25
+                      : seriousness == 2 ? 0.5
+                      : seriousness == 3 ? 1.1
+                      : seriousness == 4 ? 1.0
+                                         : 204.0;
+  const double raw = double(h.mgmtStrictness) * mult +
+                     double(h.troublePoints * (military ? 10 : 5));
+  const int score = int(raw);
+  const bool terminate = score >= 26 && int(hrRng_.below(200)) < score;
+  if (terminate) {
+    // The card chains ScenarioJobTermination(8) or ScenarioMilitaryTermination(,
+    // 8) as NextScenario rather than resolving anything itself; the port folds the
+    // termination the same way REPORT.en.md 325 does, with the same rows.
+    if (military) {
+      out.body += "\n\nYou have been dishonorably discharged from the " + h.employer + ".";
+      out.narrative += " I was dishonorably discharged from the " + h.employer + ".";
+      h.military = false;
+      h.employer.clear();
+    } else {
+      out.body += "\n\nYou have been let go from your position as " + h.job +
+                  " for disciplinary issues.";
+      out.narrative += " I was let go from my job as " + h.job + " for disciplinary issues.";
+      h.employed = false;
+      h.job.clear();
+    }
+    out.happiness -= 6;
+  }
+  // Every path counts the investigation, whether the hero keeps the job or not.
+  ++h.timesReportedToHR;
+  h.hrSeriousness = 0;
+  h.hrReason.clear();
   return true;
 }
 
@@ -23956,11 +24052,16 @@ bool Sim::seduceYear(Life& life, AgeUp& out, int forcedChoice) {
       h.safeSexWith = sup;
       life.pendingCards.push_back(kPendingSafeSex);
       // The success lane at 0x73f2e26974 pushes ScenarioSupervisorSeduceSuccess with
-      // _initiatedByHero set, and that card is the one that tells the year after.
+      // _initiatedByHero set, and that card is the one that tells the year after; it
+      // also opens the HR investigation with seriousness 4 (#67282 'trying to
+      // seduce <your/my> {0}').
       h.morningWith = sup;
       h.morningByHero = true;
       h.morningPrevLover = !h.loverStatus.empty();
       life.pendingCards.push_back(kPendingMorningAfter);
+      h.hrReason = "trying to seduce <your/my> supervisor";
+      h.hrSeriousness = 4;
+      life.pendingCards.push_back(kPendingHrDiscipline);
     } else {
       out.happiness = pointsForImpact(-1);
       out.narrative = "I attempted to seduce my supervisor, " + sup + ", but failed.";

@@ -145,7 +145,8 @@ enum PendingCard {
   kPendingBookOffer = 33,         // the publisher's book deal (REPORT.en.md 336)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
-  kPendingBirth = 36,             // the birth card that follows a kept pregnancy (338)
+  kPendingBirth = 36,
+  kPendingHrDiscipline = 37,      // the HR investigation a workplace card opens (339)             // the birth card that follows a kept pregnancy (338)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -880,6 +881,8 @@ class Sim {
   bool supervisorYear(Life& life, AgeUp& out, int forcedChoice);
   // The supervisor discipline card, REPORT.en.md 325.
   bool workplaceDisciplineYear(Life& life, AgeUp& out, int forcedChoice);
+  // The HR investigation the workplace cards escalate into (REPORT.en.md 339).
+  bool hrDisciplineYear(Life& life, AgeUp& out, int forcedChoice);
   // The hero attacking somebody (REPORT.en.md 337): ScenarioCustomAttack.
   bool customAttackYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioAgentCompliment: the agent's dismiss-only feedback card (REPORT.en.md 327).
@@ -1072,6 +1075,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng cwRng_;
   Rng supRng_;
   Rng discRng_;
+  Rng hrRng_;  // the HR investigation card's own stream
   // The attack card's own stream (REPORT.en.md 337).
   Rng atkRng_;  // the discipline card's own stream
   Rng animalRng_;  // the animal encounter's own stream

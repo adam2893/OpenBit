@@ -1086,6 +1086,14 @@ struct Hero {
   int supInsulted = 0;      // times the discipline card's insult lane ran
   int troublePoints = 0;    // SimWorkplace's own counter, fed by the card's seriousness
   int disciplineAge = -1;
+  // The HR investigation (REPORT.en.md 339): the reason literal its caller passed,
+  // the seriousness that came with it, the workplace's management strictness its
+  // termination score reads (drawn once, since the port keeps no workplace object
+  // -- a shortcut), and the tracker counter every path bumps.
+  std::string hrReason;
+  int hrSeriousness = 0;
+  int mgmtStrictness = -1;
+  int timesReportedToHR = 0;
   int attackAge = -1;   // the last year the hero attacked somebody (REPORT 337)   // the last year the discipline card fired
   // The walk's animal encounter (REPORT.en.md 326). The kill is handed to
   // checkDeath as a cause rather than written here, the way the other card-owned

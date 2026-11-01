@@ -23536,6 +23536,144 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 339. The HR investigation
+
+The workplace cards have an escalation behind them. When the hero attacks the
+supervisor or succeeds in seducing them, the game pushes
+`ScenarioWorkplaceDisciplineHR`: a card with no choices, no dropdown, no table and
+no eligibility test, that decides while it is being built whether the hero keeps
+the job.
+
+### The native side
+
+`ScenarioWorkplaceDisciplineHR` keeps a reason string, the seriousness its caller
+passed, and the narrative it will log: `_reasonString +0x170`, `_seriousness
++0x178`, `_narrative +0x180`. Its class block has exactly three methods --
+`.ctor(String,Int32) 0x298d34c` (0x74 bytes), `RefreshScenario 0x299ba04` (0x820
+bytes) and `DismissSelected 0x299c224` (0x6c bytes, tail-calling `LifeLog::Log`
+with the narrative). There is no `ChoiceSelectedAtIndex` and no
+`ScenarioIsEligibleForRandomPush`: nothing in the game rolls this card up on its
+own, it only ever arrives pushed.
+
+`RefreshScenario` builds the title from an `ArrayList` and takes one with
+`PickRandomFromStringArray 0x2e16608`. The military pool is four lines -- #30662
+`Must tread lightly`, #32756 `On thin ice`, #13345 `Being watched`, #44708 `Under
+the microscope` -- and the civilian pool five -- #35312 `Really? HR?`, #46879
+`Who's the narc`, #10265 `A whole investigation?`, #27761 `It's not that serious`,
+#42939 `These people are so touchy`. So "On thin ice" is nothing more than one of
+this card's titles; it is not the name of an escalation card of its own.
+
+The body and the narrative are the caller's reason literal with its
+`<your/my>` token rewritten -- `String::Replace(_reasonString, #9866 '<your/my>',
+#68371 'your')` for the body at 0x299bc50 and `#62676 'my'` for the narrative at
+0x299bdd0 -- then wrapped by `Format` with the class's own template: military #50274
+`Your chain of command has formally reprimanded you for {0}!` and #25711 `I was
+reprimanded by my chain of command for {0}!`; civilian #22392 `HR has launched an
+investigation into you for {0}!` and #22394 `HR investigated me for {0}!`. The body
+is stored at `+0x48` and the narrative at `+0x180`. No bracket parser, no table.
+
+Then the arithmetic. Every path adds the seriousness to the workplace's trouble
+points (`SimWorkplace+0x24 TroublePoints += _seriousness`, 0x299be1c). The score is
+`int(strictness * multiplier + TroublePoints * (military ? 10 : 5))`, where
+strictness is the workplace's `ManagementStrictness` (`SimWorkplace+0x14`) and the
+multiplier comes from the seriousness: 0.25, 0.5, 1.1, 1.0 and 204 (the last two
+constants live at 0xfaaa44 and 0xfaf714). The hero is let go when
+`score >= 26 && rand(0,200) < score` -- the `cmp w20,#0x1a` at 0x299c038 and
+`GetRandomNumber(0,200)` at 0x299c064. Because the multipliers are small and trouble
+points only ever grow, a serious incident early in a career is a reprimand and the
+same incident later is a dismissal.
+
+Termination does not happen here: the card chains `ScenarioJobTermination(8)`
+(0x387dc8c) behind the Golden Resume guard at `GameVars+0x1c8`, or
+`ScenarioMilitaryTermination(occupation, 8)` (0x39b313c) in the military, through
+`Scenario+0x128`. When the hero survives, the card calls
+`ImpactWorkplacePerformance(-_seriousness)` (0x2b4f9d8) and one unnamed person
+method through vtable slot `+0x408` with `-min(_seriousness,3)` (0x299c184). Every
+path, dismissal or not, bumps `Apollo16ChallengeTracker+0x40 <NumTimesReportedToHR>`
+(the shared tail at 0x299c1c0).
+
+The constructor has exactly fourteen call sites, each a workplace card passing its
+own reason and seriousness: gift 1 #67281 `trying to give <your/my> {0} {1}`;
+hookup 4 #62079 `making an unwanted sexual advance toward {0}`; instigate 2 #66088
+`started an untrue rumor about your {0}, {1}`; insult 2 #55438 `calling <your/my>
+{0} {1}`; spend-time 2 #54552 `attempting to fraternize with an {0}`; supervisor
+seduction 4 #67282 `trying to seduce <your/my> {0}`; reported-to-HR 1 #62083
+`making too many complaints`; annoying, inappropriate, prank and rumor 4 #54549
+`attacking {0}`; the unprofessional supervisor 5 #54546 `attacking <your/my> {0}`;
+the dealer's item card with dynamic arguments; and friend recruit 2 #54552.
+
+### The port
+
+`Sim::hrDisciplineYear` is a pending card, `kPendingHrDiscipline`, opened by the two
+workplace lanes the port already models:
+
+- the unprofessional supervisor's attack lane (`Sim::supervisorYear`, the `pick == 0`
+  branch) passes `attacking <your/my> supervisor` with seriousness 5, which is the
+  native #54546 row;
+- the successful supervisor seduction (`Sim::seduceYear`) passes
+  `trying to seduce <your/my> supervisor` with seriousness 4, the native #67282 row.
+
+The card rewrites the token itself -- `your` in the body, `my` in the journal --
+takes its title from the military or civilian pool on `hrRng_`, adds the seriousness
+to `h.troublePoints`, computes the score the native card computes, and folds the
+termination into the same year the way REPORT.en.md 325 does: the #48756 or #48660
+sentence is appended to the body and the hero loses the job (or the branch) with the
+same six-point happiness hit.
+
+### Corrections to 325
+
+The termination sentence was wrong there. #48756 is `You have been let go from your
+position as {1} for {2} for disciplinary issues.`, and `{2}` is the *reason row's own
+label* (`Disciplinary Issues`, #17783) rather than the employer -- so the old port
+text printed an empty slot (`... as Pornographer for  for disciplinary issues.`), and
+on a hero with no employer it printed two spaces. The port now states the reason
+once, `... as Pornographer for disciplinary issues.`, and the journal line keeps the
+same fold: `I was let go from my job as Pornographer for disciplinary issues.` (#25739
+has the same slot). The military sentence #48660 is unchanged.
+
+### Ceilings
+
+- Only two of the fourteen creation sites exist in the port, because only two of the
+  workplace cards that call the constructor exist. The eight coworker incident cards,
+  the gift and the fraternization cards are not modelled, so their reasons never
+  reach this card.
+- The workplace keeps no `TroublePoints` and no `ManagementStrictness` object in the
+  port. `h.troublePoints` accumulates the seriousness faithfully, but the strictness
+  the score reads is drawn once per hero over 0..100 and stands in (`shortcut`).
+- `ImpactWorkplacePerformance(-seriousness)` and the unnamed vtable `+0x408` method
+  have no counterpart in the port, so a reprimand moves no stat; only the dismissal
+  lane has its own effect (the six-point happiness hit).
+- The dismissal is resolved inside this card rather than by chaining a termination
+  card, and only the #48756/#48660 bodies are reproduced; the job-termination card's
+  own buttons and follow-up cards are not.
+- The `<your/my>` reason is the port's own composition of the native tokens: the
+  native `{0}` argument of #54546 and #67282 is a role word the port renders as
+  "supervisor" directly.
+- `NumTimesReportedToHR` is counted (`h.timesReportedToHR`) but no port card reads it.
+
+### Verified
+
+`_re/tools/test_hr_discipline.py` walks forty funded lives and asserts that every
+investigation card follows an attack or a seduction by at most one year, that the
+card offers no choice, that its title belongs to the right pool, that the body and
+journal match the military or civilian template with `your` and `my`, that a
+dismissal body ends `for disciplinary issues.` and moves happiness by -6, and that a
+reprimand moves nothing; the measured run reports `cards: 5 | reprimands: 2 |
+firings: 3`, four civilian titles over `attacking your supervisor` and `trying to
+seduce your supervisor`, and a separate thirty-life military sweep reaches the
+military pool (`military sweep: 1`). A life that ends at seventeen never sees the
+card.
+
+The full 127-test suite ran on the binary these notes describe (36518dac..., 125 PASS /
+2 FAIL). Both failures are probe-side skew rather than behaviour: test_funeral and
+test_witch_doctor each compile a small C++ probe against `port/include` and link the
+port library, and at the time of the run the tree carried the next section's header
+fields that the library had not been built with, so the two probes died on SIGABRT and
+SIGSEGV. Stashing that work, rebuilding reproduced this exact binary byte for byte
+(36518dac...), and both were re-run green on it (funeral: planning 58, cremations 7,
+ashes 7; witch doctor: 30 remedy rows, 79 cures), so the section's own tree is
+127 of 127.
+
 ## 338. The pregnancy card and the miscarriage
 
 A pregnancy in this game is not a stat: it is a SimPregnancy object on the mother, and it is
