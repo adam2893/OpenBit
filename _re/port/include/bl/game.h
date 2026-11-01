@@ -456,6 +456,12 @@ struct Hero {
   int casinoGamblers = 0;
   int casinoActPopularity = 0;
   int casinoCelebCraziness = 0;
+  std::string casinoCelebrityGenre;
+  // The theme the act's genre belongs to. The two gambler cards weigh the act
+  // against the house theme, and the shipped singer-genre table keeps genre
+  // words and theme words disjoint, so the genre's own theme is what is
+  // compared (REPORT 347).
+  std::string casinoCelebrityGenreTheme;   // the guest act's genre (346, 347)
   int casinoGamblerHappiness = 60;   // what the floor thinks of the house
   int casinoGamblerAddiction = 40;   // how deep in the regulars are
   // The casino economy (REPORT.en.md 319). The native casino keeps one
@@ -501,6 +507,9 @@ struct Hero {
   int casinoMobView = 50;                // how the member sees the hero, +0x738
   int casinoLaunderAge = -1;             // the launder card last fired
   int casinoInterrogAge = -1;            // the interrogation card last fired
+  int casinoGamblerLostAge = -1;        // the year a regular stopped coming
+  int casinoCelebComplaintAge = -1;     // the year the guest act drew a complaint
+  int casinoCelebComplimentAge = -1;    // ... and the year it drew a compliment
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
   std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for

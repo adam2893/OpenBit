@@ -587,6 +587,15 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     spec.casino_bank = v;
   }
 
+  p = findValue(json, "casino_guest");
+  if (p != std::string::npos) {
+    const size_t q = json.find('"', p);
+    if (q != std::string::npos) {
+      const size_t r2 = json.find('"', q + 1);
+      if (r2 != std::string::npos) spec.casino_guest = json.substr(q + 1, r2 - q - 1);
+    }
+  }
+
   p = findValue(json, "zooBank");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -971,6 +980,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     // Harness hook: a seeded pot lets a test drive the bankruptcy counter
     // without simulating decades of losing books (REPORT.en.md 320).
     if (spec.casino_bank != 0) life.hero.casinoBank = spec.casino_bank;
+    if (!spec.casino_guest.empty()) sim.seedCasinoGuest(life, spec.casino_guest == "same");
   }
   if (!spec.only.empty()) sim.setOnlyFamily(spec.only);
   if (spec.cult) sim.makeCult(life);

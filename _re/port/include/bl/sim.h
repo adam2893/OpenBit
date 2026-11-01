@@ -564,6 +564,11 @@ class Sim {
   void makeFighter(Life& life);
   void makeBlackMarketeer(Life& life);
   void makeCasino(Life& life);
+  // Harness hook (REPORT.en.md 347): a guest act in the house whose genre either
+  // matches the house theme or does not, so a test reaches the two punter cards.
+  void seedCasinoGuest(Life& life, bool sameTheme);
+  // The theme a singer genre belongs to, off the shipped genre table (REPORT 347).
+  std::string casinoGenreThemeOf(const std::string& genre);
   // The harness's "car" key: the hero owns a car from a16_car-models-enc (323).
   void makeCar(Life& life);
   // The harness's "only" key: try just the named family in the wheel (319).
@@ -732,6 +737,9 @@ class Sim {
                      bool& female);
   bool casinoMafiaLaunderYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoMafiaInterrogYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoGamblerLostYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoCelebComplaintYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoCelebComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
   bool carRepairYear(Life& life, AgeUp& out, int forcedChoice);
   void ensureCarFields(Life& life);
@@ -1173,6 +1181,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // tier, sex and the coin that decides whether the card fires.
   Rng casinoCardRng_;
   Rng casinoMobRng_;  // the mob favour cards' own stream (REPORT.en.md 345)
+  Rng casinoGuestRng_;  // the punter cards' own stream (REPORT.en.md 347)
   // The car's damage roll, its part pick and the repair card's own draw (REPORT.en.md 323).
   Rng carRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)

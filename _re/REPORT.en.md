@@ -23536,6 +23536,115 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 347. The casino's three punter cards
+
+The casino's age-up pass keeps a small cast of regulars, and three of the cards it can
+deal are about them: one regular stops coming, and two are about the guest act the
+casino has booked - the regular who complains the act does not fit the house theme, and
+the regular who compliments the booking when it does.
+
+### The native side
+
+`ScenarioCasinoAgeUpGamblerLost`: `.ctor 0x3572d40`, `RefreshScenario 0x35725c4`,
+`ScenarioIsEligibleForRandomPush 0x3572af4`, pushed from `SimCasino::IncrementAge` at
+`0x2aacecc`. It overrides no choice handler, so it deals one button: `#32432 'OK'`.
+Eligibility reads the punters and needs one who has been coming for five years or more
+(`hero.Age[+0x20] - gambler[+0x308] >= 5`); the hero must be 18, out of prison, and
+`YearsSinceScenario(#37052 'ScenarioCasinoAgeUpGamblerLost') > 4`. Refresh drops a
+popularity point (`SimCasino::ImpactPopularity(-1)` at `0x3572740`), removes the punter
+(`SimCasino::RemoveGambler 0x2ab0004`), sets the title `#20989 'Gambler Lost'` and the
+body `FullName + #2297 ' has stopped gambling at your casino.'`. One row follows, keyed
+`#20993 'Gambling Style'`, with the style string capitalized; the two bars are
+`#30360 'Money'` and `#10777 'Addiction'`. Journal: `#30743 "My casino's gambler, "` +
+`FullName + #5863 ', stopped playing at my casino.'`.
+
+`ScenarioCasinoAgeUpGamblerComplaintCelebrity`: `.ctor 0x356d128`,
+`RefreshScenario 0x356c0f8`, `ChoiceSelectedAtIndex 0x356c61c`,
+`ScenarioIsEligibleForRandomPush 0x356cfec`, pushed at `0x2aacf50`. Eligibility: the
+guest must still be alive (`SimCasinoCelebrity+0x18`), the casino must have punters,
+`System.String::Equals(get_GenreData(celebrity)[+0x18], casino.Theme[+0x38], w2=5)` must
+be FALSE - the card only fires when the act's genre does not belong to the house theme -
+then age 18, not in prison, and `YearsSinceScenario(#37045) > 2`. Refresh seats a punter
+(`GetRandomNonMafiaGambler 0x2ab0c24`) and builds the body from `#50268 "Your casino's "`,
+the punter's relationship status (`#5282 ', '`), the punter's full name (`#5666 ',
+is complaining that '`), the guest's full name (`#4839 "'s "`), `#46`, the punter's
+pronoun (`#3304 ' saying '`), the guest's first name, `#4839` again, the act's genre
+(`#2794 " musical stylings don't fit the "`), the house theme (`#3556 " theme you're
+trying to establish.\n\nWhat will you do?"`). Title `#16066 'Complaint'`. The three
+labels are `#12770 'Ban '` + object pronoun + `#2104 ' from my casino'`,
+`#11554 'Apologize for the inconvenience'` and `#26366 'Ignore '` + object pronoun,
+dispatched by `Contains("ban")`, `Contains("apologize")`, `Contains("ignore")`. Banning
+removes the punter, drops two popularity points, pushes the banned-gambler feedback card
+(`#50001 "You're outta here"` over a snippet from
+`a16_casino-banned-gambler-snippet-enc`) and journals
+`#23602 + #5567 + #5282 + #6086 ',.'` - the literal hard-codes "she" and ends in a comma
+followed by a full stop. Apologizing adds two addiction, drops two popularity and adds
+one punter happiness, journaling `#23453 + #5551 + #5282 + #6312 '.'`. Ignoring takes two
+addiction away, adds two popularity and drops one happiness, journaling
+`#24467 + #4921 + #5282 + #6312 '.'`.
+
+`ScenarioCasinoAgeUpGamblerComplimentCelebrity`: `.ctor 0x35709f4`,
+`RefreshScenario 0x3570214`, `ChoiceSelectedAtIndex 0x3570678`,
+`ScenarioIsEligibleForRandomPush 0x35708b8`, pushed at `0x2aacf7c`. It is the same card
+with the comparison inverted - `Equals(get_GenreData(celebrity)[+0x18], theme)` must be
+TRUE - and a longer cooldown (`YearsSinceScenario(#37049) > 4`). The body is
+`#50268 + #5282 + #5669 ', is complimenting you for booking '` + guest full name +
+`#3732 ' to perform at your casino.'` + `#46` + the punter's capitalized pronoun
+(`#3309 ' says each performance is somehow better than the previous.\n\nWhat will you
+do?'`); title `#16100 'Compliment'`. Its three labels are `#41215 'Thank '`,
+`#21649 'Give '` + pronoun + `#3411 ' some free games'` and `#26366 'Ignore '`. Thanking
+takes one addiction, one popularity point and gives one happiness; giving free games adds
+two addiction, drops two popularity and adds two happiness; ignoring drops two
+popularity. This card writes no journal at all.
+
+The genre comparison is worth recording exactly: `get_GenreData 0x2c27354` returns the
+singer-genre record, and the field read for the comparison is that record's `+0x18`, its
+theme, not the genre word printed in the body (`SimCasinoCelebrity+0x318`). The shipped
+table keeps the two vocabularies apart - its 62 rows carry 8 themes (Hollywood, Medieval,
+Roman, anime, circus, outer space, pirate, speakeasy) and no genre name is also a theme
+name - so a comparison against the genre word itself would fire the complaint card every
+year and never the compliment. The port compares the same field.
+
+### The port
+
+`Sim::casinoGamblerLostYear`, `Sim::casinoCelebComplaintYear` and
+`Sim::casinoCelebComplimentYear` in `src/fam/casino.cpp`, registered as
+`casino-gambler-lost`, `casino-celeb-complaint` and `casino-celeb-compliment`, each with
+one ticket, and each drawing from its own stream `casinoGuestRng_` so the two older
+casino cards keep their sequences. The three cooldowns are kept on the hero
+(`casinoGamblerLostAge`, `casinoCelebComplaintAge`, `casinoCelebComplimentAge`). The
+punter is the port's regular, whose tier word comes from the five gambling styles the
+casino already tracks; the guest act is the one the casino's own celebrity event seats,
+and the port now keeps that act's genre and the genre's theme
+(`casinoCelebrityGenre`, `casinoCelebrityGenreTheme`) when the act appears, drawing both
+off `a16_casino-casino-singer-genre-enc`. The cards move the port's counters rather than
+the native's per-gambler records: `casinoGamblers`, `casinoPopularity`,
+`casinoGamblerAddiction` and `casinoGamblerHappiness`.
+
+A pinned family never sees the celebrity event that seats a guest, so the harness grows
+one key: `"casino_guest": "same"` seats a guest whose genre belongs to the house theme
+and `"diff"` one whose genre does not (`Sim::seedCasinoGuest`). It is a harness hook, not
+a game path.
+
+Ceilings: the port has no per-punter records, so the five-year spread the losing card
+needs becomes "the casino has regulars", and the money and addiction bars on that card
+are not drawn. The banned punter's feedback card and its snippet are not pushed - the
+journal carries the branch, as in sections 322 and 345. The complaint body's pronoun is
+type 9, which has no recovered argument order, so the port prints the lowercase subject.
+The guest's genre is a draw, not a field of a celebrity entity the port does not have.
+
+### Verified
+
+`_re/tools/test_casino_punter.py` walks twenty lives per card with a seeded casino. The
+losing card deals 27 times with the punter named in body and journal; the complaint card
+deals in all three lanes (15 bans, 15 apologies, 7 ignores) with the punter and guest
+matching between body and journal, and never when the guest's genre belongs to the house
+theme; the compliment card deals 31 times and never when the genre does not. Both
+celebrity cards respect their cooldowns (three years measured for the complaint) and
+move no visible stat.
+
+The full 135-test suite ran on the binary these notes describe (d1509fd5..., 135 PASS / 0 FAIL).
+
 ## 346. The zoo's theft card
 
 The park's animals can be stolen. This is the last of the zoo's own age-up cards; the

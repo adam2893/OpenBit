@@ -106,6 +106,10 @@ struct ScriptSpec {
   // Seed the casino pot so a test can reach the bankruptcy counter without
   // simulating decades of losing books (REPORT.en.md 320). 0 leaves it alone.
   long long casino_bank = 0;
+  // A guest act already in the house, so a test reaches the two celebrity punter
+  // cards without waiting for a visit (REPORT.en.md 347). "same" gives the act a
+  // genre equal to the house theme, "diff" a genre that does not match.
+  std::string casino_guest;
   long long zoo_bank = 0;
   bool cult = false;
   bool pet = false;

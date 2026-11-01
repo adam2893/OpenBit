@@ -663,6 +663,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       casinoRng_(seed ^ 0xd1b54a32d192ed03ULL),
       casinoCardRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0x9e3779b97f4a7c15ULL),
       casinoMobRng_(seed ^ 0xbb67ae8584caa73bULL ^ 0x9b05688c2b3e6c1fULL),
+      casinoGuestRng_(seed ^ 0xcbbb9d5dc1059ed8ULL ^ 0x629a292a367cd507ULL),
       carRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
@@ -4573,6 +4574,14 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::casinoMafiaInterrogYear,
          [](const Life& l) { return l.hero.ownsCasino && l.hero.mafia; }, 2,
          "casino-mafia-interrog"},
+        {&Sim::casinoGamblerLostYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-gambler-lost"},
+        {&Sim::casinoCelebComplaintYear,
+         [](const Life& l) { return l.hero.ownsCasino && !l.hero.casinoCelebrity.empty(); }, 1,
+         "casino-celeb-complaint"},
+        {&Sim::casinoCelebComplimentYear,
+         [](const Life& l) { return l.hero.ownsCasino && !l.hero.casinoCelebrity.empty(); }, 1,
+         "casino-celeb-compliment"},
         {&Sim::carRepairYear, [](const Life& l) { return l.hero.ownsCar; }, 3, "car"},
     };
     const size_t n = sizeof(kFamilies) / sizeof(kFamilies[0]);
