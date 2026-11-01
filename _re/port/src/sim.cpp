@@ -667,6 +667,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
+    zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
       landlordRng_(seed ^ 0x6a09e667f3bcc909ULL),
       petRng_(seed ^ 0xbb67ae8584caa73bULL),
       studioRng_(seed ^ 0x3c6ef372fe94f82bULL),
@@ -682,6 +683,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
+      officeCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
       schoolRng_(seed ^ 0xcbbb9d5dc1059ed8ULL),
       podRng_(seed ^ 0x165667b19e3779f9ULL),
       placeRng_(seed ^ 0x38d01377beb34b6dULL),
@@ -4837,6 +4839,22 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
 // [34, 0, 10, 12, 4, 16, 18, 14, 33, 8, 31, 2, 6] and the case bodies hold the
 // point values below. The score <= -6 case falls through to the epilogue with
 // w0 = -100. Score 0 draws one value: System.Random.Next(0,2) != 0 -> -1, else +1.
+// The compliment pool. a16_compliments-enc carries one row per compliment and a Gender
+// column that is blank (or "both") when the line suits anybody; GetRandomComplimentForGender
+// filters on that and picks one uniformly (REPORT.en.md 327, 328).
+size_t Sim::complimentRow(bool female, Rng& rng) {
+  if (!ensureTable("a16_compliments-enc")) return size_t(-1);
+  const Table& t = tbl("a16_compliments-enc");
+  std::vector<size_t> pool;
+  const std::string want = female ? "female" : "male";
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string g = trim(t.at(r, "Gender"));
+    if (g.empty() || g == want || g == "both") pool.push_back(r);
+  }
+  if (pool.empty()) return size_t(-1);
+  return pool[size_t(rng.below(uint32_t(pool.size())))];
+}
+
 int Sim::pointsForImpact(int score) {
   if (score > 6) score = 6;
   if (score < -6) score = -6;
@@ -10278,6 +10296,83 @@ std::string Sim::zooToken(const std::string& key) {
 // Ceiling: the native profit formula is not recovered, so the pass reuses the two
 // numbers section 65 already models -- the gate take and the upkeep -- and calls their
 // difference the year's profit.
+// The keeper's compliment card (REPORT.en.md 328). The native card is opened from the
+// keeper's entry in the zoo's employee list - a menu action, not a yearly set - so the port
+// offers it on the years the zoo family is asked for a card, on a coin of its own and with
+// its own stream. Its text reuses the employee literals verbatim, which is what the native
+// card does: the keeper is one of the zoo's employees.
+bool Sim::zooComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooEmployee.empty()) return false;
+  if (!zooKeeperRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_compliments-enc")) return false;
+  const Table& t = tbl("a16_compliments-enc");
+  const bool kf = h.zooEmployeeFemale;
+  // Pronoun type 5 is He/She and type 8 is he's/she's (REPORT.en.md 327).
+  const std::string shes = kf ? "she's" : "he's";
+  const std::string She = kf ? "She" : "He";
+  // The title is picked from four literals. The constructor stores #16110 "Complimentary"
+  // first and always overwrites it before the pick, so that line is dead in the native card.
+  static const char* kTitles[] = {"That's nice", "So sweet", "True love", "Big fan"};
+  const std::string title = kTitles[zooKeeperRng_.below(4)];
+  // The compliment the hero pays describes the keeper, so it is filtered on the keeper's gender.
+  const size_t row = complimentRow(kf, zooKeeperRng_);
+  if (row == size_t(-1)) return false;
+  const std::string what = t.at(row, "Compliment");
+  std::string body, narrative;
+  const uint32_t frame = zooKeeperRng_.below(3);
+  if (frame == 0) {
+    body = "You called your employee, " + h.zooEmployee + ", " + what + ".";
+    narrative = "I called my employee, " + h.zooEmployee + ", " + what + ".";
+  } else if (frame == 1) {
+    body = "You told your employee, " + h.zooEmployee + ", that " + shes + " " + what + ".";
+    narrative = "I told my employee, " + h.zooEmployee + ", that " + shes + " " + what + ".";
+  } else {
+    body = "You told your employee, " + h.zooEmployee + ", that you think " + shes + " " + what + ".";
+    narrative = "I told my employee, " + h.zooEmployee + ", that " + shes + " " + what + ".";
+  }
+  // A magnitude the card only ever showed in its own bar graph: GetRandomNumber(0, 95), then
+  // +5, or a draw of its own when the keeper's competence is under 20. The draws are kept so
+  // the stream stays the native one; the number itself has nowhere to go in the port.
+  const int magnitude = int(zooKeeperRng_.below(95));
+  (void)(h.zooEmployeeCompetence < 20 ? int(zooKeeperRng_.below(20)) : magnitude + 5);
+  // The relationship gate, drawn short-circuit so the stream matches: a strong bond passes on
+  // the bond alone, otherwise the keeper's competence has to beat its own draw.
+  const bool bond = h.zooEmployeeRel > 80 + int(zooKeeperRng_.below(21));
+  const bool skill = bond ? false : h.zooEmployeeCompetence > 70 + int(zooKeeperRng_.below(31));
+  if (bond || skill) {
+    h.zooEmployeeRel += 2 + int(zooKeeperRng_.below(2));
+    if (h.zooEmployeeRel > 100) h.zooEmployeeRel = 100;
+  }
+  // The keeper answers. The returned compliment describes the hero, so it is filtered on the
+  // hero's gender, and the two narrative lines end up in the same journal entry.
+  const size_t back = complimentRow(h.female, zooKeeperRng_);
+  if (back != size_t(-1)) {
+    const std::string c2 = t.at(back, "Compliment");
+    if (zooKeeperRng_.below(2) == 0) {
+      body += "\n\nYour employee, " + h.zooEmployee + ", called you " + c2 + "!";
+      narrative += "\n" + She + " called me " + c2 + ".";
+    } else {
+      body += "\n\nYour employee, " + h.zooEmployee + ", told you that you're " + c2 + "!";
+      narrative += "\n" + She + " told me that I'm " + c2 + ".";
+    }
+  }
+  // ImpactCompetence(1) moves the keeper's competence by the game's own impact conversion.
+  h.zooEmployeeCompetence += pointsForImpact(1);
+  if (h.zooEmployeeCompetence < 0) h.zooEmployeeCompetence = 0;
+  if (h.zooEmployeeCompetence > 100) h.zooEmployeeCompetence = 100;
+  out.table = "a16_compliments-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = narrative;
+  return true;
+}
+
 void Sim::zooRunYear(Life& life) {
   Hero& h = life.hero;
   if (!h.ownsZoo || h.zooLedgerYear == h.age) return;
@@ -10378,6 +10473,8 @@ bool Sim::zooBankruptYear(Life& life, AgeUp& out, int forcedChoice) {
 
 bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
+  // The keeper's card (328) rides this family's turns; the native card is a menu action.
+  if (zooComplimentYear(life, out, forcedChoice)) return true;
   Hero& h = life.hero;
   hero_ = &h;
   life_ = &life;
@@ -16188,6 +16285,83 @@ std::string Sim::officeToken(const std::string& token) {
   return std::string();
 }
 
+// The employee's feedback card (REPORT.en.md 329). It is the twin of the zoo keeper's card
+// (328): the native ScenarioEmployeeCompliment is built by the business employee's own menu row,
+// so it is offered from the office family's turns rather than from a wheel seat.
+bool Sim::employeeComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  if (!h.ofcManager || h.age < 18 || h.inPrison) return false;
+  if (h.ofcEmployee.empty()) return false;
+  if (!officeCompRng_.chance(0.10)) return false;
+  if (!ensureTable("a16_compliments-enc")) return false;
+  const Table& t = tbl("a16_compliments-enc");
+  const bool ef = h.ofcEmployeeFemale;
+  // Pronoun type 5 is He/She and type 8 is he's/she's (REPORT.en.md 327).
+  const std::string shes = ef ? "she's" : "he's";
+  const std::string She = ef ? "She" : "He";
+  // Four titles. The constructor's own #16110 "Complimentary" is overwritten before the pick and
+  // never survives, so it is dead in the native card.
+  static const char* kTitles[] = {"That's nice", "So sweet", "True love", "Big fan"};
+  const std::string title = kTitles[officeCompRng_.below(4)];
+  // The compliment the hero pays describes the employee, so it is filtered on their gender.
+  const size_t row = complimentRow(ef, officeCompRng_);
+  if (row == size_t(-1)) return false;
+  const std::string what = t.at(row, "Compliment");
+  std::string body, narrative;
+  const uint32_t frame = officeCompRng_.below(3);
+  if (frame == 0) {
+    body = "You called your employee, " + h.ofcEmployee + ", " + what + ".";
+    narrative = "I called my employee, " + h.ofcEmployee + ", " + what + ".";
+  } else if (frame == 1) {
+    body = "You told your employee, " + h.ofcEmployee + ", that " + shes + " " + what + ".";
+    narrative = "I told my employee, " + h.ofcEmployee + ", that " + shes + " " + what + ".";
+  } else {
+    body = "You told your employee, " + h.ofcEmployee + ", that you think " + shes + " " + what + ".";
+    narrative = "I told my employee, " + h.ofcEmployee + ", that " + shes + " " + what + ".";
+  }
+  // A magnitude the card only showed in its bar graph: GetRandomNumber(0, 95), then +5, or a draw
+  // of its own when the employee's competence is under 20. The draws stay so the stream matches.
+  const int magnitude = int(officeCompRng_.below(95));
+  (void)(h.ofcPerf < 20 ? int(officeCompRng_.below(20)) : magnitude + 5);
+  // The relationship gate: the employee's bond with the hero beats a draw, or failing that their
+  // competence does. The bond impact below is drawn on every new year, as the native card does.
+  const bool bond = h.ofcEmpRel > 80 + int(officeCompRng_.below(21));
+  const bool skill = bond ? false : h.ofcPerf > 70 + int(officeCompRng_.below(31));
+  h.ofcEmpRel += 2 + int(officeCompRng_.below(2));
+  if (h.ofcEmpRel > 100) h.ofcEmpRel = 100;
+  if (bond || skill) {
+    // The employee answers. The returned compliment describes the hero, so it is filtered on the
+    // hero's gender, and both narrative lines end up in the one journal entry.
+    const size_t back = complimentRow(h.female, officeCompRng_);
+    if (back != size_t(-1)) {
+      const std::string c2 = t.at(back, "Compliment");
+      if (officeCompRng_.below(2) == 0) {
+        body += "\n\nYour employee, " + h.ofcEmployee + ", called you " + c2 + "!";
+        narrative += "\n" + She + " called me " + c2 + ".";
+      } else {
+        body += "\n\nYour employee, " + h.ofcEmployee + ", told you that you're " + c2 + "!";
+        narrative += "\n" + She + " told me that I'm " + c2 + ".";
+      }
+    }
+  }
+  // ImpactMorale(1) and ImpactCompetence(1): the card moves both of the employee's work stats.
+  h.ofcMorale += pointsForImpact(1);
+  if (h.ofcMorale < 0) h.ofcMorale = 0;
+  if (h.ofcMorale > 100) h.ofcMorale = 100;
+  h.ofcPerf += pointsForImpact(1);
+  if (h.ofcPerf < 0) h.ofcPerf = 0;
+  if (h.ofcPerf > 100) h.ofcPerf = 100;
+  out.table = "a16_compliments-enc";
+  out.row_id = std::to_string(row + 1);
+  out.title = title;
+  out.body = body;
+  out.narrative = narrative;
+  return true;
+}
+
+
+
 bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ofcManager) return false;
@@ -16197,6 +16371,8 @@ bool Sim::officeYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &h;
   life_ = &life;
   officeLive_ = true;
+  // The employee's card (329) rides this family's turns; the native card is a menu row.
+  if (employeeComplimentYear(life, out, forcedChoice)) return true;
   // Every pool in the family speaks about somebody else: "<employee> has been
   // half-assing <his/her> work", "You told <employee> ... <he/she>'s out of
   // here". The pair is the employee's, not the hero's.
@@ -22861,16 +23037,6 @@ bool Sim::agentComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   // #38849 'She', #38862 "She's", #22979 'His' and #22825 'Her'.
   const std::string shes = af ? "she's" : "he's";
   const std::string She = af ? "She" : "He";
-  auto complimentRow = [&](bool female) -> size_t {
-    std::vector<size_t> pool;
-    const std::string want = female ? "female" : "male";
-    for (size_t r = 0; r < t.size(); ++r) {
-      const std::string g = trim(t.at(r, "Gender"));
-      if (g.empty() || g == want || g == "both") pool.push_back(r);
-    }
-    if (pool.empty()) return size_t(-1);
-    return pool[size_t(agentCompRng_.below(uint32_t(pool.size())))];
-  };
   // The card opens with GetRandomNumber(0, 95) whose result it throws away; the draw is
   // kept so this stream's sequence stays the native one.
   (void)agentCompRng_.below(95);
@@ -22878,7 +23044,7 @@ bool Sim::agentComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   // its own test is unrecovered, so the port weighs the agent's opinion instead.
   const bool will = agentCompRng_.below(100) < uint32_t(h.actorAgentOpinion < 1 ? 1 : h.actorAgentOpinion);
   const int w20 = will ? 80 + int(agentCompRng_.below(20)) : 10 + int(agentCompRng_.below(30));
-  const size_t row = complimentRow(af);
+  const size_t row = complimentRow(af, agentCompRng_);
   if (row == size_t(-1)) return false;
   const std::string compliment = t.at(row, "Compliment");
   static const char* kTitles[] = {"A joy to be around", "There's that smile", "Good natured"};
@@ -22920,7 +23086,7 @@ bool Sim::agentComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   // A warm agent compliments the hero back, and the returned line replaces the journal
   // entry. The third arm of GetRandomNumber(0, 2) is unreachable (next() is exclusive).
   if (w20 >= 51) {
-    const size_t back = complimentRow(h.female);
+    const size_t back = complimentRow(h.female, agentCompRng_);
     if (back != size_t(-1)) {
       const std::string c2 = t.at(back, "Compliment");
       if (agentCompRng_.below(2) == 0) narrative = She + " called me " + c2 + ".";

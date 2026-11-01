@@ -181,6 +181,7 @@ struct Hero {
   bool ofcEmployeeFemale = false;
   int ofcStaff = 3;          // how many people report to the hero
   int ofcMorale = 55;        // 0..100, what the staff think of the hero
+  int ofcEmpRel = 60;        // 0..100, the named employee's bond with the hero (329)
   int ofcPerf = 50;          // 0..100, the named employee's performance
   int ofcWarnings = 0;       // written warnings handed out to them
   int ofcYears = 0, ofcHires = 0, ofcFires = 0;
@@ -541,6 +542,7 @@ struct Hero {
   bool zooEmployeeFemale = false;
   std::string zooEmployeeRole;
   int zooEmployeeCompetence = 50;   // 0-100, gates the staff tables
+  int zooEmployeeRel = 60;          // 0-100, how the keeper feels about the hero (328)
   int zooStaff = 0;
   int zooAnimals = 0;
   int zooAttractions = 0;

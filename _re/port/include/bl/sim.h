@@ -698,6 +698,8 @@ class Sim {
   std::string mafiaRankTitle(const Hero& h, int rank);
   void ensureMafiaFields(Life& life);
   bool zooYear(Life& life, AgeUp& out, int forcedChoice);
+  // The zoo keeper's compliment card (REPORT.en.md 328).
+  bool zooComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   std::string zooToken(const std::string& key);
   std::string movieToken(const std::string& key);
   // The four place slots of a16_movies-enc, 0 non-children 1 children 2 comedy
@@ -747,6 +749,8 @@ class Sim {
                             const std::string& filterValue, const std::string& flagColumn);
   // The same two draws, but over a caller-supplied stream: every career keeps
   // its own Rng so one family's draws never shift another's sequence.
+  // The pool DataHub::GetRandomComplimentForGender builds: rows open to that gender.
+  size_t complimentRow(bool female, Rng& rng);
   size_t pickRow(const std::string& table, const std::string& weightColumn,
                  const std::string& filterColumn, const std::string& filterValue,
                  const std::string& flagColumn, Rng& rng);
@@ -942,6 +946,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // One prison year: a job line or a row of the prison dumb-scenario pool, then
   // the countdown and the release line. REPORT.en.md 45.
   bool prisonYear(Life& life, AgeUp& out, int forcedChoice);
+  // The employee's feedback card (REPORT.en.md 329).
+  bool employeeComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   bool officeYear(Life& life, AgeUp& out, int forcedChoice);
   std::string officeToken(const std::string& token);
   bool schoolYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1184,6 +1190,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng dealerRng_;
   Rng mafiaRng_;
   Rng zooRng_;
+  Rng zooKeeperRng_;  // the keeper compliment card's own stream
+  Rng officeCompRng_;  // the employee compliment card's own stream
   Rng landlordRng_;
   Rng petRng_;
   Rng outdoorRng_;

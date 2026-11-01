@@ -23536,6 +23536,229 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 329. The employee's feedback card
+
+The boss's own compliment card: ScenarioEmployeeCompliment is the business employee's version of the
+zoo keeper's card (328), bound to a SimEmployee and built by that employee's menu row. It reuses the
+same table, titles and frames as the zoo card - "your employee" is the native text - and adds one
+thing the zoo card does not have: an optional follow-up respect card, which is why this section also
+records that card's contract.
+
+### The native card
+
+* Class ScenarioEmployeeCompliment derives straight from Scenario: `.ctor` 0x73f39ce884,
+  RefreshScenario 0x73f39ce8b8, DismissSelected 0x73f39cf358. Fields `+0x170` the employee, `+0x178`
+  the narrative. The constructor stores the employee and sets ColorScheme 5.
+* RefreshScenario, in order:
+  1. feedback-style flags `+0x132` and `+0x133`, so no buttons; ContributeToCommunityGoal, which can
+     push a community-goal card in front of this one;
+  2. title: #16110 "Complimentary" is written first and then overwritten by a pick from #41423
+     "That's nice", #39352 "So sweet", #44059 "True love", #13459 "Big fan" - the default is dead;
+  3. the year cache: the employee's `+0x144` is synced to the current year, and if it already held
+     this year the magnitude is zeroed and both the relationship step and the return compliment are
+     skipped;
+  4. a magnitude of GetRandomNumber(0, 95), then +5, or GetRandomNumber(0, 20) when the employee's
+     competence (`+0x220`) is under 20 - shown only in the card's bar graph;
+  5. the compliment the hero pays: GetRandomComplimentForGender over the EMPLOYEE's EffectiveGender,
+     then GetRandomNumber(0, 3) picks the frame: #47960 "You called your employee, {0}, {1}." with
+     #23683 "I called my employee, {0}, {1}."; #49515 "You told your employee, {0}, that {1} {2}."
+     with #25268 "I told my employee, {0}, that {1} {2}."; #49514 "You told your employee, {0}, that
+     you think {1} {2}." over the same #25268. {0} is the employee's full name, {1} is
+     PronounStringForType(8), {2} the compliment;
+  6. the relationship gate: the employee's bond with the hero beats GetRandomNumber(80, 101), or
+     failing that the employee's competence beats GetRandomNumber(70, 101); the bond impact is
+     GetRandomNumber(2, 4) and is applied on every new year, gate or no gate;
+  7. the return compliment when the gate passed: GetRandomComplimentForGender over the HERO's
+     EffectiveGender, then GetRandomNumber(0, 2) - #50316 "Your employee, {0}, called you {1}!" with
+     #69883 "{0} called me {1}.", or #50317 "Your employee, {0}, told you that you're {1}!" with
+     #70323 "{0} told me that I'm {1}.";
+  8. the third arm of that roll builds a child Scenario titled #27734 "It's mutual" and stamps a
+     hero stat slot - and is DEAD CODE in 3.25.1, because GetRandomNumber is Next(min, max) and
+     never returns its upper bound (REPORT.en.md 23.4);
+  9. the optional respect card, only when the relationship gate failed: GetRandomNumber(0, 2) equal
+     to 0 and the employee's `+0x21c` beating GetRandomNumber(0, 101) chains a ScenarioEmployeeRespect
+     behind this card;
+  10. the bar graph: #69489 "{0} Appreciation" off PronounStringForType(6), value clamp(w, 5, 100),
+      overridden to GetRandomNumber(20, 100) when the mutual arm fired;
+  11. effects: the bond slot `+0x508` gets the drawn 2..3, then ImpactMorale(1) and
+      ImpactCompetence(1); the journal is the narrative through #68635 "{0}", and Life's
+      NumTimesComplimentedSomeone (`+0x3ac`) is incremented.
+* DismissSelected only writes the journal line; there are no choices.
+
+### The respect card this chain can push
+
+Recorded here because the compliment card is one of its callers, and recovered in the same pass:
+
+* ScenarioEmployeeRespect (`.ctor` 0x73f39d6df0, RefreshScenario 0x73f39d6e2c, ChoiceSelectedAtIndex
+  0x73f39d76e0, DismissSelected 0x73f39d7a68; fields `+0x170` employee, `+0x178` narrative, `+0x180`
+  is-reaction, ColorScheme 5). Created by the yearly business report (SimBusiness::CreateAnnualReport
+  0x73f3071620), by the employee bonus mini-game and by this card.
+* Title: #36052 "Respect" when pushed; when it is a reaction, a pick from #34362 "Positive
+  reinforcement", #28812 "Let's keep this up, huh?", #30537 "Much appreciated", #10093 "A little CEO
+  appreciation", #27547 "It just warms ya heart up".
+* Body: a row of a16_employee-respect-scenarios-enc (40 rows: Scenario, Log Version, Can Be
+  Reaction, Can Be Push, Score), drawn by DataHub::GetRandomEmployeeRespectScenarioForPushOrReaction
+  (0x73f2c884a0) in buckets on the employee's bond with the hero - 1 up to 20, 2 up to 40, 3 up to
+  60, 4 up to 80, 5 above - keeping rows whose Score matches the bucket and whose Can Be Push (or
+  Can Be Reaction) flag is set, then picking uniformly. Both cells are parsed: the Scenario cell is
+  the body, the Log Version cell the journal, with the `<employee>` token filled as "your employee,
+  <name>," in the body and "my employee, <name>," in the journal.
+* Four choices, in stored order: #21649 "Give " + Pronoun(2) + #1000 " a bonus", #35385
+  "Recognize ", #45990 "Warn ", #40891 "Take no action". "Bonus" opens ScenarioEmployeeBonus (its own
+  card), "Recognize" and "Warn" open plain Scenarios whose text is unrecovered, and "Take no action"
+  appends #348 "
+I ignored ", Pronoun(2), "." to the journal, takes a karma point
+  (ImpactKarma(-1)), docks the employee's `+0x408` slot by GetRandomNumber(1, 3) and drops their
+  morale by 3.
+* The bar graph is labelled #16054 "Competence" and shows the employee's competence; it stamps no
+  stat.
+
+### The port
+
+* `Sim::employeeComplimentYear` (src/sim.cpp) is offered at the top of `Sim::officeYear`, for the
+  same reason as the zoo card: the native card is a menu row and the port has no menus, so an office
+  year is sometimes the employee's card instead of a work card. Its own stream is
+  `officeCompRng_`; the coin is 0.10.
+* The named employee the office family already carries supplies the name and gender; the card only
+  needs the bond, so the hero gained `ofcEmpRel` (0-100, starting at 60). The employee's one work
+  stat in the port, `ofcPerf`, stands in for the competence the native card reads, and the card
+  moves it and the staff morale by `pointsForImpact(1)` (4 points each).
+* The frames, titles, gate, return compliment and journal join are transcribed; the shared
+  `Sim::complimentRow` helper (328) supplies the compliment pools for both genders.
+* The respect card and the dead third arm are not implemented; this section is where their contract
+  is recorded.
+
+### Ceilings
+
+* The card's frequency is a coin (0.10 per office-family turn), not a copied roll.
+* The year cache is not modelled: a year holds one card, so the equality branch cannot be reached.
+* The bar graph, its magnitude and the ColorScheme have no meaning outside the native UI: the draws
+  are kept so the stream stays native and the number is dropped.
+* The respect card is not pushed; the bonus, recognize and warn cards behind its choices are
+  unrecovered, and a port year cannot hold two cards anyway.
+* The employee's competence is the port's performance stat: the native card reads a separate
+  competence field the port does not carry.
+* NumTimesComplimentedSomeone and ContributeToCommunityGoal are not modelled.
+
+### Verified
+
+* 19 cards over 50 office lives (seeds 1-50): each is dismiss-only, titled from the four-title
+  pool, at age 18 or later, with every stat delta zero and a16_compliments-enc as its table.
+* All three frames appear (4 called, 5 told, 10 think) and one card carries the employee's return
+  compliment, with its second paragraph naming the same employee.
+* The journal is one entry: the mirror of what the hero said, and, when the employee answers, the
+  return line under it.
+* The row the card reports is an a16_compliments-enc row open to the employee's gender, and the
+  pronoun the frame uses agrees with the gender read off the return line.
+* A hero with no office job draws no card (control run, seed 3).
+
+The full 117-test suite ran on the binary these notes describe (8ee1dc66..., 117 PASS /
+0 FAIL). It covers both 328 and 329: no test outside these two sections changed.
+
+## 328. The zoo keeper's compliment card
+
+The zoo's keeper is a person the hero can talk to, and the game has one card for it: the same
+compliment the agent card (327) pays, bound to the keeper instead. It is not pushed by a yearly
+set - the zoo employee's relationship list builds it - but its text and its effects are readable,
+and the port already has a named keeper. This section ports
+ScenarioZooEmployeeComplimentFeedback.
+
+### The native card
+
+* Class ScenarioZooEmployeeComplimentFeedback derives straight from Scenario: `.ctor` 0x73f2e5ec94,
+  RefreshScenario 0x73f2e5ecc0, DismissSelected 0x73f2e5f6a4. The constructor stores the keeper
+  at `+0x170` and nothing else: unlike the employee twin it never sets a colour scheme.
+* Title: picked from #41423 "That's nice", #39352 "So sweet", #44059 "True love", #13459
+  "Big fan". The constructor first stores #16110 "Complimentary" and that value is always
+  overwritten before the pick, so it is dead in 3.25.1.
+* RefreshScenario, in order:
+  1. feedback-style flags `+0x132` and `+0x133` (collapse open lists on dismiss), so no buttons;
+  2. the year caches: the hero's age is written into the keeper's `+0x320` unconditionally and into
+     `+0x144` when it differs - `+0x144` is SimPerson's own
+     "hero age at last compliment" field, the same one the agent card uses;
+  3. SeasonsObjectiveController::ContributeToCommunityGoal, which pushes the card to the front of
+     the queue - no stat moves;
+  4. the compliment the hero pays: DataHub::GetRandomComplimentForGender over the KEEPER's
+     EffectiveGender, then GetRandomNumber(0, 3) picks the frame:
+     #47960 "You called your employee, {0}, {1}." with #23683 "I called my employee, {0}, {1}.";
+     #49515 "You told your employee, {0}, that {1} {2}." with #25268 "I told my employee, {0}, that
+     {1} {2}."; #49514 "You told your employee, {0}, that you think {1} {2}." over the same #25268.
+     {0} is SimPersonName::FullName and the pronoun is PronounStringForType(8) - he's/she's;
+  5. a magnitude the card only shows in its bar graph: GetRandomNumber(0, 95), then +5, or
+     GetRandomNumber(0, 20) when the keeper's competence is under 20;
+  6. the year gate: if the cached hero age equals this year, the magnitude is zeroed and both the
+     relationship step and the return compliment are skipped - the card still shows;
+  7. the relationship gate: the keeper's bond with the hero above GetRandomNumber(80, 101), or the
+     keeper's competence above GetRandomNumber(70, 101); passing re-draws the magnitude as
+     GetRandomNumber(2, 4) and that draw is what the relationship slot `+0x508` receives;
+  8. the return compliment, filtered on the HERO's EffectiveGender, then GetRandomNumber(0, 2):
+     #69883 "{0} called me {1}." or #70323 "{0} told me that I'm {1}.", with the body gaining
+     #50316 "Your employee, {0}, called you {1}!" or #50317 "Your employee, {0}, told you that
+     you're {1}!" over CapitalizeString(FullName);
+  9. the mutual branch: the journal becomes #69343 "{0}\n{1}" over the two narrative lines, and a
+     child Scenario titled #27734 "It's mutual" is pushed;
+  10. the bar graph: #69489 "{0} Appreciation" off PronounStringForType(6), value clamp(w, 5, 100),
+      overridden to GetRandomNumber(20, 100) in the mutual branch.
+* Effects: the relationship slot `+0x508` (armed only when the magnitude is at least 1), and
+  SimZooEmployee::ImpactCompetence(1) clamped to 0..100 - and nothing else: no morale, no
+  achievement, no grant. Life's NumTimesComplimentedSomeone (`+0x3ac`) is incremented on every
+  refresh.
+* The only caller of the constructor is LifeInterface::GetZooEmployeeRelationshipList: the card is
+  a menu item on the keeper's row, labelled #16100 "Compliment" / #16101 "Compliment " + the
+  keeper's PronounStringForType(2). There is no yearly zoo push and no activity.
+* Dead code: the third arm of the GetRandomNumber(0, 2) roll - Next(min, max) never returns max
+  (REPORT.en.md 23.4) - and the title the constructor overwrites.
+* The card reuses the EMPLOYEE literals verbatim, "your employee" and all; that is the native text,
+  not a port shortcut.
+
+### The port
+
+* `Sim::zooComplimentYear` (src/sim.cpp) is offered at the top of `Sim::zooYear`, because the native
+  card is a menu action and the port has no menus: a zoo year is sometimes the keeper's card and
+  sometimes the park's. Its own stream is `zooKeeperRng_`.
+* The hero has to own the zoo, be 18 or older, not be in prison, and have a keeper: the keeper is
+  drawn when the zoo is bought (name, gender, role, competence) and cleared if the zoo is sold.
+* `Sim::complimentRow` holds the pool both this card and 327 draw from: the rows of
+  a16_compliments-enc whose Gender column is blank, "both" or the gender asked for.
+* The keeper's gender and name are the zoo's own fields. The three frames, the four titles, the
+  relationship gate, the return compliment's two forms and the journal join are transcribed; the
+  competence nudge is `pointsForImpact(1)` (4 points), the port's own conversion for the game's
+  AttributeAdjustmentPointsForImpactScore.
+* The relationship slot is a new hero field, `zooEmployeeRel`, starting at 60.
+
+### Ceilings
+
+* The card's frequency is a coin (0.06 per zoo-family turn), not a copied roll: nothing in the
+  binary pushes the card with a GetRandomNumber.
+* The year cache is not modelled: a year can hold only one card, so the equality branch - which
+  would suppress the band and the return compliment - cannot be reached.
+* The bar graph and its magnitude have no meaning outside the card's own UI: the draws are kept so
+  the stream stays native, the number and the label are dropped.
+* The mutual branch's child card ("It's mutual") is not pushed, and the hero stat slot it stamps
+  (`+0x408`, identity unrecovered) is not moved; the journal keeps both lines, which is what the
+  mutual branch does.
+* The relationship slot's identity is unrecovered; the port reads it as the keeper's bond and moves
+  it by the drawn 2..3 when the gate passes.
+* ContributeToCommunityGoal, NumTimesComplimentedSomeone, and the life counter it would feed are
+  not modelled - the port keeps no community goals and no such counter.
+
+### Verified
+
+* 133 cards over 40 zoo lives (seeds 1-40, zoo bought, zoo family only): every card is
+  dismiss-only (`choice` null), titled from the four-title pool, at age 18 or later, with all stat
+  deltas zero, and its table is a16_compliments-enc.
+* All three frames appear (44 called, 44 told, 45 think), and both return-compliment forms (63
+  called, 70 told), with the body's second paragraph naming the same keeper.
+* The keeper's compliment is a row open to the keeper's gender, and the gender read off the
+  return line ("She called me..." / "He told me that I'm...") agrees with the pronoun in the
+  frame that carries one.
+* The journal is one entry holding both lines: the mirror of what the hero said, then the keeper's
+  return line.
+* A hero with no zoo draws no card at all (control run, seed 3).
+
+The full 117-test suite ran on the binary these notes describe (8ee1dc66..., 117 PASS /
+0 FAIL). It covers both 328 and 329: no test outside these two sections changed.
+
 ## 327. The agent's feedback card
 
 Actors can hire an agent (325's neighbour code), and the adult game has exactly one card where
