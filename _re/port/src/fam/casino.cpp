@@ -1620,6 +1620,70 @@ bool Sim::casinoExpandYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::casinoInstallGameYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoInstallGameAge >= 0 && h.age - h.casinoInstallGameAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_casino-casino-game-room-enc")) return false;
+  const Table& games = tbl("a16_casino-casino-game-room-enc");
+  // The structure row carries the room capacity; the hero only stores the name.
+  int cap = 3;
+  if (!h.casinoStructure.empty() && ensureTable("a16_casino-casino-structure-enc")) {
+    const Table& st = tbl("a16_casino-casino-structure-enc");
+    for (size_t r = 0; r < st.size(); ++r) {
+      if (lower(trim(st.at(r, "Structure Type"))) != lower(h.casinoStructure)) continue;
+      if (st.has("Game Room Capacity")) cap = int(st.num(r, "Game Room Capacity"));
+      break;
+    }
+  }
+  if (int(h.casinoRooms.size()) >= cap) return false;  // no empty game room left
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < games.size(); ++r) {
+    const std::string g = trim(games.at(r, "Game"));
+    if (g.empty()) continue;
+    bool built = false;
+    for (const Hero::CasinoRoom& room : h.casinoRooms)
+      if (lower(room.game) == lower(g)) { built = true; break; }
+    if (!built) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[casinoMenuRng_.below(uint32_t(pool.size()))];
+  const long long cost = games.has("Installation Cost") ? (long long)games.num(row, "Installation Cost") : 0;
+  if (cost > h.casinoBank) return false;
+  const std::string game = trim(games.at(row, "Game"));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoInstallGameAge = h.age;
+  h.casinoBank -= cost;
+  Hero::CasinoRoom room;
+  room.game = game;
+  room.unitString = games.has("Unit String") ? trim(games.at(row, "Unit String")) : "table";
+  room.baseCapacity = games.has("Base Unit Capacity") ? int(games.num(row, "Base Unit Capacity")) : 1;
+  room.costPerUnit = games.has("Cost Per Unit") ? int(games.num(row, "Cost Per Unit")) : 0;
+  room.installationCost = int(cost);
+  room.defaultHouseWinRate = games.has("Default House Win Rate") ? int(games.num(row, "Default House Win Rate")) : 50;
+  room.houseWinRate = room.defaultHouseWinRate;
+  room.minBet = games.has("Min Bet") ? int(games.num(row, "Min Bet")) : 10;
+  room.maxBet = games.has("Max Bet") ? int(games.num(row, "Max Bet")) : 100;
+  h.casinoRooms.push_back(room);
+  h.casinoGames.push_back(game);
+  out.table = "registry:ScenarioCasinoInstallGame";
+  out.title = "Game Room";  // #20997
+  out.body = "Install a casino game in your empty game room today!";  // #26763
+  out.body += "\n\nCasino: " + h.casinoName;
+  out.body += "\nGame: " + game;                                // #20994
+  out.body += "\nInstallation Cost: " + money(cost);            // #26778
+  out.body += "\nAvailable Funds: " + money(h.casinoBank);      // #12534
+  out.options = {"OK"};                                        // #32432
+  out.choice = "OK";
+  return true;
+}
+
 bool Sim::casinoInvestYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

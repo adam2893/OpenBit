@@ -4586,6 +4586,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-admission"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
+        {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-install-attraction"},
         {&Sim::zooInvestYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-invest"},
         {&Sim::zooHabitatYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -4661,6 +4663,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-rename"},
         {&Sim::casinoInvestYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-invest"},
+        {&Sim::casinoInstallGameYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-install-game"},
         {&Sim::casinoExpandYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-expand"},
         {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
@@ -9005,10 +9009,13 @@ void Sim::ensureCasinoFields(Life& life) {
     }
   }
   if (h.casinoGames.empty() && ensureTable("a16_casino-casino-game-room-enc")) {
+    // One game room is left empty on purchase: the install card (REPORT.en.md
+    // 383) fills that slot, and a structure upgrade opens another one.
+    const int seedCeil = gameCap > 1 ? gameCap - 1 : 1;
     const Table& t = tbl("a16_casino-casino-game-room-enc");
     std::vector<size_t> pool;
     for (size_t r = 0; r < t.size(); ++r) pool.push_back(r);
-    for (int slot = 0; slot < gameCap && !pool.empty(); ++slot) {
+    for (int slot = 0; slot < seedCeil && !pool.empty(); ++slot) {
       const size_t at = casinoRng_.below(uint32_t(pool.size()));
       const size_t row = pool[at];
       const std::string g = trim(t.at(row, "Game"));
@@ -11490,6 +11497,49 @@ bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
   if (upkeep > 0) out.body += " | Annual Upkeep: " + money(upkeep);
   out.options = {"Build Habitat"};                                          // #14097
   out.choice = "Build Habitat";
+  return true;
+}
+
+bool Sim::zooInstallAttractionYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooAttractionAge >= 0 && h.age - h.zooAttractionAge < 4) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_zoo-attractions-enc")) return false;
+  const Table& t = tbl("a16_zoo-attractions-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string name = trim(t.at(r, "Attraction Name"));
+    if (name.empty()) continue;
+    bool built = false;
+    for (const std::string& have : h.zooAttractionNames)
+      if (lower(have) == lower(name)) { built = true; break; }
+    if (!built) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t row = pool[zooMenuRng_.below(uint32_t(pool.size()))];
+  const long long cost = t.has("Installation Cost") ? (long long)t.num(row, "Installation Cost") : 0;
+  if (cost > h.zooBank) return false;
+  const std::string name = trim(t.at(row, "Attraction Name"));
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooAttractionAge = h.age;
+  h.zooBank -= cost;
+  h.zooAttractions += 1;
+  h.zooAttractionNames.push_back(name);
+  out.table = "registry:ScenarioZooAttractionInstall";
+  out.title = "Zoo";  // #50857
+  out.body = "Install a new attraction at your zoo today!";  // #26765
+  out.body += "\n\nZoo: " + h.zooName;
+  out.body += "\nAttraction: " + name;                            // #12442
+  out.body += "\nInstallation Cost: " + money(cost);              // #26778
+  out.body += "\nZoo's Current Capital: " + money(h.zooBank);     // #50873
+  out.options = {"OK"};                                          // #32432
+  out.choice = "OK";
   return true;
 }
 

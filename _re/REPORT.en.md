@@ -23511,6 +23511,39 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 383. The two install cards
+
+The full 166-test suite ran on the binary these notes describe (a0fa50f7de8a3c3dad90..., 166 PASS / 0 FAIL): _re/tools/test_install_cards.py exercises both cards and nothing else moved.
+
+Both businesses install their stock from a menu row, and both bodies were
+recovered: `#26763 'Install a casino game in your empty game room today!'` and
+`#26765 'Install a new attraction at your zoo today!'`. The rows were not, so the
+port prints those bodies with the labels its sibling menu cards already carry --
+`#20997 'Game Room'` as the casino card's title with `#15240 'Casino'`-style name
+row replaced by the property line, `#20994 'Game'`, `#12442 'Attraction'`, the
+shared `#26778 'Installation Cost'`, `#12534 'Available Funds'` / `#50873 "Zoo's
+Current Capital"` and the generic `#32432 'OK'` -- and writes no journal.
+
+The casino card needs an empty game room. Purchasing a casino now seeds all but
+one of the structure's `Game Room Capacity` slots, which is the state the menu row
+exists for; a structure upgrade (REPORT.en.md 378) opens another one. The card
+draws the installation cost from `a16_casino-casino-game-room-enc`, refuses when
+the pot cannot cover it, and otherwise debits the pot and installs the full room
+record the economy already understands -- unit string, capacity, cost per unit,
+default house win rate, bet band. The zoo card does the same from
+`a16_zoo-attractions-enc`: no duplicate attractions, debit `Installation Cost`,
+raise the attraction count.
+
+`shortcut:` the attraction's `Annual Upkeep Cost` column is not charged; the zoo
+economy already carries a flat upkeep per attraction (REPORT.en.md 321), and
+adding a second one would double-count the same row. Neither card's own narrative
+sentence was recovered.
+
+`_re/tools/test_install_cards.py` sweeps eighty casino owners in only-mode and
+forty zoo owners normally: every card must carry the recovered body with a real
+property name, the drawn game or attraction name, a dollar installation cost and
+the `OK` answer. It prints `casino game cards: 19 | zoo attraction cards: 4`.
+
 ## 382. The casino's invest card
 
 The full 164-test suite ran on the binary these notes describe (ad431be8b2adf220dbec..., 164 PASS / 1 FAIL). The failure was test-side: _re/tools/test_vehicle_purchase.py stopped sweeping as soon as the spousal reaction appeared, which now happens on the first seed, so it never reached its three purchases; it walks until both halves are satisfied now and printed 3 purchases with 2 reactions afterwards, without a code change.

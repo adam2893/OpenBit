@@ -543,6 +543,8 @@ struct Hero {
   int casinoThemeAge = -1;               // the year the theme card fired (375)
   int casinoRenameAge = -1;             // the year the rename card fired (376)
   int casinoInvestAge = -1;  // the invest card's cooldown (REPORT.en.md 382)
+  int casinoInstallGameAge = -1;  // the install card's cooldown (383)
+  int zooAttractionAge = -1;      // the attraction install card's cooldown (383)
   int casinoExpandAge = -1;             // the year the expand card fired (378)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
@@ -628,6 +630,7 @@ struct Hero {
   int zooInvestAge = -1;          // the year the zoo invest card fired (377)
   int zooHabitatAge = -1;         // the year the habitat card fired (379)
   std::vector<std::string> zooHabitats;  // '<name> (<type>)' per habitat built (379, 380)
+  std::vector<std::string> zooAttractionNames;  // one name per installed attraction (383)
   int zooDemolishAge = -1;        // the year the demolish card fired (380)
   bool zooSellArmed = false;          // harness hook: offer the zoo sale card (381)
   bool casinoSellArmed = false;       // harness hook: offer the casino sale card (381)
