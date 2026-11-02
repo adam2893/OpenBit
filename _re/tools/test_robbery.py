@@ -53,7 +53,7 @@ wins = 0
 busts = 0
 charges = 0
 cut = 0
-for seed in range(1, 61):
+for seed in range(1, 91):  # widened when REPORT 387 comment-card family joined the wheel
     doc = run(seed)
     events = doc["events"]
     for index, event in enumerate(events):

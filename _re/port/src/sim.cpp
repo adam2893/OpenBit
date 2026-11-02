@@ -4586,6 +4586,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-admission"},
         {&Sim::zooSupplierYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-supplier"},
+        {&Sim::zooCommentCardYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-comment-card"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
         {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11630,6 +11632,61 @@ bool Sim::zooRenameYear(Life& life, AgeUp& out, int forcedChoice) {
 // " to become the new supplier for my " + the zoo's name + #3629. The supplier is
 // what sets the per-animal food line the yearly ledger charges, which is the fixed
 // cost the body promises to move (REPORT.en.md 386).
+// The zoo's comment card (ScenarioZooCommentCard). Title #15992 'Comment Card', body
+// #36160 'Review comment cards left by your zoo's patrons to see what attraction would
+// appeal to them today!', row #19090 'Estimated Install Cost', answers #26771 'Install
+// it' and #26371 'Ignore it', and the two journals: #23624 while the hero reads the
+// cards, and #10274 'A zoo patron suggested I install ' when the attraction goes up.
+// The card itself comes from a16_zoo-comment-card-color-enc (Snippet, Attraction Type,
+// Commonness Score); the price is that attraction's Installation Cost in
+// a16_zoo-attractions-enc (REPORT.en.md 387).
+bool Sim::zooCommentCardYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooCommentAge >= 0 && h.age - h.zooCommentAge < 3) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.07)) return false;
+  if (!ensureTable("a16_zoo-comment-card-color-enc")) return false;
+  if (!ensureTable("a16_zoo-attractions-enc")) return false;
+  const Table& cards = tbl("a16_zoo-comment-card-color-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < cards.size(); ++r)
+    if (!trim(cards.at(r, "Attraction Type")).empty()) pool.push_back(r);
+  if (pool.empty()) return false;
+  const size_t row = pool[zooMenuRng_.below(uint32_t(pool.size()))];
+  const std::string snippet = resolve(trim(cards.at(row, "Snippet")));
+  const std::string type = lower(trim(cards.at(row, "Attraction Type")));
+  if (snippet.empty() || type.empty()) return false;
+  const Table& att = tbl("a16_zoo-attractions-enc");
+  size_t arow = size_t(-1);
+  for (size_t r = 0; r < att.size(); ++r)
+    if (lower(trim(att.at(r, "Attraction Name"))) == type) { arow = r; break; }
+  if (arow == size_t(-1)) return false;
+  const long long cost = (long long)att.num(arow, "Installation Cost");
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooCommentAge = h.age;
+  out.table = "registry:ScenarioZooCommentCard";
+  out.title = "Comment Card";  // #15992
+  out.body = "Review comment cards left by your zoo's patrons to see what attraction would appeal to them today!";  // #36160
+  out.body += "\n\n" + snippet;
+  out.body += "\n\nAttraction: " + type;
+  out.body += "\nEstimated Install Cost: " + money(cost);  // #19090
+  out.options = {"Install it", "Ignore it"};  // #26771 / #26371
+  const int pick = forcedChoice < 0 ? int(zooMenuRng_.below(2)) : (forcedChoice > 1 ? 1 : forcedChoice);
+  out.choice = out.options[size_t(pick)];
+  out.narrative = "I began reviewing comment cards for ideas about which zoo attraction I should install.";  // #23624
+  if (pick == 0 && h.zooBank >= cost) {
+    h.zooBank -= cost;
+    h.zooAttractions += 1;
+    h.zooEngagement = h.zooEngagement < 97 ? h.zooEngagement + 3 : 100;
+    out.extra.push_back("A zoo patron suggested I install " + type + ".");  // #10274
+  }
+  return true;
+}
+
 bool Sim::zooSupplierYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

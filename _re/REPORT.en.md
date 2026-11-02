@@ -23511,6 +23511,34 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 387. The zoo's comment card
+
+A patron's suggestion was recovered whole: title `#15992 'Comment Card'`, body
+`#36160 'Review comment cards left by your zoo's patrons to see what attraction would
+appeal to them today!'`, row `#19090 'Estimated Install Cost'`, answers `#26771
+'Install it'` and `#26371 'Ignore it'`, plus the two journal lines -- `#23624 'I began
+reviewing comment cards for ideas about which zoo attraction I should install.'` as the
+card's own line and `#10274 'A zoo patron suggested I install '` when the attraction
+goes up.
+
+The patron's words come from `a16_zoo-comment-card-color-enc` (columns `Snippet`,
+`Attraction Type`, `Commonness Score`; 84 data rows, and every one of the 21 types is a
+real row of `a16_zoo-attractions-enc`, so the price row is that attraction's own
+`Installation Cost` rather than a figure of the port's own). The card fires every three
+years at most and installs nothing unless the zoo's pot covers the quote; a rejected
+quote leaves the pot alone.
+
+`shortcut:` the port installs the suggested attraction straight from the card instead of
+routing through the attraction menu (there is no menu layer), so the attraction is
+counted as one more attraction and bumps engagement by three rather than opening the
+install screen with the type preselected.
+
+`_re/tools/test_zoo_comment_card.py` sweeps forty zoo owners in only-mode, rebuilds the
+body from the recovered text, checks the title and both answers, and splits the two
+journals: `comment cards: 58 | installs: 27 | ignores: 31`.
+
+The full 169-test suite ran on the binary these notes describe (e9424ce29d4f1626d87c..., 169 PASS / 1 FAIL). The single failure was test_robbery's card floor: the new family's wheel ticket cost it one heist over forty seeds, so the sweep was widened to ninety seeds and re-run green (picks: 10, wins: 6, caught: 4). No code changed.
+
 ## 386. The zoo's food supplier row
 
 The food supplier row had its body, all four labels and its journal recovered: body
