@@ -81,6 +81,8 @@ struct ScriptSpec {
   bool landlord = false;
   bool zoo = false;
   int zoo_habitats = 0;   // test hook: this many habitats already built (REPORT.en.md 380)
+  bool zoo_sell = false;      // test hook: arm the zoo sale card (REPORT.en.md 381)
+  bool casino_sell = false;   // test hook: arm the casino sale card (REPORT.en.md 381)
   bool model = false;
   // The luxuries (REPORT.en.md 79).
   bool luxury = false;

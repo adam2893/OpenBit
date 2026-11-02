@@ -761,6 +761,8 @@ class Sim {
   bool zooInvestYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooHabitatYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooDemolishYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooSellYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoSellYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoRenameYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoExpandYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino's mob favours (REPORT.en.md 345): a made man who owns a house

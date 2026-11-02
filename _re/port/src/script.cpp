@@ -474,6 +474,20 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("zoo is not a boolean");
   }
 
+  p = findValue(json, "zoo_sell");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.zoo_sell = true;
+    else return fail("zoo_sell is not true");
+  }
+
+  p = findValue(json, "casino_sell");
+  if (p != std::string::npos) {
+    skipWs(json, p);
+    if (p + 4 <= json.size() && json.compare(p, 4, "true") == 0) spec.casino_sell = true;
+    else return fail("casino_sell is not true");
+  }
+
   p = findValue(json, "zoo_habitats");
   if (p != std::string::npos) {
     long long v = 0;
@@ -1066,6 +1080,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.fight) sim.makeFighter(life);
   if (spec.black_market) sim.makeBlackMarketeer(life);
   if (spec.casino) {
+    if (spec.casino_sell) life.hero.casinoSellArmed = true;
     sim.makeCasino(life);
     // Harness hook: a seeded pot lets a test drive the bankruptcy counter
     // without simulating decades of losing books (REPORT.en.md 320).
@@ -1090,6 +1105,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     // Harness hook: pre-build habitats so the demolish card can be reached without
     // the build card (REPORT.en.md 380).
     if (spec.zoo_habitats > 0) sim.seedZooHabitats(life, spec.zoo_habitats);
+    if (spec.zoo_sell) life.hero.zooSellArmed = true;
   }
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);

@@ -628,6 +628,8 @@ struct Hero {
   int zooHabitatAge = -1;         // the year the habitat card fired (379)
   std::vector<std::string> zooHabitats;  // '<name> (<type>)' per habitat built (379, 380)
   int zooDemolishAge = -1;        // the year the demolish card fired (380)
+  bool zooSellArmed = false;          // harness hook: offer the zoo sale card (381)
+  bool casinoSellArmed = false;       // harness hook: offer the casino sale card (381)
   int zooVisitorsLastYear = 0;   // the visitors the last ledger year's gate sold for (373)
   long long zooMoney = 0;        // the takings this year
   // The zoo's own books (REPORT.en.md 321): a pot the takings and the upkeep are

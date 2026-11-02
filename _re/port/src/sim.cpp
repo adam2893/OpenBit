@@ -4712,7 +4712,11 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
       }
       return false;
     }
-    // A conviction and a prison year are year events, not cards: they take the year
+    // The two sale cards are armed one-shot menu actions: a sale ends the business,
+  // so they run before the wheel and never return (REPORT.en.md 381).
+  if (forcedChoice < 0 && zooSellYear(life, out, forcedChoice)) return true;
+  if (forcedChoice < 0 && casinoSellYear(life, out, forcedChoice)) return true;
+  // A conviction and a prison year are year events, not cards: they take the year
     // ahead of the wheel, which used to starve both (30 lives gave one prison year, so
     // the prison family's own cards had no window). The scripted lanes keep priority
     // because a forced card is the caller's, not the year's (REPORT.en.md 259).
@@ -11277,6 +11281,93 @@ void Sim::zooRunYear(Life& life) {
 // park loses one attraction (so the yearly upkeep and the gate's visitors fall by
 // the same rule section 65 already models) and nothing is refunded, because no
 // refund flow was recovered.
+// ScenarioZooSell (REPORT.en.md 381): the zoo menu's sale row. Recovered body:
+// #44160 'Try to sell your zoo today!'. The card's rows, answer and price flow
+// were not recovered, so it reuses row #50857 'Zoo' with the park's name and
+// #50873 "Zoo's Current Capital" with the pot, and the generic #32432 'OK'.
+//
+// shortcut: the native card is menu-only, and a sale ends the zoo, so no age-up
+// would ever deal it. The port keeps that shape and offers the family only when a
+// harness arms it (spec key zoo_sell), never on the wheel. The proceeds are the
+// zoo's own pot -- nothing is invented on top of it -- and everything the park
+// held is cleared.
+bool Sim::zooSellYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.zooSellArmed || !h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  const long long proceeds = h.zooBank;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooSellArmed = false;
+  h.ownsZoo = false;
+  h.money += proceeds;
+  h.zooBank = 0;
+  h.zooNegativeYears = 0;
+  h.zooBankruptQueued = false;
+  h.zooHerd.clear();
+  h.zooHerdSeeded = false;
+  h.zooHabitats.clear();
+  h.giftShop.clear();
+  h.zooAnimals = 0;
+  h.zooAttractions = 0;
+  out.table = "registry:ScenarioZooSell";
+  out.title = "Zoo";  // #50857
+  out.body = "Try to sell your zoo today!";  // #44160
+  out.body += "\n\nZoo: " + h.zooName;                     // #50857
+  out.body += "\nZoo's Current Capital: " + money(proceeds);  // #50873
+  out.options = {"OK"};  // #32432
+  out.choice = "OK";
+  return true;
+}
+
+// ScenarioCasinoSell (REPORT.en.md 381): the casino menu's sale row. Recovered
+// body: #44157 'Try to sell your casino today!'. Rows come from the labels the
+// casino's other menu cards carry -- #15240 'Casino' and #12534 'Available
+// Funds' -- and the generic #32432 'OK'; the price flow was not recovered, so the
+// proceeds are the casino's pot and nothing else.
+//
+// shortcut: menu-only and final, so the family is armed by the harness
+// (spec key casino_sell) and never rides the wheel, for the same reason as the
+// zoo's card above.
+bool Sim::casinoSellYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.casinoSellArmed || !h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  const long long proceeds = h.casinoBank;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoSellArmed = false;
+  h.ownsCasino = false;
+  h.money += proceeds;
+  h.casinoBank = 0;
+  h.casinoStructure.clear();
+  h.casinoTheme.clear();
+  h.casinoType = 1;
+  h.casinoCelebrity.clear();
+  h.casinoCelebContract = 0;
+  h.casinoCelebSalary = 0;
+  h.casinoAct.clear();
+  h.casinoActType.clear();
+  h.casinoActTheme.clear();
+  h.casinoAmenities.clear();
+  h.casinoAmenityMonthly.clear();
+  h.casinoAmenityTheme.clear();
+  out.table = "registry:ScenarioCasinoSell";
+  out.title = "Casino";  // #15240
+  out.body = "Try to sell your casino today!";  // #44157
+  out.body += "\n\nCasino: " + h.casinoName;               // #15240
+  out.body += "\nAvailable Funds: " + money(proceeds);     // #12534
+  out.options = {"OK"};  // #32432
+  out.choice = "OK";
+  return true;
+}
+
 bool Sim::zooDemolishYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

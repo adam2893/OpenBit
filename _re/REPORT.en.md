@@ -23511,6 +23511,39 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 381. The two sale cards
+
+The full 164-test suite ran on the binary these notes describe (79a207d2d1d3e94b20c4..., 164 PASS / 0 FAIL): _re/tools/test_business_sale.py exercises both armed cards and nothing else moved.
+
+Both businesses have a sale row in their menu, and both cards' bodies were
+recovered: `#44160 'Try to sell your zoo today!'` for `ScenarioZooSell` and
+`#44157 'Try to sell your casino today!'` for `ScenarioCasinoSell`. Nothing else
+was: no rows, no answer labels, no price flow. The port therefore prints the
+recovered body plus the row labels its sibling menu cards already carry --
+`#50857 'Zoo'` with the park's name and `#50873 "Zoo's Current Capital"` with the
+pot for the zoo, `#15240 'Casino'` with the casino's name and `#12534 'Available
+Funds'` with the pot for the casino -- and the generic `#32432 'OK'`, and writes
+no journal.
+
+`shortcut:` a sale is final: it clears the property the hero was holding. No
+age-up would ever deal such a card, so the port does not put either one on the
+wheel. Instead a harness arms it (`zoo_sell` / `casino_sell`) and the card runs
+in the priority chain ahead of the wheel, disarms itself when it fires and never
+comes back. The proceeds are exactly the business's own pot -- the zoo's
+`zooBank`, the casino's `casinoBank` move into the hero's cash, negative pots
+included -- because no valuation flow was recovered and inventing one would
+fabricate economics. The zoo then drops its herd, its habitats, its shelves, its
+attractions and its negative-year counter; the casino drops its structure, theme,
+tier, celebrity and contract, act and amenity shelves. Both leave `ownsZoo` /
+`ownsCasino` false, which is what every other family already gates on.
+
+`_re/tools/test_business_sale.py` arms the zoo in ten lives and the casino in
+ten more: each life gets exactly one card, the recovered body must match with a
+dollar sign (or a minus sign on a pot that went negative), a non-empty property
+name, the `OK` answer and flat deltas; a second year cannot deal the card again,
+and the unarmed pair of lives sees neither. It prints `zoo sales: 10 | casino
+sales: 10`.
+
 ## 380. The zoo's demolish card
 
 The full 163-test suite ran on the binary these notes describe (4da1470d0e1c1945cb75..., 163 PASS / 0 FAIL): _re/tools/test_zoo_habitat_demolish.py and _re/tools/test_zoo_habitat.py exercise both habitat cards and nothing else moved.
