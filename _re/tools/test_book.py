@@ -31,6 +31,10 @@ for seed in range(1, 41):
     for event in doc["events"]:
         if event.get("title") != "Book":
             continue
+        # The publisher's book deal (REPORT.en.md 336) is titled 'Book' too; only the
+        # reading card carries the 'Mind & Body' sentence this loop is about.
+        if event.get("table") == "registry:ScenarioFameBook":
+            continue
         cards += 1
         assert event.get("body") == "Curl up with a good book today!", (seed, event.get("body"))
         assert event.get("choice") == "Read it", (seed, event.get("choice"))

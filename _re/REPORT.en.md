@@ -23536,6 +23536,138 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 365. The talk show and the commercial
+
+`SimPlace::RefreshAvailableFameOpportunities` (0x2a431d4) rebuilds the Fame place's offers
+every age, and two of them are cards rather than menu rows: a talk show invitation and a
+television commercial. The port has no place object and no menu, so both offers are rebuilt
+on the hero's own tick and pushed as pending cards - the same substitution the magazine
+(335) and the book (336) make.
+
+**The talk show.** `ScenarioFameTalkShow` (`.ctor 0x37405f4`, `RefreshScenario 0x3740670`,
+`ChoiceSelectedAtIndex 0x37408a0`). The offer is a `SimTalkShowOpportunity` with its own
+appeal getter, `HeroTalkShowAppealScore` (0x2b4b26c):
+
+```
+appeal = (3*fame + appearance + 3*intelligence) / 7.0f      # all Single
+```
+
+The card's title is #40964 'Talk Show' under the 'Fame' exterior (#19854), its body #4958
+`'{0}' has invited you to appear on the show.\n\nWhat will you do?`, and its buttons are
+#21870 'Go on the show' and #17371 'Decline the opportunity'. A refusal is worth fame -2 and
+logs #25670 `I was invited to appear on '{0}' but I declined the opportunity.`
+
+An acceptance rolls the interview out of the opportunity:
+
+```
+score = min(appeal - 30 + rand(0,60), 100)
+if (100 - karma) > rand(0,200):  score = rand(0,61)      # the karma reroll
+score >= 81 :  fame +3, happiness +5, log #69587 '{0} I made a great impression on viewers of the show.'
+score >= 25 :  log #69557 '{0} I did {1} job in my interview.'   with #51800 'a decent' / #54144 'an okay'
+else        :  fame -4, happiness -5, log #69563 '{0} I embarrassed myself on live TV.'
+```
+
+`{0}` is this card's own log line, #23463 `I appeared on {0}.` The answer pushes a second
+plain card whose title is one of five headlines (#40002 'Stay up for it', #26038 "I'm on
+tonight", #22879 'Hi Mom!', #31088 'Nailed it', #41357 'That went well, right?') over #49765
+`You were interviewed on '{0}'.`
+
+**The commercial.** `ScenarioFameCommercial` (`.ctor 0x3737474`, `RefreshScenario 0x37374f0`,
+`ChoiceSelectedAtIndex 0x37379d4`) sells an appearance in a `SimCommercial`. Its appeal,
+`HeroCommercialAppealScore` (0x2b134fc), is static:
+
+```
+appeal = (2*fame + appearance + karma) * 0.25f
+```
+
+The payment, `GetPaymentAmount` (0x2b13380), is a reach-keyed pair cut twice by the appeal:
+
+```
+A, B = reach 1 (5000, 50000) | 2 (50000, 250000) | 3 (250000, 2500000)
+if appeal < 70:  B /= 3.0f
+if appeal < 90:  B *= 0.5f
+amount = A + (B - A) * (appeal / 100.0f)
+paid   = GetLocalCostForAmountWithMinimumCostAndRoundTo(country, amount, 1000, 100)
+```
+
+That helper (0x25255f4) multiplies by the hero's own country's `PriceOfCoke` over the United
+States' 1.94, truncates to an integer, rounds up to a multiple of 100 and floors at 1000.
+The body is #70014 `{0} has offered to pay you to appear in {1} television commercial.` with
+`{1}` the reach word carrying its own article ('a local'), title #15994 'Commercial', buttons
+#11009 'Agree to do it' and #44245 'Turn it down'. A refusal writes no money and logs #25512
+`I turned down an opportunity to earn {0} by appearing in a {1} television commercial for
+{2}.` - the article there is hard-coded, so 'a international' can print. An acceptance pays
+the amount, then:
+
+```
+score = rand(0,4) == 0 ? rand(0,101) : 40 + rand(0,61)
+score >= 91: fame +2 | >= 71: +1 | >= 41: -1 | else: -2
+log #24079 'I earned {0} by appearing in {1} television commercial for {2}.'
+```
+
+and pushes a plain card headed by one of seven headlines (#38541 'Sell out', #18503 'Easy
+money', #28337 'Killed it', #44222 'Tuned in!', #44253 'Turn the TV on!', #41810 'The camera
+loves me', #39415 'Solid seven seconds') over #48417.
+
+The commercial's *offer* is not a card roll of its own. `RefreshAvailableFameOpportunities`
+(0x2a4331c) walks a ladder on appearance and fame, then rolls the reach:
+
+```
+appeal = appearance > 90 ? (fame + 200) / 3 : appearance > 70 ? (fame + 100) * 0.5 : none
+criminal record: appeal /= 3        (not modelled - the port keeps no past-offence record)
+karma < 10:      appeal /= 3
+appearance < 30: appeal /= 3
+fame > 80: reach 3 if appeal > rand(0,100), else 2 if appeal > 80, else nothing
+else:      reach 2 if appeal > rand(0,100), else 1 if appeal > rand(0,75), else nothing
+```
+
+The talk show's own gate is fame >= 90.0 with a company drawn of company type 55; the port
+takes the industry from the careers table's own company types.
+
+**In the port.** `_re/port/src/fam/fame.cpp` gains `talkShowOpportunityYear`,
+`fameTalkShowYear`, `commercialOpportunityYear` and `fameCommercialYear`, all on one new
+stream `fameMediaRng_` (the native builds both offers in the same refresh call). They are
+ticked from the age-up after the book's offer, and they answer from the pending kinds
+`kPendingTalkShow = 45` and `kPendingCommercial = 46`. The hero carries `talkShowName`,
+`commCompany`, `commReach` and `commPayment` while an offer is open.
+
+Ceilings, all *shortcut:* and cited in the source:
+
+- The cost-of-living ratio is 1.0. The port carries no price-of-coke table, so
+  `GetLocalCostForAmountWithMinimumCostAndRoundTo` is implemented as its United States form;
+  every test country is the United States and its ratio is exactly 1.0, so only the rounding
+  and the floor are exercised.
+- The commercial's reach pool is three stand-in company types per reach drawn from the
+  careers table, because the place's company pool and the reach enum (`data 0xfc4d28`) have
+  no counterpart in the port.
+- The criminal-record cut of the appeal is not applied; the port keeps no past-offence record.
+- A card the native player opens from a menu is paced instead: after an answer the same
+  offer stays away for four years. The native opportunity is rebuilt every age.
+- The two follow-up cards are folded into their own card's body after the prompt: the port
+  renders the headline and the reception/interview line under the question it answered
+  rather than pushing a second plain card, which is how the magazine and book cards already
+  do it.
+- The talk show's company type 55 is read as the careers table's 'Television' industry.
+- The answer lane is a coin (`chance(0.6)`) where the native is the player's click, so both
+  lanes are reached inside one long life.
+
+Verified (`_re/tools/test_fame_media.py`, seeds 1-10 with fame 95): 65 talk show cards (42
+accepted, 23 declined) and 8 commercial cards (6 accepted, 2 turned down) with the reaches
+'regional' and 'international'. Every accepted talk show's body carries one of the five
+headlines and a #49765 line naming the same show; every journal matches #23463 plus one of
+the three tails. Every commercial payment is a whole currency, a multiple of 100 and at
+least 1000, and the log line agrees with the body's figure. A refusal leaves the money
+alone. A minor (ages 17) is offered neither card, and a hero who cannot reach fame 90 by the
+age of twenty gets no talk show.
+
+The full 149-test suite ran on the binary these notes describe (255cc872..., 147 PASS /
+2 FAIL). Both failures are test-side and were fixed here without a code change: the
+publisher's book deal and the reading card are both titled 'Book', so the reading
+test now skips the deal's own table instead of asserting the shelf sentence against
+it, and the wheel's new tickets can drain another pending card between a relative's
+death and the funeral screen, so the funeral test now takes the next planning card of
+that age rather than the next event. Both were re-run green.
+
 ## 364. The zoo's staff split and the division-of-labor card
 
 The park's staff are one pool, and every helper that looks at them reads the same

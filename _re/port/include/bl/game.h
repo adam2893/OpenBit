@@ -953,6 +953,14 @@ struct Hero {
   long long bookProceeds = 0;
   std::string bookPublisher;
   std::vector<std::string> bookTitles;
+  // The talk show and the commercial (REPORT.en.md 365): the open offers, and
+  // for the commercial the reach word its body quotes and the payment it quoted.
+  std::string talkShowName;
+  std::string commCompany;
+  std::string commReach;
+  long long commPayment = 0;
+  int talkShowAge = -1;    // the year the show invitation was answered (365)
+  int commAge = -1;        // the year the commercial offer was answered (365)
   std::string loverGenre;      // the career row's Genre, Platform, Sport or Model Type
   std::string loverSkin;       // the names row's Skin, 1-6
   int loverFameScore = 0;      // the career row's Fame Score

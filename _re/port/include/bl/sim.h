@@ -143,6 +143,8 @@ enum PendingCard {
   kPendingAircraftScrap = 31,     // the scrap push for a worn-out aircraft (REPORT.en.md 334)
   kPendingMagazineOffer = 32,     // the magazine's photo-shoot offer (REPORT.en.md 335)
   kPendingBookOffer = 33,         // the publisher's book deal (REPORT.en.md 336)
+  kPendingTalkShow = 45,           // the talk show invitation (REPORT.en.md 365)
+  kPendingCommercial = 46,         // the commercial offer (REPORT.en.md 365)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -343,6 +345,11 @@ class Sim {
   bool fameMagazineYear(Life& life, AgeUp& out, int forcedChoice);
   // The book deal (REPORT.en.md 336).
   void bookOpportunityYear(Life& life);
+  // The talk show and the commercial, REPORT.en.md 365.
+  void talkShowOpportunityYear(Life& life);
+  bool fameTalkShowYear(Life& life, AgeUp& out, int forcedChoice);
+  void commercialOpportunityYear(Life& life);
+  bool fameCommercialYear(Life& life, AgeUp& out, int forcedChoice);
   bool fameBookYear(Life& life, AgeUp& out, int forcedChoice);
   // The custody chain, REPORT.en.md 223.
   bool custodyCaseYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1149,6 +1156,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng aircraftRng_;    // the aircraft's age, wear, breakdowns and its cards (REPORT.en.md 334)
   Rng magRng_;         // the magazine offer's own stream (REPORT.en.md 335)
   Rng pubRng_;         // the publisher's book deal, not the reading card (REPORT.en.md 336)
+  Rng fameMediaRng_;  // the talk show and the commercial (REPORT.en.md 365)
   Rng agentCompRng_;  // ScenarioAgentCompliment's own stream (REPORT.en.md 327)
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)
   Rng ahRng_;   // ScenarioSupervisorSocialize's own stream (REPORT.en.md 118)

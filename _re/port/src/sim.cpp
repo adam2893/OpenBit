@@ -724,6 +724,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       aircraftRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0xa54ff53a5f1d36f1ULL),
       magRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0xcbbb9d5dc1059ed8ULL),
       pubRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
+      fameMediaRng_(seed ^ 0x2c1b3f57a9e04d68ULL ^ 0x7f4a8e21c6b93d05ULL),
       agentCompRng_(seed ^ 0xb5c0fbcfec4d3b2fULL ^ 0xe9b5dba58189dbbcULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
       ahRng_(seed ^ 0x2545f4914f6cdd1dULL ^ 0xd6e8feb86659fd93ULL),
@@ -4207,6 +4208,8 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingAircraftScrap) return aircraftScrapYear(life, out, -1);
     if (kind == kPendingMagazineOffer) return fameMagazineYear(life, out, forcedChoice);
     if (kind == kPendingBookOffer) return fameBookYear(life, out, forcedChoice);
+    if (kind == kPendingTalkShow) return fameTalkShowYear(life, out, forcedChoice);
+    if (kind == kPendingCommercial) return fameCommercialYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -4252,6 +4255,8 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   magazineOpportunityYear(life);
   // The publisher's offer is rebuilt on the same tick (REPORT.en.md 336).
   bookOpportunityYear(life);
+  talkShowOpportunityYear(life);
+  commercialOpportunityYear(life);
   // The pregnancy chain (REPORT.en.md 338). The resolution tick runs before the
   // conception tick so a pregnancy conceived this year cannot resolve in it, and
   // both push pending cards that the same age-up drains.

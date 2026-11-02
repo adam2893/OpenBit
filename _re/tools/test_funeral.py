@@ -50,9 +50,12 @@ def check_events(seed, events, counts):
         if title == "Death" and (event.get("choice") or "").startswith("Plan "):
             counts["plan choices"] += 1
             # The queued screen must be produced, not merely marked pending.
-            if index + 1 < len(events):
-                assert events[index + 1]["title"] == "Funeral Planning", (seed, event)
-                assert events[index + 1]["age"] == event["age"], (seed, event)
+            # Other pending cards can be drained between the death and the queued
+            # screen, so the planning card is the next one of that age, not the next
+            # event (REPORT.en.md 365 moved the wheel).
+            after = [x for x in events[index:] if x.get("title") == "Funeral Planning"]
+            assert after, (seed, event)
+            assert after[0]["age"] == event["age"], (seed, event)
         elif title == "Funeral Planning":
             match = re.fullmatch(
                 r"It's time to decide what to do with your (father|mother)'s remains\.\n\n"

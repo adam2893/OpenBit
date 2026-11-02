@@ -349,4 +349,232 @@ bool Sim::fameBookYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
-}  // namespace bl
+// ---------------------------------------------------------------------------
+// The talk show and the commercial (REPORT.en.md 365). SimPlace::
+// RefreshAvailableFameOpportunities 0x2a431d4 builds one SimTalkShowOpportunity and one
+// SimCommercial per age, and ScenarioFameTalkShow (.ctor 0x37405f4, RefreshScenario
+// 0x3740670, ChoiceSelectedAtIndex 0x37408a0) / ScenarioFameCommercial (.ctor 0x3737474,
+// RefreshScenario 0x37374f0, ChoiceSelectedAtIndex 0x37379d4) ask for the answer. The port
+// has no place object and no menu, so both offers are rebuilt on the hero's own tick and
+// pushed as pending cards - the same substitution the magazine (335) and book (336) make.
+
+namespace {
+
+// SimCommercial::HeroCommercialAppealScore 0x2b134fc: (2*fame + appearance + karma) * 0.25f,
+// every load and the multiply in System.Single.
+float commercialAppealOf(const Hero& h) {
+  return (2.0f * float(h.fame) + float(h.looks) + float(h.karma)) * 0.25f;
+}
+
+// SimTalkShowOpportunity::HeroTalkShowAppealScore 0x2b4b26c:
+// (3*fame + appearance + 3*intelligence) / 7.0f, again all Single.
+float talkShowAppealOf(const Hero& h) {
+  return (3.0f * float(h.fame) + float(h.looks) + 3.0f * float(h.smarts)) / 7.0f;
+}
+
+// SimCommercial::GetPaymentAmount 0x2b13380: a reach-keyed pair, a quarter cut below an
+// appeal of 70, another half cut below 90, then the appeal's own share of the span.
+// GetLocalCostForAmountWithMinimumCostAndRoundTo 0x25255f4 scales by the hero's country and
+// rounds to a multiple of 100 with a floor of 1000; the port carries no price-of-coke table
+// (a shortcut noted in the report), so the ratio is the United States' own 1.0.
+long long commercialPaymentOf(const Hero& h, int reach) {
+  float a = 0.0f;
+  float b = 0.0f;
+  if (reach == 1) {
+    a = 5000.0f;
+    b = 50000.0f;
+  } else if (reach == 2) {
+    a = 50000.0f;
+    b = 250000.0f;
+  } else if (reach == 3) {
+    a = 250000.0f;
+    b = 2500000.0f;
+  }
+  const float ap = commercialAppealOf(h);
+  if (ap < 70.0f) b /= 3.0f;
+  if (ap < 90.0f) b *= 0.5f;
+  const float amount = a + (b - a) * (ap / 100.0f);
+  long long value = static_cast<long long>(amount);  // fcvtzs truncates toward zero
+  if (value < 0) value = 0;
+  value = ((value + 99) / 100) * 100;  // ceil to a multiple of the round-to
+  if (value < 1000) value = 1000;
+  return value;
+}
+
+// DataHub::GetStringForCompanyCommercialReach 0x59da0a8: 1 Local, 2 Regional,
+// 3 International, anything else an empty string; GetStringForCompanyCommercialReach's
+// result is lowered and given an indefinite article for the body.
+const char* reachName(int reach) {
+  if (reach == 1) return "Local";          // #29090
+  if (reach == 2) return "Regional";       // #35549
+  if (reach == 3) return "International";  // #26904
+  return "";
+}
+
+}  // namespace
+
+void Sim::talkShowOpportunityYear(Life& life) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison || !life.alive) return;
+  if (!h.talkShowName.empty()) return;  // one offer open at a time
+  // A shortcut: the native offer is rebuilt every age for a menu the player opens when
+  // they like, and the port has no menu, so a card this size is paced instead.
+  if (h.talkShowAge >= 0 && h.age - h.talkShowAge <= 3) return;
+  // The creation gate is the hero's fame against 90.0; there is no roll of its own, only
+  // the company draw (SimPlace::GetRandomCompanyForCompanyType(55)).
+  if (h.fame < 90.0f) return;
+  const std::string show = companyName("Television", life);
+  if (show.empty()) return;
+  h.talkShowName = show;
+  life.pendingCards.push_back(kPendingTalkShow);
+}
+
+bool Sim::fameTalkShowYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.talkShowName.empty()) return false;
+  hero_ = &h;
+  life_ = &life;
+  Rng& g = fameMediaRng_;
+  const std::string show = h.talkShowName;
+  out.table = "registry:ScenarioFameTalkShow";
+  out.title = "Talk Show";  // #40964, under the 'Fame' exterior #19854
+  out.body = "'" + show + "' has invited you to appear on the show.\n\nWhat will you do?";  // #4958
+  out.options = {"Go on the show", "Decline the opportunity"};  // #21870 / #17371
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : g.chance(0.6);
+  out.choice = out.options[accept ? 0 : 1];
+  h.talkShowName.clear();
+  h.talkShowAge = h.age;
+  if (!accept) {
+    out.fame = pointsForImpact(-2);
+    out.narrative =
+        "I was invited to appear on '" + show + "' but I declined the opportunity.";  // #25670
+    return true;
+  }
+  // SuccessScore = min(appeal - 30 + rand(0,60), 100); the karma reroll replaces it with
+  // rand(0,61) unless (100 - karma) beats rand(0,200).
+  int score = int(talkShowAppealOf(h)) - 30 + int(g.below(60));
+  if (score > 100) score = 100;
+  if (score < 0) score = 0;
+  if (double(100 - h.karma) > double(g.below(200))) score = int(g.below(61));
+  const std::string base = "I appeared on " + show + ".";  // #23463
+  if (score >= 81) {
+    out.fame = pointsForImpact(3);
+    out.happiness = pointsForImpact(5);
+    out.narrative = base + " I made a great impression on viewers of the show.";  // #69587
+  } else if (score >= 25) {
+    out.narrative = base + " I did " + (g.below(2) == 0 ? "a decent" : "an okay") +
+                    " job in my interview.";  // #69557, #51800 / #54144
+  } else {
+    out.fame = pointsForImpact(-4);
+    out.happiness = pointsForImpact(-5);
+    out.narrative = base + " I embarrassed myself on live TV.";  // #69563
+  }
+  // The follow-up card: one of five headlines over the interview line. Its score rides an
+  // Impression bar graph the port does not draw.
+  static const char* const kTitles[] = {"Stay up for it", "I'm on tonight", "Hi Mom!",
+                                        "Nailed it", "That went well, right?"};
+  out.body += "\n\n" + std::string(kTitles[g.below(5)]) + "\nYou were interviewed on '" +
+              show + "'.";  // #40002-41357, #49765
+  return true;
+}
+
+void Sim::commercialOpportunityYear(Life& life) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison || !life.alive) return;
+  if (!h.commCompany.empty()) return;  // one offer open at a time
+  if (h.commAge >= 0 && h.age - h.commAge <= 3) return;  // the same pacing
+  // SimPlace::RefreshAvailableFameOpportunities 0x2a4331c: the appeal ladder, then the
+  // reach roll, then a company of that reach.
+  const double appearance = double(h.looks);
+  const double fame = double(h.fame);
+  double appeal = 0.0;
+  if (appearance > 90.0) {
+    appeal = (fame + 200.0) / 3.0;
+  } else if (appearance > 70.0) {
+    appeal = (fame + 100.0) * 0.5;
+  } else {
+    return;
+  }
+  // shortcut: the native also divides the appeal by three for a criminal record
+  // (SimPast::HasCriminalRecordInPlace); the port keeps no past-offence record.
+  if (double(h.karma) < 10.0) appeal /= 3.0;
+  if (appearance < 30.0) appeal /= 3.0;
+  Rng& g = fameMediaRng_;
+  int reach = 0;
+  if (fame > 80.0) {
+    if (appeal > double(g.below(100))) {
+      reach = 3;
+    } else if (appeal > 80.0) {
+      reach = 2;
+    } else {
+      return;
+    }
+  } else {
+    if (appeal > double(g.below(100))) {
+      reach = 2;
+    } else if (appeal > double(g.below(75))) {
+      reach = 1;
+    } else {
+      return;
+    }
+  }
+  // The place's company pool has no counterpart in the port, and its reach table
+  // (data 0xfc4d28) keys an enum the port does not carry, so each reach draws from a
+  // small stand-in pool of careers-table company types (a shortcut noted in the report).
+  static const char* const kLocalAds[] = {"Fast Food", "Car Dealer", "Grocery Store"};
+  static const char* const kRegionalAds[] = {"Retailer", "Insurance Agency", "Trucking Company"};
+  static const char* const kInternationalAds[] = {"Airline", "Corporate", "App Developer"};
+  const char* const* adPool = kLocalAds;
+  if (reach == 2) adPool = kRegionalAds;
+  else if (reach == 3) adPool = kInternationalAds;
+  const std::string industry = adPool[g.below(3)];
+  const std::string name = companyName(industry, life);
+  if (name.empty()) return;
+  h.commCompany = name;
+  h.commReach = reachName(reach);
+  h.commPayment = commercialPaymentOf(h, reach);
+  life.pendingCards.push_back(kPendingCommercial);
+}
+
+bool Sim::fameCommercialYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.commCompany.empty()) return false;
+  hero_ = &h;
+  life_ = &life;
+  Rng& g = fameMediaRng_;
+  const std::string company = h.commCompany;
+  const std::string reach = lower(h.commReach);
+  const long long payment = h.commPayment;
+  // AddIndefiniteArticleToString('local') is 'a local': article and word together.
+  const std::string reachPhrase = withArticle(reach, true) + reach;
+  out.table = "registry:ScenarioFameCommercial";
+  out.title = "Commercial";  // #15994, under the 'Fame' exterior #19854
+  out.body = company + " has offered to pay you to appear in " + reachPhrase +
+             " television commercial.\n\nWhat will you do?";  // #70014
+  out.options = {"Agree to do it", "Turn it down"};  // #11009 / #44245
+  const bool accept = forcedChoice >= 0 ? forcedChoice == 0 : g.chance(0.6);
+  out.choice = out.options[accept ? 0 : 1];
+  h.commCompany.clear();
+  h.commAge = h.age;
+  if (!accept) {
+    out.narrative = "I turned down an opportunity to earn " + money(payment) +
+                    " by appearing in a " + reach + " television commercial for " + company +
+                    ".";  // #25512
+    return true;
+  }
+  h.money += payment;
+  // SuccessScore: rand(0,4)==0 -> rand(0,101), else rand(0,61)+40.
+  const int score = g.below(4) == 0 ? int(g.below(101)) : 40 + int(g.below(61));
+  out.fame = pointsForImpact(score >= 91 ? 2 : score >= 71 ? 1 : score >= 41 ? -1 : -2);
+  out.narrative = "I earned " + money(payment) + " by appearing in " + reachPhrase +
+                  " television commercial for " + company + ".";  // #24079
+  // The follow-up card: one of seven headlines over the reception line. Its score rides a
+  // Reception bar graph the port does not draw.
+  static const char* const kTitles[] = {"Sell out",        "Easy money",      "Killed it",
+                                        "Tuned in!",       "Turn the TV on!", "The camera loves me",
+                                        "Solid seven seconds"};
+  out.body += "\n\n" + std::string(kTitles[g.below(7)]) + "\nYou earned " + money(payment) +
+              " by appearing in the " + reach + " television commercial for " + company +
+              ".";  // #38541-39415, #48417
+  return true;
+}}  // namespace bl
