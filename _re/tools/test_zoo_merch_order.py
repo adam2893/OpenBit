@@ -15,12 +15,10 @@ CARDS = "registry:ScenarioZooAgeUpMerchOrder"
 FAMILY = "zoo-merch-order"
 TITLES = {"Just came in!", "That new gift smell", "Flying off the the shelves!"}
 BODY = re.compile(
-    r"^Determine how many more (?P<plural>.+?) featuring (?P<animal>.+?) the (?P<breed>.+?) "
-    r"you'd like to order from your merchandise supplier\.\n\n"
-    r"Current Unit Count: (?P<units>[\d,]+)\n"
+    r"^Your gift shop has sold all of the (?P<product>.+?) featuring (?P<animal>.+?) the "
+    r"(?P<breed>.+?)!\n\n"
     r"Cost Per Unit: (?P<unit>[^\n]+)\n"
-    r"Available Capital: (?P<capital>[^\n]+)\n"
-    r"Featured Animal: (?P<featured>[^\n]+)$")
+    r"Available Capital: (?P<capital>[^\n]+)$")
 ARRIVED = re.compile(
     r"^Your merch order of additional (?P<plural>.+?) featuring (?P<animal>.+?) the (?P<breed>.+?) "
     r"just arrived!\n\nUnits Ordered: (?P<ordered>[\d,]+)\nNew Unit Count: (?P<count>[\d,]+)$")
@@ -56,7 +54,9 @@ def arrived(doc):
 
 def catalogue():
     rows = [line.split(",") for line in (DATA / TABLE).read_text().splitlines()]
-    return {row[1] for row in rows[1:] if len(row) > 1}, {row[5] for row in rows[1:] if len(row) > 5}
+    products = {row[0] for row in rows[1:] if len(row) > 1}
+    plurals = {row[1] for row in rows[1:] if len(row) > 1}
+    return products, plurals
 
 
 def forced(want, seed=3, ages=60):
@@ -75,7 +75,7 @@ def main():
     assert not cards(run(seed=3, ages=40, zoo=False)), "the card fired without a zoo"
     assert not cards(run(seed=3, ages=17)), "the card fired for a minor"
 
-    plurals, scores = catalogue()
+    products, plurals = catalogue()
     seen = {"Order more": 0, "Nothing": 0}
     features = set()
     for seed in range(1, 21):
@@ -85,11 +85,9 @@ def main():
             assert m, card["body"]
             assert card["choice"] in seen, card["choice"]
             seen[card["choice"]] += 1
-            assert m.group("plural") in plurals, m.group("plural")
-            assert m.group("featured").lower() == (m.group("animal") + " the " + m.group("breed")).lower()
+            assert m.group("product") in products, m.group("product")
             assert m.group("capital").startswith("$"), m.group("capital")
             assert m.group("unit").startswith("$"), m.group("unit")
-            assert int(m.group("units").replace(",", "")) <= 2, m.group("units")
             assert not any((card.get("deltas") or {}).values()), card["deltas"]
             features.add(m.group("animal"))
     assert seen["Order more"] and seen["Nothing"], seen

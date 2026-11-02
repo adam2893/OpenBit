@@ -152,7 +152,8 @@ enum PendingCard {
   kPendingHeroBirth = 40,         // her birth card (342)
   kPendingInsultComeback = 41,    // the insult's comeback card (REPORT.en.md 343)
   kPendingCasinoFeedback = 42,    // the card a resignation's answer chains (REPORT.en.md 352)
-  kPendingZooFeedback = 43,       // the merch order answer card (REPORT.en.md 363)
+  kPendingZooFeedback = 43,
+  kPendingZooDivision = 44,       // the merch order answer card (REPORT.en.md 363)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -571,6 +572,7 @@ class Sim {
   void seedCasinoGuest(Life& life, bool sameTheme);
   void seedCasinoAct(Life& life, bool sameTheme);
   void seedCasinoAmenity(Life& life, bool sameTheme);
+  void seedZooStaff(Life& life, bool highCustodial);   // REPORT.en.md 364
   // The theme a singer genre belongs to, off the shipped genre table (REPORT 347).
   std::string casinoGenreThemeOf(const std::string& genre);
   // The harness's "car" key: the hero owns a car from a16_car-models-enc (323).
@@ -780,6 +782,13 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooEmployeeResignYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooEmployeeDeathYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooDivisionYear(Life& life, AgeUp& out, int forcedChoice);
+  static int zooStaffPool(const Hero& h);
+  static double zooCustodialRatio(const Hero& h);
+  int zooSplitStaff(Hero& h);
+  double zooCustodialScore(const Hero& h);
+  double zooCustomerBump(const Hero& h);
+  double zooBreachChance(const Hero& h);
   bool zooMerchYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedGiftShop(Life& life);
@@ -1310,6 +1319,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooResignRng_;  // the keeper's resignation card's own stream (REPORT.en.md 353)
   Rng zooStaffRng_;   // the keeper's hire age and lifespan (REPORT.en.md 354)
   Rng zooGiftRng_;    // the gift shop own stream (REPORT.en.md 363)
+  Rng zooSplitRng_;   // the park plot size and staff split stream (REPORT.en.md 364)
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng zooLifeRng_;    // the zoo lifecycle cards' own stream
   Rng zooTheftRng_;    // the zoo theft card's own stream

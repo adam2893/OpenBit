@@ -115,6 +115,7 @@ struct ScriptSpec {
   std::string casino_act;
   // Harness hook: pin an amenity so the two amenity cards can be walked (REPORT.en.md 351).
   std::string casino_amenity;
+  std::string zoo_staff;   // pin the park staff split: "low" or "high" custodial (REPORT.en.md 364)
   long long zoo_bank = 0;
   bool cult = false;
   bool pet = false;

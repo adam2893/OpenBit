@@ -679,6 +679,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
       zooGiftRng_(seed ^ 0x3f6a1d04c8527b9eULL ^ 0x87d2c5b10e46a9f3ULL),
+      zooSplitRng_(seed ^ 0x51c7b2e94a6d380fULL ^ 0x9e2f41d7c6b58a03ULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
       zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
@@ -4193,6 +4194,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingInsultComeback) return insultComebackYear(life, out, -1);
   if (kind == kPendingCasinoFeedback) return casinoFeedbackYear(life, out, -1);
   if (kind == kPendingZooFeedback) return zooFeedbackYear(life, out, -1);
+  if (kind == kPendingZooDivision) return zooDivisionYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
@@ -10309,6 +10311,10 @@ void Sim::ensureZooFields(Life& life) {
   h.zooTicket = 15 + int(zooRng_.below(26));
   h.zooAnimals = 3 + int(zooRng_.below(4));
   h.zooStaff = 2;
+  // SimZoo::.ctor 0x2b56f60 draws the park plot size and splits the staff pool it buys
+  // (REPORT.en.md 364).
+  h.zooSize = 1 + int(zooSplitRng_.below(3));
+  zooSplitStaff(h);
   h.zooEngagement = 50 + int(zooRng_.below(21));
   h.zooEmployeeCompetence = 40 + int(zooRng_.below(41));
   h.zooEmployeeFemale = zooRng_.chance(0.5);
@@ -10577,6 +10583,10 @@ bool Sim::zooMerchYear(Life& life, AgeUp& out, int forcedChoice) {
   life_ = &life;
   if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
   if (h.giftShop.empty()) return false;
+  // The native gate also wants a pot that can still pay for an order, and three years of
+  // quiet after the last card.
+  if (h.zooBank <= 0) return false;
+  if (h.zooMerchAge >= 0 && h.age - h.zooMerchAge <= 3) return false;
   // The native gate is a line with no units left. Its sale figure is truncated, so a line
   // of one unit parks itself there for good; the port reads two or fewer as sold out
   // (shortcut: 363).
@@ -10597,17 +10607,18 @@ bool Sim::zooMerchYear(Life& life, AgeUp& out, int forcedChoice) {
     if (!rows.empty()) rows += "\n";
     rows += label + ": " + value;
   };
-  row("Current Unit Count", grouped(it.units));
   row("Cost Per Unit", money(it.pricePerUnit));
   row("Available Capital", money(h.zooBank));
-  row("Featured Animal", spyUpperFirst(it.animal + " the " + it.breed));
-  out.body = "Determine how many more " + it.plural + " featuring " + it.animal + " the " +
-             it.breed + " you'd like to order from your merchandise supplier.\n\n" + rows;
+  out.body = "Your gift shop has sold all of the " + it.product + " featuring " + it.animal +
+             " the " + it.breed + "!\n\n" + rows;   // #50379 + #1958 + #3532 + #4218
   out.cta = "What will you do?";
   out.options = {"Order more", "Nothing"};   // #33003 / #32186
   const int pick = forcedChoice < 0 ? int(zooGiftRng_.below(2)) : forcedChoice;
   const int which = pick > 1 ? 1 : pick;
   out.choice = out.options[size_t(which)];
+  // The card itself never writes a journal line (the native logs null), so the journal
+  // belongs to the order card it chains.
+  h.zooMerchAge = h.age;
   if (which == 1) return true;
   // The order's own card is a slider; the port folds it into the answer. The slider's
   // ceiling is what the pot can pay for, and the native does not clamp the debit, so the
@@ -11680,14 +11691,99 @@ bool Sim::zooEmployeeDeathYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+int Sim::zooStaffPool(const Hero& h) {
+  // GetOperationsManagersStaffSize 0x2b57bd8 is a PlotSize lookup: int[3] {10, 20, 40}.
+  if (h.zooSize < 1 || h.zooSize > 3) return 0;
+  static const int kPool[3] = {10, 20, 40};
+  return kPool[h.zooSize - 1];
+}
+
+double Sim::zooCustodialRatio(const Hero& h) {
+  const int pool = zooStaffPool(h);
+  // The native carries no divide-by-zero guard: an empty pool leaves the ratio undefined,
+  // every band test then fails, and every helper lands on its lowest band.
+  if (pool <= 0) return -1.0;
+  return 100.0 * double(h.zooStaffCustodial) / double(pool);
+}
+
+int Sim::zooSplitStaff(Hero& h) {
+  // SimZoo::.ctor 0x2b56f60: custodial [0, N/2), security [0, what is left], customer
+  // relations the remainder.
+  const int pool = zooStaffPool(h);
+  h.zooStaffCustodial = pool > 1 ? int(zooSplitRng_.below(uint32_t(pool / 2))) : 0;
+  int left = pool - h.zooStaffCustodial;
+  h.zooStaffSecurity = left >= 1 ? int(zooSplitRng_.below(uint32_t(left + 1))) : 0;
+  left -= h.zooStaffSecurity;
+  h.zooStaffCustomerRel = left < 0 ? 0 : left;
+  return h.zooStaffCustodial;
+}
+
+void Sim::seedZooStaff(Life& life, bool highCustodial) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo) return;
+  const int pool = zooStaffPool(h);
+  h.zooStaffCustodial = highCustodial ? pool : 0;
+  h.zooStaffSecurity = 0;
+  h.zooStaffCustomerRel = highCustodial ? 0 : pool;
+}
+
+double Sim::zooCustodialScore(const Hero& h) {
+  // GetZooCustodialScore 0x2b65a90: percentage points by custodial share.
+  const double ratio = zooCustodialRatio(h);
+  if (ratio > 75.0) return double(90 + int(zooSplitRng_.below(11)));
+  if (ratio > 50.0) return double(50 + int(zooSplitRng_.below(26)));
+  if (ratio > 25.0) return double(20 + int(zooSplitRng_.below(21)));
+  return double(1 + int(zooSplitRng_.below(10)));
+}
+
+double Sim::zooCustomerBump(const Hero& h) {
+  // GetCustomerRelationsTicketSalesBumpPercentage 0x2b65ba4, a fraction: the native reads
+  // the CUSTODIAL counter and computes the points / 100.
+  const double ratio = zooCustodialRatio(h);
+  if (ratio > 75.0) return double(20 + int(zooSplitRng_.below(6))) / 100.0;
+  if (ratio > 50.0) return double(10 + int(zooSplitRng_.below(6))) / 100.0;
+  if (ratio > 25.0) return double(2 + int(zooSplitRng_.below(7))) / 100.0;
+  return 0.0;
+}
+
+double Sim::zooBreachChance(const Hero& h) {
+  // GetChanceOfSecurityBreach 0x2b65cb4: percentage points, again off the CUSTODIAL
+  // counter, against a draw from 0..100.
+  const double ratio = zooCustodialRatio(h);
+  if (ratio > 75.0) return 0.0;
+  if (ratio > 50.0) return double(5 + int(zooSplitRng_.below(6)));
+  if (ratio > 25.0) return double(10 + int(zooSplitRng_.below(11)));
+  return double(20 + int(zooSplitRng_.below(11)));
+}
+
+// ScenarioZooEmployeeManagerStaffManagement (.ctor 0x29e17b0, RefreshScenario 0x29e19f8,
+// MiniGameCompleted 0x29e1b2c) is the Division of Labor minigame card. Only the reallocate
+// answer of the cleanliness and customer-service cards reaches it. The board itself is a
+// Unity screen, so the port folds it into a fresh split of the pool and prints the card's
+// own two lines (REPORT.en.md 364).
+bool Sim::zooDivisionYear(Life& life, AgeUp& out, int) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo) return false;
+  hero_ = &h;
+  life_ = &life;
+  zooSplitStaff(h);
+  out.table = "registry:ScenarioZooEmployeeManagerStaffManagement";
+  out.title = "Division of Labor";                          // #17882
+  out.body = "Allocate your zoo's staff resources today!";   // #11155
+  out.cta = "What will you do?";
+  out.options = {"OK"};
+  out.choice = out.options[0];
+  out.narrative = "I reallocated my zoo's work force.";       // #24888
+  return true;
+}
+
 bool Sim::zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
   if (h.zooEmployee.empty()) ensureZooFields(life);
-  // The native asks SimZoo::GetZooCustodialScore 0x2b65a90 for a value under 20.0.
-  // The port has no staff roster, so every hand counts as custodial: five points a
-  // hand, which a founding park (two hands) never reaches (shortcut).
-  if (double(h.zooStaff) * 5.0 >= 20.0) return false;
+  // SimZoo::GetZooCustodialScore 0x2b65a90: the card is eligible only under 20.0, which
+  // takes a custodial share over a quarter of the pool (REPORT.en.md 364).
+  if (zooCustodialScore(h) >= 20.0) return false;
   if (h.zooCleanAge >= 0 && h.age - h.zooCleanAge <= 3) return false;  // YearsSinceScenario > 3
   hero_ = &h;
   life_ = &life;
@@ -11708,6 +11804,8 @@ bool Sim::zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice) {
   const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
                                      : 1;  // the native card is a single yes/no hand-off
   out.choice = out.options[size_t(pick)];
+  // Handing off opens the division-of-labor card (REPORT.en.md 364).
+  if (pick == 0) life.pendingCards.push_back(kPendingZooDivision);
   // The journal is one fixed line, written whichever answer is taken (#30820).
   out.narrative =
       "My operations manager suggested I assign more of my work force to custodial tasks.";
@@ -11725,8 +11823,10 @@ bool Sim::zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
   if (h.zooEmployee.empty()) ensureZooFields(life);
-  // The native asks GetCustomerRelationsTicketSalesBumpPercentage 0x2b65ba4 for
-  // zero: no division-of-labor minigame in the port, so the bump is never raised.
+  // ScenarioIsEligibleForRandomPush 0x29a4da0 asks GetCustomerRelationsTicketSalesBump-
+  // Percentage 0x2b65ba4 for exactly zero, so the card stops for good once the custodial
+  // share passes a quarter of the pool (REPORT.en.md 364).
+  if (zooCustomerBump(h) != 0.0) return false;
   if (h.zooCustAge >= 0 && h.age - h.zooCustAge <= 3) return false;  // YearsSinceScenario > 3
   hero_ = &h;
   life_ = &life;
@@ -11744,6 +11844,8 @@ bool Sim::zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice) {
   out.options = {"Reallocate labor resources", "Ignore " + them};
   const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice) : 1;
   out.choice = out.options[size_t(pick)];
+  // Handing off opens the division-of-labor card (REPORT.en.md 364).
+  if (pick == 0) life.pendingCards.push_back(kPendingZooDivision);
   out.narrative =  // #30821
       "My operations manager suggested I assign more of my work force to customer "
       "service-related tasks.";
@@ -11761,7 +11863,9 @@ bool Sim::zooTheftYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.zooHerdSeeded) zooSeedHerd(life);
   if (h.zooHerd.empty()) return false;
   if (h.zooTheftAge >= 0 && h.age - h.zooTheftAge <= 3) return false;  // YearsSinceScenario > 3
-  if (forcedChoice < 0 && !zooTheftRng_.chance(0.10)) return false;
+  // ScenarioIsEligibleForRandomPush 0x29aa4a8 fires when GetChanceOfSecurityBreach
+  // 0x2b65cb4, in percentage points, beats a draw from 0..100 (REPORT.en.md 364).
+  if (forcedChoice < 0 && !(zooBreachChance(h) > double(zooTheftRng_.below(101)))) return false;
 
   // GetRandomAnimalToSteal 0x29a990c: a weighted pick over every habitat's
   // animals, rare breeds excluded, each animal repeated by its value band.

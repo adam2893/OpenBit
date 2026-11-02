@@ -604,6 +604,15 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
       if (r2 != std::string::npos) spec.casino_amenity = json.substr(q + 1, r2 - q - 1);
     }
   }
+  p = findValue(json, "zoo_staff");
+  if (p != std::string::npos) {
+    const size_t q = json.find('"', p);
+    if (q != std::string::npos) {
+      const size_t r2 = json.find('"', q + 1);
+      if (r2 != std::string::npos) spec.zoo_staff = json.substr(q + 1, r2 - q - 1);
+    }
+  }
+
   p = findValue(json, "casino_act");
   if (p != std::string::npos) {
     const size_t q = json.find('"', p);
@@ -1010,6 +1019,10 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     // Harness hook: a seeded pot lets a test drive the inspector's ladder without
     // simulating years of losing books (REPORT.en.md 321).
     if (spec.zoo_bank != 0) life.hero.zooBank = spec.zoo_bank;
+    // Harness hook: pin the custodial share so a test can reach the top and bottom
+    // bands of the breach and ticket-sales helpers without the labour minigame
+    // (REPORT.en.md 364). It must run after the zoo exists.
+    if (!spec.zoo_staff.empty()) sim.seedZooStaff(life, spec.zoo_staff == "high");
   }
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);

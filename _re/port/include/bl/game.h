@@ -609,6 +609,10 @@ struct Hero {
   int zooEmployeeCompetence = 50;   // 0-100, gates the staff tables
   int zooEmployeeRel = 60;          // 0-100, how the keeper feels about the hero (328)
   int zooStaff = 0;
+  int zooSize = 2;                  // 1 small / 2 medium / 3 large; the pool is 10/20/40 (364)
+  int zooStaffCustodial = 0;        // the three counters SimZoo::.ctor splits its pool into
+  int zooStaffSecurity = 0;
+  int zooStaffCustomerRel = 0;
   int zooAnimals = 0;
   int zooAttractions = 0;
   int zooEngagement = 50;        // 0-100, what the patrons make of it
@@ -664,6 +668,7 @@ struct Hero {
   };
   std::vector<GiftShopItem> giftShop;
   long long zooGiftRevenue = 0;   // what the shop took this year (363)
+  int zooMerchAge = -1;           // the year the merch order card last fired (363)
   std::string zooFeedbackTitle;   // the plain card a merch order answers with (363)
   std::string zooFeedbackBody;
 

@@ -23536,6 +23536,83 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 364. The zoo's staff split and the division-of-labor card
+
+The park's staff are one pool, and every helper that looks at them reads the same
+counter. `SimZoo::GetOperationsManagersStaffSize` (0x2b57bd8) is only a plot-size
+lookup - the int array at data 0xfc5284 is `{10, 20, 40}` for small, medium and
+large, and a park with no plot or an unknown one gets nothing. `SimZoo::.ctor`
+(0x2b56f60, whose only caller is `SimPlace::RefreshAvailableZoos` at 0x2a4a4ac)
+then splits that pool at random: custodial takes `[0, N/2)`, security takes
+`[0, whatever is left]` inclusive, and customer relations get the remainder. So a
+fresh park never starts at zero in all three counters.
+
+After that, only the custodial counter is ever read, and every helper misspells
+its own field while doing it:
+
+| helper | bands off the custodial share | returns |
+| --- | --- | --- |
+| `GetZooCustodialScore` 0x2b65a90 | >75 / >50 / >25 / else | 90..100 / 50..75 / 20..40 / 1..10 |
+| `GetCustomerRelationsTicketSalesBumpPercentage` 0x2b65ba4 | the same four bands | 0.20..0.25 / 0.10..0.15 / 0.02..0.08 / 0 |
+| `GetChanceOfSecurityBreach` 0x2b65cb4 | the same four bands | 0 / 5..10 / 10..20 / 20..30 |
+
+The ratio is `counter / divider * 100` with the float array at data 0xfc5328
+({10, 20, 40}), and there is no divide-by-zero guard: a park with no plot leaves
+the divisor at zero, the division yields infinity or NaN, and an AArch64
+comparison against NaN takes every band test as false, so every helper lands on
+its lowest band. The three getters and three setters at 0x2b56de0-0x2b56e08 have
+no callers at all, and the security and customer-relations counters (zoo+0xd0 and
+zoo+0xd8) are written but never read by any logic - the names of the helpers do
+not describe what they read.
+
+Each helper is consumed by exactly one card: the cleanliness card needs the
+custodial score under 20, the customer-service card needs the bump to be exactly
+zero (a `fcmp` against 0.0, so only the lowest band qualifies), and
+`ScenarioZooAgeUpTheft::ScenarioIsEligibleForRandomPush` (0x29aa4a8) fires when
+the breach chance beats `GetRandomNumber(0, 101)`. Answering either the
+cleanliness or the customer-service card with "Reallocate labor resources" pushes
+`ScenarioZooEmployeeManagerStaffManagement` (ctor 0x29e17b0, `RefreshScenario`
+0x29e19f8, `MiniGameCompleted` 0x29e1b2c): title #17882 "Division of Labor" under
+the zoo exterior #50857, body #11155 "Allocate your zoo's staff resources
+today!", journal #24888 "I reallocated my zoo's work force.", and minigame id
+0x30. `MiniGameCompleted` writes its three answers straight back into zoo+0xd0,
++0xd4 and +0xd8.
+
+### The port
+
+`Hero` carries the three counters plus the plot size
+(`zooStaffCustodial`, `zooStaffSecurity`, `zooStaffCustomerRel`, `zooSize`).
+`Sim::ensureZooFields` draws a plot size and calls `Sim::zooSplitStaff`, which
+mirrors the constructor's three-part split from its own stream
+(`zooSplitRng_`). The three band helpers became `Sim::zooCustodialScore`,
+`Sim::zooCustomerBump` and `Sim::zooBreachChance`, all reading the custodial
+counter through `Sim::zooCustodialRatio`, and the two card gates now ask them
+instead of the flat coins the earlier sections carried. Answering either card
+with the first option pushes `kPendingZooDivision`, which renders the
+division-of-labor card and applies a fresh split.
+
+The harness hook `zoo_staff` pins the share - "high" gives custodial the whole
+pool, "low" gives customer relations the whole pool - so a test can reach the
+bands without playing the minigame.
+
+**Ceilings.** The minigame board itself is not modelled: the card re-splits the
+pool at random instead of taking three slider answers, which is the same
+approximation the other mini-game cards in this port use. The split is applied at
+park creation and on each division card, but hiring or dismissing staff does not
+re-split the counters, because the port keeps a head-count rather than a roster.
+The no-guard NaN path is reproduced only as far as the lowest band, since the
+port clamps an empty pool to a zero ratio rather than performing the division.
+
+**Verified.** `_re/tools/test_zoo_staff.py` walks twelve seeds with the custodial
+share pinned high and finds no cleanliness card, no customer-service card and no
+theft; it forces the first answer on both cards and finds the division card with
+its title, body, single "OK" and journal line and no stat deltas; and it checks
+that a low share still leaves theft available (3 cards).
+
+The full 148-test suite ran on the binary these notes describe (3afbd13c..., 148 PASS /
+0 FAIL): `_re/tools/test_zoo_staff.py` walks the split and both hand-offs, and the
+gift-shop correction shipped in the same commit is covered by
+`_re/tools/test_zoo_merch_order.py`.
 ## 363. The gift shop and the merchandise order
 
 The zoo's gift shop is a stock list on the park, and every unit on the shelves was put
@@ -23570,13 +23647,15 @@ sums in.
 
 `ScenarioZooAgeUpMerchOrder` (.ctor `0x29a8a7c`, `RefreshScenario 0x29a8a88`,
 `ChoiceSelectedAtIndex 0x29a91d0`, election `0x29a9354`) is the card that restocks a
-line. `GetRandomDepletedGiftShopItem 0x29a8f2c` picks a product with no units left;
-the card is titled `#29996 'Merch Order'` under the `#50857 'Zoo'` exterior and its body
-is `#17618 'Determine how many more '` + the catalogue plural + `#1958 ' featuring '` +
-the animal's name + `#3532 ' the '` + its breed + `#4192 " you'd like to order from your
-merchandise supplier."`. The table carries Current Unit Count, Cost Per Unit, Available
-Capital and Featured Animal, in that order, and the buttons are `#33003 'Order more'` and
-`#32186 'Nothing'`.
+line. `GetRandomDepletedGiftShopItem 0x29a8f2c` picks a product with no units left.
+The election is a hard chain: a park, a hero of at least eighteen, a pot still above zero,
+a depleted line and more than three years since the card last appeared. The card is titled
+`#29996 'Merch Order'` under the `#50857 'Zoo'` exterior and its body is
+`#50379 'Your gift shop has sold all of the '` + the catalogue Product + `#1958 ' featuring
+'` + the animal's name + `#3532 ' the '` + its breed + `#4218 '!'`. Its table carries just
+Cost Per Unit and Available Capital, and the buttons are `#33003 'Order more'` and
+`#32186 'Nothing'`. The card writes no journal line of its own -- the native passes a null
+narrative to `LifeLog` -- so the only line an order leaves is the one the order card writes.
 
 Ordering chains `ScenarioZooGiftShopProductOrderUnits` (ctor `0x29f2d08`), which folds
 the picker's slider into its own answer: the slider runs from one to
@@ -23608,15 +23687,24 @@ lines it was bought with; the herd carries no popularity figure, so the animal's
 the popularity formula is a flat 42 instead of `0.7 * animalPop`; the native gate is a
 line with zero units, but its sale figure is truncated, which parks a line of one unit at
 the gate for good, so the port reads two or fewer as sold out; the order card's slider is
-folded into the answer and always orders the most the pot can pay for; the refusal's own
-tail is not recovered, so the port writes the answer and nothing else; and the two counts
-are grouped by a local helper rather than `NumberGrouping`.
+folded into the answer and always orders the most the pot can pay for, so its own sentence
+`#17618 'Determine how many more '` + plural + `#1958` + animal + `#3532` + breed + `#4192
+" you'd like to order from your merchandise supplier."` and its Current Unit Count and
+Featured Animal rows are never printed; the refusal's own tail is not recovered, so the
+port writes the answer and nothing else; and the counts are grouped by a local helper
+rather than `NumberGrouping`.
 
-Verified: `_re/tools/test_zoo_merch_order.py` walks twenty lives and reads 43 merch cards
-(18 answered "Order more", 25 "Nothing") over 13 featured animals, each body matching the
-recovered sentence and its four rows, with no stat movement; the forced order lane writes
+Verified: `_re/tools/test_zoo_merch_order.py` walks twenty lives and reads 25 merch cards
+(13 answered "Order more", 12 "Nothing") over 9 featured animals, each body matching the
+recovered sentence and its two rows, with no stat movement; the forced order lane writes
 the journal line, keeps the count under `MaxUnits` and is answered by the arrival card,
 and the forced refusal writes neither.
+
+Correction: the first pass of this section put the order card's sentence and rows on the
+merch card, because the two cards were recovered from the same sweep and the order card's
+slider is folded into the answer here. The contract above is the one the code and the test
+now follow; the order card's own heading, sentence and two extra rows are recorded in the
+ceilings because the port never prints them.
 
 The full 147-test suite ran on the binary these notes describe (7096a8e5..., 146 PASS /
 1 FAIL). The failure is test-side and was fixed here without a code change: the new
@@ -23625,6 +23713,7 @@ carries as a float, so the strike's wipe came out one point further from the
 reconstructed int than the test allowed (it accepted exactly -100 before); that check
 now allows two points either way, which is the drift REPORT 247 already records. It was
 re-run green.
+
 ## 362. The artist-in-residence's contract
 
 The guest act the casino books has a contract length, and when it runs out the house
