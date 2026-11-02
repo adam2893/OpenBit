@@ -647,9 +647,9 @@ struct Hero {
   bool zooHerdSeeded = false;   // the park's animals are only put there once
   int zooOwnedSince = -1;
   int zooPregAge = -1;
-  int zooTheftAge = -1;
-  int zooCleanAge = -1;
-  int zooCustAge = -1;     // the year the park's ticket sales were last flagged    // the year the operations manager last complained    // the year the park was last burgled
+  int zooTheftAge = -1;    // the year the park was last burgled (346)
+  int zooCleanAge = -1;    // the year the park's cleanliness was last flagged (348)
+  int zooCustAge = -1;     // the year the operations manager last complained (349)
   int zooEmployeeHiredAge = -1;   // the hero's age when the keeper was hired (353)
   int zooEmployeeResignAge = -1;  // the year the keeper last handed in notice
   int zooEmployeeAge0 = -1;        // the keeper's age on the day they were hired (354)
@@ -677,6 +677,10 @@ struct Hero {
   int zooMerchAge = -1;           // the year the merch order card last fired (363)
   std::string zooFeedbackTitle;   // the plain card a merch order answers with (363)
   std::string zooFeedbackBody;
+  // The shop's stocking chain (REPORT.en.md 368): the add-product card hands its line to
+  // the unit card, which hands the units and the animal to the price card.
+  GiftShopItem zooShopStaged;
+  int zooShopStockAge = -1;       // the year the add-product card last fired (368)
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.

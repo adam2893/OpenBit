@@ -679,6 +679,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
       zooGiftRng_(seed ^ 0x3f6a1d04c8527b9eULL ^ 0x87d2c5b10e46a9f3ULL),
+  zooShopRng_(seed ^ 0x71b4c05d3a9e2f68ULL ^ 0x26c8e19b04f7d53aULL),
     zooStatRng_(seed ^ 0x1d4b7a93e6c05f28ULL ^ 0x63e8d1a57bf4029cULL),
       zooSplitRng_(seed ^ 0x51c7b2e94a6d380fULL ^ 0x9e2f41d7c6b58a03ULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
@@ -4211,6 +4212,8 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingBookOffer) return fameBookYear(life, out, forcedChoice);
     if (kind == kPendingTalkShow) return fameTalkShowYear(life, out, forcedChoice);
     if (kind == kPendingCommercial) return fameCommercialYear(life, out, forcedChoice);
+    if (kind == kPendingZooShopUnits) return zooShopUnitsYear(life, out, forcedChoice);
+    if (kind == kPendingZooShopPrice) return zooShopPriceYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -4577,6 +4580,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-employee-death"},
         {&Sim::zooMerchYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-merch-order"},
+        {&Sim::zooShopStockYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-shop-stock"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
         {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -10718,6 +10723,201 @@ bool Sim::zooMerchYear(Life& life, AgeUp& out, int forcedChoice) {
                   it.animal + " the " + it.breed +
                   " to restock the shelves in my zoo's gift shop.";
   life.pendingCards.push_back(kPendingZooFeedback);
+  return true;
+}
+
+// The shop's stocking chain (REPORT.en.md 368). The native stocks the shelves through the
+// gift-shop menu: ScenarioZooGiftShopAddProduct picks a catalogue line, its BuildDetails
+// child picks the units and the featured animal, and SetPrice sets the price and charges
+// the pot. The port has no menu, so the first of the three is a family card and the other
+// two are the cards it chains, exactly as the native builds them.
+bool Sim::zooShopStockYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  // The native row is offered when the shelves have room; the port also keeps two years of
+  // quiet after a card so a park cannot restock its whole shop in one life (shortcut: 368).
+  if (h.zooShopStockAge >= 0 && h.age - h.zooShopStockAge <= 2) return false;
+  const int room = zooGiftShopCapacity(h) - int(h.giftShop.size());
+  if (room < 1) return false;
+  if (!ensureTable("a16_zoo-gift-shop-item-enc")) return false;
+  const Table& t = tbl("a16_zoo-gift-shop-item-enc");
+  // The candidate loop skips a catalogue line the shelves already carry. The native
+  // filter is a LINQ Where over the item list whose helper identities are unrecovered,
+  // but the product it compares is the one the row is keyed by (shortcut: 368).
+  std::vector<size_t> rows;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string p = trim(t.at(r, "Product"));
+    if (p.empty()) continue;
+    bool used = false;
+    for (size_t i = 0; i < h.giftShop.size(); ++i)
+      if (lower(h.giftShop[i].product) == lower(p)) used = true;
+    if (!used) rows.push_back(r);
+  }
+  if (rows.empty()) return false;
+  auto grouped = [](long long v) {
+    std::string d = std::to_string(v < 0 ? -v : v);
+    for (size_t i = d.size(); i > 3; i -= 3) d.insert(i - 3, ",");
+    return (v < 0 ? "-" : "") + d;
+  };
+  // A dropdown entry is CapitalizeAllMajorWordsInString(Product) + ' (' + price + '/Unit)'
+  // (REPORT.en.md 368).
+  auto capped = [](const std::string& s) {
+    std::string o = s;
+    bool start = true;
+    for (size_t i = 0; i < o.size(); ++i) {
+      if (start && o[i] >= 'a' && o[i] <= 'z') o[i] = char(o[i] - 'a' + 'A');
+      start = o[i] == ' ' || o[i] == '-';
+    }
+    return o;
+  };
+  std::vector<std::string> labels;
+  for (size_t k = 0; k < rows.size(); ++k) {
+    long long unit = static_cast<long long>(t.num(rows[k], "Price Per Unit"));
+    if (unit < 1) unit = 1;
+    labels.push_back(capped(trim(t.at(rows[k], "Product"))) + " (" + money(unit) + "/Unit)");
+  }
+  const int pick = forcedChoice < 0 ? int(zooShopRng_.below(uint32_t(rows.size()))) : forcedChoice;
+  const size_t which = size_t(pick) < rows.size() ? size_t(pick) : 0;
+  Hero::GiftShopItem it;
+  it.product = trim(t.at(rows[which], "Product"));
+  it.plural = trim(t.at(rows[which], "Plural"));
+  it.popScore = static_cast<int>(t.num(rows[which], "Popularity Score"));
+  it.pricePerUnit = static_cast<long long>(t.num(rows[which], "Price Per Unit"));
+  if (it.pricePerUnit < 1) it.pricePerUnit = 1;
+  it.minSale = static_cast<long long>(t.num(rows[which], "Min Sale Price"));
+  it.maxSale = static_cast<long long>(t.num(rows[which], "Max Sale Price"));
+  if (it.maxSale < it.minSale) it.maxSale = it.minSale;
+  h.zooShopStaged = it;
+  out.table = "registry:ScenarioZooGiftShopAddProduct";
+  out.title = "New Merchandise";   // #31340
+  std::string rowsTxt;
+  auto row = [&rowsTxt](const std::string& label, const std::string& value) {
+    if (!rowsTxt.empty()) rowsTxt += "\n";
+    rowsTxt += label + ": " + value;
+  };
+  row("Open Shelf Space", grouped(room));          // #32924
+  row("Available Capital", money(h.zooBank));      // #12531
+  out.body = std::string("Place an order for custom merchandise to sell in your zoo's") +
+             " gift shop today!\n\n" + rowsTxt;   // #34029
+  out.cta = "What will you do?";
+  out.options = labels;
+  out.choice = labels[which];
+  h.zooShopStockAge = h.age;
+  life.pendingCards.push_back(kPendingZooShopUnits);
+  return true;
+}
+
+// ScenarioZooGiftShopAddProductBuildDetails (0x29f033c): the units and the animal.
+bool Sim::zooShopUnitsYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  Hero::GiftShopItem& it = h.zooShopStaged;
+  if (it.product.empty()) return false;
+  auto grouped = [](long long v) {
+    std::string d = std::to_string(v < 0 ? -v : v);
+    for (size_t i = d.size(); i > 3; i -= 3) d.insert(i - 3, ",");
+    return (v < 0 ? "-" : "") + d;
+  };
+  out.table = "registry:ScenarioZooGiftShopAddProductBuildDetails";
+  out.title = "Merch Order";   // #29996
+  std::string rowsTxt;
+  auto row = [&rowsTxt](const std::string& label, const std::string& value) {
+    if (!rowsTxt.empty()) rowsTxt += "\n";
+    rowsTxt += label + ": " + value;
+  };
+  row("Cost Per Unit", money(it.pricePerUnit));     // #16422
+  row("Available Capital", money(h.zooBank));       // #12531
+  out.body = std::string("Determine how many units you'd like to order from your") +
+             " merchandise supplier and what animal you'd like them to feature.\n\n" +
+             rowsTxt;   // #17619
+  out.cta = "What will you do?";
+  out.options = {"Place order", "Never mind"};   // #34033 / #31255
+  const int pick = forcedChoice < 0 ? int(zooShopRng_.below(2)) : forcedChoice;
+  const int which = pick > 1 ? 1 : pick;
+  out.choice = out.options[size_t(which)];
+  if (which == 1) {
+    h.zooShopStaged = Hero::GiftShopItem();
+    return true;
+  }
+  // The card's slider runs from one unit to min(bank / PricePerUnit, 500), starting at half
+  // of that ceiling (REPORT.en.md 368). The port takes the starting point, which is what a
+  // player who does not touch the slider orders.
+  long long ceiling = it.pricePerUnit > 0 ? h.zooBank / it.pricePerUnit : 500;
+  if (ceiling > 500) ceiling = 500;
+  if (ceiling < 1) ceiling = 1;
+  it.units = ceiling / 2;
+  if (it.units < 1) it.units = 1;
+  // The animal dropdown lists the park's animals, less the ones another line already
+  // features. Its exclusion predicate is a LINQ Where whose helpers are unrecovered; the
+  // featured animal is what it can compare (shortcut: 368).
+  std::vector<size_t> free;
+  for (size_t k = 0; k < h.zooHerd.size(); ++k) {
+    const std::string name =
+        h.zooHerd[k].name.empty() ? h.zooHerd[k].species : h.zooHerd[k].name;
+    bool used = false;
+    for (size_t i = 0; i < h.giftShop.size(); ++i)
+      if (lower(h.giftShop[i].animal) == lower(name)) used = true;
+    if (!used) free.push_back(k);
+  }
+  if (free.empty()) {
+    for (size_t k = 0; k < h.zooHerd.size(); ++k) free.push_back(k);
+  }
+  if (!free.empty()) {
+    const size_t k = free[zooShopRng_.below(uint32_t(free.size()))];
+    it.animal = h.zooHerd[k].name.empty() ? h.zooHerd[k].species : h.zooHerd[k].name;
+    it.breed = h.zooHerd[k].breed.empty() ? h.zooHerd[k].species : h.zooHerd[k].breed;
+  } else if (!h.zooAnimalName.empty() || !h.zooAnimalSpecies.empty()) {
+    it.animal = h.zooAnimalName.empty() ? h.zooAnimalSpecies : h.zooAnimalName;
+    it.breed = h.zooAnimalSpecies;
+  }
+  if (it.animal.empty()) return false;
+  h.zooShopStaged = it;
+  life.pendingCards.push_back(kPendingZooShopPrice);
+  return true;
+}
+
+// ScenarioZooGiftShopAddProductSetPrice (0x29f1454): the price, the charge and the item.
+bool Sim::zooShopPriceYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  Hero::GiftShopItem it = h.zooShopStaged;
+  if (it.product.empty()) return false;
+  auto grouped = [](long long v) {
+    std::string d = std::to_string(v < 0 ? -v : v);
+    for (size_t i = d.size(); i > 3; i -= 3) d.insert(i - 3, ",");
+    return (v < 0 ? "-" : "") + d;
+  };
+  out.table = "registry:ScenarioZooGiftShopAddProductSetPrice";
+  out.title = "Merch Price";   // #29997
+  std::string rowsTxt;
+  auto row = [&rowsTxt](const std::string& label, const std::string& value) {
+    if (!rowsTxt.empty()) rowsTxt += "\n";
+    rowsTxt += label + ": " + value;
+  };
+  row("Units Available", grouped(it.units));   // #44885
+  out.body = "Your order of " + it.plural + " featuring " + it.animal + " the " + it.breed +
+             " just arrived!\n\nSet a price before putting them on your gift shop's shelves."
+             "\n\n" + rowsTxt;   // #50438 + #1958 + #3532 + #2645
+  out.cta = "What will you do?";
+  out.options = {"OK"};   // #32432
+  out.choice = "OK";
+  // The card's slider runs between the catalogue's own sale band and starts at its
+  // midpoint, which is the price a player who does not touch it sets (REPORT.en.md 368).
+  it.sellPrice = (it.minSale + it.maxSale) / 2;
+  it.name = spyUpperFirst(it.animal + " " + it.product);
+  // The native adds the item and then charges the pot, so a shop already at its ceiling is
+  // still billed without gaining a line. The port's card can only open with room to spare,
+  // so that order is kept for fidelity and cannot be observed (REPORT.en.md 368).
+  h.giftShop.push_back(it);
+  h.zooBank -= it.units * it.pricePerUnit;
+  out.narrative = "I began selling " + it.plural + " featuring " + it.animal + " the " +
+                  it.breed + " in my zoo's gift shop.";   // #23625 + #1958 + #3532 + #2401
+  h.zooShopStaged = Hero::GiftShopItem();
   return true;
 }
 

@@ -145,6 +145,8 @@ enum PendingCard {
   kPendingBookOffer = 33,         // the publisher's book deal (REPORT.en.md 336)
   kPendingTalkShow = 45,           // the talk show invitation (REPORT.en.md 365)
   kPendingCommercial = 46,         // the commercial offer (REPORT.en.md 365)
+  kPendingZooShopUnits = 47,       // the shop chain's unit card (REPORT.en.md 368)
+  kPendingZooShopPrice = 48,       // the shop chain's price card (REPORT.en.md 368)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -801,6 +803,9 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   double zooBreachChance(const Hero& h);
   bool zooMerchYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooShopStockYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooShopUnitsYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooShopPriceYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedGiftShop(Life& life);
   int zooGiftShopCapacity(const Hero& h);   // shelves by plot size (REPORT.en.md 366)
   void zooSeedAnimalStats(Life& life, Hero::ZooHerdAnimal& a, const std::string& species,
@@ -1335,6 +1340,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooStaffRng_;   // the keeper's hire age and lifespan (REPORT.en.md 354)
   Rng zooStatRng_;    // an animal own stats, drawn once at birth (REPORT.en.md 366)
   Rng zooGiftRng_;    // the gift shop own stream (REPORT.en.md 363)
+  Rng zooShopRng_;    // the stocking chain own stream (REPORT.en.md 368)
   Rng zooSplitRng_;   // the park plot size and staff split stream (REPORT.en.md 364)
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng zooLifeRng_;    // the zoo lifecycle cards' own stream

@@ -72,8 +72,10 @@ for seed in range(1, 161):
         assert pool[0] in (pray_bless if positive else pray_curse), (seed, lines)
         assert "<" not in pool[0], (seed, lines)
 
+# The crash-out pool rides the same wheel; the zoo gift shop's stocking card (REPORT.en.md
+# 368) joined it and pushed the pool past its old eightieth seed, so the sweep is wider.
 crash_cards = 0
-for seed in range(1, 81):
+for seed in range(1, 141):
     for event in run(seed, fame=80)["events"]:
         if event.get("table") != "a16_crashout-scenario-enc":
             continue

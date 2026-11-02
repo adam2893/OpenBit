@@ -23536,6 +23536,123 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 368. The gift shop's stocking chain
+
+The native park opens its gift shop empty and stocks it through a menu the port has no screen
+for, so the park in section 363 stocked three lines when it was bought. What that shortcut
+skipped is a chain of three cards, and all three are recovered text-for-text.
+
+### The add-product card
+
+`ScenarioZooGiftShopAddProduct` — `.ctor` 0x29ef454, `RefreshScenario` 0x29ef460,
+`ChoiceSelectedAtIndex` 0x29eff78. The gift-shop menu's row (0x3188d84) offers it only when
+`SimZoo::GetMaximumNumberGiftShopItems` (0x2b5df18) exceeds the shelf count and
+`SimZoo::HasGiftShopOptions` (0x2b66968) is non-zero.
+
+- Exterior #50857 'Zoo', title #31340 'New Merchandise', body #34029 'Place an order for custom
+  merchandise to sell in your zoo's gift shop today!'.
+- Table rows: #32924 'Open Shelf Space' = NumberGroupingStringForAmount(capacity - count);
+  #12531 'Available Capital' = CurrencyStringForAmountWithBigNumberShorthand of the pot.
+- One dropdown, #15586 'Choose a product', whose entries are
+  CapitalizeAllMajorWordsInString(Product) + #688 ' (' + the currency string of PricePerUnit +
+  #6524 '/Unit)'. Candidates are the catalogue rows whose product the shelves do not already
+  carry; that filter is a LINQ Where over the item list whose helper symbols are unrecovered,
+  so the equality it uses is INFERRED from the key the row is compared by (the product string).
+- One choice, #13320 'Begin order'. The card also carries a dismiss button.
+
+### The unit card
+
+`ScenarioZooGiftShopAddProductBuildDetails` — `.ctor` 0x29f033c, `RefreshScenario` 0x29f0420,
+`ChoiceSelectedAtIndex` 0x29f0ed0, built by the add-product card and pushed on its
+NextScenario.
+
+- Exterior #50857 'Zoo', title #29996 'Merch Order', body #17619 "Determine how many units you'd
+  like to order from your merchandise supplier and what animal you'd like them to feature.".
+- Rows: #16422 'Cost Per Unit' = the currency string of item.PricePerUnit; #12531 'Available
+  Capital' = the pot.
+- A slider titled #44884 'Units' runs from one to min(floor(Bank / PricePerUnit), 500) and starts
+  at half that ceiling, with the integer-step flag set.
+- A dropdown titled #33795 'Pick an animal' lists the park's animals less the ones another line
+  already features — the same LINQ caveat, so INFERRED.
+- Choices #34033 'Place order' and #31255 'Never mind'; dispatch is the lower-cased label against
+  #63341 'order'. An order writes UnitsAvailable = min(MaxUnits, slider) before any payment, so the
+  accounting waits for the price card, and 'Never mind' only logs and refreshes.
+
+### The price card
+
+`ScenarioZooGiftShopAddProductSetPrice` — `.ctor` 0x29f1454, `RefreshScenario` 0x29f15b4,
+`ChoiceSelectedAtIndex` 0x29f1a8c.
+
+- Exterior #50857 'Zoo', title #29997 'Merch Price', body #50438 'Your order of ' + Plural +
+  #1958 ' featuring ' + the animal's name + #3532 ' the ' + breed + #2645 " just arrived!
+
+Set a
+  price before putting them on your gift shop's shelves.".
+- Row #44885 'Units Available' = NumberGroupingStringForAmount(UnitsAvailable).
+- A slider titled #36646 'Sale Price' runs from the local floor of MinSalePrice to the local floor
+  of MaxSalePrice, starting at floor(min + max) * 0.5.
+- One choice, #32432 'OK'. It writes SellPrice, calls SimZoo::AddGiftShopItem (0x2b5de48) and only
+  then debits UnitsAvailable * PricePerUnit from the pot — in that order, so a shop already at its
+  ceiling is billed without gaining a line. The journal is a tag out of #43301 'This is a top
+  seller' / #21484 'Get this on the floor!' / #14206 'Business mogul', the line #50540 "Your zoo's
+  gift shop began selling " + plural + ' featuring ' + name + ' the ' + breed, the row pair #44887
+  'Units Purchased' / #36647 'Sale Price Per Unit', and the entry #23625 'I began selling ' +
+  plural + #1958 + name + #3532 + breed + #2401 " in my zoo's gift shop.".
+
+The chain draws no random number anywhere: every card is slider- and dropdown-driven.
+
+### The port
+
+- Sim::zooShopStockYear is the wheel family zoo-shop-stock, gated on hero.ownsZoo. It is offered
+  while zooGiftShopCapacity (the 4/6/8 shelf count of section 366) still has room and a catalogue
+  line is not already on the shelves, and it keeps two years of quiet after a card. The native
+  offers the row whenever the menu is opened; one card every three years is a shortcut, since a
+  park otherwise stocks its whole shop the year it is bought.
+- The card's options are the dropdown's own entries, one per catalogue row, so a script chooses a
+  product by index and choice reports the label that was taken. A hero who is not told which line
+  to take draws one from the chain's own stream, zooShopRng_.
+- Both slider cards take their starting point, which is what a player who never touches a slider
+  buys and prices: half of min(bank / PricePerUnit, 500) units, and the midpoint of the
+  catalogue's sale band as the price.
+- The item travels between the cards in Hero::zooShopStaged, so the price card can charge the pot
+  after the unit card has chosen the count.
+- The chain draws nothing from the main stream, so a park that never stocks keeps every other
+  sequence it had.
+- The same commit gave zooTheftAge, zooCleanAge and zooCustAge their own comment lines; a patch in
+  section 364 had fused three trailing comments onto one declaration.
+
+### Ceilings
+
+- The screen that offers the chain is not modelled: the first card is a yearly opportunity, and
+  the other two are the cards it chains, as in the native.
+- The candidate filter and the animal filter are INFERRED (unrecovered LINQ helpers): the port
+  compares the product string and the featured animal's name.
+- The 'Begin order' dismissal has no counterpart: taking no line means declining the yearly
+  opportunity, which is a scripted choice only.
+- The price card's journal is emitted as one line; the native writes two entries and tags them
+  from a pool of three, and the tags are not rendered.
+- The 'Never mind' reply clears the staged item and writes nothing, matching the native's
+  log-only path.
+- The country's local-price scaling is not applied: every cost the port carries is already in the
+  hero's own country, so the local floor is the catalogue value.
+
+### Verified
+
+_re/tools/test_zoo_shop_stock.py walks eight eighty-age lives with the family forced, and parses
+every one of the thirty-seven add-product cards against the catalogue: the body's two rows, the
+label's product and price, and a unit card at the same age whose answer is one of the two labels.
+Each order is then required to be followed by a price card whose body names the same line and
+animal as its journal entry, and every card's free-slot count must stay within the eight-slot
+ceiling of the largest plot. Both lanes were seen (sixteen orders, twenty-one refusals), the three
+years of quiet hold between stocking cards, and no card moved a stat bar.
+
+
+The full 152-test suite ran on the binary these notes describe (a9008fc9..., 151 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the new
+family's wheel ticket pushed the crash-out pool's third card past the sweep's eightieth
+seed, so that test now walks a hundred and forty seeds (four cards measured). It was
+re-run green.
+
 ## 367. The astronaut's two career cards
 
 The astronaut subsystem's yearly tick is `SimSpecialJobAstronaut::IncrementAge` (0x2bbd928 in
