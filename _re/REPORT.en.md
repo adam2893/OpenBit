@@ -23511,6 +23511,43 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 378. The casino's expand card
+
+The full 161-test suite ran on the binary these notes describe (c8e10c67e1e9d4b21471..., 161 PASS / 0 FAIL): _re/tools/test_casino_expand.py exercises the card and nothing else moved.
+
+The casino menu's expansion row opens `ScenarioCasinoExpand` (CTA `0x35c7ce4`), the card
+a casino owner uses to climb one rung of the building ladder. Like sections 373 to 377 it
+is menu-only natively -- nothing in an age-up pipeline pushes it -- so the port offers it
+as its own guarded family rather than pretending an age-up dealt it.
+
+Recovered text: the body is `#45123 'Upgrade your '` + the casino's display name +
+`#3822 ' today!'`; the rows are `#19325 'Expansion'`, printed with the next structure
+wrapped in `#5144 ')'`, and `#12534 'Available Funds'`; the single answer is
+`#45117 'Upgrade'`. Nothing else in the native method carried text, so the port prints
+exactly those three pieces and writes no journal.
+
+The ladder is the table's, which is why this card is worth having:
+`a16_casino-casino-structure-enc` sells `gambling den` at 100,000, `game parlor` at
+300,000, `clubhouse` at 300,000, and the two rows above them, each with its amenity, game
+room and entertainment capacities and its base monthly cost. The port already carried
+that ladder as the casino's tier (`casinoType`, section 319), so the card finds the hero's
+current row by structure name, takes the cheapest row priced above it, charges the
+difference between the two prices, moves the hero to that structure, sets the tier to the
+row's index plus one and refreshes the base monthly cost from the row. A hero at the top
+row, short of the price, or inside the five-year cooldown gets nothing.
+
+`shortcut:` the native price flow was not recovered, so charging the price difference
+rather than the full price of the new structure is the documented choice; if the recovered
+price ever lands, this is the line to change. The card also does not redeal the casino's
+amenity, game-room and entertainment slots, which the port fills at creation: raising the
+tier lifts the revenue multipliers and the monthly cost but does not by itself add a slot.
+
+The full test: `_re/tools/test_casino_expand.py` plays forty casino lives, demands the
+recovered body on every card, a positive price, a dollar sign on both money rows, the
+`Upgrade` answer, flat deltas, no repeat inside five years, at least two different
+structures across the run, and zero cards in the ten-seed no-casino control. It prints
+`cards: 15 | structures seen: 3 | cooldown steps: 2`.
+
 ## 377. The zoo's invest card
 
 The zoo menu's capital row opens `ScenarioZooInvest` (CTA `0x29eb8fc`), the card a

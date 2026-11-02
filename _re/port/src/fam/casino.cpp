@@ -1563,6 +1563,63 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 // shortcut: same as the zoo's card -- menu-only natively, a text field the port
 // cannot type into, so a fresh name is drawn from the casino's creation pool and
 // never the name it already has. No journal is written.
+// ScenarioCasinoExpand (REPORT.en.md 378): the casino menu's upgrade card, CTA
+// 0x35c7ce4. Recovered literals: body #45123 'Upgrade your ' + the casino's
+// display name + #3822 ' today!', rows #12534 'Available Funds' and #19325
+// 'Expansion' (the row that prints the next structure, wrapped with #5144 ')'),
+// and the answer #45117 'Upgrade'.
+//
+// shortcut: the card is menu-only natively, so it is offered here as its own
+// family the way 373-377 are. The rung it climbs and the price it charges are the
+// table's: a16_casino-casino-structure-enc sells the structures in price order, so
+// the next row is the expansion and the difference between the two prices is what
+// the hero pays. The native price flow was not recovered, so charging the
+// difference rather than the full price is the documented choice. No journal is
+// written: the narrative was not recovered.
+bool Sim::casinoExpandYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoExpandAge >= 0 && h.age - h.casinoExpandAge < 5) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_casino-casino-structure-enc")) return false;
+  const Table& t = tbl("a16_casino-casino-structure-enc");
+  size_t cur = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r)
+    if (trim(t.at(r, "Structure Type")) == h.casinoStructure) { cur = r; break; }
+  if (cur == size_t(-1)) return false;
+  const double curPrice = t.num(cur, "Price");
+  size_t next = size_t(-1);
+  for (size_t r = 0; r < t.size(); ++r) {
+    const double price = t.num(r, "Price");
+    if (price <= curPrice) continue;
+    if (next == size_t(-1) || price < t.num(next, "Price")) next = r;
+  }
+  if (next == size_t(-1)) return false;
+  const long long price = static_cast<long long>(t.num(next, "Price")) -
+                          static_cast<long long>(curPrice);
+  if (price < 0 || h.money < price) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoExpandAge = h.age;
+  const std::string becomes = trim(t.at(next, "Structure Type"));
+  h.casinoStructure = becomes;
+  h.casinoType = int(next) + 1;
+  if (t.has("Base Monthly Cost")) h.casinoBaseMonthlyCost = (long long)t.num(next, "Base Monthly Cost");
+  h.money -= price;
+  out.table = "registry:ScenarioCasinoExpand";
+  out.title = "Casino";  // #15240
+  out.body = "Upgrade your " + h.casinoName + " today!";  // #45123 + #3822
+  out.body += "\n\nExpansion: " + becomes + " (" + money(price) + ")";  // #19325 / #5144
+  out.body += "\nAvailable Funds: " + money(h.money);                  // #12534
+  out.options = {"Upgrade"};                                           // #45117
+  out.choice = "Upgrade";
+  return true;
+}
+
 bool Sim::casinoRenameYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
