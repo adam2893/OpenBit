@@ -23511,6 +23511,30 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 372. The Noble Prize nomination
+
+The astronaut's publication has one card left that the port did not reach: the nomination itself. ScenarioAstronautNoblePrizePush is pushed from SimSpecialJobAstronaut::IncrementAge (0x2bbd928) with no eligibility method of its own, so the gate lives in the push loop: walk get_PublicationItems(), skip any publication whose latch (+0x28) is already set, require its peer review score (+0x18) to be 95 or better (cmp w8,#0x5f), roll GetRandomNumber(0,4) and proceed only on 0. The card is built with the publication (+0x170), the job (+0x178) and its narrative (+0x180), and the latch is set before the card is shown.
+
+RefreshScenario (0x34579b8) draws roll = GetRandomNumber(0, trunc(publication[+0x1c])) and prints Number of Nominees = roll + 100. The body is #48730 'You have been nominated for a Noble Prize in Physics for your publication, '' + Name + #4706 ''!''; the title is #31887 'Noble Prize Nomination'; the rows are #34834 'Publication' and #32379 'Number of Nominees'; the bar is #33546 'Peer Review'; and the two answers are #10545 'Accept the nomination' and #44245 'Turn it down'. The log line is #24372 with the same name and #4706.
+
+ChoiceSelectedAtIndex (0x3457d34) dispatches on String::Contains(label, #53607 'accept'). Accepting chains ScenarioAstronautNoblePrizeAccept; turning it down wraps #49674 'You turned down the nomination for ''' + Name + #4752 '''.''' in a bare Scenario titled #48947 'You lost', with no choices. Both lanes write the nomination's narrative and refresh the UI; neither touches money or a stat inside this card.
+
+The port adds Sim::astroNobleYear (family astro-noble, gate l.hero.astronaut, one wheel ticket) with its own stream nobleRng_, the priority call right after astroCareerYear, the latch field astroPubPrize and the score field astroPubScore. The turn-down lane queues kPendingAstroResult, rendered by Sim::astroResultYear as a plain title/body/OK card, which is also the shape a bare Scenario has in the port. The log line is the nomination line; the answer cards write nothing.
+
+Ceilings, all of them in the code beside the fields they affect:
+
+- The native card walks a list of publications. The port keeps one publication per hero, so the walk is one step and a life can be nominated once.
+- The peer review score is drawn on nobleRng_ when the publication is created instead of being composed from the publication's own quality; the producer of that number is outside this card and was not recovered.
+- +0x1c is a float in the native object and the port has no second field, so the nominee range reuses the int score it gates on.
+- The accept card's prose and its effects are outside this card and unrecovered, so accepting records the nomination and grants nothing rather than inventing a prize. There is deliberately no fabricated award line.
+- The accept and dismiss buttons are real choices in the port (-1 lets nobleRng_ pick, a scripted index forces one), and the nominee count is printed as a body row rather than a bar graph because the port renders bars as rows.
+
+The test hook is astro_pub: a peer review score that seeds the nomination by giving the hero a publication from a16_astronaut-publication-titles-enc, so the harness can reach the card without waiting for the 10%-a-year publication draw. It draws nothing.
+
+_re/tools/test_astro_noble.py walks twelve lives with the hook: each is nominated exactly once, the body parses into name, nominees and score, the log carries the nomination line, and the answer lanes split five accepts to seven refusals with the turn-down card carrying the same publication name. Two controls keep it honest: a publication that scores 60 never reaches the card, and a hero with no publication never sees one.
+
+The full 155-test suite ran on the binary these notes describe (e4441bf9..., 155 PASS / 0 FAIL): _re/tools/test_astro_noble.py drives the nomination, both answer lanes and the two controls, and nothing else moved.
+
 ## 371. The contract offer card
 
 The renewal card's first answer did not stand on its own: natively it chains

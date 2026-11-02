@@ -726,6 +726,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       aircraftRng_(seed ^ 0x3c6ef372fe94f82bULL ^ 0xa54ff53a5f1d36f1ULL),
       magRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0xcbbb9d5dc1059ed8ULL),
       pubRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
+      nobleRng_(seed ^ 0x7feb352d2b1e9c11ULL ^ 0x4c9e8fd2a71b36c5ULL),
       fameMediaRng_(seed ^ 0x2c1b3f57a9e04d68ULL ^ 0x7f4a8e21c6b93d05ULL),
       agentCompRng_(seed ^ 0xb5c0fbcfec4d3b2fULL ^ 0xe9b5dba58189dbbcULL),
       tbRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x94d049bb133111ebULL),
@@ -4218,6 +4219,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingZooShopOrderUnits) return zooShopOrderUnitsYear(life, out, forcedChoice);
     if (kind == kPendingZooShopAdjustPrice) return zooShopAdjustPriceYear(life, out, forcedChoice);
   if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
+  if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -4597,6 +4599,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::outdoorYear, [](const Life& l) { return l.hero.outdoors; }},
         {&Sim::hustlerYear, [](const Life& l) { return l.hero.hustle; }},
         {&Sim::astroYear, [](const Life& l) { return l.hero.astronaut; }},
+        {&Sim::astroNobleYear, [](const Life& l) { return l.hero.astronaut; }, 1,
+         "astro-noble"},
         {&Sim::racingYear, [](const Life& l) { return l.hero.racing; }},
         {&Sim::actorYear, [](const Life& l) { return l.hero.actor; }},
         {&Sim::financeYear, [](const Life& l) { return l.hero.investing; }},
@@ -4733,6 +4737,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     // rank's Too Old Age, the forced-retirement card. Both are built by the
     // astronaut's age-up chain in the game, not by the roulette (REPORT.en.md 367).
     if (forcedChoice < 0 && astroCareerYear(life, out, forcedChoice)) return true;
+    if (forcedChoice < 0 && astroNobleYear(life, out, forcedChoice)) return true;
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -15077,6 +15082,8 @@ bool Sim::astroYear(Life& life, AgeUp& out, int forcedChoice) {
       if (r != size_t(-1)) {
         const Table& t = tbl("a16_astronaut-publication-titles-enc");
         h.astroPublication = resolve(trim(t.at(r, "Name")));
+        h.astroPubScore = int(nobleRng_.below(101));
+        h.astroPubPrize = false;
         title = "A paper published";
         body = "Title: " + h.astroPublication + ".";
         mark("a16_astronaut-publication-titles-enc", r);
@@ -15322,6 +15329,101 @@ bool Sim::astroYear(Life& life, AgeUp& out, int forcedChoice) {
 // roulette -- CheckForPromotion builds ScenarioAstronautRankUp, and the agency builds
 // ScenarioAstronautAgencyRetire once the rank's own Too Old Age is reached -- so
 // they run ahead of the wheel and draw nothing but a title.
+// ScenarioAstronautNoblePrizePush (REPORT.en.md 372): a publication with a peer
+// review score of 95 or better can be nominated for a Noble Prize. Native
+// .ctor 0x3457984, RefreshScenario 0x34579b8, ChoiceSelectedAtIndex 0x3457d34,
+// pushed from SimSpecialJobAstronaut::IncrementAge 0x2bbd928 with no eligibility
+// method of its own. Fields: _publication +0x170 (Name +0x10, peer review +0x18,
+// nominee range float +0x1c, nominated latch +0x28), _special +0x178,
+// _narrative +0x180.
+//
+// The push loop walks get_PublicationItems(), skips any publication whose latch is
+// already set, requires the score >= 95 (cmp w8,#0x5f) and rolls GetRandomNumber(0,4)
+// for each, proceeding on 0. Refresh draws roll = GetRandomNumber(0, trunc(+0x1c))
+// and prints Number of Nominees = roll + 100. Body #48730 + Name + #4706, title
+// #31887, rows #34834 'Publication' and #32379 'Number of Nominees', the bar is
+// #33546 'Peer Review', choices #10545 'Accept the nomination' and #44245 'Turn it
+// down', narrative #24372 + Name + #4706. The accept lane chains
+// ScenarioAstronautNoblePrizeAccept; the turn-down lane wraps #49674 + Name + #4752
+// in a bare Scenario titled #48947 'You lost'.
+//
+// shortcut: the port keeps one publication per hero rather than a list, so the walk
+// is one step and the score is drawn on this card's own stream instead of being
+// composed from the publication's quality (whose producer is outside this card).
+// The accept card's prose and effects are unrecovered, so accepting records the
+// nomination and grants nothing rather than inventing a prize; the nominee range
+// uses the same int the gate reads because the port has no separate float field.
+bool Sim::astroNobleYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.astronaut || h.inPrison || h.age < 18) return false;
+  if (h.astroPublication.empty() || h.astroPubScore < 95 || h.astroPubPrize) return false;
+  if (forcedChoice < 0 && nobleRng_.below(4) != 0) return false;
+  // A year can run several families before one of them takes the card; the ones
+  // that bail leave their AgeUp half filled, so the card starts clean.
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  // The latch is set when the card is built, so a turned-down nomination is never
+  // offered again.
+  h.astroPubPrize = true;
+  const int nominees = 100 + int(nobleRng_.below(uint32_t(h.astroPubScore)));
+  out.table = "registry:ScenarioAstronautNoblePrizePush";
+  out.title = "Noble Prize Nomination";
+  out.body = "You have been nominated for a Noble Prize in Physics for your publication, '" +
+             h.astroPublication + "'!";
+  out.body += "\n\nPublication: " + h.astroPublication;
+  out.body += "\nNumber of Nominees: " + std::to_string(nominees);
+  out.body += "\n\nPeer Review: " + std::to_string(h.astroPubScore);
+  out.narrative = "I have been nominated for a Noble Prize in Physics for my publication, '" +
+                  h.astroPublication + "'!";
+  out.options = {"Accept the nomination", "Turn it down"};
+  int pick = forcedChoice >= 0 ? forcedChoice : int(nobleRng_.below(2));
+  if (pick > 1) pick = 1;
+  out.choice = out.options[size_t(pick)];
+  if (pick == 0) return true;
+  // 'You lost' is a bare Scenario with no choices: the port renders it as its own
+  // plain card, queued so it follows the nomination (REPORT.en.md 372).
+  h.astroFeedbackTitle = "You lost";
+  h.astroFeedbackBody = "You turned down the nomination for '" + h.astroPublication + "'.";
+  life.pendingCards.push_back(kPendingAstroResult);
+  return true;
+}
+
+// The plain card both a bare Scenario and the turn-down lane need: title, body and
+// one OK button (REPORT.en.md 372).
+bool Sim::astroResultYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:Scenario";
+  out.title = h.astroFeedbackTitle;
+  out.body = h.astroFeedbackBody;
+  out.options = {"OK"};
+  out.choice = "OK";
+  h.astroFeedbackTitle.clear();
+  h.astroFeedbackBody.clear();
+  return true;
+}
+
+// Test hook: arms the nomination card by giving the hero a publication whose peer
+// review score clears the gate (REPORT.en.md 372). No RNG is drawn.
+bool Sim::seedAstroPublication(Life& life, int score) {
+  Hero& h = life.hero;
+  h.astronaut = true;
+  const Table& t = tbl("a16_astronaut-publication-titles-enc");
+  if (t.size() == 0) return false;
+  h.astroPublication = resolve(trim(t.at(0, "Name")));
+  h.astroPubScore = score;
+  h.astroPubPrize = false;
+  return true;
+}
+
 bool Sim::astroCareerYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

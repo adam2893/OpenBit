@@ -151,6 +151,7 @@ enum PendingCard {
   kPendingZooShopOrderUnits = 50,  // the product card's order answer (REPORT.en.md 370)
   kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
   kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
+  kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -587,6 +588,7 @@ class Sim {
   // matches the house theme or does not, so a test reaches the two punter cards.
   void seedCasinoGuest(Life& life, bool sameTheme);
   void seedCasinoAct(Life& life, bool sameTheme);
+  bool seedAstroPublication(Life& life, int score);  // test hook (REPORT.en.md 372)
   void seedCasinoAmenity(Life& life, bool sameTheme);
   void seedZooStaff(Life& life, bool highCustodial);   // REPORT.en.md 364
   // The theme a singer genre belongs to, off the shipped genre table (REPORT 347).
@@ -843,6 +845,8 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool hustlerYear(Life& life, AgeUp& out, int forcedChoice);
   bool astroYear(Life& life, AgeUp& out, int forcedChoice);
   bool astroCareerYear(Life& life, AgeUp& out, int forcedChoice);
+  bool astroNobleYear(Life& life, AgeUp& out, int forcedChoice);
+  bool astroResultYear(Life& life, AgeUp& out, int forcedChoice);
   std::string outdoorToken(const std::string& key);
   std::string hustlerToken(const std::string& key);
   std::string astroToken(const std::string& key);
@@ -1179,6 +1183,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng aircraftRng_;    // the aircraft's age, wear, breakdowns and its cards (REPORT.en.md 334)
   Rng magRng_;         // the magazine offer's own stream (REPORT.en.md 335)
   Rng pubRng_;         // the publisher's book deal, not the reading card (REPORT.en.md 336)
+  Rng nobleRng_;       // the Noble Prize card's own stream (REPORT.en.md 372)
   Rng fameMediaRng_;  // the talk show and the commercial (REPORT.en.md 365)
   Rng agentCompRng_;  // ScenarioAgentCompliment's own stream (REPORT.en.md 327)
   Rng tbRng_;   // ScenarioSupervisorTeamBuilding's own stream (REPORT.en.md 117)

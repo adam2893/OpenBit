@@ -701,11 +701,19 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
   }
   p = findValue(json, "astro_missions");
   if (p != std::string::npos) {
-    while (p < json.size() && (json[p] == ' ' || json[p] == '	')) ++p;
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
     long long v = 0;
     if (readInt(json, p, v) == std::string::npos) return fail("astro_missions is not a number");
     if (v < 0 || v > 100) return fail("astro_missions must be between 0 and 100");
     spec.astro_missions = int(v);
+  }
+  p = findValue(json, "astro_pub");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("astro_pub is not a number");
+    if (v < 0 || v > 100) return fail("astro_pub must be between 0 and 100");
+    spec.astro_pub = int(v);
   }
   p = findValue(json, "cult");
   if (p != std::string::npos) {
@@ -1079,6 +1087,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.astronaut) {
     sim.makeAstronaut(life);
     if (spec.astro_missions > 0) life.hero.astroMissions = spec.astro_missions;
+    if (spec.astro_pub > 0) sim.seedAstroPublication(life, spec.astro_pub);
   }
   if (spec.producer) sim.makeTrade(life, 1);
   if (spec.soundcloud) sim.makeTrade(life, 2);

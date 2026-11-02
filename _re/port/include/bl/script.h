@@ -69,6 +69,7 @@ struct ScriptSpec {
   bool hustler = false;
   bool astronaut = false;
   int astro_missions = 0;  // test hook: the missions already flown (REPORT.en.md 367)
+  int astro_pub = 0;       // test hook: a publication with this peer review score (REPORT.en.md 372)
   // The car and the races (REPORT.en.md 75).
   bool racing = false;
   // A car of the hero's own, without the races (REPORT.en.md 323). The repair card only

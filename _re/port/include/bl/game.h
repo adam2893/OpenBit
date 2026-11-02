@@ -788,6 +788,12 @@ struct Hero {
   std::string astroAgency, astroRankTitle, astroShuttle, astroCrewmate, astroColleague;
   std::string astroDirector, astroMission, astroDestination, astroDiscovery;
   std::string astroBody, astroPublication, astroArtifact;
+  // The publication's peer review score and its Noble Prize latch (REPORT.en.md 372).
+  // The native card keeps a list of publications; the port keeps one.
+  int astroPubScore = -1;
+  bool astroPubPrize = false;
+  // A bare result card waiting to be shown: 'You lost' (REPORT.en.md 372).
+  std::string astroFeedbackTitle, astroFeedbackBody;
   bool astroCrewmateFemale = false, astroColleagueFemale = false, astroBeenToSpace = false;
   int astroRank = 1;              // 1 Cadet, 2 Captain, 3 Major, 4 General
   int astroRespect = 40, astroFitness = 40, astroTechnical = 40, astroFlight = 40;
