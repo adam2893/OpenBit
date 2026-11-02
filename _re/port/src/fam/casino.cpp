@@ -746,6 +746,7 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
             }
             h.casinoPopularity += h.casinoActPopularity * 2;
             tell("I booked " + h.casinoAct + (h.casinoActType.empty() ? std::string() : " the " + h.casinoActType) + ".");
+            h.casinoActMetAge = h.age;
             happiness += 2;
           }
         }
@@ -785,6 +786,9 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
                                                "", "", "", "", casinoRng_);
           h.casinoCelebrityGenreTheme = casinoGenreThemeOf(h.casinoCelebrityGenre);
           h.casinoCelebCraziness = 20 + int(casinoRng_.below(71));
+          h.casinoCelebFemale = pronounOtherSet_ ? pronounOtherFemale_ : casinoRng_.chance(0.5);
+          h.casinoCelebMetAge = h.age;
+          h.casinoCelebRel = 20 + int(casinoRng_.below(61));
           const size_t dr = pickRow("a16_casino-celebrity-demand-enc", "", "", "", "", casinoRng_);
           title = "A celebrity in the house";
           if (dr != size_t(-1)) {
@@ -1620,6 +1624,141 @@ void Sim::seedCasinoAmenity(Life& life, bool sameTheme) {
   }
 }
 
+bool Sim::casinoCelebResignYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.casinoCelebrity.empty() || h.age < 18 || h.inPrison) return false;
+  if (h.casinoCelebMetAge < 0 || h.age - h.casinoCelebMetAge < 4) return false;
+  if (h.casinoCelebRel > 40) return false;
+  if (h.casinoCelebResignAge >= 0 && h.age - h.casinoCelebResignAge <= 2) return false;
+  if (forcedChoice < 0 && !casinoResignRng_.chance(0.25)) return false;
+  const std::string tier = casinoTierWord(h, casinoResignRng_);
+  const bool female = h.casinoCelebFemale;
+  const std::string them = female ? "her" : "him";
+  const std::string poss = female ? "her" : "his";
+  const std::string she = female ? "She" : "He";
+  const std::string shes = female ? "she's" : "he's";
+  h.casinoCelebResignAge = h.age;
+  out.table = "registry:ScenarioCasinoAgeUpCelebrityResignation";
+  out.title = "Resignation";  // #36027
+  out.body = "Your casino's " + tier + ", " + h.casinoCelebrity + ", is informing you that " +
+             shes + " resigning from performing at your casino.\n\n" + she + " says " + shes +
+             " booked a better gig at a bigger casino across town.";
+  out.cta = "What will you do?";
+  out.options = {"Offer " + them + " more money", "Beg " + them + " to stay",
+                 "Wish " + them + " well"};
+  int pick = forcedChoice < 0 ? int(casinoResignRng_.below(3)) : forcedChoice;
+  if (pick > 2) pick = 2;
+  out.choice = out.options[size_t(pick)];
+  std::string narrative = "My casino's " + tier + ", " + h.casinoCelebrity + ", put in " + poss +
+                          " resignation from " + poss + " position at my casino.";
+  const auto drop = [&]() {
+    h.casinoCelebrity.clear();
+    h.casinoCelebrityGenre.clear();
+    h.casinoCelebrityGenreTheme.clear();
+    h.casinoCelebCraziness = 0;
+    h.casinoCelebMetAge = -1;
+    h.casinoCelebRel = 0;
+  };
+  if (pick == 0) {
+    // The native chains ScenarioCasinoAgeUpCelebrityResignationOffer, whose body is
+    // not recovered: the offer costs nothing here and the follow-up is not pushed
+    // (ceiling).
+  } else if (pick == 1) {
+    if (h.casinoCelebRel >= int(casinoResignRng_.below(101))) {
+      narrative += "\nI begged " + them + " to stay and " + (female ? "she" : "he") + " agreed.";
+      h.casinoCelebRel = 90;
+      h.casinoFeedbackTitle = "Fine, I guess";  // #20245
+      h.casinoFeedbackBody = she + " agreed to stay on as your casino's " + tier + "!";
+    } else {
+      drop();
+      h.casinoPopularity -= 2;
+      if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+      narrative += "\n" + she + " refused to stay, even though I begged.";
+      h.casinoFeedbackTitle = "No dice";  // #31612
+      h.casinoFeedbackBody = she + " turned you down and resigned from " + poss +
+                             " position as your casino's " + tier + ".";
+    }
+  } else {
+    drop();
+    narrative += "\nI wished " + them + " well.";
+  }
+  out.narrative = narrative;
+  if (!h.casinoFeedbackTitle.empty()) life.pendingCards.push_back(kPendingCasinoFeedback);
+  return true;
+}
+
+bool Sim::casinoActResignYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.casinoAct.empty() || h.age < 18 || h.inPrison) return false;
+  if (h.casinoActMetAge < 0 || h.age - h.casinoActMetAge <= 3) return false;
+  if (h.casinoActResignAge >= 0 && h.age - h.casinoActResignAge <= 2) return false;
+  if (forcedChoice < 0 && !casinoResignRng_.chance(0.25)) return false;
+  h.casinoActResignAge = h.age;
+  out.table = "registry:ScenarioCasinoAgeUpEntertainmentActResignation";
+  out.title = "Resignation";  // #36027
+  out.body = h.casinoAct + "'s manager is informing you that the act will no longer perform "
+                           "at your casino.\n\nThey booked a better gig at a bigger casino "
+                           "across town.";
+  out.cta = "What will you do?";
+  out.options = {"Offer them more money", "Beg them to stay", "Wish them well"};
+  int pick = forcedChoice < 0 ? int(casinoResignRng_.below(3)) : forcedChoice;
+  if (pick > 2) pick = 2;
+  out.choice = out.options[size_t(pick)];
+  std::string narrative = h.casinoAct + " put in their resignation from their position at my casino.";
+  const auto drop = [&]() {
+    h.casinoAct.clear();
+    h.casinoActType.clear();
+    h.casinoActTheme.clear();
+    h.casinoActPopularity = 0;
+    h.casinoActMetAge = -1;
+  };
+  if (pick == 0) {
+    // The native chains ScenarioCasinoAgeUpEntertainmentActResignationOffer, whose body
+    // is not recovered: the offer costs nothing here and the follow-up is not pushed
+    // (ceiling).
+  } else if (pick == 1) {
+    if (h.casinoPopularity >= int(casinoResignRng_.below(101))) {
+      narrative += "\nI begged them to stay and they agreed.";
+      h.casinoFeedbackTitle = "Fine, I guess";  // #20245
+      h.casinoFeedbackBody = "They agreed to continue performing at your casino!";
+    } else {
+      drop();
+      h.casinoPopularity -= 2;
+      if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+      narrative += "\nThey refused to stay, even though I begged.";
+      h.casinoFeedbackTitle = "No dice";  // #31612
+      h.casinoFeedbackBody = "They turned you down and resigned anyway.";
+    }
+  } else {
+    drop();
+    narrative += "\nI wished them well.";
+  }
+  out.narrative = narrative;
+  if (!h.casinoFeedbackTitle.empty()) life.pendingCards.push_back(kPendingCasinoFeedback);
+  return true;
+}
+
+bool Sim::casinoFeedbackYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.casinoFeedbackTitle.empty()) return false;
+  out.table = "registry:Scenario";  // a plain Scenario(title, body), no choices
+  out.title = h.casinoFeedbackTitle;
+  out.body = h.casinoFeedbackBody;
+  out.cta = "What will you do?";
+  out.options = {"OK"};
+  out.choice = "OK";
+  h.casinoFeedbackTitle.clear();
+  h.casinoFeedbackBody.clear();
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");
@@ -1656,6 +1795,12 @@ void Sim::seedCasinoGuest(Life& life, bool sameTheme) {
   // hands the guest the theme word as its theme so the comparison still works
   // (harness hook only).
   h.casinoCelebrityGenreTheme = pick.empty() ? h.casinoTheme : pickTheme;
+  // The resignation card needs an age at which the guest was last met, and the
+  // relationship it weighs; a pinned guest never went through the booking pass
+  // (harness hook only).
+  h.casinoCelebMetAge = h.age;
+  h.casinoCelebRel = 20;
+  if (h.casinoCelebFemale != true && h.casinoCelebFemale != false) h.casinoCelebFemale = false;
 }
 
 void Sim::seedCasinoAct(Life& life, bool sameTheme) {
@@ -1684,6 +1829,7 @@ void Sim::seedCasinoAct(Life& life, bool sameTheme) {
   h.casinoActType = type;
   h.casinoActTheme = theme.empty() ? (sameTheme ? h.casinoTheme : std::string("medieval")) : theme;
   if (sameTheme) h.casinoActTheme = h.casinoTheme;
+  h.casinoActMetAge = h.age;  // harness hook only
 }
 
 std::string Sim::casinoToken(const std::string& key) {

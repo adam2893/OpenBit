@@ -151,6 +151,7 @@ enum PendingCard {
   kPendingHeroMiscarriage = 39,   // her pregnancy lost (342)
   kPendingHeroBirth = 40,         // her birth card (342)
   kPendingInsultComeback = 41,    // the insult's comeback card (REPORT.en.md 343)
+  kPendingCasinoFeedback = 42,    // the card a resignation's answer chains (REPORT.en.md 352)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -746,6 +747,9 @@ class Sim {
   bool casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoAmenityComplaintYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoAmenityComplimentYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoCelebResignYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoActResignYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
   bool carRepairYear(Life& life, AgeUp& out, int forcedChoice);
   void ensureCarFields(Life& life);
@@ -1191,7 +1195,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng casinoMobRng_;  // the mob favour cards' own stream (REPORT.en.md 345)
   Rng casinoGuestRng_;
   Rng casinoFloorRng_;  // the act cards' own stream (REPORT.en.md 350)
-  Rng casinoAmenityRng_;  // the amenity cards' own stream (REPORT.en.md 351)  // the punter cards' own stream (REPORT.en.md 347)
+  Rng casinoAmenityRng_;  // the amenity cards' own stream (REPORT.en.md 351)
+  Rng casinoResignRng_;   // the resignation cards' own stream (REPORT.en.md 352)
   // The car's damage roll, its part pick and the repair card's own draw (REPORT.en.md 323).
   Rng carRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)

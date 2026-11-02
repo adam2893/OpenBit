@@ -666,6 +666,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       casinoGuestRng_(seed ^ 0xcbbb9d5dc1059ed8ULL ^ 0x629a292a367cd507ULL),
   casinoFloorRng_(seed ^ 0x152f808a67c4f4d5ULL ^ 0x9d6e1c05a3b8f2e1ULL),
   casinoAmenityRng_(seed ^ 0x2e9f0b1c7a4d6351ULL ^ 0x6d2b79f5c8e14a37ULL),
+  casinoResignRng_(seed ^ 0x1b2c3d4e5f60718aULL ^ 0x93a5c6e1f042b7d9ULL),
       carRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
@@ -4174,6 +4175,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingHeroMiscarriage) return heroMiscarriageYear(life, out, -1);
     if (kind == kPendingHeroBirth) return heroBirthYear(life, out, -1);
     if (kind == kPendingInsultComeback) return insultComebackYear(life, out, -1);
+  if (kind == kPendingCasinoFeedback) return casinoFeedbackYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
@@ -4593,6 +4595,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-amenity-complaint"},
         {&Sim::casinoAmenityComplimentYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-amenity-compliment"},
+        {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-celeb-resign"},
+        {&Sim::casinoActResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-act-resign"},
         {&Sim::casinoCelebComplimentYear,
          [](const Life& l) { return l.hero.ownsCasino && !l.hero.casinoCelebrity.empty(); }, 1,
          "casino-celeb-compliment"},

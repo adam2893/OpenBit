@@ -513,6 +513,14 @@ struct Hero {
   std::string casinoActTheme;           // the act in residence's own theme
   int casinoActComplaintAge = -1;        // the year the act drew a complaint
   int casinoActComplimentAge = -1;       // ... and the year it drew a compliment
+  int casinoCelebRel = 60;               // how the guest act feels about the hero (0-100, 352)
+  bool casinoCelebFemale = false;        // ... and which pronoun it takes
+  int casinoCelebMetAge = -1;            // the hero's age when the guest act was booked
+  int casinoActMetAge = -1;              // ... and when the act in residence was booked
+  int casinoCelebResignAge = -1;         // the year the guest act last handed in notice
+  int casinoActResignAge = -1;           // ... and the act in residence
+  std::string casinoFeedbackTitle;       // the follow-up a resignation's answer chains (352)
+  std::string casinoFeedbackBody;
   int casinoAmenityComplaintAge = -1;    // the year an amenity drew a complaint
   int casinoAmenityComplimentAge = -1;   // ... and the year one drew a compliment    // ... and the year it drew a compliment
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5

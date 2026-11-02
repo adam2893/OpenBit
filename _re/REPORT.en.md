@@ -23536,6 +23536,114 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 352. The casino's two resignations
+
+Both of the casino's performers can hand in their notice: the guest act and the act in
+residence. The answers are the same three - offer more money, beg them to stay, wish them
+well - and the toss that decides a beg is the guest's relationship strength on one card
+and the house's own popularity on the other.
+
+### The guest act
+
+ScenarioCasinoAgeUpCelebrityResignation (.ctor `0x35694c4`, RefreshScenario `0x3568620`,
+ChoiceSelectedAtIndex `0x3568c88`, ScenarioIsEligibleForRandomPush `0x3569394`) is pushed from
+`SimCasino::IncrementAge` at `0x2aaca9c`, and holds the narrative at 0x170, the casino at
+0x178 and the celebrity at 0x180. Eligibility wants the casino and a living guest, the
+guest to have been acquired through the Hollywood star item, the hero's age at their last
+meeting to be at least four years old, their relationship strength at or below 40, the hero
+to be 18 and out of prison, and YearsSinceScenario above 2.
+
+RefreshScenario sets the title to `#36027` "Resignation" and the focus to the guest. The
+body is `#50268` "Your casino's ", the relationship status, `#5282` ", ", the full name, `#5683`
+", is informing you that ", the type-8 pronoun ("she's"/"he's"), `#3239` " resigning from
+performing at your casino.", a blank line, the capitalised subject pronoun (type 5), `#3307`
+" says ", the type-8 pronoun again and `#1524` " booked a better gig at a bigger casino
+across town.\n\nWhat will you do?".
+
+The stored answers are `#32554` "Offer " plus the object pronoun plus `#2784` " more money",
+`#13299` "Beg " plus the pronoun plus `#3770` " to stay", and `#47032` "Wish " plus the pronoun
+plus `#4018` " well"; dispatch lowercases the label and tests for "offer", then "beg", then
+"wish". Every answer starts from the same journal `#30741` "My casino's ", the relationship
+status, `#5282` ", ", the name, `#5777` ", put in ", the possessive pronoun, `#3234`
+" resignation from ", the possessive pronoun and `#3064` " position at my casino.".
+
+Offer chains ScenarioCasinoAgeUpCelebrityResignationOffer (`0x3569368`) and changes nothing
+else. Beg compares the guest's relationship strength against rand(0,101) - strength wins,
+the guest stays on as your casino's status with `#1129` " agreed to stay on as your casino's "
+and `#4218` "!", the journal gains `#268` "\nI begged ", the pronoun, `#3771` " to stay and ", the
+subject pronoun and `#1138` " agreed.", and the follow-up title is `#20245` "Fine, I guess". A
+loss calls RemoveCelebrity (`0x2ab1654`), drops popularity two, gains #45 plus the subject
+pronoun, `#3178` " refused to stay, even though I begged.", with body `#3874` " turned you down
+and resigned from ", the possessive pronoun and `#3062` " position as your casino's " plus
+the status, and title `#31612` "No dice". Wish removes the guest and appends `#471` "\nI
+wished ", the pronoun, `#4019` " well.".
+
+### The act in residence
+
+ScenarioCasinoAgeUpEntertainmentActResignation (.ctor `0x356a830`, RefreshScenario `0x3569eb8`,
+ChoiceSelectedAtIndex `0x356a22c`, ScenarioIsEligibleForRandomPush `0x356a680`) is pushed at
+`0x2aad224` with the narrative at 0x170, the casino at 0x178 and the act at 0x180. Its
+eligibility walks the act list for the first act whose HeroAgeAtLastInteractedWithHero is
+more than three years behind the hero, then wants the hero to be 18, out of prison, and
+YearsSinceScenario above 2.
+
+The body is the act's name followed by `#4878` "'s manager is informing you that the act will
+no longer perform at your casino.", then `#128` "\n\nThey booked a better gig at a bigger
+casino across town.\n\nWhat will you do?". The title is `#36027` "Resignation" again and the
+exterior title `#15240` "Casino". Answers are stored as written: `#32562` "Offer them more
+money", `#13305` "Beg them to stay", `#47038` "Wish them well". The journal is the act's name
+plus `#3111` " put in their resignation from their position at my casino.".
+
+Offer chains ScenarioCasinoAgeUpEntertainmentActResignationOffer (`0x356a654`) and touches
+nothing. Beg weighs the casino's own popularity against rand(0,101): a win answers `#42951`
+"They agreed to continue performing at your casino!" with title `#20245` and journal `#269`
+"\nI begged them to stay and they agreed."; a loss calls RemoveEntertainmentAct
+(`0x2ab1c00`), drops popularity two, answers `#43076` "They turned you down and resigned
+anyway." with title `#31612` and journal `#588` "\nThey refused to stay, even though I begged.".
+Wish removes the act and appends `#472` "\nI wished them well.".
+
+A beg's outcome is not the card's own text: both cards chain a plain Scenario(title, body)
+built through `0x2a25510`, which carries no choices and writes no journal.
+
+### The port
+
+`Sim::casinoCelebResignYear` and `Sim::casinoActResignYear` in _re/port/src/fam/casino.cpp,
+registered as casino-celeb-resign and casino-act-resign with one ticket each, and
+`Sim::casinoFeedbackYear`, which drains the follow-up through a new pending kind
+kPendingCasinoFeedback (42). The cards keep their own stream, casinoResignRng_, so no
+earlier casino card shifts, and each keeps a cooldown stamp.
+
+The guest's pronouns and its last-met age are stamped when the celebrity first appears in
+the house; the relationship the beg weighs is drawn then too and sits in
+`h.casinoCelebRel`. The act's last-met age is stamped by the booking branch. Both removal
+paths clear the performer's own fields, and a beg's outcome is pushed as the follow-up card
+the native chains.
+
+### Ceilings
+
+The Hollywood star gate is not modelled: a port guest is a name and a genre, not an
+inventory item, so any guest in the house can resign. The relationship the guest card
+weighs is a draw at 20-80 rather than the sum the native getter builds from the guest's own
+person record, in keeping with REPORT 325. Both offer answers chain cards whose bodies are
+not recovered, so they cost nothing here and their follow-up is not pushed. A failed beg
+floors popularity at zero rather than letting it go negative, the tracking funnel event is
+not recorded, and the act's manager sentence uses the act's name without the native's
+handling of an act whose name already ends in a quote.
+
+### Verified
+
+_re/tools/`test_casino_resignation`.py pins both cards over twenty lives with a guest and an
+act seeded through the harness hooks. Measured: celeb cards: 18 | act cards: 22 and lanes:
+{'celeb': {'beg': 6, 'offer': 7, 'wish': 5}, 'act': {'offer': 6, 'wish': 11, 'beg': 5}} |
+feedback: {'celeb': {'no', 'ok'}, 'act': {'no', 'ok'}}. Every body and journal names the
+same performer the card is about, the wish answer appends its own line, the offer answer
+appends none, both beg outcomes arrive as follow-up cards, neither card repeats inside
+three years, and neither can be drawn without a casino.
+
+The full 140-test suite ran on the binary these notes describe (e6ffd340...,
+140 PASS / 0 FAIL): `_re/tools/test_casino_resignation.py` exercises both cards, all
+three answers and both beg outcomes, and nothing else moved.
+
 ## 351. The casino's two amenity cards
 
 The floor's amenities get the same treatment as its act: one punter calls the place tacky
