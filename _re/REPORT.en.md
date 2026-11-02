@@ -23536,6 +23536,70 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 354. The zoo keeper's death
+
+The zoo's IncrementAge chain has one card the park does not choose: the keeper dies.
+`ScenarioZooEmployeeDeath` (`.ctor` 0x29d8554, `RefreshScenario` 0x29d8588,
+`ChoiceSelectedAtIndex` 0x29d8ad8) is pushed at 0x2b59b38 from a loop that walks every
+keeper in `EmployeesList` and asks the death question of each. The card carries the keeper
+and the cause string on its own fields (`+0x188` and `+0x178`).
+
+The loop is the interesting part. A keeper who is already dead is skipped with
+`IncrementYearsSinceDeath`; so is one who is a friend or the current lover of the hero —
+those never die. For everyone else the native reads the keeper's script, stamps the
+keeper's age into it, and compares that age with the death age stored on the script
+(`[script+0x18][+0x60]`). Only a keeper at or past that age produces the card, and the card
+removes them from the list (`SimZoo::RemoveEmployee` 0x2b5df88) the moment it is shown.
+
+The cause string is chosen at the same time: #57525 `'died of old age'` for a keeper over
+69, #63111 `'of natural causes'` otherwise. Those two literals are not the same shape — one
+carries its own verb and the other does not — while the body format #50546 and the journal
+both read "{0} died {1}". An old keeper therefore produces "He died died of old age" in both
+places. That duplication is upstream, and this port reproduces it rather than correcting it.
+
+Body: #50546 `"Your zoo's {0}, {1}, passed away at the age of {2}.\n\n{3} died {4}."` with
+the employee type, the full name, the age, the capitalised pronoun and the cause. Title
+#17288 `'Death'`. Journal: `'My zoo's '` (#510) + employee type + #5282 `', '` + name +
+#5501 `', died '` + cause + #6312 `'.'`. The card drops the hero's happiness by two (the
+0x408 slot) whichever answer is given.
+
+| Answer | What happens |
+| --- | --- |
+| Attend `{0}` funeral | journal #266 `'\nI attended '` + pronoun + #2154 `' funeral.'` |
+| Skip `{0}` funeral | journal #400 `'\nI skipped '` + pronoun + #2154 `' funeral.'` |
+
+### The port's card
+
+`Sim::zooEmployeeDeathYear` sits with the zoo's other cards in `_re/port/src/sim.cpp` and
+runs on `zoo-employee-death` at one ticket, with its own stream `zooStaffRng_` for the two
+numbers the native reads off the keeper's script. The keeper's hire age is already stamped
+by 353, so the port only needs the age they were hired at (drawn 18..45) and the age they
+die at (drawn 55..85); the age on the card is the hire age plus the years served since
+`zooEmployeeHiredAge`. Nothing is drawn until the first year the card is reachable, so the
+years before it leave every other zoo card's sequence untouched.
+
+Ceilings:
+
+- The native reads each keeper's death age from their script and can bury several keepers
+  at once; the port has one keeper, so it draws a lifespan instead and can bury only that
+  one.
+- The friend/current-lover exemption is not modelled: the port's keeper is never either.
+- The card removes the keeper and takes the hero's happiness by two; the rest of the
+  native's per-employee bookkeeping (years since death, script state) has no port analogue.
+- The "died died of old age" duplication is kept, as noted above.
+
+Verified: `_re/tools/test_zoo_employee_death.py` walks twenty lives, matches the body and
+the journal against each other and against the two cause literals, checks the pronoun in
+the button agrees with the body, both farewell lines, the -2 happiness, and that a life
+without a zoo and a life that ends at seventeen never see the card. Measured:
+`cards: 20 | lanes: {'skip': 10, 'attend': 10}`.
+
+The full 142-test suite ran on the binary these notes describe (9f7eae4d..., 141 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: every zoo
+card since 353 takes another ticket in the same wheel, and the one spousal reaction
+`_re/tools/test_vehicle_purchase.py` looks for had moved out to seed 86 of the first
+ninety, so that test now walks until the reaction turns up instead of pinning a window.
+It was re-run green.
 ## 353. The zoo keeper's resignation
 
 The zoo's IncrementAge chain calls one more card after the pregnancy and before the

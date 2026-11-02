@@ -673,6 +673,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
+      zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
       zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
@@ -4549,6 +4550,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
+        {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-employee-death"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
         {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11428,6 +11431,65 @@ bool Sim::zooEmployeeResignYear(Life& life, AgeUp& out, int forcedChoice) {
     narrative += "\nI called " + them + " " + insult + ".";
   }
   out.narrative = narrative;
+  return true;
+}
+
+
+bool Sim::zooEmployeeDeathYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooEmployee.empty()) ensureZooFields(life);
+  if (h.zooEmployee.empty()) return false;
+  if (h.zooEmployeeHiredAge < 0) return false;
+  // ScenarioZooEmployeeDeath (ctor 0x29d8554, RefreshScenario 0x29d8588,
+  // ChoiceSelectedAtIndex 0x29d8ad8, pushed from SimZoo::IncrementAge 0x2b59b38). The native
+  // ages every keeper against the death age on their script; the port keeps one keeper and
+  // draws both the hire age and the lifespan on this stream instead (REPORT.en.md 354).
+  if (h.zooEmployeeAge0 < 0) {
+    h.zooEmployeeAge0 = 18 + int(zooStaffRng_.below(28));
+    h.zooEmployeeLifespan = 55 + int(zooStaffRng_.below(31));
+  }
+  const int keeperAge = h.zooEmployeeAge0 + (h.age - h.zooEmployeeHiredAge);
+  if (keeperAge < h.zooEmployeeLifespan) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  const std::string role = h.zooEmployeeRole.empty() ? std::string("keeper")
+                                                     : lower(h.zooEmployeeRole);
+  const std::string name = h.zooEmployee;
+  const bool female = h.zooEmployeeFemale;
+  const std::string poss = female ? "her" : "his";
+  const std::string they = female ? "She" : "He";
+  // The two literals are not the same shape: #57525 'died of old age' carries its own verb
+  // and #63111 'of natural causes' does not, while the body and the journal both read
+  // "{0} died {1}." The duplicate verb that produces ("died died of old age") is upstream
+  // and is reproduced here rather than corrected.
+  const std::string deathString = keeperAge > 69 ? "died of old age" : "of natural causes";
+
+  out.table = "registry:ScenarioZooEmployeeDeath";
+  out.title = "Death";  // #17288
+  out.body = "Your zoo's " + role + ", " + name + ", passed away at the age of " +
+             std::to_string(keeperAge) + ".\n\n" + they + " died " + deathString + ".";
+  out.cta = "What will you do?";
+  out.options = {"Attend " + poss + " funeral", "Skip " + poss + " funeral"};
+  int pick = forcedChoice < 0 ? int(zooStaffRng_.below(2)) : forcedChoice;
+  if (pick > 1) pick = 1;
+  out.choice = out.options[size_t(pick)];
+
+  std::string narrative = "My zoo's " + role + ", " + name + ", died " + deathString + ".";
+  if (pick == 0) narrative += "\nI attended " + poss + " funeral.";  // #266 / #2154
+  else narrative += "\nI skipped " + poss + " funeral.";            // #400 / #2154
+  out.narrative = narrative;
+  // The card itself drops the hero's happiness by two (0x408 slot), whichever answer is
+  // given; the two answers then differ only in the line they journal.
+  out.happiness -= 2;
+
+  h.zooEmployee.clear();
+  h.zooEmployeeRole.clear();
+  h.zooEmployeeHiredAge = -1;
+  h.zooEmployeeAge0 = -1;
+  h.zooEmployeeLifespan = 0;
+  if (h.zooStaff > 0) h.zooStaff -= 1;
   return true;
 }
 

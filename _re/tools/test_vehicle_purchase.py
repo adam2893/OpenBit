@@ -31,11 +31,12 @@ def run(seed):
 
 bought = 0
 reacted = 0
-# The zoo keeper's resignation (353) added a family ahead of this one in the wheel,
-# so the single reaction this run produces moved from the first thirty seeds to
-# the fortieth-something (measured: seed 44 of 1-60). Walk wider rather than
-# weaken the count.
-for seed in range(1, 46):
+# Every zoo card added since 353 takes another ticket in the same wheel, so the one
+# spousal reaction this run produces keeps moving further out (measured at seed 86
+# over the first ninety). Walk until it turns up instead of pinning a window.
+for seed in range(1, 131):
+    if reacted:
+        break
     for event in run(seed)["events"]:
         table = event.get("table") or ""
         if table == "a16_outdoor-vehicle-enc":
