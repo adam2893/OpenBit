@@ -4584,6 +4584,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
         {&Sim::zooAdmissionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-admission"},
+        {&Sim::zooSupplierYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-supplier"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
         {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11619,6 +11621,58 @@ bool Sim::zooRenameYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body += "\nName: " + h.zooName;               // #31091
   out.options = {"OK"};
   out.choice = "OK";
+  return true;
+}
+
+// The zoo's food supplier row (ScenarioZooFoodSupplier). The body and all four rows
+// were recovered: #10831, #11430 Animal Food Supplier, #16840 Current Supplier,
+// #16841 Current Supplier Cost, #11478 Annual Supplier Cost; the journal is #3628's
+// " to become the new supplier for my " + the zoo's name + #3629. The supplier is
+// what sets the per-animal food line the yearly ledger charges, which is the fixed
+// cost the body promises to move (REPORT.en.md 386).
+bool Sim::zooSupplierYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooSupplierAge >= 0 && h.age - h.zooSupplierAge < 4) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_zoo-supplier-names-enc")) return false;
+  const Table& t = tbl("a16_zoo-supplier-names-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r)
+    if (!trim(t.at(r, "Name")).empty()) pool.push_back(r);
+  if (pool.empty()) return false;
+  const size_t row = pool[zooMenuRng_.below(uint32_t(pool.size()))];
+  std::string next = trim(resolve(trim(t.at(row, "Name"))));
+  if (next.empty() || lower(next) == lower(h.zooSupplier)) return false;
+  // The body promises a *lower* fixed cost, so the new supplier's line is drawn
+  // below the current one (500..2500 per animal against the 2500 the ledger used
+  // before this card existed). A quote above the current line would make the card
+  // a punishment and would also bankrupt a thin park (REPORT.en.md 386).
+  const int delta = int(zooMenuRng_.below(2001));
+  int per = 500 + delta;
+  if (per >= h.zooFoodPerAnimal) per = h.zooFoodPerAnimal > 600 ? h.zooFoodPerAnimal - 100 : 500;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string before = h.zooSupplier;
+  const int beforePer = h.zooFoodPerAnimal;
+  h.zooSupplier = next;
+  h.zooFoodPerAnimal = per;
+  h.zooSupplierAge = h.age;
+  out.table = "registry:ScenarioZooFoodSupplier";
+  out.title = "Animal Food Supplier";  // #11430
+  out.body = "Adjust your fixed cost by changing your supplier.\n\nA new supplier may give you a lower fixed cost!";  // #10831
+  out.body += "\n\nCurrent Supplier: " + (before.empty() ? "the old supplier" : before);                       // #11430
+  out.body += "\nCurrent Supplier Cost: " + money((long long)beforePer * (h.zooAnimals > 0 ? h.zooAnimals : 1));  // #16841
+  out.body += "\nAnimal Food Supplier: " + next;  // #11430
+  out.body += "\nAnnual Supplier Cost: " + money((long long)per * (h.zooAnimals > 0 ? h.zooAnimals : 1));  // #11478
+  out.options = {"OK"};  // #32432
+  out.choice = out.options[0];
+  out.narrative = "I convinced " + next + " to become the new supplier for my zoo.";  // #3628 + #3629
+  out.happiness += 1;
   return true;
 }
 

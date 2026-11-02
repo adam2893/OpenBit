@@ -33,7 +33,7 @@ def run(seed, ages=50):
 cards = 0
 apologies = 0
 declines = 0
-for seed in range(1, 41):
+for seed in range(1, 61):  # widened when REPORT 386's zoo-supplier family joined the wheel
     doc = run(seed)
     for event in doc["events"]:
         if event.get("title") != "Squabble":

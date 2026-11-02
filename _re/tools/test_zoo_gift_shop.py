@@ -42,7 +42,7 @@ def expected_popularity(it):
 
 
 def main():
-    counts = []
+    counts = []  # seeds whose shop was still stocked at the end
     rare = 0
     gone = 0
     seen = 0
@@ -52,6 +52,13 @@ def main():
         assert isinstance(gift, list), gift
         # A park of plot size 1, 2 or 3 fills 4, 6 or 8 shelves; a duplicate draw
         # leaves a line out, so a seeded shop holds at most eight of them.
+        if not gift:
+            # The shop was stocked and then sold every line out before the life
+            # ended: the yearly ledger retires an empty product. Only accept the
+            # empty list when the same life shows the shop running.
+            live = [e for e in doc["events"] if "GiftShop" in (e.get("table") or "")]
+            assert live, (seed, "an empty gift shop with no shop card in its life")
+            continue
         assert 1 <= len(gift) <= 8, (seed, len(gift))
         counts.append(len(gift))
         for it in gift:

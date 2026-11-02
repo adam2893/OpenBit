@@ -802,6 +802,7 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   void zooRunYear(Life& life);
   bool zooBankruptYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooAdmissionYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooSupplierYear(Life& life, AgeUp& out, int forcedChoice);
   double casinoTaxRate(double taxable) const;
   void ensureCultFields(Life& life);
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);

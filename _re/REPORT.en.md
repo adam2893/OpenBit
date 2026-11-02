@@ -23511,6 +23511,35 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 386. The zoo's food supplier row
+
+The food supplier row had its body, all four labels and its journal recovered: body
+`#10831 'Adjust your fixed cost by changing your supplier.\n\nA new supplier may give
+you a lower fixed cost!'`, rows `#16840 'Current Supplier'`, `#16841 'Current Supplier
+Cost'`, `#11430 'Animal Food Supplier'`, `#11478 'Annual Supplier Cost'`, title
+`#11430`, answer `#32432 'OK'`, journal `#3628 ' to become the new supplier for my '`
+joined to the zoo's name (`#3629`).
+
+The card draws a supplier from `a16_zoo-supplier-names-enc` (columns `Name`,
+`Commonness Score`; the names carry `<random-surname>` and go through `resolve`),
+refuses one the zoo already uses, and moves the per-animal food line the yearly
+ledger charges. That line used to be a hard-coded 2500 per animal in
+`Sim::zooRunYear`; it is now `Hero::zooFoodPerAnimal`, which this card moves
+symmetrically within 500..6000, so the card really does what its body promises.
+
+`shortcut:` the supplier table has no cost column -- only the name and its commonness
+score -- so the new cost is a draw around the current one rather than a figure the
+native reads, and the row's title is printed as the card title because the recovered
+literal is the row's own label.
+
+`_re/tools/test_zoo_supplier.py` sweeps forty zoo owners in only-mode, matches the
+body against the recovered text, requires the new supplier to differ from the old,
+the journal clause, and the two cost rows to move on most cards: `supplier cards: 49
+| cards whose cost moved: 49`. The zoo habitat, invest, admission and both sale tests
+were re-run green after the ledger change.
+
+The full 169-test suite ran on the binary these notes describe (55162a3e5a610e6a455f..., 169 PASS / 0 FAIL). Its first run caught two things worth naming: a stray overwrite had changed the witch doctor card's answer to a literal OK (restored), and the new family's wheel ticket moved two seeded tests (the gift shop can now be sold out at the end of a life, and the sibling squabble needed a wider seed sweep); both were fixed test-side, and the three affected tests were re-run green.
+
 ## 385. The amenity menu's install and demolish rows
 
 The two amenity rows had their bodies recovered -- `#26768 'Install an amenity in
