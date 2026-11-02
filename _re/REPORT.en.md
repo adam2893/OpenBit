@@ -305,8 +305,6 @@ The game ships its whole content library as Unity TextAssets:
 - [obs] The installer gate and feedback module identify this as a liteapks/9mod funnel build rather than host-targeted malware; the injected telemetry provider `com.bamen.report` reports install/online events to `api.gamekillerapp.com`.
 - [inf] For a port, the valuable part is not the mod but the **content library + IL2CPP method inventory**: together they are enough to re-implement this game on another platform (Part III).
 
-
-
 ## 16. Hook-site re-verification and correction ([obs], second dynamic pass)
 
 1. [obs] Correct addressing: libil2cpp.so's mapped segments are **not** a simple base+file-offset shift (the segments drift by 0x1000-0x4000). The file offset must be converted through the `/proc/<pid>/maps` segment table (start/end/file_offset) before reading bytes; plain base+offset reads a mismatched page — which is the source of the earlier misreading in section 13.
@@ -316,7 +314,6 @@ The game ships its whole content library as Unity TextAssets:
 5. [correction] Section 13's earlier claim ("58 sites still show the original prologue, only 0x31ddad0 has an adrp patch") is **wrong** — it came from mis-addressed reads. The correct finding: **all 59 hook sites are patched in place**.
 6. [obs] The hooked addresses are **not** method entries: `Game.UIIAPManager::GodModePurchased's methodPointer sits at file offset 0x31e24e8 and its first 16 bytes (`fe0f1bf8 fa6701a9 f85f02a9 f65703a9`) match the file, unpatched; likewise `BitizenshipPurchased`(0x31e1b54), `CareerActorPurchased`(0x31e66e8), `GoldenPacifierPurchased`(0x31e9078), `RestorePurchases`(0x31f9bbc), `get_Inst`(0x31e19e0). => The patches sit at interior check points (0x31ddad0-0x31f5040), consistent with name-based method resolution plus interior interception.
 7. [unk] The exact trampoline destination is unresolved: decoding the B relative offset lands on read-only data or a segment gap, so no executable stub could be read; the trampoline layout stays unknown (it does not affect the "hooked" conclusion — the byte diff and the RWX pages are direct evidence).
-
 
 ## 17. Part III: native C++ port (dynamic-phase output)
 
@@ -348,7 +345,6 @@ cmake --build build -j4
 **Mod side**: `kEntitlements[60]` is generated from Game.UIIAPManager's 60 `*Purchased` grant points plus 58 `Purchase*` initiators, each cross-referenced to its IAPManager product-id field; `grant()` accepts four real addressing forms (grant method, short name, IAPManager field, Purchase* initiator); `grantAll()` grants all 60. The menu tree is reproduced verbatim: NOTE / RichTextView (Google Play Services notice) / MOD FEATURES / Button Free In-App Purchase / CONTACT US / Settings (Toggle Save Feature, Toggle Auto Menu Size) / Game Info.
 
 **Not ported (honest list, full text in README)**: careers/education/relationships/money/property (a16_careers-enc loads but is unused), mini-games, heirlooms/artifacts, Darkly paywalls, time machine, Battle Pass, daily quests, notifications, ads, the whole UI layer (menu geometry is known: MENU_WIDTH 290 / HEIGHT 210 / CORNER 35.0f / ICON_SIZE 45 / ACCENT #7C4DFF but not reproduced), art and audio (8133 Texture2D not exported), 11 BinaryFormatter tables (including the two age13 saves that hit Nrbf RecursionError), unresolved placeholders such as `<rb>`, and a port-side simplified mortality rule.
-
 
 ## 18. Phase 1: differential test bench (RNG parity + observed corpus)
 
@@ -570,7 +566,6 @@ correctly (`choice` at y=1625 and y=1744) and took the game from age 50 to 53 in
 one run. Note the shell preview of a 1440x2560 screencap is 961x1708 - exactly
 2/3 scale - and reading button rows off the preview without converting misled an
 earlier diagnosis.
-
 
 ## 21. Phase 1: replaying the game's own pick (push) + where a scenario's text lives
 
@@ -1130,7 +1125,6 @@ body with `<parent>` resolved to "mother", and three buttons. Fixed on the way:
 `shortcut:` the scripted table's `ActionList`/`Impacts`/`ResultNarratives` are not evaluated, so a
 scripted year logs title+body plus the chosen label instead of the game's outcome sentence.
 
-
 ---
 
 ## 28. A year is several lines: per-person lifecycle, not one scenario
@@ -1231,7 +1225,6 @@ of family/disease lifecycle lines. Neither is a defect in the mechanism §27 fix
 lifecycle exists. What the bench does claim, and still holds, is: option/choice agreement on pushed
 years, card and button text agreement, and stat deltas read only inside a pushed year.
 
-
 ---
 
 ## 29. The text engine behind every line: BracketParser
@@ -1301,7 +1294,6 @@ log shows for a scenario is this parser's output, not the table cell.
   for draw.
 - `ReplaceIndefiniteArticle` and the pronoun tables explain the article/pronoun variation in game lines
   ("**an** EF-5 tornado", "**a** rusty nail") that a naive template would get wrong.
-
 
 ## 30. Newborn setup timing, and what the per-age stats stream can be used for
 
@@ -1706,7 +1698,6 @@ The sentence is now reported as `final.death` (`{"type": "...", "sentence": "...
 Both pronoun values and both `<body part>` paths are now observable, which is what makes the death table
 comparable against a capture at all.
 
-
 ## 36. Where the per-person lifecycle lines come from (next work item)
 
 §28 established that a year is several lines and that they are code templates, not table rows. The
@@ -1744,7 +1735,6 @@ brother", "mother"), a school/grade, a disease pair, a job title and a spouse. T
 person model §31.3 also asks for (prison, royal, vampire, military branch, occupation).
 
 Full grepped inventory: `/tmp/qdir/lifecycle_templates.txt`.
-
 
 ## 37. Per-person lifecycle lines: the family model behind them
 
@@ -1870,7 +1860,6 @@ age 59  My little sister, Beyawnce, has been promoted to Sr. Flight Attendant.
 - The gender used for a pronoun inside a family line is the hero's gender; the game
   passes the gender of the person the sentence talks about, so a third party of the
   opposite sex to the hero would be described wrongly. Same limitation as section 34.4.
-
 
 ## 38. The circumstance pools are built in code, not in a CSV
 
@@ -3829,7 +3818,6 @@ token handling from sections 33 to 46.
   no abort; all-109 push replay exits 0; residue census 0 distinct tokens.
 - The whole `a16_dumb-scenarios-*` family is now read: the remaining unwired pools are none.
 
-
 ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them
 
 The port had no relationship model at all: `grep -rn lover include/bl/` found nothing, and every
@@ -3991,7 +3979,6 @@ The check is the `spy` script key over seeds 1-30 in both genders, ages 60, coll
 > The client wants a corrupt judge dead. Suggested method: Strangle Them. The opportunity comes at the library. The client says he has it coming and only has himself to blame. The target is usually tossing bread crumbs to some ducks at the local park. Best opening: In his own little world. Distraction: a shifty-looking Instagram model, playing with her hair and glancing over at him.
 
 and its log: "Darknight strangled a corrupt judge with some packing tape! My banana taser let me send 50,000 volts through a corrupt judge's leg. I used acid to dissolve a corrupt judge's body in a landfill."
-
 
 ## 59. The fight family: a combat career drawn from thirty-eight tables
 
@@ -7236,7 +7223,6 @@ log line of any card may belong to another subsystem: the port prints the
 lifecycle lines that were already in the year before the family's own, which is why a
 review card can open with a relative's diagnosis.
 
-
 ## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables
 
 ### 77.1 The family
@@ -7340,7 +7326,6 @@ The probe (`/tmp/qdir/finres.py`, thirty seeds and both genders to sixty) prints
 
 Sample cards, in the port's own words:
 
-
     In the news
     stock market price hikes imminent
     My portfolio is worth $397.
@@ -7380,7 +7365,6 @@ Sample cards, in the port's own words:
     Asking around
     He said he can't quite figure out what you mean.
     I asked around about cryptocurrencies and got nothing worth acting on.
-
 
 A note on the data rather than the port: a portfolio row can read "It was a strong year for your portfolio, which yielded -6% in returns." The pool's own adjective and its own delta band disagree, and the port prints the row as written rather than repairing the pool.
 
@@ -7536,13 +7520,11 @@ A note on the data rather than the port: the campaign pool's reception lines are
 
 The regression that ran with this section is the usual set: twenty-one family probes at zero residue, the residue census at zero, coverage 109 of 109 captured and 107 recoverable, the port-versus-game gap at zero, the scripted push run clean and the bench run to the end of its trace.
 
-
 ## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables
 
 The `a16_luxury` family is the money side of the game. Everywhere else in the port the hero earns a wage, runs a business or wins a purse; here he simply has money, and the family is the catalogue of what money buys: a private island, an exotic watch, a secret society, a spa, a night out among famous people, and a small aircraft-carrier of accessories for the jet, the car and the boat.
 
 Behavioural sources, all under `/Users/Adam/Documents/bitlife/_re/gamedata_plain`:
-
 
 ### 79.1 The family
 
@@ -7684,7 +7666,6 @@ Two smaller things: the cuisine keeps the pool's own capitalisation (`cooking Fi
     Games at the League of Extraordinary Idiots
     We played telephone.
     The League of Extraordinary Idiots spent the evening playing telephone.
-
 
 ---
 
@@ -8700,7 +8681,6 @@ its cell with `."` followed by a period in the source data, and the
 `a16_school-principal-warnings-enc` rows are written in the third person
 (`<principal> encourage you to do the right thing`), so folding them to the first person
 leaves the data's own verb form behind.
-
 
 ## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket
 
@@ -10277,7 +10257,6 @@ captured / 107 recoverable, `portgap.py` `ENTRIES 109 rendered-by-port 107
 gap 0`, `blsim --script covpush.json` rc 0 with an empty stderr, and
 `bench.sh /tmp/trace_c10.json` reaching age 34 without an abort.
 
-
 ## 91. The social media year: one account, six tables, and a handle nobody could name
 
 Section 90 gave the hero a listener. This one gives him an audience. Seven tables of
@@ -10750,7 +10729,6 @@ classmate rather than a partner; the two prom wins are 8 and 10, the second bein
 fifteen `Gave Speech` rows; and the party's {-1} discipline is `lively` while {-3} is `wild`
 with its karma.
 
-
 Thirteen cards, one per branch the section can reach - three field trips by Focus, four dances by
 companion and by verdict, four parties by rowdiness and hookup, and both prom verdicts:
 
@@ -10851,12 +10829,10 @@ the two grammar fixes of this section, visible in the dance and field trip cards
 Added one node to the log format: the card's own ledger line comes first in `logLines`, the
 narrative second, which is the same order every other family uses.
 
-
 The full regression after the section: thirty-six probes at residue 0 (the new `slpres.py`
 joins the list), the residue census at `distinct residue tokens 0 total 0`, coverage at
 `captured scenarios: 109 recoverable: 107`, the port gap at `ENTRIES 109 rendered-by-port
 107 gap 0`, the push script at rc 0 with empty stderr, and the benchmark reaching age 34.
-
 
 ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing
 
@@ -19105,7 +19081,6 @@ rule the family ran to the end of every life.
 
 ### 124.7 Shortcuts
 
-
 * The net-worth constant is unreadable offline: the `adrp` page is printed
   digit-clipped by the local tooling and the cell it points at holds unrelated
   floats. The port uses $100,000, documented at the branch.
@@ -23536,6 +23511,86 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 370. The product card's two answers
+
+The product card (REPORT.en.md 369) hands two of its three answers to cards of their own.
+The port used to route them to the stocking chain's cards, which are different classes with
+different wording; these are the shelf's own.
+
+### Order more units
+
+`ScenarioZooGiftShopProductOrderUnits` (`.ctor 0x29f2d08`, `ChoiceSelectedAtIndex 0x29f3380`),
+exterior `#50857 'Zoo'`, title `#29996 'Merch Order'`.
+
+Body: `#17618 'Determine how many more '` + `ItemData.Plural` + `#1958 ' featuring '` + animal name
++ `#3532 ' the '` + breed + `#4192 " you'd like to order from your merchandise supplier."`
+
+Rows, in dictionary order: `'Current Unit Count'` (`#16844`, `UnitsAvailable +0x20`),
+`'Cost Per Unit'` (`#16422`, `PricePerUnit +0x30`), `'Available Capital'` (`#12531`, the
+zoo's `BankBalance`), `'Featured Animal'` (`#19992`, `Capitalize(name + ' the ' + breed)`).
+
+The slider `#44884 'Units'` runs from 1 to
+`min(floor(Bank / PricePerUnit), MaxUnits - UnitsAvailable)` and opens on half of that:
+`MaxUnits` is the item's fixed 500 (`+0x50`). The answer `#34033 'Place order'` takes
+`added = min(MaxUnits - UnitsAvailable, slider)`, adds it to `UnitsAvailable` and debits
+`added * PricePerUnit` from the bank; `#31255 'Never mind'` writes nothing at all. Dispatch is
+`ToLower` then `Contains` `'order'` (`#63341`).
+
+The arrival card is a plain `Scenario` titled from `PickRandomFromStringArray` over
+`#28046 'Just came in!'`, `#41303 'That new gift smell'` and `#20426 'Flying off the the shelves!'`
+(the doubled "the the" is in the binary), body `#50408 'Your merch order of additional '` +
+plural + `#1958` + animal + `#3532` + breed + `#2644 ' just arrived!'`, rows
+`'Units Ordered'` (`#44886`) and `'New Unit Count'` (`#31390`). The line the order writes is
+`#24749 'I ordered '` + count + `#2782 ' more '` + plural + `#1958` + animal + `#3532` + breed +
+`#3753 " to restock the shelves in my zoo's gift shop."`
+
+### Adjust the price
+
+`ScenarioZooGiftShopProductAdjustPrice` (`.ctor 0x29f2074`, `ChoiceSelectedAtIndex 0x29f26f4`),
+title `#29997 'Merch Price'`.
+
+Body: `#10823 "Adjust the price of your gift shop's "` + `ItemData.Plural` + `#6312 '.'`
+
+Rows, in dictionary order: `'Featured Animal'` (`#19992`), `'Cost Per Unit'` (`#16422`),
+`'Current Sale Price'` (`#16833`, `SellPrice +0x28`), `'Units Sold Last Year'` (`#44891`),
+`'Units Remaining'` (`#44888`); one bar graph, `'Popularity'` (`#34316`).
+
+The slider `#36646 'Sale Price'` runs between the floor of the catalogue's local
+`MinSalePrice` and `MaxSalePrice` and opens on the shelf's current price. The
+single answer `#32432 'OK'` writes the slider straight into `item.SellPrice` and charges
+nothing. The line it writes is `#47562 'You adjusted the price for your '` + plural +
+`#2090 ' from '` + old + `#3584 ' to '` + new + `#6312`.
+
+### The port
+
+Both cards are pending kinds (`kPendingZooShopOrderUnits`, `kPendingZooShopAdjustPrice`) and the
+product card now hands its answers to them instead of the stocking chain's cards.
+`Sim::zooShopShelfIndex` finds the live shelf again from the staged copy, because the list
+can change between the two cards.
+
+Ceilings:
+
+- No slider: the order card takes half of what it could afford, which is where the
+  native's slider opens, and the price card draws a fresh price from the catalogue's band.
+  A draw that lands on the current price is nudged one step, so the card always has a
+  change to report where a player who never moved the slider would report none.
+- The order card's bar graph is printed as a `Popularity: N` body line, the port's
+  convention for bars.
+- The price card writes its line but no table of old and new prices: those figures
+  (`#32713 'Old Sale Price'`, `#31366 'New Sale Price'`) belong to a result screen the port folds
+  into the same card.
+
+Verified: `_re/tools/test_zoo_shop_answers.py` walks five lives of eighty years and reads 16
+order cards (7 placed, 9 refused) with 7 arrival cards and 20 price cards, checking both
+bodies row by row, the order's "never mind" silence, the arrival card's figures, and that
+every price line moves the price while no card moves a stat bar.
+
+The full 154-test suite ran on the binary these notes describe (b7416522..., 153 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the product
+card answers now open the shelf own cards (REPORT 370) rather than the stocking chain,
+so `_re/tools/test_zoo_shop_profile.py` was pointed at the two new classes and re-run
+green (71 product cards, 22 adjust / 21 order / 28 retire, all three forced lanes).
+
 ## 369. The gift shop's product card
 
 The shelf's own card is `ScenarioZooGiftShopProductProfile` (`.ctor 0x29f3af0`, `RefreshScenario 0x29f3b1c`,
@@ -23602,7 +23657,6 @@ order with their currencies and counts, the popularity line, the three labels, t
 two-year gap between cards and that no card moves a stat bar; it then forces each of
 the three answers on a real card and checks the price card, the unit card and the
 shelf's disappearance, and closes on a life without a park.
-
 
 The full 153-test suite ran on the binary these notes describe (46cca75a..., 152 PASS /
 1 FAIL). The failure is test-side and was fixed here without a code change: a news story
@@ -23717,7 +23771,6 @@ Each order is then required to be followed by a price card whose body names the 
 animal as its journal entry, and every card's free-slot count must stay within the eight-slot
 ceiling of the largest plot. Both lanes were seen (sixteen orders, twenty-one refusals), the three
 years of quiet hold between stocking cards, and no card moved a stat bar.
-
 
 The full 152-test suite ran on the binary these notes describe (a9008fc9..., 151 PASS /
 1 FAIL). The failure is test-side and was fixed here without a code change: the new
@@ -25739,7 +25792,6 @@ a forced card that really carries the forced answer; and the robbery card's resu
 now be separated from the pick by a drained pending card, or never arrive at all when
 the pick is the last card of the life, so that check walks forward over the age's own
 events. Both were re-run green.
-
 
 ## 344. The zoo's animals, pregnant and dead
 
@@ -29385,7 +29437,6 @@ tests      89/89 green (test_adoption added)
 shortcut: the adoption menu's prompt is not in the dump; the body names the child's
 reason via the row's own Snippet, whose <his/her> slot the text resolver fills.
 
-
 ## 296. The interview
 
 a16_interview-questions-enc is the whole card in one row: `Question`, `CTA`
@@ -29414,7 +29465,6 @@ Two defects found while wiring it: the school state sets `employed` at 18 before
 job is drawn, so the gate now keys on the empty career track (the same signal
 careerYear uses), and the drawn title could be the class word 'Abbreviated' until the
 career-name fallback 286 introduced was applied here too.
-
 
 ## 294. Counting menus apart from cards
 
@@ -29462,7 +29512,6 @@ a16_adoption-reasons         the adoption card's snippet pool (Reason / Abbrevia
 Those four are the next sections; the check passes at 99.5% today because the project's
 bar is 95%, and it will read 878/878 when they land.
 
-
 ## 293. The Assets walk, and why the last tables are shells
 
 The menu walk continued into Assets and its Belongings browser. What it shows is the
@@ -29501,7 +29550,6 @@ reading is the inverse: a table that the game only ever draws as a menu row is n
 card table, and the checker cannot tell the two apart. The bar can be met for any
 individual table by naming it in a card, but that would be fabrication, not porting.
 
-
 ## 292. What the menu walk found, and what it did not
 
 After the book, diet and martial-arts captures (289-291), the walk continued:
@@ -29529,7 +29577,6 @@ invented year, not a transcribed one.
 state unchanged:   tests 85/85, card tables 874/935
 ```
 
-
 ## 291. Martial arts, and the belt ladder
 
 Third menu capture:
@@ -29555,7 +29602,6 @@ tests      85/85 green (test_martial_arts added)
 
 shortcut: the lesson count in {0} is not captured (10 is used) and the game's move
 list is not modelled; a course advances one belt in the hierarchy.
-
 
 ## 290. The diet menu
 
@@ -29583,7 +29629,6 @@ tests      84/84 green (test_diet added)
 
 shortcut: the game keeps a diet running with a menu to manage it and charges monthly;
 the port spends one year and charges that year's cost.
-
 
 ## 289. The bookshelf, and the menu capture 288 asked for
 
@@ -29627,7 +29672,6 @@ Activities    Outdoor (horses?), Casino (3), Black Market (auction categories)
 
 Each is one screenshot away, and each screenshot turns a table from 'unreferenced'
 into a card with the game's own text.
-
 
 ## 288. The 64 tables nobody has opened
 
@@ -29684,7 +29728,6 @@ and the third character is still playable. That is a different capture method fr
 age-up play (`tools/mumu_play.py` taps Age; a menu walker would tap Activities, Assets,
 Relationships and their submenus), and it is the only path left to the last 6.8%.
 
-
 ## 287. A brother's children, and the sentence for it
 
 The third played life at 18:
@@ -29709,7 +29752,6 @@ a few nieces and nephews per life, not a nursery.
 
 `test_sibling_marriage` now counts both forms, checks that a named father is a sibling
 the life married, and that the child really joins the family.
-
 
 ## 286. The headhunter
 
@@ -29745,7 +29787,6 @@ The first version named the job `None` for careers whose Seniority Track is a cl
 word; those fall back to the Career column now, as careerYear already does for its
 own line.
 
-
 ## 285. The wheel experiment, measured and put back
 
 284 ended with the structural issue named: the family wheel is a rotation, and the loop
@@ -29780,7 +29821,6 @@ when           the next session that can re-derive every family's ticket share
                against the two played lives in one pass
 ```
 
-
 ## 284. The tryout, and the two sentences around it
 
 The third played life at 14 adds the sentence between the school's start and its
@@ -29812,7 +29852,6 @@ game's lowercase spelling in the tryout sentence.
 30 lives:  18 tryouts   96 joins   114 starts
 tests      81/81 green (test_school_join now covers both)
 ```
-
 
 ## 283. The prom is its own card
 
@@ -29846,7 +29885,6 @@ decline  'You decided you didn't care about being nominated for prom king.'
 
 The vote, the two button labels and the winner's name are the port's (the game's tally
 and the label drawing are code-side); the sentences are the literals above.
-
 
 ## 282. The school's name, and the generator 264 called missing
 
@@ -29910,9 +29948,7 @@ can be engaged *again* later -- the lover-nag pool re-engages -- so
 `test_call_off_engagement` allows the end state to be `engaged` when a marriage-nag card
 follows the call-off in that life.
 
-
 ```
-
 
 ## 281. What the third character's later years added
 
@@ -29959,7 +29995,6 @@ carries the two fragments that build the ignore lane: #4070 `' who was trying to
 what is new is that the ignore line is now half-assembled from literals rather than
 wholly unknown.
 
-
 ## 280. The parents' car gift
 
 The third played life at 16, in one card and two sentences:
@@ -29993,7 +30028,6 @@ tests      79/79 green (test_parents_car added)
 The card is offered ahead of the wheel at 16-17 the way graduation and the exam are;
 without that it reached one life in forty.
 
-
 ## 279. The yearly filler narration
 
 The third character's screen at 16 carried the line the port had never written:
@@ -30023,7 +30057,6 @@ residue   a row that still resolves with '<' is dropped rather than logged
 ```
 
 `test_boosts` came back to 18 cards once the main stream stopped moving.
-
 
 ## 278. The eye exam is a mini-game, and the card says so
 
@@ -30064,7 +30097,6 @@ harness reattached to a life whose log had already rolled, so the harvested trac
 only seven ages wide. It is not committed: the useful artefact from this session is the
 screenshot above, and the frozen-card behaviour is recorded here because it will meet
 the next playthrough too -- the driver cannot play mini-games.
-
 
 ## 277. Where the port stands, and what it waits on
 
@@ -30117,7 +30149,6 @@ named above record the exact literal or table that is missing in each case.
 The port is at the evidence ceiling: further work is a decision about which capture to
 take, not a code change that is waiting to be written.
 
-
 ## 276. The part-time job
 
 The second played life at 13:
@@ -30160,7 +30191,6 @@ impact, so the simulation has to clamp per event too.
 `test_pray_wealth` fell to two cards with the new family taking years; pray-asset got a
 third wheel seat (six cards now) rather than a lowered bar.
 
-
 ## 275. The parents' pet
 
 The second played life at 3:
@@ -30200,7 +30230,6 @@ My ragdoll cat, Sebastian, perished after losing his last fight, against old age
 tests      77/77 green (test_parents_pet added)
 ```
 
-
 ## 274. A sibling comes out
 
 The second played life at 24:
@@ -30232,7 +30261,6 @@ sexuality table itself carries.
 40 lives:  18 confessions   13 announcements, each tied to a sibling who confessed
 tests      76/76 green (test_sibling_coming_out added)
 ```
-
 
 ## 273. The crime chain: arrested, charged, pleaded, sentenced
 
@@ -30288,7 +30316,6 @@ acquittal          the trial's coin is the port's (50/50); the trace only shows
                    a guilty plea, so there is no evidence for the trial's odds
 ```
 
-
 ## 272. Marriage and birth rates, against a family that exists
 
 271 said the rates could only be tuned once the population was there. It is, so:
@@ -30327,7 +30354,6 @@ test_sibling_marriage  a birth dated before its mother's marriage, because two
 ```
 tests 74/74 green
 ```
-
 
 ## 271. The relatives the game actually gives you
 
@@ -30373,7 +30399,6 @@ draw (one sibling at 55%) is unchanged. With the population in place, the marria
 birth rates from 270 are the next tuning pass -- and they are now measurable against a
 comparable family, which they were not before.
 
-
 ## 270. A sibling's marriage and children
 
 269 left two categories short. Both now exist in the person loop, with the played life's
@@ -30418,7 +30443,6 @@ played lives' own family sizes.
 a birth never precedes its mother's marriage. `test_family.py` accepts the longer
 sentence for the same reason.
 
-
 ## 269. The family lifecycle's own rates
 
 268 pointed at the relative lines as the real composition gap. Measured on both played
@@ -30461,7 +30485,6 @@ against 0.01): the port's person loop marries a relative only when the hero's ow
 pushes it, and never has a relative's baby. Those two are the next section's work, and
 they are countable the same way.
 
-
 ## 268. The composition gap, measured and corrected
 
 267 called the composition gap \"the largest fidelity item left\" on a number that was
@@ -30502,7 +30525,6 @@ promoted, gets ill, marries, or has a child. That is measurable the same way (li
 year), and it does not disturb any card's calibration because those lines come from
 their own streams.
 
-
 ## 267. The optometrist, and the composition problem it exposed
 
 The second played life (266) gave this chain whole:
@@ -30542,7 +30564,6 @@ of years for the dumb pool ahead of the wheel, with the tests recalibrated once.
 
 `test_troll_outbound`'s bar is lowered to two cards with that reason written beside it,
 rather than pretending the card got better.
-
 
 ## 266. A second played life, and 25 classes it added
 
@@ -30593,7 +30614,6 @@ plus `ScenarioCasinoBet`, `ScenarioCasinoOutcome`, `ScenarioGameBlackjack`,
 chain's prompts are still card-side, but its *sentences* -- arrest, charge, plea, sentence,
 prison name, release -- are all here, and the juvenile shoplifting card brings the
 delinquency chain's first real lines too. Next pass starts from these, not from a guess.
-
 
 ## 265. The battery, restored again
 
@@ -32347,17 +32367,11 @@ cards: 5      leftovers: 0      bench 0 lines
 <musician-indefinite>            blocked (no music career in this card's path)
 ```
 
-
 ```
 
 ```
-
 
 work — and the registry entry existing is *not* the same as the table loading.
-
-
-
-
 
 else.
 
@@ -32369,27 +32383,11 @@ ported:   a16_paranormal-encounters-enc (§186)   a16_stalker-scenarios-enc (§1
 remaining: 24
 ```
 
-
-
-
-
 ### 190.3 Verification
 
 `test_paranormal`, `test_stalker`, `test_parent_cheat` all `ok`; bench **0 lines** — the
 bench trace is a childhood life where no ambient card fires, so the restructure is
 invisible to it, which is the check that nothing else moved.
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## 178. Correction: "decrypts" is not a discriminator
 
@@ -32442,23 +32440,4 @@ Two rounds were spent proving that one sentence of §176 was too optimistic and 
 the card that worked. What it changes in the plan is concrete: the remaining content is
 **not** blocked behind a decryption subsystem, because 1,071 plain tables cover 928
 loaders. The cipher stays unread, and stays unnecessary for the cards the port can reach.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -683,6 +683,7 @@ struct Hero {
   int zooShopStockAge = -1;       // the year the add-product card last fired (368)
   size_t zooShopProfileIdx = 0;   // the shelf the product card opened on (369)
   int zooShopProfileAge = -1;     // the year the product card last fired (369)
+  size_t zooShopAnswerIdx = 0;    // the shelf the product card's answer is about (370)
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.

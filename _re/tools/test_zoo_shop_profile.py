@@ -8,8 +8,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = os.path.join(ROOT, "port", "build", "blsim")
 
 PROFILE = "registry:ScenarioZooGiftShopProductProfile"
-UNITS = "registry:ScenarioZooGiftShopAddProductBuildDetails"
-PRICE = "registry:ScenarioZooGiftShopAddProductSetPrice"
+UNITS = "registry:ScenarioZooGiftShopProductOrderUnits"    # REPORT 370
+PRICE = "registry:ScenarioZooGiftShopProductAdjustPrice"   # REPORT 370
 
 BODY = re.compile(
     r"Merch Type: (?P<product>.+?)\n"

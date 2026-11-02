@@ -148,6 +148,8 @@ enum PendingCard {
   kPendingZooShopUnits = 47,       // the shop chain's unit card (REPORT.en.md 368)
   kPendingZooShopPrice = 48,       // the shop chain's price card (REPORT.en.md 368)
   kPendingZooShopProfile = 49,     // the product card the shop menu opens (REPORT.en.md 369)
+  kPendingZooShopOrderUnits = 50,  // the product card's order answer (REPORT.en.md 370)
+  kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -808,6 +810,9 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooShopUnitsYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooShopPriceYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooShopProfileYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooShopOrderUnitsYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooShopAdjustPriceYear(Life& life, AgeUp& out, int forcedChoice);
+  size_t zooShopShelfIndex(const Life& life) const;   // REPORT.en.md 370
   void zooSeedGiftShop(Life& life);
   int zooGiftShopCapacity(const Hero& h);   // shelves by plot size (REPORT.en.md 366)
   const Hero::ZooHerdAnimal* zooHerdFind(const Hero& h, const std::string& name);
