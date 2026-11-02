@@ -678,6 +678,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
+      zooGiftRng_(seed ^ 0x3f6a1d04c8527b9eULL ^ 0x87d2c5b10e46a9f3ULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
       zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
@@ -4191,6 +4192,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingHeroBirth) return heroBirthYear(life, out, -1);
     if (kind == kPendingInsultComeback) return insultComebackYear(life, out, -1);
   if (kind == kPendingCasinoFeedback) return casinoFeedbackYear(life, out, -1);
+  if (kind == kPendingZooFeedback) return zooFeedbackYear(life, out, -1);
     if (kind == kPendingWitchResult || kind == kPendingWitchCure)
       return witchDoctorFollowup(life, out, pending);
 
@@ -4565,6 +4567,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-death"},
+        {&Sim::zooMerchYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-merch-order"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
         {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -10324,6 +10328,7 @@ void Sim::makeZoo(Life& life) {
   // The herd the lifecycle cards act on (REPORT.en.md 344).
   h.zooOwnedSince = h.age;
   zooSeedHerd(life);
+  zooSeedGiftShop(life);
   h.money -= 25000;   // the park is bought, not inherited
 }
 
@@ -10493,16 +10498,175 @@ bool Sim::zooComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The gift shop (REPORT.en.md 363). The native park opens with empty shelves: every
+// product is bought through the shop menu, which the port has no screen for, so the
+// park stocks three lines when it is bought instead (shortcut: 363).
+void Sim::zooSeedGiftShop(Life& life) {
+  Hero& h = life.hero;
+  if (!h.giftShop.empty()) return;
+  if (!ensureTable("a16_zoo-gift-shop-item-enc")) return;
+  const Table& t = tbl("a16_zoo-gift-shop-item-enc");
+  for (int n = 0; n < 3 && t.size(); ++n) {
+    const size_t r = zooGiftRng_.below(uint32_t(t.size()));
+    Hero::GiftShopItem it;
+    it.product = trim(t.at(r, "Product"));
+    bool dup = it.product.empty();
+    for (size_t i = 0; i < h.giftShop.size(); ++i)
+      if (lower(h.giftShop[i].product) == lower(it.product)) dup = true;
+    if (dup) continue;
+    it.plural = trim(t.at(r, "Plural"));
+    it.popScore = static_cast<int>(t.num(r, "Popularity Score"));
+    it.pricePerUnit = static_cast<long long>(t.num(r, "Price Per Unit"));
+    it.minSale = static_cast<long long>(t.num(r, "Min Sale Price"));
+    it.maxSale = static_cast<long long>(t.num(r, "Max Sale Price"));
+    if (it.maxSale < it.minSale) it.maxSale = it.minSale;
+    it.sellPrice = it.minSale + static_cast<long long>(zooGiftRng_.below(uint32_t(it.maxSale - it.minSale + 1)));
+    if (!h.zooHerd.empty()) {
+      const size_t k = zooGiftRng_.below(uint32_t(h.zooHerd.size()));
+      it.animal = h.zooHerd[k].name.empty() ? h.zooHerd[k].species : h.zooHerd[k].name;
+      it.breed = h.zooHerd[k].breed.empty() ? h.zooHerd[k].species : h.zooHerd[k].breed;
+    } else {
+      it.animal = h.zooAnimalName.empty() ? h.zooAnimalSpecies : h.zooAnimalName;
+      it.breed = h.zooAnimalSpecies;
+    }
+    if (it.animal.empty()) it.animal = "the park";
+    it.name = spyUpperFirst(it.animal + " " + it.product);
+    it.units = 20 + static_cast<long long>(zooGiftRng_.below(81));
+    h.giftShop.push_back(it);
+  }
+}
+
+// One year of trade (REPORT.en.md 363). The native formula weights the featured animal's
+// own standing at 0.7, the price's place in the catalogue's band at up to 10 and the
+// product's popularity score at 4 each, then draws a percentage from a band that narrows
+// as the line gets more popular. The herd carries no popularity figure, so the animal's
+// share is a fixed 42 (shortcut: 363).
+void Sim::zooGiftShopTick(Life& life) {
+  Hero& h = life.hero;
+  long long takings = 0;
+  for (size_t i = 0; i < h.giftShop.size(); ++i) {
+    Hero::GiftShopItem& it = h.giftShop[i];
+    double pop = 42.0;
+    if (it.maxSale > it.minSale) {
+      const double span = double(it.maxSale - it.minSale);
+      pop += 10.0 * (1.0 - (double(it.sellPrice - it.minSale) / span));
+    }
+    pop += 4.0 * double(it.popScore);
+    uint32_t lo = 0;
+    uint32_t hi = 11;
+    if (pop > 80.0) { lo = 80; hi = 101; }
+    else if (pop > 60.0) { lo = 60; hi = 81; }
+    else if (pop > 40.0) { lo = 40; hi = 61; }
+    else if (pop > 20.0) { lo = 10; hi = 31; }
+    const long long pct = static_cast<long long>(lo + zooGiftRng_.below(hi - lo));
+    const long long sold = (it.units * pct) / 100;
+    it.units -= sold;
+    it.unitsSold = sold;
+    it.revenue = it.sellPrice * sold;
+    takings += it.revenue;
+  }
+  h.zooGiftRevenue = takings;
+}
+
+// ScenarioZooAgeUpMerchOrder (REPORT.en.md 363). The native card is one rung of the park's
+// ordered age-up chain and fires when a line has sold out; the port gives it a wheel
+// ticket instead, so it can still only appear once a year.
+bool Sim::zooMerchYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.giftShop.empty()) return false;
+  // The native gate is a line with no units left. Its sale figure is truncated, so a line
+  // of one unit parks itself there for good; the port reads two or fewer as sold out
+  // (shortcut: 363).
+  size_t idx = size_t(-1);
+  for (size_t k = 0; k < h.giftShop.size() && idx == size_t(-1); ++k)
+    if (h.giftShop[k].units <= 2) idx = k;
+  if (idx == size_t(-1)) return false;
+  const Hero::GiftShopItem it = h.giftShop[idx];
+  auto grouped = [](long long v) {
+    std::string d = std::to_string(v < 0 ? -v : v);
+    for (size_t i = d.size(); i > 3; i -= 3) d.insert(i - 3, ",");
+    return (v < 0 ? "-" : "") + d;
+  };
+  out.table = "registry:ScenarioZooAgeUpMerchOrder";
+  out.title = "Merch Order";   // #29996
+  std::string rows;
+  auto row = [&rows](const std::string& label, const std::string& value) {
+    if (!rows.empty()) rows += "\n";
+    rows += label + ": " + value;
+  };
+  row("Current Unit Count", grouped(it.units));
+  row("Cost Per Unit", money(it.pricePerUnit));
+  row("Available Capital", money(h.zooBank));
+  row("Featured Animal", spyUpperFirst(it.animal + " the " + it.breed));
+  out.body = "Determine how many more " + it.plural + " featuring " + it.animal + " the " +
+             it.breed + " you'd like to order from your merchandise supplier.\n\n" + rows;
+  out.cta = "What will you do?";
+  out.options = {"Order more", "Nothing"};   // #33003 / #32186
+  const int pick = forcedChoice < 0 ? int(zooGiftRng_.below(2)) : forcedChoice;
+  const int which = pick > 1 ? 1 : pick;
+  out.choice = out.options[size_t(which)];
+  if (which == 1) return true;
+  // The order's own card is a slider; the port folds it into the answer. The slider's
+  // ceiling is what the pot can pay for, and the native does not clamp the debit, so the
+  // pot can go negative (shortcut: one unit when the slider would bottom out at zero).
+  long long room = 500 - it.units;
+  if (room < 1) room = 1;
+  long long affordable = it.pricePerUnit > 0 ? h.zooBank / it.pricePerUnit : room;
+  if (affordable < 0) affordable = 0;
+  long long units = affordable < room ? affordable : room;
+  if (units < 1) units = 1;
+  const long long cost = it.pricePerUnit * units;
+  h.giftShop[idx].units += units;
+  h.zooBank -= cost;
+  static const char* kTitles[] = {"Just came in!", "That new gift smell",
+                                  "Flying off the the shelves!"};
+  h.zooFeedbackTitle = kTitles[zooGiftRng_.below(3)];
+  h.zooFeedbackBody = "Your merch order of additional " + it.plural + " featuring " +
+                      it.animal + " the " + it.breed + " just arrived!\n\n" +
+                      "Units Ordered: " + grouped(units) + "\n" +
+                      "New Unit Count: " + grouped(h.giftShop[idx].units);
+  out.narrative = "I ordered " + grouped(units) + " more " + it.plural + " featuring " +
+                  it.animal + " the " + it.breed +
+                  " to restock the shelves in my zoo's gift shop.";
+  life.pendingCards.push_back(kPendingZooFeedback);
+  return true;
+}
+
+// The plain Scenario the merchandise order answers with (REPORT.en.md 363).
+bool Sim::zooFeedbackYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.zooFeedbackTitle.empty()) return false;
+  out.table = "registry:Scenario";  // a plain Scenario(title, body), no choices
+  out.title = h.zooFeedbackTitle;
+  out.body = h.zooFeedbackBody;
+  out.cta = "What will you do?";
+  out.options = {"OK"};
+  out.choice = "OK";
+  h.zooFeedbackTitle.clear();
+  h.zooFeedbackBody.clear();
+  return true;
+}
+
 void Sim::zooRunYear(Life& life) {
   Hero& h = life.hero;
   if (!h.ownsZoo || h.zooLedgerYear == h.age) return;
   h.zooLedgerYear = h.age;
+  zooGiftShopTick(life);
   const long long gate = static_cast<long long>(h.zooTicket)
                        * (h.zooAnimals + h.zooAttractions) * 900;
+  // The shop's takings land in the same pot: the native gross is the gate plus the
+  // attractions plus the gift shop, and only the profit reaches the bank (REPORT 363).
+  const long long shop = h.zooGiftRevenue;
   const long long upkeep = static_cast<long long>(h.zooAnimals) * 2500
                          + static_cast<long long>(h.zooAttractions) * 5000;
-  h.zooMoney = gate;
-  h.zooBank += gate - upkeep;
+  h.zooMoney = gate + shop;
+  h.zooBank += gate + shop - upkeep;
   if (h.zooBank >= 0) {
     h.zooNegativeYears = 0;
     h.zooBankruptQueued = false;

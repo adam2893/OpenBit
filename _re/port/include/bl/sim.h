@@ -152,6 +152,7 @@ enum PendingCard {
   kPendingHeroBirth = 40,         // her birth card (342)
   kPendingInsultComeback = 41,    // the insult's comeback card (REPORT.en.md 343)
   kPendingCasinoFeedback = 42,    // the card a resignation's answer chains (REPORT.en.md 352)
+  kPendingZooFeedback = 43,       // the merch order answer card (REPORT.en.md 363)
   kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
   kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
   kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
@@ -779,6 +780,10 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooEmployeeResignYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooEmployeeDeathYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooMerchYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
+  void zooSeedGiftShop(Life& life);
+  void zooGiftShopTick(Life& life);
   bool zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedHerd(Life& life);
   std::string zooAnimalNameFor(const std::string& breed, bool female);
@@ -1304,6 +1309,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng zooRng_;
   Rng zooResignRng_;  // the keeper's resignation card's own stream (REPORT.en.md 353)
   Rng zooStaffRng_;   // the keeper's hire age and lifespan (REPORT.en.md 354)
+  Rng zooGiftRng_;    // the gift shop own stream (REPORT.en.md 363)
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng zooLifeRng_;    // the zoo lifecycle cards' own stream
   Rng zooTheftRng_;    // the zoo theft card's own stream

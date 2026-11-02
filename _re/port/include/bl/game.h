@@ -644,6 +644,28 @@ struct Hero {
   int zooEmployeeResignAge = -1;  // the year the keeper last handed in notice
   int zooEmployeeAge0 = -1;        // the keeper's age on the day they were hired (354)
   int zooEmployeeLifespan = 0;     // the age the keeper dies at
+  // The gift shop (REPORT.en.md 363). The native park opens with empty shelves and the
+  // player stocks them through the shop menu, which the port has no screen for, so the
+  // park stocks three lines when it is bought (shortcut: 363).
+  struct GiftShopItem {
+    std::string product;      // the catalogue's Product column
+    std::string plural;       // the catalogue's Plural column
+    std::string animal;       // the featured animal's name
+    std::string breed;
+    std::string name;         // '<animal> <product>'
+    long long pricePerUnit = 0;
+    long long sellPrice = 0;
+    long long minSale = 0;
+    long long maxSale = 0;
+    long long units = 0;
+    long long unitsSold = 0;
+    long long revenue = 0;
+    int popScore = 0;
+  };
+  std::vector<GiftShopItem> giftShop;
+  long long zooGiftRevenue = 0;   // what the shop took this year (363)
+  std::string zooFeedbackTitle;   // the plain card a merch order answers with (363)
+  std::string zooFeedbackBody;
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.
