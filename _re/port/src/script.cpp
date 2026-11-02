@@ -292,6 +292,46 @@ std::string lifeJson(const ScriptSpec& spec, const std::string& heroAtBirth,
     o << (i ? ",\n" : "\n") << "    " << events[i];
   }
   o << (events.empty() ? "],\n" : "\n  ],\n");
+  // The gift shop is a menu in the native build, so its shelves never reach a script
+  // otherwise (REPORT.en.md 366). This is what the yearly books work from.
+  o << "  \"gift\": [";
+  for (size_t i = 0; i < h.giftShop.size(); ++i) {
+    const Hero::GiftShopItem& it = h.giftShop[i];
+    double animalPop = 0.0;
+    bool inZoo = false;
+    bool animalRare = false;
+    int animalCool = 0, animalHealth = 0, animalHappy = 0, animalCraz = 0, animalChar = 0;
+    for (size_t k = 0; k < h.zooHerd.size(); ++k) {
+      if (!h.zooHerd[k].name.empty() && h.zooHerd[k].name == it.animal) {
+        inZoo = true;
+        animalPop = zooAnimalPopularity(h.zooHerd[k]);
+        animalRare = h.zooHerd[k].rare;
+        animalCool = h.zooHerd[k].cool;
+        animalHealth = h.zooHerd[k].health;
+        animalHappy = h.zooHerd[k].happiness;
+        animalCraz = h.zooHerd[k].craziness;
+        animalChar = h.zooHerd[k].charisma;
+        break;
+      }
+    }
+    o << (i ? ",\n" : "\n") << "    {\"product\": " << jsonStr(it.product)
+      << ", \"animal\": " << jsonStr(it.animal)
+      << ", \"inZoo\": " << (inZoo ? "true" : "false")
+      << ", \"animalPopularity\": " << animalPop
+      << ", \"rare\": " << (animalRare ? "true" : "false")
+      << ", \"cool\": " << animalCool
+      << ", \"health\": " << animalHealth
+      << ", \"happiness\": " << animalHappy
+      << ", \"craziness\": " << animalCraz
+      << ", \"charisma\": " << animalChar
+      << ", \"score\": " << it.popScore
+      << ", \"min\": " << it.minSale
+      << ", \"max\": " << it.maxSale
+      << ", \"sell\": " << it.sellPrice
+      << ", \"units\": " << it.units << "}";
+  }
+  o << (h.giftShop.empty() ? "],\n" : "\n  ],\n");
+
   o << "  \"final\": {\"age\": " << h.age
     << ", \"alive\": " << (life.alive ? "true" : "false")
     << ", \"stats\": " << statsJson(h)

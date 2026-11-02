@@ -636,6 +636,12 @@ struct Hero {
     int age = 0;
     bool pregnant = false;
     int health = 90;
+    // The stats SimZooAnimal::GetPopularity (0x2b661f8) weighs (REPORT.en.md 366).
+    bool rare = false;
+    int cool = 60;        // 20 x the catalogue's Cool Score
+    int happiness = 45;
+    int craziness = 55;
+    int charisma = 8;
   };
   std::vector<ZooHerdAnimal> zooHerd;
   bool zooHerdSeeded = false;   // the park's animals are only put there once

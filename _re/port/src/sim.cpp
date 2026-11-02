@@ -679,6 +679,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
       zooGiftRng_(seed ^ 0x3f6a1d04c8527b9eULL ^ 0x87d2c5b10e46a9f3ULL),
+    zooStatRng_(seed ^ 0x1d4b7a93e6c05f28ULL ^ 0x63e8d1a57bf4029cULL),
       zooSplitRng_(seed ^ 0x51c7b2e94a6d380fULL ^ 0x9e2f41d7c6b58a03ULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
       zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
@@ -10512,12 +10513,71 @@ bool Sim::zooComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 // The gift shop (REPORT.en.md 363). The native park opens with empty shelves: every
 // product is bought through the shop menu, which the port has no screen for, so the
 // park stocks three lines when it is bought instead (shortcut: 363).
+// SimZooAnimal::GetPopularity (0x2b661f8) is derived per call from the animal's own
+// stats, never stored (REPORT.en.md 366): cool is twenty times the catalogue's Cool
+// Score, and a rare breed weights cool far above health. Clamped to 0..100.
+// Ceiling: the native reads the animal's live health, happiness, craziness and
+// charisma; the port keeps health at a flat 90 (REPORT 344) and draws the other
+// three once at birth from the ranges the native constructor uses.
+void Sim::zooSeedAnimalStats(Life& life, Hero::ZooHerdAnimal& a, const std::string& species,
+                             const std::string& breed) {
+  (void)life;
+  int cool = 0;
+  bool rare = false;
+  if (ensureTable("a16_zoo-animals-enc")) {
+    const Table& t = tbl("a16_zoo-animals-enc");
+    size_t hit = size_t(-1);
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (lower(trim(t.at(r, "Breed"))) != lower(breed)) continue;
+      if (!species.empty() && lower(trim(t.at(r, "Animal"))) != lower(species)) continue;
+      hit = r;
+      break;
+    }
+    if (hit != size_t(-1)) {
+      cool = 20 * static_cast<int>(t.num(hit, "Cool Score"));
+      rare = !trim(t.at(hit, "Rare")).empty();
+    }
+  }
+  if (cool <= 0) cool = 20;
+  if (cool > 100) cool = 100;
+  a.rare = rare;
+  a.cool = cool;
+  a.charisma = 1 + static_cast<int>(zooStatRng_.below(15));
+  a.craziness = 10 + static_cast<int>(zooStatRng_.below(91));
+  a.happiness = (rare ? 40 : 30) + static_cast<int>(zooStatRng_.below(30));
+}
+
+double zooAnimalPopularity(const Hero::ZooHerdAnimal& a) {
+  double pop = 0.0;
+  if (a.rare) {
+    pop = 0.75 * double(a.cool) + 0.10 * double(a.health) + 0.05 * double(a.craziness) +
+          0.10 * double(a.charisma);
+  } else {
+    pop = 0.45 * double(a.cool) + 0.25 * double(a.health) + 0.10 * double(a.happiness) +
+          0.10 * double(a.craziness) + 0.10 * double(a.charisma);
+  }
+  if (pop < 0.0) pop = 0.0;
+  if (pop > 100.0) pop = 100.0;
+  return pop;
+}
+
+// SimZoo::GetMaximumNumberGiftShopItems (0x2b5df18) is a plot lookup with no state:
+// shelves 4, 6 or 8 by plot size, and none at all from the fourth size up
+// (REPORT.en.md 366).
+int Sim::zooGiftShopCapacity(const Hero& h) {
+  if (h.zooSize < 1 || h.zooSize > 3) return 0;
+  return 2 * (h.zooSize - 1) + 4;
+}
+
 void Sim::zooSeedGiftShop(Life& life) {
   Hero& h = life.hero;
   if (!h.giftShop.empty()) return;
   if (!ensureTable("a16_zoo-gift-shop-item-enc")) return;
   const Table& t = tbl("a16_zoo-gift-shop-item-enc");
-  for (int n = 0; n < 3 && t.size(); ++n) {
+  // The native shop starts empty and fills one shelf at a time; the port opens with
+  // the shelves full up to capacity so the yearly trade has something to sell.
+  const int cap = zooGiftShopCapacity(h);
+  for (int n = 0; n < cap && t.size(); ++n) {
     const size_t r = zooGiftRng_.below(uint32_t(t.size()));
     Hero::GiftShopItem it;
     it.product = trim(t.at(r, "Product"));
@@ -10547,17 +10607,23 @@ void Sim::zooSeedGiftShop(Life& life) {
   }
 }
 
-// One year of trade (REPORT.en.md 363). The native formula weights the featured animal's
-// own standing at 0.7, the price's place in the catalogue's band at up to 10 and the
-// product's popularity score at 4 each, then draws a percentage from a band that narrows
-// as the line gets more popular. The herd carries no popularity figure, so the animal's
-// share is a fixed 42 (shortcut: 363).
+// One year of trade (REPORT.en.md 363, 366). The native formula weights the featured
+// animal's own popularity at 0.7, the price's place in the catalogue's band at up to 10
+// and the product's popularity score at 4 each, then draws a percentage from a band that
+// narrows as the line gets more popular.
 void Sim::zooGiftShopTick(Life& life) {
   Hero& h = life.hero;
   long long takings = 0;
   for (size_t i = 0; i < h.giftShop.size(); ++i) {
     Hero::GiftShopItem& it = h.giftShop[i];
-    double pop = 42.0;
+    double pop = 0.0;
+    // The featured animal only counts while it is still in the park; the native
+    // compares the very object the item holds, and the port matches its name.
+    for (size_t k = 0; k < h.zooHerd.size(); ++k) {
+      if (lower(h.zooHerd[k].name) != lower(it.animal)) continue;
+      pop += 0.7 * zooAnimalPopularity(h.zooHerd[k]);
+      break;
+    }
     if (it.maxSale > it.minSale) {
       const double span = double(it.maxSale - it.minSale);
       pop += 10.0 * (1.0 - (double(it.sellPrice - it.minSale) / span));
@@ -11403,6 +11469,7 @@ bool Sim::zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice) {
     baby.age = 0;
     baby.health = 90;
     baby.name = zooAnimalNameFor(parent.breed, baby.female);
+    zooSeedAnimalStats(life, baby, baby.species, baby.breed);
     const std::string genderWord = baby.female ? "female" : "male";
     const std::string objPron = zooObjPronoun(baby.female);
     h.zooHerd.push_back(baby);
@@ -12005,6 +12072,7 @@ void Sim::zooSeedHerd(Life& life) {
     // modelled, so the herd is seeded young (0-5) with full health.
     a.age = int(zooLifeRng_.below(6));
     a.health = 90;
+    zooSeedAnimalStats(life, a, a.species, a.breed);
     h.zooHerd.push_back(a);
   }
 }

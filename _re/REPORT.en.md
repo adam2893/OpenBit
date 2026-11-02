@@ -23536,6 +23536,150 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 366. The gift shop's shelves and its popularity
+
+The shop a park keeps is not a counter of receipts: every line carries its own
+product, the animal it is themed on, a price inside the catalogue's band, a
+stock count and a condition figure, and the year's trade is drawn from a band
+that the line's popularity decides.
+
+### What the item is
+
+`SimZooGiftShopItem::.ctor` (0x2b6c0d0) copies one row of
+`a16_zoo-gift-shop-item-enc` (Product, Plural, Price Per Unit, Min Sale Price,
+Max Sale Price, Popularity Score): the unit price is floored at one, the stock
+ceiling `+0x50` is a flat 500 and the condition byte `+0x54` starts at 100.
+`SetFeaturedAnimal` (0x2b6c480) then names the line
+`Capitalize(animal name + ' ' + product)` and keeps the animal object itself at
+`+0x38`. The condition figure is dead data: `GetCondition` (0x2b6c478) has no
+caller anywhere in the binary and nothing else writes the byte.
+
+The shelves are player-built. The item constructor has exactly one caller, the
+`RefreshScenario` of the menu card `ScenarioZooGiftShopProductAdd` (0x29efaf0),
+which is reached from the park's Gift Shop menu; `AddProduct` leads to
+`BuildDetails` and `SetPrice`, whose answer is the only caller of
+`SimZoo::AddGiftShopItem` (0x2b5de48). Nothing is stocked for free, so a fresh
+park's list at `+0x68` is empty.
+
+The number of shelves is a plot lookup. `SimZoo::GetMaximumNumberGiftShopItems`
+(0x2b5df18) takes `PlotSize - 1`, doubles it and adds four, but returns zero
+once the size is four or more:
+
+    plot 1 -> 4,  plot 2 -> 6,  plot 3 -> 8,  plot 4+ -> 0
+
+The menu's own guard wants `(capacity - current count) >= 1` before it offers
+"Add a Product"; the `SetPrice` answer runs `AddGiftShopItem` and then debits
+the park's bank, in that order, and `AddGiftShopItem` silently returns without
+adding anything when the list is already full — so a player at capacity is
+charged for a product they never get. That ordering bug is left alone here (see
+the ceilings).
+
+### What the line's popularity is
+
+`SimZooGiftShopItem::GetPopularity` (0x2b6c31c) derives the figure per call; it
+is never stored. The first term counts only while the featured animal is still
+in the park, which `SimZoo::GetAnimalExistsInZoo` (0x2b6647c) answers through
+`SimZooHabitat::AnimalExists` (0x2b6cf20) and a plain `List.Contains` with the
+default comparer — object identity on the `SimZooAnimal`, not the name, not the
+breed, not the catalogue row. The item holds the animal itself, so the gate
+keeps working after the animal dies until the habitat prunes it.
+
+The animal's own standing is `SimZooAnimal::GetPopularity` (0x2b661f8), also
+derived per call and clamped to 0..100. Its cool score is twenty times the
+catalogue's Cool Score column (1..5, so 20..100), and the weight set depends on
+whether the breed is rare:
+
+    rare     0.75*cool + 0.10*health + 0.05*craziness + 0.10*charisma
+    common   0.45*cool + 0.25*health + 0.10*happiness
+                     + 0.10*craziness + 0.10*charisma
+
+The weights are plain .rodata floats (0xFB007C = 0.45, 0xFB056C = 0.7,
+0xFACB10 = 0.05, 0xFABC78 = 0.15, 0xFAED38 = 0.1, 0xFAC194 = 0.2). No popularity
+is written anywhere: `SimZooAnimal::.ctor` (0x2b62f88) only seeds a fallback
+triple at `+0x90/+0x94/+0x98` (85..96 for a rare breed, 30..60 for a common one,
+plus happiness 40..70 or 30..60 and health 60..80 or 50..80), together with
+health `rand(20,40)`, charisma `rand(1,16)` and craziness `rand(10,101)`. The
+fallbacks are read only when there is no park or no compatible habitat.
+
+The line's figure is then
+
+    (inZoo ? animalPopularity : 0) * 0.7
+      + (1 - (SellPrice - MinSalePrice)/(MaxSalePrice - MinSalePrice)) * 100 * 0.1
+      + PopularityScore * 20 * 0.2
+
+with the last term simply four times the catalogue's score. The thousandths are
+kept: a line with cool 60, health 90, happiness 47, craziness 68 and charisma 9
+comes out at exactly 61.9.
+
+### The year's trade
+
+`SimZooGiftShopItem::IncrementAge` (0x2b6c1b0) draws one percentage from a band
+that narrows as the line's popularity rises — above 80 the draw is 80..100,
+above 60 it is 60..80, above 40 it is 40..60, above 20 it is 10..30, and below
+that it is 0..10 — and multiplies it by the units on hand. Stock falls by what
+sold, `UnitsSoldLastYear` and `LastYearsRevenue` are written, and
+`SimZoo::GetAnnualGiftShopRevenue` (0x2b5d7ac) hands the takings to the park's
+books. No money moves inside the item.
+
+### In the port
+
+`Hero::GiftShopItem` carries the catalogue's product, plural, price band, score
+and the stocked line, and `Hero::ZooHerdAnimal` now carries the four stats the
+animal's popularity needs (a `rare` flag, `cool`, `happiness`, `craziness`,
+`charisma`); they are drawn once at birth from a stream of their own,
+`zooStatRng_`, in the ranges the native constructor uses, so no existing zoo
+card moved. `Sim::zooSeedAnimalStats` reads the catalogue row by breed and takes
+`cool = 20 * Cool Score` with the Rare column as the flag, and
+`zooAnimalPopularity` is the free function both the shop and the script read.
+`Sim::zooGiftShopCapacity` is the plot lookup, and `Sim::zooSeedGiftShop` fills
+the shelves to capacity when the park is bought, since the port has no Gift
+Shop menu to add a product from. `Sim::zooGiftShopTick` now weights a line by
+its animal's own popularity times 0.7 and adds the price and score terms
+exactly; the animal is matched to the herd by name.
+
+The shop is a menu in the native build, so nothing else would let a script see
+it. The script's output carries a `gift` array — one entry per line with the
+product, the featured animal, whether it is still in the park, the animal's own
+popularity and stats, the price band, the sale price and the units left. That
+is what `_re/tools/test_zoo_gift_shop.py` recomputes the formula from, so the
+weights are checked rather than assumed.
+
+### Ceilings
+
+* The herd's health stays the flat 90 the park has always seeded (REPORT 344)
+  instead of the native `rand(20,40)`, and happiness, craziness and charisma are
+  drawn once at birth rather than tracked through the animal's life, so a line's
+  popularity does not move as the animal ages.
+* The in-park gate compares names, where the native compares the animal object
+  itself; a herd that ever held two animals of the same name would read as one.
+* The Gift Shop menu chain — `AddProduct`, `BuildDetails`, `SetPrice`,
+  `OrderUnits`, the product profile with its price slider and the retire answer
+  — is not modelled. The port opens with the shelves full to capacity and never
+  adds, retires or reprices a line.
+* Because the menu is missing, the native ordering bug that charges the park for
+  a product it cannot shelf is not reproduced: nothing in the port can add past
+  capacity.
+* A price is drawn once, inside the catalogue's band, when the shelf is filled;
+  the player's own price slider and the resulting band position are not
+  modelled beyond that one draw.
+* The catalogue's condition byte is not modelled at all: it is dead in the
+  native build, so a line never wears out.
+
+### Verified
+
+`_re/tools/test_zoo_gift_shop.py` walks ten parks of sixty years and one of
+eighty-five: forty-nine shelf lines, popularity recomputed from each animal's
+own stats and matched to the last binary digit in both branches (eight rare
+lines among them), three lines whose featured animal had left the park and
+therefore scored no animal share, shelf counts of 3..6 across the ten parks
+(plot sizes 1 and 2), and no shelves at all without a park. The zoo's own cards
+were re-run on the same binary without moving: the merchandise order answers
+twenty-seven cards over eleven animals, the theft card eighty-four over both
+answers, the bankruptcy card still saves the park, and the lifecycle cards count
+birth, death, eggs, failure, live and pregnancy exactly as before.
+The full 150-test suite ran on the binary these notes describe (b9f2834f..., 150 PASS /
+0 FAIL): _re/tools/test_zoo_gift_shop.py recomputes every shelf line's popularity from
+the animal's own stats and nothing else moved.
 ## 365. The talk show and the commercial
 
 `SimPlace::RefreshAvailableFameOpportunities` (0x2a431d4) rebuilds the Fame place's offers
