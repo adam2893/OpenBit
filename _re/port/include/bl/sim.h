@@ -754,6 +754,7 @@ class Sim {
   // ScenarioCasinoAgeUpGamblerComplimentGame (REPORT.en.md 324), the complaint
   // card's positive twin.
   bool casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoWithdrawYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino's mob favours (REPORT.en.md 345): a made man who owns a house
   // gets asked to launder take and to lend out a storage room for an
   // interrogation. Both draw their member and their money on their own stream.
@@ -1254,6 +1255,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng casinoGuestRng_;
   Rng casinoFloorRng_;  // the act cards' own stream (REPORT.en.md 350)
   Rng casinoAmenityRng_;  // the amenity cards' own stream (REPORT.en.md 351)
+  Rng casinoMenuRng_;  // the casino menu cards' own stream (REPORT.en.md 374)
   Rng casinoResignRng_;  // the resignation cards' own stream (REPORT.en.md 352)
   Rng casinoDeathRng_;   // the punter and guest-act death cards' own stream (355)   // the resignation cards' own stream (REPORT.en.md 352)
   Rng casinoDemandRng_;  // the guest act's demand card own stream (REPORT.en.md 356)

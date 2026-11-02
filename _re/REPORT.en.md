@@ -23511,6 +23511,40 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 374. The casino's withdraw card
+
+The casino menu's withdraw row opens `ScenarioCasinoWithdrawFunds` (CTA
+`0x35ccdb4`), a card that nothing in the age-up pipeline ever pushes. Like the
+zoo's admission fee in 373 it is offered here as its own guarded family, and its
+answer moves money the port already keeps: the casino's own balance comes out of
+the casino and lands in the hero's pocket.
+
+Recovered text: the body is `#40889 "Take money out of your casino today!"`, the
+rows are `#11284 "Amount"` and `#12534 "Available Funds"`, the only answer is
+`#32432 "OK"` and the card's own title literal is `#15240 "Casino"`. The
+currency prefix is whatever the hero's country prints, so a Euro life shows a
+Euro amount.
+
+* The card fires only for a hero who owns a casino, is 18 or older, is not in
+  prison, has a positive casino balance and has not seen the card for four years.
+* `Amount` is half the balance floored to the nearest thousand; answering moves
+  exactly that amount out of the casino and into the hero's cash, so the card is
+  a real lever on the bankruptcy clock 319 and 320 describe.
+* No journal is written: the native narrative for this card was not recovered,
+  and none is invented.
+
+shortcut: the native amount control is a slider and its bounds, default and
+rounding were not recovered, so the port withdraws half the balance rather than
+reproduce a slider it cannot read. The row label `Amount` is the native one; the
+number in it is the port's.
+
+`_re/tools/test_casino_withdraw.py` drives twenty seeds: 7 cards, the recovered
+body on each, the four-year cooldown, the half-the-balance arithmetic against the
+funds row on every card and a no-casino control
+(`cards: 7 | ok`).
+
+The full 157-test suite ran on the binary these notes describe (7208868afde84e9d874a..., 157 PASS / 0 FAIL): _re/tools/test_casino_withdraw.py drives twenty seeds, the recovered body and arithmetic on every card, the cooldown and the no-casino control, and nothing else moved.
+
 ## 373. The zoo's admission fee
 
 The zoo management menu has a gate-price card, `ScenarioZooAdmissionFee`, that

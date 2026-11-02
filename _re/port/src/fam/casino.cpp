@@ -1532,6 +1532,45 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 // house theme, the compliment wants one that does. The compliment writes no journal
 // either, and its 'give' answer raises the punter's addiction instead of lowering it -
 // an inconsistency in the shipped card, kept here. REPORT 351.
+// ScenarioCasinoWithdrawFunds (REPORT.en.md 374): the casino menu's withdraw card.
+// CTA 0x35ccdb4. Recovered literals: body #40889 'Take money out of your casino
+// today!', the row label #11284 'Amount', #12534 'Available Funds', the answer
+// #32432 'OK' and the card's own title #15240 'Casino'.
+//
+// shortcut: the card is menu-only natively -- no age-up pushes it -- so the port
+// offers it as its own family the way 364's Division of Labor row and 373's
+// admission fee are offered. The native amount control is a slider whose bounds
+// and default were not recovered; the port therefore withdraws half of the
+// casino's balance, floored to a thousand, and prints that amount in the row the
+// card got. No journal is written: the narrative was not recovered.
+bool Sim::casinoWithdrawYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoBank <= 0) return false;
+  if (h.casinoWithdrawAge >= 0 && h.age - h.casinoWithdrawAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.06)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoWithdrawAge = h.age;
+  long long amount = h.casinoBank / 2;
+  amount -= amount % 1000;
+  if (amount <= 0) amount = h.casinoBank;
+  out.table = "registry:ScenarioCasinoWithdrawFunds";
+  out.title = "Casino";  // #15240
+  out.body = "Take money out of your casino today!";  // #40889
+  out.body += "\n\nAmount: " + money(amount);
+  out.body += "\nAvailable Funds: " + money(h.casinoBank);
+  out.options = {"OK"};
+  out.choice = "OK";
+  h.casinoBank -= amount;
+  h.money += amount;
+  return true;
+}
+
 bool Sim::casinoAmenityComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
