@@ -23536,6 +23536,62 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 358. The complaint card's missing game
+
+`ScenarioCasinoAgeUpGamblerComplaintGame` is the casino age-up card that fires when a
+regular cannot play what he wants. Its own addresses are `.ctor 0x356f760`,
+`RefreshScenario 0x356e188`, `ChoiceSelectedAtIndex 0x356eaf0`, eligibility
+`0x356f31c`, and it is constructed from the ordered push cascade in
+`SimCasino::IncrementAge` at `0x2aaced8`.
+
+**Eligibility draws nothing.** There is no coin flip, no win rate and no units check in
+it: it walks the gambler list, asks whether some regular's favourite game type has no
+installed room, then requires the hero to be eighteen or older, out of prison, and more
+than two years past the last card of this class. The winner is the last qualifying
+regular with its first missing favourite, and when no regular qualifies but the
+question answers differently the fallback is one random regular and one random
+favourite. The game's printed name comes from `GetNameStringForGameType 0x2aa9a40`;
+the paragraph under the sentence comes from
+`GetRandomCasinoCasinoGameRoomComplaintForHappiness 0x26c6f20` filtered by that
+regular's happiness and parsed with `<hero-casino>` bound to the house. The title is
+`#16066 'Complaint'`, the sentence is "Your casino's {relationship}, {name}, is
+complaining that your casino doesn't have {pronoun} favorite game, {game}." and the
+buttons are 'Ban {them} from my casino', 'Apologize for the inconvenience' and 'Ignore
+{them}'.
+
+**The relationship slot speaks in types, not ranks.** It is
+`SimCasinoGambler::RelationshipStatusString`, whose words are `'casual gambler'`,
+`'high roller'` and `'Mafia member'` — the five-step Beginner/Amateur/Novice/Regular/
+High Roller ladder earlier sections of this report used is the port's own invention and
+does not appear on this card.
+
+**One card a year.** The native push site is an ordered if/else cascade over the casino
+age-up classes, so a year can carry at most one of them, and the first eligible class in
+the order wins.
+
+Port: `Sim::casinoComplaintYear` (`_re/port/src/fam/casino.cpp`) lost its
+`chance(0.10)` gate and now asks the native question directly — it scans
+`a16_casino-casino-game-room-enc` for the first game the hero has no `CasinoRoom` for
+and returns without a card when every game is installed. It also gained the two-year
+cooldown, kept in the new `Hero::casinoComplaintAge` field, and its relationship slot
+now prints `'high roller'` for a style-5 regular and `'casual gambler'` otherwise.
+
+Ceilings: the port has no per-regular favourite list, so the casino's whole game
+catalogue stands in for the regulars' favourites; it has no mafia regulars yet (the
+ceiling recorded in 357), so `'Mafia member'` never prints; the cascade is not modelled
+as an order because the wheel already yields one family card a year; and the praise twin
+(`ScenarioCasinoAgeUpGamblerComplimentGame`) keeps the rank ladder because its own
+contract was not recovered.
+
+Verified by `_re/tools/test_casino_complaint.py`, which also had its mood-row matcher
+widened from a `\S+` wildcard to `.+?` because the shipped rows substitute multi-word
+pools such as `<friendly advice/constructive criticism/an honest assessment/the obvious
+next step>`.
+
+The full 145-test suite ran on the binary these notes describe (e2f504b1..., 145 PASS /
+0 FAIL): `_re/tools/test_casino_complaint.py` exercises the card, its two type
+words and the widened mood rows, and nothing else moved.
+
 ## 357. The new regular's card
 
 `ScenarioCasinoAgeUpGamblerNew` is the casino's only purely informational card

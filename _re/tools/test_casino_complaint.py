@@ -11,7 +11,7 @@ PORT = ROOT / "port" / "build" / "blsim"
 DATA = ROOT / "gamedata_plain"
 
 TABLE = "registry:ScenarioCasinoAgeUpGamblerComplaintGame"
-TIERS = ("Beginner", "Amateur", "Novice", "Regular", "High Roller")
+TIERS = ("casual gambler", "high roller")  # REPORT 358: the type words, not the rank ladder
 BODY = re.compile(r"^Your casino's (?P<tier>\w+(?: \w+)?), (?P<name>.+?), is complaining "
                   r"that your casino doesn't have (?:his|her) favorite game, (?P<game>.+)\.$")
 
@@ -80,7 +80,7 @@ def main():
     # token becomes a wildcard and the rest of the cell must match verbatim.
     def cell_hits(cell, text):
         parts = re.split(r"<[^>]+>", cell)
-        pattern = r"\S+".join(re.escape(part) for part in parts)
+        pattern = r".+?".join(re.escape(part) for part in parts)
         return re.fullmatch(pattern, text) is not None
     assert any(cell_hits(r, paras[1]) for r in mood), paras[1]
     assert paras[1][:1].isupper(), paras[1]

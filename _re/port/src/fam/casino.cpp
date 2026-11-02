@@ -219,19 +219,33 @@ bool Sim::casinoBankruptYear(Life& life, AgeUp& out, int forcedChoice) {
 // inconvenience' and #26366 'Ignore '; the two short labels end in a space because the
 // native card appends the gambler's name to them.
 //
-// Ceiling: the tier ladder the card's {relationship} slot names is not recovered. The port
-// has five gambler styles already (319) and five rank words exist in the literal table
-// (Beginner #13333, Amateur #11239, Novice #32248, Regular #35559, High Roller #22919), so
-// style N is called by rank word N. Nothing here is invented text; only the pairing is.
+// ScenarioCasinoAgeUpGamblerComplaintGame speaks about a regular by type, not by a
+// five-step rank ladder: the relationship slot is 'casual gambler' or 'high roller' or
+// 'Mafia member' (REPORT.en.md 358). The port has no mafia regulars yet (357's ceiling),
+// so only the first two appear.
 bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
-  if (forcedChoice < 0 && !casinoCardRng_.chance(0.10)) return false;
+  // The native eligibility draws nothing: the card fires when some regular's
+  // favourite game has no matching room installed, and names that game
+  // (REPORT.en.md 358). Two years of quiet follow a card.
+  if (h.casinoComplaintAge >= 0 && h.age - h.casinoComplaintAge <= 2) return false;
+  std::string game;
+  if (ensureTable("a16_casino-casino-game-room-enc")) {
+    const Table& games = tbl("a16_casino-casino-game-room-enc");
+    for (size_t r = 0; r < games.size() && game.empty(); ++r) {
+      const std::string g = trim(games.at(r, "Game"));
+      if (g.empty()) continue;
+      bool built = false;
+      for (size_t i = 0; i < h.casinoRooms.size(); ++i)
+        if (lower(h.casinoRooms[i].game) == lower(g)) { built = true; break; }
+      if (!built) game = g;
+    }
+  }
+  if (game.empty()) return false;
   hero_ = &h;
   life_ = &life;
 
-  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
-                                 "High Roller"};
   int style = 3;
   if (!h.casinoGamblerStyles.empty()) {
     const size_t pick = casinoCardRng_.below(uint32_t(h.casinoGamblerStyles.size()));
@@ -242,8 +256,6 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   const bool female = casinoCardRng_.chance(0.5);
   std::string gambler = resolve("<casino-gambler>");
   if (gambler.empty()) gambler = female ? "Jane Doe" : "John Doe";
-  std::string game = resolve("<casino-game>");
-  if (game.empty()) game = "blackjack";
 
   // The row's own line follows the sentence, and the picker filters the table by
   // the floor's mood first (GetRandomCasinoGameRoomComplaintForHappiness): a happy
@@ -269,9 +281,10 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
     }
   }
 
+  const std::string rel = style >= 5 ? "high roller" : "casual gambler";
   out.table = "registry:ScenarioCasinoAgeUpGamblerComplaintGame";
   out.title = "Complaint";
-  out.body = std::string("Your casino's ") + kTiers[style - 1] + ", " + gambler +
+  out.body = std::string("Your casino's ") + rel + ", " + gambler +
              ", is complaining that your casino doesn't have " +
              (female ? "her" : "his") + " favorite game, " + game + ".";
   if (!rowText.empty()) out.body += "\n\n" + rowText;
@@ -284,6 +297,7 @@ bool Sim::casinoComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   const int pick = forcedChoice >= 0 ? (forcedChoice > 2 ? 2 : forcedChoice)
                                      : int(casinoCardRng_.below(3));
   out.choice = out.options[pick];
+  h.casinoComplaintAge = h.age;
 
   if (pick == 1) {
     // Apologising buys the punter a little more appetite for the floor.

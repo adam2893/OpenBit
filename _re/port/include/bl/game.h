@@ -498,6 +498,7 @@ struct Hero {
   long long casinoBaseMonthlyCost = 0;   // that structure's Base Monthly Cost
   int casinoLedgerYear = -1;             // the last year the books were run
   int casinoBankruptYears = 0;           // consecutive years the casino pot ended negative
+  int casinoComplaintAge = -1;           // age the complaint card last fired (358)
   int casinoComplimentAge = -1;          // age the compliment card last fired (5-year cooldown)
   // The mob's man at the house (REPORT.en.md 345). The native cards hold one
   // SimCasinoMafiaMember with its own person record; the port has no member
