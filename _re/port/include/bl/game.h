@@ -547,6 +547,8 @@ struct Hero {
   int casinoInstallGameAge = -1;  // the install card's cooldown (383)
   int casinoRoomNameAge = -1;    // the room rename card's cooldown (384)
   int casinoRoomRemoveAge = -1;  // the room remove card's cooldown (384)
+  int casinoAmenityInstallAge = -1;   // the amenity install card's cooldown (385)
+  int casinoAmenityDemolishAge = -1;  // the amenity demolish card's cooldown (385)
   int zooAttractionAge = -1;      // the attraction install card's cooldown (383)
   int casinoExpandAge = -1;             // the year the expand card fired (378)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5

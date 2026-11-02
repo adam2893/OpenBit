@@ -23511,6 +23511,41 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 385. The amenity menu's install and demolish rows
+
+The two amenity rows had their bodies recovered -- `#26768 'Install an amenity in
+your casino today!'` for `ScenarioCasinoAmenityInstall` and `#17499 'Demolish one of
+your amenities today!'` for `ScenarioCasinoAmenityDemolish` -- so the port prints
+them with the labels the amenity cards already carry (`#11275 'Amenity'`, `#11276
+'Amenity Capacity'`, `#11274 'Amenities Installed'`, `#11277 'Amenity
+Installation'`) and `#26764 'Install a new amenity'` / `#17496 'Demolish Amenity'`
+as the answers. The demolish card appends the recovered confirmation `#11807 'Are
+you sure you want to demolish this amenity?'` instead of opening a second screen. No
+journal on either card.
+
+The install card reads the structure's `Amenity Capacity` and refuses when the floor
+is full, draws a line that is not installed yet, prefers a row whose `Theme` is the
+house theme and only falls back to an off-theme line when every themed line is
+already up, charges the row's `Cost` to the casino's pot and pushes the amenity with
+its theme and monthly cost. The demolish card drops one amenity and its two parallel
+columns.
+
+One economy change was needed to make the install row reachable at all: purchasing a
+casino now seeds `Amenity Capacity - 1` amenities (never fewer than one), the same
+one-empty-slot rule the game-room install card needed in 383. Before this the floor
+was always full at purchase and the row could never fire.
+
+`shortcut:` demolishing refunds nothing (no refund flow recovered), and both cards
+choose their own year because the port has no menus to open them from.
+
+`_re/tools/test_casino_amenity_menu.py` sweeps both cards over sixty casino owners
+in only-mode and demands the recovered body, the capacity and installation rows, the
+confirmation sentence and the matching answer; it prints `install cards: 9 (9
+amenities) | demolish cards: 19`. The four existing casino card tests were re-run
+green after the seeding change.
+
+The full 168-test suite ran on the binary these notes describe (623e62745f290deb8bfc..., 168 PASS / 0 FAIL): _re/tools/test_casino_amenity_menu.py drives both cards, and the four existing casino card tests were re-run green after the amenity-seeding change.
+
 ## 384. The game room's rename and clear-out rows
 
 Two more game-room menu rows had their bodies recovered:

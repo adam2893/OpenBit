@@ -1625,6 +1625,106 @@ bool Sim::casinoExpandYear(Life& life, AgeUp& out, int forcedChoice) {
 // rows reuse the labels the casino's other room cards already carry, and the remove
 // card appends the recovered confirmation sentence (#11790) rather than inventing a
 // second screen (REPORT.en.md 384).
+// The amenity menu's install and demolish rows, ScenarioCasinoAmenityInstall and
+// ScenarioCasinoAmenityDemolish. Both bodies were recovered (#26768 and #17499); the
+// rows reuse the labels the casino's amenity cards already carry (#11275 Amenity,
+// #11276 Amenity Capacity, #11274 Amenities Installed, #11277 Amenity Installation)
+// and the answers are #26764 Install a new amenity / #17496 Demolish Amenity. The
+// demolish card appends the recovered confirmation #11807 (REPORT.en.md 385).
+bool Sim::casinoAmenityInstallYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoAmenityInstallAge >= 0 && h.age - h.casinoAmenityInstallAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_casino-casino-amenity-enc")) return false;
+  const Table& t = tbl("a16_casino-casino-amenity-enc");
+  int capacity = 2;
+  if (ensureTable("a16_casino-casino-structure-enc")) {
+    const Table& st = tbl("a16_casino-casino-structure-enc");
+    for (size_t r = 0; r < st.size(); ++r) {
+      if (lower(trim(st.at(r, "Structure Type"))) != lower(h.casinoStructure)) continue;
+      if (st.has("Amenity Capacity")) capacity = int(st.num(r, "Amenity Capacity"));
+      break;
+    }
+  }
+  if (int(h.casinoAmenities.size()) >= capacity) return false;
+  struct Pick { size_t row; bool themed; };
+  std::vector<Pick> pool;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string name = trim(t.at(r, "Amenity Name"));
+    if (name.empty()) continue;
+    bool used = false;
+    for (size_t i = 0; i < h.casinoAmenities.size(); ++i)
+      if (lower(h.casinoAmenities[i]) == lower(name)) used = true;
+    if (used) continue;
+    const bool themed = t.has("Theme") && lower(trim(t.at(r, "Theme"))) == lower(h.casinoTheme);
+    pool.push_back(Pick{r, themed});
+  }
+  if (pool.empty()) return false;
+  // A matching theme is what the floor wants; only fall back to an off-theme row when
+  // every themed line is already installed (REPORT.en.md 350's match impact).
+  std::vector<size_t> themed;
+  for (size_t i = 0; i < pool.size(); ++i)
+    if (pool[i].themed) themed.push_back(pool[i].row);
+  const size_t row = themed.empty() ? pool[casinoMenuRng_.below(uint32_t(pool.size()))].row
+                                    : themed[casinoMenuRng_.below(uint32_t(themed.size()))];
+  const long long cost = t.has("Cost") ? (long long)t.num(row, "Cost") : 0;
+  if (cost > h.casinoBank) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string name = trim(t.at(row, "Amenity Name"));
+  h.casinoAmenityInstallAge = h.age;
+  h.casinoBank -= cost;
+  h.casinoAmenities.push_back(name);
+  h.casinoAmenityTheme.push_back(t.has("Theme") ? trim(t.at(row, "Theme")) : std::string());
+  h.casinoAmenityMonthly.push_back(t.has("Monthly Expenses") ? (long long)t.num(row, "Monthly Expenses") : 0);
+  out.table = "registry:ScenarioCasinoAmenityInstall";
+  out.title = "Amenity";  // #11275
+  out.body = "Install an amenity in your casino today!";  // #26768
+  out.body += "\n\nAmenity: " + name;                                    // #11275
+  out.body += "\nAmenity Capacity: " + std::to_string(capacity);          // #11276
+  out.body += "\nAmenities Installed: " + std::to_string(h.casinoAmenities.size());  // #11274
+  out.body += "\nAmenity Installation: " + money(cost);                   // #11277
+  out.options = {"Install a new amenity"};                                 // #26764
+  out.choice = "Install a new amenity";
+  return true;
+}
+
+bool Sim::casinoAmenityDemolishYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoAmenities.empty()) return false;
+  if (h.casinoAmenityDemolishAge >= 0 && h.age - h.casinoAmenityDemolishAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  const size_t at = casinoMenuRng_.below(uint32_t(h.casinoAmenities.size()));
+  const std::string name = h.casinoAmenities[at];
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoAmenities.erase(h.casinoAmenities.begin() + std::ptrdiff_t(at));
+  if (at < h.casinoAmenityTheme.size())
+    h.casinoAmenityTheme.erase(h.casinoAmenityTheme.begin() + std::ptrdiff_t(at));
+  if (at < h.casinoAmenityMonthly.size())
+    h.casinoAmenityMonthly.erase(h.casinoAmenityMonthly.begin() + std::ptrdiff_t(at));
+  h.casinoAmenityDemolishAge = h.age;
+  out.table = "registry:ScenarioCasinoAmenityDemolish";
+  out.title = "Amenity";  // #11275
+  out.body = "Demolish one of your amenities today!";  // #17499
+  out.body += "\n\nAmenity: " + name;                                   // #11275
+  out.body += "\nAmenities Installed: " + std::to_string(h.casinoAmenities.size());  // #11274
+  out.body += "\n\nAre you sure you want to demolish this amenity?";    // #11807
+  out.options = {"Demolish Amenity"};                                     // #17496
+  out.choice = "Demolish Amenity";
+  return true;
+}
+
 bool Sim::casinoRoomNameYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

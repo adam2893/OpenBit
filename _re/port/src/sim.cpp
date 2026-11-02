@@ -4669,6 +4669,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-room-name"},
         {&Sim::casinoRoomRemoveYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-room-remove"},
+        {&Sim::casinoAmenityInstallYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-amenity-install"},
+        {&Sim::casinoAmenityDemolishYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-amenity-demolish"},
         {&Sim::casinoExpandYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-expand"},
         {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
@@ -8989,7 +8993,10 @@ void Sim::ensureCasinoFields(Life& life) {
     // that name a Theme only fit a house of that theme.
     const Table& t = tbl("a16_casino-casino-amenity-enc");
     std::vector<std::string> used;
-    for (int slot = 0; slot < amenityCap; ++slot) {
+    // One slot stays empty: the amenity install card (REPORT.en.md 385) is the only
+    // way to fill it, exactly as the game-room install card needed one (383).
+    const int amenitySeed = amenityCap > 1 ? amenityCap - 1 : 1;
+    for (int slot = 0; slot < amenitySeed; ++slot) {
       std::vector<size_t> pool;
       for (size_t r = 0; r < t.size(); ++r) {
         const std::string cat = lower(trim(t.at(r, "Category")));
