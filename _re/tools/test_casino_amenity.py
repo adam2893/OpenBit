@@ -12,7 +12,7 @@ hook (casino_amenity), because a port casino only builds what the patron visit r
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-TIERS = r"(?:Beginner|Amateur|Novice|Regular|High Roller)"
+TIERS = r"(?:casual gambler|high roller)"  # REPORT 360
 
 COMPLAINT = "registry:ScenarioCasinoAgeUpGamblerComplaintAmenity"
 COMPLIMENT = "registry:ScenarioCasinoAgeUpGamblerComplimentAmenity"

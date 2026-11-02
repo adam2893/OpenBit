@@ -567,18 +567,10 @@ bool Sim::casinoMafiaLaunderYear(Life& life, AgeUp& out, int forcedChoice) {
   const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
                                      : int(casinoMobRng_.below(2));
   out.choice = out.options[pick];
-  // The refresh's journal. Its relationship-status slot (member vtable +0x4f8) is
-  // unrecovered, so the punter tier of the floor's own table stands in (shortcut).
-  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
-                                 "High Roller"};
-  int style = 3;
-  if (!h.casinoGamblerStyles.empty()) {
-    style = h.casinoGamblerStyles[size_t(casinoMobRng_.below(
-        uint32_t(h.casinoGamblerStyles.size())))];
-  }
-  if (style < 1) style = 1;
-  if (style > 5) style = 5;
-  out.narrative = std::string("My casino's ") + kTiers[style - 1] + ", \"" + nick +
+  // The journal's relationship slot (member vtable +0x4f8) prints one of the three
+  // recovered type words, and this card is only ever pushed by a mafia member, so it
+  // is the 'Mafia member' one (REPORT.en.md 360).
+  out.narrative = std::string("My casino's Mafia member, \"") + nick +
                   "\" " + name + ", asked me to launder $" + std::to_string(amount) +
                   " through my casino and offered me $" + std::to_string(cut) +
                   " to do so.";
@@ -684,6 +676,8 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
   ensureCasinoFields(life);
   // The books are kept every year, whether or not a card comes up (319).
   casinoRunYear(life);
+  // The guest act contract ticks down every year (362); the renewal card reads it.
+  if (!h.casinoCelebrity.empty() && h.casinoCelebContract > 0) h.casinoCelebContract -= 1;
   if (!casinoRng_.chance(0.50)) return false;
   rndCache_.clear(); rbLast_.clear();        // the '<rb>' alternatives belong to one card
   casinoGambler_.clear();  // one punter per card
@@ -818,6 +812,11 @@ bool Sim::casinoYear(Life& life, AgeUp& out, int forcedChoice) {
           h.casinoCelebFemale = pronounOtherSet_ ? pronounOtherFemale_ : casinoRng_.chance(0.5);
           h.casinoCelebMetAge = h.age;
           h.casinoCelebRel = 20 + int(casinoRng_.below(61));
+          // The booking card passes a dropdown length from {2,3,5,7,10} and a
+          // slider salary; the port draws both from the house stream (REPORT 362).
+          static const int kBookLengths[5] = {2, 3, 5, 7, 10};
+          h.casinoCelebContract = kBookLengths[int(casinoRng_.below(5))];
+          h.casinoCelebSalary = 50000 + 1000LL * int(casinoRng_.below(451));
           const size_t dr = pickRow("a16_casino-celebrity-demand-enc", "", "", "", "", casinoRng_);
           title = "A celebrity in the house";
           if (dr != size_t(-1)) {
@@ -1374,7 +1373,8 @@ void Sim::makeCasino(Life& life) {
 }
 
 namespace {
-std::string casinoTierWord(const Hero& h, Rng& rng);  // defined below
+std::string casinoGamblerStatus(const Hero& h, Rng& rng);  // defined below
+std::string casinoCelebStatus();                            // defined below
 }
 
 // The act cards: ScenarioCasinoAgeUpGamblerComplaintEntertainmentAct (.ctor
@@ -1396,11 +1396,12 @@ bool Sim::casinoActComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.casinoAct.empty() || h.casinoGamblers <= 0) return false;
   if (lower(h.casinoActTheme) == lower(h.casinoTheme)) return false;
   if (h.casinoActComplaintAge >= 0 && h.age - h.casinoActComplaintAge <= 2) return false;
-  if (forcedChoice < 0 && !casinoFloorRng_.chance(0.10)) return false;
+  // The native eligibility draws nothing here: the theme test above is the whole gate
+  // (REPORT.en.md 361).
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoFloorRng_);
+  const std::string tier = casinoGamblerStatus(h, casinoFloorRng_);
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";
@@ -1428,6 +1429,31 @@ bool Sim::casinoActComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
     // The native spells the pronoun into the literal, as the guest-complaint card does.
     out.narrative = "I banned my casino's gambler, " + punter +
                     ", from my casino after she complained about " + h.casinoAct + ".";
+    // The door is not the end of it: the card draws a craziness band snippet, appends
+    // the walk-out journal tail and pushes a plain feedback card (REPORT.en.md 361).
+    const int craziness = int(casinoFloorRng_.below(101));
+    const size_t snipRow =
+        pickWindow("a16_casino-banned-gambler-snippet-enc", "", "", "",
+                  "Min Gambler Craziness", "Max Gambler Craziness", craziness,
+                  casinoFloorRng_);
+    if (snipRow != size_t(-1)) {
+      const Table& snip = tbl("a16_casino-banned-gambler-snippet-enc");
+      const std::string shown = resolve(trim(snip.at(snipRow, "Snippet")));
+      const std::string walked = resolve(trim(snip.at(snipRow, "Log Version")));
+      const std::string poss = female ? "her" : "his";
+      if (!walked.empty())
+        out.narrative += std::string(" ") + (female ? "She" : "He") + " " +
+                          spyLowerFirst(walked) +
+                          " on " + poss + " way out.";
+      if (!shown.empty()) {
+        h.casinoFeedbackTitle = "You're outta here";
+        h.casinoFeedbackBody = "You banned " + punter + " from your casino.\n\n" +
+                               std::string(female ? "She" : "He") + " " +
+                               spyLowerFirst(shown) +
+                               " on " + poss + " way out.";
+        life.pendingCards.push_back(kPendingCasinoFeedback);
+      }
+    }
   } else if (pick == 1) {
     h.casinoGamblerAddiction += 2;
     if (h.casinoGamblerAddiction > 100) h.casinoGamblerAddiction = 100;
@@ -1452,11 +1478,12 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.casinoAct.empty() || h.casinoGamblers <= 0) return false;
   if (lower(h.casinoActTheme) == lower(h.casinoTheme)) return false;
   if (h.casinoActComplimentAge >= 0 && h.age - h.casinoActComplimentAge <= 4) return false;
-  if (forcedChoice < 0 && !casinoFloorRng_.chance(0.10)) return false;
+  // The native eligibility draws nothing here: the theme test above is the whole gate
+  // (REPORT.en.md 361).
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoFloorRng_);
+  const std::string tier = casinoGamblerStatus(h, casinoFloorRng_);
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";
@@ -1521,11 +1548,12 @@ bool Sim::casinoAmenityComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
     }
   }
   if (which == size_t(-1)) return false;
-  if (forcedChoice < 0 && !casinoAmenityRng_.chance(0.10)) return false;
+  // The native eligibility draws nothing here: the theme test above is the whole gate
+  // (REPORT.en.md 361).
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoAmenityRng_);
+  const std::string tier = casinoGamblerStatus(h, casinoAmenityRng_);
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";
@@ -1588,11 +1616,12 @@ bool Sim::casinoAmenityComplimentYear(Life& life, AgeUp& out, int forcedChoice) 
     }
   }
   if (which == size_t(-1)) return false;
-  if (forcedChoice < 0 && !casinoAmenityRng_.chance(0.10)) return false;
+  // The native eligibility draws nothing here: the theme test above is the whole gate
+  // (REPORT.en.md 361).
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoAmenityRng_);
+  const std::string tier = casinoGamblerStatus(h, casinoAmenityRng_);
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";
@@ -1662,7 +1691,7 @@ bool Sim::casinoCelebResignYear(Life& life, AgeUp& out, int forcedChoice) {
   if (h.casinoCelebRel > 40) return false;
   if (h.casinoCelebResignAge >= 0 && h.age - h.casinoCelebResignAge <= 2) return false;
   if (forcedChoice < 0 && !casinoResignRng_.chance(0.25)) return false;
-  const std::string tier = casinoTierWord(h, casinoResignRng_);
+  const std::string tier = casinoCelebStatus();
   const bool female = h.casinoCelebFemale;
   const std::string them = female ? "her" : "him";
   const std::string poss = female ? "her" : "his";
@@ -1807,7 +1836,7 @@ bool Sim::casinoGamblerDeathYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   const int punterAge = h.casinoPunterAge0 + (h.age - h.casinoPunterMetAge);
   if (punterAge < h.casinoPunterLifespan) return false;
-  const std::string tier = casinoTierWord(h, casinoDeathRng_);
+  const std::string tier = casinoGamblerStatus(h, casinoDeathRng_);
   const bool female = h.casinoPunterFemale;
   const std::string she = female ? "She" : "He";
   const std::string poss = female ? "her" : "his";
@@ -1852,7 +1881,7 @@ bool Sim::casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   const int celebAge = h.casinoCelebAge0 + (h.age - h.casinoCelebMetAge);
   if (celebAge < h.casinoCelebLifespan) return false;
-  const std::string tier = casinoTierWord(h, casinoDeathRng_);
+  const std::string tier = casinoCelebStatus();
   const bool female = h.casinoCelebFemale;
   const std::string she = female ? "She" : "He";
   const std::string poss = female ? "her" : "his";
@@ -2106,6 +2135,112 @@ bool Sim::casinoGamblerNewYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::casinoCelebRenewYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.casinoCelebrity.empty()) return false;
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.casinoCelebMetAge < 0) return false;
+  // ScenarioIsEligibleForRandomPush 0x73f3a011ac: the card asks only that the
+  // contract has run out (SimCasinoCelebrity+0x324 <= 0) and draws nothing.
+  if (h.casinoCelebContract > 0) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  // The relationship slot speaks in types, not the port's rank ladder (REPORT 360).
+  const std::string name = h.casinoCelebrity;
+  const bool female = h.casinoCelebFemale;
+  const std::string them = female ? "her" : "him";
+  const std::string theirs = female ? "Her" : "His";
+  const std::string subject = female ? "she" : "he";
+  const std::string possessive = female ? "her" : "his";
+
+  auto drop = [&h]() {
+    h.casinoCelebrity.clear();
+    h.casinoCelebrityGenre.clear();
+    h.casinoCelebrityGenreTheme.clear();
+    h.casinoCelebCraziness = 0;
+    h.casinoCelebRel = 60;
+    h.casinoCelebMetAge = -1;
+    h.casinoCelebContract = -1;
+    h.casinoCelebSalary = 0;
+  };
+
+  out.table = "registry:ScenarioCasinoAgeUpCelebrityContractRenewal";
+  out.title = "Contract Renewal";  // #16302
+  out.body = "Your casino's artist-in-residence, " + name +
+             "'s contract has ended.\n\n" + theirs + " agent tells you " + subject +
+             "'ll renew " + possessive + " contract for the right price.";
+  out.cta = "What will you do?";
+  out.options = {"Make " + them + " an offer", "Let " + them + " go"};
+  const int pick = forcedChoice >= 0 ? (forcedChoice > 1 ? 1 : forcedChoice)
+                                     : int(casinoRenewRng_.below(2));
+  out.choice = out.options[size_t(pick)];
+
+  if (pick == 1) {
+    // "Let <them> go": a plain result card, the celebrity removed, one journal line.
+    h.casinoFeedbackTitle = "Laterrrr";  // #28535
+    h.casinoFeedbackBody = name + " ended " + possessive + " residency at your casino." +
+               "\n\nYears Booked: " + std::to_string(h.age - h.casinoCelebMetAge);
+    out.narrative = "My casino's artist-in-residence, " + name +
+                    "'s, contract expired and I decided not to renew it.";  // #30741/#5282/#4924
+    drop();
+    life.pendingCards.push_back(kPendingCasinoFeedback);
+    return true;
+  }
+
+  // "Make <them> an offer" chains ScenarioCasinoAgeUpCelebrityContractOffer
+  // (.ctor 0x73f39ff010, handler 0x73f39ff8c4). The port has no dropdown and no
+  // slider, so the contract length is drawn from the native list {2,3,5,7,10}
+  // and the salary is the slider's default, the midpoint of its band (shortcut).
+  static const int kLengths[5] = {2, 3, 5, 7, 10};
+  const int length = kLengths[casinoRenewRng_.below(5)];
+  const long long salary = 275000;  // (50000 + 500000) / 2
+  const int fame = h.casinoCelebFame < 0 ? 50 : h.casinoCelebFame;
+  int window1;
+  if (fame > 49)
+    window1 = salary <= 350000 ? 10 + int(casinoRenewRng_.below(5))
+                              : 15 + int(casinoRenewRng_.below(10));
+  else
+    window1 = salary >= 75000 ? 10 + int(casinoRenewRng_.below(10))
+                              : 15 + int(casinoRenewRng_.below(15));
+  const int pop = h.casinoPopularity;
+  const int window2 = pop >= 50 ? int(casinoRenewRng_.below(10))
+                    : pop >= 40 ? 10 + int(casinoRenewRng_.below(10))
+                                : 20 + int(casinoRenewRng_.below(10));
+  const int window3 = fame >= 50 ? int(casinoRenewRng_.below(10))
+                    : fame >= 40 ? 10 + int(casinoRenewRng_.below(10))
+                                 : 20 + int(casinoRenewRng_.below(10));
+  const int score = window1 + window2 + window3;
+  const int roll = int(casinoRenewRng_.below(101));
+
+  if (score >= roll) {
+    h.casinoCelebContract = length;
+    h.casinoCelebSalary = salary;
+    h.casinoFeedbackTitle = "You've got a deal";  // #50080
+    h.casinoFeedbackBody = name + " agreed to the terms of " + possessive +
+               " new contract and will continue performing at your casino." +
+               "\n\nResidency Duration: " + std::to_string(length) + " Years" +
+               "\nNew Salary: " + money(salary);
+    out.narrative = "My casino's artist-in-residence, " + name +
+                    "'s, contract came up for renewal and " + subject +
+                    " decided to stay after I offered " + them + " a salary of " +
+                    money(salary) + ".";
+  } else {
+    h.casinoFeedbackTitle = "You're crazy";  // #49951
+    h.casinoFeedbackBody = name +
+               " refused your new contract offer and will not perform at your "
+               "casino anymore.";
+    out.narrative = "My casino's artist-in-residence, " + name +
+                    "'s, contract came up for renewal and " + subject +
+                    " refused the terms of the new contract.";
+    h.casinoPopularity -= 2;
+    if (h.casinoPopularity < 0) h.casinoPopularity = 0;
+    drop();
+  }
+  life.pendingCards.push_back(kPendingCasinoFeedback);
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");
@@ -2147,6 +2282,8 @@ void Sim::seedCasinoGuest(Life& life, bool sameTheme) {
   // (harness hook only).
   h.casinoCelebMetAge = h.age;
   h.casinoCelebRel = 20;
+  h.casinoCelebContract = 0;   // seedCasinoGuest: a contract already up for renewal (362)
+  h.casinoCelebSalary = 275000;
   if (h.casinoCelebFemale != true && h.casinoCelebFemale != false) h.casinoCelebFemale = false;
 }
 
@@ -2220,18 +2357,22 @@ std::string Sim::casinoToken(const std::string& key) {
 
 namespace {
 
-// The punter's relationship status the casino cards print. The native reads it
-// off its gambler record; the port keeps one gambling style per punter instead
-// (REPORT.en.md 322), so the word is drawn from the same list.
-std::string casinoTierWord(const Hero& h, Rng& rng) {
-  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular", "High Roller"};
+// The punter's relationship slot speaks the gambler's type rather than a rank
+// ladder: 'casual gambler', 'high roller' or 'Mafia member' (the native reads
+// SimCasinoGambler::RelationshipStatusString, REPORT.en.md 360). The port keeps one
+// gambling style per regular instead of a gambler record, so the style draw stands
+// in, and a Mafia member cannot be drawn because the port has no mafia regulars
+// yet (REPORT.en.md 357).
+std::string casinoGamblerStatus(const Hero& h, Rng& rng) {
   int style = 3;
   if (!h.casinoGamblerStyles.empty())
     style = h.casinoGamblerStyles[rng.below(uint32_t(h.casinoGamblerStyles.size()))];
-  if (style < 1) style = 1;
-  if (style > 5) style = 5;
-  return kTiers[style - 1];
+  return style >= 5 ? "high roller" : "casual gambler";
 }
+
+// A booked act's slot is fixed: SimCasinoCelebrity::RelationshipStatusString always
+// prints the one literal #54414 'artist-in-residence' (REPORT.en.md 356, 360).
+std::string casinoCelebStatus() { return "artist-in-residence"; }
 
 // The first name only: the complaint card reaches for the celebrity's first
 // name, not the full name (RefreshScenario 0x356c0f8 reads +0x18 of the name).
@@ -2302,7 +2443,7 @@ bool Sim::casinoCelebComplaintYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoGuestRng_);
+  const std::string tier = casinoCelebStatus();
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";
@@ -2372,7 +2513,7 @@ bool Sim::casinoCelebComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   hero_ = &h;
   life_ = &life;
 
-  const std::string tier = casinoTierWord(h, casinoGuestRng_);
+  const std::string tier = casinoCelebStatus();
   const std::string punter = resolve("<casino-gambler>");
   const bool female = casinoGamblerFemale_;
   const std::string them = female ? "her" : "him";

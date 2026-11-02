@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-TIERS = r"Beginner|Amateur|Novice|Regular|High Roller"
+TIERS = r"casual gambler|high roller|artist-in-residence"  # REPORT 360
 
 LOST = "registry:ScenarioCasinoAgeUpGamblerLost"
 COMPLAINT = "registry:ScenarioCasinoAgeUpGamblerComplaintCelebrity"

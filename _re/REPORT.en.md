@@ -23536,6 +23536,173 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 362. The artist-in-residence's contract
+
+The guest act the casino books has a contract length, and when it runs out the house
+has one last chance to keep it. `SimCasinoCelebrity+0x324` is that length;
+`SimCasinoAgeUpCelebrityContractRenewal` (.ctor `0x73f3a01254`, `RefreshScenario`
+`0x73f3a005b8`, handler `0x73f3a00d0c`, eligibility `0x73f3a011ac`, pushed from
+`SimCasino::IncrementAge 0x73f2f461cc`) fires the year it reaches zero and nothing else:
+the gate is casino, a living celebrity, `ContractLength <= 0`, hero age >= 18 and out of
+prison, and it draws no random number at all.
+
+The card is titled `#16302 'Contract Renewal'` and says `Your casino's ` (#50268) + the
+relationship word + `, ` (#5282) + the full name + `'s contract has ended.` (#4855), a
+blank line, then pronoun 6 + `#1108 ' agent tells you '` + pronoun 0 +
+`#4828 "'ll renew "` + pronoun 1 + `#1670 ' contract for the right price.'` followed by
+the usual `\n\nWhat will you do?`. Its table holds `Current Salary` (#16832),
+`Additional Expenses` (#10793) and `Last Year's Revenue` (#28503), and two bars carry
+pronoun 6 + `#822 ' Fame'` and pronoun 6 + `#922 ' Popularity'`.
+
+Its two answers do different things:
+
+* `Let him/her go` builds a plain result card titled `#28535 'Laterrrr'` whose body is the
+  name + `#1905 ' ended '` + pronoun 1 + `#3232 ' residency at your casino.'`, hands it a
+  one-row table `#47424 'Years Booked'` over `SimCasinoCelebrity+0x32c`, removes the
+  celebrity and writes the journal `My casino's ` + relationship word + `, ` + name +
+  `#4924 "'s, contract expired and I decided not to renew it."`
+* `Make him/her an offer` chains `ScenarioCasinoAgeUpCelebrityContractOffer`
+  (.ctor `0x73f39ff010`, `RefreshScenario` `0x73f39ff03c`, handler `0x73f39ff8c4`). That
+  card is titled `Contract`, exterior `Celebrity`, and asks `#17334 'Decide the terms of
+  your new contract with '` + name. It offers a dropdown `#28715 'Length'` over the
+  hard-coded list {2, 3, 5, 7, 10} rendered as `#69718 '{0} Years'`, and a slider
+  `#36642 'Salary'` between `MinimumCelebritySalary` and a local 500000 whose default is
+  the midpoint. Its one real button is `Make him/her this offer`.
+
+The offer is scored, not chosen: fame above 49 pays more from a salary at or under the
+local 350000 than above it (`10 + rand(0,5)` against `15 + rand(0,10)`), fame at or under
+49 pays more from a salary at or above the local 75000 (`10 + rand(0,10)` against
+`15 + rand(0,15)`); casino popularity at 50/40 adds `rand(0,10)` / `10 + rand(0,10)` /
+`20 + rand(0,10)`; fame at 50/40 adds the same three windows; the celebrity accepts when
+the total is at least `rand(0,101)`. Accepting writes both fields back, and the journal
+reads `My casino's ` + relationship word + `, ` + name + `'s, contract came up for renewal
+and ` + pronoun 0 + `#1714 ' decided to stay after I offered '` + pronoun 2 +
+`#1022 ' a salary of '` + the salary. Refusing removes the celebrity, takes two
+popularity and writes `#3154 ' refused the terms of the new contract.'`. The result cards
+are `#50080 "You've got a deal"` with `#1133 ' agreed to the terms of '` + pronoun 1 +
+`#2816 ' new contract and will continue performing at your casino.'` and
+`#49951 "You're crazy"` with `#3183 ' refused your new contract offer and will not
+perform at your casino anymore.'`; the accepted card carries `#36021 'Residency
+Duration'` and `#31365 'New Salary'`.
+
+The booking side writes the same two fields: `SimCasino::HireCelebrity 0x73f2f4b4e8`
+takes the salary and the length as arguments, and both call sites in the booking card
+pass the value of the same {2, 3, 5, 7, 10} dropdown, so no table column ever supplies
+a contract length.
+
+The port now keeps `casinoCelebSalary` and `casinoCelebContract` on the hero, ticks the
+contract down by one every year in `Sim::casinoYear` before its own coin, draws both
+fields at booking, and implements the renewal card in `Sim::casinoCelebRenewYear`
+(`_re/port/src/fam/casino.cpp`) as the family `casino-celeb-renew`.
+
+Ceilings: the port has no dropdown and no slider, so the contract length is drawn from
+the native list and the salary is fixed at the slider's default midpoint (275000 in the
+United States); the booking salary is drawn from the same band in whole thousands
+rather than chosen; the Hollywood Star button is omitted because the port has no
+in-app-purchase path behind it; the card's table and bars are not rendered, as the port
+draws no stat rows on age-up cards; the offer card is folded into the renewal card's
+answer because the port shows one card per year, with the result arriving on the shared
+follow-up card (§352) instead of a chained child; and `Current Salary`, `Additional
+Expenses` and `Last Year's Revenue` are not modelled, the last two having no port
+counterpart for a guest act.
+
+Verified: `_re/tools/test_casino_renewal.py` walked twenty seeded lives with a booked
+act and measured 20 renewal cards over both answers (11 letting the act go, 9 making an
+offer), 11 `Laterrrr` results, 7 refusals and 2 acceptances, each result card naming the
+same act as the renewal card and each journal matching its own arm; a life without a
+casino draws no card.
+
+The full 146-test suite ran on the binary these notes describe (4351b43c..., 146
+PASS / 0 FAIL): `_re/tools/test_casino_renewal.py` walks the card, both answers and
+every result card, and nothing else moved.
+
+## 361. The act cards' gates and the door
+
+The four punter cards of 350 and 351 shared one invention: each ended its eligibility
+test with a ten per cent coin. The recovered contracts draw nothing at all.
+`ScenarioIsEligibleForRandomPush` for the two act cards (`0x356df38` complaint,
+`0x3571104` compliment) and the two amenity cards (`0x356beb4`, `0x356ffe8`) is a hard
+AND gate: the entity list holds one row whose theme sits on the right side of the
+house theme, the casino has at least one gambler, the hero is eighteen or older, out
+of prison, and enough years have passed since the class last fired (2/4/2/2 for
+complaint-act, compliment-act, complaint-amenity, compliment-amenity). The coin is gone
+from all four cards.
+
+The act complaint's ban answer then does more than show the punter out:
+
+* `SimCasino::RemoveGambler 0x2ab0004` and `SimCasino::ImpactPopularity 0x2aafdfc` with
+  −2, as before.
+* a snippet drawn by `DataHub::GetRandomCasinoBannedGamblerSnippetForCraziness 0x26c67b8`
+  from the punter's craziness, out of `a16_casino-banned-gambler-snippet-enc` — the port
+  bands it on `Min Gambler Craziness` / `Max Gambler Craziness` with a craziness drawn
+  from its own stream.
+* a journal tail: `pron(5)` + `' '` + the row's `Log Version` + `' on '` + `pron(1)` +
+  `#4005 ' way out.'`, appended to the ban line the card already wrote.
+* a plain follow-up card titled `#50001 "You're outta here"`, whose body is
+  `'You banned ' + name + #2145 ' from your casino.\n\n' + pron(5) + ' ' + snippet +
+  ' on ' + pron(1) + ' way out.'`. The port queues it through the feedback card 352
+  already renders.
+
+A ban now reads, in the port, `I banned my casino's gambler, Bacardi Flooren, from my
+casino after she complained about Rutabaga Top Laugh Hour. She loudly exclaimed, "This
+place will be out of business next week," while on her way out.` and a second card
+follows with the same sentence under "You're outta here".
+
+Ceilings: the native writes the two statements into separate narrative slots and the
+port prints them as one line; the follow-up card's child scenario is only partially
+recovered, so the port renders its text with the shared plain card rather than a class
+of its own; and the two unresolved virtual slots the answers touch (`+0x738`, `+0x508`)
+stay mapped onto the port's per-gambler happiness and popularity counters, as 322
+recorded.
+
+Verified: with the coin gone the cards fire every eligible year, so
+`_re/tools/test_casino_act.py` now sees 137 complaint cards over twenty seeds (36 of
+them bans, each with its walk-out tail and a follow-up card) and 83 compliments;
+`_re/tools/test_casino_amenity.py` sees 161 complaints and 107 compliments, and
+`_re/tools/test_casino_punter.py` is unchanged at 27 lost punters.
+
+The full 146-test suite ran on the binary these notes describe
+(4351b43c..., 146 PASS / 0 FAIL). The 362 card shipped in the same commit and is
+covered by the same run.
+
+## 360. The casino's relationship words
+
+Every casino card that names a punter opens with a relationship slot, and three of
+the recovered contracts read the same two getters for it. Neither returns a rank.
+
+`SimCasinoGambler::RelationshipStatusString` speaks the gambler's **type**: the three
+words are `'casual gambler'`, `'high roller'` and `'Mafia member'`. The complaint and
+compliment cards (§358, §359) both print it, and the launder card's journal reads the
+same slot through the member's own getter at vtable `+0x4f8`.
+`SimCasinoCelebrity::RelationshipStatusString` returns one fixed literal, `#54414
+'artist-in-residence'` — which is why the demand card (§356) reads that way and why
+no celebrity card ever varies it.
+
+The port had one helper, `casinoTierWord`, printing `Beginner` / `Amateur` / `Novice`
+/ `Regular` / `High Roller` — an invention from §322 that every gambler card inherited.
+It is replaced by two:
+
+* `casinoGamblerStatus` keeps the §357 style draw (the port tracks a gambling style per
+  regular rather than a gambler record) and prints `'high roller'` for style 5 and
+  `'casual gambler'` otherwise. `'Mafia member'` cannot be drawn because the port has no
+  mafia regulars (§357's ceiling), so the third word exists only where a card is pushed
+  by a mafia member.
+* `casinoCelebStatus` returns the fixed `'artist-in-residence'`.
+
+Call sites: the two act cards and the two amenity cards take the gambler word, the two
+celebrity cards (complaint, compliment) and the two death/resignation cards take the
+fixed word, and the launder journal now spells `My casino's Mafia member, "…"` directly.
+
+Ceilings: the high-roller boundary is read off the port's own style ladder rather than
+the native `GamblingStyle +0x30c == 5` test, because the port has no per-gambler record;
+and `'Mafia member'` is inferred from the vtable getter's ownership (only a mafia member
+pushes that card) rather than from the getter body, which is an unresolved il2cpp slot.
+
+Verified: the seven casino tests that pin a relationship word
+(`_re/tools/test_casino_act.py`, `test_casino_amenity.py`, `test_casino_death.py`,
+`test_casino_mob.py`, `test_casino_punter.py`, `test_casino_resignation.py`,
+`test_casino_gambler_new.py`) were re-run green against the rebuilt binary.
+
 ## 359. The compliment card's own contract
 
 The praise twin of 358, `ScenarioCasinoAgeUpGamblerComplimentGame`, was ported from a

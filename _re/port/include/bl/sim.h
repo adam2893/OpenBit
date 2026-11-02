@@ -752,6 +752,7 @@ class Sim {
 bool casinoGamblerDeathYear(Life& life, AgeUp& out, int forcedChoice);
 bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoCelebDemandYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoCelebRenewYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoGamblerNewYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).
@@ -1206,6 +1207,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng casinoDeathRng_;   // the punter and guest-act death cards' own stream (355)   // the resignation cards' own stream (REPORT.en.md 352)
   Rng casinoDemandRng_;  // the guest act's demand card own stream (REPORT.en.md 356)
   Rng casinoNewRng_;  // the new regular's own stream (REPORT.en.md 357)
+  Rng casinoRenewRng_;  // the contract renewal card own stream (REPORT.en.md 362)
   // The car's damage roll, its part pick and the repair card's own draw (REPORT.en.md 323).
   Rng carRng_;
   Rng godRng_;  // God Mode's log-line pick (REPORT 312)

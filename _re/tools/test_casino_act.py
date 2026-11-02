@@ -12,7 +12,7 @@ port casino books an act only now and then: see the ceilings in REPORT 350.
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-TIERS = r"(?:Beginner|Amateur|Novice|Regular|High Roller)"
+TIERS = r"(?:casual gambler|high roller)"  # REPORT 360: the gambler type words
 
 COMPLAINT = "registry:ScenarioCasinoAgeUpGamblerComplaintEntertainmentAct"
 COMPLIMENT = "registry:ScenarioCasinoAgeUpGamblerComplimentEntertainmentAct"
@@ -28,7 +28,7 @@ BODY_COMPLIMENT = re.compile(
     r"attraction\.$")
 BAN_LOG = re.compile(
     r"^I banned my casino's gambler, (?P<punter>.+), from my casino after she "
-    r"complained about (?P<act>.+)\.$")
+    r"complained about (?P<act>.+?)\.(?: (?:She|He) .+ on (?:her|his) way out\.)?$")  # REPORT 361 tail
 SORRY_LOG = re.compile(
     r"^I apologized to my casino's gambler, (?P<punter>.+), for having booked "
     r"(?P<act>.+)\.$")
@@ -66,8 +66,11 @@ def lines(event):
 # --- the complaint -----------------------------------------------------------
 lanes = {}
 ages = []
+complaint_docs = []
 for seed in range(1, 21):
-    for card in cards(run(seed, "diff", "casino-act-complaint"), COMPLAINT):
+    doc = run(seed, "diff", "casino-act-complaint")
+    complaint_docs.append(doc)
+    for card in cards(doc, COMPLAINT):
         assert card["title"] == "Complaint", card
         m = BODY_COMPLAINT.match(card.get("body") or "")
         assert m, (seed, card.get("body"))
@@ -88,6 +91,20 @@ for seed in range(1, 21):
         assert not any((card.get("deltas") or {}).values()), (seed, card.get("deltas"))
         ages.append((seed, card["age"]))
 assert len(lanes) == 3, lanes
+
+# The ban answer is not the end of it: the snippet pool contributes a walk-out line,
+# the journal keeps it and a plain card follows (REPORT.en.md 361).
+FEEDBACK = re.compile(
+    r"^You banned (?P<name>.+?) from your casino.\n\n(?:She|He) .+ on (?:her|his) way out\.$")
+door = 0
+for doc in complaint_docs:
+    for card in cards(doc, "registry:Scenario"):
+        if card["title"] != "You're outta here":
+            continue
+        door += 1
+        assert FEEDBACK.match(card.get("body") or ""), card.get("body")
+        assert not any((card.get("deltas") or {}).values()), card.get("deltas")
+assert door > 0, "the ban answer never reached its follow-up card"
 
 # Neither card comes round again the next two years (native: YearsSinceScenario > 2).
 for seed in sorted({s for s, _ in ages}):

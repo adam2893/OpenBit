@@ -525,6 +525,8 @@ struct Hero {
   int casinoCelebPop = 50;               // ... and its own popularity, moved by an obliged demand
   int casinoCelebDemandAge = -1;         // the year the guest act last made a demand
   std::vector<int> casinoCelebPerks;     // the demand rows already satisfied (356)
+  long long casinoCelebSalary = 0;       // the guest act yearly fee (362)
+  int casinoCelebContract = -1;          // years left on its contract, ticked every year (362)
   int casinoGamblerNewAge = -1;          // the year the last new regular walked in (357)
   int casinoPunterAge0 = -1;       // the regular's age when they started coming (355)
   int casinoPunterLifespan = 0;    // the age that regular dies at

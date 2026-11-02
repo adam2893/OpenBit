@@ -12,7 +12,7 @@ costs popularity, and a beg's outcome arrives as a follow-up card.
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "port" / "build" / "blsim"
-TIER = r"(?:Beginner|Amateur|Novice|Regular|High Roller)"
+TIER = r"(?:artist-in-residence)"  # REPORT 360
 
 CELEB = "ScenarioCasinoAgeUpCelebrityResignation"
 ACT = "ScenarioCasinoAgeUpEntertainmentActResignation"

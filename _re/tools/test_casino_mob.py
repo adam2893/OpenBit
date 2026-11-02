@@ -16,7 +16,7 @@ PORT = ROOT / "port" / "build" / "blsim"
 
 LAUNDER = "registry:ScenarioCasinoAgeUpMafiaMemberLaunder"
 INTERROG = "registry:ScenarioCasinoAgeUpMafiaMemberInterrogation"
-TIERS = "Beginner|Amateur|Novice|Regular|High Roller"
+TIERS = "Mafia member"  # REPORT 360
 
 BODY_LAUNDER = re.compile(
     r'^"(?P<nick>.+)" (?P<name>.+?) is asking for a favor on behalf of '
