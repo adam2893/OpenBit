@@ -588,6 +588,7 @@ class Sim {
   // matches the house theme or does not, so a test reaches the two punter cards.
   void seedCasinoGuest(Life& life, bool sameTheme);
   void seedCasinoAct(Life& life, bool sameTheme);
+  void seedZooHabitats(Life& life, int count);
   bool seedAstroPublication(Life& life, int score);  // test hook (REPORT.en.md 372)
   void seedCasinoAmenity(Life& life, bool sameTheme);
   void seedZooStaff(Life& life, bool highCustodial);   // REPORT.en.md 364
@@ -759,6 +760,7 @@ class Sim {
   bool zooRenameYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooInvestYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooHabitatYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooDemolishYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoRenameYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoExpandYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino's mob favours (REPORT.en.md 345): a made man who owns a house

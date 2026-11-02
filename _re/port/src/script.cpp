@@ -474,6 +474,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("zoo is not a boolean");
   }
 
+  p = findValue(json, "zoo_habitats");
+  if (p != std::string::npos) {
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("zoo_habitats is not a number");
+    if (v < 0 || v > 40) return fail("zoo_habitats is out of range");
+    spec.zoo_habitats = int(v);
+  }
+
   p = findValue(json, "model");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -1079,6 +1087,9 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
     // bands of the breach and ticket-sales helpers without the labour minigame
     // (REPORT.en.md 364). It must run after the zoo exists.
     if (!spec.zoo_staff.empty()) sim.seedZooStaff(life, spec.zoo_staff == "high");
+    // Harness hook: pre-build habitats so the demolish card can be reached without
+    // the build card (REPORT.en.md 380).
+    if (spec.zoo_habitats > 0) sim.seedZooHabitats(life, spec.zoo_habitats);
   }
   if (spec.landlord) sim.makeLandlord(life);
   if (spec.pet) sim.makePet(life);

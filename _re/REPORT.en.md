@@ -23511,6 +23511,36 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 380. The zoo's demolish card
+
+The full 163-test suite ran on the binary these notes describe (4da1470d0e1c1945cb75..., 163 PASS / 0 FAIL): _re/tools/test_zoo_habitat_demolish.py and _re/tools/test_zoo_habitat.py exercise both habitat cards and nothing else moved.
+
+The zoo menu's other habitat row opens `ScenarioZooHabitatDemolish` (the mirror
+of section 379's build card). Only its body was recovered -- `#17501 "Demolish
+one of your zoo's habitats today!"` -- so the port reuses the two row labels the
+build card does carry (`#50857 'Zoo'`, `#32920 'Open Habitat Slots'`) and the
+generic `#32432 'OK'`, and writes no journal, because neither the card's own rows
+nor its narrative sentence were recovered.
+
+The effect is the build card's in reverse. Section 379 now keeps the park's
+habitats as a list of `name (type)` strings (the names still come from
+`a16_zoo-habitat-names-enc`), so the demolish card draws one of them, takes it
+off the list, drops one attraction and re-points the zoo's current habitat at
+whatever is left. One attraction is exactly the port's existing lever: the yearly
+books charge 5,000 per attraction and the gate's visitors multiply animals and
+attractions, so a demolition lowers both. Nothing is refunded, because no refund
+flow was recovered.
+
+The test harness gains a `zoo_habitats` hook (`Sim::seedZooHabitats`) that puts
+a given number of habitats in the park with the build card's own tables, so the
+demolish card can be exercised without waiting for the build card to fire.
+`_re/tools/test_zoo_habitat_demolish.py` seeds three habitats in each of thirty
+lives: no life may see more than three cards, every card must name a habitat the
+previous card did not, the slot count may not go negative, the answer is `OK`,
+the deltas are flat, no card repeats inside four years, and the ten-seed control
+with zero seeded habitats sees nothing. It prints `cards: 28 | habitat types seen:
+5`.
+
 ## 379. The zoo's habitat card
 
 The full 162-test suite ran on the binary these notes describe (37fa04a36cf705a81339..., 162 PASS / 0 FAIL): _re/tools/test_zoo_habitat.py exercises the card and nothing else moved.

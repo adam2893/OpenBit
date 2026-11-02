@@ -4590,6 +4590,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-invest"},
         {&Sim::zooHabitatYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-habitat"},
+        {&Sim::zooDemolishYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-demolish"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11264,6 +11266,83 @@ void Sim::zooRunYear(Life& life) {
 // built, the type is drawn from the addable rows weighted by nothing, and the
 // habitat's name comes from the names table; the card also writes no journal
 // because its narrative sentence was not recovered.
+// ScenarioZooHabitatDemolish (REPORT.en.md 380): the zoo menu's mirror of the
+// build card, CTA 0x29f8f54's neighbour. Recovered literal: body #17501
+// "Demolish one of your zoo's habitats today!". The card's own rows and answer
+// were not recovered, so it reuses the two labels the build card does carry --
+// #50857 'Zoo' and #32920 'Open Habitat Slots' -- and the generic #32432 'OK',
+// and it writes no journal.
+//
+// The effect is the build card's in reverse: one habitat leaves the list, the
+// park loses one attraction (so the yearly upkeep and the gate's visitors fall by
+// the same rule section 65 already models) and nothing is refunded, because no
+// refund flow was recovered.
+bool Sim::zooDemolishYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooHabitats.empty()) return false;
+  if (h.zooDemolishAge >= 0 && h.age - h.zooDemolishAge < 4) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.05)) return false;
+  const size_t pick = zooMenuRng_.below(uint32_t(h.zooHabitats.size()));
+  const std::string gone = h.zooHabitats[pick];
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooDemolishAge = h.age;
+  h.zooHabitats.erase(h.zooHabitats.begin() + std::ptrdiff_t(pick));
+  if (h.zooAttractions > 0) h.zooAttractions -= 1;
+  h.zooHabitat.clear();
+  if (!h.zooHabitats.empty()) h.zooHabitat = h.zooHabitats.back();
+  out.table = "registry:ScenarioZooHabitatDemolish";
+  out.title = "Zoo";  // #50857
+  out.body = "Demolish one of your zoo's habitats today!";  // #17501
+  out.body += "\n\nZoo: " + h.zooName;
+  out.body += "\nHabitat: " + gone;
+  out.body += "\nOpen Habitat Slots: " +
+              std::to_string(2 * h.zooSize - static_cast<int>(h.zooHabitats.size()));
+  out.options = {"OK"};  // #32432
+  out.choice = "OK";
+  return true;
+}
+
+// Test hook (REPORT.en.md 380): put habitats in the park so the demolish card can
+// be exercised on its own. It uses the build card's own tables, so the names and
+// types a test sees are the ones the game would have produced.
+void Sim::seedZooHabitats(Life& life, int count) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo) { h.ownsZoo = true; ensureZooFields(life); }
+  if (!ensureTable("a16_zoo-habitat-type-enc")) return;
+  const Table& t = tbl("a16_zoo-habitat-type-enc");
+  std::vector<size_t> addable;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string add = t.has("Add Habitat") ? lower(trim(t.at(r, "Add Habitat"))) : "";
+    if (add == "x" || add == "yes" || add == "true" || add == "1") addable.push_back(r);
+  }
+  if (addable.empty()) return;
+  for (int n = 0; n < count; ++n) {
+    const size_t pick = addable[zooMenuRng_.below(uint32_t(addable.size()))];
+    const std::string type = trim(t.at(pick, "Type"));
+    std::string name;
+    if (ensureTable("a16_zoo-habitat-names-enc")) {
+      const Table& nt = tbl("a16_zoo-habitat-names-enc");
+      std::vector<size_t> of;
+      for (size_t r = 0; r < nt.size(); ++r)
+        if (lower(trim(nt.at(r, "Habitat Type"))) == lower(type)) of.push_back(r);
+      if (!of.empty())
+        name = trim(nt.at(of[zooMenuRng_.below(uint32_t(of.size()))], "Name"));
+    }
+    if (name.empty()) name = spyUpperFirst(type);
+    h.zooHabitats.push_back(name + " (" + type + ")");
+    h.zooHabitat = type;
+    h.zooAttractions += 1;
+  }
+}
+
 bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
@@ -11272,7 +11351,7 @@ bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
   if (h.zooHabitatAge >= 0 && h.age - h.zooHabitatAge < 5) return false;
   if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
-  const int slots = 2 * h.zooSize - h.zooAttractions;
+  const int slots = 2 * h.zooSize - static_cast<int>(h.zooHabitats.size());
   if (slots < 1) return false;
   if (!ensureTable("a16_zoo-habitat-type-enc")) return false;
   const Table& t = tbl("a16_zoo-habitat-type-enc");
@@ -11303,6 +11382,7 @@ bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
   h.zooBank -= cost;
   h.zooAttractions += 1;
   h.zooHabitat = type;
+  h.zooHabitats.push_back(habitatName + " (" + type + ")");
   out.table = "registry:ScenarioZooHabitatBuild";
   out.title = "Zoo";  // #50857
   out.body = "Build a new habitat in your zoo today!";  // #14104

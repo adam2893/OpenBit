@@ -80,6 +80,7 @@ struct ScriptSpec {
   int car_reliability = -1;
   bool landlord = false;
   bool zoo = false;
+  int zoo_habitats = 0;   // test hook: this many habitats already built (REPORT.en.md 380)
   bool model = false;
   // The luxuries (REPORT.en.md 79).
   bool luxury = false;
