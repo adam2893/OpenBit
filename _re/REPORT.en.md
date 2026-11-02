@@ -23511,6 +23511,33 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 382. The casino's invest card
+
+The full 164-test suite ran on the binary these notes describe (ad431be8b2adf220dbec..., 164 PASS / 1 FAIL). The failure was test-side: _re/tools/test_vehicle_purchase.py stopped sweeping as soon as the spousal reaction appeared, which now happens on the first seed, so it never reached its three purchases; it walks until both halves are satisfied now and printed 3 purchases with 2 reactions afterwards, without a code change.
+
+The casino menu has an invest row, and its body was recovered: `#27215 'Invest
+money into your casino today!'`. The rest of the card was not, so the port prints
+the recovered body plus the row labels its sibling menu cards already carry --
+`#15240 'Casino'` with the name, `#12534 'Available Funds'` with the pot and
+`#11284 'Amount'` with the injection -- and the `#27203 'Invest'` button, with no
+journal.
+
+The injection is the same one the zoo's invest card makes (REPORT.en.md 377): a
+pot that has gone negative is topped up to zero first, otherwise a tenth of the
+hero's cash goes in rounded down to the nearest thousand, and either figure is
+capped by what the hero actually has. The cooldown is four years.
+
+A casino loses money far more often than a zoo, so the cash injection has to be
+reachable: the card rides the wheel like every other menu card, and it also runs
+ahead of the wheel while the pot is below zero, because that is exactly the case
+the card exists for. The `shortcut:` is that the native flow opens this card from
+a menu whenever the owner likes, while the port has no menus and so chooses the
+year itself.
+
+`_re/tools/test_casino_invest.py` funds sixty casino owners and demands the
+recovered body with a real name and both dollar rows, the `Invest` answer and at
+least one card; it prints `cards: 10 | topped up from negative: 6`.
+
 ## 381. The two sale cards
 
 The full 164-test suite ran on the binary these notes describe (79a207d2d1d3e94b20c4..., 164 PASS / 0 FAIL): _re/tools/test_business_sale.py exercises both armed cards and nothing else moved.

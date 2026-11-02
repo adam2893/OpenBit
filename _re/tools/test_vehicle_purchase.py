@@ -35,7 +35,10 @@ reacted = 0
 # spousal reaction this run produces keeps moving further out (measured at seed 86
 # over the first ninety). Walk until it turns up instead of pinning a window.
 for seed in range(1, 131):
-    if reacted:
+    # Walk until both halves of the check are satisfied: a reaction can arrive
+    # on the first seed now, and stopping there would leave the purchase lane
+    # untested (REPORT.en.md 382).
+    if reacted and bought >= 3:
         break
     for event in run(seed)["events"]:
         table = event.get("table") or ""

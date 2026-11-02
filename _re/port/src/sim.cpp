@@ -4659,6 +4659,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-theme"},
         {&Sim::casinoRenameYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-rename"},
+        {&Sim::casinoInvestYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-invest"},
         {&Sim::casinoExpandYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-expand"},
         {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
@@ -4716,6 +4718,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // so they run before the wheel and never return (REPORT.en.md 381).
   if (forcedChoice < 0 && zooSellYear(life, out, forcedChoice)) return true;
   if (forcedChoice < 0 && casinoSellYear(life, out, forcedChoice)) return true;
+  // A casino that has bled past zero is the case the invest card exists for, and
+  // the wheel rarely gets there before bankruptcy: top the pot up first.
+  if (forcedChoice < 0 && life.hero.ownsCasino && life.hero.casinoBank < 0 &&
+      casinoInvestYear(life, out, forcedChoice)) return true;
   // A conviction and a prison year are year events, not cards: they take the year
     // ahead of the wheel, which used to starve both (30 lives gave one prison year, so
     // the prison family's own cards had no window). The scripted lanes keep priority

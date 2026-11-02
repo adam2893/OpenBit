@@ -1620,6 +1620,40 @@ bool Sim::casinoExpandYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::casinoInvestYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.money < 1000) return false;
+  if (h.casinoInvestAge >= 0 && h.age - h.casinoInvestAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.06)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  long long amount = 0;
+  if (h.casinoBank < 0) {
+    amount = -h.casinoBank;  // a losing year leaves the pot short; top it up first
+  } else {
+    amount = (h.money / 10) / 1000 * 1000;
+  }
+  if (amount > h.money) amount = h.money;
+  if (amount <= 0) return false;
+  h.casinoInvestAge = h.age;
+  h.money -= amount;
+  h.casinoBank += amount;
+  out.table = "registry:ScenarioCasinoInvest";
+  out.title = "Casino";  // #15240
+  out.body = "Invest money into your casino today!";  // #27215
+  out.body += "\n\nCasino: " + h.casinoName;
+  out.body += "\nAvailable Funds: " + money(h.casinoBank);  // #12534
+  out.body += "\nAmount: " + money(amount);                // #11284
+  out.options = {"Invest"};                                // #27203
+  out.choice = "Invest";
+  return true;
+}
+
 bool Sim::casinoRenameYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

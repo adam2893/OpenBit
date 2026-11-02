@@ -542,6 +542,7 @@ struct Hero {
   int casinoWithdrawAge = -1;            // the year the withdraw card fired (374)
   int casinoThemeAge = -1;               // the year the theme card fired (375)
   int casinoRenameAge = -1;             // the year the rename card fired (376)
+  int casinoInvestAge = -1;  // the invest card's cooldown (REPORT.en.md 382)
   int casinoExpandAge = -1;             // the year the expand card fired (378)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
