@@ -4586,6 +4586,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-admission"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
+        {&Sim::zooInvestYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-invest"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11230,6 +11232,51 @@ void Sim::zooRunYear(Life& life) {
 // cannot type into, so the port draws a fresh name from the same pool the zoo was
 // created from and never draws the name it already has. No journal is written:
 // the narrative was not recovered.
+// ScenarioZooInvest (REPORT.en.md 377): the zoo menu's capital card, CTA 0x29eb8fc.
+// Recovered literals: body #27214 'Invest in your zoo today!', rows #50873 "Zoo's
+// Current Capital", #11284 'Amount', #50857 'Zoo', the answer #32432 'OK' and the
+// button label #27203 'Invest'.
+//
+// shortcut: the card is menu-only natively, so it is offered here as its own
+// family the way 373-376 are. The native amount control is a slider whose bounds
+// were not recovered; the port invests the shortfall when the zoo's balance is
+// negative and otherwise ten percent of the hero's cash, floored to a thousand
+// and capped at what the hero can afford. No journal is written: the narrative
+// was not recovered.
+bool Sim::zooInvestYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.money < 1000) return false;
+  if (h.zooInvestAge >= 0 && h.age - h.zooInvestAge < 4) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  long long amount = 0;
+  if (h.zooBank < 0) {
+    amount = -h.zooBank;
+  } else {
+    amount = (h.money / 10) / 1000 * 1000;
+  }
+  if (amount > h.money) amount = h.money;
+  if (amount <= 0) return false;
+  h.zooInvestAge = h.age;
+  h.money -= amount;
+  h.zooBank += amount;
+  out.table = "registry:ScenarioZooInvest";
+  out.title = "Zoo";  // #50857
+  out.body = "Invest in your zoo today!";  // #27214
+  out.body += "\n\nZoo: " + h.zooName;
+  out.body += "\nZoo's Current Capital: " + money(h.zooBank);  // #50873
+  out.body += "\nAmount: " + money(amount);                   // #11284
+  out.options = {"Invest"};                                   // #27203
+  out.choice = "Invest";
+  return true;
+}
+
 bool Sim::zooRenameYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

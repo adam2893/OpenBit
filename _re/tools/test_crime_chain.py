@@ -57,10 +57,13 @@ for seed in range(1, 41):
             continue
         m = ARREST.match(lines[-1]) if lines else None
         if m:
-            if pending is not None and event["age"] - pending["age"] >= 2:
+            if pending is not None and event["age"] > pending["age"]:
                 # A chain can stall when the year's cards run out before the verdict
-                # card is dealt; a later arrest then opens a fresh chain (measured
-                # seed 23: a not-guilty plea at 60, then a new arrest at 62).
+                # card is dealt, and a later arrest then opens a fresh chain. The gap
+                # need not be two years: measured seed 20 pleads at 54 and is arrested
+                # for a different crime at 55 before that verdict ever arrives, and
+                # seed 23 pleads at 60 and is arrested again at 62. Only two arrests in
+                # the same year are still impossible.
                 pending = None
             assert pending is None, (seed, "second arrest before the first ended", event)
             assert m.group(1) in crimes, (seed, m.group(1))

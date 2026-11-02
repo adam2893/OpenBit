@@ -23511,6 +23511,39 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 377. The zoo's invest card
+
+The zoo menu's capital row opens `ScenarioZooInvest` (CTA `0x29eb8fc`), the card a
+keeper uses to push money back into a zoo that is running short. Nothing in the
+age-up pipeline pushes it, so it is offered here as its own guarded family, and
+its answer moves the hero's cash into the zoo's own balance -- the pot 319's zoo
+counterpart and the bankruptcy card both read.
+
+Recovered text: the body is `#27214 "Invest in your zoo today!"`, the rows are
+`#50873 "Zoo's Current Capital"`, `#11284 "Amount"` and `#50857 "Zoo"`, the
+answer is `#32432 "OK"` and the button label the card carries is `#27203
+"Invest"`. The card's own title literal is `#50857 "Zoo"`.
+
+* The card fires only for a hero who owns a zoo, is 18 or older, is not in
+  prison, has at least a thousand in cash, and never twice inside four years.
+* The amount is the shortfall when the zoo's balance is negative, and otherwise a
+  tenth of the hero's cash floored to a thousand, capped at what the hero can
+  actually pay -- so the card never overdraws the hero.
+* The money really moves: the hero's cash falls and the zoo's balance rises by the
+  same amount, which is the lever the zoo's bankruptcy card 321 answers to.
+* No journal is written: the native narrative for this card was not recovered.
+
+shortcut: the native amount control is a slider whose bounds were not recovered,
+so the port invests the shortfall (or a tenth of the cash) rather than reproduce a
+slider it cannot read. The row labels and the answer are the native ones; the
+number and the button spelling are the port's.
+
+`_re/tools/test_zoo_invest.py` drives twenty seeds: 41 cards, the recovered body
+and rows on each, the four-year cooldown, whole-thousand amounts that never exceed
+the zoo's capital, and a no-zoo control (`cards: 41 | ok`).
+
+The full 160-test suite ran on the binary these notes describe (cf433d0a725445600e64..., 159 PASS / 1 FAIL). The failure is test-side: _re/tools/test_crime_chain.py refused a second arrest while an earlier chain was still open, but a chain can stall when the year's cards run out; seed 20 pleads at 54 and is arrested for a different crime at 55 before that verdict arrives. The test now lets a later-year arrest open a fresh chain and still rejects two arrests in one year; it passes (21 chains, 2 acquittals) with no code change.
+
 ## 376. The zoo's and the casino's rename cards
 
 Two more menu cards come with the same shape: `ScenarioZooName` (CTA
