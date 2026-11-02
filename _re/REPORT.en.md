@@ -23536,6 +23536,67 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 359. The compliment card's own contract
+
+The praise twin of 358, `ScenarioCasinoAgeUpGamblerComplimentGame`, was ported from a
+reconstruction and has now been checked against its own disassembly. Addresses:
+`.ctor 0x3572578` (a two-instruction tail into `Scenario::.ctor(false)`),
+`RefreshScenario 0x3571344`, `ChoiceSelectedAtIndex 0x3571cf8`,
+`ScenarioIsEligibleForRandomPush 0x3572134`, pushed from
+`SimCasino::IncrementAge 0x2aacf04` with no draw at the push site.
+
+**Eligibility is a hard AND gate, not a coin flip.** The predicate enumerates the
+gambler list and requires that some regular's favourite game has no installed room
+(`cmp w21,#5` bounds the game-type enum), then hero age ≥ 18, not in prison, and
+`Life::YearsSinceScenario` of this class greater than 4 (`cmp w0,#4 ; cset w8,gt`).
+There is no presented-count cap and no separate ownership test — the casino is taken
+from the hero's own life object.
+
+**The body names a favourite the casino does not have.**
+`SimCasinoGambler::GetRandomFavoriteGame 0x2c28920` is drawn and then rejected while
+`GetFavoriteGames` contains it among the installed rooms, so the printed game is a
+missing one, capitalised by `CapitalizeAllMajorWordsInString 0x2e15700`. The sentence
+is nine parts — `#50268` "Your casino's ", `RelationshipStatusString 0x2c2812c`,
+`#5282` ', ', the full name, `#5672` ', is complimenting your casino for having ',
+`PronounStringForType(1)`, `#1953` ' favorite game, ', the game, `#6312` '.' — then
+`#46` and the parsed row from
+`GetRandomCasinoGamblerGameRoomComplimentForHappiness 0x26c89bc` (banded on the
+gambler's own happiness, bracket dictionary holding only the person) and `#146`
+'\n\nWhat will you do?'. Title `#16100 'Compliment'`; ExteriorTitle is never written.
+
+**The relationship slot is the type word again.** `RelationshipStatusString` returns
+`'casual gambler'` / `'high roller'` / `'Mafia member'` — the same correction 358 made
+on the complaint card.
+
+**Journal and effects.** RefreshScenario seeds the journal with `#25215 "I thanked my
+casino's gambler, "` + name + `#5547 ', for '` + possessor + `#1659 ' compliment about
+my casino.'`, which is what thanking logs. Thanking also moves addiction −1 and the
+two unidentified vtable slots by −1 and +1. Giving moves addiction +2 and the slots by
+−2 and +2 and appends `#341` + name + `#5857 ', some free games after '` + subject
+pronoun + `#1660 ' complimented my casino.'`. Ignoring appends `#351` + name +
+`#5350 ', after '` + subject pronoun + `#1660` and then calls
+`SimCasino::ImpactPopularity(-2)`; thank and give skip that call. The handler draws
+nothing, writes no follow-up scenario and touches no money.
+
+Port: `Sim::casinoComplimentYear` (`_re/port/src/fam/casino.cpp`) lost its
+`chance(0.10)` gate for the native predicate — it collects the catalogue games with no
+`CasinoRoom` and returns without a card when none is missing — draws the printed game
+from that list instead of a generic `<casino-game>` resolution, and prints the type
+words instead of the port's rank ladder.
+
+Ceilings: the two vtable slots stay paired with the port's popularity bar (the same
+shortcut 324 recorded); the port keeps its own style draw to choose between `'casual
+gambler'` and `'high roller'` because it has no per-gambler entity; `'Mafia member'`
+never prints for the reason 357 recorded; the row's bracket dictionary holds only the
+person, as native.
+
+Verified by `_re/tools/test_casino_compliment.py` (its tier set narrowed to the two
+recovered type words):
+
+The full 145-test suite ran on the binary these notes describe (ed9c87e9..., 145 PASS /
+0 FAIL): `_re/tools/test_casino_compliment.py` exercises the card and its narrowed
+type words, and nothing else moved.
+
 ## 358. The complaint card's missing game
 
 `ScenarioCasinoAgeUpGamblerComplaintGame` is the casino age-up card that fires when a

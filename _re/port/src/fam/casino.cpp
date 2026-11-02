@@ -374,13 +374,26 @@ bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
   // Life::YearsSinceScenario('ScenarioCasinoAgeUpGamblerComplimentGame') > 4.
   if (h.casinoComplimentAge >= 0 && h.age - h.casinoComplimentAge <= 4) return false;
-  if (forcedChoice < 0 && !casinoCardRng_.chance(0.10)) return false;
+  // ScenarioIsEligibleForRandomPush hard-gates on a regular whose favourite game is not
+  // installed in the casino, and the card then names one of those missing games; there is
+  // no coin flip (REPORT.en.md 359).
+  std::vector<std::string> missing;
+  if (ensureTable("a16_casino-casino-game-room-enc")) {
+    const Table& games = tbl("a16_casino-casino-game-room-enc");
+    for (size_t r = 0; r < games.size(); ++r) {
+      const std::string g = trim(games.at(r, "Game"));
+      if (g.empty()) continue;
+      bool built = false;
+      for (size_t i = 0; i < h.casinoRooms.size(); ++i)
+        if (lower(h.casinoRooms[i].game) == lower(g)) { built = true; break; }
+      if (!built) missing.push_back(g);
+    }
+  }
+  if (missing.empty()) return false;
   hero_ = &h;
   life_ = &life;
   casinoGambler_.clear();  // one punter per card
   casinoRoom_.clear();
-  static const char* kTiers[] = {"Beginner", "Amateur", "Novice", "Regular",
-                                 "High Roller"};
   int style = 3;
   if (!h.casinoGamblerStyles.empty()) {
     const size_t pick = casinoCardRng_.below(uint32_t(h.casinoGamblerStyles.size()));
@@ -391,8 +404,8 @@ bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   const bool female = casinoCardRng_.chance(0.5);
   std::string gambler = resolve("<casino-gambler>");
   if (gambler.empty()) gambler = female ? "Jane Doe" : "John Doe";
-  std::string game = resolve("<casino-game>");
-  if (game.empty()) game = "blackjack";
+  // A favourite game the casino does not have; the draw is the card second one.
+  std::string game = missing[size_t(casinoCardRng_.below(uint32_t(missing.size())))];
   game = allMajorWords(game);
 
   std::string rowText;
@@ -420,7 +433,9 @@ bool Sim::casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
   const std::string subj = female ? "she" : "he";
   out.table = "registry:ScenarioCasinoAgeUpGamblerComplimentGame";
   out.title = "Compliment";  // #16100
-  out.body = std::string("Your casino's ") + kTiers[style - 1] + ", " + gambler +
+  // RelationshipStatusString speaks in types, not in the port rank ladder (359).
+  const std::string rel = style >= 5 ? "high roller" : "casual gambler";
+  out.body = std::string("Your casino's ") + rel + ", " + gambler +
              ", is complimenting your casino for having " + his +
              " favorite game, " + game + ".";  // #50268 #5282 #5672 #1953 #6312
   if (!rowText.empty()) out.body += "\n\n" + rowText;  // #46

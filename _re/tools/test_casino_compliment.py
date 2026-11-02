@@ -11,7 +11,7 @@ PORT = ROOT / "port" / "build" / "blsim"
 DATA = ROOT / "gamedata_plain"
 
 TABLE = "registry:ScenarioCasinoAgeUpGamblerComplimentGame"
-TIERS = {"Beginner", "Amateur", "Novice", "Regular", "High Roller"}
+TIERS = {"casual gambler", "high roller"}  # REPORT 359: the type words
 BODY = re.compile(r"^Your casino's (?P<tier>[^,]+), (?P<name>.+), is complimenting "
                   r"your casino for having (?P<poss>his|her) favorite game, "
                   r"(?P<game>.+)\.$")
