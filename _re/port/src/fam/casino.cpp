@@ -1976,6 +1976,107 @@ bool Sim::casinoCelebDemandYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioCasinoAgeUpGamblerNew (REPORT.en.md 357): a new regular starts
+// frequenting the casino. Native .ctor 0x3573804, RefreshScenario 0x3572d4c,
+// ScenarioIsEligibleForRandomPush 0x357373c, pushed from SimCasino::IncrementAge
+// bl @0x2aacea0. Fields: _narrative +0x170, _casino +0x178. The card overrides no
+// ChoiceSelectedAtIndex -- it is informational, with a single OK button and no
+// dismiss button.
+//
+// Eligibility draws nothing: casino present, hero age >= 18, not in prison, and
+// YearsSinceScenario(#37053 'ScenarioCasinoAgeUpGamblerNew') > 4. Refresh builds a
+// whole SimCasinoGambler with PersonGenerator::GenerateRandomCasinoGambler
+// 0x338bba8 (its second argument suppresses mafia-member generation while the
+// casino has no mobsters), retries the name up to fifty times against the hero's
+// known people, then SimCasino::AddGambler 0x2ab3a90 and ImpactPopularity(+2).
+//
+// Bodies: 'A ' #9953 + GamblerTypeString + #2805 ' named ' + name + #2583
+// ' is now frequently gambling at your casino.'; the table rows are Age #10954,
+// Occupation #32523, Gambling Style #20993 and Favorite Games #19976, the two
+// bars are Money #30360 and Addiction #10777, the single choice is #32432 'OK',
+// and the journal is 'A ' + GetGamblingStyleString + #2157 ' gambler named ' +
+// name + #1478 ' began frequenting my casino.'.
+//
+// shortcut: the port has no gambler entity, so the newcomer's details are drawn
+// from this card's own stream and printed, and the regular is only counted (its
+// style goes onto casinoGamblerStyles so later cards can draw it). The mafia
+// branch of the native generator is not modelled -- every newcomer is an ordinary
+// gambler -- the fifty-attempt name collision retry collapses to one draw, and
+// the two bar graphs are body lines.
+bool Sim::casinoGamblerNewYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoGamblerNewAge >= 0 && h.age - h.casinoGamblerNewAge <= 4) return false;
+
+  static const char* kStyles[] = {"Beginner", "Amateur", "Novice", "Regular",
+                                  "High Roller"};
+  const int style = int(casinoNewRng_.below(5));
+  const bool female = casinoNewRng_.chance(0.5);
+  std::string name = resolve("<casino-gambler>");
+  if (name.empty()) name = female ? "Jane Doe" : "John Doe";
+  const int age = 21 + int(casinoNewRng_.below(45));
+  const long long cash = 500 + static_cast<long long>(casinoNewRng_.below(250000));
+  const int addiction = int(casinoNewRng_.below(101));
+
+  ensureTable("a16_careers-enc");
+  const Table& careers = tbl("a16_careers-enc");
+  std::string occupation =
+      careers.size() ? trim(careers.at(casinoNewRng_.below(uint32_t(careers.size())), "Career"))
+                     : std::string();
+  if (occupation.empty()) occupation = "Office Worker";
+
+  ensureTable("a16_casino-casino-game-room-enc");
+  const Table& games = tbl("a16_casino-casino-game-room-enc");
+  std::string favourites;
+  const int nGames = 1 + int(casinoNewRng_.below(2));
+  for (int g = 0; g < nGames && games.size(); ++g) {
+    std::string game = trim(games.at(casinoNewRng_.below(uint32_t(games.size())), "Game"));
+    if (game.empty()) continue;
+    if (favourites.find(game) != std::string::npos) continue;
+    if (!favourites.empty()) favourites += ", ";
+    favourites += allMajorWords(game);
+  }
+  if (favourites.empty()) favourites = "Blackjack";
+
+  // GamblerTypeString 0x2c28130 prints 'casual gambler' / 'high roller' /
+  // 'Mafia member'; only a five-style regular counts as a high roller here.
+  const std::string type = style == 4 ? "high roller" : "casual gambler";
+
+  out.table = "registry:ScenarioCasinoAgeUpGamblerNew";
+  out.title = "New Gambler";  // #31317
+  out.body = std::string("A ") + type + " named " + name +
+             " is now frequently gambling at your casino.";
+  std::string rows;
+  auto row = [&rows](const std::string& label, const std::string& value) {
+    if (!rows.empty()) rows += "\n";
+    rows += label + ": " + value;
+  };
+  row("Age", std::to_string(age));
+  row("Occupation", allMajorWords(occupation));
+  row("Gambling Style", allMajorWords(kStyles[style]));
+  row("Favorite Games", favourites);
+  out.body += "\n\n" + rows;
+  // BarGraphArray: Money #30360 over the gambler's own money, Addiction #10777
+  // over its addiction.
+  out.body += "\n\nMoney: " + money(cash);
+  out.body += "\nAddiction: " + std::to_string(addiction);
+  out.cta = "What will you do?";  // #146
+  out.options = {"OK"};           // #32432
+  out.choice = "OK";
+  out.narrative = std::string("A ") + kStyles[style] + " gambler named " + name +
+                  " began frequenting my casino.";
+
+  h.casinoGamblerNewAge = h.age;
+  h.casinoGamblers += 1;
+  h.casinoGamblerStyles.push_back(style + 1);
+  h.casinoPopularity += 2;
+  if (h.casinoPopularity > 100) h.casinoPopularity = 100;
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");

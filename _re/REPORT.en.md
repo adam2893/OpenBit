@@ -23536,6 +23536,97 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 357. The new regular's card
+
+`ScenarioCasinoAgeUpGamblerNew` is the casino's only purely informational card
+among the twenty-two `SimCasino::IncrementAge` pushes: nobody is asked
+anything, a gambler simply starts turning up. Native class: `.ctor 0x3573804`,
+`RefreshScenario 0x3572d4c`, `ScenarioIsEligibleForRandomPush 0x357373c`,
+pushed from `SimCasino::IncrementAge` at `0x2aacea0`. It declares no
+`ChoiceSelectedAtIndex` override at all. Its fields are `_narrative +0x170` and
+`_casino +0x178`.
+
+### Eligibility
+
+The check draws nothing: the casino (`Life+0x5f8`) must be present, the hero
+must be 18 or older, not in prison, and
+`YearsSinceScenario(#37053 'ScenarioCasinoAgeUpGamblerNew') > 4`. So the card
+can only land once every fifth year, and it lands the first year the cooldown
+is clear -- there is no chance roll anywhere in the chain.
+
+### What the refresh builds
+
+`PersonGenerator::GenerateRandomCasinoGambler 0x338bba8(place, noMafiaGate)`
+makes the person. Its second argument is computed by the card: if the hero has
+no mafia special job, the country is asked for its mobs
+(`DataHub::GetAllMafiaMobsForHostCountryCode 0x2856588`) and the gate stays on
+only while `SimCasino::GetMafiaMembers 0x2ab1128` returns an empty list. The
+name is then retried up to fifty times
+(`Generation` helper `0x25241d8`, `FullName 0x2b2c2bc`) against the hero's
+known people so a new regular cannot share a name with somebody the hero
+already knows. Finally `SimCasino::AddGambler 0x2ab3a90` and
+`SimCasino::ImpactPopularity 0x2aafdfc(+2)`.
+
+```
+Title  #31317 'New Gambler'
+Body   #9953 'A ' + GamblerTypeString + #2805 ' named ' + name +
+       #2583 ' is now frequently gambling at your casino.'
+```
+
+Table rows, in insertion order: `Age` #10954 over
+`NumberGroupingStringForAmount`, `Occupation` #32523 over
+`ShortOccupationString` capitalised, `Gambling Style` #20993 over
+`GetGamblingStyleString` capitalised, `Favorite Games` #19976 over
+`GetFavoriteGamesString`. The two bar graphs are `Money` #30360 over the
+gambler's own money (`+0xbc`) and `Addiction` #10777 over `+0x368`. The single
+choice is #32432 `OK`, and `HasDismissButton` is cleared, so the card cannot be
+waved away without pressing it.
+
+Journal: `#9953 'A ' + GetGamblingStyleString + #2157 ' gambler named ' + name +
+#1478 ' began frequenting my casino.'`
+
+`GamblerTypeString 0x2c28130` is a different string from
+`GetGamblingStyleString 0x2c284b8`: the type is `casual gambler` / `high
+roller` / `Mafia member`, the style is the five-rung ladder
+`Beginner`/`Amateur`/`Novice`/`Regular`/`High Roller`. The body prints the
+type, the journal prints the style.
+
+### What the port does
+
+`Sim::casinoGamblerNewYear` (`_re/port/src/fam/casino.cpp`, registered as
+`casino-gambler-new` with one ticket and the `ownsCasino` gate) runs on its own
+`casinoNewRng_` stream. The cooldown is `casinoGamblerNewAge` plus the native's
+four-year gap, and the newcomer's details are drawn when the card fires: style,
+gender, name, age (21-65), money, addiction, one career name out of
+`a16_careers-enc` and one or two game names out of
+`a16_casino-casino-game-room-enc`.
+
+Ceilings, all marked `shortcut:` in the code:
+
+- the port has no gambler entity, so the newcomer is printed and then only
+  counted; their style is pushed onto `casinoGamblerStyles` so the other
+  casino cards can draw it;
+- the mafia branch of the native generator is not modelled -- every newcomer
+  is an ordinary gambler, so `Mafia member` never appears in the body;
+- the fifty-attempt name collision retry collapses to a single draw (the
+  name pool cannot repeat across cards, but it can repeat across years);
+- the two bar graphs are body lines rather than bars;
+- the card is one wheel ticket, while the native pushes it independently of
+  the other twenty-one cards, so in the port it can be skipped in a year it
+  would natively have fired.
+
+### Verified
+
+`_re/tools/test_casino_gambler_new.py` walks ten seeds and says `cards: 50 |
+styles: ['Amateur', 'Beginner', 'High Roller', 'Novice', 'Regular'] | names: 10`.
+It matches the whole body against the row and bar layout, checks that every
+style word comes from the ladder and that the body's type word agrees with it
+(a `High Roller` is a `high roller`, nobody else is), that the journal repeats
+the same name and style, that no two regulars arrive inside the same five
+years, and that a hero without a casino never sees the card.The full 145-test suite ran on the binary these notes describe (77c7e0db..., 145 PASS /
+0 FAIL): `_re/tools/test_casino_gambler_new.py` exercises the card, its rows and
+its two bar values, and nothing else moved.
+
 ## 356. The guest act's demand card
 
 `ScenarioCasinoAgeUpCelebrityDemand` is the artist-in-residence's own card: the
