@@ -4588,6 +4588,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-rename"},
         {&Sim::zooInvestYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-invest"},
+        {&Sim::zooHabitatYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-habitat"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11245,6 +11247,75 @@ void Sim::zooRunYear(Life& life) {
 // negative and otherwise ten percent of the hero's cash, floored to a thousand
 // and capped at what the hero can afford. No journal is written: the narrative
 // was not recovered.
+// ScenarioZooHabitatBuild (REPORT.en.md 379): the zoo menu's habitat card, CTA
+// 0x29f8f54. Recovered literals: body #14104 'Build a new habitat in your zoo
+// today!', rows #50857 'Zoo' and #32920 'Open Habitat Slots', the answer #14097
+// 'Build Habitat', plus #2203 ' habitat' and #32432 'OK' from the same method.
+//
+// The park's habitats are the table's: a16_zoo-habitat-type-enc lists the types
+// that may be added (its 'Add Habitat' column is the yes/no) with their Cost and
+// their Annual Upkeep Fees, and a16_zoo-habitat-names-enc names the habitats it
+// builds. The port already charges an annual upkeep of 5,000 per attraction
+// (REPORT.en.md 65), so a new habitat is one more attraction and one more cost
+// against the zoo's pot.
+//
+// shortcut: the native method's slot arithmetic and its type picker were not
+// recovered, so the slot count is two per plot size less the habitats already
+// built, the type is drawn from the addable rows weighted by nothing, and the
+// habitat's name comes from the names table; the card also writes no journal
+// because its narrative sentence was not recovered.
+bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooHabitatAge >= 0 && h.age - h.zooHabitatAge < 5) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  const int slots = 2 * h.zooSize - h.zooAttractions;
+  if (slots < 1) return false;
+  if (!ensureTable("a16_zoo-habitat-type-enc")) return false;
+  const Table& t = tbl("a16_zoo-habitat-type-enc");
+  std::vector<size_t> addable;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string add = t.has("Add Habitat") ? lower(trim(t.at(r, "Add Habitat"))) : "";
+    if (add == "x" || add == "yes" || add == "true" || add == "1") addable.push_back(r);
+  }
+  if (addable.empty()) return false;
+  const size_t pick = addable[zooMenuRng_.below(uint32_t(addable.size()))];
+  const std::string type = trim(t.at(pick, "Type"));
+  const long long cost = static_cast<long long>(t.num(pick, "Cost"));
+  const long long upkeep = t.has("Annual Upkeep Fees") ? (long long)t.num(pick, "Annual Upkeep Fees") : 0;
+  if (cost < 0 || h.zooBank < cost) return false;
+  std::string habitatName;
+  if (ensureTable("a16_zoo-habitat-names-enc")) {
+    const Table& n = tbl("a16_zoo-habitat-names-enc");
+    std::vector<size_t> of;
+    for (size_t r = 0; r < n.size(); ++r)
+      if (lower(trim(n.at(r, "Habitat Type"))) == lower(type)) of.push_back(r);
+    if (!of.empty()) habitatName = trim(n.at(of[zooMenuRng_.below(uint32_t(of.size()))], "Name"));
+  }
+  if (habitatName.empty()) habitatName = spyUpperFirst(type);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooHabitatAge = h.age;
+  h.zooBank -= cost;
+  h.zooAttractions += 1;
+  h.zooHabitat = type;
+  out.table = "registry:ScenarioZooHabitatBuild";
+  out.title = "Zoo";  // #50857
+  out.body = "Build a new habitat in your zoo today!";  // #14104
+  out.body += "\n\nZoo: " + h.zooName;                                     // #50857
+  out.body += "\nOpen Habitat Slots: " + std::to_string(slots);            // #32920
+  out.body += "\nHabitat: " + habitatName + " (" + type + ")";             // #2203
+  out.body += "\nCost: " + money(cost);
+  if (upkeep > 0) out.body += " | Annual Upkeep: " + money(upkeep);
+  out.options = {"Build Habitat"};                                          // #14097
+  out.choice = "Build Habitat";
+  return true;
+}
+
 bool Sim::zooInvestYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

@@ -23511,6 +23511,43 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 379. The zoo's habitat card
+
+The full 162-test suite ran on the binary these notes describe (37fa04a36cf705a81339..., 162 PASS / 0 FAIL): _re/tools/test_zoo_habitat.py exercises the card and nothing else moved.
+
+The zoo menu's build-a-habitat row opens `ScenarioZooHabitatBuild` (CTA
+`0x29f8f54`), the card that puts one more habitat in the park. It is menu-only
+natively, so like sections 373 to 378 the port offers it as its own guarded
+family.
+
+Recovered text: the body is `#14104 'Build a new habitat in your zoo today!'`;
+the rows are `#50857 'Zoo'` and `#32920 'Open Habitat Slots'`; the answer is
+`#14097 'Build Habitat'`; `#2203 ' habitat'` and `#32432 'OK'` came from the same
+method without a recovered sentence to hang on, so the port prints the habitat
+and its price as two more rows and does not invent prose around them.
+
+The habitats themselves are the tables': `a16_zoo-habitat-type-enc` lists every
+habitat type with an `Add Habitat` flag, a `Cost` and `Annual Upkeep Fees`, and
+`a16_zoo-habitat-names-enc` turns a type into the names a park gives its rooms
+(`desert` becomes `We're Duned Adventure`). The card draws an addable type, names
+it from the matching rows, charges the type's cost against the zoo's pot and
+counts one more attraction -- which is the port's existing lever, because the
+yearly books already charge 5,000 of upkeep per attraction and the gate's
+visitor count multiplies animals and attractions together (sections 65 and 373).
+
+`shortcut:` the native slot arithmetic and its picker were not recovered, so the
+open slots are two per plot size less the habitats already built (the row only
+falls while a park builds), the type is drawn flat from the addable rows rather
+than weighted, and the card writes no journal because no narrative sentence was
+recovered. The upkeep the table prints is reported but not double-charged: the
+5,000-per-attraction rule already covers it.
+
+`_re/tools/test_zoo_habitat.py` plays forty zoo lives: it demands the recovered
+body on every card, a positive slot count that falls by exactly one per build, a
+positive cost with a dollar sign, a named habitat, the `Build Habitat` answer,
+flat deltas, no repeat inside five years, and no card in the ten-seed no-zoo
+control. It prints `cards: 73 | habitat types seen: 5`.
+
 ## 378. The casino's expand card
 
 The full 161-test suite ran on the binary these notes describe (c8e10c67e1e9d4b21471..., 161 PASS / 0 FAIL): _re/tools/test_casino_expand.py exercises the card and nothing else moved.

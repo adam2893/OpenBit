@@ -625,6 +625,7 @@ struct Hero {
   int zooAdmissionAge = -1;      // the year the admission fee card was offered (373)
   int zooRenameAge = -1;          // the year the zoo rename card fired (376)
   int zooInvestAge = -1;          // the year the zoo invest card fired (377)
+  int zooHabitatAge = -1;         // the year the habitat card fired (379)
   int zooVisitorsLastYear = 0;   // the visitors the last ledger year's gate sold for (373)
   long long zooMoney = 0;        // the takings this year
   // The zoo's own books (REPORT.en.md 321): a pot the takings and the upkeep are
