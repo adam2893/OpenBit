@@ -772,6 +772,7 @@ class Sim {
   bool zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooTheftYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooEmployeeResignYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCustomerServiceYear(Life& life, AgeUp& out, int forcedChoice);
   void zooSeedHerd(Life& life);
   std::string zooAnimalNameFor(const std::string& breed, bool female);
@@ -1291,6 +1292,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng dealerRng_;
   Rng mafiaRng_;
   Rng zooRng_;
+  Rng zooResignRng_;  // the keeper's resignation card's own stream (REPORT.en.md 353)
   Rng zooKeeperRng_;  // the keeper compliment card's own stream
   Rng zooLifeRng_;    // the zoo lifecycle cards' own stream
   Rng zooTheftRng_;    // the zoo theft card's own stream

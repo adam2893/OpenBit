@@ -625,6 +625,8 @@ struct Hero {
   int zooTheftAge = -1;
   int zooCleanAge = -1;
   int zooCustAge = -1;     // the year the park's ticket sales were last flagged    // the year the operations manager last complained    // the year the park was last burgled
+  int zooEmployeeHiredAge = -1;   // the hero's age when the keeper was hired (353)
+  int zooEmployeeResignAge = -1;  // the year the keeper last handed in notice
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.

@@ -23536,6 +23536,80 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 353. The zoo keeper's resignation
+
+The zoo's IncrementAge chain calls one more card after the pregnancy and before the
+cleanliness report: `ScenarioZooAgeUpEmployeeResignation` (`.ctor` 0x29a4e98,
+`RefreshScenario` 0x29a4ea4, `ChoiceSelectedAtIndex` 0x29a5864,
+`ScenarioIsEligibleForRandomPush` 0x29a5ebc), pushed at 0x2b59ce8. It is the zoo's
+counterpart to the casino's two resignations in 352, and it is the only zoo card that takes
+a member of staff away from the park.
+
+Eligibility asks for a zoo that has been open `YearsOwned >= 6`, a hero of 18 or more who
+is not in prison, `YearsSinceScenario > 3`, and a disgruntled employee from
+`SimZoo::GetDisgruntledEmployee` (0x29a5558). The native calls a keeper disgruntled on
+either of two grounds: the last time the hero interacted with them is more than three years
+past, or their salary has not moved in five years and is still at or below 500.
+
+The body names the keeper by employee type and full name, then adds a colour sentence drawn
+from `a16_zoo-employee-resignation-color-enc`. That table has 33 rows and the header
+`String,Gender,Employee Type,Min Competence,Max Competence,Commonness Score`; the row is
+picked by `Commonness Score` inside the window `Min Competence`..`Max Competence` that
+holds the keeper's competence, and its tokens `<he/she>` / `<his/her>` resolve to that
+keeper. One row names `<zoo-other>`, a competing park. The sentences carry their own full
+stop and open on the lowercase pronoun token, so the card shows "She is more interested in
+working at an aquarium than a zoo." Text: #5713 `', is resigning from '`, #3066
+`' position at your zoo.'`, then the colour, then #6348 `"\n\nWhat will you do?"`.
+
+The three answers are the same shape as the casino's, minus the toss:
+
+| Answer | What happens |
+| --- | --- |
+| Wish `{0}` well | the keeper leaves; the hero's happiness slot takes -2; journal #471 `'\nI wished '` + pronoun + #4019 `' well.'` |
+| Offer `{0}` a raise | the keeper stays; the native chains `ScenarioZooEmployeeSalary` |
+| Insult `{0}` one last time | the keeper leaves; discipline -2 and karma -3; a follow-up `Scenario` titled one of #11409 `'And stay out'`, #45203 `'Useless mutt'`, #48310 `'You dirty, mangy, ugly-'`, #32862 `'Only animals could love you'`, with body #47921 `'You called '` + pronoun + the insult + a full stop (the tail's own literal is not recorded) |
+
+### The port's card
+
+`Sim::zooEmployeeResignYear` sits beside the zoo's other cards in `_re/port/src/sim.cpp`,
+with its own stream `zooResignRng_` so the years the card does not fire are unchanged. It
+runs on `zoo-employee-resign` at one ticket. The gate is the native one where the port can
+express it: a zoo open six years, a hero who is an adult and out of prison, a four-year
+cooldown, and a keeper who has not been spoken to for three years. The colour row is picked
+by `pickWindow` over `Min Competence`/`Max Competence`, then capitalised and given a
+full stop only when it does not already end in one — the rows in this table do, unlike the
+supervisor warnings of 325.
+
+The hire date is stamped at both hire sites (`ensureZooFields` and the applicant branch of
+`zooYear`), because the native's "three years without an interaction" needs a reference
+point the port does not otherwise keep. That applicant branch used to narrate a resignation
+when the keeper left; the narration is gone, and the step now only ever brings an applicant.
+
+Ceilings:
+
+- The native disgruntlement test has two clauses and the port has no keeper salary, so the
+  hire age stands for both.
+- `<zoo-other>` becomes "a rival zoo"; the port has no competitor parks.
+- The raise chains `ScenarioZooEmployeeSalary`, whose body is not recovered, so the keeper
+  simply stays and the raise costs nothing.
+- The insolent answer's follow-up uses the shared insult pool of 343 and boxes the sentence
+  as "You called him <insult>." — the native's own journal wording for this card is not
+  recovered, so that line is port-side.
+- The zoo keeps one keeper with one competence, so the window test sees a single value
+  rather than a staff list.
+
+Verified: `_re/tools/test_zoo_employee_resignation.py` walks thirty lives, checks the body
+and its colour against every row of the table, one lane at a time, the farewell journals,
+the -2 happiness, the -2 discipline and -3 karma, a four-year gap between cards on the same
+life, and that a life without a zoo never sees it. Measured: `cards: 28 | lanes: {'wish': 14,
+'insult': 14, 'offer': 14} | feedback: 14`.
+
+The full 141-test suite ran on the binary these notes describe (54dba89d..., 140 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: the new
+family's wheel ticket moved the one spousal reaction `_re/tools/test_vehicle_purchase.py`
+looks for past its thirtieth seed (seed 44 is the only one in the first sixty), so that
+test now walks forty-five seeds. It was re-run green.
+
 ## 352. The casino's two resignations
 
 Both of the casino's performers can hand in their notice: the guest act and the act in

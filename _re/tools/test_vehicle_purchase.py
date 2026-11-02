@@ -31,7 +31,11 @@ def run(seed):
 
 bought = 0
 reacted = 0
-for seed in range(1, 31):
+# The zoo keeper's resignation (353) added a family ahead of this one in the wheel,
+# so the single reaction this run produces moved from the first thirty seeds to
+# the fortieth-something (measured: seed 44 of 1-60). Walk wider rather than
+# weaken the count.
+for seed in range(1, 46):
     for event in run(seed)["events"]:
         table = event.get("table") or ""
         if table == "a16_outdoor-vehicle-enc":

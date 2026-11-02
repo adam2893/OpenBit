@@ -672,6 +672,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
+      zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooLifeRng_(seed ^ 0x5be0cd19137e2179ULL ^ 0x2b3b1f3a7d4e6c55ULL),
       zooTheftRng_(seed ^ 0x1f83d9abfb41bd6bULL ^ 0x4a3b2c1d0e5f6789ULL),
     zooKeeperRng_(seed ^ 0x510e527fade682d1ULL ^ 0x9b05688c2b3e6c1fULL),
@@ -4546,6 +4547,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooYear, nullptr, 1, "zoo"},
         {&Sim::zooLifecycleYear, [](const Life& l) { return l.hero.ownsZoo; }, 2, "zoo-lifecycle"},
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
+        {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-employee-resign"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
         {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -10280,6 +10283,7 @@ void Sim::ensureZooFields(Life& life) {
   h.zooEmployeeCompetence = 40 + int(zooRng_.below(41));
   h.zooEmployeeFemale = zooRng_.chance(0.5);
   h.zooEmployee = drawFirstName(h.zooEmployeeFemale) + " " + drawSurname();
+  h.zooEmployeeHiredAge = h.age;
   h.zooEmployeeRole = "keeper";
   zooBuilt_.clear();
 }
@@ -10860,25 +10864,8 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
   }
   // 10. A keeper arrives, or one of them hands in their notice.
   else if (zooRng_.chance(0.10)) {
-    if (h.zooStaff > 0 && zooRng_.chance(0.35)) {
-      const size_t r = drawWin("a16_zoo-employee-resignation-color-enc", "Commonness Score", "", "",
-                               "Min Competence", "Max Competence", double(h.zooEmployeeCompetence));
-      title = "A resignation";
-      if (r != size_t(-1)) {
-        const Table& t = tbl("a16_zoo-employee-resignation-color-enc");
-        pronounOtherSet_ = true;
-        pronounOtherFemale_ = h.zooEmployeeFemale;
-        body = h.zooEmployee + ", the zoo's " + lower(h.zooEmployeeRole) + ", is leaving.";
-        say(spyUpperFirst(cell(t, r, "String")));
-        const std::string role = lower(resolve(trim(t.at(r, "Employee Type"))));
-        if (!role.empty()) extra.push_back("The " + role + " post is open again.");
-      } else {
-        body = h.zooEmployee + ", the zoo's " + lower(h.zooEmployeeRole) + ", is leaving.";
-      }
-      h.zooStaff -= 1;
-      h.zooEmployee.clear();
-      happy -= 1;
-    } else {
+    // The keeper's resignation is its own card now (REPORT.en.md 353), so this
+    // step only ever brings an applicant.
       const int want = 30 + int(zooRng_.below(61));
       const size_t r = drawWin("a16_zoo-employee-application-color-enc", "Commonness Score", "", "",
                                "Min Competence", "Max Competence", double(want));
@@ -10891,6 +10878,7 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
         h.zooEmployeeCompetence = want;
         h.zooEmployeeFemale = zooRng_.chance(0.5);
         h.zooEmployee = drawFirstName(h.zooEmployeeFemale) + " " + drawSurname();
+        h.zooEmployeeHiredAge = h.age;
         pronounOtherSet_ = true;
         pronounOtherFemale_ = h.zooEmployeeFemale;
         body = "I hired " + h.zooEmployee + " as a " + role + ".";
@@ -10906,7 +10894,6 @@ bool Sim::zooYear(Life& life, AgeUp& out, int forcedChoice) {
       } else {
         body = "Nobody worth the wage came in for an interview.";
       }
-    }
   }
   // 11. A feature for the habitat the animal lives in.
   else if (zooRng_.chance(0.10)) {
@@ -11353,6 +11340,97 @@ bool Sim::zooLifecycleYear(Life& life, AgeUp& out, int forcedChoice) {
 // deals whenever the zoo is old enough and the custodial score sits under twenty.
 // 'Reallocate labor resources' hands off to the staff-management menu card, which the
 // port has no menu layer for, so both answers only write the journal (REPORT 348).
+// ScenarioZooAgeUpEmployeeResignation (.ctor 0x29a4e98, RefreshScenario 0x29a4ea4,
+// ChoiceSelectedAtIndex 0x29a5864, GetDisgruntledEmployee 0x29a5558,
+// ScenarioIsEligibleForRandomPush 0x29a5ebc, pushed at 0x2b59ce8, the else-if step
+// right after the pregnancy card). A keeper who has not been dealt with hands in their
+// notice: wish them well (they leave), offer a raise (a salary card follows), or insult
+// them one last time (they leave, and the hero is disciplined and loses karma).
+bool Sim::zooEmployeeResignYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooEmployee.empty()) ensureZooFields(life);
+  if (h.zooEmployee.empty()) return false;
+  if (h.zooOwnedSince < 0 || h.age - h.zooOwnedSince < 6) return false;  // YearsOwned >= 6
+  // The native asks GetDisgruntledEmployee for a keeper whose last interaction is more
+  // than three years old (or whose salary has not moved in five). The port has one
+  // keeper and no salary, so the hire age stands for both clauses (shortcut).
+  if (h.zooEmployeeHiredAge < 0 || h.age - h.zooEmployeeHiredAge <= 3) return false;
+  if (h.zooEmployeeResignAge >= 0 && h.age - h.zooEmployeeResignAge <= 3) return false;
+  if (forcedChoice < 0 && !zooResignRng_.chance(0.25)) return false;
+  hero_ = &h;
+  life_ = &life;
+
+  pronounOtherSet_ = true;
+  pronounOtherFemale_ = h.zooEmployeeFemale;
+  std::string colour;
+  const size_t cr = pickWindow("a16_zoo-employee-resignation-color-enc", "Commonness Score",
+                               "", "", "Min Competence", "Max Competence",
+                               double(h.zooEmployeeCompetence), zooResignRng_);
+  if (cr != size_t(-1))
+    colour = resolve(trim(tbl("a16_zoo-employee-resignation-color-enc").at(cr, "String")));
+  // The colour may name a rival zoo; the port has no competitor list (shortcut).
+  if (!colour.empty()) substAll(colour, "<zoo-other>", "a rival zoo");
+
+  const std::string role = h.zooEmployeeRole.empty() ? std::string("keeper")
+                                                     : lower(h.zooEmployeeRole);
+  const std::string name = h.zooEmployee;
+  const bool female = h.zooEmployeeFemale;
+  const std::string them = female ? "her" : "him";
+  const std::string poss = female ? "her" : "his";
+  h.zooEmployeeResignAge = h.age;
+  out.table = "registry:ScenarioZooAgeUpEmployeeResignation";
+  out.title = "Resignation";  // #36027
+  out.body = "Your " + role + ", " + name + ", is resigning from " + poss +
+             " position at your zoo.";
+  if (!colour.empty()) {
+    // The rows carry their own full stop and open on a lowercase pronoun.
+    colour = spyUpperFirst(colour);
+    out.body += "\n\n" + colour + (colour.back() == '.' ? "" : ".");
+  }
+  out.body += "\n\nWhat will you do?";
+  out.cta = "What will you do?";
+  out.options = {"Wish " + them + " well", "Offer " + them + " a raise",
+                 "Insult " + them + " one last time"};
+  int pick = forcedChoice < 0 ? int(zooResignRng_.below(3)) : forcedChoice;
+  if (pick > 2) pick = 2;
+  out.choice = out.options[size_t(pick)];
+
+  std::string narrative = "My " + role + ", " + name + ", handed me a letter of resignation.";
+  const auto drop = [&]() {
+    h.zooEmployee.clear();
+    h.zooEmployeeRole.clear();
+    h.zooEmployeeHiredAge = -1;
+    if (h.zooStaff > 0) h.zooStaff -= 1;
+  };
+  if (pick == 0) {
+    drop();
+    // The native asks the hero's happiness slot for -2 (0x408).
+    out.happiness -= 2;
+    narrative += "\nI wished " + them + " well.";
+  } else if (pick == 1) {
+    // The native chains ScenarioZooEmployeeSalary, whose body is not recovered: the
+    // keeper stays and the raise costs nothing here (ceiling).
+  } else {
+    const std::string insult = insultTokenForGender(female);
+    drop();
+    out.discipline -= 2;
+    out.karma -= 3;
+    static const char* const kTitles[] = {"And stay out", "Useless mutt",
+                                          "You dirty, mangy, ugly-",
+                                          "Only animals could love you"};
+    out.table = "registry:Scenario";  // the native chains a feedback Scenario
+    out.title = kTitles[zooResignRng_.below(4)];
+    out.body = "You called " + them + " " + insult + ".";
+    out.cta = "What will you do?";
+    out.options = {"OK"};
+    out.choice = "OK";
+    narrative += "\nI called " + them + " " + insult + ".";
+  }
+  out.narrative = narrative;
+  return true;
+}
+
 bool Sim::zooCleanlinessYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
