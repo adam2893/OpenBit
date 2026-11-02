@@ -23511,6 +23511,66 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 371. The contract offer card
+
+The renewal card's first answer did not stand on its own: natively it chains
+`ScenarioCasinoAgeUpCelebrityContractOffer` (`.ctor 0x73f39ff010`, `RefreshScenario 0x73f39ff03c`,
+`ChoiceSelectedAtIndex 0x73f39ff8c4`), the card where the terms of the new residency are put on
+the table. The port used to decide the offer inside the renewal card and push the result
+straight away, so the player never saw the terms. This section splits it out.
+
+### The card
+
+Exterior `#50856 'Casino'`, title `#16293 'Contract'`.
+
+Body: `#17334 'Decide the terms of your new contract with '` + the celebrity's full name.
+
+The dictionary holds `'Current Salary'` (`#16832`, the expiring salary), and the two controls:
+a dropdown `'Length'` (`#28715`) whose options are `Format(#69718 '{0} Years', n)` for
+`n in {2, 3, 5, 7, 10}`, and a slider `'Salary'` (`#36642`) running from the local 50,000 to
+500,000 with the midpoint as its start.
+
+Two answers: `#45181 'Use the Hollywood Star'` (the monetization path, shown only while the
+player holds a Hollywood Star) and `#29530 'Make '` + `PronounStringForType(celeb, 2)` +
+`#3559 ' this offer'`. Taking the offer writes the slider's salary and the dropdown's length
+onto the celebrity's contract, then chains a plain result card: `#50080 "You've got a deal"`
+with `#36021 'Residency Duration'` and `#31365 'New Salary'` rows, or `#49951 "You're crazy"`
+with the celebrity removed and the casino's popularity down 2. The answer also writes the
+journal: the eleven-part "renewed ... for $N" line, or the seven-part "refused the terms"
+line that ends `#3154`.
+
+### The port
+
+`Sim::casinoCelebOfferYear` renders the card as pending kind `kPendingCasinoCelebOffer`; the
+renewal card now only puts a length on the table (`h.casinoCelebOfferLength`) and queues it.
+The accept decision moved here with it, unchanged: `score` is the three window rolls the
+previous section recorded, and the celebrity stays while `score >= GetRandomNumber(0,101)`.
+
+Ceilings:
+
+- No dropdown and no slider, so the length is drawn from the native list `{2,3,5,7,10}` and
+  the salary on the table is the slider's midpoint, 275,000, which is where the native slider
+  opens. Both are printed in the body as rows instead of controls.
+- The Hollywood Star answer is not rendered; the port has no monetization path.
+- The result card keeps the wording the previous section documented rather than the native's
+  `#50080` / `#49951` bodies, which are result screens the port folds in.
+
+The seeding hook also picked the celebrity's gender wrongly: `seedCasinoGuest` set the flag to
+false whenever it was not already true or false, which for a bool is always, so every pinned
+guest was male while the booking pass aside (`casino.cpp:812`) did draw one. The hook now draws
+it on the renewal stream.
+
+Verified: `_re/tools/test_casino_renewal.py` over twenty lives reaches 12 offer lanes and 8
+"let them go" lanes, reads the contract card's rows against the renewal card's name, and
+follows each offer to its result: 4 deals and 8 refusals, each with the matching journal line
+on the offer card.
+
+The full 154-test suite ran on the binary these notes describe (5ac8bae8..., 153 PASS /
+1 FAIL). The failure was test-side and fixed here without touching the code: the card
+addresses the punter by pronoun, so after the guest-gender fix `_re/tools/test_casino_demand.py`
+now sees both `Oblige him` and `Oblige her` instead of a single spelling, and the lane
+count was normalised. It re-ran green (150 cards, 70 refuse / 43 + 37 oblige).
+
 ## 370. The product card's two answers
 
 The product card (REPORT.en.md 369) hands two of its three answers to cards of their own.

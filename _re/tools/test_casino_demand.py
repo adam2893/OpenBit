@@ -161,8 +161,10 @@ def main():
                 REFUSE_FB.match(e["body"]) or (_ for _ in ()).throw(
                     AssertionError((seed, "follow-up", e["body"])))
     assert gaps_ok, "a demand landed in the year right after another"
-    assert set(lanes) == {"Refuse"} or len(lanes) == 2, lanes
-    assert "Oblige him" in lanes, lanes
+    # The card addresses the punter by pronoun, so the oblige lane has two spellings.
+    lender = sorted(k for k in lanes if k.startswith("Oblige"))
+    assert lender, lanes
+    assert set(lanes) == {"Refuse", *lender} or len(lanes) == 2, lanes
     assert lanes.get("Refuse"), lanes
     # The two follow-up bodies, one lane each, checked on the seeds where they occur.
     oblige_fb = refuse_fb = 0

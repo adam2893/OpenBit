@@ -150,6 +150,7 @@ enum PendingCard {
   kPendingZooShopProfile = 49,     // the product card the shop menu opens (REPORT.en.md 369)
   kPendingZooShopOrderUnits = 50,  // the product card's order answer (REPORT.en.md 370)
   kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
+  kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -771,6 +772,7 @@ bool casinoGamblerDeathYear(Life& life, AgeUp& out, int forcedChoice);
 bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoCelebDemandYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoCelebRenewYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoCelebOfferYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoGamblerNewYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoFeedbackYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioCarRepair and the car's own damage roll (REPORT.en.md 323).

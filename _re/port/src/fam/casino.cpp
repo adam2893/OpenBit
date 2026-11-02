@@ -2189,12 +2189,42 @@ bool Sim::casinoCelebRenewYear(Life& life, AgeUp& out, int forcedChoice) {
   }
 
   // "Make <them> an offer" chains ScenarioCasinoAgeUpCelebrityContractOffer
-  // (.ctor 0x73f39ff010, handler 0x73f39ff8c4). The port has no dropdown and no
-  // slider, so the contract length is drawn from the native list {2,3,5,7,10}
-  // and the salary is the slider's default, the midpoint of its band (shortcut).
+  // (.ctor 0x73f39ff010). The port has no dropdown and no slider, so the offer
+  // card draws the length from the native list {2,3,5,7,10} and puts the
+  // slider default salary, the midpoint of its band, on the table (REPORT 371).
   static const int kLengths[5] = {2, 3, 5, 7, 10};
-  const int length = kLengths[casinoRenewRng_.below(5)];
-  const long long salary = 275000;  // (50000 + 500000) / 2
+  h.casinoCelebOfferLength = kLengths[casinoRenewRng_.below(5)];
+  life.pendingCards.push_back(kPendingCasinoCelebOffer);
+  return true;
+}
+
+bool Sim::casinoCelebOfferYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.casinoCelebrity.empty() || h.casinoCelebMetAge < 0) return false;
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.casinoCelebOfferLength <= 0) return false;
+
+  const std::string name = h.casinoCelebrity;
+  const bool female = h.casinoCelebFemale;
+  const std::string them = female ? "her" : "him";
+  const std::string subject = female ? "she" : "he";
+  const std::string possessive = female ? "her" : "his";
+  const long long salary = 275000;  // (50000 + 500000) / 2, the slider's default
+  const int length = h.casinoCelebOfferLength;
+
+  out.table = "registry:ScenarioCasinoAgeUpCelebrityContractOffer";
+  out.title = "Contract";  // #16293
+  out.body = "Decide the terms of your new contract with " + name +  // #17334
+             "\n\nCurrent Salary: " + money(h.casinoCelebSalary) +      // #16832
+             "\nLength: " + std::to_string(length) + " Years" +         // #28715/#69718
+             "\nSalary: " + money(salary);                             // #36642
+  out.cta = "What will you do?";
+  out.options = {"Make " + them + " this offer"};  // #29530 + #3559
+  out.choice = out.options[0];
+
   const int fame = h.casinoCelebFame < 0 ? 50 : h.casinoCelebFame;
   int window1;
   if (fame > 49)
@@ -2235,8 +2265,16 @@ bool Sim::casinoCelebRenewYear(Life& life, AgeUp& out, int forcedChoice) {
                     " refused the terms of the new contract.";
     h.casinoPopularity -= 2;
     if (h.casinoPopularity < 0) h.casinoPopularity = 0;
-    drop();
+    h.casinoCelebrity.clear();
+    h.casinoCelebrityGenre.clear();
+    h.casinoCelebrityGenreTheme.clear();
+    h.casinoCelebCraziness = 0;
+    h.casinoCelebRel = 60;
+    h.casinoCelebMetAge = -1;
+    h.casinoCelebContract = -1;
+    h.casinoCelebSalary = 0;
   }
+  h.casinoCelebOfferLength = 0;
   life.pendingCards.push_back(kPendingCasinoFeedback);
   return true;
 }
@@ -2284,7 +2322,9 @@ void Sim::seedCasinoGuest(Life& life, bool sameTheme) {
   h.casinoCelebRel = 20;
   h.casinoCelebContract = 0;   // seedCasinoGuest: a contract already up for renewal (362)
   h.casinoCelebSalary = 275000;
-  if (h.casinoCelebFemale != true && h.casinoCelebFemale != false) h.casinoCelebFemale = false;
+  // The booking pass picks the celebrity's gender (casino.cpp:812); a pinned guest skips
+  // it, so the hook picks one here on its own stream (REPORT.en.md 371).
+  if (!h.casinoCelebFemale) h.casinoCelebFemale = casinoRenewRng_.chance(0.5);
 }
 
 void Sim::seedCasinoAct(Life& life, bool sameTheme) {

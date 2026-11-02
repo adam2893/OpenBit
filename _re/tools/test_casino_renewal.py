@@ -13,6 +13,11 @@ BODY = re.compile(
     r"^Your casino's artist-in-residence, (?P<name>.+?)'s contract has ended\.\n\n"
     r"(?:His|Her) agent tells you (?:he|she)'ll renew (?:his|her) contract for the "
     r"right price\.$")
+CONTRACT = re.compile(
+    r"^Decide the terms of your new contract with (?P<name>.+?)\n\n"
+    r"Current Salary: \$(?P<salary>[\d,]+)\nLength: (?P<length>2|3|5|7|10) Years\n"
+    r"Salary: \$(?P<offer>[\d,]+)$")
+
 DEAL = re.compile(
     r"^(?P<name>.+?) agreed to the terms of (?:his|her) new contract and will continue "
     r"performing at your casino\.\n\nResidency Duration: (?:2|3|5|7|10) Years\n"
@@ -87,6 +92,15 @@ for seed in range(1, 21):
             assert lm.group('name') == m.group('name'), (seed, lm.group('name'))
             results['go'] = results.get('go', 0) + 1
         else:
+            # The offer answer chains the contract card (REPORT.en.md 371), which
+            # carries the terms and the decision; the result card follows it.
+            offer = next((e for e in follow if e.get('title') == 'Contract'), None)
+            assert offer, (seed, 'offer answer opened no contract card', titles)
+            om = CONTRACT.match(offer.get('body') or '')
+            assert om, (seed, offer.get('body'))
+            assert om.group('name') == m.group('name'), (seed, om.group('name'))
+            assert (offer.get('choice') or '').endswith('this offer'), (seed, offer.get('choice'))
+            assert (offer.get('choice') or '').startswith('Make '), (seed, offer.get('choice'))
             both = {'deal': DEAL, 'crazy': CRAZY}
             hit = [(k, rx.match(e.get('body') or '')) for e in follow
                    for k, rx in both.items() if e.get('title') == (
@@ -96,8 +110,8 @@ for seed in range(1, 21):
             assert match, (seed, kind, [e.get('body') for e in follow])
             assert match.group('name') == m.group('name'), (seed, match.group('name'))
             want = STAYED if kind == 'deal' else REFUSED
-            tail = [x for x in card.get('logLines') or [] if want.match(x)]
-            assert tail, (seed, kind, card.get('logLines'))
+            tail = [x for x in offer.get('logLines') or [] if want.match(x)]
+            assert tail, (seed, kind, offer.get('logLines'))
             results[kind] = results.get(kind, 0) + 1
 assert seeds > 0, 'the renewal card never fired'
 assert len(lanes) == 2, lanes
