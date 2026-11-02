@@ -23511,6 +23511,40 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 375. The casino's theme card
+
+The casino menu's theme row opens `ScenarioCasinoTheme` (CTA `0x35cc4c4`), the
+third menu card this series offers because nothing in the age-up pipeline pushes
+it. It is also the most useful of the three: acts and amenities are judged
+against the house theme, so the theme is the lever 350 and 351 already read.
+
+Recovered text: the body is `#33753 "Pick a new theme for your "` + the casino's
+display name + `#3822 " today!"`, the row label is `#42810 "Theme"`, the answer
+is `#32432 "OK"` and the card's own title literal is again `#15240 "Casino"`.
+Theme values are the table's own (the port's are mixed case, exactly as the
+casino's creation draws them).
+
+* The card fires only for a hero who owns a casino, is 18 or older, is not in
+  prison, and it never repeats inside five years.
+* The new theme is drawn from `a16_casino-casino-theme-enc` by walking the table
+  from a random start, so a card can never print the theme the casino already has.
+* Changing the theme moves which punter cards can fire: a complaint needs an act
+  or amenity whose theme differs from the house's, a compliment needs one that
+  matches, so this card steers both.
+* No journal is written: the native narrative for this card was not recovered.
+
+shortcut: the native picker is a dropdown the port cannot drive, so the card
+draws a theme instead of letting the player choose one. The draw runs on the menu
+stream 374 introduced rather than a new stream, because neither card is part of
+the yearly wheel calibration.
+
+`_re/tools/test_casino_theme.py` drives twenty seeds: 7 cards, the recovered body
+on each, the theme row and the answer, the five-year cooldown, six distinct themes
+and never the same theme twice in a row, plus a no-casino control
+(`cards: 7 | themes seen: 6 | seeds with two moves: 0`).
+
+The full 158-test suite ran on the binary these notes describe (073ff0eaf9079a3aa47f..., 158 PASS / 0 FAIL): _re/tools/test_casino_theme.py drives twenty seeds, the recovered body and theme row on every card, the cooldown, the no-repeat rule and the no-casino control, and nothing else moved.
+
 ## 374. The casino's withdraw card
 
 The casino menu's withdraw row opens `ScenarioCasinoWithdrawFunds` (CTA

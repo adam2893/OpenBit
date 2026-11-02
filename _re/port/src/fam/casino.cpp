@@ -1543,6 +1543,51 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 // and default were not recovered; the port therefore withdraws half of the
 // casino's balance, floored to a thousand, and prints that amount in the row the
 // card got. No journal is written: the narrative was not recovered.
+// ScenarioCasinoTheme (REPORT.en.md 375): the casino menu's theme card, CTA
+// 0x35cc4c4. Recovered literals: body #33753 'Pick a new theme for your ' + the
+// casino's display name + #3822 ' today!', the row label #42810 'Theme', the
+// answer #32432 'OK' and the card's own title #15240 'Casino'.
+//
+// shortcut: the card is menu-only natively, so it is offered here as its own
+// family the way 373 and 374 are. The theme picker is a dropdown the port cannot
+// drive, so the card draws a theme from the table the casino's own creation uses,
+// excluding the one it already has. This is the lever 350 and 351 already read:
+// acts and amenities are judged against the house theme, so changing it moves
+// which of those cards can fire for a complaint and which for a compliment.
+// No journal is written: the narrative was not recovered.
+bool Sim::casinoThemeYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoThemeAge >= 0 && h.age - h.casinoThemeAge < 5) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_casino-casino-theme-enc")) return false;
+  const Table& t = tbl("a16_casino-casino-theme-enc");
+  if (t.size() < 2) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoThemeAge = h.age;
+  // Walk the table from a random start so a small table still finds another theme.
+  const size_t start = size_t(casinoMenuRng_.below(uint32_t(t.size())));
+  std::string picked;
+  for (size_t i = 0; i < t.size(); ++i) {
+    const std::string cand = trim(t.at((start + i) % t.size(), "Theme"));
+    if (!cand.empty() && cand != h.casinoTheme) { picked = cand; break; }
+  }
+  if (picked.empty()) return false;
+  h.casinoTheme = picked;
+  out.table = "registry:ScenarioCasinoTheme";
+  out.title = "Casino";  // #15240
+  out.body = "Pick a new theme for your " + h.casinoName + " today!";  // #33753 + #3822
+  out.body += "\n\nTheme: " + h.casinoTheme;                          // #42810
+  out.options = {"OK"};
+  out.choice = "OK";
+  return true;
+}
+
 bool Sim::casinoWithdrawYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

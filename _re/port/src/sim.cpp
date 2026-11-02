@@ -4647,6 +4647,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-amenity-compliment"},
         {&Sim::casinoWithdrawYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-withdraw"},
+        {&Sim::casinoThemeYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-theme"},
         {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-celeb-resign"},
         {&Sim::casinoActResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,

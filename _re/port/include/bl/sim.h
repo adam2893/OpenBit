@@ -755,6 +755,7 @@ class Sim {
   // card's positive twin.
   bool casinoComplimentYear(Life& life, AgeUp& out, int forcedChoice);
   bool casinoWithdrawYear(Life& life, AgeUp& out, int forcedChoice);
+  bool casinoThemeYear(Life& life, AgeUp& out, int forcedChoice);
   // The casino's mob favours (REPORT.en.md 345): a made man who owns a house
   // gets asked to launder take and to lend out a storage room for an
   // interrogation. Both draw their member and their money on their own stream.
