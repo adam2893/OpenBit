@@ -676,6 +676,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
       mafiaRng_(seed ^ 0x27d4eb2f165667c5ULL),
       zooRng_(seed ^ 0x3c79ac492ba7b653ULL),
+      zooMenuRng_(seed ^ 0x1b56c4e9a3d7f281ULL ^ 0x27d4eb2f165667c5ULL),
       zooResignRng_(seed ^ 0x51d0f3a7c92b6481ULL ^ 0x2f8e6b4519c07d3eULL),
       zooStaffRng_(seed ^ 0x7a3e19c6b05d482fULL ^ 0x48c1f7b3e29a650dULL),
       zooGiftRng_(seed ^ 0x3f6a1d04c8527b9eULL ^ 0x87d2c5b10e46a9f3ULL),
@@ -4580,6 +4581,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooYear, nullptr, 1, "zoo"},
         {&Sim::zooLifecycleYear, [](const Life& l) { return l.hero.ownsZoo; }, 2, "zoo-lifecycle"},
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
+        {&Sim::zooAdmissionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-admission"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11179,6 +11182,9 @@ void Sim::zooRunYear(Life& life) {
   const long long shop = h.zooGiftRevenue;
   const long long upkeep = static_cast<long long>(h.zooAnimals) * 2500
                          + static_cast<long long>(h.zooAttractions) * 5000;
+  // The card's Ticket Sales Last Year row counts the visitors the gate's own
+  // arithmetic implies (REPORT.en.md 373).
+  h.zooVisitorsLastYear = (h.zooAnimals + h.zooAttractions) * 900;
   h.zooMoney = gate + shop;
   h.zooBank += gate + shop - upkeep;
   if (h.zooBank >= 0) {
@@ -11192,6 +11198,48 @@ void Sim::zooRunYear(Life& life) {
   if (++h.zooNegativeYears < 3) return;
   life.pendingCards.push_back(kPendingZooBankrupt);
   h.zooBankruptQueued = true;
+}
+
+// ScenarioZooAdmissionFee (REPORT.en.md 373): the zoo's gate price card. Native
+// .ctor / RefreshScenario reached from the zoo management menu, CTA 0x29e8328.
+// The body is #10818 'Adjust the admission fee for your zoo today!', the rows are
+// #16843 'Current Ticket Price', #43551 'Ticket Sales Last Year' and #50857 'Zoo',
+// the price row label is #34534 'Price' and the answer is #32432 'OK'.
+//
+// shortcut: the card is menu-only natively -- nothing pushes it from an age-up --
+// so the port offers it as its own family the way 364's Division of Labor row is
+// offered, and the fee is drawn on this card's own stream instead of coming from a
+// typed number because a script cannot type. No journal line is written: the
+// native narrative for this card was not recovered.
+bool Sim::zooAdmissionYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooAdmissionAge >= 0 && h.age - h.zooAdmissionAge < 5) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.08)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooAdmissionAge = h.age;
+  // The native slider is unrecovered; the port moves the price by one to four
+  // dollars a year and keeps it where a ticket can still sell.
+  int step = 1 + int(zooMenuRng_.below(4));
+  if (zooMenuRng_.chance(0.5)) step = -step;
+  int price = h.zooTicket + step;
+  if (price < 1) price = 1;
+  if (price > 200) price = 200;
+  h.zooTicket = price;
+  out.table = "registry:ScenarioZooAdmissionFee";
+  out.title = "Admission Fee";  // #10850
+  out.body = "Adjust the admission fee for your zoo today!";  // #10818
+  out.body += "\n\nCurrent Ticket Price: " + money(h.zooTicket);
+  out.body += "\nTicket Sales Last Year: " + std::to_string(h.zooVisitorsLastYear);
+  out.body += "\nZoo: " + h.zooName;
+  out.options = {"OK"};
+  out.choice = "OK";
+  return true;
 }
 
 bool Sim::zooBankruptYear(Life& life, AgeUp& out, int forcedChoice) {

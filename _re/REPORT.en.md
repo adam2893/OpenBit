@@ -23511,6 +23511,44 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 373. The zoo's admission fee
+
+The zoo management menu has a gate-price card, `ScenarioZooAdmissionFee`, that
+nothing in the age-up pipeline ever pushes: it is opened from the zoo menu row
+`'Admission Fee'` and dies with the menu. The port has no menu, so the card
+is offered as its own family, the same ceiling 364's Division of Labor row
+already carries, and its fee is drawn on its own stream because a script cannot
+type a number into a slider.
+
+The card is small and its text is fully recovered. The body is `#10818
+"Adjust the admission fee for your zoo today!"` with three rows under it: `#16843
+"Current Ticket Price"`, `#43551 "Ticket Sales Last Year"` and `#50857 "Zoo"`.
+The price row's own label is `#34534 "Price"` and the only answer is `#32432
+"OK"`. Nothing else on the card is a literal the player reads.
+
+* The card fires only for a hero who owns a zoo, is 18 or older and is not in
+  prison, and never twice inside five years.
+* The fee moves by one to four dollars a year, up or down on a coin, and stays
+  inside a band where a ticket can still sell.
+* The journal is deliberately empty. The native narrative for this card was not
+  recovered, so none is invented.
+* `Ticket Sales Last Year` counts the visitors the gate's own arithmetic
+  implies (the park's animals and attractions times the gate multiplier the
+  ledger already uses), because the native counts per-ticket and the port's
+  ledger is the only place a visit count exists.
+
+shortcut: the native slider bounds and the card's show conditions inside the
+menu are unrecovered. The port draws a small yearly nudge and clamps it to
+$1..$200 rather than reproduce a slider range it cannot read. The card also
+writes no journal, as above, so a life log never mentions the new fee.
+
+`_re/tools/test_zoo_admission.py` drives twenty seeds: 29 cards, the recovered
+body on every one, the five-year cooldown, 11 seeds whose fee moved across two
+cards, 17 distinct prices, and a no-zoo control that never sees the card
+(`cards: 29 | seeds whose fee moved: 11 | prices seen: 17`).
+
+The full 156-test suite ran on the binary these notes describe (08018e84..., 156 PASS / 0 FAIL): _re/tools/test_zoo_admission.py drives twenty seeds, the recovered body on every card, the five-year cooldown and the no-zoo control, and nothing else moved.
+
 ## 372. The Noble Prize nomination
 
 The astronaut's publication has one card left that the port did not reach: the nomination itself. ScenarioAstronautNoblePrizePush is pushed from SimSpecialJobAstronaut::IncrementAge (0x2bbd928) with no eligibility method of its own, so the gate lives in the push loop: walk get_PublicationItems(), skip any publication whose latch (+0x28) is already set, require its peer review score (+0x18) to be 95 or better (cmp w8,#0x5f), roll GetRandomNumber(0,4) and proceed only on 0. The card is built with the publication (+0x170), the job (+0x178) and its narrative (+0x180), and the latch is set before the card is shown.

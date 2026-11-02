@@ -783,6 +783,7 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   // The zoo's own books and the inspector's warning (REPORT.en.md 321).
   void zooRunYear(Life& life);
   bool zooBankruptYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooAdmissionYear(Life& life, AgeUp& out, int forcedChoice);
   double casinoTaxRate(double taxable) const;
   void ensureCultFields(Life& life);
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);
@@ -1351,6 +1352,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng cultRng_;
   Rng dealerRng_;
   Rng mafiaRng_;
+  Rng zooMenuRng_;  // the zoo menu cards' own stream (REPORT.en.md 373)
   Rng zooRng_;
   Rng zooResignRng_;  // the keeper's resignation card's own stream (REPORT.en.md 353)
   Rng zooStaffRng_;   // the keeper's hire age and lifespan (REPORT.en.md 354)

@@ -618,6 +618,8 @@ struct Hero {
   int zooAttractions = 0;
   int zooEngagement = 50;        // 0-100, what the patrons make of it
   int zooTicket = 20;            // gate price
+  int zooAdmissionAge = -1;      // the year the admission fee card was offered (373)
+  int zooVisitorsLastYear = 0;   // the visitors the last ledger year's gate sold for (373)
   long long zooMoney = 0;        // the takings this year
   // The zoo's own books (REPORT.en.md 321): a pot the takings and the upkeep are
   // settled against, the run of losing years, and the age whose pass already ran.
