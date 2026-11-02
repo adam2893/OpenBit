@@ -1855,6 +1855,127 @@ bool Sim::casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// ScenarioCasinoAgeUpCelebrityDemand (REPORT.en.md 356) is the guest act's own
+// demand card: the artist-in-residence wants a perk provided, or refuses to
+// perform. Native .ctor 0x3568614, RefreshScenario 0x3567260,
+// ChoiceSelectedAtIndex 0x3567ac8, ScenarioIsEligibleForRandomPush 0x356845c,
+// push site SimCasino::IncrementAge bl @0x2aacac8 (the second rung of the ordered
+// cascade). Fields: _narrative +0x170, _casino +0x178, _celebrity +0x180,
+// _perk +0x188, _perkData +0x190, _perkString +0x198.
+//
+// Eligibility: the celebrity must be alive, the hero must own a casino, its
+// demand list must not already be satisfied, and a roll of GetRandomNumber(0,101)
+// has to land under 80 when the celebrity's craziness is above its fame and under
+// 50 otherwise; then hero age >= 18, not in prison, and
+// YearsSinceScenario #37039 'ScenarioCasinoAgeUpCelebrityDemand' > 1. shortcut: the
+// native roll happens before the age/prison/year tests and its exclusion list is
+// the celebrity's own _requiredIdPerks (+0x348); the port tests the plain gates
+// first and keeps the satisfied rows in casinoCelebPerks.
+//
+// A row of a16_casino-celebrity-demand-enc (loader DataHub::LoadCasinoCelebrityDemandSet
+// 0x26c7ae0, picker GetRandomCasinoCelebrityDemand 0x26c8094) is picked
+// automatically; the item goes through the game's bracket parser with
+// DoNotCapitalize, takes 'some ' #65874 when its Plural cell is set and an
+// indefinite article when its Uses Indefinite Article cell is set.
+bool Sim::casinoCelebDemandYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.ownsCasino || h.casinoCelebrity.empty() || h.casinoCelebMetAge < 0) return false;
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.casinoCelebDemandAge >= 0 && h.age - h.casinoCelebDemandAge <= 1) return false;
+
+  // The celeb's fame is not modelled, so it is drawn once from this card's own
+  // stream; craziness is the booking's value (REPORT.en.md 347).
+  if (h.casinoCelebFame < 0) h.casinoCelebFame = 20 + int(casinoDemandRng_.below(71));
+  const int threshold = h.casinoCelebCraziness > h.casinoCelebFame ? 80 : 50;
+  if (forcedChoice < 0 && int(casinoDemandRng_.below(101)) >= threshold) return false;
+
+  ensureTable("a16_casino-celebrity-demand-enc");
+  const Table& dt = tbl("a16_casino-celebrity-demand-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < dt.size(); ++r) {
+    const int idx = int(dt.num(r, "Index"));
+    bool done = false;
+    for (size_t k = 0; k < h.casinoCelebPerks.size(); ++k)
+      if (h.casinoCelebPerks[k] == idx) { done = true; break; }
+    if (!done) pool.push_back(r);
+  }
+  if (pool.empty()) return false;
+  const size_t drow = pool[casinoDemandRng_.below(uint32_t(pool.size()))];
+
+  std::string perk = resolve(trim(dt.at(drow, "Item")));
+  if (dt.flag(drow, "Plural")) perk = "some " + perk;
+  if (dt.flag(drow, "Uses Indefinite Article")) perk = withArticle(perk, true) + perk;
+
+  const bool female = h.casinoCelebFemale;
+  const std::string obj = female ? "her" : "him";        // PronounStringForType 2
+  const std::string sub = female ? "she" : "he";         // 0
+  const std::string poss = female ? "her" : "his";       // 1
+  const std::string cont = female ? "She's" : "He's";    // 9
+  const std::string possCap = female ? "Her" : "His";    // 6
+
+  // The status string SimCasinoCelebrity::RelationshipStatusString 0x2c277a0
+  // returns is the single literal #54414 'artist-in-residence'.
+  out.table = "registry:ScenarioCasinoAgeUpCelebrityDemand";
+  out.title = "Demand";  // #17489
+  out.body = std::string("Your casino's artist-in-residence, ") + h.casinoCelebrity +
+             ", is demanding you provide " + obj + " with a perk, or " + sub +
+             " won't perform.";
+  out.body += "\n\n" + cont + " demanding you have " + perk + " on-hand before each of " +
+              poss + " performances.";
+  // TableDictionary (+0xa0) and TableOrderArray (+0xa8): 'Additional Expenses'
+  // #10793 = GetYearlyExpenseForPerk (0x2c276d0 -> DataCountry local cost of
+  // row.Cost x 12; the country scaling is not modelled here) and 'Request'
+  // #35890 = the perk with CapitalizeAllMajorWords.
+  std::string rows;
+  auto row = [&rows](const std::string& label, const std::string& value) {
+    if (!rows.empty()) rows += "\n";
+    rows += label + ": " + value;
+  };
+  row("Additional Expenses", money(int(dt.num(drow, "Cost")) * 12));
+  row("Request", allMajorWords(perk));
+  out.body += "\n\n" + rows;
+  // BarGraphArray (+0xb8): [0] {pron6} ' Fame' #822 over Att_fame (+0xb4),
+  // [1] {pron6} ' Popularity' #922 over the celebrity's own popularity (+0x338).
+  out.body += "\n\n" + possCap + " Fame: " + std::to_string(h.casinoCelebFame);
+  out.body += "\n" + possCap + " Popularity: " + std::to_string(h.casinoCelebPop);
+  out.cta = "What will you do?";  // #146
+  out.options = {"Oblige " + obj, "Refuse"};
+
+  int pick = forcedChoice < 0 ? int(casinoDemandRng_.below(2)) : forcedChoice;
+  if (pick > 1) pick = 1;
+  out.choice = out.options[size_t(pick)];
+  h.casinoCelebDemandAge = h.age;
+
+  // Both lanes chain a plain Scenario whose title is the single-element list
+  // PickRandomFromStringArray over #27654 "It's a NEED, not a  want" (two spaces in
+  // the literal); the port's existing feedback card renders it (REPORT.en.md 352).
+  if (pick == 0) {
+    // SimCasinoCelebrity::AddPerk 0x2c275a0(celebrity, row.Index, perk) and
+    // ImpactPopularity 0x2c27830(celebrity, row['Celebrity Popularity Impact']).
+    h.casinoCelebPerks.push_back(int(dt.num(drow, "Index")));
+    h.casinoCelebPop += int(dt.num(drow, "Celebrity Popularity Impact"));
+    out.narrative = "I began providing " + perk + " for my casino's artist-in-residence, " +
+                    h.casinoCelebrity + ".";
+    h.casinoFeedbackTitle = "It's a NEED, not a  want";  // #27654
+    h.casinoFeedbackBody = "You began providing " + perk + " for " + h.casinoCelebrity +
+                           " before each of " + poss + " performances.";
+  } else {
+    // The refusal lane insults the hero with DataHub::GetRandomInsultForGender
+    // 0x2808580(hero.Gender) and writes no popularity change.
+    const std::string insult = insultTokenForGender(h.female);
+    const std::string msg = spyUpperFirst(sub) + " called you " + insult + ".";
+    out.narrative = "I refused to give in to my casino's artist-in-residence, " +
+                    h.casinoCelebrity + "'s, demand for " + perk + ".";
+    h.casinoFeedbackTitle = "It's a NEED, not a  want";  // #27654
+    h.casinoFeedbackBody = spyUpperFirst(sub) + " yelled at you for refusing " + poss +
+                           " request.\n\n" + msg + ".";
+  }
+  if (h.casinoCelebPop < 0) h.casinoCelebPop = 0;
+  if (h.casinoCelebPop > 100) h.casinoCelebPop = 100;
+  life.pendingCards.push_back(kPendingCasinoFeedback);
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");

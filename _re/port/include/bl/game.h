@@ -520,6 +520,10 @@ struct Hero {
   int casinoCelebResignAge = -1;
   int casinoCelebAge0 = -1;        // the guest act's age when it was booked (355)
   int casinoCelebLifespan = 0;     // the age the guest act dies at
+  int casinoCelebFame = -1;              // the guest act's own fame, drawn on its first demand (356)
+  int casinoCelebPop = 50;               // ... and its own popularity, moved by an obliged demand
+  int casinoCelebDemandAge = -1;         // the year the guest act last made a demand
+  std::vector<int> casinoCelebPerks;     // the demand rows already satisfied (356)
   int casinoPunterAge0 = -1;       // the regular's age when they started coming (355)
   int casinoPunterLifespan = 0;    // the age that regular dies at
   int casinoPunterMetAge = -1;     // the hero's age when the regular turned up

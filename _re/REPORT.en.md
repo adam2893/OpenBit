@@ -23536,6 +23536,116 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 356. The guest act's demand card
+
+`ScenarioCasinoAgeUpCelebrityDemand` is the artist-in-residence's own card: the
+celebrity wants a perk kept on hand before every performance, and obliging it
+satisfies the demand while refusing earns an insult. The native class is
+`.ctor 0x3568614`, `RefreshScenario 0x3567260`, `ChoiceSelectedAtIndex 0x3567ac8`, `ScenarioIsEligibleForRandomPush 0x356845c`, and it is pushed from
+`SimCasino::IncrementAge` at `0x2aacac8` -- the second rung of that method's
+**ordered if/else cascade**, not an independent roll: at most one casino age-up
+card is built in a year. Its fields are `_narrative +0x170`, `_casino +0x178`,
+`_celebrity +0x180`, `_perk +0x188`, `_perkData +0x190` and `_perkString +0x198`.
+
+### Eligibility and the row
+
+The chain runs casino -> celebrity -> `Alive (+0x18)` -> the celebrity's
+satisfied-demand count `< GetCasinoCelebrityDemandCount() 0x26c7ea0` -> a roll
+of `GetRandomNumber(0,101)` that has to land **under 80 when the celebrity's
+craziness (+0xc0) is above its fame (+0xb4) and under 50 otherwise** -> hero age
+>= 18 -> not in prison -> `YearsSinceScenario(#37039) > 1`. Note the roll comes
+before the age, prison and year tests.
+
+The row is not a table draw from the card: `GetRandomCasinoCelebrityDemand (list) 0x26c8094` reads `a16_casino-celebrity-demand-enc` and excludes every
+`Index` the celebrity already has in `_requiredIdPerks (+0x348)`. The item then
+goes through the game's bracket parser with `DoNotCapitalize=1`, takes `some `
+(#65874) when its `Plural` cell is set and an indefinite article when its `Uses Indefinite Article` cell is set -- in that order, both flags can be set.
+
+Body, wrapped end to end:
+
+```
+"Your casino's " + RelationshipStatusString + ", " + FullName +
+", is demanding you provide " + pron(2) + " with a perk, or " + pron(0) +
+" won't perform." + #46 + pron(9) + " demanding you have " + _perkString +
+" on-hand before each of " + pron(1) + " performances." + #6348
+```
+
+`SimCasinoCelebrity::RelationshipStatusString 0x2c277a0` is the single literal
+#54414 `artist-in-residence`. The title is #17489 `Demand` (#146 is the
+`What will you do?` cta).
+
+A `TableDictionary` (+0xa0) and a `TableOrderArray` (+0xa8) carry two rows:
+`Additional Expenses` #10793 is `GetYearlyExpenseForPerk 0x2c276d0`, the local
+cost of the row's `Cost (+0x24)` times twelve, and `Request` #35890 is the item
+with `CapitalizeAllMajorWords`. A `BarGraphArray` (+0xb8) carries `pron(6) + Fame` #822 over `Att_fame (+0xb4)` and `pron(6) + Popularity` #922 over the
+celebrity's own `_popularity (+0x338)`.
+
+Choices, stored order: `Concat(#32516 'Oblige ', pron(2))` and #35505
+`Refuse`, dispatched by `Contains('oblige')` else `Contains('refuse')`.
+
+Oblige calls `SimCasinoCelebrity::AddPerk 0x2c275a0(celebrity, row.Index, perk)` and `ImpactPopularity 0x2c27830(celebrity, row.Celebrity Popularity Impact)`. Refuse writes no state at all: `GetRandomInsultForGender 0x2808580 (hero.Gender)` gives an insult, `msg = pron(5) + #1591 ' called you ' + insult + #6312 '.'`, and the card's reaction is `pron(5) + #4172 ' yelled at you for refusing ' + pron(1) + #3227 ' request.' + #46 + msg + #6312 '.'` -- which
+**renders with a double period** because `msg` already ends in one. Neither
+answer touches money.
+
+Both answers then push a plain `Scenario` whose title comes from
+`PickRandomFromStringArray` over the single literal #27654
+`It's a NEED, not a  want` (the double space is in the literal). The oblige
+body is `'You began providing ' + perk + #1997 ' for ' + FullName + #1469 ' before each of ' + pron(1) + #3037 ' performances.'`; the refuse body is the
+same reaction sentence. The narrative on the card itself is
+`'I began providing ' + perk + ' for my casino's ' + status + ', ' + FullName + '. '` on the oblige lane and `"I refused to give in to my casino's " + status + ", " + FullName + "'s, demand for " + perk + "."` on the refuse lane.
+
+### What the port does
+
+`Sim::casinoCelebDemandYear` (`_re/port/src/fam/casino.cpp`, registered as
+`casino-celeb-demand` with one ticket and the `ownsCasino` gate) runs on its own
+`casinoDemandRng_` stream so no other family's sequence moves. The celebrity's
+fame is not modelled anywhere in the port, so it is drawn once (20-99) the
+first time the card is reachable and kept on the hero; the demand's own
+popularity starts at 50 and is clamped to 0-100.
+
+The satisfied demands are kept as a `std::vector<int> casinoCelebPerks` of
+table `Index` values, which is the port's stand-in for `_requiredIdPerks`.
+Everything else follows the native text: the `Plural` and `Uses Indefinite Article` prefixes in the native order, the two dictionary rows rendered as
+`label: value` body lines (the ledger's own precedent), the two bars rendered
+as `His Fame: 58` / `His Popularity: 50` body lines, and both follow-ups
+pushed as the existing `kPendingCasinoFeedback` card from REPORT 352.
+
+Ceilings, all marked `shortcut:` in the code:
+
+- the native roll happens before the age/prison/year gates, the port tests
+  those gates first and draws once when it is already reachable;
+- the exclusion list is the port's own vector, not the celebrity object's;
+- fame is a flat 20-99 draw rather than the native attribute;
+- the yearly expense prints `Cost x 12` without the country's local-cost
+  conversion (the port works in the printed currency throughout);
+- the two bar graphs are body lines, not graphs;
+- the follow-up is the shared feedback card rather than a fresh scenario
+  class, so it carries the standard one-button close.
+
+### A port defect fixed on the way
+
+`a16_company-name-structure-enc` has one row whose suffix cell is not a word
+but a token: `Corporate,<color> <suffix>,,<type>,`. `Sim::companyName`
+(`_re/port/src/sim.cpp`) had no `<type>` handler, so a company founded with the
+`Corporate` type printed `Global <type>` verbatim, and `Corporate` is a real
+type -- `a16_careers-enc:23` is `Accountant,Corporate,...`. The handler now
+draws from that token's own file, `a16_company-name-type-enc` (a single `Type`
+column), and the token never survives. No script key surfaces an employer name
+today, so this is a correctness fix that changes no card text.
+
+### Verified
+
+`_re/tools/test_casino_demand.py` walks twenty seeds with a seeded guest act
+and says `cards: 150 | lanes: {'Refuse': 70, 'Oblige him': 80} | follow-ups: 80 oblige / 68 refuse | fame: [21, 28, 31, 34]`. It checks the body against the
+table's own items (slash pools matched word for word, single tokens accepted
+as a wildcard because their text lives in the game's dictionaries), the
+pronoun agreement across all four substitutions, the `Request` row's
+capitalisation, both narratives, both follow-up bodies including the double
+period, that neither lane moves money, that two demands never land in adjacent
+years, and that a hero without a casino never sees the card.The full 144-test suite ran on the binary these notes describe (e223d1c6..., 144 PASS /
+0 FAIL): `_re/tools/test_casino_demand.py` exercises the card, both lanes and both
+follow-ups, and nothing else moved.
+
 ## 355. The casino's death cards
 
 Two age-up cards take a person off the casino's books for good. `ScenarioCasinoAgeUpGamblerDeath` (`.ctor` 0x35bdcb0, `RefreshScenario` 0x35bdcf0, `ChoiceSelectedAtIndex` 0x35be0e8, pushed at `SimCasino::IncrementAge` 0x2aac974) covers a regular on the floor; `ScenarioCasinoCelebrityDeath` (`.ctor` 0x3593210, `RefreshScenario` 0x3593250, `ChoiceSelectedAtIndex` 0x359360c, pushed at 0x2aace2c) covers the guest act in residence. Neither has a `ScenarioIsEligibleForRandomPush`; both are decided inline in `SimCasino::IncrementAge`.

@@ -668,6 +668,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
   casinoAmenityRng_(seed ^ 0x2e9f0b1c7a4d6351ULL ^ 0x6d2b79f5c8e14a37ULL),
   casinoResignRng_(seed ^ 0x1b2c3d4e5f60718aULL ^ 0x93a5c6e1f042b7d9ULL),
   casinoDeathRng_(seed ^ 0x5f1c8e37a942d06bULL ^ 0x8b3d90f2c15ea476ULL),
+  casinoDemandRng_(seed ^ 0x2b7e4c19d5a0638fULL ^ 0x74c93e10b8d5af26ULL),
       carRng_(seed ^ 0x9e3779b97f4a7c15ULL ^ 0x2545f4914f6cdd1dULL ^ 0x6a09e667f3bcc909ULL),
       cultRng_(seed ^ 0xa24baed4963ee407ULL),
       dealerRng_(seed ^ 0x9ddfea08eb382d69ULL),
@@ -3261,6 +3262,15 @@ std::string Sim::companyName(const std::string& companyType, const Life& life) {
   }
   if (fmt.find("<suffix>") != std::string::npos) fmt = replaceAll(fmt, "<suffix>", pickList(st.at(row, "Suffix")));
   if (fmt.find("<prefix>") != std::string::npos) fmt = replaceAll(fmt, "<prefix>", pickList(st.at(row, "Prefix")));
+  // One structure row ('Corporate') names its suffix '<type>' rather than a word,
+  // and that pool is a file of its own: a16_company-name-type-enc's single 'Type'
+  // column (REPORT.en.md 356). Without this the name keeps the literal token.
+  if (fmt.find("<type>") != std::string::npos) {
+    ensureTable("a16_company-name-type-enc");
+    const Table& types = tbl("a16_company-name-type-enc");
+    if (types.size())
+      fmt = replaceAll(fmt, "<type>", trim(types.at(rng_.below(uint32_t(types.size())), "Type")));
+  }
   if (fmt.find("<city>") != std::string::npos) fmt = replaceAll(fmt, "<city>", life.hero.city);
   if (fmt.find("<random-first-name>") != std::string::npos)
     fmt = replaceAll(fmt, "<random-first-name>", drawFirstName(rng_.chance(0.5)));
@@ -4610,6 +4620,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-gambler-death"},
         {&Sim::casinoCelebDeathYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-celeb-death"},
+        {&Sim::casinoCelebDemandYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-celeb-demand"},
         {&Sim::casinoCelebComplimentYear,
          [](const Life& l) { return l.hero.ownsCasino && !l.hero.casinoCelebrity.empty(); }, 1,
          "casino-celeb-compliment"},
