@@ -4718,6 +4718,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         !h.b2sPromDone && backToSchoolYear(life, out, forcedChoice)) {
       return true;
     }
+    // The agency's own hand on the hero's shoulder: the promotion card and, at the
+    // rank's Too Old Age, the forced-retirement card. Both are built by the
+    // astronaut's age-up chain in the game, not by the roulette (REPORT.en.md 367).
+    if (forcedChoice < 0 && astroCareerYear(life, out, forcedChoice)) return true;
     for (size_t k = 0; k < wn; ++k) {
       const size_t idx = size_t(wheel[(dispatchCursor_ + k) % wn]);
       const Family& f = kFamilies[idx];
@@ -14861,28 +14865,15 @@ bool Sim::astroYear(Life& life, AgeUp& out, int forcedChoice) {
 
   if (title.empty()) { astroLive_ = live0; return false; }
 
-  // Promotion needs the rank's own gates, from a16_astronaut-career-rank.
+  // The year's pay, from the rank's own Min/Max Salary window. Promotion and
+  // retirement are cards of their own now (astroCareerYear, REPORT.en.md 367), so
+  // this block only pays.
   if (ensureTable("a16_astronaut-career-rank-enc")) {
     const Table& t = tbl("a16_astronaut-career-rank-enc");
     const size_t row = std::min<size_t>(size_t(h.astroRank) - 1, t.size() - 1);
     const long long lo = astroMoney(t.at(row, "Min Salary"));
     const long long hi = astroMoney(t.at(row, "Max Salary"));
     take += hi > lo ? lo + static_cast<long long>(astroRng_.below(unsigned(hi - lo + 1))) : lo;
-    if (h.astroRank < int(t.size()) && h.astroMissions >= int(t.num(row, "Missions to Promotion")) &&
-        h.astroYearsInAgency >= int(t.num(row, "Min Years in Agency")) &&
-        h.smarts >= int(t.num(row, "Minimum Intelligence")) &&
-        h.discipline >= int(t.num(row, "Minimum Discipline")) &&
-        h.health >= int(t.num(row, "Minimum Health"))) {
-      h.astroRank += 1;
-      h.astroMissions = 0;
-      h.astroYearsInAgency = 0;
-      const size_t next = size_t(h.astroRank) - 1;
-      h.astroRankTitle = trim(t.at(next, "Rank"));
-      h.astroSalary = astroMoney(t.at(next, "Min Salary"));
-      add("I was promoted to " + h.astroRankTitle + " of " + h.astroAgency + ".");
-      bump(h.astroRespect, 5);
-      happy += 3;
-    }
   }
 
   out.table = tableRef.empty() ? "a16_astronaut-dumb-scenarios-enc" : tableRef;
@@ -14901,6 +14892,90 @@ bool Sim::astroYear(Life& life, AgeUp& out, int forcedChoice) {
   astroLive_ = live0;
   return true;
 }
+
+// ===== The astronaut's own two cards (REPORT.en.md 367) =====
+
+// Both are built by SimSpecialJobAstronaut's age-up chain rather than by the
+// roulette -- CheckForPromotion builds ScenarioAstronautRankUp, and the agency builds
+// ScenarioAstronautAgencyRetire once the rank's own Too Old Age is reached -- so
+// they run ahead of the wheel and draw nothing but a title.
+bool Sim::astroCareerYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.astronaut || h.inPrison) return false;
+  if (!ensureTable("a16_astronaut-career-rank-enc")) return false;
+  const Table& t = tbl("a16_astronaut-career-rank-enc");
+  if (!t.size()) return false;
+  const size_t row = std::min<size_t>(size_t(h.astroRank) - 1, t.size() - 1);
+  out.cta = "What will you do?";
+  out.options = {"OK"};   // both native cards are dismiss-only (no ChoiceSelectedAtIndex)
+  out.choice = "OK";
+
+  // The rank's own Too Old Age: 65 for the two junior ranks, 60 above them. The
+  // agency forces the hero out, with the card's nine-title pool.
+  const int tooOld = int(t.num(row, "Too Old Age"));
+  if (tooOld > 0 && h.age >= tooOld) {
+    static const char* kTitles[9] = {
+        "Gone for good", "Now I have...free time?", "Clocked out", "Unshackled",
+        "Chasing a different bag", "Thanks for the memories", "Nothing for me here",
+        "On to bigger & better things", "Spreading my wings"};
+    out.table = "registry:ScenarioAstronautAgencyRetire";
+    out.title = kTitles[int(astroRng_.below(9))];
+    out.body = "You have been forced to retire from your job at " + h.astroAgency +
+               " due to old age.";  // #48675 + #1861
+    out.narrative = "I retired from " + h.astroAgency +
+                    " after being told that I am too old to keep doing this type of work.";
+    // SimSpecialJobAstronaut::ResignAstronautJobWithReason(2) ends the job.
+    h.astronaut = false;
+    h.astroAgency.clear();
+    h.astroMission.clear();
+    h.astroDestination.clear();
+    return true;
+  }
+
+  // Promotion gates: the rank row's own columns (a16_astronaut-career-rank).
+  if (h.astroRank >= int(t.size())) return false;
+  if (h.astroMissions < int(t.num(row, "Missions to Promotion"))) return false;
+  if (h.astroYearsInAgency < int(t.num(row, "Min Years in Agency"))) return false;
+  if (h.smarts < int(t.num(row, "Minimum Intelligence"))) return false;
+  if (h.discipline < int(t.num(row, "Minimum Discipline"))) return false;
+  if (h.health < int(t.num(row, "Minimum Health"))) return false;
+
+  const long long oldSalary = h.astroSalary;
+  h.astroRank += 1;
+  h.astroMissions = 0;
+  h.astroYearsInAgency = 0;
+  const size_t next = size_t(h.astroRank) - 1;
+  h.astroRankTitle = trim(t.at(next, "Rank"));
+  h.astroSalary = astroMoney(t.at(next, "Min Salary"));
+  char pct[32];
+  const double growth = oldSalary > 0
+                          ? 100.0 * double(h.astroSalary - oldSalary) / double(oldSalary)
+                          : 0.0;
+  std::snprintf(pct, sizeof pct, "%.1f", growth > 0.0 ? growth : 0.0);
+
+  std::string rows;
+  rows += "New Rank: " + spyUpperFirst(h.astroRankTitle);      // #31357
+  // #31297 New Clearance has no recovered source, so the row is left out (ceiling).
+  rows += "\n";
+  rows += "New Salary: " + money(h.astroSalary) + " (+" + pct + "%)";  // #31365 + #69435
+
+  out.table = "registry:ScenarioAstronautRankUp";
+  out.title = "Rank up";   // #35208, inferred from the method's own cell block
+  out.body = "You have been promoted to the rank of " + h.astroRankTitle + " in " +
+             h.astroAgency + "." + "\n\n" + rows;  // #48738 + #2363 + #6312
+  out.narrative = spyUpperFirst(h.astroAgency) + " promoted me to " + h.astroRankTitle +
+                  " with a salary of " + money(h.astroSalary) + ".";  // #3105 + #4087
+  // CheckForPromotion's own effects; ImpactReputation rides the agency respect score
+  // (2 -> +2, 3 -> +3, 4 -> +5 by the rank reached), which is the port's stand-in.
+  h.discipline = std::min(100, h.discipline + 2);
+  h.karma = std::min(100, h.karma + 1);
+  h.astroRespect = std::min(100, h.astroRespect + (h.astroRank >= 4 ? 5 : (h.astroRank == 3 ? 3 : 2)));
+  return true;
+}
+
 
 
 

@@ -68,6 +68,7 @@ struct ScriptSpec {
   bool dealer = false;
   bool hustler = false;
   bool astronaut = false;
+  int astro_missions = 0;  // test hook: the missions already flown (REPORT.en.md 367)
   // The car and the races (REPORT.en.md 75).
   bool racing = false;
   // A car of the hero's own, without the races (REPORT.en.md 323). The repair card only

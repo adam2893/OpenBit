@@ -23536,6 +23536,108 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 367. The astronaut's two career cards
+
+The astronaut subsystem's yearly tick is `SimSpecialJobAstronaut::IncrementAge` (0x2bbd928 in
+the dump's address space, virtual, so it has no direct `bl` callers) and it chains
+`SimProbe::IncrementAge`, `SimSpaceMission::IncrementAge`, `CheckForPromotion` 0x2bbe998 and
+`CheckForDumbScenarios` 0x2bbe4ac. Two of the cards it can build are the promotion and the
+agency's forced retirement; the rest of the astronaut pack's cards are menu work and stay out
+of scope.
+
+### The promotion card
+
+`ScenarioAstronautRankUp` — `.ctor` 0x3465cb8 (`SimSpecialJobAstronaut`,
+`DataAstronautCareerRank`), `RefreshScenario` 0x3465cf0, `DismissSelected` 0x3466298, pushed
+from `CheckForPromotion` (its `bl` at dump 0x73f3058c68). `RefreshScenario` promotes before it
+renders: `rank = _special[+0x178].Rank[+0x44]`, then `SetRank(rank+1)`, then
+`_rankData = _special[+0x178]`. The same call applies `ImpactDiscipline(+2)`,
+`ImpactKarma(+1)` and `ImpactReputation` by the rank reached (+2 at the second rank, +3 at the
+third, +5 at the fourth). The card is dismiss-only — it has a `DismissSelected` and no
+`ChoiceSelectedAtIndex`.
+
+- Title #35208 'Rank up'. The index is read out of the method's own literal cell block; the
+  exact store line for the title was not captured, so this is the one inferred literal in the
+  section.
+- Body: #48738 'You have been promoted to the rank of ' + `GetNameForRank()` + #2363 ' in ' +
+  `GetAgencyName()` + #6312 '.'.
+- Narrative: `CapitalizeFirstLetterOfSentenceString(GetAgencyName())` + #3105 ' promoted me to '
+  + `GetNameForRank()` + #4087 ' with a salary of ' +
+  `CurrencyStringForAmount(_rankData.Salary[+0x1c])` + #6312 '.'.
+- Table rows: #31357 'New Rank' = `CapitalizeString(GetNameForRank())`; #31297 'New Clearance' =
+  a second string out of the same record whose source is UNRECOVERED; #31365 'New Salary' =
+  #69435 '{0} (+{1})' over `CurrencyStringForAmount(newSalary)` and
+  `PercentStringForValueWithFractionDigits(100*(newSalary-oldSalary)/oldSalary, 1)`.
+
+### The forced retirement card
+
+`ScenarioAstronautAgencyRetire` — `.ctor(bool _forcedRetirement)` 0x73f38f78d0,
+`RefreshScenario` 0x73f38f7904. (The sweep recorded the retirement pair in the 0x73f3 dump
+range and the promotion pair in the 0x34 range, so the two address sets are not comparable
+offsets into the same space.)
+
+Gate: the hero's age against `_rankData.RetirementAge[+0x40]`, which is the rank table's own
+`Too Old Age` column — 65 for Cadet and Captain, 60 for Major and General. The card then
+tail-calls `ResignAstronautJobWithReason(2, null)` and `CancelAllAstronautScenarios`. Its
+non-forced branch collapses any open lists and writes a different narrative (#25001 + agency +
+#1082).
+
+- Title: a uniform pick from #22048 'Gone for good', #32251 'Now I have...free time?', #15759
+  'Clocked out', #45043 'Unshackled', #15445 'Chasing a different bag', #41267 'Thanks for the
+  memories', #32194 'Nothing for me here', #32757 'On to bigger & better things', #39744
+  'Spreading my wings'.
+- Body: #48675 'You have been forced to retire from your job at ' + `GetAgencyName()` + #1861
+  ' due to old age.'
+- Narrative: #25001 'I retired from ' + agency + #1082 ' after being told that I am too old to
+  keep doing this type of work.'
+
+### The port
+
+- `Sim::astroCareerYear` (`_re/port/src/sim.cpp`) runs ahead of the wheel in `dispatchYear`:
+  `if (forcedChoice < 0 && astroCareerYear(life, out, forcedChoice)) return true;`. It is a
+  priority step rather than a family because neither card is a roulette entry in the game: both
+  come out of the astronaut tick, and a wheel ticket would have put the promotion behind the
+  whole family list.
+- Retirement is tested first, against the current rank row's `Too Old Age`: the card gets the
+  nine-title pool, the body and the narrative, and the job ends (`h.astronaut = false`, with the
+  agency, mission and destination cleared). It answers a single "OK" because the native pair is
+  dismiss-only.
+- Otherwise the rank row's own gates (missions to promotion, years in agency, minimum
+  intelligence, discipline and health) promote the hero: rank + 1, missions and years reset, the
+  rank title and pay from the next row, and the three effects.
+- The move removed the promotion text line `astroYear` used to append, so that function now only
+  pays the year's salary window.
+- Test hook: the script spec gained `astro_missions` (an integer) so a harness life can start with
+  missions already flown. Without it the rank gate is reachable only by luck, and sixteen seeded
+  lives produced nine promotions.
+
+### Ceilings
+
+- The 'New Clearance' row is not rendered: the record field that feeds it is UNRECOVERED.
+- `ImpactReputation` is applied to the agency respect score, not to a reputation stat, which the
+  port does not carry (REPORT.en.md 325 substitutes the same way for the supervisor card).
+- The card's non-forced branch is not modelled: the port only retires an astronaut whose age
+  reaches the rank's gate.
+- The promotion card's title is the one inferred literal in this section.
+- A life still cannot join the agency from inside the game (there is no hiring card), so only a
+  scripted hero reaches either card.
+- Neither card owns an RNG stream: the retirement title comes from `astroRng_` and the promotion
+  draws nothing.
+
+### Verified
+
+`_re/tools/test_astro_career.py` walks sixteen seeded lives: nine promotion cards and nine
+retirement cards. Each promotion body is parsed down to the rank, the agency, the row's
+capitalisation, the money and the one-decimal percentage, and its narrative must name the same
+rank and salary; the ladder must climb without repeats and stop at the table's last row. A
+retirement must carry one of the nine titles plus the exact body and log line, arrive at or after
+the youngest `Too Old Age`, and be the life's last astronaut card. A hero who is not an astronaut
+gets neither card.
+
+The full 151-test suite ran on the binary these notes describe (f71dec06..., 151
+PASS / 0 FAIL): `_re/tools/test_astro_career.py` walks the promotion ladder and the
+forced retirement, and nothing else moved.
+
 ## 366. The gift shop's shelves and its popularity
 
 The shop a park keeps is not a counter of receipts: every line carries its own

@@ -826,6 +826,7 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool outdoorYear(Life& life, AgeUp& out, int forcedChoice);
   bool hustlerYear(Life& life, AgeUp& out, int forcedChoice);
   bool astroYear(Life& life, AgeUp& out, int forcedChoice);
+  bool astroCareerYear(Life& life, AgeUp& out, int forcedChoice);
   std::string outdoorToken(const std::string& key);
   std::string hustlerToken(const std::string& key);
   std::string astroToken(const std::string& key);

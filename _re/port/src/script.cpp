@@ -699,6 +699,14 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else if (p + 5 <= json.size() && json.compare(p, 5, "false") == 0) spec.astronaut = false;
     else return fail("astronaut is not a boolean");
   }
+  p = findValue(json, "astro_missions");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '	')) ++p;
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("astro_missions is not a number");
+    if (v < 0 || v > 100) return fail("astro_missions must be between 0 and 100");
+    spec.astro_missions = int(v);
+  }
   p = findValue(json, "cult");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -1068,7 +1076,10 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.pet) sim.makePet(life);
   if (spec.outdoor) sim.makeOutdoor(life);
   if (spec.hustler) sim.makeHustler(life);
-  if (spec.astronaut) sim.makeAstronaut(life);
+  if (spec.astronaut) {
+    sim.makeAstronaut(life);
+    if (spec.astro_missions > 0) life.hero.astroMissions = spec.astro_missions;
+  }
   if (spec.producer) sim.makeTrade(life, 1);
   if (spec.soundcloud) sim.makeTrade(life, 2);
   if (spec.scout) sim.makeTrade(life, 3);
