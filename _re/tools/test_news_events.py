@@ -33,7 +33,10 @@ for seed in range(1, 31):
         cards += 1
         body = event["body"]
         assert "<" not in body and ">" not in body, (seed, body)
-        assert body[0].isupper() or body[0].isdigit(), (seed, body)
+        # A story may open on a quoted word: the capital check reads the first
+        # letter, not the first byte.
+        lead = body.lstrip(chr(34) + chr(39))
+        assert lead and (lead[0].isupper() or lead[0].isdigit()), (seed, body)
         assert event.get("title"), (seed, "no title")
         assert not event.get("residue"), (seed, event.get("residue"))
         bodies.add(body)

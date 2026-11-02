@@ -4214,6 +4214,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingCommercial) return fameCommercialYear(life, out, forcedChoice);
     if (kind == kPendingZooShopUnits) return zooShopUnitsYear(life, out, forcedChoice);
     if (kind == kPendingZooShopPrice) return zooShopPriceYear(life, out, forcedChoice);
+    if (kind == kPendingZooShopProfile) return zooShopProfileYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -4582,6 +4583,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-merch-order"},
         {&Sim::zooShopStockYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-shop-stock"},
+        {&Sim::zooShopProfileYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-shop-profile"},
         {&Sim::zooCleanlinessYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-cleanliness"},
         {&Sim::zooCustomerServiceYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -10625,19 +10628,7 @@ void Sim::zooGiftShopTick(Life& life) {
   long long takings = 0;
   for (size_t i = 0; i < h.giftShop.size(); ++i) {
     Hero::GiftShopItem& it = h.giftShop[i];
-    double pop = 0.0;
-    // The featured animal only counts while it is still in the park; the native
-    // compares the very object the item holds, and the port matches its name.
-    for (size_t k = 0; k < h.zooHerd.size(); ++k) {
-      if (lower(h.zooHerd[k].name) != lower(it.animal)) continue;
-      pop += 0.7 * zooAnimalPopularity(h.zooHerd[k]);
-      break;
-    }
-    if (it.maxSale > it.minSale) {
-      const double span = double(it.maxSale - it.minSale);
-      pop += 10.0 * (1.0 - (double(it.sellPrice - it.minSale) / span));
-    }
-    pop += 4.0 * double(it.popScore);
+    const double pop = zooGiftShopPopularity(h, it);
     uint32_t lo = 0;
     uint32_t hi = 11;
     if (pop > 80.0) { lo = 80; hi = 101; }
@@ -10938,6 +10929,107 @@ bool Sim::zooFeedbackYear(Life& life, AgeUp& out, int forcedChoice) {
   h.zooFeedbackBody.clear();
   return true;
 }
+
+const Hero::ZooHerdAnimal* Sim::zooHerdFind(const Hero& h, const std::string& name) {
+  for (size_t k = 0; k < h.zooHerd.size(); ++k)
+    if (lower(h.zooHerd[k].name) == lower(name)) return &h.zooHerd[k];
+  return nullptr;
+}
+
+// ScenarioZooGiftShopItem::GetPopularity (REPORT.en.md 369): the featured animal's own
+// appeal while it is still in the park, the price against the catalogue's band, and the
+// line's own appeal score. The yearly trade bands this figure, the product card shows it.
+double Sim::zooGiftShopPopularity(const Hero& h, const Hero::GiftShopItem& it) {
+  double pop = 0.0;
+  if (const Hero::ZooHerdAnimal* a = zooHerdFind(h, it.animal)) pop += 0.7 * zooAnimalPopularity(*a);
+  if (it.maxSale > it.minSale)
+    pop += 10.0 * (1.0 - double(it.sellPrice - it.minSale) / double(it.maxSale - it.minSale));
+  pop += 4.0 * double(it.popScore);
+  return pop;
+}
+
+// ScenarioZooGiftShopProductProfile (REPORT.en.md 369). The native opens this from the
+// shop's shelf menu; the port gives it a wheel ticket, and its three answers hand off to
+// the two cards the stocking chain (REPORT.en.md 368) already renders.
+bool Sim::zooShopProfileYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.giftShop.empty()) return false;
+  // The native has no cooldown: the card is only ever as frequent as the menu it lives in.
+  // A wheel ticket has to ration itself, so two quiet years follow a card (shortcut).
+  if (h.zooShopProfileAge >= 0 && h.age - h.zooShopProfileAge <= 2) return false;
+  std::string allMajorWords(const std::string& text);   // defined in fam/casino.cpp
+  auto grouped = [](long long v) {
+    std::string d = std::to_string(v < 0 ? -v : v);
+    for (size_t i = d.size(); i > 3; i -= 3) d.insert(i - 3, ",");
+    return (v < 0 ? "-" : "") + d;
+  };
+  // A line whose featured animal has left the park is what the card exists to warn about,
+  // so it wins the pick; otherwise any shelf will do.
+  size_t idx = 0;
+  for (size_t i = 0; i < h.giftShop.size(); ++i)
+    if (!zooHerdFind(h, h.giftShop[i].animal)) { idx = i; break; }
+  const Hero::GiftShopItem it = h.giftShop[idx];   // copied: the retire answer erases it
+  const bool featured = zooHerdFind(h, it.animal) != NULL;
+  h.zooShopProfileIdx = idx;
+  h.zooShopProfileAge = h.age;
+  h.zooShopStaged = it;   // both hand-offs read the staged shelf
+  std::string rowsTxt;
+  auto row = [&rowsTxt](const std::string& label, const std::string& value) {
+    if (!rowsTxt.empty()) rowsTxt += "\n";
+    rowsTxt += label + ": " + value;
+  };
+  row("Merch Type", spyUpperFirst(it.product));                          // #29998
+  row("Featured Animal", spyUpperFirst(it.animal + " the " + it.breed)); // #19992
+  row("Sale Price", money(it.sellPrice));                               // #36646
+  row("Last Year's Revenue", money(it.revenue));                        // #28503
+  row("Units Sold Last Year", grouped(it.unitsSold));                   // #44891
+  row("Units Remaining", grouped(it.units));                            // #44888
+  out.table = "registry:ScenarioZooGiftShopProductProfile";
+  out.title = allMajorWords(it.animal + " " + it.product);
+  std::string body;
+  // The body is only written while the animal has gone (REPORT.en.md 369).
+  if (!featured)
+    body = std::string("This product's sales have diminished because ") + it.animal + " the " +
+           it.breed + " is no longer in your zoo.";   // #43422 + #3532 + #2545
+  out.body = body.empty() ? rowsTxt : body + "\n\n" + rowsTxt;
+  out.body += "\nPopularity: " + std::to_string(int(zooGiftShopPopularity(h, it)));   // #34316
+  out.cta = "What will you do?";
+  out.options.clear();
+  out.options.push_back("Adjust the price");                 // #10822
+  if (featured) out.options.push_back("Order more units");    // #33004
+  out.options.push_back("Retire this product");              // #36112
+  const int n = int(out.options.size());
+  const int pick = forcedChoice < 0 ? int(zooShopRng_.below(uint32_t(n)))
+                                    : (forcedChoice < n ? forcedChoice : n - 1);
+  out.choice = out.options[size_t(pick)];
+  const std::string pickLower = lower(out.choice);
+  if (pickLower.find("adjust") != std::string::npos) {
+    life.pendingCards.push_back(kPendingZooShopPrice);
+    return true;
+  }
+  if (pickLower.find("order") != std::string::npos) {
+    // At the shelf's capacity the native writes a line, not a card (REPORT.en.md 369).
+    if (it.units >= 500) {
+      out.body = std::string("You can't order more ") + it.plural +
+                 " because your gift shop is already at capacity for this product.\n\n" +
+                 "Current Unit Count: " + grouped(it.units);   // #48092 + #1460 + #16844
+      out.options = {"OK"};
+      out.choice = "OK";
+      return true;
+    }
+    life.pendingCards.push_back(kPendingZooShopUnits);
+    return true;
+  }
+  // Retire: the shelf goes. The native's journal tail literal is unrecovered, so only the
+  // removal is reproduced (ceiling, REPORT.en.md 369).
+  if (h.zooShopProfileIdx < h.giftShop.size())
+    h.giftShop.erase(h.giftShop.begin() + std::ptrdiff_t(h.zooShopProfileIdx));
+  return true;
+}
+
 
 void Sim::zooRunYear(Life& life) {
   Hero& h = life.hero;

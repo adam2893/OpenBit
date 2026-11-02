@@ -23536,6 +23536,78 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 369. The gift shop's product card
+
+The shelf's own card is `ScenarioZooGiftShopProductProfile` (`.ctor 0x29f3af0`, `RefreshScenario 0x29f3b1c`,
+`ChoiceSelectedAtIndex 0x29f41d8`). The native opens it from the shop's shelf menu; the port gives it a
+wheel family (`zoo-shop-profile`, one ticket, gated on the park) because it has no menu.
+
+Title: `CapitalizeAllMajorWordsInString(animal.Name + ' ' + item.Product)` (literal `#648 ' '`) — the
+shelf is named after the animal in front of it, so "Alice Poster".
+
+The body is written **only while the featured animal has left the park**: `#43422 "This product's sales`
+`have diminished because "` + animal name + `#3532 ' the '` + `item.Breed` + `#2545 ' is no longer in your zoo.'`. The
+check is `SimZoo::GetAnimalExistsInZoo 0x2b6647c` on the item's own `+0x38` animal object, and the
+branch that writes the sentence is skipped when it answers true.
+
+The table carries six rows in this order, all from the class's own dictionary build:
+`'Merch Type'` (`#29998`, `Capitalize(Product)`), `'Featured Animal'` (`#19992`,
+`Capitalize(animal + ' the ' + breed)`), `'Sale Price'` (`#36646`, the line's `SellPrice +0x28`),
+`"Last Year's Revenue"` (`#28503`, `LastYearsRevenue +0x48`), `'Units Sold Last Year'` (`#44891`,
+`UnitsSoldLastYear +0x40`) and `'Units Remaining'` (`#44888`, `UnitsAvailable +0x20`). One bar graph holds
+`'Popularity'` (`#34316`) over `ScenarioZooGiftShopItem::GetPopularity 0x2b6c31c`.
+
+Three answers, and the label list changes with the park:
+
+- `#10822 'Adjust the price'`, always, hands off to `ScenarioZooGiftShopProductAdjustPrice`
+  (`.ctor 0x29f2074`) — the price card the stocking chain (REPORT.en.md 368) already renders.
+- `#33004 'Order more units'`, only when the animal is still in the park, hands off to
+  `ScenarioZooGiftShopProductOrderUnits` (`.ctor 0x29f2d08`) — the unit card of the same chain. At
+  `UnitsAvailable >= MaxUnits` (`+0x20` against `+0x50`, 500) the native writes no card at all, just the
+  line `#48092 "You can't order more "` + `ItemData.Plural` + `#1460 ' because your gift shop is already at`
+  `capacity for this product.'` with a `'Current Unit Count'` (`#16844`) row.
+- `#36112 'Retire this product'`, always last, calls `SimZoo::RemoveGiftShopItem 0x2b5df30` and stores
+  `#11929` as the choice's confirmation text: "Are you sure you want to retire this product?
+  You will lose any remaining units you've purchased."
+
+Dispatch is `ToLower` then `Contains`: `'adjust'` (`#53724`), `'order'` (`#63341`),
+`'retire'` (`#64602`).
+
+### The port
+
+`Sim::zooShopProfileYear` sits beside the rest of the shop in `src/sim.cpp`; the two answers
+it hands off to push the pending kinds the stocking chain already registers
+(`kPendingZooShopPrice`, `kPendingZooShopUnits`) and stage the shelf in `h.zooShopStaged` the way
+the chain's own cards expect. The popularity figure the card shows is now one
+function, `Sim::zooGiftShopPopularity`, shared with the yearly trade, so the number the player
+reads is the number that bands the sales. `Sim::zooHerdFind` answers the "is the animal still
+in the park" question for both.
+
+Ceilings:
+
+- No shop menu: the card is a wheel family with a two-year cooldown, where the native
+  offers it whenever the shelf menu opens.
+- The retire answer takes effect at once; the native asks the confirmation question
+  first (`#11929`) and only then removes the shelf.
+- The retire lane writes no journal line: the native's sentence starts `#25007 'I retired the '` and
+  its tail literal is unrecovered, so only the removal is reproduced.
+- The bar graph is printed as a `Popularity: N` body line, the port's convention for bars.
+- The capacity line is coded but was never reached: it needs 500 units on one shelf.
+- The gone-animal body was never reached either: the port's herd keeps its animals for
+  life, so the warning branch has no occasion to fire.
+
+Verified: `_re/tools/test_zoo_shop_profile.py` walks six lives of eighty years and reads 108 product
+cards (adjust 39, order 29, retire 40), checking the title's shape, the six rows in
+order with their currencies and counts, the popularity line, the three labels, the
+two-year gap between cards and that no card moves a stat bar; it then forces each of
+the three answers on a real card and checks the price card, the unit card and the
+shelf's disappearance, and closes on a life without a park.
+
+
+The full 153-test suite ran on the binary these notes describe (46cca75a..., 152 PASS /
+1 FAIL). The failure is test-side and was fixed here without a code change: a news story
+may open on a quoted word, so that test reads the first letter past any leading quote and
+apostrophe instead of the first byte. It was re-run green.
 ## 368. The gift shop's stocking chain
 
 The native park opens its gift shop empty and stocks it through a menu the port has no screen

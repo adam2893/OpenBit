@@ -681,6 +681,8 @@ struct Hero {
   // the unit card, which hands the units and the animal to the price card.
   GiftShopItem zooShopStaged;
   int zooShopStockAge = -1;       // the year the add-product card last fired (368)
+  size_t zooShopProfileIdx = 0;   // the shelf the product card opened on (369)
+  int zooShopProfileAge = -1;     // the year the product card last fired (369)
 
   // The rental property (REPORT.en.md 66): a house the hero lets out, the
   // tenant in it, and the squatter who may replace them.
