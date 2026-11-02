@@ -23536,6 +23536,40 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 355. The casino's death cards
+
+Two age-up cards take a person off the casino's books for good. `ScenarioCasinoAgeUpGamblerDeath` (`.ctor` 0x35bdcb0, `RefreshScenario` 0x35bdcf0, `ChoiceSelectedAtIndex` 0x35be0e8, pushed at `SimCasino::IncrementAge` 0x2aac974) covers a regular on the floor; `ScenarioCasinoCelebrityDeath` (`.ctor` 0x3593210, `RefreshScenario` 0x3593250, `ChoiceSelectedAtIndex` 0x359360c, pushed at 0x2aace2c) covers the guest act in residence. Neither has a `ScenarioIsEligibleForRandomPush`; both are decided inline in `SimCasino::IncrementAge`.
+
+### When somebody dies
+
+The gambler loop walks `SimCasino+0xc8` `GamblersList`. A gambler already flagged dead (`+0x18`) only gets `SimPerson::IncrementYearsSinceDeath` 0x2c47234. A friend (`IsFriend` 0x2c399d8) or the hero's current lover (`IsCurrentLover` 0x2c46f70) never dies. Everyone else has their script refreshed with `SimThirdPersonScript::UpdateStatesForAge` 0x2c5045c(script, gambler.Age), and the death age is then read back out of `[script+0x18][+0x60]`; while `gambler.Age` is under it nothing happens, and once it is over it the person is stamped dead. The celebrity path is the same check applied to the single celebrity slot at `SimCasino+0xe0`, except that one is only the friend and current-lover exemption, and a celebrity already dead just empties the slot.
+
+Either death is worth a `deathString` of `#57525 'died of old age'` when the person was older than 69 and `#57524 'died of natural causes'` otherwise, and both literals carry their own verb.
+
+### The card
+
+Title `#17288 'Death'`, colour scheme 1, focus person the one who died. The body is `String::Format` over `#50270 "Your casino's {0}, {1}, passed away at the age of {2}.\n\n{3} {4}."` with `{0}` the person's own `RelationshipStatusString` (`SimCasinoGambler::RelationshipStatusString` 0x2c2812c, `SimCasinoCelebrity::RelationshipStatusString` 0x2c277a0), `{1}` the full name, `{2}` the boxed age, `{3}` the capitalised pronoun and `{4}` the `deathString`. Both cards offer the same two answers, `#12413 'Attend '` + possessive pronoun + `#2153 ' funeral'` and `#39181 'Skip it'`, dispatched by `String::Contains` on the lowered label ('attend' 0x4e10fdc, 'skip'). Attending is worth `SimPerson::ImpactKarma` 0x2c4abfc(+1); skipping is worth nothing. The gambler's journal is `#1771 ' died.'` appended to their name. The celebrity's journal is the narrative the constructor was handed, `pronoun + #1753 ' died ' + deathString + #6312 '.'`.
+
+`RefreshScenario` removes the person from the casino (`SimCasino::RemoveGambler` 0x2ab0004 for a regular, `SimCasino::RemoveCelebrity` 0x2ab1654 for the act) and stamps their script's death age.
+
+An old guest act's journal therefore reads `He died died of old age.` — the pronoun-and-verb sentence in the constructor is composed around a `deathString` that already starts with "died". That duplication is upstream and is kept here, the same way the zoo keeper's 354 pair is kept; the body, which spells the verb once, reads naturally.
+
+### The port
+
+`Sim::casinoGamblerDeathYear` and `Sim::casinoCelebDeathYear` (both in `_re/port/src/fam/casino.cpp`) are two families at one wheel ticket each, gated on `hero.ownsCasino`, `age >= 18` and not being in prison, named `casino-gambler-death` and `casino-celeb-death`. The draw of a funeral answer and the tier word (`Sim::casinoTierWord`) come off a new `casinoDeathRng_` stream so the other casino families keep their sequences. The card's `out.choice` is set from the drawn answer, and the karma point is added only for the funeral.
+
+Ceilings: the port keeps a count of regulars rather than a persistent list, so a death draws one regular lazily — a name, a gender, a starting age of 18..62 and a lifespan of 55..85 — and removes that one from the count; a new regular can appear later. The guest act's age is likewise drawn against the year the act was booked, using the `casinoCelebMetAge` stamp 352 introduced. The friend and current-lover exemptions are not modelled, because the port's regulars and guest acts are never either. A regular who has already died is not tracked with a years-since-death counter. The tier word is drawn from the same stream as the card rather than read off the person, matching the shortcut 352 already records.
+
+### Verified
+
+- `_re/tools/test_casino_death.py` pins each family in turn, twenty-five seeds apiece: `gambler cards: 20 | celeb cards: 14 | lanes: {'gambler': 3, 'celeb': 2}`.
+- Every body matches `Your casino's <tier>, <name>, passed away at the age of <age>.` followed by the cause; no card names a person younger than 55, the cause is "died of old age" exactly when the age is over 69, the attending answer's pronoun agrees with the body's, the karma point lands only for the funeral and not for the skip, and the gambler's journal reads `<name> died.` while the celebrity's reads the doubled sentence.
+- Both answers show up for both families, and a hero who owns no casino sees neither card even with the family pinned.
+
+The full 143-test suite ran on the binary these notes describe (4883ea69..., 143 PASS /
+0 FAIL): `_re/tools/test_casino_death.py` exercises both cards and both
+answers, and nothing else moved.
+
 ## 354. The zoo keeper's death
 
 The zoo's IncrementAge chain has one card the park does not choose: the keeper dies.

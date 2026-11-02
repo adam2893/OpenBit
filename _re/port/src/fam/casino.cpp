@@ -1759,6 +1759,102 @@ bool Sim::casinoFeedbackYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::casinoGamblerDeathYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoGamblers <= 0) return false;
+  // (shortcut) The native walks a persistent gambler list and asks each gambler's
+  // script for a death age (SimThirdPersonScript[+0x18][+0x60]). The port keeps a
+  // count of regulars and one lazily drawn regular instead, the way 354 does for
+  // the zoo keeper; nothing is drawn until the card can actually fire.
+  if (h.casinoPunterAge0 < 0) {
+    h.casinoPunterFemale = casinoDeathRng_.chance(0.5);
+    h.casinoPunterName = drawFirstName(h.casinoPunterFemale) + " " + drawSurname();
+    h.casinoPunterAge0 = 18 + int(casinoDeathRng_.below(45));
+    h.casinoPunterLifespan = 55 + int(casinoDeathRng_.below(31));
+    h.casinoPunterMetAge = h.age;
+  }
+  const int punterAge = h.casinoPunterAge0 + (h.age - h.casinoPunterMetAge);
+  if (punterAge < h.casinoPunterLifespan) return false;
+  const std::string tier = casinoTierWord(h, casinoDeathRng_);
+  const bool female = h.casinoPunterFemale;
+  const std::string she = female ? "She" : "He";
+  const std::string poss = female ? "her" : "his";
+  const std::string name = h.casinoPunterName;
+  // #57524 / #57525 carry their own verb, and #50270 reads "{3} {4}.", so both
+  // causes read naturally here (unlike the zoo keeper's 354 pair).
+  const std::string deathString =
+      punterAge > 69 ? "died of old age" : "died of natural causes";
+  out.table = "registry:ScenarioCasinoAgeUpGamblerDeath";
+  out.title = "Death";  // #17288
+  out.body = "Your casino's " + tier + ", " + name + ", passed away at the age of " +
+             std::to_string(punterAge) + ".\n\n" + she + " " + deathString + ".";
+  out.cta = "What will you do?";
+  out.options = {"Attend " + poss + " funeral", "Skip it"};  // #12413 + #2153, #39181
+  int pick = forcedChoice;
+  if (pick < 0) pick = int(casinoDeathRng_.below(2));
+  if (pick > 1) pick = 1;
+  out.choice = out.options[size_t(pick)];
+  std::string narrative = name + " died.";  // #1771
+  if (pick == 0) out.karma += 1;
+  out.narrative = narrative;
+  h.casinoGamblers -= 1;
+  if (h.casinoGamblers < 0) h.casinoGamblers = 0;
+  h.casinoPunterAge0 = -1;
+  h.casinoPunterLifespan = 0;
+  h.casinoPunterMetAge = -1;
+  h.casinoPunterName.clear();
+  return true;
+}
+
+bool Sim::casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  life_ = &life;
+  if (!h.ownsCasino || h.casinoCelebrity.empty() || h.age < 18 || h.inPrison) return false;
+  if (h.casinoCelebMetAge < 0) return false;
+  // (shortcut) Same substitution as the gambler card above: the native reads the
+  // act's death age off its own script, the port draws a lifespan on first reach.
+  if (h.casinoCelebAge0 < 0) {
+    h.casinoCelebAge0 = 18 + int(casinoDeathRng_.below(45));
+    h.casinoCelebLifespan = 55 + int(casinoDeathRng_.below(31));
+  }
+  const int celebAge = h.casinoCelebAge0 + (h.age - h.casinoCelebMetAge);
+  if (celebAge < h.casinoCelebLifespan) return false;
+  const std::string tier = casinoTierWord(h, casinoDeathRng_);
+  const bool female = h.casinoCelebFemale;
+  const std::string she = female ? "She" : "He";
+  const std::string poss = female ? "her" : "his";
+  const std::string name = h.casinoCelebrity;
+  const std::string deathString =
+      celebAge > 69 ? "died of old age" : "died of natural causes";
+  out.table = "registry:ScenarioCasinoCelebrityDeath";
+  out.title = "Death";  // #17288
+  out.body = "Your casino's " + tier + ", " + name + ", passed away at the age of " +
+             std::to_string(celebAge) + ".\n\n" + she + " " + deathString + ".";
+  out.cta = "What will you do?";
+  out.options = {"Attend " + poss + " funeral", "Skip it"};
+  int pick = forcedChoice;
+  if (pick < 0) pick = int(casinoDeathRng_.below(2));
+  if (pick > 1) pick = 1;
+  out.choice = out.options[size_t(pick)];
+  // The celebrity's journal is the ctor narrative: pronoun, " died ", cause, ".".
+  std::string narrative = she + " died " + deathString + ".";
+  if (pick == 0) out.karma += 1;
+  out.narrative = narrative;
+  h.casinoCelebrity.clear();
+  h.casinoCelebrityGenre.clear();
+  h.casinoCelebrityGenreTheme.clear();
+  h.casinoCelebCraziness = 0;
+  h.casinoCelebRel = 60;
+  h.casinoCelebMetAge = -1;
+  h.casinoCelebAge0 = -1;
+  h.casinoCelebLifespan = 0;
+  return true;
+}
+
 std::string Sim::casinoGenreThemeOf(const std::string& genre) {
   if (genre.empty() || !ensureTable("a16_casino-casino-singer-genre-enc")) return std::string();
   const Table& t = tbl("a16_casino-casino-singer-genre-enc");

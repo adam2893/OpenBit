@@ -517,7 +517,14 @@ struct Hero {
   bool casinoCelebFemale = false;        // ... and which pronoun it takes
   int casinoCelebMetAge = -1;            // the hero's age when the guest act was booked
   int casinoActMetAge = -1;              // ... and when the act in residence was booked
-  int casinoCelebResignAge = -1;         // the year the guest act last handed in notice
+  int casinoCelebResignAge = -1;
+  int casinoCelebAge0 = -1;        // the guest act's age when it was booked (355)
+  int casinoCelebLifespan = 0;     // the age the guest act dies at
+  int casinoPunterAge0 = -1;       // the regular's age when they started coming (355)
+  int casinoPunterLifespan = 0;    // the age that regular dies at
+  int casinoPunterMetAge = -1;     // the hero's age when the regular turned up
+  std::string casinoPunterName;    // the regular the death card is about
+  bool casinoPunterFemale = false;         // the year the guest act last handed in notice
   int casinoActResignAge = -1;           // ... and the act in residence
   std::string casinoFeedbackTitle;       // the follow-up a resignation's answer chains (352)
   std::string casinoFeedbackBody;
