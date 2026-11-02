@@ -1620,6 +1620,83 @@ bool Sim::casinoExpandYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The game-room menu's rename and clear-out rows, ScenarioCasinoGameRoomName and
+// ScenarioCasinoGameRoomRemove. Their bodies were recovered (#21733 and #15708); the
+// rows reuse the labels the casino's other room cards already carry, and the remove
+// card appends the recovered confirmation sentence (#11790) rather than inventing a
+// second screen (REPORT.en.md 384).
+bool Sim::casinoRoomNameYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoRooms.empty()) return false;
+  if (h.casinoRoomNameAge >= 0 && h.age - h.casinoRoomNameAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_casino-random-game-room-name-enc")) return false;
+  const Table& t = tbl("a16_casino-random-game-room-name-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r)
+    if (!trim(t.at(r, "Name")).empty()) pool.push_back(r);
+  if (pool.empty()) return false;
+  Hero::CasinoRoom& room = h.casinoRooms[casinoMenuRng_.below(uint32_t(h.casinoRooms.size()))];
+  std::string name;
+  for (int attempt = 0; attempt < 8 && pool.size() > 1; ++attempt) {
+    const size_t row = pool[casinoMenuRng_.below(uint32_t(pool.size()))];
+    name = trim(t.at(row, "Name"));
+    if (lower(name) != lower(room.name)) break;
+  }
+  if (name.empty()) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string before = room.name;
+  room.name = name;
+  h.casinoRoomNameAge = h.age;
+  out.table = "registry:ScenarioCasinoGameRoomName";
+  out.title = "Game Room";  // #20997
+  out.body = "Give your game room a new name today!";  // #21733
+  out.body += "\n\nGame: " + room.game;              // #20994
+  out.body += "\nCurrent Name: " + (before.empty() ? room.game : before);  // #16820
+  out.body += "\nName: " + name;                      // #31091
+  out.options = {"OK"};                               // #32432
+  out.choice = "OK";
+  return true;
+}
+
+bool Sim::casinoRoomRemoveYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoRooms.empty()) return false;
+  if (h.casinoRoomRemoveAge >= 0 && h.age - h.casinoRoomRemoveAge < 4) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  const size_t at = casinoMenuRng_.below(uint32_t(h.casinoRooms.size()));
+  const std::string game = h.casinoRooms[at].game;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.casinoRooms.erase(h.casinoRooms.begin() + std::ptrdiff_t(at));
+  for (size_t i = 0; i < h.casinoGames.size(); ++i) {
+    if (lower(h.casinoGames[i]) != lower(game)) continue;
+    h.casinoGames.erase(h.casinoGames.begin() + std::ptrdiff_t(i));
+    break;
+  }
+  h.casinoRoomRemoveAge = h.age;
+  out.table = "registry:ScenarioCasinoGameRoomRemove";
+  out.title = "Game Room";  // #20997
+  out.body = "Clear out a game room today!";  // #15708
+  out.body += "\n\nGame: " + game;                       // #20994
+  out.body += "\nGame Rooms Installed: " + std::to_string(h.casinoRooms.size());  // #21000
+  out.body += "\n\nAre you sure you want to clear out this game room?";          // #11790
+  out.options = {"Remove Game Room"};                     // #35662
+  out.choice = "Remove Game Room";
+  return true;
+}
+
 bool Sim::casinoInstallGameYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

@@ -23511,6 +23511,37 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 384. The game room's rename and clear-out rows
+
+Two more game-room menu rows had their bodies recovered:
+`#21733 'Give your game room a new name today!'` for
+`ScenarioCasinoGameRoomName` and `#15708 'Clear out a game room today!'` for
+`ScenarioCasinoGameRoomRemove`. The rows themselves were not, so both cards print
+their recovered body with the labels the casino's other cards carry -- `#20997
+'Game Room'` as the title, `#20994 'Game'`, `#16820 'Current Name'` and `#31091
+'Name'` for the rename card, `#21000 'Game Rooms Installed'` for the clear-out
+card -- and `#32432 'OK'` / `#35662 'Remove Game Room'` as the answers. Neither
+writes a journal.
+
+The rename draws a name from `a16_casino-random-game-room-name-enc` (the table has
+a `Game Room Type` column, but the port's rooms are already typed by their game,
+so only the `Name` column is used) and never re-uses the room's current name. The
+clear-out card picks a room, drops it and its entry from the room-name list the
+older cards read, and appends the recovered confirmation sentence `#11790 'Are you
+ sure you want to clear out this game room?'` rather than opening a second screen.
+
+`shortcut:` clearing out a room refunds nothing -- no refund flow was recovered --
+and both cards choose their own year, because the port has no menus to open them
+from.
+
+`_re/tools/test_casino_room_menu.py` runs each card in its own only-mode sweep of
+forty casino owners and demands the recovered body with a real game name, a
+different new name on the rename card, the recovered confirmation sentence on the
+clear-out card and the matching answer. It prints `name cards: 11 | remove cards:
+10`.
+
+The full 167-test suite ran on the binary these notes describe (18a1d110206e6ecdcc26..., 167 PASS / 0 FAIL): _re/tools/test_casino_room_menu.py drives both cards and nothing else moved.
+
 ## 383. The two install cards
 
 The full 166-test suite ran on the binary these notes describe (a0fa50f7de8a3c3dad90..., 166 PASS / 0 FAIL): _re/tools/test_install_cards.py exercises both cards and nothing else moved.

@@ -471,6 +471,7 @@ struct Hero {
   // cards talk about; casinoRooms is the state behind it.
   struct CasinoRoom {
     std::string game;
+    std::string name;   // the room's own name, from the menu's rename card (384)
     std::string unitString;
     int units = 0;
     int baseCapacity = 0;
@@ -544,6 +545,8 @@ struct Hero {
   int casinoRenameAge = -1;             // the year the rename card fired (376)
   int casinoInvestAge = -1;  // the invest card's cooldown (REPORT.en.md 382)
   int casinoInstallGameAge = -1;  // the install card's cooldown (383)
+  int casinoRoomNameAge = -1;    // the room rename card's cooldown (384)
+  int casinoRoomRemoveAge = -1;  // the room remove card's cooldown (384)
   int zooAttractionAge = -1;      // the attraction install card's cooldown (383)
   int casinoExpandAge = -1;             // the year the expand card fired (378)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
