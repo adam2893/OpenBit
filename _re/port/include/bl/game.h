@@ -541,6 +541,7 @@ struct Hero {
   int casinoAmenityComplimentAge = -1;   // ... and the year one drew a compliment    // ... and the year it drew a compliment
   int casinoWithdrawAge = -1;            // the year the withdraw card fired (374)
   int casinoThemeAge = -1;               // the year the theme card fired (375)
+  int casinoRenameAge = -1;             // the year the rename card fired (376)
   std::vector<int> casinoGamblerStyles;  // one style per punter, 1..5
   std::vector<long long> casinoAmenityMonthly;   // the same amenities' Monthly Expenses
   std::vector<std::string> casinoAmenityTheme;   // and the theme each was built for
@@ -621,6 +622,7 @@ struct Hero {
   int zooEngagement = 50;        // 0-100, what the patrons make of it
   int zooTicket = 20;            // gate price
   int zooAdmissionAge = -1;      // the year the admission fee card was offered (373)
+  int zooRenameAge = -1;          // the year the zoo rename card fired (376)
   int zooVisitorsLastYear = 0;   // the visitors the last ledger year's gate sold for (373)
   long long zooMoney = 0;        // the takings this year
   // The zoo's own books (REPORT.en.md 321): a pot the takings and the upkeep are

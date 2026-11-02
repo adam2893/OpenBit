@@ -4584,6 +4584,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::zooTheftYear, [](const Life& l) { return l.hero.ownsZoo; }, 1, "zoo-theft"},
         {&Sim::zooAdmissionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-admission"},
+        {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-rename"},
         {&Sim::zooEmployeeResignYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-employee-resign"},
         {&Sim::zooEmployeeDeathYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -4649,6 +4651,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "casino-withdraw"},
         {&Sim::casinoThemeYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-theme"},
+        {&Sim::casinoRenameYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
+         "casino-rename"},
         {&Sim::casinoCelebResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
          "casino-celeb-resign"},
         {&Sim::casinoActResignYear, [](const Life& l) { return l.hero.ownsCasino; }, 1,
@@ -11216,6 +11220,50 @@ void Sim::zooRunYear(Life& life) {
 // offered, and the fee is drawn on this card's own stream instead of coming from a
 // typed number because a script cannot type. No journal line is written: the
 // native narrative for this card was not recovered.
+// ScenarioZooName (REPORT.en.md 376): the zoo menu's rename card, CTA 0x29ec1d4.
+// Recovered literals: body #17331 'Decide on a name for your new zoo.', rows
+// #16820 'Current Name' and #31091 'Name', the answer #32432 'OK' and the card's
+// own title #50857 'Zoo'.
+//
+// shortcut: the card is menu-only natively, so it is offered here as its own
+// family the way 373-375 are. The native control is a text field, which a script
+// cannot type into, so the port draws a fresh name from the same pool the zoo was
+// created from and never draws the name it already has. No journal is written:
+// the narrative was not recovered.
+bool Sim::zooRenameYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooRenameAge >= 0 && h.age - h.zooRenameAge < 5) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_zoo-random-zoo-names-enc")) return false;
+  const Table& t = tbl("a16_zoo-random-zoo-names-enc");
+  if (t.size() < 2) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string before = h.zooName;
+  std::string picked;
+  for (size_t i = 0; i < t.size(); ++i) {
+    const size_t r = size_t(zooMenuRng_.below(uint32_t(t.size())));
+    const std::string cand = resolve(trim(t.at(r, "Name")));
+    if (!cand.empty() && cand != before) { picked = cand; break; }
+  }
+  if (picked.empty()) return false;
+  h.zooRenameAge = h.age;
+  h.zooName = picked;
+  out.table = "registry:ScenarioZooName";
+  out.title = "Zoo";  // #50857
+  out.body = "Decide on a name for your new zoo.";  // #17331
+  out.body += "\n\nCurrent Name: " + before;        // #16820
+  out.body += "\nName: " + h.zooName;               // #31091
+  out.options = {"OK"};
+  out.choice = "OK";
+  return true;
+}
+
 bool Sim::zooAdmissionYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;

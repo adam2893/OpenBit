@@ -23511,6 +23511,43 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 376. The zoo's and the casino's rename cards
+
+Two more menu cards come with the same shape: `ScenarioZooName` (CTA
+`0x29ec1d4`) and `ScenarioCasinoName` (CTA `0x35cbbac`). Neither is pushed by an
+age-up; both are offered here as their own guarded families, and both print the
+name they replace next to the name they install, so the port can check the
+hand-off without a menu.
+
+Recovered text: the zoo body is `#17331 "Decide on a name for your new zoo."` and
+the casino body is `#21725 "Give your casino a new name today!"`; both cards carry
+the rows `#16820 "Current Name"` and `#31091 "Name"` and the single answer `#32432
+"OK"`. The zoo card's title literal is `#50857 "Zoo"` and the casino's is again
+`#15240 "Casino"`.
+
+* Each card fires only for a hero who owns that venue, is 18 or older, is not in
+  prison, and never twice inside five years.
+* The new name is drawn from the same pool that created the venue
+  (`a16_zoo-random-zoo-names-enc` and `a16_casino-random-hero-casino-name-enc`)
+  and is redrawn until it differs from the old one, so a card never installs the
+  name the venue already has.
+* The next card's `Current Name` is the previous card's `Name`, which is how the
+  test proves the rename landed rather than just that a card appeared.
+* No journal is written: neither narrative was recovered.
+
+shortcut: the native control is a text field in both cards, and a script cannot
+type into it, so the port draws a name instead of accepting one. The zoo draw runs
+on the menu stream 373 introduced and the casino draw on 374's, because neither
+card belongs to the yearly wheel calibration.
+
+`_re/tools/test_rename_cards.py` drives twenty seeds: 30 zoo cards (12 of them
+chained behind another card), 7 casino cards, the recovered body and rows on every
+card, the five-year cooldown, no card ever printing the same name twice, both
+chains and both no-ownership controls
+(`zoo cards: 30 (chains 12) | casino cards: 7 | ok`).
+
+The full 159-test suite ran on the binary these notes describe (c08086a81cce9c897e0d..., 158 PASS / 1 FAIL). The failure is test-side: _re/tools/test_crashout.py wanted two crashout cards in sixty famous lives and found one, because the two rename families widened the wheel again; the test now searches a hundred and twenty lives and passes (three cards), with no code change.
+
 ## 375. The casino's theme card
 
 The casino menu's theme row opens `ScenarioCasinoTheme` (CTA `0x35cc4c4`), the

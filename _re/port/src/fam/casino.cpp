@@ -1555,6 +1555,47 @@ bool Sim::casinoActComplimentYear(Life& life, AgeUp& out, int forcedChoice) {
 // acts and amenities are judged against the house theme, so changing it moves
 // which of those cards can fire for a complaint and which for a compliment.
 // No journal is written: the narrative was not recovered.
+// ScenarioCasinoName (REPORT.en.md 376): the casino menu's rename card, CTA
+// 0x35cbbac. Recovered literals: body #21725 'Give your casino a new name today!',
+// rows #16820 'Current Name' and #31091 'Name', the answer #32432 'OK' and the
+// card's own title #15240 'Casino'.
+//
+// shortcut: same as the zoo's card -- menu-only natively, a text field the port
+// cannot type into, so a fresh name is drawn from the casino's creation pool and
+// never the name it already has. No journal is written.
+bool Sim::casinoRenameYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsCasino || h.age < 18 || h.inPrison) return false;
+  if (h.casinoRenameAge >= 0 && h.age - h.casinoRenameAge < 5) return false;
+  if (forcedChoice < 0 && !casinoMenuRng_.chance(0.05)) return false;
+  if (!ensureTable("a16_casino-random-hero-casino-name-enc")) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string before = h.casinoName;
+  std::string picked;
+  for (int i = 0; i < 8; ++i) {
+    const std::string cand = resolve(pickSnippet("a16_casino-random-hero-casino-name-enc",
+                                                "Name", "Commonness Score", "", "", "",
+                                                casinoMenuRng_));
+    if (!cand.empty() && cand != before) { picked = cand; break; }
+  }
+  if (picked.empty()) return false;
+  h.casinoRenameAge = h.age;
+  h.casinoName = picked;
+  out.table = "registry:ScenarioCasinoName";
+  out.title = "Casino";  // #15240
+  out.body = "Give your casino a new name today!";  // #21725
+  out.body += "\n\nCurrent Name: " + before;        // #16820
+  out.body += "\nName: " + h.casinoName;            // #31091
+  out.options = {"OK"};
+  out.choice = "OK";
+  return true;
+}
+
 bool Sim::casinoThemeYear(Life& life, AgeUp& out, int forcedChoice) {
   (void)forcedChoice;
   Hero& h = life.hero;
