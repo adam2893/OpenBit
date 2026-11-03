@@ -1254,6 +1254,10 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     // call keeps the override from leaking into later years.
     if (i < int(spec.push.size())) {
       const PushSpec& ps = spec.push[size_t(i)];
+      if ((!ps.scenario.empty() || !ps.table.empty()) && !life.pendingCards.empty()) {
+        if (error) *error = "push[" + std::to_string(i) + "]: replay conflicts with a pending card";
+        return false;
+      }
       const bool accepted = !ps.scenario.empty()
           ? sim.forceScenarioClass(ps.scenario, ps.choice)
           : sim.forceScenario(ps.table, ps.row);

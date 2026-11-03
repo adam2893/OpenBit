@@ -106,4 +106,31 @@ with tempfile.TemporaryDirectory() as directory:
         p=subprocess.run([str(BIN),'--script','/dev/stdin'],cwd=ROOT,
                          input=json.dumps(spec),capture_output=True,text=True)
         assert p.returncode==0 and json.loads(p.stdout)['events'],(entry,p.stdout,p.stderr)
-print('ok: rejected replay choices fail closed; valid/malformed boundaries, lifecycle abort and producer auto-scenes preserved')
+# An explicit replay must not succeed with an unrelated queued follow-up card.
+for request in (dict(scenario='ScenarioOfferFood',choice=0),
+                dict(table='a16_adoption-scenarios-enc',row=1)):
+    spec=dict(seed=7,country='United States',gender='male',ages=1,
+              push=[dict(scenario='ScenarioWitchDoctor',choice=0),request])
+    p=subprocess.run([str(BIN),'--script','/dev/stdin'],cwd=ROOT,
+                     input=json.dumps(spec),capture_output=True,text=True)
+    assert p.returncode!=0 and not p.stdout.strip() and 'push[1]' in p.stderr and 'pending' in p.stderr, (request,p.stdout,p.stderr)
+# Explicit null and absent override both preserve the native-backed pending chain.
+spec=dict(seed=7,country='United States',gender='male',ages=1,
+          push=[dict(scenario='ScenarioWitchDoctor',choice=0)])
+absent=subprocess.run([str(BIN),'--script','/dev/stdin'],cwd=ROOT,
+                      input=json.dumps(spec),capture_output=True,text=True)
+spec['push'].append(None)
+cleared=subprocess.run([str(BIN),'--script','/dev/stdin'],cwd=ROOT,
+                       input=json.dumps(spec),capture_output=True,text=True)
+assert absent.returncode==cleared.returncode==0 and absent.stdout==cleared.stdout
+pending_events=json.loads(absent.stdout)['events']
+assert len(pending_events)>=2
+assert pending_events[1]['table']=='registry:ScenarioInsufficientFinances',pending_events
+assert pending_events[1]['age']==pending_events[0]['age']
+spec['ages']=2
+spec['push'].append(dict(scenario='ScenarioOfferFood',choice=0))
+resumed=subprocess.run([str(BIN),'--script','/dev/stdin'],cwd=ROOT,
+                       input=json.dumps(spec),capture_output=True,text=True)
+assert resumed.returncode==0,resumed.stderr
+assert json.loads(resumed.stdout)['events'][-1]['table']=='ScenarioOfferFood'
+print('ok: replay rejection, choice boundaries, auto-scene producer, pending conflicts and replay after queue drain')

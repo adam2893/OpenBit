@@ -33780,3 +33780,36 @@ and unrelated script grammar weaknesses remain separate. Pending-card replay
 interference, complete accepted-output provenance, native capture/state/RNG
 proof and immutable execution remain open canonical requirements.
 
+## 407. Scripted replay cannot be silently intercepted by a pending card
+
+The P0.2 pending-card fixture reproduced a successful but unrelated output:
+a first WitchDoctor visit queued its native-backed shortage popup, then an
+explicit ScenarioOfferFood request was accepted while the pending dispatcher
+emitted registry:ScenarioInsufficientFinances instead. The script returned
+successful JSON although the requested replay never ran.
+
+runScript now rejects a nonempty class/table request when a card is already
+pending, before setting an override. The indexed pending-conflict error returns
+without successful trace output. Native-backed queue priority is unchanged;
+null/absent overrides still drain the queued scene normally. The regression
+covers both class and table requests, checks byte-identical null/absent drain,
+asserts the exact shortage popup and same-age delivery, then successfully runs
+a new forced replay after the queue empties. No queue is erased or bypassed.
+
+Build exit0. Expanded replay-rejection, nineteen-lane lifecycle and Witch
+Doctor checks exit0. Independent scoped review found no blocking regression:
+GodMode/TimeMachine dispatch remains before this guard, CLI failure emits no
+stdout, and no new resources require cleanup. Full durable suite407:
+189 PASS /0FAIL,planned=completed=189,exit0,interrupted=false,
+changed_inputs=[],snapshot_error=null,integrity_scope=endpoint-sha256.
+Logs/manifests: /tmp/qdir/suite407-run.log and /tmp/qdir/suite407/.
+Before/after binary SHA-256:
+d7aaa0b91d6702fff9d2e96f5fb9bb0a4f55f2f02066f5bc2b66e017adbb1fc5.
+No source/header/tool/content/binary edits occurred during full acceptance.
+
+shortcut: row_recover still indexes recovered requests by age while runScript
+indexes cards, so same-age follow-ups can reveal alignment gaps. They now fail
+closed, not certify unrelated output. Complete producer/card alignment, native
+queue/provenance contracts, reused-Sim transaction rollback and full native
+state/RNG evidence are not closed by this scripted conflict guard.
+
