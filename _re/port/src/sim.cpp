@@ -3963,9 +3963,13 @@ struct TimeSave {
   Sim sim;
 };
 
-bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice) {
+bool Sim::ageUp(Life& life, AgeUp& out, int forcedChoice, const TableChoice* tableChoice) {
+  out.tableChoiceSupported = false;
+  if (tableChoice && (forcedChoice >= 0 || tableChoice->index < 0 ||
+                     tableChoice->table.empty() || tableChoice->row_id.empty())) return false;
   const int before = life.hero.age;
-  const bool ok = ageUpYear(life, out, forcedChoice);
+  const bool ok = ageUpYear(life, out, forcedChoice, tableChoice);
+  if (tableChoice && (!ok || !out.tableChoiceSupported)) return false;
   if (ok && timeMachineOn_ && life.hero.age != before) saveTimeMachine(life);
   return ok;
 }
@@ -4147,7 +4151,7 @@ bool Sim::godModeEdit(Life& life, AgeUp& out, const GodModeEdit& e, std::string*
   return true;
 }
 
-bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
+bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice* tableChoice) {
   hero_ = &life.hero;
   life_ = &life;
   rndCache_.clear(); rbLast_.clear();  // one scenario per year: the '<rbN>' cache starts empty
@@ -4285,7 +4289,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   conceptionTick(life);
   const std::vector<std::string> fillerNarration = fillerNarrationLines(life);
   AgeUp ev;
-  const bool got = dispatchYear(life, ev, forcedChoice);
+  const bool got = dispatchYearWithTableChoice(life, ev, forcedChoice, tableChoice);
   ev.ailmentCost = diseaseHealthCost;
   // The family lines go in front of whatever the card wrote, which is the order
   // the game logs them in.
@@ -4342,6 +4346,10 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
 }
 
 bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
+  return dispatchYearWithTableChoice(life, out, forcedChoice, nullptr);
+}
+
+bool Sim::dispatchYearWithTableChoice(Life& life, AgeUp& out, int forcedChoice, const TableChoice* tableChoice) {
   // A funeral owed from the family lines takes the year ahead of any family (REPORT 249):
   // the trace writes the death and the funeral in the same year, and a family reached by
   // the rotation would push the card a year late.
@@ -4852,8 +4860,12 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
     std::string table;
     size_t row = 0;
     if (pickDumbScenario(life, &table, &row)) {
+      if (tableChoice && (tableChoice->table != table ||
+                          tableChoice->row_id != std::to_string(row + 1))) return false;
       const Table& t = tbl(table.c_str());
-      return renderRow(t, row, life, out, forcedChoice);
+      const bool got = renderRow(t, row, life, out, forcedChoice, tableChoice);
+      out.tableChoiceSupported = got && !out.options.empty();
+      return got;
     }
   }
 
@@ -4879,7 +4891,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   return false;
 }
 
-bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice) {
+bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice,
+                    const TableChoice* tableChoice) {
   hero_ = &life.hero;
   life_ = &life;
   (void)life;  // the row's text is already gender-gated by scenarioEligible()
@@ -5013,9 +5026,13 @@ bool Sim::renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, in
     for (int n : choices) out.options.push_back(resolve(t.at(row, "Choice " + std::to_string(n))));
     // A scripted run can name the branch it wants; anything else is the seeded
     // pick, so both paths stay reproducible from the seed.
-    const int n = forcedChoice >= 0 && size_t(forcedChoice) < choices.size()
-                      ? choices[size_t(forcedChoice)]
-                      : choices[rng_.below(uint32_t(choices.size()))];
+    int n = forcedChoice >= 0 && size_t(forcedChoice) < choices.size()
+                ? choices[size_t(forcedChoice)]
+                : choices[rng_.below(uint32_t(choices.size()))];
+    if (tableChoice) {
+      if (tableChoice->index < 0 || size_t(tableChoice->index) >= choices.size()) return false;
+      n = choices[size_t(tableChoice->index)];
+    }
     const std::string suffix = " " + std::to_string(n);
     out.choice = resolve(t.at(row, "Choice" + suffix));
     out.narrative = resolve(t.at(row, "Narrative" + suffix));

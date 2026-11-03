@@ -33846,3 +33846,57 @@ Played card-cap versus scripted year-cap alignment remains separate. Demo
 main.cpp health omission and alternative-button dispatch remain separate open
 frontend work; the one-line played correction does not claim to fix them.
 
+## 409. Numbered generic-table buttons apply after natural scenario selection
+
+Actual UI regression reproduced typed2 displaying Say ma ma but executing Cry
+on seed7,United States,male,first age. The native option labels were printed,
+but play.cpp stored only the -1 default lane. The first option was also marked
+as the game pick even though the natural branch was the third option.
+
+A naive scripted choices=[1] oracle selected a different scenario because
+forcedChoice also controls family eligibility. That oracle was discarded. The
+valid branch oracle first records the naturally shown table/row, then pins that
+row only on the script side; the real played fixture has no replay override.
+Forced-row replay is not natural-state/RNG equivalence. Inspection also showed
+renderRow is impure, so rerendering after ageUp or copying only Life was rejected.
+
+The scoped correction uses a per-call TableChoice expected-table/row/index.
+Natural eligibility and selection still receive forcedChoice=-1. Only the actual
+generic fallback checks the expected row and passes the request to its single
+renderRow call. The ordinary lane draw is consumed, then the selected lane is
+applied before narrative/impacts. The request is not stored in Sim or TimeMachine
+state. Explicit port-only capability travels through AgeUp and the eighteenth
+fork-probe field; it is not claimed to be an original native field.
+
+Generic native buttons map every printed index. Blank Enter keeps the natural
+RNG path; the annotation follows the actual default label. Invalid numbers fail
+before parent commit; mismatched/unsupported late requests fail explicitly.
+Non-generic menus retain their existing filtered alternate-probe path, rather
+than blindly advertising unverified native continuations. Script forcedChoice
+and push behavior remain unchanged.
+
+Scoped review found a new public request-dispatch bypass. Compiler RED proved
+the unguarded four-argument dispatcher was externally callable; the fix preserves
+the original public three-argument dispatcher and keeps request propagation
+private. Compiler checks prove that boundary. Eight public-API cases cover
+provenance, bounds, incompatible mode, stale capability, early-error re-arm and
+a real pending interception. Actual UI checks cover all four first-card buttons,
+blank/default labeling, explicit-default versus blank three-year byte identity
+and malformed/out-of-range numeric input without a committed card. Health and
+established replay checks remain green; final build exits0.
+
+Full durable suite409:191 PASS /0FAIL,planned=completed=191,exit0,
+interrupted=false,changed_inputs=[],snapshot_error=null,endpoint-sha256.
+Logs/manifests: /tmp/qdir/suite409-run.log and /tmp/qdir/suite409/.
+Before/after binary SHA-256:
+8c74d083a4b1b0064ec737a9e09b820fac809cf965493641d6ea0387b39a8db7.
+No source/header/tool/content/binary changes occurred during full acceptance.
+
+shortcut: natural late choice is generic-fallback only. Family/code-built/pending
+scenarios need explicit selection/branch continuations for complete UI parity.
+The preserved normal-draw policy is a deterministic port contract, not measured
+native RNG equivalence. Like existing cardless ageUp, a rejected late request
+is not whole-Life/Sim transactional rollback; the guarded CLI exits with error.
+Duplicate/token-label and transport-fault coverage, complete before/after state
+and all broader native/capture/immutable-execution obligations remain open.
+

@@ -34,6 +34,13 @@ struct Country {
   std::string adjectival;
 };
 
+// Port-only request: choose a branch after natural generic-table selection.
+// ponytail: generic fallback only; family/pending branches need explicit continuations.
+struct TableChoice {
+  std::string table, row_id;
+  int index = -1;
+};
+
 // One resolved age-up event, taken from a real table row.
 struct AgeUp {
   std::string table;      // the real table the row came from
@@ -68,6 +75,7 @@ struct AgeUp {
   // real menu, and probing for them changed the RNG stream (which is why play had
   // stopped offering any).
   std::vector<std::string> options;
+  bool tableChoiceSupported = false;  // port capability, not native game state
 };
 
 // One God Mode edit (REPORT.en.md 312): "hero", "family:N" or "child:N", new names
@@ -531,7 +539,9 @@ class Sim {
   // The Fame family's own gate, read off ScenarioFamePaparazzi's eligibility:
   // fame >= 75.0f (0x42960000) or the developer's testing flag.
   bool isFamous(const Hero& h) const { return h.fame >= 75.0f; }
-  bool ageUp(Life& life, AgeUp& out, int forcedChoice = -1);
+  // tableChoice keeps natural selection; false rejects an unsupported/mismatched request.
+  // Like ordinary cardless ageUp, failure is not a whole-Life/Sim rollback.
+  bool ageUp(Life& life, AgeUp& out, int forcedChoice = -1, const TableChoice* tableChoice = nullptr);
   // The Time Machine (REPORT.en.md 310): a snapshot of the whole life after every
   // birthday, the newest 20 years kept, and a wholesale restore. Off by default:
   // copying the simulator every year is a cost only a time-travelling run pays.
@@ -666,7 +676,8 @@ class Sim {
   // Renders one real row into out: Title/Body/CTA, the filled-in Choice N
   // columns and the branch's impacts. Falls back to a narrative-only table
   // (a 'Scenario' or 'String' column) so a forced filler row still renders.
-  bool renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice);
+  bool renderRow(const Table& t, size_t row, const Life& life, AgeUp& out, int forcedChoice,
+                 const TableChoice* tableChoice = nullptr);
   // Renders one registry entry (a scripted-event scenario) into out. The body
   // and the chosen branch's log line both come from the registry's literals,
   // with "{parent}" / "{name}" filled the way the game fills its own {0}/{1}.
@@ -1313,7 +1324,8 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng timeMachineRng_;  // the narrative pick; survives a restore (REPORT 310)
   bool timeMachineOn_ = false;
   std::map<int, std::shared_ptr<TimeSave>> timeSaves_;  // savedLife-age{N}.data
-  bool ageUpYear(Life& life, AgeUp& out, int forcedChoice);
+  bool ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice* tableChoice);
+  bool dispatchYearWithTableChoice(Life& life, AgeUp& out, int forcedChoice, const TableChoice* tableChoice);
   void saveTimeMachine(const Life& life);
   void witchImpact(const Hero& h, AgeUp& out, int health, int happiness, int looks, int smarts);
   void witchCureRestore(const Hero& h, AgeUp& out, size_t row);

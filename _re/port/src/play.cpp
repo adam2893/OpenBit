@@ -36,6 +36,7 @@ struct Probe {
   std::string extra;          // the year's own log lines, \n separated
   int karma = 0, discipline = 0, happiness = 0, health = 0, smarts = 0, looks = 0;
   int age = 0;
+  bool tableChoiceSupported = false;
 };
 
 // The row's labels travel as one field: \x1e between them, no card text carries it.
@@ -68,7 +69,7 @@ std::string encode(const Probe& p) {
     << '\x1f' << p.body << '\x1f' << p.cta << '\x1f' << p.choice << '\x1f'
     << p.narrative << '\x1f' << joinOptions(p.options) << '\x1f' << p.extra << '\x1f' << p.karma << '\x1f' << p.discipline
     << '\x1f' << p.happiness << '\x1f' << p.health << '\x1f' << p.smarts << '\x1f'
-    << p.looks << '\x1f' << p.age;
+    << p.looks << '\x1f' << p.age << '\x1f' << (p.tableChoiceSupported ? 1 : 0);
   return s.str();
 }
 
@@ -82,7 +83,7 @@ Probe decode(const std::string& blob) {
     f.push_back(blob.substr(i, j - i));
     i = j + 1;
   }
-  if (f.size() < 17) return p;
+  if (f.size() < 18) return p;
   p.got = f[0] == "1";
   p.table = f[1]; p.row = f[2]; p.title = f[3]; p.body = f[4]; p.cta = f[5];
   p.choice = f[6]; p.narrative = f[7]; p.options = splitOptions(f[8]); p.extra = f[9];
@@ -93,6 +94,7 @@ Probe decode(const std::string& blob) {
   p.smarts = std::atoi(f[14].c_str());
   p.looks = std::atoi(f[15].c_str());
   p.age = std::atoi(f[16].c_str());
+  p.tableChoiceSupported = f[17] == "1";
   return p;
 }
 
@@ -119,6 +121,7 @@ bool probeYear(Sim& sim, Life& life, int forced, Probe* out) {
       p.cta = ev.cta;
       p.choice = ev.choice;
       p.options = ev.options;
+      p.tableChoiceSupported = ev.tableChoiceSupported;
       p.narrative = ev.narrative;
       for (size_t k = 0; k < ev.extra.size(); ++k) {
         if (k) p.extra += '\n';
@@ -231,13 +234,14 @@ int runPlayMode(const std::string& reDir, const ScriptSpec& spec) {
     std::vector<std::string> labels;
     if (base.choice.empty()) {
       std::cout << "  [enter] continue\n";
-    } else if (base.options.size() >= 2) {
+    } else if (base.tableChoiceSupported && base.options.size() >= 2) {
       // The row itself says what its buttons are (REPORT.en.md 233), so the menu no
       // longer depends on a probe that consumes a different RNG path.
-      for (size_t i = 0; i < base.options.size(); ++i)
+      for (size_t i = 0; i < base.options.size(); ++i) {
         std::cout << "  [" << (i + 1) << "] " << base.options[i]
-                  << (i == 0 ? "   (the game's own pick)" : "") << "\n";
-      lanes.push_back(-1);
+                  << (base.options[i] == base.choice ? "   (the game's own pick)" : "") << "\n";
+        lanes.push_back(int(i));
+      }
       labels = base.options;
     } else {
       lanes.push_back(-1);
@@ -265,8 +269,15 @@ int runPlayMode(const std::string& reDir, const ScriptSpec& spec) {
       std::string line;
       if (!std::getline(std::cin, line)) break;
       if (line == "q" || line == "quit") break;
-      const int pick = line.empty() ? 1 : std::atoi(line.c_str());
-      if (pick >= 1 && pick <= int(lanes.size())) forced = lanes[size_t(pick - 1)];
+      if (!line.empty()) {
+        char* end = nullptr;
+        const long pick = std::strtol(line.c_str(), &end, 10);
+        if (end == line.c_str() || *end != 0 || pick < 1 || size_t(pick) > lanes.size()) {
+          std::cerr << "play: invalid choice number\n";
+          return 2;
+        }
+        forced = lanes[size_t(pick - 1)];
+      }
     } else {
       std::string scratch;
       if (!std::getline(std::cin, scratch)) break;  // EOF ends the session
@@ -275,7 +286,15 @@ int runPlayMode(const std::string& reDir, const ScriptSpec& spec) {
 
     // (4) The same year, for real, with the picked index.
     AgeUp ev;
-    if (!sim.ageUp(life, ev, forced)) break;
+    const bool lateChoice = base.tableChoiceSupported && base.options.size() >= 2 && forced >= 0;
+    const TableChoice selection{base.table, base.row, forced};
+    if (!sim.ageUp(life, ev, lateChoice ? -1 : forced, lateChoice ? &selection : nullptr)) {
+      if (lateChoice) {
+        std::cerr << "play: displayed table choice no longer matches the selected scenario\n";
+        return 2;
+      }
+      break;
+    }
     applyStats(life.hero, ev);
     if (!ev.choice.empty())
       std::cout << "\n  -> " << ev.choice << "\n";

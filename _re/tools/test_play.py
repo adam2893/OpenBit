@@ -59,6 +59,46 @@ assert any(l in taken for pair in labels for l in pair), (taken[:3], labels[:3])
 #    forked preview, so a played life is as reproducible as a scripted one.
 assert play(["2"] + [""] * 200) == out2
 
+# 4. Every printed native button number must execute that exact shown row branch.
+base_spec=dict(seed=7,country="United States",gender="male",ages=1)
+baseline=subprocess.run([str(PORT),"--script","/dev/stdin"],input=json.dumps(base_spec),
+                        capture_output=True,text=True,cwd=ROOT)
+assert baseline.returncode==0,baseline.stderr
+shown=json.loads(baseline.stdout)["events"][0]
+assert shown["table"] and shown["row"],shown
+for number in (2,1,3,4):
+    spec=dict(base_spec,choices=[number-1],push=[dict(table=shown["table"],row=shown["row"])])
+    scripted=subprocess.run([str(PORT),"--script","/dev/stdin"],input=json.dumps(spec),
+                            capture_output=True,text=True,cwd=ROOT)
+    assert scripted.returncode==0,scripted.stderr
+    expected=json.loads(scripted.stdout)["events"][0]["choice"]
+    played=play([str(number)],base_spec)
+    prefix="["+str(number)+"] "
+    label=next(line.strip()[len(prefix):] for line in played.splitlines()
+               if line.strip().startswith(prefix))
+    selected=next(line.strip()[3:] for line in played.splitlines()
+                  if line.strip().startswith("-> "))
+    assert _bare(label)==expected,(number,label,expected)
+    assert selected==expected,(number,selected,expected,played)
+blank=play([""],base_spec)
+marked=next(line.strip().split("] ",1)[1] for line in blank.splitlines()
+            if "the game's own pick" in line)
+assert _bare(marked)==shown["choice"],(marked,shown["choice"])
+blank_taken=next(line.strip()[3:] for line in blank.splitlines() if line.strip().startswith("-> "))
+assert blank_taken==shown["choice"],(blank_taken,shown["choice"])
+own_number=next(line.strip().split("]",1)[0][1:] for line in blank.splitlines()
+                if "the game's own pick" in line)
+three_years=dict(base_spec,ages=3)
+assert play([own_number,"",""],three_years)==play(["","",""],three_years)
+with tempfile.TemporaryDirectory() as directory:
+    path=Path(directory)/"life.json"
+    path.write_text(json.dumps(base_spec))
+    for answer in ("0","5","-1","2junk","garbage","999999999999999999999999"):
+        bad=subprocess.run([str(PORT),"--script",str(path),"--play"],
+                           input=answer+chr(10),capture_output=True,text=True,cwd=ROOT)
+        assert bad.returncode==2 and "invalid choice" in bad.stderr,(answer,bad.stdout,bad.stderr)
+        assert not any(line.strip().startswith("-> ") for line in bad.stdout.splitlines())
+
 print("played ages:", len(ages), "->", ages[-1])
 print("lanes answered:", len(taken))
 print("ok")
