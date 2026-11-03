@@ -430,6 +430,15 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
     else return fail("sports is not a boolean");
   }
 
+  p = findValue(json, "sport_injury");
+  if (p != std::string::npos) {
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    long long v = 0;
+    if (readInt(json, p, v) == std::string::npos) return fail("sport_injury is not a number");
+    if (v < 0 || v > 2) return fail("sport_injury must be 0, 1 or 2");
+    spec.sport_injury = int(v);
+  }
+
   p = findValue(json, "business");
   if (p != std::string::npos) {
     skipWs(json, p);
@@ -1044,6 +1053,7 @@ bool setupLife(Sim& sim, const ScriptSpec& spec, Life& life, std::string* heroAt
   if (spec.vampire) sim.makeVampire(life);
   if (spec.military) sim.makeMilitary(life);
   if (spec.sports) sim.makeAthlete(life);
+  if (spec.sport_injury > 0) sim.seedSportInjury(life, spec.sport_injury == 2);
   if (spec.business) sim.makeBusiness(life);
   if (spec.racing) sim.makeRacing(life);
   if (spec.car) {

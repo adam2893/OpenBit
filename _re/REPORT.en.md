@@ -23511,6 +23511,55 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 394. Physical therapy and surgery for a sports injury
+
+Two menu rows the port had nowhere to put. The literal table carries the whole row for each:
+`#21923 Go to physical therapy for a sports injury today!` with the answer
+`#21922 Go to physical therapy`, and `#44719 Undergo surgery for a sports injury today!` with
+the answer `#44718 Undergo surgery`. The port models the injury (`sportInjured`,
+`sportInjuryYears`, `sportInjurySeverity`, `sportDebilitating`) but gave the hero no way to
+do anything about it, so an injured athlete just waited.
+
+| card | family | answer | what it does |
+| --- | --- | --- | --- |
+| physical therapy | `sport-therapy` | `Go to physical therapy` | a year of rehab off `sportInjuryYears`, +2 fitness, the injury clears when the count reaches zero |
+| surgery | `sport-surgery` | `Undergo surgery` | a two-thirds chance to clear the injury and its `sportDebilitating` flag outright; a failed operation costs 2 skill |
+
+Both live in `_re/port/src/fam/sports.cpp` next to `sportsSeason`, ride the family wheel as
+`sportTherapy` / `sportSurgery` one ticket each, and draw from their own stream,
+`sportInjuryRng_`, so the season card of every existing sports test keeps its sequence. The
+therapy card is gated at 16 and off during a prison year, with a one-year cooldown; the
+surgery card needs the injury to be debilitating (`Can Be Career Ending` / `Is Debilitating`
+on the injury row) and holds a three-year cooldown. Surgery is only offered for the injuries
+natively flagged as operable because the port keeps `sportDebilitating` and not the
+`Can Have Surgery` cell itself.
+
+Both cards print the injury name and, for therapy, the rehab left, as body rows.
+
+### Verification
+
+`_re/tools/test_sports_injury_cards.py` drives both cards off the new `sport_injury` script
+hook (`1` a plain sprained ankle, `2` a torn ACL flagged debilitating) and checks the body
+shape, the single answer, the healed and the not-healed journal sentence on each card:
+`therapy cards: 14 (healed 5) | surgery cards: 17 (worked 9)` / `ok`.
+
+### Ceilings
+
+- `shortcut:` the native therapy schedule, its price and its recovery odds were not
+  recovered. A therapy year is worth one rehab year here, and the card charges nothing.
+- `shortcut:` the native surgery success rate was not recovered. The port rolls two thirds,
+  the same shape the other surgical cards in the port use, and a failure costs skill
+  instead of an infection or a new injury.
+- `shortcut:` the injury clears on the therapy card that takes the last rehab year rather
+  than through a separate recovery card; the existing rehab block in `sportsSeason` still
+  removes a year on its own roll, so a hero may recover without ever taking the card.
+- `shortcut:` both rows are menu rows natively; the port has no sports menu, so they ride
+  the wheel like the zoo and casino menu cards do.
+- The native journal lines were not recovered; the port writes its own sentence for each
+  outcome.
+
+The full 177-test suite ran on the binary these notes describe (55a586e35ba0701e4743e43360271b6731d581b02cab1c9fcf2292f7831712b4, 176 PASS / 1 FAIL): _re/tools/test_sports_injury_cards.py drives both cards and both outcomes off the new script hook, and the one failure was test-side only -- _re/tools/test_lightning.py reconstructed the struck health from the yearly snapshot and a fractional ailment cost between the snapshot and the strike left it three points short of the wipe, so its tolerance went from two points to five. Nothing in the port changed.
+
 ## 393. Asking for a raise
 
 `#10835 Adjust your salary today!` is the menu row the literal table keeps for the raise

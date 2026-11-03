@@ -1201,6 +1201,9 @@ struct Hero {
   bool sportChampion = false, sportTop5 = false, sportHall = false;
   bool sportRookie = false;            // true only for the first season
   bool sportInjured = false;
+  int sportInjuryClearAge = -1;  // the year the injury card cleared it (REPORT.en.md 394)
+  int sportTherapyAge = -1;      // the physical therapy cards cooldown (REPORT.en.md 394)
+  int sportSurgeryAge = -1;      // the surgery cards cooldown (REPORT.en.md 394)
   std::string sportInjury;
   int sportInjuryYears = 0, sportInjurySeverity = 0, sportInjuryPain = 0;
   bool sportDebilitating = false, sportCareerEnding = false;

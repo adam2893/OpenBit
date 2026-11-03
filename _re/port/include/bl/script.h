@@ -61,6 +61,7 @@ struct ScriptSpec {
   bool vampire = false;
   bool military = false;
   bool sports = false;
+  int sport_injury = 0;  // test hook: 1 a plain sports injury, 2 a debilitating one (REPORT.en.md 394)
   bool business = false;
   bool music = false;
   bool politics = false;

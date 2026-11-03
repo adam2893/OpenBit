@@ -383,6 +383,8 @@ class Sim {
   bool universityYear(Life& life, AgeUp& out, int forcedChoice);
   bool communityCollegeYear(Life& life, AgeUp& out, int forcedChoice);
   bool raiseYear(Life& life, AgeUp& out, int forcedChoice);
+  bool sportTherapyYear(Life& life, AgeUp& out, int forcedChoice);
+  bool sportSurgeryYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioSchoolFund, the card the accepted application hands to (REPORT.en.md 317).
   bool universityFundYear(Life& life, AgeUp& out, int forcedChoice);
   // SimLoan: the tuition a college year adds to the principal, the payback that starts
@@ -570,6 +572,7 @@ class Sim {
   void makeVampire(Life& life);
   void makeMilitary(Life& life);
   void makeAthlete(Life& life);
+  void seedSportInjury(Life& life, bool debilitating);  // test hook (REPORT.en.md 394)
   void makeBusiness(Life& life);
   void makeRacing(Life& life);
   void makeActor(Life& life);
@@ -1178,6 +1181,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng modelRng_;
   Rng luxuryRng_;
   Rng sportProRng_;
+  Rng sportInjuryRng_;  // the two injury cards own stream (REPORT.en.md 394)
   Rng raiseRng_;  // the raise card own stream (REPORT.en.md 393)
   Rng boatRng_;
   Rng officeRng_;

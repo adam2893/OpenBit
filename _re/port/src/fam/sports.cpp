@@ -617,6 +617,92 @@ bool Sim::sportsSeason(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+// The two injury menu cards (REPORT.en.md 394). The literal table has the whole row for
+// each: body #21923 "Go to physical therapy for a sports injury today!" with the answer
+// #21922 "Go to physical therapy", and body #44719 "Undergo surgery for a sports injury
+// today!" with the answer #44718 "Undergo surgery". The native arithmetic behind either
+// was not recovered, so the port models the two obvious effects and says so below
+// (shortcut).
+bool Sim::sportTherapyYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.sportInjured || h.sportInjuryClearAge >= 0) return false;
+  if (h.age < 16 || h.inPrison) return false;
+  if (h.sportTherapyAge >= 0 && h.age - h.sportTherapyAge < 1) return false;
+  if (forcedChoice < 0 && !sportInjuryRng_.chance(0.50)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.sportTherapyAge = h.age;
+  // A year of therapy is worth a year of rehab, and the fitness the layoff cost.
+  if (h.sportInjuryYears > 0) h.sportInjuryYears -= 1;
+  h.sportFitness = h.sportFitness > 100 - 2 ? 100 : h.sportFitness + 2;
+  const bool healed = h.sportInjuryYears <= 0;
+  if (healed) {
+    h.sportInjured = false;
+    h.sportInjuryClearAge = h.age;
+  }
+  out.table = "registry:ScenarioSportsPhysicalTherapy";
+  out.title = "Physical Therapy";
+  out.body = "Go to physical therapy for a sports injury today!";  // #21923
+  out.body += "\n\nInjury: " + h.sportInjury + "\nRehab Left: " +
+              std::to_string(h.sportInjuryYears) + (h.sportInjuryYears == 1 ? " year" : " years");
+  out.options = {"Go to physical therapy"};  // #21922
+  out.choice = out.options[0];
+  out.narrative = healed
+      ? "A year of physical therapy finally cleared up my " + h.sportInjury + "."
+      : "I spent the year in physical therapy for my " + h.sportInjury + ".";
+  return true;
+}
+
+bool Sim::sportSurgeryYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.sportInjured || !h.sportDebilitating) return false;
+  if (h.age < 16 || h.inPrison) return false;
+  if (h.sportSurgeryAge >= 0 && h.age - h.sportSurgeryAge < 3) return false;
+  if (forcedChoice < 0 && !sportInjuryRng_.chance(0.50)) return false;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.sportSurgeryAge = h.age;
+  // shortcut: the native success rate and recovery schedule were not recovered. Two
+  // thirds of these operations take; a failed one costs another step of skill.
+  const bool worked = forcedChoice >= 0 ? forcedChoice == 0 : sportInjuryRng_.chance(0.66);
+  if (worked) {
+    h.sportInjured = false;
+    h.sportDebilitating = false;
+    h.sportInjuryYears = 0;
+    h.sportInjuryClearAge = h.age;
+  } else {
+    h.sportSkill = h.sportSkill > 4 ? h.sportSkill - 2 : 0;
+  }
+  out.table = "registry:ScenarioSportsSurgery";
+  out.title = "Surgery";
+  out.body = "Undergo surgery for a sports injury today!";  // #44719
+  out.body += "\n\nInjury: " + h.sportInjury;
+  out.options = {"Undergo surgery"};  // #44718
+  out.choice = out.options[0];
+  out.narrative = worked
+      ? "Surgery repaired my " + h.sportInjury + " and I am cleared to train again."
+      : "The surgery on my " + h.sportInjury + " did not take and cost me more strength.";
+  return true;
+}
+// Test hook (REPORT.en.md 394): a script spec can hand the hero an injury so the two
+// injury cards can be driven without waiting for a season to roll one.
+void Sim::seedSportInjury(Life& life, bool debilitating) {
+  Hero& h = life.hero;
+  if (!h.sportPro) makeAthlete(life);
+  h.sportInjured = true;
+  h.sportInjury = debilitating ? "torn ACL" : "sprained ankle";
+  h.sportInjurySeverity = debilitating ? 8 : 3;
+  h.sportInjuryYears = debilitating ? 3 : 2;
+  h.sportInjuryPain = debilitating ? 8 : 3;
+  h.sportDebilitating = debilitating;
+}
+
 bool Sim::sportsYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.athlete) return false;
