@@ -615,6 +615,7 @@ struct Hero {
   int zooHireAge = -1;           // the year the hiring card last fired (388)
   std::string zooHireName, zooHireType;  // the candidate waiting on their interview (389)
   int zooHireComp = 0;                   // that candidate own competence (389)
+  int zooMoveInAge = -1;         // the year the animal move-in card fired (390)
   std::string zooHabitat;        // the habitat the card is about
   std::string zooAnimalSpecies;  // the species ("Big Cat")
   std::string zooAnimalBreed;    // the breed inside the species
@@ -671,6 +672,7 @@ struct Hero {
     int happiness = 45;
     int craziness = 55;
     int charisma = 8;
+    std::string habitat;  // the habitat it was moved into (REPORT.en.md 390)
   };
   std::vector<ZooHerdAnimal> zooHerd;
   bool zooHerdSeeded = false;   // the park's animals are only put there once

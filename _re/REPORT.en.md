@@ -23511,6 +23511,39 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 390. Moving an animal into a habitat
+
+The habitat cards (379, 380) could build and clear habitats but nothing ever put an
+animal on display. `#30487 'Move an animal into this habitat today!'` is the card that
+does it, and the catalogue has the join it needs: `a16_zoo-animals-enc` carries a
+`Compatible Habitats` column (`temperate, rainforest, savanna, aviary` and the rest),
+which is exactly the eight types `a16_zoo-habitat-type-enc` sells.
+
+The card walks the herd for an animal with no habitat yet, looks its catalogue row up by
+animal and breed, and keeps the first built habitat whose type appears in that row. The
+move-in sentence comes from `a16_zoo-habitat-move-in-feedback-enc`, whose rows name a
+list of animal types (and sometimes a breed); a row is eligible when its breed matches
+and its type list contains the species, or when both columns are blank (the generic
+`'<he/she> curiously looked around <his/her> new home...'` row). Pronouns are rewritten
+for a female animal, and the sentence is capitalised because several rows start with the
+pronoun token in lower case.
+
+**A defect this section found in 379:** the habitat names table holds
+`<Forest/Woodland/Woody> Wildlife Sanctuary`-style tokens, and the build card stored the
+name unresolved. `resolve()` picks a random alternative on every call, so the card's
+`Habitat:` row and the line the move wrote into the log disagreed. Both habitat build
+sites now resolve the name once, before it is stored.
+
+**A second defect the suite found:** the agent gender was cached on the hero and never
+cleared when an agent was dropped or replaced, so the agent compliment card (327) could
+pronoun a replacement by the previous agent's gender. Clearing the field wherever the
+agent is cleared or hired lets the card read the gender back from the celebrity-name row.
+
+`_re/tools/test_zoo_move_in.py` sweeps twelve zoo owners with two habitats each and walks
+both answers: `move-in cards: 11 | moved: 4 | declined: 7`.
+
+The full 173-test suite ran on the binary these notes describe (4ebce1ed60cf668a8f2b..., 173 PASS / 0 FAIL): _re/tools/test_zoo_move_in.py drives the card and both answers, and test_agent_compliment caught the cached agent-gender defect fixed above.
+
 ## 389. The zoo candidate's interview
 
 The hiring card used to close the hire on its own answer. Natively it does not:

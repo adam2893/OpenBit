@@ -4591,6 +4591,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-comment-card"},
         {&Sim::zooHireYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-hire"},
+        {&Sim::zooMoveInYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-move-in"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
         {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11459,7 +11461,9 @@ void Sim::seedZooHabitats(Life& life, int count) {
         name = trim(nt.at(of[zooMenuRng_.below(uint32_t(of.size()))], "Name"));
     }
     if (name.empty()) name = spyUpperFirst(type);
-    h.zooHabitats.push_back(name + " (" + type + ")");
+    // Resolve once here: the table's names carry <Forest/Woodland/Woody>-style tokens and
+    // every later resolve() would pick a different one (REPORT.en.md 390).
+    h.zooHabitats.push_back(resolve(name) + " (" + type + ")");
     h.zooHabitat = type;
     h.zooAttractions += 1;
   }
@@ -11504,7 +11508,7 @@ bool Sim::zooHabitatYear(Life& life, AgeUp& out, int forcedChoice) {
   h.zooBank -= cost;
   h.zooAttractions += 1;
   h.zooHabitat = type;
-  h.zooHabitats.push_back(habitatName + " (" + type + ")");
+  h.zooHabitats.push_back(resolve(habitatName) + " (" + type + ")");  // resolved once (REPORT.en.md 390)
   out.table = "registry:ScenarioZooHabitatBuild";
   out.title = "Zoo";  // #50857
   out.body = "Build a new habitat in your zoo today!";  // #14104
@@ -11704,6 +11708,106 @@ bool Sim::zooHireYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::zooMoveInYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooHabitats.empty()) return false;
+  if (h.zooMoveInAge >= 0 && h.age - h.zooMoveInAge < 3) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.07)) return false;
+  if (!ensureTable("a16_zoo-animals-enc") || !ensureTable("a16_zoo-habitat-move-in-feedback-enc"))
+    return false;
+  const Table& cats = tbl("a16_zoo-animals-enc");
+  // Habitat types already standing, and the herd animals still off display.
+  std::vector<std::pair<std::string, std::string> > built;  // (type, full label)
+  for (size_t i = 0; i < h.zooHabitats.size(); ++i) {
+    const std::string& label = h.zooHabitats[i];
+    const size_t open = label.rfind('(');
+    if (open == std::string::npos || label.empty() || label[label.size() - 1] != ')') continue;
+    built.push_back(std::make_pair(lower(trim(label.substr(open + 1, label.size() - open - 2))), label));
+  }
+  if (built.empty()) return false;
+  std::vector<size_t> movable;
+  std::vector<size_t> where;
+  for (size_t i = 0; i < h.zooHerd.size(); ++i) {
+    if (!h.zooHerd[i].habitat.empty()) continue;
+    size_t cat = size_t(-1);
+    for (size_t r = 0; r < cats.size(); ++r)
+      if (lower(trim(cats.at(r, "Animal"))) == lower(h.zooHerd[i].species) &&
+          lower(trim(cats.at(r, "Breed"))) == lower(h.zooHerd[i].breed)) { cat = r; break; }
+    if (cat == size_t(-1)) continue;
+    const std::string compatible = lower(trim(cats.at(cat, "Compatible Habitats")));
+    for (size_t b = 0; b < built.size(); ++b) {
+      if (compatible.find(built[b].first) == std::string::npos) continue;
+      movable.push_back(i);
+      where.push_back(b);
+      break;
+    }
+  }
+  if (movable.empty()) return false;
+  const size_t slot = zooMenuRng_.below(uint32_t(movable.size()));
+  Hero::ZooHerdAnimal& animal = h.zooHerd[movable[slot]];
+  const std::string habitatLabel = built[where[slot]].second;
+  // The move-in line joins on the animal type (and sometimes the breed), so pick a
+  // feedback row that either names this animal or names nothing at all.
+  const Table& fb = tbl("a16_zoo-habitat-move-in-feedback-enc");
+  std::vector<size_t> lines;
+  for (size_t r = 0; r < fb.size(); ++r) {
+    const std::string type = lower(trim(fb.at(r, "Animal Type")));
+    const std::string breed = lower(trim(fb.at(r, "Breed")));
+    const std::string kind = lower(animal.species);
+    if (!breed.empty() && breed != lower(animal.breed)) continue;
+    if (type.empty()) { if (breed.empty()) lines.push_back(r); continue; }
+    bool hit = false;
+    size_t at = 0;
+    while (at <= type.size()) {
+      const size_t comma = type.find(',', at);
+      const std::string piece = trim(type.substr(at, comma == std::string::npos ? std::string::npos : comma - at));
+      if (piece == kind) { hit = true; break; }
+      if (comma == std::string::npos) break;
+      at = comma + 1;
+    }
+    if (hit) lines.push_back(r);
+  }
+  if (lines.empty()) return false;
+  const size_t row = lines[zooMenuRng_.below(uint32_t(lines.size()))];
+  std::string line = resolve(trim(fb.at(row, "String")));
+  if (animal.female) {
+    substAll(line, " he ", " she ");
+    substAll(line, " his ", " her ");
+    substAll(line, " him ", " her ");
+    if (line.compare(0, 3, "he ") == 0) line = "she" + line.substr(2);
+    if (line.compare(0, 4, "his ") == 0) line = "her" + line.substr(3);
+  }
+  if (!line.empty() && line[0] >= (char)97 && line[0] <= (char)122) line[0] = char(line[0] - 32);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooMoveInAge = h.age;
+  out.table = "registry:ScenarioZooHabitatMoveIn";
+  out.title = "Habitat";  // the habitat sublist label
+  out.body = "Move an animal into this habitat today!";  // #30487
+  out.body += "\n\n";
+  out.body += "Habitat: " + habitatLabel;
+  out.body += "\n";
+  out.body += "Animal: " + animal.name + " the " + animal.breed;
+  out.body += "\n\n";
+  out.body += line;
+  out.options = {"Move it in", "Not now"};
+  const int pick = forcedChoice < 0 ? int(zooMenuRng_.below(2)) : (forcedChoice > 1 ? 1 : forcedChoice);
+  out.choice = out.options[size_t(pick)];
+  if (!line.empty() && line[0] >= (char)97 && line[0] <= (char)122) line[0] = char(line[0] - 32);
+  out.narrative = pick == 0
+      ? "I moved " + animal.name + " the " + animal.breed + " into " + habitatLabel + "."
+      : "I left " + animal.name + " the " + animal.breed + " off display for now.";
+  if (pick == 0) {
+    animal.habitat = habitatLabel;
+    h.zooEngagement = h.zooEngagement < 97 ? h.zooEngagement + 3 : 100;
+    out.extra.push_back(animal.name + " the " + animal.breed + " is now on display in " + habitatLabel + ".");
+  }
+  return true;
+}
 bool Sim::zooInterviewYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;
@@ -16404,6 +16508,7 @@ bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
         mark("a16_actor-agent-fire-color-enc", static_cast<int>(r));
         add(h.actorAgent + " is no longer my agent.");
         h.actorAgent.clear();
+        h.actorAgentFemale = -1;  // the next agent brings its own gender (REPORT.en.md 390)
         h.actorAgentReputation = 40;
         h.actorReputation = std::max(0, h.actorReputation - 2);
       }
@@ -16423,6 +16528,7 @@ bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
         mark("a16_actor-agent-drops-hero-color-enc", static_cast<int>(r));
         add(h.actorAgent + " dropped me as a client.");
         h.actorAgent.clear();
+        h.actorAgentFemale = -1;  // the next agent brings its own gender (REPORT.en.md 390)
         h.actorAgentReputation = 40;
         h.actorReputation = std::max(0, h.actorReputation - 3);
         happy -= 2;
@@ -16440,6 +16546,7 @@ bool Sim::actorYear(Life& life, AgeUp& out, int forcedChoice) {
       if (r != size_t(-1)) {
         const std::string who = personName("agent");
         h.actorAgent = who.empty() ? "Mx. Barnes" : who;
+        h.actorAgentFemale = -1;  // read back from the name table (REPORT.en.md 390)
         h.actorAgentReputation = 30 + static_cast<int>(actorRng_.below(51));
         pronOther(actorRng_.chance(0.5));
         title = "A new agent";
