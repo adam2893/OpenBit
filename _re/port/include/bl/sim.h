@@ -155,6 +155,7 @@ enum PendingCard {
   kPendingZooInterview = 54,       // the zoo candidate interview (REPORT.en.md 389)
   kPendingCommunity = 55,         // the community-college card (REPORT.en.md 392)
   kPendingLegalName = 56,          // the legal name change's outcome card (REPORT.en.md 398)
+  kPendingAdoptionName = 57,       // naming the adopted child (REPORT.en.md 399)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -433,6 +434,7 @@ class Sim {
   bool nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool adoptionNameYear(Life& life, AgeUp& out, int forcedChoice);
   // The wedding plan, REPORT.en.md 160.
   bool loverWeddingYear(Life& life, AgeUp& out, int forcedChoice);
   // The elopement offer, REPORT.en.md 159.

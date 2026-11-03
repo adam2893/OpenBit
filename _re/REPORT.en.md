@@ -23513,6 +23513,44 @@ shortcut: the menu's own prompt is not in the dump, so the body is the menu labe
 
 The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
 
+## 399. Naming the adopted child
+
+Two things in one: the adoption beat now keeps the child, and the identity family's
+adoption member asks whether that child takes the hero's surname.
+
+The defect first. `Sim::adoptionYear` (`_re/port/src/sim.cpp`) built a `Person` for the
+adopted child and dropped it — no `Life::family` entry, no further card, the child existed
+only inside one journal line. An adoption that leaves no trace in the family is a bug, not
+a ceiling, so the lane now pushes the person into `life.family`. The child also arrives
+with a drawn birth surname instead of inheriting the hero's on the spot, which is what makes
+the naming card's two rows differ.
+
+Native contract for `ScenarioNameChangeAdoption` (static ctor `0x73f28b6ef4`,
+`RefreshScenario` `0x73f28b6f78`, `ChoiceSelectedAtIndex` `0x73f28b7378`):
+
+| slot | literal |
+| --- | --- |
+| title | #10876 `Adoption` |
+| body | #32278 `Now that you've adopted {0}, you're wondering if you should change {1} last name to match yours.\n\nWhat will you do?` |
+| rows | #16820 `Current Name` #34367 `Possible Name` #31091 `Name` |
+| buttons | #28236 `Keep {0} current name` #15392 `Change it to {0}` |
+
+`{0}` is the child's given name and `{1}` the child's possessive pronoun, so the card reads
+"change his last name" or "change her last name" to match the child the agency placed. The
+choosing lane rewrites the family entry; the keeping lane leaves it alone. Both write a
+port-side journal naming the child, since no journal literal was recovered for either lane.
+
+**shortcut:** the card answers immediately on the next age-up rather than after the native
+processing delay, and the child's birth surname comes from the port's own surname pool
+rather than an agency record.
+
+Files: `_re/port/include/bl/game.h` (`adoptionNameIdx`), `_re/port/include/bl/sim.h`
+(`kPendingAdoptionName = 57`), `_re/port/src/sim.cpp` (`adoptionYear`'s family push and
+queue, the dispatch), `_re/port/src/fam/lover.cpp` (`Sim::adoptionNameYear`),
+`_re/tools/test_adoption_name.py`.
+
+The full 181-test suite ran on the binary these notes describe (dba96b8411f2c348e64f22aefc67cce59abc7e7c2769d4be277696d138a3b458, 180 PASS / 1 FAIL). The single failure was test-side: _re/tools/test_adoption.py keyed on the card title alone and mistook the naming card for the adoption card, so it now skips the body that opens on the adopted child; re-run green (adoption cards: 15, adopted: 12, refused: 3). _re/tools/test_adoption_name.py is the new drive for this section.
+
 ## 398. The legal name change
 
 The fourth member of the identity family, and the one the player asks for rather than the

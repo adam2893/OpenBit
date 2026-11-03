@@ -32,9 +32,13 @@ for seed in range(1, 41):
     for event in doc["events"]:
         if event.get("title") != "Adoption":
             continue
+        body = event.get("body") or ""
+        # The naming card of REPORT.en.md 399 carries the same title; it comes after
+        # the adoption and asks about the child's surname.
+        if body.startswith("Now that you've adopted "):
+            continue
         cards += 1
         assert event["age"] >= 21, (seed, event["age"])
-        body = event.get("body") or ""
         assert body.startswith("You are thinking about adopting a child "), (seed, body)
         assert body.endswith("\n\nWhat will you do?"), (seed, body)
         middle = body[len("You are thinking about adopting a child "):-len("\n\nWhat will you do?")]

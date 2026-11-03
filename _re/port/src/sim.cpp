@@ -4226,6 +4226,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingZooShopAdjustPrice) return zooShopAdjustPriceYear(life, out, forcedChoice);
   if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
   if (kind == kPendingLegalName) return legalNameOutcomeYear(life, out, forcedChoice);
+  if (kind == kPendingAdoptionName) return adoptionNameYear(life, out, forcedChoice);
   if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
   if (kind == kPendingZooInterview) return zooInterviewYear(life, out, forcedChoice);
   if (kind == kPendingCommunity) return communityCollegeYear(life, out, forcedChoice);
@@ -28791,13 +28792,18 @@ bool Sim::adoptionYear(Life& life, AgeUp& out, int forcedChoice) {
   out.choice = "Adopt the child";
   const bool girl = adoptRng_.chance(0.5);
   const int childAge = 1 + int(adoptRng_.below(8));
-  const std::string name = life_ && !life_->hero.lastName.empty()
-                               ? drawFirstName(girl) + " " + h.lastName
-                               : drawFirstName(girl);
+  // The child arrives with its own family's surname; whether it takes the hero's is the
+  // question the naming card asks one age-up later (REPORT.en.md 399).
+  const std::string name = drawFirstName(girl) + " " + drawSurname();
   Person child;
   child.relation = girl ? "daughter" : "son";
   child.name = name;
   child.female = girl;
+  child.age = childAge;
+  // The Person this lane builds used to be dropped; an adopted child is family.
+  life.family.push_back(child);
+  h.adoptionNameIdx = int(life.family.size()) - 1;
+  life.pendingCards.push_back(kPendingAdoptionName);  // REPORT.en.md 399
   child.age = childAge;
   out.narrative = "I adopted " + name + ", a " + std::to_string(childAge) +
                   "-year old " + (girl ? "girl" : "boy") + ".";  // #23411

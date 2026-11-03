@@ -936,6 +936,8 @@ struct Hero {
   // The legal name change card's pending rename (REPORT.en.md 398).
   std::string legalNameFirst, legalNameLast;
   int legalNameAge = -1;
+  // The adoption naming card's target, indexed into Life::family (REPORT.en.md 399).
+  int adoptionNameIdx = -1;
   int relationship = 60;         // the game's own relationship score, 0-100
   // The lowest the score ever got (REPORT.en.md 192): the break-up gate is
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether

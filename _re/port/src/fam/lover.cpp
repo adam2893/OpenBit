@@ -395,6 +395,49 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
 // (200 is already a multiple of the round-to and above the floor); the willingness stat
 // at [[Life+0xb8]+0x28]+0xac is unrecovered and karma stands in for it; the outcome card
 // answers with a single OK rather than the native reply pool (#41386/#32644/#14259).
+// ScenarioNameChangeAdoption (REPORT.en.md 399): the card that follows an adoption and
+// asks whether the child takes the hero's surname. The class's static ctor 0x73f28b6ef4
+// (RefreshScenario 0x73f28b6f78, ChoiceSelectedAtIndex 0x73f28b7378) loads title #10876
+// 'Adoption', body #32278 "Now that you've adopted {0}, you're wondering if you should
+// change {1} last name to match yours.\n\nWhat will you do?" ({1} is the possessive
+// pronoun), the rows #16820 'Current Name' / #34367 'Possible Name' / #31091 'Name', and
+// the buttons #28236 'Keep {0} current name' / #15392 'Change it to {0}'.
+//
+// The card is the second half of the adoption beat: Sim::adoptionYear now records the
+// child in Life::family (before this the Person it built was dropped, so an adopted child
+// never joined the family) and queues this card for the next age-up.
+bool Sim::adoptionNameYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.adoptionNameIdx < 0 || size_t(h.adoptionNameIdx) >= life.family.size()) return false;
+  const size_t idx = size_t(h.adoptionNameIdx);
+  h.adoptionNameIdx = -1;
+  Person& child = life.family[idx];
+  const std::string first = child.name.empty() ? "" : child.name.substr(0, child.name.find(' '));
+  if (first.empty()) return false;
+  const std::string poss = child.female ? "her" : "his";
+  const std::string possible = first + (h.lastName.empty() ? "" : " " + h.lastName);
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioNameChangeAdoption";
+  out.title = "Adoption";  // #10876
+  out.body = "Now that you've adopted " + first + ", you're wondering if you should change " +
+             poss + " last name to match yours.\n\nWhat will you do?";  // #32278
+  out.body += "\n\nCurrent Name: " + child.name;  // #16820
+  out.body += "\nPossible Name: " + possible;     // #34367
+  out.options = {"Keep " + first + "'s current name", "Change it to " + possible};
+  int lane = forcedChoice;
+  if (lane < 0 || lane > 1) lane = int(namePullRng_.below(2));
+  out.choice = out.options[size_t(lane)];
+  if (lane == 0) {
+    out.narrative = "I kept " + child.name + "'s current name.";
+  } else {
+    child.name = possible;
+    out.narrative = "I changed " + first + "'s name to " + possible + ".";
+  }
+  return true;
+}
+
 bool Sim::legalNameYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.age < 18 || h.inPrison) return false;
