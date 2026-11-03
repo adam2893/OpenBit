@@ -923,6 +923,12 @@ struct Hero {
   bool loverFemale = false;
   int loverAge = 0;
   std::string loverStatus;       // "", "dating", "married"
+  // The surname the identity card after a wedding offers (REPORT.en.md 396). The
+  // port's partner record carries a given name only, so the card draws one of its
+  // own instead of reading the spouse's (shortcut: the native spouse is a full
+  // SimPerson with its own surname).
+  std::string nameChangeSurname;
+  bool nameChangePending = false;  // the identity card has not been offered yet
   int relationship = 60;         // the game's own relationship score, 0-100
   // The lowest the score ever got (REPORT.en.md 192): the break-up gate is
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether

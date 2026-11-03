@@ -23511,6 +23511,69 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
+
+## 396. The identity card after a wedding
+
+Getting married is where the port used to stop: the hero kept the surname they were
+born with for life. The game asks. `ScenarioNameChangeMarriage` (`.ctor 0x73f28b842c`,
+`RefreshScenario 0x73f28b84a8`, `ChoiceSelectedAtIndex 0x73f28b8a38`) is the card, and
+its strings come out of the class's own static ctor, resolved slot by slot with
+`tools/lit_cell.py`:
+
+- title `#26311 'Identity'`
+- body `#32275 "Now that you're married, you're wondering if you should change your last
+  name.\n\nWhat last name will you choose?"`
+- rows `#50142 'Your Last Name'`, `#69671 '{0} Last Name'` (the spouse's), `#31091 'Name'`
+- buttons `#28237 'Keep {0} {1}'`, `#15401 'Change to {0} {1}'`, `#11136 'All the way: {0} {1}'`
+- the same ctor also loads `#30530 'Mr.'`, `#30532 'Mrs.'`, `#18178 'Dr.'` and
+  `#30671 'Mx.'` for the `Name` row of a spouse record with an honorific
+
+The port now draws the card the year after the ceremony (one-shot, before the wheel,
+the same lane the two sale cards use) and writes the surname the answer names: keep,
+take the spouse's, or hyphenate both. Its journals are port-written:
+`I kept the last name X.`, `I took the last name Y.` and
+`I took both last names and became X Y-Z.`
+
+`shortcut:` the port's partner record carries a given name only (`Hero::loverName`,
+REPORT 57), so the spouse's surname is drawn from the celebrity-name table the whole
+port draws personal names from, kept in `Hero::nameChangeSurname`, rather than read off
+the spouse. Which button writes which surname is a reading of the labels: the handler
+keeps `_halfSurname` and `_fullSurname`, and "all the way" is taken to mean both names.
+The honorific half of the native `Name` row is not modelled, and the card is offered
+even to a hero whose partner arrived through a fixture rather than the proposal chain.
+
+The full 178-test suite ran on the binary these notes describe (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL): _re/tools/test_university.py now asserts the card's own body, and the identity card of 396 is driven by _re/tools/test_marriage_name.py. The first attempt to exercise this section ran while the 396 sources were landing, and two harness tests that compile against the working tree (test_funeral, test_witch_doctor) failed for that reason alone; both are green on this run.
+
+## 395. The university card's own body and buttons
+
+The application card was emitted with an empty body and one button the card
+does not have. Both are now the card's own. `ScenarioSchoolUniversity::RefreshScenario`
+`0x73f2a67ecc` branches on whether the hero already applied at this age
+(`[hero+0x218]` is the application age, `[hero+0x20]` the current one) and stores a
+different body either way, then rebuilds its button list from the class's static
+string slots. Resolving those slots through `tools/lit_cell.py` gives the texts:
+
+- normal branch: body `#11631 'Apply to university today!'` (slot `0x5c46558`)
+- already-applied branch: body `#48630 'You have already been accepted to university.'`
+  (slot `0x5c46530`)
+- buttons: `#11629 'Apply to university'` (`0x5c46018`), `#18846 'Enlist in the military'`
+  (`0x5c46528`), `#21323 'Get a job instead'` (`0x5c46538`), plus `#22037 'Golden diploma'`
+  (`0x5c46020`) when `[hero+0x131]` is set, `#20430 'Focus on royal life instead'`
+  (`0x5c46548`) for royalty, and `#20831 'Fund this program'` (`0x5c46550`) on the
+  already-applied branch
+- title stays `#18550 'Education'` (`0x5c41c30`)
+
+Before this section the port printed no body at all and offered `'Take some time off'`,
+which is a button of the *rejection* card (`#21322`, §392), not of this one. The port
+now emits the normal body and the three unconditional buttons, and still takes the
+application in every replay (`shortcut:`, unchanged from §313).
+
+Ceilings: the already-applied body, the Golden diploma resume perk, the royal exit and
+the Fund this program button are not modelled, so their branch never runs here. The
+`Enlist in the military` and `Get a job instead` buttons are listed but not dispatched —
+a replay that presses them is out of reach of the harness.
+
 ## 394. Physical therapy and surgery for a sports injury
 
 Two menu rows the port had nowhere to put. The literal table carries the whole row for each:

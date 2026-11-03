@@ -324,6 +324,8 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
     out.narrative = "You have chosen to marry " + h.loverName + " at " +
                     (definite ? std::string("the ") : std::string()) + venue + ".";
     out.extra.push_back("The wedding cost " + money(price) + ".");
+    // The identity card follows the wedding (REPORT.en.md 396).
+    h.nameChangePending = true;
   } else {
     out.choice = "Actually, never mind";
     out.narrative = "I called off my wedding with " + h.loverName + ".";
@@ -345,6 +347,67 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
 //
 // shortcut: the game's success roll for begging is not read; the port keeps the
 // couple together when the relationship is still above 40 and lets them go otherwise.
+// ScenarioNameChangeMarriage (REPORT.en.md 396): the identity card that follows a
+// wedding. Its strings were resolved out of the class's static ctor
+// (0x73f28b842c): title #26311 'Identity', body #32275
+// "Now that you're married, you're wondering if you should change your last name.
+//
+// What last name will you choose?", rows #50142 'Your Last Name', #69671
+// '{0} Last Name' and #31091 'Name', and the three buttons #28237 'Keep {0} {1}',
+// #15401 'Change to {0} {1}' and #11136 'All the way: {0} {1}'.
+//
+// shortcut: the {0} {1} pairs are the hero's first name and a surname here, and the
+// spouse's surname is drawn from the port's own name table because a partner record
+// in this port carries a given name only (a native spouse is a full SimPerson with
+// last name and honorific -- the same static ctor also loads #30530/#30532/#18178/
+// #30671 Mr./Mrs./Dr./Mx. for the 'Name' row, which this card does not model).
+// Which button writes which surname was not recovered past the two fields
+// _halfSurname and _fullSurname, so the mapping below is the reading the button
+// labels support: keep, take the spouse's, hyphenate.
+bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.loverStatus != "married") return false;
+  if (!h.nameChangePending) return false;
+  h.nameChangePending = false;
+  if (h.firstName.empty()) return false;
+  if (!ensureTable("a16_casino-casino-celebrity-name-enc")) return false;
+  const Table& names = tbl("a16_casino-casino-celebrity-name-enc");
+  if (names.size() == 0) return false;
+  if (h.nameChangeSurname.empty()) {
+    h.nameChangeSurname = trim(names.at(nameRng_.below(uint32_t(names.size())), "Last Name"));
+    if (h.nameChangeSurname.empty()) return false;
+  }
+  const std::string own = h.lastName.empty() ? h.firstName : h.lastName;
+  const std::string spouse = h.nameChangeSurname;
+  const std::string kept = h.firstName + " " + own;
+  const std::string taken = h.firstName + " " + spouse;
+  const std::string joined = h.firstName + " " + own + "-" + spouse;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioNameChangeMarriage";
+  out.title = "Identity";  // #26311
+  out.body = "Now that you're married, you're wondering if you should change your last "
+             "name.\n\nWhat last name will you choose?";  // #32275
+  out.body += "\n\nYour Last Name: " + own;             // #50142
+  out.body += "\n" + h.firstName + " Last Name: " + spouse;  // #69671
+  out.body += "\nName: " + kept;                        // #31091
+  out.options = {"Keep " + kept, "Change to " + taken, "All the way: " + joined};
+  int lane = forcedChoice;
+  if (lane < 0 || lane > 2) lane = int(nameRng_.below(3));
+  out.choice = out.options[size_t(lane)];
+  if (lane == 1) {
+    h.lastName = spouse;
+    out.narrative = "I took the last name " + spouse + ".";
+  } else if (lane == 2) {
+    h.lastName = own + "-" + spouse;
+    out.narrative = "I took both last names and became " + joined + ".";
+  } else {
+    out.narrative = "I kept the last name " + own + ".";
+  }
+  return true;
+}
+
 bool Sim::loverLeavesYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (forcedChoice < 0 && !h.relationshipOn) return false;

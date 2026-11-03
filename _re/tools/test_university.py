@@ -51,6 +51,9 @@ assert len(offers) == 1, offers
 ev = offers[0]
 assert ev["age"] == 19, ev["age"]
 assert ev["title"] == "Education", ev["title"]
+# The body is the card's own (REPORT.en.md 395): RefreshScenario 0x73f2a67ecc
+# stores #11631 into the body slot on the not-yet-applied branch.
+assert ev["body"] == "Apply to university today!", ev["body"]
 assert ev["choice"] == "Apply to university", ev["choice"]
 # The accepted card's own line comes last; the college start line belongs to the
 # tuition screen that answers it (REPORT.en.md 317), which is a card of its own.

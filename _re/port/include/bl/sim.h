@@ -152,8 +152,8 @@ enum PendingCard {
   kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
   kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
   kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
-  kPendingZooInterview = 54,
-  kPendingCommunity = 55,      // the community-college card (REPORT.en.md 392)        // the zoo candidate interview that follows the hiring card (REPORT.en.md 389)
+  kPendingZooInterview = 54,       // the zoo candidate interview (REPORT.en.md 389)
+  kPendingCommunity = 55,         // the community-college card (REPORT.en.md 392)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -428,6 +428,7 @@ class Sim {
   bool exLoverSextYear(Life& life, AgeUp& out, int forcedChoice);
   // The partner ends it, REPORT.en.md 164.
   bool loverLeavesYear(Life& life, AgeUp& out, int forcedChoice);
+  bool nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice);
   // The wedding plan, REPORT.en.md 160.
   bool loverWeddingYear(Life& life, AgeUp& out, int forcedChoice);
   // The elopement offer, REPORT.en.md 159.
@@ -1329,6 +1330,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   // first ~80 wheel seats ever led a life, so a family late in the list never did.
   bool wheelStarted_ = false;
   Rng loverRng_;
+  Rng nameRng_;  // the identity card after a wedding (REPORT.en.md 396)
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own
   // idiom for a new card (REPORT.en.md 187).

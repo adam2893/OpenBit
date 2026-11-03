@@ -778,6 +778,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       surgRng_(seed ^ 0x2a6c4e8f1d3b5a79ULL ^ 0xbf58476d1ce4e5b9ULL),
       adoptRng_(seed ^ 0x3b7d5f9a1c4e6820ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
+      nameRng_(seed ^ 0x1f2e3d4c5b6a7988ULL ^ 0x8c9d0e1f2a3b4c5dULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -4750,6 +4751,10 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // so they run before the wheel and never return (REPORT.en.md 381).
   if (forcedChoice < 0 && zooSellYear(life, out, forcedChoice)) return true;
   if (forcedChoice < 0 && casinoSellYear(life, out, forcedChoice)) return true;
+  // The identity card after a wedding is a one-shot follow-up: it runs before the
+  // wheel the year after the ceremony and never returns (REPORT.en.md 396).
+  if (forcedChoice < 0 && life.hero.nameChangePending &&
+      nameChangeMarriageYear(life, out, forcedChoice)) return true;
   // A casino that has bled past zero is the case the invest card exists for, and
   // the wheel rarely gets there before bankruptcy: top the pot up first.
   if (forcedChoice < 0 && life.hero.ownsCasino && life.hero.casinoBank < 0 &&
@@ -5741,7 +5746,16 @@ bool Sim::universityYear(Life& life, AgeUp& out, int forcedChoice) {
   out.extra = extra;
   out.table = "registry:ScenarioSchoolUniversity";
   out.title = "Education";
-  out.options = {"Apply to university", "Get a job instead", "Take some time off"};
+  // The body and the buttons are the card's own: RefreshScenario 0x73f2a67ecc
+  // stores #11631 'Apply to university today!' into the body slot (+0x48) on the
+  // not-yet-applied branch and #48630 'You have already been accepted to university.'
+  // on the repeat branch, then builds the button list from the static string slots
+  // #11629 'Apply to university', #18846 'Enlist in the military' and
+  // #21323 'Get a job instead'. (The same method also offers #22037 'Golden diploma'
+  // when the resume perk is owned, #20430 'Focus on royal life instead' to royalty and
+  // #20831 'Fund this program' on the repeat branch; the port models none of these.)
+  out.body = "Apply to university today!";  // #11631
+  out.options = {"Apply to university", "Enlist in the military", "Get a job instead"};
   if (accepted) {
     // The accepted application only buys the tuition screen (ScenarioSchoolFund,
     // REPORT.en.md 317): the hero is enrolled by that card's own lane.
