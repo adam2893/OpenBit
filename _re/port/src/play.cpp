@@ -156,7 +156,7 @@ void applyStats(Hero& h, const AgeUp& ev) {
   h.karma += ev.karma;
   h.discipline += ev.discipline;
   h.happiness += ev.happiness;
-  h.health += ev.health;
+  h.health += ev.health - ev.ailmentCost;
   h.smarts += ev.smarts;
   h.looks += ev.looks;
   h.fame = std::max(0.0f, std::min(100.0f, h.fame + float(ev.fame)));

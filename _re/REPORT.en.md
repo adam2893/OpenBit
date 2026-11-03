@@ -33813,3 +33813,36 @@ closed, not certify unrelated output. Complete producer/card alignment, native
 queue/provenance contracts, reused-Sim transaction rollback and full native
 state/RNG evidence are not closed by this scripted conflict guard.
 
+## 408. Played lives apply the scripted annual illness health cost
+
+The P1 paired-frontend regression reproduced seed7,United States,male,ages3
+with default answers: played health95 versus scripted health82. Scripted events
+contained positive ailmentCost, so the fixture exercised actual disease damage
+rather than a zero-cost equality. play.cpp applyStats added only ev.health;
+script.cpp already added ev.health-ev.ailmentCost under the native-backed annual
+illness contract recorded in REPORT247.
+
+The one-line played formula now matches the scripted formula. Existing clamping,
+normal card deltas and death checks are unchanged. Read-only review confirmed
+there is no second deduction in Sim: it accumulates/reports the cost, while fork
+previews discard their state and only the parent applies its fresh AgeUp once.
+The matched fixture verifies requested age3/alive completion plus final health,
+age and alive equality, preventing matching premature exits from passing.
+
+Build and paired RED/GREEN checks exit0 after correction. Existing played-life
+check passed82 cards through age79 with48 answered lanes; disease lifecycle
+check passed364 diagnoses,198 cures and39 lives with an illness. Independent
+scoped review found no blocking defect; its known-completion fixture hardening
+was added. Full durable suite408:190 PASS /0FAIL,planned=completed=190,exit0,
+interrupted=false,changed_inputs=[],snapshot_error=null,endpoint-sha256.
+Logs/manifests: /tmp/qdir/suite408-run.log and /tmp/qdir/suite408/.
+Before/after binary SHA-256:
+6e4d0030614450cefbf464a859e7d174e99c2c55af2d0355edf2b7378e46fc1b.
+No source/header/tool/content/binary changes occurred during full acceptance.
+
+shortcut: this paired fixture proves one nonzero-damage default life, not
+per-step/full-state native equivalence or independent death/clamp edge coverage.
+Played card-cap versus scripted year-cap alignment remains separate. Demo
+main.cpp health omission and alternative-button dispatch remain separate open
+frontend work; the one-line played correction does not claim to fix them.
+
