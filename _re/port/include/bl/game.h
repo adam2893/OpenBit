@@ -612,6 +612,7 @@ struct Hero {
   int zooFoodPerAnimal = 2500;   // the current supplier's annual cost per animal (386)
   int zooSupplierAge = -1;       // the year the food supplier card last fired (386)
   int zooCommentAge = -1;        // the year the comment card last fired (387)
+  int zooHireAge = -1;           // the year the hiring card last fired (388)
   std::string zooHabitat;        // the habitat the card is about
   std::string zooAnimalSpecies;  // the species ("Big Cat")
   std::string zooAnimalBreed;    // the breed inside the species

@@ -4588,6 +4588,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-supplier"},
         {&Sim::zooCommentCardYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-comment-card"},
+        {&Sim::zooHireYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-hire"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
         {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11640,6 +11642,65 @@ bool Sim::zooRenameYear(Life& life, AgeUp& out, int forcedChoice) {
 // The card itself comes from a16_zoo-comment-card-color-enc (Snippet, Attraction Type,
 // Commonness Score); the price is that attraction's Installation Cost in
 // a16_zoo-attractions-enc (REPORT.en.md 387).
+// The zoo's hiring card (ScenarioZooEmployeeHiring; the class name literal is #37370).
+// Body #22966 'Hire an employee for your zoo today!', rows #11600 'Applicant',
+// #16054 'Competence' and #19262 'Existing Competence', answers #22973 'Hire them'
+// and #26371 'Ignore it'. The candidate comes from
+// a16_zoo-employee-application-color-enc (String, Employee Type, Min Competence,
+// Max Competence, Commonness Score) -- 71 rows whose types are the zoo's own rooms
+// (arctic animal expert, veterinarian, operations manager...) -- and the application
+// sentence is that row's String with its tokens resolved. The journal is #24494
+// 'I interviewed a candidate for the open ' + the type + ' position.' (REPORT.en.md 388).
+bool Sim::zooHireYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooHireAge >= 0 && h.age - h.zooHireAge < 3) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_zoo-employee-application-color-enc")) return false;
+  const Table& t = tbl("a16_zoo-employee-application-color-enc");
+  std::vector<size_t> pool;
+  for (size_t r = 0; r < t.size(); ++r)
+    if (!trim(t.at(r, "Employee Type")).empty()) pool.push_back(r);
+  if (pool.empty()) return false;
+  const size_t row = pool[zooMenuRng_.below(uint32_t(pool.size()))];
+  const std::string app = spyUpperFirst(resolve(trim(t.at(row, "String"))));
+  const std::string type = lower(trim(t.at(row, "Employee Type")));
+  if (app.empty() || type.empty()) return false;
+  const int minC = int(t.num(row, "Min Competence"));
+  const int maxC = int(t.num(row, "Max Competence"));
+  int comp = 50;
+  if (maxC > 0 && maxC >= minC) comp = minC + int(zooMenuRng_.below(uint32_t(maxC - minC + 1)));
+  else if (minC > 0) comp = minC < 100 ? minC + int(zooMenuRng_.below(uint32_t(101 - minC))) : minC;
+  if (comp < 0) comp = 0;
+  if (comp > 100) comp = 100;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooHireAge = h.age;
+  const bool candFemale = zooMenuRng_.chance(0.5);
+  const std::string who = drawFirstName(candFemale) + " " + drawSurname();
+  out.table = "registry:ScenarioZooEmployeeHiring";
+  out.title = "Employee Candidate";  // #18688 (a row label upstream; the only recovered heading)
+  out.body = "Hire an employee for your zoo today!";  // #22966
+  out.body += "\n\n" + app;
+  out.body += "\n\nApplicant: " + who;                       // #11600
+  out.body += "\nCompetence: " + std::to_string(comp);         // #16054
+  out.body += "\nExisting Competence: " + std::to_string(h.zooEmployeeCompetence);  // #19262
+  out.options = {"Hire them", "Ignore it"};  // #22973 / #26371
+  const int pick = forcedChoice < 0 ? int(zooMenuRng_.below(2)) : (forcedChoice > 1 ? 1 : forcedChoice);
+  out.choice = out.options[size_t(pick)];
+  out.narrative = "I interviewed a candidate for the open " + type + " position.";  // #24494
+  if (pick == 0) {
+    h.zooStaff += 1;
+    h.zooEmployeeCompetence = (h.zooEmployeeCompetence * 2 + comp) / 3;
+    h.zooEngagement = h.zooEngagement < 98 ? h.zooEngagement + 2 : 100;
+    out.extra.push_back("I hired " + who + " as a " + type + " for my zoo.");
+  }
+  return true;
+}
+
 bool Sim::zooCommentCardYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;

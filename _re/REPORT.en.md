@@ -23511,6 +23511,36 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 388. The zoo's hiring card
+
+The candidate screen was recovered far enough to print: body `#22966 'Hire an employee
+for your zoo today!'`, rows `#11600 'Applicant'`, `#16054 'Competence'` and `#19262
+'Existing Competence'`, answers `#22973 'Hire them'` and `#26371 'Ignore it'`, and the
+journal `#24494 'I interviewed a candidate for the open '` + the employee type +
+`' position.'`. The class itself is `ScenarioZooEmployeeHiring` (`#37370`).
+
+The candidate comes from `a16_zoo-employee-application-color-enc` (columns `String`,
+`Employee Type`, `Min Competence`, `Max Competence`, `Commonness Score`; 71 data rows
+whose types are the zoo's own rooms -- arctic animal expert, aviary animal expert,
+veterinarian, operations manager and the rest). The application sentence is that row's
+`String` with its `<he/she>`-style tokens resolved and its first letter capitalised, and
+the competence is drawn inside the row's own band; a row that only names one bound of
+the band draws up to 100 from it. Hiring raises the staff count by one and moves the
+keeper competence a third of the way toward the candidate's, and the hire is logged.
+
+`shortcut:` the candidate's name is drawn from the port's own name pools (the native
+candidate object is a generated person the port does not model), the title uses the
+recovered row label `#18688 'Employee Candidate'` because no heading literal survived,
+the reject answer reuses the recovered `#26371 'Ignore it'` line, and the port has no
+wage model, so the hire costs nothing up front -- the card is capped by the zoo's staff
+pool instead.
+
+`_re/tools/test_zoo_hire.py` sweeps forty zoo owners in only-mode, rebuilds the body
+from the recovered text, checks both journals and the competence band: `hiring cards:
+56 | hires: 32 | ignores: 24`.
+
+The full 170-test suite ran on the binary these notes describe (5a3b17bbb197aef18f76..., 170 PASS / 1 FAIL). The failure was test_call_off_engagement's free-play status sweep: the new family's wheel ticket left no married ending among the first thirty seeds, so the sweep was widened to sixty and re-run green (cards: 1, statuses: dating / engaged / married). No code changed.
+
 ## 387. The zoo's comment card
 
 A patron's suggestion was recovered whole: title `#15992 'Comment Card'`, body

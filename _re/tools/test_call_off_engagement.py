@@ -68,7 +68,7 @@ assert cards, "no engagement was ever called off"
 
 # The engaged status is reachable in free play, not only from the fixture.
 seen = set()
-for seed in range(1, 31):
+for seed in range(1, 61):  # widened when REPORT 388 zoo-hire family joined the wheel
     seen.add(run(seed, ages=80, relationship=True)["final"]["loverStatus"])
 # Since the elopement (§159) and wedding (§160) cards landed, an engagement is usually
 # resolved inside the same year, so a life need not *end* engaged. The status is
