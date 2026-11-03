@@ -23513,6 +23513,56 @@ shortcut: the menu's own prompt is not in the dump, so the body is the menu labe
 
 The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
 
+## 401. Guaranteed mutual hyphenation and native surname ordering
+
+Extends section400 without inventing missing lover sexuality, residence or fame
+inputs. [obs] ScenarioNameChangeSpouse(String) at 0x73f28b907c calls willingness
+once. True copies heroNew into spouseNew. False reaches gender==1 and strict
+Att_craziness<70 at 0x73f28b9170–918c and makes that same copy. Consequently
+female partners below70 ALWAYS produce equal new surnames on the hyphenated
+marriage route, independently of the unavailable willingness inputs.
+The port now queues that provable result with existing kind58/payload.a=1.
+
+[obs] SimLover::HyphenatedLastNameForMarriage at 0x73f30d43c4 keeps the
+first dash-separated part of each surname. Gender==1 places the partner part
+first; other genders place the hero part first (tail0x73f30d44e4–4508,
+slot0x5c34d50 {0}-{1}). The port previously concatenated whole surnames in
+hero-first order. Carter-Reed and female partner Stone-Jones now produce
+Stone-Carter, not Carter-Reed-Stone-Jones. The marriage card and stored hero
+surname use that same native result; the full maiden surname remains intact.
+
+[obs] Equal hero/spouse new surnames at RefreshScenario0x73f28ba358 use
+#28703 Legally bound, #70761 {0}Your {1} has also decided to change {2} name
+to {3}., and #69752 {0} also decided to hyphenate {1} last name. The prefix
+is empty here (0x73f28ba694–6c0), not a leading pair of newlines. The queued
+card updates the partner surname; it does not advance age/year. Copying Life
+preserves the payload and replays the same result without extra random draws.
+The per-card payload captures the constructor surname string: a later queued hero
+rename must not replace the surname already promised to the partner. A second
+RED regression changed the restored hero surname before delivery and exposed the
+mutable-state lookup; capturing the string fixes that interleaving. Empty mutual
+captures are rejected before any surname mutation.
+
+shortcut: keep-own, male-partner and craziness>=70 hyphenated follow-ups still
+need the native willingness inputs. They remain unsupported rather than guessed.
+The native willingness call's random draw is not replayed for the guaranteed
+subset; this port has isolated streams and does not claim global RNG parity.
+Spouse-name surrogate, binary pronouns and dismissal convention remain as400.
+
+Regression tools/test_spouse_hyphenation.py links the real library. RED observed
+old surname ordering/truncation; assertions cover0,19,20,69,70,100 craziness,
+both surname orders, original maiden retention, delayed partner mutation,
+same-age one-shot dequeue and replay from a copied pending Life. Existing marriage
+regression retains exact choice/journal checks with corrected native ordering.
+Acceptance: final build exited0; all six focused identity tests passed. The frozen
+full suite completed183 PASS / 0 FAIL, exit0, binary SHA-256
+815998e778492c6c5d169dc1d2b97be4e4a30495f3999ffcf8bbdcb4b5671dcd.
+All217 source/header/test digest checks and the final binary digest passed.
+JSON replay seed35 verified the mutual-name journal immediately follows its
+marriage card at the same age. Independent static review found no actionable
+issues in the initial mutual-name diff; the subsequent captured-name interleaving
+fix received local diff review plus fresh focused/full-suite verification.
+
 ## 400. Spouse surname follow-up: the full-surname route
 
 [obs] Native marriage metadata names +0x16c _halfChoiceZI, +0x170 _fullChoiceZI,

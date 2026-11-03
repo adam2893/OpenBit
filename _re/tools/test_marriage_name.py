@@ -15,7 +15,6 @@ BODY = re.compile(
     r"Name: (?P<full>.+)$")
 KEPT = re.compile(r"^Keep (?P<first>\S+) (?P<own>.+)$")
 TAKEN = re.compile(r"^All the way: (?P<first>\S+) (?P<spouse>.+)$")
-JOINED = re.compile(r"^Change to (?P<first>\S+) (?P<own>.+)-(?P<spouse>.+)$")
 
 
 def run(spec):
@@ -56,10 +55,11 @@ for seed in range(1, 41):
             assert k and k.group("spouse") == spouse, (seed, choice)
             assert e["logLines"][-1] == "I took the last name " + spouse + ".", (seed, e["logLines"])
         else:
-            k = JOINED.match(choice)
-            assert k and k.group("own") == own and k.group("spouse") == spouse, (seed, choice)
+            # The fixture partner is female; native helper puts her first dash-part first.
+            surname = spouse.split("-")[0] + "-" + own.split("-")[0]
+            assert choice == "Change to " + first + " " + surname, (seed, choice)
             assert e["logLines"][-1] == ("I took both last names and became " + first + " " +
-                                         own + "-" + spouse + "."), (seed, e["logLines"])
+                                         surname + "."), (seed, e["logLines"])
         assert m.group("full") == first + " " + own, (seed, m.group("full"))
 
 assert seen["cards"] >= 3, seen

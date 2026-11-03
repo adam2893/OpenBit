@@ -542,11 +542,14 @@ bool Sim::nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
-bool Sim::nameChangeSpouseYear(Life& life, AgeUp& out) {
-  const Hero& h = life.hero;
+bool Sim::nameChangeSpouseYear(Life& life, AgeUp& out, const Life::PendingCard& pending) {
+  Hero& h = life.hero;
+  const bool bothChanged = pending.a == 1;
+  if (bothChanged && pending.text.empty()) return false;
   if (h.loverStatus != "married" || h.firstName.empty() ||
       h.lastName.empty() || h.loverName.empty() || h.nameChangeSurname.empty())
     return false;
+  if (bothChanged) h.nameChangeSurname = pending.text;
   const std::string pronoun = h.loverFemale ? "her" : "his";
   const std::string spouse = h.loverName + " " + h.nameChangeSurname;
   const auto extra = out.extra;
@@ -560,7 +563,13 @@ bool Sim::nameChangeSpouseYear(Life& life, AgeUp& out) {
   out.options = {"OK"};
   out.choice = "OK";
   out.narrative = h.loverName + " decided to keep " + pronoun + " name.";
-  // ponytail: only the full-surname ctor route; add other routes with lover traits.
+  if (bothChanged) {
+    out.title = "Legally bound";  // #28703
+    out.body = std::string("Your ") + (h.loverFemale ? "wife" : "husband") +
+               " has also decided to change " + pronoun + " name to " + spouse + ".";
+    out.narrative = h.loverName + " also decided to hyphenate " + pronoun + " last name.";
+  }
+  // ponytail: only input-independent outcomes; add other routes with lover traits.
   return true;
 }
 
@@ -581,7 +590,11 @@ bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
   const std::string spouse = h.nameChangeSurname;
   const std::string kept = h.firstName + " " + own;
   const std::string taken = h.firstName + " " + spouse;
-  const std::string joined = h.firstName + " " + own + "-" + spouse;
+  const std::string ownPart = own.substr(0, own.find('-'));
+  const std::string spousePart = spouse.substr(0, spouse.find('-'));
+  const std::string joinedSurname = h.loverFemale ? spousePart + "-" + ownPart
+                                                : ownPart + "-" + spousePart;
+  const std::string joined = h.firstName + " " + joinedSurname;
   const std::vector<std::string> extra = out.extra;
   out = AgeUp();
   out.extra = extra;
@@ -604,8 +617,11 @@ bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
     life.pendingCards.push_back(kPendingSpouseName);
   } else if (lane == 1) {
     h.nameChangeMaiden = own;
-    h.lastName = own + "-" + spouse;
+    h.lastName = joinedSurname;
     out.narrative = "I took both last names and became " + joined + ".";
+    // ctor(String) sets the same surname even when willingness returns false.
+    if (h.loverFemale && h.loverCraziness < 70)
+      life.pendingCards.emplace_back(kPendingSpouseName, 1, -1, joinedSurname);
   } else {
     out.narrative = "I kept the last name " + own + ".";
   }

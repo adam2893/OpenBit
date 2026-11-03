@@ -222,9 +222,11 @@ struct Life {
     int kind = 0;
     int a = -1;   // child index, or -1
     int b = -1;   // row index, or -1
+    std::string text;  // captured native surname for the mutual-name card (401)
     PendingCard() = default;
     // Implicit from the kind, so every existing push still reads the same.
-    PendingCard(int k, int inA = -1, int inB = -1) : kind(k), a(inA), b(inB) {}
+    PendingCard(int k, int inA = -1, int inB = -1, std::string inText = {})
+        : kind(k), a(inA), b(inB), text(std::move(inText)) {}
   };
   std::vector<PendingCard> pendingCards;
   // The friend-advice card's PresentedCountForScenario counter (REPORT.en.md
@@ -432,7 +434,7 @@ class Sim {
   // The partner ends it, REPORT.en.md 164.
   bool loverLeavesYear(Life& life, AgeUp& out, int forcedChoice);
   bool nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice);
-  bool nameChangeSpouseYear(Life& life, AgeUp& out);
+  bool nameChangeSpouseYear(Life& life, AgeUp& out, const Life::PendingCard& pending);
   bool nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameOutcomeYear(Life& life, AgeUp& out, int forcedChoice);

@@ -4175,7 +4175,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     const Life::PendingCard pending = life.pendingCards[pick];
     life.pendingCards.erase(life.pendingCards.begin() + long(pick));
     const int kind = pending.kind;
-    if (kind == kPendingSpouseName) return nameChangeSpouseYear(life, out);
+    if (kind == kPendingSpouseName) return nameChangeSpouseYear(life, out, pending);
     if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
     if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
     if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
