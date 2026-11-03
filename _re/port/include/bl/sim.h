@@ -429,6 +429,7 @@ class Sim {
   // The partner ends it, REPORT.en.md 164.
   bool loverLeavesYear(Life& life, AgeUp& out, int forcedChoice);
   bool nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice);
+  bool nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice);
   // The wedding plan, REPORT.en.md 160.
   bool loverWeddingYear(Life& life, AgeUp& out, int forcedChoice);
   // The elopement offer, REPORT.en.md 159.

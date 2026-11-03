@@ -929,6 +929,10 @@ struct Hero {
   // SimPerson with its own surname).
   std::string nameChangeSurname;
   bool nameChangePending = false;  // the identity card has not been offered yet
+  // The surname the hero carried into the marriage, so the divorce card can offer it
+  // back (REPORT.en.md 397). Set when the identity card actually changes the name.
+  std::string nameChangeMaiden;
+  bool nameChangeDivorcePending = false;  // a divorce has not offered the name back
   int relationship = 60;         // the game's own relationship score, 0-100
   // The lowest the score ever got (REPORT.en.md 192): the break-up gate is
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether

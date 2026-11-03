@@ -23513,6 +23513,50 @@ shortcut: the menu's own prompt is not in the dump, so the body is the menu labe
 
 The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
 
+## 397. The identity card after a divorce
+
+Answering the obvious follow-up to 396: when the marriage ends, does the hero take the
+old surname back? `ScenarioNameChangeDivorce` is the third member of the identity family
+and reuses the marriage card's title, row and honourific pool verbatim.
+
+Native contract, read from the class's static ctor `0x73f28b767c` (`RefreshScenario`
+`0x73f28b76f8`, `ChoiceSelectedAtIndex` `0x73f28b7990`):
+
+| slot | literal |
+| --- | --- |
+| title | #26311 `Identity` |
+| body | #32272 `Now that you're divorced, you're thinking about changing your name back.\n\nWhat will you do?` |
+| row | #31091 `Name` |
+| honourifics | #30530 `Mr.` #30532 `Mrs.` #30671 `Mx.` #18178 `Dr.` |
+| buttons | #21802 `Go back to {0} {1}` #39986 `Stay as {0} {1}` |
+
+Both buttons quote a full name, but not the same one: `Stay as` repeats the name in the
+`Name` row, while `Go back to` quotes the maiden name, which the row deliberately does not
+show. That is the one behavioural detail worth pinning down in a test, and it is the case
+the first run of `_re/tools/test_marriage_name_divorce.py` caught.
+
+The card is offered only when the wedding card of 396 actually *changed* the surname. The
+port records the pre-marriage surname in `Hero::nameChangeMaiden` at both changed lanes of
+`Sim::nameChangeMarriageYear` (the flat `Change to` lane and the hyphenating `All the way`
+lane), and the divorce side arms `Hero::nameChangeDivorcePending` at the two leaving lanes
+of `Sim::loverLeavesYear` — the card then runs once, in the priority chain, and never
+returns. A hero who never married, or who kept the name at the wedding, is never offered it.
+
+The changed surname is the only effect on either lane; no stat, money or journal from the
+native side was recovered, so both journal lines are the port's own and say which choice was
+made.
+
+**shortcut:** one card, no spouse-side view — the native card can also rename the departed
+spouse. The sleeve's honourific pool is carried as body text rather than a dropdown in the
+marriage card's manner, and the `Mr./Mrs.` honourific is not prefixed to the names.
+
+Files: `_re/port/include/bl/game.h` (`nameChangeMaiden`, `nameChangeDivorcePending`),
+`_re/port/include/bl/sim.h`, `_re/port/src/fam/lover.cpp`
+(`Sim::nameChangeDivorceYear`), `_re/port/src/sim.cpp` (the priority call),
+`_re/tools/test_marriage_name_divorce.py`.
+
+The full 179-test suite ran on the binary these notes describe (f48e85c5b4ea8f6f7641d07d6db1f368f742ded27d6b51f561ed6569a96e08ec, 179 PASS / 0 FAIL): _re/tools/test_marriage_name_divorce.py drives the card over two hundred married lives, checks both answers and the name each button quotes, and proves a hero who never married is never offered it.
+
 ## 396. The identity card after a wedding
 
 Getting married is where the port used to stop: the hero kept the surname they were

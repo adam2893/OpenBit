@@ -364,6 +364,47 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
 // Which button writes which surname was not recovered past the two fields
 // _halfSurname and _fullSurname, so the mapping below is the reading the button
 // labels support: keep, take the spouse's, hyphenate.
+// ScenarioNameChangeDivorce (REPORT.en.md 397): the identity card that follows a
+// divorce. Strings from the class's static ctor 0x73f28b767c: title #26311
+// 'Identity', body #32272 "Now that you're divorced, you're thinking about changing
+// your name back.\n\nWhat will you do?", row #31091 'Name' (with the same
+// Mr./Mrs./Dr./Mx. honourific pool the marriage card carries) and the two buttons
+// #21802 'Go back to {0} {1}' and #39986 'Stay as {0} {1}'.
+//
+// shortcut: the slogans' journals were not recovered, so both lines below are the
+// port's own; and the card is offered only when the marriage card actually changed
+// the hero's surname (Hero::nameChangeMaiden carries the old one).
+bool Sim::nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (!h.nameChangeDivorcePending) return false;
+  h.nameChangeDivorcePending = false;
+  if (h.nameChangeMaiden.empty() || h.firstName.empty()) return false;
+  const std::string maiden = h.nameChangeMaiden;
+  const std::string kept = h.lastName.empty() ? maiden : h.lastName;
+  const std::string back = h.firstName + " " + maiden;
+  const std::string stays = h.firstName + " " + kept;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioNameChangeDivorce";
+  out.title = "Identity";  // #26311
+  out.body = "Now that you're divorced, you're thinking about changing your name back."
+             "\n\nWhat will you do?";  // #32272
+  out.body += "\n\nName: " + stays;  // #31091
+  out.options = {"Go back to " + back, "Stay as " + stays};
+  int lane = forcedChoice;
+  if (lane < 0 || lane > 1) lane = int(nameRng_.below(2));
+  out.choice = out.options[size_t(lane)];
+  if (lane == 0) {
+    h.lastName = maiden;
+    out.narrative = "I went back to the name " + back + ".";
+  } else {
+    out.narrative = "I stayed " + stays + ".";
+  }
+  h.nameChangeMaiden.clear();
+  return true;
+}
+
 bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.loverStatus != "married") return false;
@@ -397,9 +438,11 @@ bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
   if (lane < 0 || lane > 2) lane = int(nameRng_.below(3));
   out.choice = out.options[size_t(lane)];
   if (lane == 1) {
+    h.nameChangeMaiden = own;
     h.lastName = spouse;
     out.narrative = "I took the last name " + spouse + ".";
   } else if (lane == 2) {
+    h.nameChangeMaiden = own;
     h.lastName = own + "-" + spouse;
     out.narrative = "I took both last names and became " + joined + ".";
   } else {
@@ -453,6 +496,7 @@ bool Sim::loverLeavesYear(Life& life, AgeUp& out, int forcedChoice) {
   ended.city = h.city;
   h.exLovers.push_back(ended);
   ++h.exes;
+  if (married) h.nameChangeDivorcePending = true;  // REPORT.en.md 397
   h.breakUpPending = true;
   h.breakUpWord = h.loverStatus;
   h.breakUpName = h.loverName;

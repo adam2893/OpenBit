@@ -4755,7 +4755,9 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
   // wheel the year after the ceremony and never returns (REPORT.en.md 396).
   if (forcedChoice < 0 && life.hero.nameChangePending &&
       nameChangeMarriageYear(life, out, forcedChoice)) return true;
-  // A casino that has bled past zero is the case the invest card exists for, and
+
+  if (forcedChoice < 0 && life.hero.nameChangeDivorcePending &&
+      nameChangeDivorceYear(life, out, forcedChoice)) return true;  // A casino that has bled past zero is the case the invest card exists for, and
   // the wheel rarely gets there before bankruptcy: top the pot up first.
   if (forcedChoice < 0 && life.hero.ownsCasino && life.hero.casinoBank < 0 &&
       casinoInvestYear(life, out, forcedChoice)) return true;
