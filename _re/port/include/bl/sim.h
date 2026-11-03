@@ -545,7 +545,9 @@ class Sim {
   // Replays one exact real table row instead of drawing one. The Phase 1 bench
   // uses it to feed the port the pick the game actually made, so the comparison
   // isolates mechanics from selection. row is 1-based; row <= 0 clears the
-  // override. A table that is not loaded yet is loaded on demand (the wired-up
+  // override. Class/table requests share one slot: each request replaces the old
+  // one, including rejection or cancellation, so reuse cannot replay stale input.
+  // A table that is not loaded yet is loaded on demand (the wired-up
   // loop only loads five), so a script may name any real gamedata_plain table.
   bool forceScenario(const std::string& table, long long row);
   // Replays one scripted-event scenario by its real il2cpp class name, rendered

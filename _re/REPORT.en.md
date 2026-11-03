@@ -33693,3 +33693,43 @@ state, RNG or rewind epochs. Lossless capture and immutable execution remain
 open canonical parity requirements. No live capture/purchase/network action
 was performed for this fix.
 
+## 405. Replay rejection, cancellation and replacement cannot retain stale requests
+
+P0.2 lifecycle regression reproduced a public Sim API failure: accepting
+ScenarioWitchDoctor, then rejecting an unknown class, still emitted the old
+registry:ScenarioWitchDoctor card. An identically seeded control instead emitted
+a16_social-media-channels-enc. The original setters independently retained
+class/table payloads and returned on validation failure without invalidation.
+
+Both forceScenario and forceScenarioClass now clear all four class/table replay
+fields before validating the new request or handling cancellation. The shared
+slot therefore represents only the latest accepted request; rejection leaves
+no stale replay, and either cancellation form clears either mode. The public
+header records this harness contract. No native gameplay probability, schedule
+or rule is changed or claimed recovered.
+
+The real-data C++ fixture tools/test_replay_lifecycle.py uses public APIs and
+compares actual outgoing cards against independently seeded controls. Nineteen
+lanes cover same/cross-mode invalid class, choice, table and row, successful
+re-arm after rejection, same/cross-mode cancellation, negative-row cancellation,
+and same/cross-mode replacement. The control explicitly cancels after first
+consumption, preventing symmetric stale retention from passing the second-card
+comparison. Separate no-followup class/table fixtures assert empty pending
+queues so another card cannot mask consumption. Comparisons cover table,row_id,
+title,body,narrative and hero age; this is not full-state native equivalence.
+
+Build exit0. Expanded lifecycle, existing replay-rejection and affected Witch
+Doctor checks exit0. Independent scoped diff/caller review found no actionable
+production issue or reachable input-alias hazard; its coverage findings were
+addressed in the nineteen-lane fixture. Full durable suite405:189 PASS /0FAIL,
+planned=completed=189,exit0,interrupted=false,changed_inputs=[],snapshot_error=null,
+integrity_scope=endpoint-sha256. Logs/manifests: /tmp/qdir/suite405-run.log and
+/tmp/qdir/suite405/. Before/after binary SHA-256:
+4ca20fd555c0a288ac0fccc7d4ce5a0dcd7526579b4bc617c70e12ef2aff9bf7.
+Sources/headers/tools/content/binary were unchanged during the complete run.
+
+shortcut: pending-card precedence, provenance of every accepted registry output
+and non-WitchDoctor invalid-choice handling remain open P0.2 work. This chapter
+closes stale request reuse/replacement, not the whole replay or parity gate.
+The endpoint-only integrity and incomplete native-capture ceilings remain.
+

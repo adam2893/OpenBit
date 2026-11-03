@@ -5113,11 +5113,9 @@ bool Sim::ensureTable(const std::string& name) {
 }
 
 bool Sim::forceScenario(const std::string& table, long long row) {
-  if (row <= 0) {  // clear: the next age-up draws as usual
-    forcedTable_.clear();
-    forcedRow_ = 0;
-    return true;
-  }
+  forcedTable_.clear(); forcedRow_ = 0;
+  forcedClass_.clear(); forcedClassChoice_ = -1;
+  if (row <= 0) return true;  // clear: the next age-up draws as usual
   if (!ensureTable(table)) {
     std::fprintf(stderr, "forceScenario: table not loaded: %s\n", table.c_str());
     return false;
@@ -7239,11 +7237,9 @@ bool Sim::renderScenarioClass(const std::string& cls, const Life& life, AgeUp& o
 }
 
 bool Sim::forceScenarioClass(const std::string& cls, int choice) {
-  if (cls.empty()) {  // clear: the next age-up draws as usual
-    forcedClass_.clear();
-    forcedClassChoice_ = -1;
-    return true;
-  }
+  forcedTable_.clear(); forcedRow_ = 0;
+  forcedClass_.clear(); forcedClassChoice_ = -1;
+  if (cls.empty()) return true;  // clear: the next age-up draws as usual
   if (cls == "ScenarioWitchDoctor" && choice != -1 && choice != 0) {
     std::fprintf(stderr, "forceScenarioClass: Witch Doctor has only choice 0\n");
     return false;
