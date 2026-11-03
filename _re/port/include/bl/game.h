@@ -933,6 +933,9 @@ struct Hero {
   // back (REPORT.en.md 397). Set when the identity card actually changes the name.
   std::string nameChangeMaiden;
   bool nameChangeDivorcePending = false;  // a divorce has not offered the name back
+  // The legal name change card's pending rename (REPORT.en.md 398).
+  std::string legalNameFirst, legalNameLast;
+  int legalNameAge = -1;
   int relationship = 60;         // the game's own relationship score, 0-100
   // The lowest the score ever got (REPORT.en.md 192): the break-up gate is
   // 'relationship < 30' and §191 found it almost never fires, so the question is whether

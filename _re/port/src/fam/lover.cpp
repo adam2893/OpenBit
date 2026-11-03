@@ -374,6 +374,100 @@ bool Sim::loverWeddingYear(Life& life, AgeUp& out, int forcedChoice) {
 // shortcut: the slogans' journals were not recovered, so both lines below are the
 // port's own; and the card is offered only when the marriage card actually changed
 // the hero's surname (Hero::nameChangeMaiden carries the old one).
+// ScenarioNameChangePull (REPORT.en.md 398): the legal name change. The class's
+// static ctor 0x73f28b9250 loads title #31092 'Name Change', body #20128 'File a
+// request to legally change your name today!', the rows #20313 'First Name',
+// #28484 'Last Name' and #16417 'Cost', and the button #20127 'File a request'.
+// Its RefreshScenario 0x73f28b92e0 builds the cost with
+// DataCountry::GetLocalCostForAmountWithMinimumCostAndRoundTo(country, 200.0f, 25, 5)
+// (0x43480000 + mov w1,#0x19 + mov w2,#5) and the same-name guard #48042.
+//
+// ChoiceSelectedAtIndex 0x73f28b9760: charges the cost, refuses when the name is
+// unchanged (#48042), and rolls the outcome:
+//   r1 = GetRandomNumber(0,100); r1 <= 10 -> rejected, else
+//   stat = the person's willingness float; stat >= 20 -> approved iff
+//   stat > GetRandomNumber(0,150); stat < 20 -> approved iff GetRandomNumber(0,150) < 20.
+// Approved: body #50489 + journal #69299; rejected: body #50490 + journal #69298.
+// The filing journal is #24171, and ScenarioInsufficientFinances carries #66953.
+//
+// shortcut: the two name fields are dropdowns natively and text inputs on screen, so the
+// port draws both from its own pools; the local cost scaling is the United States' 1.0
+// (200 is already a multiple of the round-to and above the floor); the willingness stat
+// at [[Life+0xb8]+0x28]+0xac is unrecovered and karma stands in for it; the outcome card
+// answers with a single OK rather than the native reply pool (#41386/#32644/#14259).
+bool Sim::legalNameYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  if (h.age < 18 || h.inPrison) return false;
+  if (h.legalNameAge >= 0 && h.age - h.legalNameAge < 12) return false;
+  if (forcedChoice < 0 && !namePullRng_.chance(0.05)) return false;
+  const bool female = h.female;
+  const std::string first = drawFirstName(female);
+  const std::string last = drawSurname();
+  const std::string full = first + " " + last;
+  if (first == h.firstName && last == h.lastName) return false;
+  h.legalNameAge = h.age;
+  const long long cost = 200;  // GetLocalCostForAmountWithMinimumCostAndRoundTo(…, 200, 25, 5)
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioNameChangePull";
+  out.title = "Name Change";                                        // #31092
+  out.body = "File a request to legally change your name today!";   // #20128
+  out.body += "\n\nFirst Name: " + first;                          // #20313
+  out.body += "\nLast Name: " + last;                               // #28484
+  out.body += "\nCost: " + money(cost);                             // #16417
+  out.options = {"File a request"};                                  // #20127
+  out.choice = out.options[0];
+  if (h.money < cost) {
+    out.body += "\n\nYou do not have enough money to file the request.";  // port-side
+    out.narrative = "I could not afford to file a request to change my name.";
+    return true;
+  }
+  h.money -= cost;
+  h.legalNameFirst = first;
+  h.legalNameLast = last;
+  out.narrative = "I filed a request to legally change my name to " + full + ".";  // #24171
+  life.pendingCards.push_back(kPendingLegalName);
+  return true;
+}
+
+// The outcome card one year on (REPORT.en.md 398). The approval arithmetic is the one
+// recovered above; the reply pool is folded into a single OK (documented ceiling).
+bool Sim::legalNameOutcomeYear(Life& life, AgeUp& out, int forcedChoice) {
+  (void)forcedChoice;
+  Hero& h = life.hero;
+  const std::string full = h.legalNameFirst + " " + h.legalNameLast;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const int r1 = int(namePullRng_.below(100));
+  bool approved = false;
+  if (r1 > 10) {
+    const double stat = double(h.karma);  // shortcut: the native willingness float
+    if (stat >= 20.0) approved = stat > double(namePullRng_.below(150));
+    else approved = int(namePullRng_.below(150)) < 20;
+  }
+  out.table = "registry:ScenarioNameChangePull";
+  out.title = "Name Change";  // #31092
+  if (approved) {
+    h.firstName = h.legalNameFirst;
+    h.lastName = h.legalNameLast;
+    out.body = "Your request to change your name has been approved by the " + h.country +
+               " government.\n\nYou are now " + full + ".";  // #50489
+    out.narrative = "My request to change my name was approved.\nI am now " + full + ".";
+  } else {
+    out.body = "Your request to change your name to " + full + " was rejected by the " +
+               h.country + " government.";  // #50490
+    out.narrative = "My request to change my name to " + full + " was rejected by the " +
+                    h.country + " government.";  // #69298
+  }
+  out.options = {"OK"};
+  out.choice = out.options[0];
+  h.legalNameFirst.clear();
+  h.legalNameLast.clear();
+  return true;
+}
+
 bool Sim::nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (!h.nameChangeDivorcePending) return false;

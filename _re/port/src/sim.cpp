@@ -779,6 +779,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       adoptRng_(seed ^ 0x3b7d5f9a1c4e6820ULL ^ 0x94d049bb133111ebULL),
       loverRng_(seed ^ 0x243f6a8885a308d3ULL ^ 0xa54ff53a5f1d36f1ULL),
       nameRng_(seed ^ 0x1f2e3d4c5b6a7988ULL ^ 0x8c9d0e1f2a3b4c5dULL),
+      namePullRng_(seed ^ 0x3a7f1c0d95b2e648ULL ^ 0x51c9d7e3f0a2b865ULL),
       ambientRng_(seed ^ 0x13198a2e03707344ULL ^ 0xa4093822299f31d0ULL),
       fstRng_(seed ^ 0x1d8e4e27c47d124fULL ^ 0xd6e8feb86659fd93ULL),
       rumOutRng_(seed ^ 0xd6e8feb86659fd93ULL ^ 0x9e3779b97f4a7c15ULL),
@@ -4224,6 +4225,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingZooShopOrderUnits) return zooShopOrderUnitsYear(life, out, forcedChoice);
     if (kind == kPendingZooShopAdjustPrice) return zooShopAdjustPriceYear(life, out, forcedChoice);
   if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
+  if (kind == kPendingLegalName) return legalNameOutcomeYear(life, out, forcedChoice);
   if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
   if (kind == kPendingZooInterview) return zooInterviewYear(life, out, forcedChoice);
   if (kind == kPendingCommunity) return communityCollegeYear(life, out, forcedChoice);
@@ -4497,6 +4499,7 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          1, "sport-surgery"},
         {&Sim::raiseYear, [](const Life& l) { return l.hero.employed && !l.hero.military; },
          1, "raise"},
+        {&Sim::legalNameYear, [](const Life& l) { return l.hero.age >= 18; }, 1, "legal-name"},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
         {&Sim::interviewYear, nullptr, 2},
         {&Sim::plasticSurgeryYear, nullptr, 2},

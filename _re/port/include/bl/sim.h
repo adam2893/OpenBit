@@ -154,6 +154,7 @@ enum PendingCard {
   kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
   kPendingZooInterview = 54,       // the zoo candidate interview (REPORT.en.md 389)
   kPendingCommunity = 55,         // the community-college card (REPORT.en.md 392)
+  kPendingLegalName = 56,          // the legal name change's outcome card (REPORT.en.md 398)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -430,6 +431,8 @@ class Sim {
   bool loverLeavesYear(Life& life, AgeUp& out, int forcedChoice);
   bool nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice);
   bool nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice);
+  bool legalNameYear(Life& life, AgeUp& out, int forcedChoice);
+  bool legalNameOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
   // The wedding plan, REPORT.en.md 160.
   bool loverWeddingYear(Life& life, AgeUp& out, int forcedChoice);
   // The elopement offer, REPORT.en.md 159.
@@ -1332,6 +1335,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   bool wheelStarted_ = false;
   Rng loverRng_;
   Rng nameRng_;  // the identity card after a wedding (REPORT.en.md 396)
+  Rng namePullRng_;  // the legal name change's own stream (REPORT.en.md 398)
   // A stream for the one-off ambient cards (paranormal, stalker, and whatever joins
   // them), so adding one cannot shift every later draw in loverRng_ -- the port's own
   // idiom for a new card (REPORT.en.md 187).

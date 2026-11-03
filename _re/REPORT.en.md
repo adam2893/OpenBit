@@ -23513,6 +23513,56 @@ shortcut: the menu's own prompt is not in the dump, so the body is the menu labe
 
 The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
 
+## 398. The legal name change
+
+The fourth member of the identity family, and the one the player asks for rather than the
+game: `ScenarioNameChangePull` files a request with the government, charges a fee, and
+answers a year later.
+
+Native contract, from the class's static ctor `0x73f28b9250`, `RefreshScenario`
+`0x73f28b92e0` and `ChoiceSelectedAtIndex` `0x73f28b9760`:
+
+| slot | literal |
+| --- | --- |
+| title | #31092 `Name Change` |
+| body | #20128 `File a request to legally change your name today!` |
+| rows | #20313 `First Name` #28484 `Last Name` #16417 `Cost` |
+| button | #20127 `File a request` |
+| same-name guard | #48042 `You can't file a request to change your name to {0} because you already have that name.` |
+| filing journal | #24171 `I filed a request to legally change my name to {0}.` |
+| insufficient funds | #66953 `to file a request to change your name` |
+| approved body / journal | #50489 `Your request to change your name has been approved by the {0} government.\n\nYou are now {1}.` / #69299 |
+| rejected body / journal | #50490 `Your request to change your name to {0} was rejected by the {1} government.` / #69298 |
+
+The fee is `DataCountry::GetLocalCostForAmountWithMinimumCostAndRoundTo(country, 200.0f,
+25, 5)` — the constants sit right before the call in the refresh stream (`0x43480000` is
+200.0f, then `mov w1,#0x19` and `mov w2,#5`).
+
+The verdict is a two-gate roll, both stages drawn from `GetRandomNumber`:
+
+1. `r1 = GetRandomNumber(0, 100)`; `r1 <= 10` rejects outright.
+2. Otherwise a willingness float on the hero is read. Below 20, the request is approved only
+   when `GetRandomNumber(0, 150) < 20`; at 20 or above, it is approved when the float
+   exceeds `GetRandomNumber(0, 150)`.
+
+Measured over eighty-two filings the port approves thirty-three and rejects forty-eight,
+which is the shape the two gates predict for a hero whose stat sits near zero.
+
+**shortcut:** the two name boxes are text inputs on screen, so the port draws both from its
+own pools; the local price scaling uses the United States' 1.0 ratio (200 is already a
+multiple of the round-to and above the floor); the willingness stat at
+`[[Life+0xb8]+0x28]+0xac` is unrecovered and karma stands in for it; and the outcome card
+answers with a single `OK` instead of the native reply pool (#41386 `That's better`,
+#32644 `Oh yeah`, #14259 `But why`).
+
+Files: `_re/port/include/bl/game.h` (`legalNameFirst`, `legalNameLast`, `legalNameAge`),
+`_re/port/include/bl/sim.h` (`kPendingLegalName = 56`, `namePullRng_`),
+`_re/port/src/fam/lover.cpp` (`Sim::legalNameYear`, `Sim::legalNameOutcomeYear`),
+`_re/port/src/sim.cpp` (the family row, the seed and the dispatch),
+`_re/tools/test_legal_name.py`.
+
+The full 180-test suite ran on the binary these notes describe (7b61e40981f5c53e43be76da35f34c6ab1db6432b7dbd532f43cb97d6f294dc3, 180 PASS / 0 FAIL): _re/tools/test_legal_name.py drives eighty-two filings through both verdicts and checks the fee, the filing journal and the name each body quotes.
+
 ## 397. The identity card after a divorce
 
 Answering the obvious follow-up to 396: when the marriage ends, does the hero take the
