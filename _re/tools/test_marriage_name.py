@@ -14,8 +14,8 @@ BODY = re.compile(
     r"Your Last Name: (?P<own>.+)\n(?P<first>\S+) Last Name: (?P<spouse>.+)\n"
     r"Name: (?P<full>.+)$")
 KEPT = re.compile(r"^Keep (?P<first>\S+) (?P<own>.+)$")
-TAKEN = re.compile(r"^Change to (?P<first>\S+) (?P<spouse>.+)$")
-JOINED = re.compile(r"^All the way: (?P<first>\S+) (?P<own>.+)-(?P<spouse>.+)$")
+TAKEN = re.compile(r"^All the way: (?P<first>\S+) (?P<spouse>.+)$")
+JOINED = re.compile(r"^Change to (?P<first>\S+) (?P<own>.+)-(?P<spouse>.+)$")
 
 
 def run(spec):
@@ -51,7 +51,7 @@ for seed in range(1, 41):
             k = KEPT.match(choice)
             assert k and k.group("own") == own and k.group("first") == first, (seed, choice)
             assert e["logLines"][-1] == "I kept the last name " + own + ".", (seed, e["logLines"])
-        elif choice.startswith("Change to "):
+        elif choice.startswith("All the way: "):
             k = TAKEN.match(choice)
             assert k and k.group("spouse") == spouse, (seed, choice)
             assert e["logLines"][-1] == "I took the last name " + spouse + ".", (seed, e["logLines"])

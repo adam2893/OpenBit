@@ -542,6 +542,28 @@ bool Sim::nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::nameChangeSpouseYear(Life& life, AgeUp& out) {
+  const Hero& h = life.hero;
+  if (h.loverStatus != "married" || h.firstName.empty() ||
+      h.lastName.empty() || h.loverName.empty() || h.nameChangeSurname.empty())
+    return false;
+  const std::string pronoun = h.loverFemale ? "her" : "his";
+  const std::string spouse = h.loverName + " " + h.nameChangeSurname;
+  const auto extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioNameChangeSpouse";
+  out.title = "What's my name again?";  // #46468
+  out.body = "Your name is now " + h.firstName + " " + h.lastName + "."
+             "\n\nYour " + (h.loverFemale ? "wife" : "husband") +
+             " has decided to keep " + pronoun + " name, " + spouse + ".";
+  out.options = {"OK"};
+  out.choice = "OK";
+  out.narrative = h.loverName + " decided to keep " + pronoun + " name.";
+  // ponytail: only the full-surname ctor route; add other routes with lover traits.
+  return true;
+}
+
 bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   if (h.loverStatus != "married") return false;
@@ -570,15 +592,17 @@ bool Sim::nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice) {
   out.body += "\n\nYour Last Name: " + own;             // #50142
   out.body += "\n" + h.firstName + " Last Name: " + spouse;  // #69671
   out.body += "\nName: " + kept;                        // #31091
-  out.options = {"Keep " + kept, "Change to " + taken, "All the way: " + joined};
+  out.options = {"Keep " + kept, "Change to " + joined, "All the way: " + taken};
   int lane = forcedChoice;
   if (lane < 0 || lane > 2) lane = int(nameRng_.below(3));
   out.choice = out.options[size_t(lane)];
-  if (lane == 1) {
+  if (lane == 2) {
     h.nameChangeMaiden = own;
     h.lastName = spouse;
     out.narrative = "I took the last name " + spouse + ".";
-  } else if (lane == 2) {
+    // Native ctor(String,Bool) leaves the partner surname unchanged.
+    life.pendingCards.push_back(kPendingSpouseName);
+  } else if (lane == 1) {
     h.nameChangeMaiden = own;
     h.lastName = own + "-" + spouse;
     out.narrative = "I took both last names and became " + joined + ".";

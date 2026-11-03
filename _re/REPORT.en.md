@@ -23513,6 +23513,62 @@ shortcut: the menu's own prompt is not in the dump, so the body is the menu labe
 
 The same 178-test suite (720e26aa41e0e3b4a853a35038fc0c36c1ca48a501ca300db5a3a7b5f9ecc336, 178 PASS / 0 FAIL) contains _re/tools/test_marriage_name.py, which drives the card over forty engaged lives and checks each answer's surname and journal line, plus three controls that never marry.
 
+## 400. Spouse surname follow-up: the full-surname route
+
+[obs] Native marriage metadata names +0x16c _halfChoiceZI, +0x170 _fullChoiceZI,
++0x178 _halfSurname, +0x180 _fullSurname. RefreshScenario at 0x73f28b84a8
+stores the partner surname in _fullSurname (0x73f28b864c), then optionally
+stores HyphenatedLastNameForMarriage in _halfSurname (0x73f28b86ac).
+Choice construction reads _halfSurname at 0x73f28b8904 with #15401
+Change to {0} {1}; _fullSurname at 0x73f28b8990 uses #11136
+All the way: {0} {1}. The port had these two surname results reversed.
+This section corrects both labels/results; the existing marriage regression keeps
+its surname and journal assertions with corrected lane labels.
+
+[obs] ChoiceSelectedAtIndex 0x73f28b8a38 constructs ScenarioNameChangeSpouse
+with (String,Bool) at 0x73f28b8d18 for the full/take-partner route, not the
+hyphenated route. That constructor (0x73f28b91c8) leaves _spouseNewLastName
+empty. RefreshScenario 0x73f28ba358 consequently selects #46468
+What's my name again? (slot 0x5c38eb0 at 0x73f28ba490), prefixes the body
+with #50418 Your name is now {0}., then two newlines and #70763
+{0}Your {1} has decided to keep {2} name, {3}. The journal is #69913
+{0} decided to keep {1} name.; DismissSelected 0x73f28bae70 logs that
+_narrative directly. The port queues kind 58 in Life::pendingCards and drains
+it without advancing age/year, using the existing follow-up dispatcher.
+No second pending flag, new RNG stream, or guessed probability is needed.
+
+shortcut: automatic delivery covers only the full/take-partner constructor.
+Keep-own and hyphenate constructors depend on native lover traits and willingness
+not modeled by this port; their spouse-takes-name and mutual-hyphenation branches
+remain unimplemented, not randomly approximated. Spouse names use the port's
+existing given-name/surname fields; binary pronouns and OK dismissal remain port
+conventions. This is a verified increment, not full spouse-family or game parity.
+
+Regression: tools/test_spouse_name.py links the real library, checks both spouse
+genders, corrected marriage lanes, exact card/journal, unchanged surnames,
+same-age one-shot queue consumption. RED observed against the previous library:
+full-surname lane incorrectly changed Carter to Carter-Stone. Build exited 0.
+Focused spouse/marriage/divorce/legal/adoption naming tests all passed. The full
+frozen suite completed with 182 PASS / 0 FAIL, exit 0, on binary SHA-256
+fbae0ea965e71032c89a50ca047b2b138ae2f5f7a1ce69a26cdce04cf76e540c.
+The runner verified both the binary digest and all source/header/test digests
+remained unchanged. An additional JSON replay (seed 4, male, United States,
+40 ages, engaged, cash 500000) verified the spouse journal follows the full-name
+marriage choice at the same age. Scoped independent diff review found no
+actionable issues; remaining journal/snapshot call sites were checked locally.
+
+Further native recovery, not implemented here: +0xc0 is Att_craziness, +0x24
+is Sexuality (not marital status). WillAgreeToChangeNameAfterMarriage
+0x73f30d8c9c checks CurrentLife.Fame object presence, not a lover override.
+For sexuality==1/gender==0 its default threshold is int(craziness>80), exactly
+0 or 1; lover-residence CITY overrides are San Francisco 50, Seattle 30,
+Portland 40, Boston 20 (not countries). For other sexuality it compares
+clamped raw hero relationship strength against Next(0,200). String constructor
+0x73f28b907c fallback uses strict craziness<70, not 40. Hyphenation keeps
+only the first dash-separated part of each surname; gender==1 puts the
+partner surname first. Exact input initialization, spouse sexuality/residence,
+Fame-object and AuraRing fidelity are prerequisites for the remaining routes.
+
 ## 399. Naming the adopted child
 
 Two things in one: the adoption beat now keeps the child, and the identity family's

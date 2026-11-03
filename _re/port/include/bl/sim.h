@@ -156,6 +156,7 @@ enum PendingCard {
   kPendingCommunity = 55,         // the community-college card (REPORT.en.md 392)
   kPendingLegalName = 56,          // the legal name change's outcome card (REPORT.en.md 398)
   kPendingAdoptionName = 57,       // naming the adopted child (REPORT.en.md 399)
+  kPendingSpouseName = 58,         // partner keeps their surname after marriage (400)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -431,6 +432,7 @@ class Sim {
   // The partner ends it, REPORT.en.md 164.
   bool loverLeavesYear(Life& life, AgeUp& out, int forcedChoice);
   bool nameChangeMarriageYear(Life& life, AgeUp& out, int forcedChoice);
+  bool nameChangeSpouseYear(Life& life, AgeUp& out);
   bool nameChangeDivorceYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameYear(Life& life, AgeUp& out, int forcedChoice);
   bool legalNameOutcomeYear(Life& life, AgeUp& out, int forcedChoice);
