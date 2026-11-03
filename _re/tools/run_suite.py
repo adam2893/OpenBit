@@ -14,7 +14,9 @@ from pathlib import Path
 
 def snapshot(root):
     paths=set()
-    for folder,pattern in (('port/src','*.cpp'),('port/include','*.h'),('tools','*.py'),('gamedata_plain','*')):
+    paths.update(p for pattern in ('*.py','*.js') for p in root.glob(pattern) if p.is_file())
+    for folder,pattern in (('port/src','*.cpp'),('port/include','*.h'),('tools','*.py'),
+                           ('gamedata_plain','*'),('gamedata_json','*.json')):
         paths.update(p for p in (root/folder).rglob(pattern) if p.is_file() and '__pycache__' not in p.parts)
     for name in ('port/build/blsim','port/build/libblport.a','il2cpp_dump.txt'):
         if (root/name).is_file():

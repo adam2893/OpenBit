@@ -33650,3 +33650,46 @@ timeouts rather than the n keyword; correction needs an isolated regression.
 Bounded shifting buffers, count saturation and reset/non-atomic capture still
 prevent that future keyword fix alone from certifying lossless observation.
 
+## 404. Capture stream sizes are RPC payloads, not polling timeouts
+
+Read-only contract inspection identified drive10.py requests of logs3000,
+scenarios1000 and ticks500 as positional arguments to blhrpc.rpc. The actual
+signature is rpc(op, timeout=40, **kw): only kw plus op enters the request.
+The dispatcher therefore used default tails50/20/10. Slicing those tails at
+the full pre-action buffer lengths silently discarded observations even when
+all records were still retained below their native caps.
+
+Regression tools/test_drive10_rpc.py AST-selects exactly the three stream
+assignments and executes the real RPC encoder/decoder against in-memory
+request/response streams. It never imports the driver loop, opens transport
+files, calls a device or runs original application code. RED observed requests
+containing op only. Minimal n=3000/n=1000/n=500 keyword corrections now preserve
+the intended payloads and both new rows per stream for two boundary fixtures:
+baseline lengths51/21/11 and49/19/9. The misleading exact-slicing comment is
+replaced with the unshifted/unreset-buffer ceiling. Historical captures were
+not rewritten and no historical loss quantity is claimed.
+
+The regression also exposed missing manifest coverage for root capture scripts
+and JSON backing data. A separate RED fixture asserted absent capture.py,
+capture.js and gamedata_json/countries.json hashes. The endpoint snapshot now
+includes root Python/JavaScript files and recursive gamedata_json/*.json; the
+fixture passes. This expands observed dependencies, not immutable execution.
+
+Focused payload and runner checks exit0. Scoped independent current-file static
+review found no actionable regression; the reviewer did not execute tests or
+independently retrieve the baseline diff. Full durable suite404:188 PASS /0FAIL,
+planned=completed=188,exit0,interrupted=false,changed_inputs=[],snapshot_error=null,
+integrity_scope=endpoint-sha256. Logs and manifests: /tmp/qdir/suite404-run.log
+and /tmp/qdir/suite404/. Before/after drive10.py hash is
+98fa9e33caff175d093e890afb776d2078b72eafa8f92f432a5938ba0c349e44; unchanged
+binary8b5af574d035b928cfab3c87feee13275ee7cf2aaa365be3905d568ab7fe7970.
+No C++ rebuild or source/tool/content changes occurred during acceptance.
+
+shortcut: JS retention still caps logs3000/scenarios1000/ticks400 and shifts
+old rows. Saturation, clear/reset and non-atomic diag/fetch invalidate raw
+length-based prefix slicing. The keyword correction neither recovers historical
+missing observations nor establishes complete stream ordering, full native
+state, RNG or rewind epochs. Lossless capture and immutable execution remain
+open canonical parity requirements. No live capture/purchase/network action
+was performed for this fix.
+

@@ -128,11 +128,11 @@ for r in range(N):
     n1 = c1[0]
     if len(acts) == 8 and not any(b > a for a, b in zip(c0, c1)) and LAST[0]:
         shutil.copy(LAST[0], '/tmp/stuck_r%d.png' % r)
-    # c0 holds the buffer lengths at round start, so slicing from them is exact:
-    # no separate counter to keep in sync with the harness buffers.
-    logs = (blhrpc.rpc('logs', 3000) or [])[c0[0]:]
-    scen = (blhrpc.rpc('scenarios', 1000) or [])[c0[1]:]
-    ticks = (blhrpc.rpc('ticks', 500) or [])[c0[2]:]
+    # Prefix slicing is valid only while retained buffers have not shifted/reset.
+    # ponytail: bounded tails lack cursors; add sequence/overflow evidence for lossless capture.
+    logs = (blhrpc.rpc('logs', n=3000) or [])[c0[0]:]
+    scen = (blhrpc.rpc('scenarios', n=1000) or [])[c0[1]:]
+    ticks = (blhrpc.rpc('ticks', n=500) or [])[c0[2]:]
     hero = blhrpc.rpc('hero', 1)
     rec = {'round': r, 'acts': acts, 'dbg': db, 'age': age_of(hero), 'logs': logs, 'scenarios': scen,
            'ticks': ticks, 'hero': (hero[-1] if isinstance(hero, list) and hero else hero)}

@@ -17,6 +17,10 @@ with tempfile.TemporaryDirectory() as directory:
     (root/'port/build').mkdir(parents=True)
     (root/'port/build/blsim').write_bytes(b'fixture binary')
     (root/'port/build/libblport.a').write_bytes(b'fixture library')
+    (root/'capture.py').write_text('# capture dependency')
+    (root/'capture.js').write_text('// capture dependency')
+    (root/'gamedata_json').mkdir()
+    (root/'gamedata_json/countries.json').write_text('{}')
     command=[sys.executable,str(RUNNER),'--root',str(root)]
     output=Path(directory)/'zero'
     p=subprocess.run(command+['--output',str(output)],capture_output=True,text=True)
@@ -51,6 +55,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert summary['passed']==3 and summary['failed']==0 and summary['integrity_ok']
     assert 'port/build/blsim' in summary['inputs_before']
     assert 'port/build/libblport.a' in summary['inputs_before']
+    assert {'capture.py','capture.js','gamedata_json/countries.json'} <= summary['inputs_before'].keys()
     # Interrupt only after the owned child announces readiness over a bounded local socket.
     marker=Path(directory)/'ready.sock'
     (root/'tools/test_signal.py').write_text("import os,socket,signal; s=socket.socket(socket.AF_UNIX); s.connect(os.environ['SUITE_SIGNAL_SOCKET']); s.sendall(str(os.getpid()).encode()); s.close(); signal.pause()")
