@@ -148,6 +148,8 @@ struct Hero {
   std::string employer;  // the company the job line names ("at Impact Racetrack")
   std::string employerType;  // the careers row's Company Type, named lazily
   long long jobSalary = 0;   // the salary a job line names (REPORT.en.md 286)
+  int raiseAge = -1;         // the year the raise card last fired (REPORT.en.md 393)
+  long long jobSalaryCap = 0; // the career rows Salary Cap (REPORT.en.md 393)
   bool onDiet = false;       // the year the diet card is spent (REPORT 290)
   std::string martialArt;    // the art the belt belongs to (REPORT 291)
   int martialBelt = -1;      // index into the art's Belt Hierarchy
@@ -234,6 +236,9 @@ struct Hero {
   // for the tuition screen (REPORT.en.md 317).
   int ageAtUniversityApplication = -1;
   int universityStage = 0;
+  // The rejection card four ways out (REPORT.en.md 392): 0 none, 1 the
+  // community-college lane was taken and its card is queued, 2 enrolled.
+  int communityCollege = 0;
   // SimLoan (REPORT.en.md 317). The game's own layout is YearsCompleted +0x10,
   // YearsLeft +0x14, LoanType +0x18, InterestRate +0x1c, Years +0x20,
   // DownPaymentPercent +0x24, Active +0x28, DownPayment +0x2c, FinancedAmount +0x30,

@@ -23511,6 +23511,83 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 393. Asking for a raise
+
+`#10835 Adjust your salary today!` is the menu row the literal table keeps for the raise
+card; `#50155 Your Salary` is its title, `#16832 Current Salary` and `#31365 New Salary`
+are its rows, and `#12153 Ask for a raise` is its one answer. The port had no card here at
+all, so a hero could hold the same salary for a whole career.
+
+| part | source |
+| --- | --- |
+| body | `#10835 Adjust your salary today!` |
+| title | `#50155 Your Salary` |
+| rows | `#16832 Current Salary`, `#31365 New Salary` (printed only when the raise lands) |
+| answer | `#12153 Ask for a raise` |
+| salary ledger | `a16_careers-enc` `Starting Salary` / `Salary Cap` for the hero job row |
+
+`Sim::raiseYear` (`_re/port/src/sim.cpp`) walks in the family wheel as `raise`, one ticket,
+ready for a hero who is employed and not in the military. It is gated at 18, refuses a
+prison year, and fires at most once every four years on its own stream, `raiseRng_`
+(`0.15` a year, the same menu-row convention the other zoo and casino menu cards use).
+
+The first time it fires for a job it opens the ledger from that career row: `Starting Salary`
+becomes the current salary and `Salary Cap` becomes the ceiling, both parsed out of the
+`$25,000.00` style cells the table carries. A landed raise steps the salary by a tenth
+(at least $1,000, rounded down to the nearest thousand) and stops at the cap; a landed roll
+with no headroom left prints no `New Salary` row and is read as a refusal.
+
+### Verification
+
+`_re/tools/test_raise.py` runs twenty careers and checks the body shape, the single answer,
+the four-year floor, the chain oracle (the salary a raise lands on is the `Current Salary`
+the next card opens with) and a hero who never held a job never seeing the card:
+`cards: 10 | raised: 2 | refused: 8` / `ok`.
+
+### Ceilings
+
+- `shortcut:` the native negotiation arithmetic was not recovered. The port rolls a raise
+  off the hero smarts (`0.25 + smarts/200`, so 25% at zero and 75% at a hundred) rather
+  than from a performance or seniority score, and the step size is a flat tenth.
+- `shortcut:` natively the row is a menu action the player may take whenever they like;
+  the port has no job menu, so the card rides the wheel on its own stream and its own
+  four-year cooldown stands in for the player choice.
+- `shortcut:` the salary ledger is opened lazily by this card (the first time it fires for
+  a job) rather than at hiring time, because the hire lanes only store the job name.
+- The native journal line for a raise was not recovered; the port writes its own plain
+  sentence for both outcomes.
+
+The full 176-test suite ran on the binary these notes describe (844d2ded1deae26a4c927b08ef203592d62e37276e38acf5668d321fd96121e5, 175 PASS / 1 FAIL): _re/tools/test_raise.py drives the card, its answer, the four-year floor and the salary chain, and the one failure was test-side only -- test_university_rejection still compared the enlistment journal line with an anchored pattern after this section put the refusal line in front of it, so the pattern was unanchored and the two exact-string lane comparisons became suffix checks. Nothing in the port changed.
+
+## 392. The rejection card four ways out
+
+`ScenarioUniversityRejectedOptions` (`.ctor 0x73f2a6936c`) is the card a rejected application hands to. It carries four answers -- `Enlist in the military`, `Enroll in community college`, `Get a job`, `Take some time off` -- over the body `Your application to university was rejected.` The port listed all four but always took `Get a job` and applied nothing, so three of the four buttons were lies. They are real now.
+
+| answer | what happens |
+| --- | --- |
+| Enlist in the military | `makeMilitary()`, the existing enlistment path (REPORT 50), and the journal line `#24115 "I enlisted in the {0} with a salary of {1}.\nI am {2}."` filled from the branch, the rank row salary and the rank longhand |
+| Enroll in community college | queues the enrolment card below; the hero is enrolled on the college rung |
+| Get a job | records the decision; the next year career card does the hiring (REPORT 51) |
+| Take some time off | records the decision and nothing else |
+
+### The community-college enrolment card
+
+`Enroll in community college today!` (`#18858`) is a whole card body in the literal table, titled `Community College` (`#16026`) with the single answer `Enroll in community college` (`#18857`). It enrols the hero exactly the way the tuition screen does -- `universityStage = 1`, the `I started college.` line -- so a community-college hero walks into the same college rung the university lane produces.
+
+### Ceilings
+
+- `shortcut:` natively the player picks one of the four answers. The replay draws one at random (or takes the forced index in script mode), the same convention every other menu card here uses.
+- `shortcut:` the journal lines for the community, job and time-off answers were not recovered; the port writes its own plain sentence (the enlistment line is native).
+- `shortcut:` the native community-college tuition flow was not recovered, so the enrolment is free. The university lane still charges through the tuition screen (REPORT 317).
+- `shortcut:` the same three unlocked answers on the application card itself (`Get a job instead`, `Take some time off`) still take the application; only the rejection card was recovered far enough to route them.
+
+### Verification
+
+`_re/tools/test_university_rejection.py` drives forty low-grade lives (the fixture from `test_university.py`: grades 10 puts the hero under the admission threshold) and asserts that all four answers appear, that the enlistment journal names a real branch and a salary, and that the community answer opens the enrolment card with its exact title, body and answer and writes the enrolment line. It also carries a control: an accepted hero never sees the community card.
+
+Measured: rejections: 33 | lanes: {"Enlist in the military": 10, "Get a job": 11, "Take some time off": 8, "Enroll in community college": 4}.
+The full 176-test suite ran on the binary these notes describe (844d2ded1deae26a4c927b08ef203592d62e37276e38acf5668d321fd96121e5, 175 PASS / 1 FAIL): _re/tools/test_university_rejection.py drives all four answers and the community card, and one defect it found was in this section -- the refusal card was emitted with an empty body and its refusal journal line was dropped whenever the enlistment answer won. Both are fixed above (title Education, body #50200, and the refusal line now always heads the log with the lane sentence appended after it); the one remaining failure was test-side only and was fixed here. The companion run also caught _re/tools/test_university.py expecting the card verbatim and the old fixed answer.
+
 ## 391. Renaming a zoo animal
 
 The zoo menu has a row for renaming an animal, and its body survived whole: `#15581 "Choose a new name for your animal today!"`. The name pool is `a16_zoo-animal-names-enc`, keyed by animal and breed and split by gender -- `Ms. <random-surname>` for a female secretary bird, `Mr. <random-surname>` for a male one, `Count Chocula` for a vampire bat, `Tiguana Notaro` for an iguana. The `<random-surname>` token is the portfolio-wide one `resolve()` already owns, so no new token machinery was needed. The card carries two rows, `Current Name` (`#16820`, recovered in 384) and `Name` (`#31091`), and a single `OK` (`#32432`). The journal line opens on `#24973 "I renamed "`.

@@ -152,7 +152,8 @@ enum PendingCard {
   kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
   kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
   kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
-  kPendingZooInterview = 54,        // the zoo candidate interview that follows the hiring card (REPORT.en.md 389)
+  kPendingZooInterview = 54,
+  kPendingCommunity = 55,      // the community-college card (REPORT.en.md 392)        // the zoo candidate interview that follows the hiring card (REPORT.en.md 389)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -380,6 +381,8 @@ class Sim {
   bool surrogateRejectionYear(Life& life, AgeUp& out, int forcedChoice);
   // University application: ScenarioSchoolUniversity, REPORT.en.md 313.
   bool universityYear(Life& life, AgeUp& out, int forcedChoice);
+  bool communityCollegeYear(Life& life, AgeUp& out, int forcedChoice);
+  bool raiseYear(Life& life, AgeUp& out, int forcedChoice);
   // ScenarioSchoolFund, the card the accepted application hands to (REPORT.en.md 317).
   bool universityFundYear(Life& life, AgeUp& out, int forcedChoice);
   // SimLoan: the tuition a college year adds to the principal, the payback that starts
@@ -1175,6 +1178,7 @@ bool backToSchoolYear(Life& life, AgeUp& out, int forcedChoice);
   Rng modelRng_;
   Rng luxuryRng_;
   Rng sportProRng_;
+  Rng raiseRng_;  // the raise card own stream (REPORT.en.md 393)
   Rng boatRng_;
   Rng officeRng_;
   Rng schoolRng_;

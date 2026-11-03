@@ -700,6 +700,7 @@ Sim::Sim(std::string reDir, uint64_t seed)
       modelRng_(seed ^ 0xbb67ae8584caa73bULL),
       luxuryRng_(seed ^ 0x510e527fade682d1ULL),
       sportProRng_(seed ^ 0x9b05688c2b3e6c1fULL),
+      raiseRng_(seed ^ 0x2c1b3c6d4a5e7f80ULL ^ 0x7a1d9f3c5b8e2046ULL),
       boatRng_(seed ^ 0x1f83d9abfb41bd6bULL),
       officeRng_(seed ^ 0x5be0cd19137e2179ULL),
       officeCompRng_(seed ^ 0xa54ff53a5f1d36f1ULL ^ 0x3c6ef372fe94f82bULL),
@@ -4223,6 +4224,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
   if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
   if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
   if (kind == kPendingZooInterview) return zooInterviewYear(life, out, forcedChoice);
+  if (kind == kPendingCommunity) return communityCollegeYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -4487,6 +4489,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
         {&Sim::ambientYear, nullptr, 3},
         {&Sim::loverBreakUpYear, nullptr},
         {&Sim::vampireYear, [](const Life& l) { return l.hero.vampire; }},
+        {&Sim::raiseYear, [](const Life& l) { return l.hero.employed && !l.hero.military; },
+         1, "raise"},
         {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
         {&Sim::interviewYear, nullptr, 2},
         {&Sim::plasticSurgeryYear, nullptr, 2},
@@ -5747,14 +5751,141 @@ bool Sim::universityYear(Life& life, AgeUp& out, int forcedChoice) {
   // .ctor 0x73f2a6936c) with its own four ways out.
   h.universityStage = 2;
   out.table = "registry:ScenarioUniversityRejectedOptions";
+  out.title = "Education";
+  out.body = "Your application to university was rejected.";  // #50200
+  // Four ways out, all of them real now (REPORT.en.md 392): natively the player
+  // picks one; the replay draws one, the same way every other menu card here does.
   out.options = {"Enlist in the military", "Enroll in community college",
                  "Get a job", "Take some time off"};
-  out.choice = "Get a job";
-  out.body = "Your application to university was rejected.";
-  out.narrative = "I applied to university but my application was rejected.";
+  int lane = forcedChoice;
+  if (lane < 0 || lane > 3) lane = int(schoolRng_.below(4));
+  out.choice = out.options[size_t(lane)];
+  // The refusal line always goes in first; a lane may append its own sentence
+  // after it (the enlistment one is native, #24115).
+  out.narrative = "I applied to university but my application was rejected.";  // #23495
+  if (lane == 0) {
+    makeMilitary(life);
+    out.narrative += "\nI enlisted in the " + h.militaryBranch + " with a salary of " +
+                     h.militaryPay + ".\nI am " + h.militaryRank + ".";  // #24115
+  } else if (lane == 1) {
+    h.communityCollege = 1;
+    life.pendingCards.push_back(kPendingCommunity);
+    // shortcut: the native card only supplies the label; the port records the
+    // decision in its own words.
+    out.narrative += "\nI decided to enrol in community college.";
+  } else if (lane == 2) {
+    out.narrative += "\nI decided to get a job.";
+  } else {
+    out.narrative += "\nI decided to take some time off.";
+  }
   return true;
 }
 
+// The community-college enrolment card (REPORT.en.md 392). ScenarioUniversityRejected
+// Options hands its second answer to this card: body #18858 "Enroll in community
+// college today!", title #16026 "Community College", answer #18857 "Enroll in
+// community college". The card enrols the hero on the same rung the tuition screen
+// does (universityStage 1 plus the college start line), but charges nothing:
+// shortcut: the native community-college tuition flow was not recovered, so the port
+// treats the enrolment as free rather than inventing a price.
+bool Sim::communityCollegeYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.communityCollege != 1) return false;
+  (void)forcedChoice;
+  h.communityCollege = 2;
+  h.universityStage = 1;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  out.table = "registry:ScenarioCommunityCollegeEnroll";
+  out.title = "Community College";  // #16026
+  out.body = "Enroll in community college today!";  // #18858
+  out.options = {"Enroll in community college"};  // #18857
+  out.choice = out.options[0];
+  if (h.schoolAnnouncedLevel != 4) {
+    h.schoolAnnouncedLevel = 4;
+    out.extra.push_back(std::string("I started ") + schoolLevelName(4) + ".");
+  }
+  out.narrative = "I enrolled in community college.";
+  return true;
+}
+// The raise card (REPORT.en.md 393). #10835 "Adjust your salary today!" is the menu
+// row the literal table keeps for it; #50155 "Your Salary" is the card title, with
+// #16832 "Current Salary" and #31365 "New Salary" as its rows and #12153 "Ask for a
+// raise" as its one answer. The native negotiation arithmetic was not recovered, so
+// the port rolls the answer off the hero smarts and prints the new figure only when
+// it lands (shortcut).
+// The raise card (REPORT.en.md 393). #10835 "Adjust your salary today!" is the menu
+// row the literal table keeps for it; #50155 "Your Salary" is the card title, with
+// #16832 "Current Salary" and #31365 "New Salary" as its rows and #12153 "Ask for a
+// raise" as its one answer. The native negotiation arithmetic was not recovered: the
+// port rolls the answer off the hero smarts, opens the ledger on the career rows own
+// Starting Salary the first time the card fires, and stops at its Salary Cap
+// (shortcut).
+static long long digitsOf(const std::string& text) {
+  long long value = 0;
+  bool any = false;
+  for (size_t i = 0; i < text.size(); ++i) {
+    const char c = text[i];
+    if (c < '0' || c > '9') continue;
+    value = value * 10 + (c - '0');
+    any = true;
+  }
+  return any ? value : 0;
+}
+
+bool Sim::raiseYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.age < 18 || h.inPrison || !h.employed || h.military) return false;
+  if (h.raiseAge >= 0 && h.age - h.raiseAge < 4) return false;
+  if (forcedChoice < 0 && !raiseRng_.chance(0.15)) return false;
+  if (h.jobSalary <= 0 || h.jobSalaryCap <= 0) {
+    if (!ensureTable("a16_careers-enc")) return false;
+    const Table& t = tbl("a16_careers-enc");
+    const std::string want = lower(trim(h.job));
+    for (size_t r = 0; r < t.size(); ++r) {
+      if (lower(trim(t.at(r, "Career"))) != want) continue;
+      const long long start = digitsOf(t.at(r, "Starting Salary"));
+      h.jobSalaryCap = digitsOf(t.at(r, "Salary Cap"));
+      if (h.jobSalary <= 0) h.jobSalary = start;
+      break;
+    }
+    if (h.jobSalary <= 0) return false;
+  }
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.raiseAge = h.age;
+  const long long was = h.jobSalary;
+  long long next = was;
+  const bool landed = forcedChoice >= 0
+      ? forcedChoice == 0
+      : raiseRng_.chance(0.25 + double((h.smarts < 0 ? 0 : (h.smarts > 100 ? 100 : h.smarts))) / 200.0);
+  if (landed) {
+    long long step = was / 10;
+    if (step < 1000) step = 1000;
+    step = (step / 1000) * 1000;
+    next = was + step;
+    if (next > h.jobSalaryCap) next = h.jobSalaryCap;
+    if (next > was) h.jobSalary = next;
+    else next = was;
+  }
+  out.table = "registry:ScenarioRaise";
+  out.title = "Your Salary";  // #50155
+  out.body = "Adjust your salary today!";  // #10835
+  out.body += "\n\nCurrent Salary: " + money(was);  // #16832
+  if (next != was) out.body += "\nNew Salary: " + money(next);  // #31365
+  out.options = {"Ask for a raise"};  // #12153
+  out.choice = out.options[0];
+  out.narrative = next != was
+      ? "I asked for a raise and got one: my salary is now " + money(next) + "."
+      : "I asked for a raise and was turned down.";
+  return true;
+}
 // ---- The tuition screen and the student loan (REPORT.en.md 317) -------------
 // ScenarioSchoolFund::ChoiceSelectedAtIndex 0x73f2a5b090 is the card an accepted
 // application hands to. It dispatches on a lowercased substring of the clicked

@@ -70,12 +70,19 @@ assert len(rej) == 1, rej
 ev = rej[0]
 assert ev["age"] == 19, ev["age"]
 assert ev["body"] == "Your application to university was rejected.", ev["body"]
-assert ev["choice"] == "Get a job", ev["choice"]
-assert ev["logLines"][-1] == REJECTED_LINE, ev["logLines"]
+# One of the four ways out, drawn (REPORT.en.md 392).
+LANES = {"Enlist in the military", "Enroll in community college",
+         "Get a job", "Take some time off"}
+assert ev["choice"] in LANES, ev["choice"]
 assert not card(d, OFFER), "a rejected hero does not get the offer card"
 allLines = logs(d)
-assert "I started college." not in allLines, allLines
+# The refusal line is on the card; a lane may append its own line after it.
+assert [l for l in allLines if l.startswith(REJECTED_LINE)], allLines
 assert not [l for l in allLines if "extracurricular activities were available at my college" in l]
+if ev["choice"] == "Enroll in community college":
+    assert [e2["table"] for e2 in card(d, "registry:ScenarioCommunityCollege")], d["events"]
+else:
+    assert "I started college." not in allLines, allLines
 
 # 3. The 45-point threshold of the undergraduate row: 14 grades fall short, 15 pass,
 #    and a hero with no fixture always clears it (the draw is 62-86).
