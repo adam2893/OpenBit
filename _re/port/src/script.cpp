@@ -1245,8 +1245,14 @@ bool runScript(Sim& sim, const ScriptSpec& spec, std::string* json, std::string*
     // call keeps the override from leaking into later years.
     if (i < int(spec.push.size())) {
       const PushSpec& ps = spec.push[size_t(i)];
-      if (!ps.scenario.empty()) sim.forceScenarioClass(ps.scenario, ps.choice);
-      else sim.forceScenario(ps.table, ps.row);
+      const bool accepted = !ps.scenario.empty()
+          ? sim.forceScenarioClass(ps.scenario, ps.choice)
+          : sim.forceScenario(ps.table, ps.row);
+      if (!accepted) {
+        if (error) *error = "push[" + std::to_string(i) + "]: rejected replay override " +
+                            (ps.scenario.empty() ? ps.table : ps.scenario);
+        return false;
+      }
     }
     else sim.forceScenario(std::string(), 0);
     AgeUp ev;

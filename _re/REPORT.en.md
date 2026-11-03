@@ -33559,3 +33559,44 @@ the card that worked. What it changes in the plan is concrete: the remaining con
 **not** blocked behind a decryption subsystem, because 1,071 plain tables cover 928
 loaders. The cipher stays unread, and stays unnecessary for the cards the port can reach.
 
+## 402. Full parity work inventory and rejected replay requests
+
+The canonical work ledger is docs/superpowers/plans/2026-11-03-parity.md. It
+covers the supplied3.25.1/version1063 game, every content/DLC/product family,
+player controls/presentation, platform boundaries, storage/recovery and proof.
+The six _re/parity/*_TODO.md indexes retain30212 addressable, overlapping
+obligations:21627 type declarations,2722 scenario-ancestry candidates,
+1072 decoded files,60 entitlement grant entries,2786 APK entries and1945
+source/report audit-note candidates. Dependencies, helpers, dead content, aliases
+and old notes are triaged rather than blindly treated as new game features.
+References, loading, grant flags and passing samples do not certify equivalence.
+
+The standard-library tools/parity_inventory.py preserves duplicate declaration
+identity, inherited scenario ancestry, CSV logical record/physical line spans,
+nullable product aliases, binary and parse-error records, archive entry identity
+and source/input hashes. Its tests also verify deterministic output and refusal
+to overwrite existing human checklists before writing any output. The recorded
+APK SHA-256 matches c2111dee01a5d28f0a5f6cfb61bcf2d513a53d8f8ef0f530265da9240f215c1d.
+The census authority is discovery; each behavioral contract needs independent
+native evidence. Reconcile section chronology before closing an old note.
+
+First execution task: runScript discarded the boolean result of forceScenarioClass
+and forceScenario. RED reproduced an unrecognized class returning process exit0
+with an unrelated ordinary event. The runner now propagates rejection with the
+push index and emits no successful JSON trace; the table validator rejects rows
+above the loaded table size before accepting the override. Null entries still
+clear the override, and WitchDoctor retains its established path. Regression
+covers missing class/table, high and maximum signed64-bit row, last logical row,
+a failed second request without trace fragments, null reset and accepted class.
+
+Build exited0 after matching the existing tbl(const char*) API. Two new regression
+scripts and the affected WitchDoctor check passed. Independent static review
+found no actionable source issues; review-driven fixture coverage was extended
+and passed. Full frozen suite:185 PASS / 0 FAIL, exit0, binary SHA-256
+8b5af574d035b928cfab3c87feee13275ee7cf2aaa365be3905d568ab7fe7970.
+All268 C++/header/Python tooling digests and the final binary digest passed.
+The delivery check verified that every census item has a persistent checkbox
+and that the census source hashes match. This chapter is appended to retain
+all preexisting report line references. The canonical ledger defines the next
+contracts, including differential age coverage and strict verifier exit status.
+

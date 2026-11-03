@@ -1,0 +1,1949 @@
+# Documented ceiling candidates requiring reconciliation
+
+These are candidates, NOT a count of current unresolved tasks. Reconcile numeric section chronology and source changes; mark current/historical-fixed/shipped-dead/intentional-exclusion/unknown with evidence. Never resurrect a superseded limit or silently drop an unknown.
+
+- [ ] GAP-1 [source](../port/src/bag.cpp#L213)  — " does not select " + c.expect +
+- [ ] GAP-2 [source](../port/src/deck.cpp#L45)  — // bit-for-bit, not card order (shortcut: card order, upgrade if a trace needs
+- [ ] GAP-3 [source](../port/src/fam/birth.cpp#L62)  — life.pendingCards.push_back(kPendingHeroPregnancy);
+- [ ] GAP-4 [source](../port/src/fam/birth.cpp#L77)  — life.pendingCards.push_back(kPendingPregnancy);
+- [ ] GAP-5 [source](../port/src/fam/birth.cpp#L99)  — life.pendingCards.push_back(kPendingHeroMiscarriage);
+- [ ] GAP-6 [source](../port/src/fam/birth.cpp#L101)  — life.pendingCards.push_back(kPendingHeroBirth);
+- [ ] GAP-7 [source](../port/src/fam/birth.cpp#L115)  — // stand in (shortcut, and the reason the band is drawn from him).
+- [ ] GAP-8 [source](../port/src/fam/birth.cpp#L121)  — life.pendingCards.push_back(kPendingMiscarriage);
+- [ ] GAP-9 [source](../port/src/fam/birth.cpp#L123)  — life.pendingCards.push_back(kPendingBirth);
+- [ ] GAP-10 [source](../port/src/fam/birth.cpp#L130)  — // flag the port has no access to, so it is left out (ceiling).
+- [ ] GAP-11 [source](../port/src/fam/birth.cpp#L194)  — // child from the game's own pool because there is no text entry (ceiling).
+- [ ] GAP-12 [source](../port/src/fam/casino.cpp#L27)  — // shortcut: how a fresh punter's style is rolled is not recovered, so the port
+- [ ] GAP-13 [source](../port/src/fam/casino.cpp#L77)  — // shortcut: the house win rate drifts toward the row's Default House Win Rate
+- [ ] GAP-14 [source](../port/src/fam/casino.cpp#L92)  — // shortcut: the per-punter expression is unrecovered; the port spreads the
+- [ ] GAP-15 [source](../port/src/fam/casino.cpp#L141)  — // shortcut: an act's salary and a celebrity's fee have no table column and no
+- [ ] GAP-16 [source](../port/src/fam/casino.cpp#L147)  — // shortcut: the adjustment ratio is the hero country's Price Of Coke against
+- [ ] GAP-17 [source](../port/src/fam/casino.cpp#L148)  — // the reference country's, and the reference country is not recovered, so the
+- [ ] GAP-18 [source](../port/src/fam/casino.cpp#L174)  — life.pendingCards.push_back(kPendingCasinoBankrupt);
+- [ ] GAP-19 [source](../port/src/fam/casino.cpp#L213)  — // hero about a game the floor does not run.
+- [ ] GAP-20 [source](../port/src/fam/casino.cpp#L216)  — // gambler's tier, ', ' #5282, the name, ", is complaining that your casino doesn't have "
+- [ ] GAP-21 [source](../port/src/fam/casino.cpp#L224)  — // 'Mafia member' (REPORT.en.md 358). The port has no mafia regulars yet (357's ceiling),
+- [ ] GAP-22 [source](../port/src/fam/casino.cpp#L288)  — ", is complaining that your casino doesn't have " +
+- [ ] GAP-23 [source](../port/src/fam/casino.cpp#L310)  — // column is Gambler Craziness, which this port does not track, so the floor's
+- [ ] GAP-24 [source](../port/src/fam/casino.cpp#L311)  — // happiness is used for the band instead (ceiling).
+- [ ] GAP-25 [source](../port/src/fam/casino.cpp#L348)  — // Ceilings: the two casino vtable slots the handler moves (+0x738 and +0x508, both
+- [ ] GAP-26 [source](../port/src/fam/casino.cpp#L407)  — // A favourite game the casino does not have; the draw is the card second one.
+- [ ] GAP-27 [source](../port/src/fam/casino.cpp#L455)  — if (h.casinoPopularity > 0) h.casinoPopularity -= 1;   // slot A (shortcut)
+- [ ] GAP-28 [source](../port/src/fam/casino.cpp#L456)  — if (h.casinoPopularity < 100) h.casinoPopularity += 1; // slot B (shortcut)
+- [ ] GAP-29 [source](../port/src/fam/casino.cpp#L460)  — if (h.casinoPopularity > 1) h.casinoPopularity -= 2;   // slot A (shortcut)
+- [ ] GAP-30 [source](../port/src/fam/casino.cpp#L461)  — if (h.casinoPopularity < 99) h.casinoPopularity += 2;  // slot B (shortcut)
+- [ ] GAP-31 [source](../port/src/fam/casino.cpp#L479)  — // being made and owning the house stands for the attachment (shortcut), and the
+- [ ] GAP-32 [source](../port/src/fam/casino.cpp#L512)  — // pool rather than to no nickname at all (shortcut).
+- [ ] GAP-33 [source](../port/src/fam/casino.cpp#L530)  — if (cell.find('<') != std::string::npos) cell.clear();  // a token the table does not define
+- [ ] GAP-34 [source](../port/src/fam/casino.cpp#L550)  — // band is used as it stands (shortcut).
+- [ ] GAP-35 [source](../port/src/fam/casino.cpp#L659)  — // pays the US marginal rate wherever he lives (shortcut).
+- [ ] GAP-36 [source](../port/src/fam/casino.cpp#L747)  — // only matching rows are booked), any other act draws one (shortcut;
+- [ ] GAP-37 [source](../port/src/fam/casino.cpp#L807)  — // cards that weigh it against the house theme (shortcut).
+- [ ] GAP-38 [source](../port/src/fam/casino.cpp#L961)  — // the first choice is the one taken (the same shortcut the UFL card uses).
+- [ ] GAP-39 [source](../port/src/fam/casino.cpp#L1290)  — //      so the native queue gets this card every year. shortcut: the port deals
+- [ ] GAP-40 [source](../port/src/fam/casino.cpp#L1329)  — // shortcut: the native card shows the popularity as a bar graph, and the port
+- [ ] GAP-41 [source](../port/src/fam/casino.cpp#L1388)  — // because the act does not fit, the compliment because ... the shipped eligibility
+- [ ] GAP-42 [source](../port/src/fam/casino.cpp#L1414)  — " saying their " + h.casinoActTheme + "-themed act doesn't fit the " +
+- [ ] GAP-43 [source](../port/src/fam/casino.cpp#L1454)  — life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-44 [source](../port/src/fam/casino.cpp#L1531)  — // weighed the other way round: the complaint wants an amenity that does NOT match the
+- [ ] GAP-45 [source](../port/src/fam/casino.cpp#L1540)  — // shortcut: the card is menu-only natively -- no age-up pushes it -- so the port
+- [ ] GAP-46 [source](../port/src/fam/casino.cpp#L1543)  — // and default were not recovered; the port therefore withdraws half of the
+- [ ] GAP-47 [source](../port/src/fam/casino.cpp#L1545)  — // card got. No journal is written: the narrative was not recovered.
+- [ ] GAP-48 [source](../port/src/fam/casino.cpp#L1551)  — // shortcut: the card is menu-only natively, so it is offered here as its own
+- [ ] GAP-49 [source](../port/src/fam/casino.cpp#L1557)  — // No journal is written: the narrative was not recovered.
+- [ ] GAP-50 [source](../port/src/fam/casino.cpp#L1563)  — // shortcut: same as the zoo's card -- menu-only natively, a text field the port
+- [ ] GAP-51 [source](../port/src/fam/casino.cpp#L1572)  — // shortcut: the card is menu-only natively, so it is offered here as its own
+- [ ] GAP-52 [source](../port/src/fam/casino.cpp#L1576)  — // the hero pays. The native price flow was not recovered, so charging the
+- [ ] GAP-53 [source](../port/src/fam/casino.cpp#L1578)  — // written: the narrative was not recovered.
+- [ ] GAP-54 [source](../port/src/fam/casino.cpp#L2181)  — // not recovered: the offer costs nothing here and the follow-up is not pushed
+- [ ] GAP-55 [source](../port/src/fam/casino.cpp#L2182)  — // (ceiling).
+- [ ] GAP-56 [source](../port/src/fam/casino.cpp#L2203)  — if (!h.casinoFeedbackTitle.empty()) life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-57 [source](../port/src/fam/casino.cpp#L2236)  — // is not recovered: the offer costs nothing here and the follow-up is not pushed
+- [ ] GAP-58 [source](../port/src/fam/casino.cpp#L2237)  — // (ceiling).
+- [ ] GAP-59 [source](../port/src/fam/casino.cpp#L2256)  — if (!h.casinoFeedbackTitle.empty()) life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-60 [source](../port/src/fam/casino.cpp#L2283)  — // (shortcut) The native walks a persistent gambler list and asks each gambler's
+- [ ] GAP-61 [source](../port/src/fam/casino.cpp#L2333)  — // (shortcut) Same substitution as the gambler card above: the native reads the
+- [ ] GAP-62 [source](../port/src/fam/casino.cpp#L2385)  — // YearsSinceScenario #37039 'ScenarioCasinoAgeUpCelebrityDemand' > 1. shortcut: the
+- [ ] GAP-63 [source](../port/src/fam/casino.cpp#L2401)  — // The celeb's fame is not modelled, so it is drawn once from this card's own
+- [ ] GAP-64 [source](../port/src/fam/casino.cpp#L2442)  — // row.Cost x 12; the country scaling is not modelled here) and 'Request'
+- [ ] GAP-65 [source](../port/src/fam/casino.cpp#L2490)  — life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-66 [source](../port/src/fam/casino.cpp#L2515)  — // shortcut: the port has no gambler entity, so the newcomer's details are drawn
+- [ ] GAP-67 [source](../port/src/fam/casino.cpp#L2518)  — // branch of the native generator is not modelled -- every newcomer is an ordinary
+- [ ] GAP-68 [source](../port/src/fam/casino.cpp#L2644)  — life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-69 [source](../port/src/fam/casino.cpp#L2654)  — life.pendingCards.push_back(kPendingCasinoCelebOffer);
+- [ ] GAP-70 [source](../port/src/fam/casino.cpp#L2735)  — life.pendingCards.push_back(kPendingCasinoFeedback);
+- [ ] GAP-71 [source](../port/src/fam/casino.cpp#L2771)  — // A house theme the table does not carry has no genre to borrow: the hook then
+- [ ] GAP-72 [source](../port/src/fam/casino.cpp#L2889)  — // Ceilings: the native shows the punter's gambling style as a table row; the
+- [ ] GAP-73 [source](../port/src/fam/casino.cpp#L2891)  — // not keep, so the row is dropped (REPORT.en.md 322 keeps the same ceiling).
+- [ ] GAP-74 [source](../port/src/fam/casino.cpp#L2919)  — // house booked does not fit the theme it is trying to establish - so the card
+- [ ] GAP-75 [source](../port/src/fam/casino.cpp#L2926)  — // Ceilings: the ban's feedback card (title "You're outta here", body over the
+- [ ] GAP-76 [source](../port/src/fam/fame.cpp#L19)  — // shortcut: the game's gate also requires the hero's own Fame record to exist
+- [ ] GAP-77 [source](../port/src/fam/fame.cpp#L71)  — // object is not ported, so the opportunity is rebuilt from the hero's own attributes on the
+- [ ] GAP-78 [source](../port/src/fam/fame.cpp#L167)  — life.pendingCards.push_back(kPendingMagazineOffer);
+- [ ] GAP-79 [source](../port/src/fam/fame.cpp#L274)  — if (h.bookPending) return;
+- [ ] GAP-80 [source](../port/src/fam/fame.cpp#L306)  — const int ceiling = static_cast<int>(2.0 * base * (1.0 + appeal / 100.0));
+- [ ] GAP-81 [source](../port/src/fam/fame.cpp#L307)  — h.bookProceeds = ceiling > 0 ? static_cast<long long>(g.below(uint32_t(ceiling))) : 0;
+- [ ] GAP-82 [source](../port/src/fam/fame.cpp#L310)  — h.bookPending = true;
+- [ ] GAP-83 [source](../port/src/fam/fame.cpp#L311)  — life.pendingCards.push_back(kPendingBookOffer);
+- [ ] GAP-84 [source](../port/src/fam/fame.cpp#L316)  — if (!h.bookPending) return false;
+- [ ] GAP-85 [source](../port/src/fam/fame.cpp#L330)  — h.bookPending = false;
+- [ ] GAP-86 [source](../port/src/fam/fame.cpp#L348)  — h.bookPending = false;
+- [ ] GAP-87 [source](../port/src/fam/fame.cpp#L359)  — // pushed as pending cards - the same substitution the magazine (335) and book (336) make.
+- [ ] GAP-88 [source](../port/src/fam/fame.cpp#L379)  — // (a shortcut noted in the report), so the ratio is the United States' own 1.0.
+- [ ] GAP-89 [source](../port/src/fam/fame.cpp#L420)  — // A shortcut: the native offer is rebuilt every age for a menu the player opens when
+- [ ] GAP-90 [source](../port/src/fam/fame.cpp#L429)  — life.pendingCards.push_back(kPendingTalkShow);
+- [ ] GAP-91 [source](../port/src/fam/fame.cpp#L473)  — // Impression bar graph the port does not draw.
+- [ ] GAP-92 [source](../port/src/fam/fame.cpp#L498)  — // shortcut: the native also divides the appeal by three for a criminal record
+- [ ] GAP-93 [source](../port/src/fam/fame.cpp#L522)  — // (data 0xfc4d28) keys an enum the port does not carry, so each reach draws from a
+- [ ] GAP-94 [source](../port/src/fam/fame.cpp#L523)  — // small stand-in pool of careers-table company types (a shortcut noted in the report).
+- [ ] GAP-95 [source](../port/src/fam/fame.cpp#L536)  — life.pendingCards.push_back(kPendingCommercial);
+- [ ] GAP-96 [source](../port/src/fam/fame.cpp#L572)  — // Reception bar graph the port does not draw.
+- [ ] GAP-97 [source](../port/src/fam/lover.cpp#L23)  — // A partner does not demand contraception at 66 (REPORT.en.md 205): the card's own
+- [ ] GAP-98 [source](../port/src/fam/lover.cpp#L101)  — // approve of that.' The argue roll that follows is not ported.
+- [ ] GAP-99 [source](../port/src/fam/lover.cpp#L161)  — // The card's buttons are not ported, so it arrives as a report -- the same shape as
+- [ ] GAP-100 [source](../port/src/fam/lover.cpp#L232)  — // The planning card is not ported, so eloping marries on the spot and the
+- [ ] GAP-101 [source](../port/src/fam/lover.cpp#L255)  — // The planning card is not ported: eloping is the marriage.
+- [ ] GAP-102 [source](../port/src/fam/lover.cpp#L276)  — // shortcut: the game's wedding cost is a formula over the venue's Cost Score, the
+- [ ] GAP-103 [source](../port/src/fam/lover.cpp#L278)  — // here, priced at 1000 per point. The honeymoon half is not modelled.
+- [ ] GAP-104 [source](../port/src/fam/lover.cpp#L297)  — // 'Do it' lane reports that the hero cannot pay -- the game does not hide the plan.
+- [ ] GAP-105 [source](../port/src/fam/lover.cpp#L328)  — h.nameChangePending = true;
+- [ ] GAP-106 [source](../port/src/fam/lover.cpp#L348)  — // shortcut: the game's success roll for begging is not read; the port keeps the
+- [ ] GAP-107 [source](../port/src/fam/lover.cpp#L359)  — // shortcut: the {0} {1} pairs are the hero's first name and a surname here, and the
+- [ ] GAP-108 [source](../port/src/fam/lover.cpp#L363)  — // #30671 Mr./Mrs./Dr./Mx. for the 'Name' row, which this card does not model).
+- [ ] GAP-109 [source](../port/src/fam/lover.cpp#L364)  — // Which button writes which surname was not recovered past the two fields
+- [ ] GAP-110 [source](../port/src/fam/lover.cpp#L374)  — // shortcut: the slogans' journals were not recovered, so both lines below are the
+- [ ] GAP-111 [source](../port/src/fam/lover.cpp#L393)  — // shortcut: the two name fields are dropdowns natively and text inputs on screen, so the
+- [ ] GAP-112 [source](../port/src/fam/lover.cpp#L473)  — life.pendingCards.push_back(kPendingLegalName);
+- [ ] GAP-113 [source](../port/src/fam/lover.cpp#L478)  — // recovered above; the reply pool is folded into a single OK (documented ceiling).
+- [ ] GAP-114 [source](../port/src/fam/lover.cpp#L489)  — const double stat = double(h.karma);  // shortcut: the native willingness float
+- [ ] GAP-115 [source](../port/src/fam/lover.cpp#L516)  — if (!h.nameChangeDivorcePending) return false;
+- [ ] GAP-116 [source](../port/src/fam/lover.cpp#L517)  — h.nameChangeDivorcePending = false;
+- [ ] GAP-117 [source](../port/src/fam/lover.cpp#L545)  — bool Sim::nameChangeSpouseYear(Life& life, AgeUp& out, const Life::PendingCard& pending) {
+- [ ] GAP-118 [source](../port/src/fam/lover.cpp#L547)  — const bool bothChanged = pending.a == 1;
+- [ ] GAP-119 [source](../port/src/fam/lover.cpp#L548)  — if (bothChanged && pending.text.empty()) return false;
+- [ ] GAP-120 [source](../port/src/fam/lover.cpp#L552)  — if (bothChanged) h.nameChangeSurname = pending.text;
+- [ ] GAP-121 [source](../port/src/fam/lover.cpp#L572)  — // ponytail: only input-independent outcomes; add other routes with lover traits.
+- [ ] GAP-122 [source](../port/src/fam/lover.cpp#L579)  — if (!h.nameChangePending) return false;
+- [ ] GAP-123 [source](../port/src/fam/lover.cpp#L580)  — h.nameChangePending = false;
+- [ ] GAP-124 [source](../port/src/fam/lover.cpp#L617)  — life.pendingCards.push_back(kPendingSpouseName);
+- [ ] GAP-125 [source](../port/src/fam/lover.cpp#L624)  — life.pendingCards.emplace_back(kPendingSpouseName, 1, -1, joinedSurname);
+- [ ] GAP-126 [source](../port/src/fam/lover.cpp#L676)  — if (married) h.nameChangeDivorcePending = true;  // REPORT.en.md 397
+- [ ] GAP-127 [source](../port/src/fam/lover.cpp#L677)  — h.breakUpPending = true;
+- [ ] GAP-128 [source](../port/src/fam/lover.cpp#L684)  — life.pendingCards.push_back(kPendingBreakUpAnnouncement);
+- [ ] GAP-129 [source](../port/src/fam/lover.cpp#L794)  — // The divorce lane opens the court chain, which is not ported (REPORT 172).
+- [ ] GAP-130 [source](../port/src/fam/lover.cpp#L811)  — // shortcut: the handler's stat moves were not read, so the lanes differ only in their
+- [ ] GAP-131 [source](../port/src/fam/lover.cpp#L895)  — // A single parent is asked too, so this card does not need a partner -- only a child.
+- [ ] GAP-132 [source](../port/src/fam/lover.cpp#L962)  — // shortcut: Danger Score is not turned into damage. The game's own use of it was not
+- [ ] GAP-133 [source](../port/src/fam/lover.cpp#L963)  — // read, and a health hit on a random encounter would be a rule the port invented.
+- [ ] GAP-134 [source](../port/src/fam/lover.cpp#L990)  — // shortcut: Can Assault is not acted on -- the assault card is a different class and
+- [ ] GAP-135 [source](../port/src/fam/lover.cpp#L991)  — // is not ported, so this card reports being watched and stops there.
+- [ ] GAP-136 [source](../port/src/fam/lover.cpp#L1101)  — // shortcut: the identity is reported, not stored -- the port's Hero has no identity
+- [ ] GAP-137 [source](../port/src/fam/lover.cpp#L1102)  — // field, and adding one is a structural change this card does not need.
+- [ ] GAP-138 [source](../port/src/fam/lover.cpp#L1170)  — // a16_surrogate-run-off-scenarios-enc is NOT ported: its rows say
+- [ ] GAP-139 [source](../port/src/fam/lover.cpp#L1172)  — // surrogate actor the port does not have (REPORT.en.md 196). The table stays untouched
+- [ ] GAP-140 [source](../port/src/fam/lover.cpp#L1199)  — // '<age>' and '<adoptee>' need the adoptee this card does not name; the card declines
+- [ ] GAP-141 [source](../port/src/fam/lover.cpp#L1216)  — // shortcut: the size of the boost is not in the table. The port moves the attribute by
+- [ ] GAP-142 [source](../port/src/fam/lover.cpp#L1242)  — // actor this card does not have.
+- [ ] GAP-143 [source](../port/src/fam/lover.cpp#L1268)  — // card does not have; the card declines rather than printing the token (REPORT 206).
+- [ ] GAP-144 [source](../port/src/fam/lover.cpp#L1315)  — // Hero Min/Max Age, Person Gender, Person Min/Max Money, Hero Needs Money, Hero Doesn't
+- [ ] GAP-145 [source](../port/src/fam/lover.cpp#L1407)  — // 'Twitch Only' rows need a streaming career the port does not model, and a row whose
+- [ ] GAP-146 [source](../port/src/fam/lover.cpp#L1492)  — // flagged Gay or Single needs a state the port does not model, so those rows are
+- [ ] GAP-147 [source](../port/src/fam/lover.cpp#L1527)  — // Two more tables, both blocked only on a token the port can answer (REPORT 209).
+- [ ] GAP-148 [source](../port/src/fam/lover.cpp#L1531)  — // already draws. The Attitude gate belongs to a stat the port does not have, so rows
+- [ ] GAP-149 [source](../port/src/fam/lover.cpp#L1612)  — // Min/Max Age, Student, Job, Hero Has/Doesn't Have Lover, Both Parents Alive, Hero
+- [ ] GAP-150 [source](../port/src/fam/lover.cpp#L1633)  — if (t.flag(r, "Hero Doesn't Have Lover") && !h.loverName.empty()) continue;
+- [ ] GAP-151 [source](../port/src/fam/lover.cpp#L1899)  — // alternatives and need nothing but a gate; a row gated on a Sexuality the port does not
+- [ ] GAP-152 [source](../port/src/fam/lover.cpp#L1944)  — // shortcut: the price is Price Score * 10000, a scale the house table does not state; the
+- [ ] GAP-153 [source](../port/src/fam/lover.cpp#L1990)  — // prepurchase rows need a purchase preview the port does not build, and are skipped.
+- [ ] GAP-154 [source](../port/src/fam/lover.cpp#L2102)  — // or more). The native multiplier M is unrecovered, so the port uses 1 (ceiling).
+- [ ] GAP-155 [source](../port/src/fam/lover.cpp#L2114)  — out.title.clear();  // the scrap push's own title literal is not recovered
+- [ ] GAP-156 [source](../port/src/fam/lover.cpp#L2131)  — // The native third button is the Golden Wrench, an in-app purchase this port does not
+- [ ] GAP-157 [source](../port/src/fam/lover.cpp#L2197)  — // (219) and '<lover>' the partner; the prepurchase rows need a preview the port does not
+- [ ] GAP-158 [source](../port/src/fam/lover.cpp#L2269)  — life.pendingCards.push_back(kPendingAircraftDanger);
+- [ ] GAP-159 [source](../port/src/fam/lover.cpp#L2281)  — // one flag per aircraft kind. The port does not record the kind it bought, so the kind
+- [ ] GAP-160 [source](../port/src/fam/lover.cpp#L2324)  — // payload queue (REPORT.en.md 184) is the same machinery, so the trial is a pending card
+- [ ] GAP-161 [source](../port/src/fam/lover.cpp#L2353)  — // card does not repeat the name (REPORT.en.md 223).
+- [ ] GAP-162 [source](../port/src/fam/lover.cpp#L2357)  — life.pendingCards.push_back(kPendingCustodyTrial);
+- [ ] GAP-163 [source](../port/src/fam/lover.cpp#L2417)  — // defendant-money columns imply. shortcut: a 60/40 split, not the game's formula.
+- [ ] GAP-164 [source](../port/src/fam/lover.cpp#L2546)  — // gemstone's own Min/Max Cost. (shortcut: the real formula carries a quality roll
+- [ ] GAP-165 [source](../port/src/fam/lover.cpp#L2547)  — // the port does not reproduce.)
+- [ ] GAP-166 [source](../port/src/fam/lover.cpp#L2617)  — // body) is launched from the Relationships menu and is not ported.
+- [ ] GAP-167 [source](../port/src/fam/lover.cpp#L2694)  — // reads. The shop screen itself is a menu the port does not have.
+- [ ] GAP-168 [source](../port/src/fam/lover.cpp#L2711)  — // plural shape was found, so the port does not sell them rather than invent
+- [ ] GAP-169 [source](../port/src/fam/lover.cpp#L2785)  — return m < 500.0 ? 500.0 : m;  // ponytail: the economy scale M (GameRef..+0x1d4) is 1
+- [ ] GAP-170 [source](../port/src/fam/lover.cpp#L2821)  — h.aircraftRepairPending = false;
+- [ ] GAP-171 [source](../port/src/fam/lover.cpp#L2822)  — h.aircraftScrapPending = false;
+- [ ] GAP-172 [source](../port/src/fam/lover.cpp#L2836)  — // check, in that order (the two native callers' relative order is unrecovered: shortcut).
+- [ ] GAP-173 [source](../port/src/fam/lover.cpp#L2847)  — // IncrementAge: Age++, then the wear. Maintenance is not ported, so NumMaint stays 0.
+- [ ] GAP-174 [source](../port/src/fam/lover.cpp#L2858)  — if (h.aircraftScrapPending) return;
+- [ ] GAP-175 [source](../port/src/fam/lover.cpp#L2863)  — h.aircraftScrapPending = true;
+- [ ] GAP-176 [source](../port/src/fam/lover.cpp#L2864)  — life.pendingCards.push_back(kPendingAircraftScrap);
+- [ ] GAP-177 [source](../port/src/fam/lover.cpp#L2868)  — if (h.aircraftRepairPending) return;
+- [ ] GAP-178 [source](../port/src/fam/lover.cpp#L2902)  — h.aircraftRepairPending = true;
+- [ ] GAP-179 [source](../port/src/fam/lover.cpp#L2904)  — life.pendingCards.push_back(kPendingAircraftRepair);
+- [ ] GAP-180 [source](../port/src/fam/lover.cpp#L2909)  — if (h.aircraft.empty() || !h.aircraftRepairPending) return false;
+- [ ] GAP-181 [source](../port/src/fam/lover.cpp#L2928)  — // The Golden Wrench button (#45180) is an in-app purchase this port does not carry; an
+- [ ] GAP-182 [source](../port/src/fam/lover.cpp#L2941)  — h.aircraftRepairPending = false;
+- [ ] GAP-183 [source](../port/src/fam/lover.cpp#L2963)  — if (h.aircraft.empty() || !h.aircraftScrapPending) return false;
+- [ ] GAP-184 [source](../port/src/fam/lover.cpp#L2994)  — h.aircraftScrapPending = false;
+- [ ] GAP-185 [source](../port/src/fam/lover.cpp#L2995)  — h.aircraftRepairPending = false;
+- [ ] GAP-186 [source](../port/src/fam/paternity.cpp#L30)  — // shortcut: a fixture child has no other parent recorded (REPORT.en.md 146), so
+- [ ] GAP-187 [source](../port/src/fam/paternity.cpp#L71)  — // results card yet, so only the counter moves (shortcut).
+- [ ] GAP-188 [source](../port/src/fam/paternity.cpp#L78)  — life.pendingCards.push_back(kPendingPaternityResults);
+- [ ] GAP-189 [source](../port/src/fam/paternity.cpp#L82)  — // shortcut: that scenario is not ported, so the stat move is all of it.
+- [ ] GAP-190 [source](../port/src/fam/paternity.cpp#L108)  — // fixture child that belongs to the ex stays hers (REPORT.en.md 150's shortcut).
+- [ ] GAP-191 [source](../port/src/fam/paternity.cpp#L148)  — // shortcut: the prompt's own sentence was not captured; the log sentence is the
+- [ ] GAP-192 [source](../port/src/fam/paternity.cpp#L159)  — life.pendingCards.push_back(kPendingProactivePaternity);
+- [ ] GAP-193 [source](../port/src/fam/paternity.cpp#L162)  — // shortcut: no refusal line is in the trace, so the port writes none.
+- [ ] GAP-194 [source](../port/src/fam/racing.cpp#L233)  — // columns the generic renderRow does not know (Vehicle Condition, Enjoyment,
+- [ ] GAP-195 [source](../port/src/fam/sports.cpp#L624)  — // was not recovered, so the port models the two obvious effects and says so below
+- [ ] GAP-196 [source](../port/src/fam/sports.cpp#L625)  — // (shortcut).
+- [ ] GAP-197 [source](../port/src/fam/sports.cpp#L671)  — // shortcut: the native success rate and recovery schedule were not recovered. Two
+- [ ] GAP-198 [source](../port/src/fam/spy.cpp#L104)  — // shortcut: the port has no client record; name and gender are drawn here.
+- [ ] GAP-199 [source](../port/src/fam/spy.cpp#L142)  — // when the drawn text does not already carry one.
+- [ ] GAP-200 [source](../port/src/fam/spy.cpp#L303)  — // shortcut: Client.BriefingDescriptor() is the client's name and
+- [ ] GAP-201 [source](../port/src/fam/spy.cpp#L314)  — // shortcut: the native approach dropdown (+25 when it matches the row's
+- [ ] GAP-202 [source](../port/src/fam/spy.cpp#L346)  — // shortcut: the native client generator was not traced; the type is uniform.
+- [ ] GAP-203 [source](../port/src/fam/spy.cpp#L361)  — // shortcut: the native drive/file browser (one (FileName, FileColor) list
+- [ ] GAP-204 [source](../port/src/fam/spy.cpp#L369)  — // shortcut: the native first sentence needs mission.ComputerType and
+- [ ] GAP-205 [source](../port/src/fam/spy.cpp#L370)  — // FileAction, which the port does not draw; only the colour sentence (L109
+- [ ] GAP-206 [source](../port/src/fam/spy.cpp#L452)  — // shortcut: OrderBy's random key lambda is not traced; one unit() key per
+- [ ] GAP-207 [source](../port/src/fam/spy.cpp#L474)  — // shortcut: the native first sentence ('Your <relationship>, <titled code
+- [ ] GAP-208 [source](../port/src/fam/spy.cpp#L493)  — // shortcut: 'Your <relationship>, <titled code name>, ' becomes the
+- [ ] GAP-209 [source](../port/src/fam/spy.cpp#L501)  — // shortcut: a wrong wire leads natively to an interruption fight or
+- [ ] GAP-210 [source](../port/src/fam/spy.cpp#L619)  — // shortcut: the sentence ends before ' disguised as <disguise>' (the port
+- [ ] GAP-211 [source](../port/src/fam/spy.cpp#L630)  — // shortcut: native shows it only when the agent returns (IsSuccessfulMissionAction()
+- [ ] GAP-212 [source](../port/src/fam/trade.cpp#L164)  — // the first one (the same shortcut as the other dumb-scenario pools).
+- [ ] GAP-213 [source](../port/src/fam/vampire.cpp#L696)  — // vampire (shortcut) and the location is drawn uniformly instead of being picked by the
+- [ ] GAP-214 [source](../port/src/fam/vampire.cpp#L697)  — // player (shortcut). Human and vampire appearances are other classes and end the turn.
+- [ ] GAP-215 [source](../port/src/fam/vampire.cpp#L739)  — // ponytail: native Array.Sort is unstable, so tied likelihoods have no fixed order;
+- [ ] GAP-216 [source](../port/src/fam/vampire.cpp#L803)  — // a title line and a body (shortcut: the port shows one card per year).
+- [ ] GAP-217 [source](../port/src/fam/vampire.cpp#L814)  — // native token source is unrecovered; the port draws a16_body-parts-enc (shortcut).
+- [ ] GAP-218 [source](../port/src/main.cpp#L189)  — // --bagcheck: the push-scenario selector builds a flat bag by appending each
+- [ ] GAP-219 [source](../port/src/main.cpp#L233)  — {99.0f, 4, 100.0f},     // +30 from 99 is over the ceiling
+- [ ] GAP-220 [source](../port/src/script.cpp#L1208)  — // a second card drains it on its own ageUp call, which does not advance the age.
+- [ ] GAP-221 [source](../port/src/script.cpp#L1231)  — ? (lived < spec.ages || !life.pendingCards.empty())
+- [ ] GAP-222 [source](../port/src/script.cpp#L1232)  — : (life.hero.age < spec.ages || !life.pendingCards.empty());
+- [ ] GAP-223 [source](../port/src/script.cpp#L1272)  — if (life.hero.age != ageBefore) ++lived;  // a pending card leaves the age alone
+- [ ] GAP-224 [source](../port/src/sim.cpp#L243)  — {{"It doesn't bother me", ""}, {"Go to the doctor", ""},
+- [ ] GAP-225 [source](../port/src/sim.cpp#L259)  — {"ScenarioSocialMediaJoinComplete", "", "Social Media",
+- [ ] GAP-226 [source](../port/src/sim.cpp#L339)  — // shortcut: the dismissal reason is code-built; only the captured one is
+- [ ] GAP-227 [source](../port/src/sim.cpp#L357)  — // log shape "{0} I forgave {1}." whose first fill is unmeasured, so the
+- [ ] GAP-228 [source](../port/src/sim.cpp#L528)  — // shortcut: registry deltas are 0 and the parent word is fixed to "mother"
+- [ ] GAP-229 [source](../port/src/sim.cpp#L538)  — // shortcut: single-parent stand-in; upgrade when Life.Father/Mother exist.
+- [ ] GAP-230 [source](../port/src/sim.cpp#L1509)  — // style values, not for a colour channel the port does not have.
+- [ ] GAP-231 [source](../port/src/sim.cpp#L1825)  — // The game does not keep the circumstance pools in a CSV: DataHub
+- [ ] GAP-232 [source](../port/src/sim.cpp#L2032)  — // A country the region table does not carry answers with the country itself,
+- [ ] GAP-233 [source](../port/src/sim.cpp#L3014)  — // shortcut: only the six attributes the port models are kept, the other draws
+- [ ] GAP-234 [source](../port/src/sim.cpp#L3052)  — // shortcut: health only ever changes here. In the game every health change goes
+- [ ] GAP-235 [source](../port/src/sim.cpp#L3061)  — // capture (100 84 83 87 88 92) come from systems the port does not model yet:
+- [ ] GAP-236 [source](../port/src/sim.cpp#L3301)  — // Anything a format still asks for is a pool the port does not have: drop the
+- [ ] GAP-237 [source](../port/src/sim.cpp#L3391)  — // and inventing a line now would be text the game does not have.
+- [ ] GAP-238 [source](../port/src/sim.cpp#L3416)  — // shortcut: the mortality curve (0.5%/year from 30, 2%/year from 45,
+- [ ] GAP-239 [source](../port/src/sim.cpp#L3455)  — !life.hero.pendingFuneral) {
+- [ ] GAP-240 [source](../port/src/sim.cpp#L3456)  — life.hero.pendingFuneral = true;
+- [ ] GAP-241 [source](../port/src/sim.cpp#L3501)  — // shortcut: the game's own chances for both are not read; the port uses a
+- [ ] GAP-242 [source](../port/src/sim.cpp#L3645)  — // shortcut: class-word tracks ('None'/'Abbreviated'/'Working Class'/
+- [ ] GAP-243 [source](../port/src/sim.cpp#L3689)  — // shortcut: the game has no literal for leaving the orphanage (its
+- [ ] GAP-244 [source](../port/src/sim.cpp#L3702)  — // region where the table knows the pair; a city the table does not carry (its
+- [ ] GAP-245 [source](../port/src/sim.cpp#L3837)  — // shortcut: prison, royal, school (teacher), family (stepchild), friend and
+- [ ] GAP-246 [source](../port/src/sim.cpp#L3839)  — // hero state they gate on, so they are left out rather than approximated. The
+- [ ] GAP-247 [source](../port/src/sim.cpp#L3884)  — // shortcut: orphan (k=0), royal and military are categories the game gated on
+- [ ] GAP-248 [source](../port/src/sim.cpp#L3885)  — // hero state the port does not model, so they read as "gate failed" and
+- [ ] GAP-249 [source](../port/src/sim.cpp#L3895)  — // shortcut: the real gates of the remaining categories during a prison
+- [ ] GAP-250 [source](../port/src/sim.cpp#L3923)  — // (DUMB_SCENARIO_TYPE_ROYAL, literal #17018). shortcut: the k -> set
+- [ ] GAP-251 [source](../port/src/sim.cpp#L3945)  — // family lifecycle lines and the pending-card queue -- and hands the rest to
+- [ ] GAP-252 [source](../port/src/sim.cpp#L3957)  — // whole Life graph in, RNG and decks included, clears the pending scenarios, and on
+- [ ] GAP-253 [source](../port/src/sim.cpp#L4012)  — // shortcut: the prison line (#68766/#68767 "You've been in {1} for {2} {3}.")
+- [ ] GAP-254 [source](../port/src/sim.cpp#L4013)  — // needs the years already served, which the port does not keep.
+- [ ] GAP-255 [source](../port/src/sim.cpp#L4034)  — life.pendingCards.clear();  // GenesisController.ResetScenarios
+- [ ] GAP-256 [source](../port/src/sim.cpp#L4035)  — if (wasDead) life.wasResurrected = true;  // shortcut: the port keeps no graveyard
+- [ ] GAP-257 [source](../port/src/sim.cpp#L4090)  — // shortcut: the port keeps no attribute floats for relatives and no Willpower or
+- [ ] GAP-258 [source](../port/src/sim.cpp#L4096)  — " is not modelled for " + e.person);
+- [ ] GAP-259 [source](../port/src/sim.cpp#L4137)  — // shortcut: RelationshipStatusStringForEditPersonInPointOfView(true) is not
+- [ ] GAP-260 [source](../port/src/sim.cpp#L4157)  — if (!life.pendingCards.empty()) {
+- [ ] GAP-261 [source](../port/src/sim.cpp#L4165)  — // others; a chain left behind another pending card can be stranded by a death.
+- [ ] GAP-262 [source](../port/src/sim.cpp#L4166)  — const PendingCard priority[] = {kPendingLoverArgues, kPendingCrimeSentence,
+- [ ] GAP-263 [source](../port/src/sim.cpp#L4167)  — kPendingCrimePlea, kPendingCrimeCharge};
+- [ ] GAP-264 [source](../port/src/sim.cpp#L4168)  — for (PendingCard kind : priority) {
+- [ ] GAP-265 [source](../port/src/sim.cpp#L4169)  — for (size_t i = 0; i < life.pendingCards.size(); ++i) {
+- [ ] GAP-266 [source](../port/src/sim.cpp#L4170)  — if (life.pendingCards[i].kind == kind) { pick = i; picked = true; break; }
+- [ ] GAP-267 [source](../port/src/sim.cpp#L4175)  — const Life::PendingCard pending = life.pendingCards[pick];
+- [ ] GAP-268 [source](../port/src/sim.cpp#L4176)  — life.pendingCards.erase(life.pendingCards.begin() + long(pick));
+- [ ] GAP-269 [source](../port/src/sim.cpp#L4177)  — const int kind = pending.kind;
+- [ ] GAP-270 [source](../port/src/sim.cpp#L4178)  — if (kind == kPendingSpouseName) return nameChangeSpouseYear(life, out, pending);
+- [ ] GAP-271 [source](../port/src/sim.cpp#L4179)  — if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
+- [ ] GAP-272 [source](../port/src/sim.cpp#L4180)  — if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
+- [ ] GAP-273 [source](../port/src/sim.cpp#L4181)  — if (kind == kPendingPaternityResults) return paternityResultsYear(life, out, -1);
+- [ ] GAP-274 [source](../port/src/sim.cpp#L4182)  — if (kind == kPendingLoverArgues) return loverArguesYear(life, out, -1);
+- [ ] GAP-275 [source](../port/src/sim.cpp#L4183)  — if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
+- [ ] GAP-276 [source](../port/src/sim.cpp#L4184)  — if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
+- [ ] GAP-277 [source](../port/src/sim.cpp#L4185)  — if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
+- [ ] GAP-278 [source](../port/src/sim.cpp#L4186)  — if (kind == kPendingSafeSex) return safeSexYear(life, out, -1);
+- [ ] GAP-279 [source](../port/src/sim.cpp#L4187)  — if (kind == kPendingCrimeCharge) return crimeChargeYear(life, out, -1);
+- [ ] GAP-280 [source](../port/src/sim.cpp#L4188)  — if (kind == kPendingCrimePlea) return crimePleaYear(life, out, -1);
+- [ ] GAP-281 [source](../port/src/sim.cpp#L4189)  — if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
+- [ ] GAP-282 [source](../port/src/sim.cpp#L4190)  — if (kind == kPendingHitmanOutcome) return hitmanOutcomeYear(life, out, -1);
+- [ ] GAP-283 [source](../port/src/sim.cpp#L4191)  — if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
+- [ ] GAP-284 [source](../port/src/sim.cpp#L4192)  — if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
+- [ ] GAP-285 [source](../port/src/sim.cpp#L4193)  — if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
+- [ ] GAP-286 [source](../port/src/sim.cpp#L4194)  — // The tuition screen is the one pending card the script harness can answer: its
+- [ ] GAP-287 [source](../port/src/sim.cpp#L4196)  — if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
+- [ ] GAP-288 [source](../port/src/sim.cpp#L4197)  — if (kind == kPendingCasinoBankrupt) return casinoBankruptYear(life, out, -1);
+- [ ] GAP-289 [source](../port/src/sim.cpp#L4198)  — if (kind == kPendingZooBankrupt) return zooBankruptYear(life, out, forcedChoice);
+- [ ] GAP-290 [source](../port/src/sim.cpp#L4199)  — if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
+- [ ] GAP-291 [source](../port/src/sim.cpp#L4200)  — if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
+- [ ] GAP-292 [source](../port/src/sim.cpp#L4201)  — if (kind == kPendingHrDiscipline) return hrDisciplineYear(life, out, -1);
+- [ ] GAP-293 [source](../port/src/sim.cpp#L4202)  — if (kind == kPendingHeroPregnancy) return heroPregnancyYear(life, out, forcedChoice);
+- [ ] GAP-294 [source](../port/src/sim.cpp#L4203)  — if (kind == kPendingHeroMiscarriage) return heroMiscarriageYear(life, out, -1);
+- [ ] GAP-295 [source](../port/src/sim.cpp#L4204)  — if (kind == kPendingHeroBirth) return heroBirthYear(life, out, -1);
+- [ ] GAP-296 [source](../port/src/sim.cpp#L4205)  — if (kind == kPendingInsultComeback) return insultComebackYear(life, out, -1);
+- [ ] GAP-297 [source](../port/src/sim.cpp#L4206)  — if (kind == kPendingCasinoFeedback) return casinoFeedbackYear(life, out, -1);
+- [ ] GAP-298 [source](../port/src/sim.cpp#L4207)  — if (kind == kPendingZooFeedback) return zooFeedbackYear(life, out, -1);
+- [ ] GAP-299 [source](../port/src/sim.cpp#L4208)  — if (kind == kPendingZooDivision) return zooDivisionYear(life, out, -1);
+- [ ] GAP-300 [source](../port/src/sim.cpp#L4209)  — if (kind == kPendingWitchResult || kind == kPendingWitchCure)
+- [ ] GAP-301 [source](../port/src/sim.cpp#L4210)  — return witchDoctorFollowup(life, out, pending);
+- [ ] GAP-302 [source](../port/src/sim.cpp#L4212)  — if (kind == kPendingEmployeeRespect) return employeeRespectYear(life, out, -1, true);
+- [ ] GAP-303 [source](../port/src/sim.cpp#L4213)  — if (kind == kPendingEmployeeRecognize) return employeeRecognizeYear(life, out, -1);
+- [ ] GAP-304 [source](../port/src/sim.cpp#L4214)  — if (kind == kPendingEmployeeWarn) return employeeWarnYear(life, out, -1);
+- [ ] GAP-305 [source](../port/src/sim.cpp#L4215)  — if (kind == kPendingEmployeeBonus) return employeeBonusYear(life, out, forcedChoice);
+- [ ] GAP-306 [source](../port/src/sim.cpp#L4216)  — if (kind == kPendingAircraftDanger) return aircraftDangerYear(life, out, -1);
+- [ ] GAP-307 [source](../port/src/sim.cpp#L4217)  — if (kind == kPendingAircraftRepair) return aircraftRepairYear(life, out, forcedChoice);
+- [ ] GAP-308 [source](../port/src/sim.cpp#L4218)  — if (kind == kPendingAircraftScrap) return aircraftScrapYear(life, out, -1);
+- [ ] GAP-309 [source](../port/src/sim.cpp#L4219)  — if (kind == kPendingMagazineOffer) return fameMagazineYear(life, out, forcedChoice);
+- [ ] GAP-310 [source](../port/src/sim.cpp#L4220)  — if (kind == kPendingBookOffer) return fameBookYear(life, out, forcedChoice);
+- [ ] GAP-311 [source](../port/src/sim.cpp#L4221)  — if (kind == kPendingTalkShow) return fameTalkShowYear(life, out, forcedChoice);
+- [ ] GAP-312 [source](../port/src/sim.cpp#L4222)  — if (kind == kPendingCommercial) return fameCommercialYear(life, out, forcedChoice);
+- [ ] GAP-313 [source](../port/src/sim.cpp#L4223)  — if (kind == kPendingZooShopUnits) return zooShopUnitsYear(life, out, forcedChoice);
+- [ ] GAP-314 [source](../port/src/sim.cpp#L4224)  — if (kind == kPendingZooShopPrice) return zooShopPriceYear(life, out, forcedChoice);
+- [ ] GAP-315 [source](../port/src/sim.cpp#L4225)  — if (kind == kPendingZooShopProfile) return zooShopProfileYear(life, out, forcedChoice);
+- [ ] GAP-316 [source](../port/src/sim.cpp#L4226)  — if (kind == kPendingZooShopOrderUnits) return zooShopOrderUnitsYear(life, out, forcedChoice);
+- [ ] GAP-317 [source](../port/src/sim.cpp#L4227)  — if (kind == kPendingZooShopAdjustPrice) return zooShopAdjustPriceYear(life, out, forcedChoice);
+- [ ] GAP-318 [source](../port/src/sim.cpp#L4228)  — if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
+- [ ] GAP-319 [source](../port/src/sim.cpp#L4229)  — if (kind == kPendingLegalName) return legalNameOutcomeYear(life, out, forcedChoice);
+- [ ] GAP-320 [source](../port/src/sim.cpp#L4230)  — if (kind == kPendingAdoptionName) return adoptionNameYear(life, out, forcedChoice);
+- [ ] GAP-321 [source](../port/src/sim.cpp#L4231)  — if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
+- [ ] GAP-322 [source](../port/src/sim.cpp#L4232)  — if (kind == kPendingZooInterview) return zooInterviewYear(life, out, forcedChoice);
+- [ ] GAP-323 [source](../port/src/sim.cpp#L4233)  — if (kind == kPendingCommunity) return communityCollegeYear(life, out, forcedChoice);
+- [ ] GAP-324 [source](../port/src/sim.cpp#L4234)  — if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
+- [ ] GAP-325 [source](../port/src/sim.cpp#L4235)  — if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
+- [ ] GAP-326 [source](../port/src/sim.cpp#L4236)  — if (kind == kPendingBirth) return birthYear(life, out, -1);
+- [ ] GAP-327 [source](../port/src/sim.cpp#L4283)  — // both push pending cards that the same age-up drains.
+- [ ] GAP-328 [source](../port/src/sim.cpp#L4348)  — if (forcedChoice < 0 && life.hero.pendingFuneral) return funeralYear(life, out, forcedChoice);
+- [ ] GAP-329 [source](../port/src/sim.cpp#L4352)  — if (forcedChoice < 0 && life.hero.graduationPending) return graduationYear(life, out, forcedChoice);
+- [ ] GAP-330 [source](../port/src/sim.cpp#L4367)  — // shortcut: the table's gates the port cannot evaluate yet (Required
+- [ ] GAP-331 [source](../port/src/sim.cpp#L4398)  — // shortcut: Occupation.Pension and Occupation.AgeAtRetirement are not modelled;
+- [ ] GAP-332 [source](../port/src/sim.cpp#L4400)  — if (h.age >= retirementAge(h) && h.employed && !h.military && !h.militaryPending)
+- [ ] GAP-333 [source](../port/src/sim.cpp#L4505)  — {&Sim::militaryYear, [](const Life& l) { return (l.hero.military || l.hero.militaryPending); }},
+- [ ] GAP-334 [source](../port/src/sim.cpp#L4761)  — if (forcedChoice < 0 && life.hero.nameChangePending &&
+- [ ] GAP-335 [source](../port/src/sim.cpp#L4764)  — if (forcedChoice < 0 && life.hero.nameChangeDivorcePending &&
+- [ ] GAP-336 [source](../port/src/sim.cpp#L4796)  — if (forcedChoice < 0 && h.eyeExamPending && eyeExamYear(life, out, forcedChoice))
+- [ ] GAP-337 [source](../port/src/sim.cpp#L4980)  — // shortcut: only the label list is read -- Filter, HeroAge, ActionList,
+- [ ] GAP-338 [source](../port/src/sim.cpp#L5011)  — // (REPORT.en.md 233). Filled before the lane is picked, so it does not depend on
+- [ ] GAP-339 [source](../port/src/sim.cpp#L5027)  — // drawn -1 or +1, so reading a column the row does not carry moved smarts
+- [ ] GAP-340 [source](../port/src/sim.cpp#L5141)  — // shortcut: the third label (the home remedy) is modelled for two symptoms and
+- [ ] GAP-341 [source](../port/src/sim.cpp#L5180)  — static const char* kLabel[4] = {"It doesn't bother me", "Go to the doctor", nullptr,
+- [ ] GAP-342 [source](../port/src/sim.cpp#L5239)  — for (const auto& p : life.pendingCards)
+- [ ] GAP-343 [source](../port/src/sim.cpp#L5240)  — if (p.kind == kPendingWitchResult || p.kind == kPendingWitchCure) return false;
+- [ ] GAP-344 [source](../port/src/sim.cpp#L5266)  — // ponytail: flatten the native Cost UI field into the body until card fields exist.
+- [ ] GAP-345 [source](../port/src/sim.cpp#L5274)  — life.pendingCards.emplace_back(kPendingWitchResult,
+- [ ] GAP-346 [source](../port/src/sim.cpp#L5312)  — life.pendingCards.emplace_back(kPendingWitchResult, int(witchRng_.below(2)), int(diseaseRow));
+- [ ] GAP-347 [source](../port/src/sim.cpp#L5329)  — life.pendingCards.emplace_back(kPendingWitchResult, 2 + int(witchRng_.below(2)));
+- [ ] GAP-348 [source](../port/src/sim.cpp#L5337)  — bool Sim::witchDoctorFollowup(Life& life, AgeUp& out, const Life::PendingCard& pending) {
+- [ ] GAP-349 [source](../port/src/sim.cpp#L5344)  — if (pending.kind == kPendingWitchCure) {
+- [ ] GAP-350 [source](../port/src/sim.cpp#L5346)  — if (pending.a < 0 || size_t(pending.a) >= d.size()) return false;
+- [ ] GAP-351 [source](../port/src/sim.cpp#L5347)  — const std::string disease = diseaseDisplayName(d, size_t(pending.a));
+- [ ] GAP-352 [source](../port/src/sim.cpp#L5352)  — witchCureRestore(h, out, size_t(pending.a));
+- [ ] GAP-353 [source](../port/src/sim.cpp#L5355)  — if (pending.kind != kPendingWitchResult || pending.a < 0 || pending.a > 9) return false;
+- [ ] GAP-354 [source](../port/src/sim.cpp#L5361)  — out.title = titles[pending.a];
+- [ ] GAP-355 [source](../port/src/sim.cpp#L5362)  — if (pending.a >= 4) {
+- [ ] GAP-356 [source](../port/src/sim.cpp#L5365)  — out.body += pending.b > 0 ? "\n\nYou are " + money(pending.b) + " short." : "\n\nYou are broke.";
+- [ ] GAP-357 [source](../port/src/sim.cpp#L5369)  — if (pending.a < 2) life.pendingCards.emplace_back(kPendingWitchCure, pending.b);
+- [ ] GAP-358 [source](../port/src/sim.cpp#L5386)  — if (!h.pendingFuneral) return false;
+- [ ] GAP-359 [source](../port/src/sim.cpp#L5394)  — // shortcut: the card's own prompt was not captured; the title is the registry's.
+- [ ] GAP-360 [source](../port/src/sim.cpp#L5411)  — h.pendingFuneralPlan = true;
+- [ ] GAP-361 [source](../port/src/sim.cpp#L5412)  — life.pendingCards.push_back(kPendingFuneralPlan);
+- [ ] GAP-362 [source](../port/src/sim.cpp#L5414)  — h.pendingFuneral = false;
+- [ ] GAP-363 [source](../port/src/sim.cpp#L5429)  — // carries; they are left out rather than invented.
+- [ ] GAP-364 [source](../port/src/sim.cpp#L5476)  — if (!h.pendingFuneralPlan) return false;
+- [ ] GAP-365 [source](../port/src/sim.cpp#L5477)  — h.pendingFuneralPlan = false;
+- [ ] GAP-366 [source](../port/src/sim.cpp#L5485)  — // game's own formula is class-side and was not recovered (shortcut).
+- [ ] GAP-367 [source](../port/src/sim.cpp#L5517)  — h.pendingFuneralAshes = true;
+- [ ] GAP-368 [source](../port/src/sim.cpp#L5520)  — life.pendingCards.push_back(kPendingFuneralAshes);
+- [ ] GAP-369 [source](../port/src/sim.cpp#L5533)  — if (!h.pendingFuneralAshes) return false;
+- [ ] GAP-370 [source](../port/src/sim.cpp#L5534)  — h.pendingFuneralAshes = false;
+- [ ] GAP-371 [source](../port/src/sim.cpp#L5557)  — // age; the game's choice of age subject is unrecovered (shortcut).
+- [ ] GAP-372 [source](../port/src/sim.cpp#L5615)  — // invented location (the test treats a missing one as a failure).
+- [ ] GAP-373 [source](../port/src/sim.cpp#L5652)  — h.eyeExamPending = true;
+- [ ] GAP-374 [source](../port/src/sim.cpp#L5658)  — if (!h.eyeExamPending) return false;
+- [ ] GAP-375 [source](../port/src/sim.cpp#L5659)  — h.eyeExamPending = false;
+- [ ] GAP-376 [source](../port/src/sim.cpp#L5663)  — // not modelled -- the result is a coin (shortcut) carrying the played life's own
+- [ ] GAP-377 [source](../port/src/sim.cpp#L5705)  — if (!h.graduationPending) return false;
+- [ ] GAP-378 [source](../port/src/sim.cpp#L5706)  — h.graduationPending = false;
+- [ ] GAP-379 [source](../port/src/sim.cpp#L5730)  — // shortcut: the native ability score is not recovered, so the port's own
+- [ ] GAP-380 [source](../port/src/sim.cpp#L5732)  — // Country.SchoolGraduationAge gate are not modelled; the card is offered the
+- [ ] GAP-381 [source](../port/src/sim.cpp#L5734)  — // the two cards in one year was not recovered); the card's body text is
+- [ ] GAP-382 [source](../port/src/sim.cpp#L5736)  — // screen, 0x73f2a5a944) is not modelled, so an accepted hero starts college the
+- [ ] GAP-383 [source](../port/src/sim.cpp#L5753)  — // (shortcut).
+- [ ] GAP-384 [source](../port/src/sim.cpp#L5775)  — life.pendingCards.push_back(kPendingUniversityFund);
+- [ ] GAP-385 [source](../port/src/sim.cpp#L5802)  — life.pendingCards.push_back(kPendingCommunity);
+- [ ] GAP-386 [source](../port/src/sim.cpp#L5803)  — // shortcut: the native card only supplies the label; the port records the
+- [ ] GAP-387 [source](../port/src/sim.cpp#L5819)  — // shortcut: the native community-college tuition flow was not recovered, so the port
+- [ ] GAP-388 [source](../port/src/sim.cpp#L5847)  — // raise" as its one answer. The native negotiation arithmetic was not recovered, so
+- [ ] GAP-389 [source](../port/src/sim.cpp#L5849)  — // it lands (shortcut).
+- [ ] GAP-390 [source](../port/src/sim.cpp#L5853)  — // raise" as its one answer. The native negotiation arithmetic was not recovered: the
+- [ ] GAP-391 [source](../port/src/sim.cpp#L5856)  — // (shortcut).
+- [ ] GAP-392 [source](../port/src/sim.cpp#L5937)  — // shortcut: the native ability score is unrecovered, so the port's own schoolGrades
+- [ ] GAP-393 [source](../port/src/sim.cpp#L5982)  — // shortcut: ScenarioSchoolFund's own ExteriorTitle was not recovered; the port
+- [ ] GAP-394 [source](../port/src/sim.cpp#L6034)  — // native bodies and logs of this branch were not recovered.
+- [ ] GAP-395 [source](../port/src/sim.cpp#L6095)  — // shortcut: the native code pays twelve min(Balance, standard) months and books
+- [ ] GAP-396 [source](../port/src/sim.cpp#L6116)  — // the accomplice is always there and the identity gates are not modelled
+- [ ] GAP-397 [source](../port/src/sim.cpp#L6117)  — // (shortcut), and the coin below is the port's.
+- [ ] GAP-398 [source](../port/src/sim.cpp#L6164)  — // shortcut), ImpactDiscipline(-3), ImpactKarma(-3), then the activity row.
+- [ ] GAP-399 [source](../port/src/sim.cpp#L6170)  — // run does not move any other family's sequence.
+- [ ] GAP-400 [source](../port/src/sim.cpp#L6206)  — // renders as the next card. shortcut: the sentence ladder by tier is the port's
+- [ ] GAP-401 [source](../port/src/sim.cpp#L6207)  — // (1/1/2/3/5), since the spliced scenario's own length is not recovered.
+- [ ] GAP-402 [source](../port/src/sim.cpp#L6212)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-403 [source](../port/src/sim.cpp#L6448)  — // own wording (shortcut).
+- [ ] GAP-404 [source](../port/src/sim.cpp#L6519)  — // shortcut: the prompt's own lines were not captured; the log sentence is the
+- [ ] GAP-405 [source](../port/src/sim.cpp#L6530)  — // shortcut: no doubled-down line is in the trace, so the port writes none.
+- [ ] GAP-406 [source](../port/src/sim.cpp#L6552)  — life.pendingCards.push_back(kPendingLicenseTest);
+- [ ] GAP-407 [source](../port/src/sim.cpp#L6562)  — // decoy. shortcut: the game's own chance of the hero picking right is not read, so
+- [ ] GAP-408 [source](../port/src/sim.cpp#L6583)  — // shortcut: the card shows the sign as an image; the port has no image, so the
+- [ ] GAP-409 [source](../port/src/sim.cpp#L6609)  — h.graduationPending = true;
+- [ ] GAP-410 [source](../port/src/sim.cpp#L6705)  — // shortcut: the card's own prompt was not captured; it is rebuilt from the log
+- [ ] GAP-411 [source](../port/src/sim.cpp#L6729)  — // shortcut: the refusal lane's line is not in the trace and the port will not
+- [ ] GAP-412 [source](../port/src/sim.cpp#L6846)  — // shortcut: two-variant item list, extend as more captures land.
+- [ ] GAP-413 [source](../port/src/sim.cpp#L6963)  — // shortcut: the dismissal reason is a code-built sentence; only the captured
+- [ ] GAP-414 [source](../port/src/sim.cpp#L7013)  — // shortcut: the club list is code-built in the game (metadata #27937-#27943);
+- [ ] GAP-415 [source](../port/src/sim.cpp#L7029)  — // shortcut: the meeting place is code-built in the game (gym and library
+- [ ] GAP-416 [source](../port/src/sim.cpp#L7036)  — // shortcut: the port's family model has a stepfather relation but no
+- [ ] GAP-417 [source](../port/src/sim.cpp#L7077)  — // shortcut: the findable is a code array in the game, not a table, so only
+- [ ] GAP-418 [source](../port/src/sim.cpp#L7099)  — // shortcut: stake drawn from Default..Max Bet * 100; the game reads the
+- [ ] GAP-419 [source](../port/src/sim.cpp#L7133)  — // shortcut: no step-relative model yet, upgrade with the full family graph.
+- [ ] GAP-420 [source](../port/src/sim.cpp#L7158)  — // shortcut: the port has no step-parent gender slot (see above).
+- [ ] GAP-421 [source](../port/src/sim.cpp#L7267)  — // shortcut: the 2%/year conviction chance and the sentence table {1,2,3,5,10}
+- [ ] GAP-422 [source](../port/src/sim.cpp#L7306)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-423 [source](../port/src/sim.cpp#L7333)  — life.pendingCards.push_back(kPendingCrimePlea);
+- [ ] GAP-424 [source](../port/src/sim.cpp#L7338)  — // not-guilty lane is the port's: the trial's coin is its own (shortcut), and a
+- [ ] GAP-425 [source](../port/src/sim.cpp#L7356)  — life.pendingCards.push_back(kPendingCrimeSentence);
+- [ ] GAP-426 [source](../port/src/sim.cpp#L7365)  — life.pendingCards.push_back(kPendingCrimeSentence);
+- [ ] GAP-427 [source](../port/src/sim.cpp#L7814)  — // shortcut: a juvenile sentence reuses the adult release line; the literal
+- [ ] GAP-428 [source](../port/src/sim.cpp#L7850)  — // shortcut: the careers table's own eligibility columns (Required Education,
+- [ ] GAP-429 [source](../port/src/sim.cpp#L7859)  — if (h.military || h.militaryPending) return false;
+- [ ] GAP-430 [source](../port/src/sim.cpp#L7872)  — // A retired hero (ageUp's 66 rule, REPORT.en.md 124) does not start a new
+- [ ] GAP-431 [source](../port/src/sim.cpp#L8109)  — // The nine remaining dumb-scenario pools share one runner: each names its table,
+- [ ] GAP-432 [source](../port/src/sim.cpp#L8230)  — // The fighting style is a label: the move system is not modelled, so nothing
+- [ ] GAP-433 [source](../port/src/sim.cpp#L8562)  — // Surgery and the cost columns are not modelled: the injury is the stat
+- [ ] GAP-434 [source](../port/src/sim.cpp#L9493)  — // 2. The run: the batch goes out and comes back as money, or it does not.
+- [ ] GAP-435 [source](../port/src/sim.cpp#L10228)  — // shortcut: a hand-kept verb list, upgrade if a table adds another verb.
+- [ ] GAP-436 [source](../port/src/sim.cpp#L10442)  — title = "Not yet";
+- [ ] GAP-437 [source](../port/src/sim.cpp#L10673)  — // Ceiling: the native profit formula is not recovered, so the pass reuses the two
+- [ ] GAP-438 [source](../port/src/sim.cpp#L10755)  — // park stocks three lines when it is bought instead (shortcut: 363).
+- [ ] GAP-439 [source](../port/src/sim.cpp#L10759)  — // Ceiling: the native reads the animal's live health, happiness, craziness and
+- [ ] GAP-440 [source](../port/src/sim.cpp#L10952)  — life.pendingCards.push_back(kPendingZooFeedback);
+- [ ] GAP-441 [source](../port/src/sim.cpp#L10981)  — row("Units Remaining", grouped(it.units));                             // #44888
+- [ ] GAP-442 [source](../port/src/sim.cpp#L10995)  — // always has something to report (shortcut, REPORT.en.md 370).
+- [ ] GAP-443 [source](../port/src/sim.cpp#L11018)  — // (shortcut: 363).
+- [ ] GAP-444 [source](../port/src/sim.cpp#L11050)  — // ceiling is what the pot can pay for, and the native does not clamp the debit, so the
+- [ ] GAP-445 [source](../port/src/sim.cpp#L11051)  — // pot can go negative (shortcut: one unit when the slider would bottom out at zero).
+- [ ] GAP-446 [source](../port/src/sim.cpp#L11071)  — life.pendingCards.push_back(kPendingZooFeedback);
+- [ ] GAP-447 [source](../port/src/sim.cpp#L11086)  — // quiet after a card so a park cannot restock its whole shop in one life (shortcut: 368).
+- [ ] GAP-448 [source](../port/src/sim.cpp#L11094)  — // but the product it compares is the one the row is keyed by (shortcut: 368).
+- [ ] GAP-449 [source](../port/src/sim.cpp#L11154)  — life.pendingCards.push_back(kPendingZooShopUnits);
+- [ ] GAP-450 [source](../port/src/sim.cpp#L11192)  — // of that ceiling (REPORT.en.md 368). The port takes the starting point, which is what a
+- [ ] GAP-451 [source](../port/src/sim.cpp#L11193)  — // player who does not touch the slider orders.
+- [ ] GAP-452 [source](../port/src/sim.cpp#L11194)  — long long ceiling = it.pricePerUnit > 0 ? h.zooBank / it.pricePerUnit : 500;
+- [ ] GAP-453 [source](../port/src/sim.cpp#L11195)  — if (ceiling > 500) ceiling = 500;
+- [ ] GAP-454 [source](../port/src/sim.cpp#L11196)  — if (ceiling < 1) ceiling = 1;
+- [ ] GAP-455 [source](../port/src/sim.cpp#L11197)  — it.units = ceiling / 2;
+- [ ] GAP-456 [source](../port/src/sim.cpp#L11201)  — // featured animal is what it can compare (shortcut: 368).
+- [ ] GAP-457 [source](../port/src/sim.cpp#L11224)  — life.pendingCards.push_back(kPendingZooShopPrice);
+- [ ] GAP-458 [source](../port/src/sim.cpp#L11256)  — // midpoint, which is the price a player who does not touch it sets (REPORT.en.md 368).
+- [ ] GAP-459 [source](../port/src/sim.cpp#L11259)  — // The native adds the item and then charges the pot, so a shop already at its ceiling is
+- [ ] GAP-460 [source](../port/src/sim.cpp#L11316)  — // A wheel ticket has to ration itself, so two quiet years follow a card (shortcut).
+- [ ] GAP-461 [source](../port/src/sim.cpp#L11345)  — row("Units Remaining", grouped(it.units));                            // #44888
+- [ ] GAP-462 [source](../port/src/sim.cpp#L11366)  — life.pendingCards.push_back(kPendingZooShopAdjustPrice);
+- [ ] GAP-463 [source](../port/src/sim.cpp#L11379)  — life.pendingCards.push_back(kPendingZooShopOrderUnits);
+- [ ] GAP-464 [source](../port/src/sim.cpp#L11383)  — // removal is reproduced (ceiling, REPORT.en.md 369).
+- [ ] GAP-465 [source](../port/src/sim.cpp#L11416)  — life.pendingCards.push_back(kPendingZooBankrupt);
+- [ ] GAP-466 [source](../port/src/sim.cpp#L11426)  — // shortcut: the card is menu-only natively -- nothing pushes it from an age-up --
+- [ ] GAP-467 [source](../port/src/sim.cpp#L11430)  — // native narrative for this card was not recovered.
+- [ ] GAP-468 [source](../port/src/sim.cpp#L11436)  — // shortcut: the card is menu-only natively, so it is offered here as its own
+- [ ] GAP-469 [source](../port/src/sim.cpp#L11440)  — // the narrative was not recovered.
+- [ ] GAP-470 [source](../port/src/sim.cpp#L11446)  — // shortcut: the card is menu-only natively, so it is offered here as its own
+- [ ] GAP-471 [source](../port/src/sim.cpp#L11448)  — // were not recovered; the port invests the shortfall when the zoo's balance is
+- [ ] GAP-472 [source](../port/src/sim.cpp#L11451)  — // was not recovered.
+- [ ] GAP-473 [source](../port/src/sim.cpp#L11464)  — // shortcut: the native method's slot arithmetic and its type picker were not
+- [ ] GAP-474 [source](../port/src/sim.cpp#L11468)  — // because its narrative sentence was not recovered.
+- [ ] GAP-475 [source](../port/src/sim.cpp#L11472)  — // were not recovered, so it reuses the two labels the build card does carry --
+- [ ] GAP-476 [source](../port/src/sim.cpp#L11482)  — // were not recovered, so it reuses row #50857 'Zoo' with the park's name and
+- [ ] GAP-477 [source](../port/src/sim.cpp#L11485)  — // shortcut: the native card is menu-only, and a sale ends the zoo, so no age-up
+- [ ] GAP-478 [source](../port/src/sim.cpp#L11488)  — // zoo's own pot -- nothing is invented on top of it -- and everything the park
+- [ ] GAP-479 [source](../port/src/sim.cpp#L11525)  — // Funds' -- and the generic #32432 'OK'; the price flow was not recovered, so the
+- [ ] GAP-480 [source](../port/src/sim.cpp#L11528)  — // shortcut: menu-only and final, so the family is armed by the harness
+- [ ] GAP-481 [source](../port/src/sim.cpp#L11869)  — life.pendingCards.push_back(kPendingZooInterview);
+- [ ] GAP-482 [source](../port/src/sim.cpp#L12227)  — // Ceiling: the recovered concatenation joins the inspector's pronoun, the funds
+- [ ] GAP-483 [source](../port/src/sim.cpp#L12256)  — // Shortcut: the native card opens an amount input (minimum the shortfall plus one,
+- [ ] GAP-484 [source](../port/src/sim.cpp#L12540)  — body = "The " + name + " would cost " + money(cost) + ", which the zoo does not have.";
+- [ ] GAP-485 [source](../port/src/sim.cpp#L12634)  — body = withArticle(feat, true) + feat + " would cost " + money(cost) + ", which the zoo does not have.";
+- [ ] GAP-486 [source](../port/src/sim.cpp#L12652)  — body = withArticle(feat, true) + feat + " would cost " + money(cost) + ", which the zoo does not have.";
+- [ ] GAP-487 [source](../port/src/sim.cpp#L12762)  — say("The park does not have " + withArticle(wanted, true) + wanted + " yet.");
+- [ ] GAP-488 [source](../port/src/sim.cpp#L13059)  — // keeper and no salary, so the hire age stands for both clauses (shortcut).
+- [ ] GAP-489 [source](../port/src/sim.cpp#L13074)  — // The colour may name a rival zoo; the port has no competitor list (shortcut).
+- [ ] GAP-490 [source](../port/src/sim.cpp#L13114)  — // The native chains ScenarioZooEmployeeSalary, whose body is not recovered: the
+- [ ] GAP-491 [source](../port/src/sim.cpp#L13115)  — // keeper stays and the raise costs nothing here (ceiling).
+- [ ] GAP-492 [source](../port/src/sim.cpp#L13163)  — // and #63111 'of natural causes' does not, while the body and the journal both read
+- [ ] GAP-493 [source](../port/src/sim.cpp#L13309)  — if (pick == 0) life.pendingCards.push_back(kPendingZooDivision);
+- [ ] GAP-494 [source](../port/src/sim.cpp#L13349)  — if (pick == 0) life.pendingCards.push_back(kPendingZooDivision);
+- [ ] GAP-495 [source](../port/src/sim.cpp#L13397)  — // plot is read off the attractions (shortcut).
+- [ ] GAP-496 [source](../port/src/sim.cpp#L14847)  — if (fa > 0 && fanAge > int(fa)) continue;   // 'Fan Age' is the ceiling
+- [ ] GAP-497 [source](../port/src/sim.cpp#L15311)  — // inline in the scenario cells, so the port carries its own (shortcut).
+- [ ] GAP-498 [source](../port/src/sim.cpp#L15386)  — // shortcut: the port models no children, so the "child" condition of the excuse
+- [ ] GAP-499 [source](../port/src/sim.cpp#L16192)  — // Impact, which the shared renderer does not know about, so the year
+- [ ] GAP-500 [source](../port/src/sim.cpp#L16193)  — // applies its own training effects (shortcut: flat impacts).
+- [ ] GAP-501 [source](../port/src/sim.cpp#L16347)  — // shortcut: the port keeps one publication per hero rather than a list, so the walk
+- [ ] GAP-502 [source](../port/src/sim.cpp#L16387)  — life.pendingCards.push_back(kPendingAstroResult);
+- [ ] GAP-503 [source](../port/src/sim.cpp#L16483)  — // #31297 New Clearance has no recovered source, so the row is left out (ceiling).
+- [ ] GAP-504 [source](../port/src/sim.cpp#L17363)  — // a blank cell fits any year, and so does a column the table does not have.
+- [ ] GAP-505 [source](../port/src/sim.cpp#L17419)  — if (delta < -75) delta = -75;  // shortcut: one year never wipes a position out (REPORT 77)
+- [ ] GAP-506 [source](../port/src/sim.cpp#L17463)  — // shortcut: a cash buy needs an income the scripted runs never have.
+- [ ] GAP-507 [source](../port/src/sim.cpp#L17879)  — // club membership, so the luxury life starts with a fortune (shortcut,
+- [ ] GAP-508 [source](../port/src/sim.cpp#L18191)  — // The hero's yacht is a sailing yacht (shortcut, REPORT.en.md 79).
+- [ ] GAP-509 [source](../port/src/sim.cpp#L18221)  — // The pool has no cost column; the price is invented (shortcut).
+- [ ] GAP-510 [source](../port/src/sim.cpp#L18471)  — // the season does not claim.
+- [ ] GAP-511 [source](../port/src/sim.cpp#L18522)  — // fund (shortcut, REPORT.en.md 81).
+- [ ] GAP-512 [source](../port/src/sim.cpp#L19105)  — // chain has no depth limit and the port would loop (shortcut).
+- [ ] GAP-513 [source](../port/src/sim.cpp#L19108)  — life.pendingCards.push_back(kPendingEmployeeBonus);
+- [ ] GAP-514 [source](../port/src/sim.cpp#L19110)  — life.pendingCards.push_back(kPendingEmployeeRecognize);
+- [ ] GAP-515 [source](../port/src/sim.cpp#L19112)  — life.pendingCards.push_back(kPendingEmployeeWarn);
+- [ ] GAP-516 [source](../port/src/sim.cpp#L19261)  — life.pendingCards.push_back(kPendingEmployeeRespect);
+- [ ] GAP-517 [source](../port/src/sim.cpp#L19595)  — // elementary column (shortcut: the real game's middle-school split is not in
+- [ ] GAP-518 [source](../port/src/sim.cpp#L19641)  — // port already has (the weights are the port's: shortcut).
+- [ ] GAP-519 [source](../port/src/sim.cpp#L20111)  — // shortcut: the hero has no athleticism attribute of its own, so the
+- [ ] GAP-520 [source](../port/src/sim.cpp#L20243)  — // Relationship, which the generic renderRow does not read, so the family draws
+- [ ] GAP-521 [source](../port/src/sim.cpp#L20275)  — // The tags the reference table does not answer: the hero's city, a full name
+- [ ] GAP-522 [source](../port/src/sim.cpp#L20292)  — // shortcut: the name table is the one the port already names people from,
+- [ ] GAP-523 [source](../port/src/sim.cpp#L20583)  — // shortcut: the hero has no popularity attribute of its own, so the
+- [ ] GAP-524 [source](../port/src/sim.cpp#L20656)  — // A sponsor. shortcut: no table in the corpus names advertisers, so the
+- [ ] GAP-525 [source](../port/src/sim.cpp#L20774)  — // one; otherwise it stays the hero's. Shortcut: an unknown bracket keeps the
+- [ ] GAP-526 [source](../port/src/sim.cpp#L21250)  — // shortcut: the real game names the tabloids, and no table in the corpus
+- [ ] GAP-527 [source](../port/src/sim.cpp#L21497)  — // the invented name survives the swap (REPORT.en.md 94).
+- [ ] GAP-528 [source](../port/src/sim.cpp#L21961)  — // The volume is worked back from the costs rather than invented: a company
+- [ ] GAP-529 [source](../port/src/sim.cpp#L21979)  — // The market normalises, it does not grind one way: both figures drift back
+- [ ] GAP-530 [source](../port/src/sim.cpp#L22327)  — h.militaryPending = true;
+- [ ] GAP-531 [source](../port/src/sim.cpp#L22374)  — if (!h.military && !h.militaryPending) return false;
+- [ ] GAP-532 [source](../port/src/sim.cpp#L22383)  — h.militaryPending = false;
+- [ ] GAP-533 [source](../port/src/sim.cpp#L22415)  — // shortcut: twenty years of service is the retirement rule; the game's own
+- [ ] GAP-534 [source](../port/src/sim.cpp#L22460)  — // invented seat (17 of them have one: Belgium, Denmark, Japan, ...).
+- [ ] GAP-535 [source](../port/src/sim.cpp#L22465)  — // Royal' rows window on. Shortcut: the real distribution was not read out of
+- [ ] GAP-536 [source](../port/src/sim.cpp#L22519)  — // shortcut: the royal circumstance pool is built in code
+- [ ] GAP-537 [source](../port/src/sim.cpp#L22555)  — // lightning.'). A pending cause pre-empts the annual roll.
+- [ ] GAP-538 [source](../port/src/sim.cpp#L22598)  — for (const auto& pending : life.pendingCards)
+- [ ] GAP-539 [source](../port/src/sim.cpp#L22599)  — if (pending.kind == kPendingWitchResult || pending.kind == kPendingWitchCure) return false;
+- [ ] GAP-540 [source](../port/src/sim.cpp#L22649)  — // shortcut: the port keeps no property list yet, so '<house>' is one house
+- [ ] GAP-541 [source](../port/src/sim.cpp#L22678)  — // shortcut: no friend list, so the friend who becomes a lover is a fresh
+- [ ] GAP-542 [source](../port/src/sim.cpp#L22758)  — // shortcut: Clean, the pregnancy columns, Multiple Children and the vampire
+- [ ] GAP-543 [source](../port/src/sim.cpp#L22831)  — // shortcut: the game reaches these cards as rewarded-video opportunities
+- [ ] GAP-544 [source](../port/src/sim.cpp#L22835)  — // parent's line, the same kind of shortcut the celebrity app's trigger takes.
+- [ ] GAP-545 [source](../port/src/sim.cpp#L22877)  — // shortcut: the scenario's own Impacts are code-side and unrecovered, so the
+- [ ] GAP-546 [source](../port/src/sim.cpp#L22920)  — // shortcut: the invite reaches the game through ScenarioPushSpendTime's own
+- [ ] GAP-547 [source](../port/src/sim.cpp#L22975)  — // shortcut: no literal holds the hero refusing a pastime invite (the
+- [ ] GAP-548 [source](../port/src/sim.cpp#L23003)  — // shortcut: ScenarioIsEligibleForRandomPush @0x73f2a65248 is code-side, so the
+- [ ] GAP-549 [source](../port/src/sim.cpp#L23085)  — // shortcut: ScenarioMobsterSpendTimePush has no eligibility method, so the
+- [ ] GAP-550 [source](../port/src/sim.cpp#L23088)  — // child, so the card keeps the same floor (shortcut: the game's drop for an
+- [ ] GAP-551 [source](../port/src/sim.cpp#L23123)  — // same shortcut the family card takes, REPORT.en.md 97).
+- [ ] GAP-552 [source](../port/src/sim.cpp#L23159)  — // shortcut: the class carries no push rate (the friend subsystem opens the
+- [ ] GAP-553 [source](../port/src/sim.cpp#L23185)  — // shortcut: two rows write the friend's partner ('<friend-lover>',
+- [ ] GAP-554 [source](../port/src/sim.cpp#L23265)  — // no bar for (shortcut).
+- [ ] GAP-555 [source](../port/src/sim.cpp#L23272)  — // keeps no reader for (shortcut).
+- [ ] GAP-556 [source](../port/src/sim.cpp#L23295)  — // shortcut: the class carries no push rate (the friend subsystem opens the
+- [ ] GAP-557 [source](../port/src/sim.cpp#L23408)  — // has no scenario push, so the hand-off is a shortcut and the card's own
+- [ ] GAP-558 [source](../port/src/sim.cpp#L23415)  — // the shared tail) -- the port has no notoriety and no friend bar (shortcut).
+- [ ] GAP-559 [source](../port/src/sim.cpp#L23445)  — // has no scenario push (shortcut), so the drawn insult survives only in the
+- [ ] GAP-560 [source](../port/src/sim.cpp#L23483)  — // shortcut: the class carries no push rate (the friend subsystem opens the
+- [ ] GAP-561 [source](../port/src/sim.cpp#L23502)  — // is a floor, Sender Max Age a ceiling when set, Sender Gender must match or
+- [ ] GAP-562 [source](../port/src/sim.cpp#L23581)  — // drawn slot, so it always reads 'friend' -- the prank card's shortcut).
+- [ ] GAP-563 [source](../port/src/sim.cpp#L23593)  — // port's friend is a drawn slot with no bar, so that is a shortcut, as it is
+- [ ] GAP-564 [source](../port/src/sim.cpp#L23596)  — // 'Deny it' (#17528), "It doesn't bother me", and 'Start a rumor about {0}'
+- [ ] GAP-565 [source](../port/src/sim.cpp#L23602)  — // has no scenario push, so the hand-off is a shortcut and the card's own
+- [ ] GAP-566 [source](../port/src/sim.cpp#L23620)  — out.choice = "It doesn't bother me";
+- [ ] GAP-567 [source](../port/src/sim.cpp#L23631)  — // line stands in for it (shortcut).
+- [ ] GAP-568 [source](../port/src/sim.cpp#L23638)  — life.rumorOutPending = true;
+- [ ] GAP-569 [source](../port/src/sim.cpp#L23654)  — // the queue flag (shortcut).
+- [ ] GAP-570 [source](../port/src/sim.cpp#L23656)  — if (!life.rumorOutPending) return false;
+- [ ] GAP-571 [source](../port/src/sim.cpp#L23660)  — life.rumorOutPending = false;
+- [ ] GAP-572 [source](../port/src/sim.cpp#L23785)  — // shortcut: the class carries no push rate (the friend subsystem opens the
+- [ ] GAP-573 [source](../port/src/sim.cpp#L23805)  — // matching returns null and the card does not open. Hero Min Age and Friend
+- [ ] GAP-574 [source](../port/src/sim.cpp#L23806)  — // Min Age are floors, the two Max Age columns are ceilings when set (0 is
+- [ ] GAP-575 [source](../port/src/sim.cpp#L23812)  — // one are skipped (shortcut).
+- [ ] GAP-576 [source](../port/src/sim.cpp#L23910)  — // the port's drawn friend slot does not carry -- the prank card's
+- [ ] GAP-577 [source](../port/src/sim.cpp#L23911)  — // shortcut), the hero's own slot 0x408 goes +3 and ImpactKarma(2). The
+- [ ] GAP-578 [source](../port/src/sim.cpp#L23915)  — // the block is a shortcut. The branch then pushes a reaction card (a title
+- [ ] GAP-579 [source](../port/src/sim.cpp#L23936)  — // push for (shortcut). The journal line is the two-line #30988 -- 'My {0},
+- [ ] GAP-580 [source](../port/src/sim.cpp#L23964)  — // no port field behind it (shortcut).
+- [ ] GAP-581 [source](../port/src/sim.cpp#L23968)  — // shortcut: the class carries no push rate -- the friend subsystem is what
+- [ ] GAP-582 [source](../port/src/sim.cpp#L23987)  — // of floor + GetRandomNumber(0, ceiling - floor), where the floor is 18 or, when
+- [ ] GAP-583 [source](../port/src/sim.cpp#L23989)  — // ceiling is friend age + 10 raised to floor + 10 when it would fall below it.
+- [ ] GAP-584 [source](../port/src/sim.cpp#L23990)  — // Nothing the card renders reads that age, so the port does not draw it
+- [ ] GAP-585 [source](../port/src/sim.cpp#L23991)  — // (shortcut), and the class's spouse branch -- the husband/wife pair off the
+- [ ] GAP-586 [source](../port/src/sim.cpp#L24011)  — // nothing matching returns null and the card does not open. Hero Min Age and
+- [ ] GAP-587 [source](../port/src/sim.cpp#L24012)  — // Friend Min Age are floors, the two Max Age columns are ceilings when set,
+- [ ] GAP-588 [source](../port/src/sim.cpp#L24015)  — // or Vampire Friend Lover columns, so the port does not filter on them either:
+- [ ] GAP-589 [source](../port/src/sim.cpp#L24134)  — life.pendingCards.push_back(kPendingSafeSex);
+- [ ] GAP-590 [source](../port/src/sim.cpp#L24149)  — // appreciation bar (shortcut), so the row's own line is what gets logged.
+- [ ] GAP-591 [source](../port/src/sim.cpp#L24157)  — // the coin is the port's (shortcut). Success journals ' ' + the row's line +
+- [ ] GAP-592 [source](../port/src/sim.cpp#L24163)  — // port's usual shortcut.
+- [ ] GAP-593 [source](../port/src/sim.cpp#L24199)  — // shortcut: with no eligibility method to copy, the port gives the card the
+- [ ] GAP-594 [source](../port/src/sim.cpp#L24226)  — // friend-prank card's shortcut, src/sim.cpp 102).
+- [ ] GAP-595 [source](../port/src/sim.cpp#L24247)  — // running game -- so the port flips a coin of its own. shortcut: both pools are
+- [ ] GAP-596 [source](../port/src/sim.cpp#L24257)  — // port's drawn friend does not carry, the family's documented shortcut),
+- [ ] GAP-597 [source](../port/src/sim.cpp#L24259)  — // shortcut: the age-sync only runs on a friend the card has already met; the
+- [ ] GAP-598 [source](../port/src/sim.cpp#L24303)  — // (shortcut). The prison flavour is here too (REPORT.en.md 110): the same push
+- [ ] GAP-599 [source](../port/src/sim.cpp#L24312)  — // the friend does not turn into an enemy first: the friend must be twelve or
+- [ ] GAP-600 [source](../port/src/sim.cpp#L24324)  — // 109), not the unfriend card. shortcut: every test above reads a field of the
+- [ ] GAP-601 [source](../port/src/sim.cpp#L24340)  — // the port's drawn slot does not carry, so it always reads 'friend' (the
+- [ ] GAP-602 [source](../port/src/sim.cpp#L24341)  — // friend-prank card's shortcut). PronounStringForType(0) @0x73f30e64d0 is the
+- [ ] GAP-603 [source](../port/src/sim.cpp#L24359)  — // (shortcut) -- and tail-calls SimPerson.Unfriend() @0x73f30e4240. Dismissed
+- [ ] GAP-604 [source](../port/src/sim.cpp#L24361)  — // shortcut: the hero's own prison state stands in for the whole block, as in the
+- [ ] GAP-605 [source](../port/src/sim.cpp#L24389)  — // then six years since [friend+0x160] HeroAgeAtLastUnfriendAttempt. shortcut:
+- [ ] GAP-606 [source](../port/src/sim.cpp#L24393)  — // bar the port does not carry) go with them.
+- [ ] GAP-607 [source](../port/src/sim.cpp#L24427)  — // port renders it as the follow-up to this outcome (shortcut).
+- [ ] GAP-608 [source](../port/src/sim.cpp#L24428)  — life.unfriendOutPending = true;
+- [ ] GAP-609 [source](../port/src/sim.cpp#L24463)  — // port renders it as the follow-up to this outcome (shortcut).
+- [ ] GAP-610 [source](../port/src/sim.cpp#L24464)  — life.unfriendOutPending = true;
+- [ ] GAP-611 [source](../port/src/sim.cpp#L24504)  — // is the rumor card's pattern and a shortcut in the same sense: the game's trigger is
+- [ ] GAP-612 [source](../port/src/sim.cpp#L24507)  — if (!life.unfriendOutPending) return false;
+- [ ] GAP-613 [source](../port/src/sim.cpp#L24512)  — life.unfriendOutPending = false;
+- [ ] GAP-614 [source](../port/src/sim.cpp#L24526)  — // FriendRelationshipStatusString, which the port's drawn slot does not carry, so
+- [ ] GAP-615 [source](../port/src/sim.cpp#L24527)  — // the relationship word is always 'friend' (the family's standing shortcut).
+- [ ] GAP-616 [source](../port/src/sim.cpp#L24531)  — static const char* const kGone[5] = {"Begone", "They're too toxic", "Blocked",
+- [ ] GAP-617 [source](../port/src/sim.cpp#L24542)  — // survives every card (the family's standing shortcut).
+- [ ] GAP-618 [source](../port/src/sim.cpp#L24585)  — // still cancel it. shortcut: the port's friend is a drawn slot with no object, so
+- [ ] GAP-619 [source](../port/src/sim.cpp#L24605)  — // the port's drawn slot does not carry, so it always reads 'friend' (the
+- [ ] GAP-620 [source](../port/src/sim.cpp#L24606)  — // friend-prank card's shortcut). PronounStringForType(1) is the possessive form
+- [ ] GAP-621 [source](../port/src/sim.cpp#L24670)  — // standing shortcut for a missing object field.
+- [ ] GAP-622 [source](../port/src/sim.cpp#L24694)  — // assault the hero has just talked their way out of, or walked into. shortcut: the
+- [ ] GAP-623 [source](../port/src/sim.cpp#L24746)  — // reused hookup sound and the 'acBijuuMike' / Jacksepticeye hooks are REPORT 341 ceilings.
+- [ ] GAP-624 [source](../port/src/sim.cpp#L24783)  — // port's drawn slot does not carry, so the relationship word is always 'friend' (the
+- [ ] GAP-625 [source](../port/src/sim.cpp#L24784)  — // family's standing shortcut). PronounStringForType(0) @0x73f30e64d0 is the subject
+- [ ] GAP-626 [source](../port/src/sim.cpp#L24850)  — // 0x5CBC8C0). shortcut: the port pushes no child card.
+- [ ] GAP-627 [source](../port/src/sim.cpp#L24870)  — // @0x73f2ca2120, {1} the object pronoun. shortcut: the table behind
+- [ ] GAP-628 [source](../port/src/sim.cpp#L24911)  — // relationship on, so that half stays a shortcut; the child card is queued instead
+- [ ] GAP-629 [source](../port/src/sim.cpp#L24912)  — // (the unfriend pair's pending-flag pattern) and the encounter's own friend and weapon
+- [ ] GAP-630 [source](../port/src/sim.cpp#L24914)  — life.attackInPending = true;
+- [ ] GAP-631 [source](../port/src/sim.cpp#L24943)  — // its own log line. shortcut: the assault's damage and the death roll (the DangerScore
+- [ ] GAP-632 [source](../port/src/sim.cpp#L24951)  — if (!life.attackInPending) return false;
+- [ ] GAP-633 [source](../port/src/sim.cpp#L24955)  — life.attackInPending = false;
+- [ ] GAP-634 [source](../port/src/sim.cpp#L24969)  — // FriendRelationshipStatusString, which the port's drawn slot does not carry, so the
+- [ ] GAP-635 [source](../port/src/sim.cpp#L24970)  — // relationship word is always 'friend' (the family's standing shortcut).
+- [ ] GAP-636 [source](../port/src/sim.cpp#L25049)  — // is at most one, and GetFriend() returns somebody. shortcut: the port's hero
+- [ ] GAP-637 [source](../port/src/sim.cpp#L25053)  — // shortcut: the class carries no push rate -- the registry's candidate list is
+- [ ] GAP-638 [source](../port/src/sim.cpp#L25062)  — // @0x73f30d284c of at least 65.0f (w24 = 0x42820000). shortcut: the port's friend
+- [ ] GAP-639 [source](../port/src/sim.cpp#L25068)  — // family's standing shortcut, src/sim.cpp 24897).
+- [ ] GAP-640 [source](../port/src/sim.cpp#L25087)  — // 'have a {0}', whose {0} is SimPersonName.FullName. The gate does not ask for a
+- [ ] GAP-641 [source](../port/src/sim.cpp#L25104)  — // woman' / 0x5C56B88 'young man', 0x5C4CE38 'woman' / 0x5C4CE48 'man'. shortcut:
+- [ ] GAP-642 [source](../port/src/sim.cpp#L25130)  — // shortcut: the port has no friend relationship slot to move.
+- [ ] GAP-643 [source](../port/src/sim.cpp#L25147)  — // 0x5CBC700). shortcut: the port pushes no child scenario, draws no bar graph
+- [ ] GAP-644 [source](../port/src/sim.cpp#L25217)  — // shortcut: the class carries no push rate of its own -- the game's own
+- [ ] GAP-645 [source](../port/src/sim.cpp#L25224)  — // One coworker for the whole life (shortcut: the game refreshes a roster
+- [ ] GAP-646 [source](../port/src/sim.cpp#L25305)  — // The rumor card is the one card that does not use the dictionary: its
+- [ ] GAP-647 [source](../port/src/sim.cpp#L25348)  — // (shortcut), so the row's own line is what gets logged.
+- [ ] GAP-648 [source](../port/src/sim.cpp#L25370)  — // No stat moves, and the port has no scenario push (shortcut).
+- [ ] GAP-649 [source](../port/src/sim.cpp#L25385)  — out.choice = "It doesn't bother me";  // #27502
+- [ ] GAP-650 [source](../port/src/sim.cpp#L25398)  — // scenario push (shortcut) and logs the row's own line.
+- [ ] GAP-651 [source](../port/src/sim.cpp#L25441)  — // shortcut: the gate also reads the supervisor's own slot 0x240 and skips the
+- [ ] GAP-652 [source](../port/src/sim.cpp#L25528)  — // 'Have a talk with {0}' (#22687), "It doesn't bother me" (#27502) and
+- [ ] GAP-653 [source](../port/src/sim.cpp#L25535)  — // #66580, doesn't #57652 -- and a label matching none changes nothing at all.
+- [ ] GAP-654 [source](../port/src/sim.cpp#L25563)  — life.pendingCards.push_back(kPendingHrDiscipline);
+- [ ] GAP-655 [source](../port/src/sim.cpp#L25579)  — out.choice = "It doesn't bother me";  // #27502
+- [ ] GAP-656 [source](../port/src/sim.cpp#L25601)  — // allegation and its seriousness itself (shortcut). Choices come from the card's own
+- [ ] GAP-657 [source](../port/src/sim.cpp#L25605)  — // Ceilings: the supervisor's strictness (+0x244) and professionalism (+0x240) and the
+- [ ] GAP-658 [source](../port/src/sim.cpp#L25650)  — // The allegations whose placeholders all resolve. {0} is the relation word the card
+- [ ] GAP-659 [source](../port/src/sim.cpp#L25652)  — // third placeholder the native pools fill with the gift's name and the insult phrase,
+- [ ] GAP-660 [source](../port/src/sim.cpp#L25653)  — // and this family reads those two from a16_gifts-enc and a16_insults-enc (shortcut:
+- [ ] GAP-661 [source](../port/src/sim.cpp#L25703)  — // (shortcut) The seduce lane's success is decided by the card's own roll; the port
+- [ ] GAP-662 [source](../port/src/sim.cpp#L25722)  — // returns), so that is the form written here (ceiling, REPORT.en.md 343).
+- [ ] GAP-663 [source](../port/src/sim.cpp#L25729)  — life.pendingCards.push_back(kPendingInsultComeback);
+- [ ] GAP-664 [source](../port/src/sim.cpp#L25738)  — // it was (ceiling, REPORT.en.md 325).
+- [ ] GAP-665 [source](../port/src/sim.cpp#L25744)  — life.pendingCards.push_back(kPendingMorningAfter);
+- [ ] GAP-666 [source](../port/src/sim.cpp#L25753)  — // The lane's ImpactWorkplacePerformance(-4) has no port model (ceiling).
+- [ ] GAP-667 [source](../port/src/sim.cpp#L25793)  — // The rows with slash alternatives need the pool walker the family does not have
+- [ ] GAP-668 [source](../port/src/sim.cpp#L25794)  — // here; they are skipped rather than printed with their slashes (shortcut).
+- [ ] GAP-669 [source](../port/src/sim.cpp#L25823)  — // (shortcut).
+- [ ] GAP-670 [source](../port/src/sim.cpp#L25861)  — // annual family (shortcut) - the same shape the port's other activity cards take.
+- [ ] GAP-671 [source](../port/src/sim.cpp#L25951)  — // (shortcut: the native destination of that jump was not recovered).
+- [ ] GAP-672 [source](../port/src/sim.cpp#L25965)  — // A failed attempt that the animal does not answer is only embarrassing.
+- [ ] GAP-673 [source](../port/src/sim.cpp#L26019)  — // the name. A name that table does not hold (a fallback) gets a drawn gender.
+- [ ] GAP-674 [source](../port/src/sim.cpp#L26075)  — // A cool courtesy the agent does not return (w20 <= 14): the body gains a second
+- [ ] GAP-675 [source](../port/src/sim.cpp#L26114)  — // first card about him (ceiling: the native refreshes a whole roster).
+- [ ] GAP-676 [source](../port/src/sim.cpp#L26123)  — // in the binary. The port keeps no connection score (shortcut: it stands in as
+- [ ] GAP-677 [source](../port/src/sim.cpp#L26125)  — // willpower branch, which the port does not model, so it takes that branch's
+- [ ] GAP-678 [source](../port/src/sim.cpp#L26189)  — // unrecovered, so the port stops at the reply (ceiling).
+- [ ] GAP-679 [source](../port/src/sim.cpp#L26223)  — // drawn once and stands in for it (shortcut).
+- [ ] GAP-680 [source](../port/src/sim.cpp#L26327)  — // The flag lives on the workplace object, which the port does not model, so the
+- [ ] GAP-681 [source](../port/src/sim.cpp#L26345)  — // shortcut: when this card reaches a supervisor that card has not named yet,
+- [ ] GAP-682 [source](../port/src/sim.cpp#L26385)  — // port models neither bar (shortcut), so the two stay comments. It sets
+- [ ] GAP-683 [source](../port/src/sim.cpp#L26426)  — // shortcut: the supervisor the port draws is a name with no age, no 0x240 bar
+- [ ] GAP-684 [source](../port/src/sim.cpp#L26427)  — // and no lover link, so the three tests about him are not modelled; the age
+- [ ] GAP-685 [source](../port/src/sim.cpp#L26498)  — // port models no supervisor bar and no coworker relationships (shortcut), so
+- [ ] GAP-686 [source](../port/src/sim.cpp#L26546)  — // shortcut: the game re-offers the card every eligible year (the life byte
+- [ ] GAP-687 [source](../port/src/sim.cpp#L26556)  — // 1624). shortcut: the port draws that array with the card's own stream and
+- [ ] GAP-688 [source](../port/src/sim.cpp#L26587)  — // shortcut: the thunder sound at [self+0x140] ('a16_sndThunder.aiff' #53013),
+- [ ] GAP-689 [source](../port/src/sim.cpp#L26614)  — // The game does not roll for this card; the workplace pushes it like any other
+- [ ] GAP-690 [source](../port/src/sim.cpp#L26649)  — // belongs to (the game hands the picker the flag, shortcut).
+- [ ] GAP-691 [source](../port/src/sim.cpp#L26736)  — // as its top step (shortcut).
+- [ ] GAP-692 [source](../port/src/sim.cpp#L26740)  — // The report lane @0x73f2e2641c does nothing but push a bare Scenario carrying
+- [ ] GAP-693 [source](../port/src/sim.cpp#L26748)  — // @0x73f30e4cdc. The port models neither bar (shortcut), so only the
+- [ ] GAP-694 [source](../port/src/sim.cpp#L26759)  — life.pendingCards.push_back(kPendingMorningAfter);
+- [ ] GAP-695 [source](../port/src/sim.cpp#L26773)  — // port models no interest, so it draws the coin (shortcut). The failure lane
+- [ ] GAP-696 [source](../port/src/sim.cpp#L26777)  — // ScenarioWorkplaceDisciplineHR so HR deals with the fallout (not modelled).
+- [ ] GAP-697 [source](../port/src/sim.cpp#L26782)  — life.pendingCards.push_back(kPendingSafeSex);
+- [ ] GAP-698 [source](../port/src/sim.cpp#L26790)  — life.pendingCards.push_back(kPendingMorningAfter);
+- [ ] GAP-699 [source](../port/src/sim.cpp#L26793)  — life.pendingCards.push_back(kPendingHrDiscipline);
+- [ ] GAP-700 [source](../port/src/sim.cpp#L26908)  — // shortcut: that chain (GetCrimeScenarioForCrimeType @0x73f2f16ab4 and the
+- [ ] GAP-701 [source](../port/src/sim.cpp#L26910)  — // port does not model, so the lane keeps the stat move and its journal.
+- [ ] GAP-702 [source](../port/src/sim.cpp#L26916)  — // shortcut: the follow-up the game pushes next -- 'You successfully stopped
+- [ ] GAP-703 [source](../port/src/sim.cpp#L26978)  — // shortcut: _happenedOnWalk (0x16a) is written only by the walk ctor at
+- [ ] GAP-704 [source](../port/src/sim.cpp#L27048)  — // shortcut: the pushed follow-ups (GetCrimeScenarioForCrimeType(7) for the
+- [ ] GAP-705 [source](../port/src/sim.cpp#L27056)  — // @0x73f2f1d674, BecomeAddictedToDrug @0x73f2f1dcdc, which the port does not
+- [ ] GAP-706 [source](../port/src/sim.cpp#L27108)  — // subsystems the port does not carry (shortcut comments).
+- [ ] GAP-707 [source](../port/src/sim.cpp#L27116)  — life.pendingCards.push_back(kPendingLoverArgues);
+- [ ] GAP-708 [source](../port/src/sim.cpp#L27160)  — if (h.employed || h.military || h.militaryPending) return false;
+- [ ] GAP-709 [source](../port/src/sim.cpp#L27163)  — // shortcut: the gate then compares NetWorth() @0x73f2f08a60 with a double the
+- [ ] GAP-710 [source](../port/src/sim.cpp#L27177)  — // shortcut: the port's relatives carry no relationship strength, so the
+- [ ] GAP-711 [source](../port/src/sim.cpp#L27231)  — // shortcut: the accept then pushes a second card -- PickRandomFromStringArray
+- [ ] GAP-712 [source](../port/src/sim.cpp#L27255)  — // shortcut: the app's trigger and its _cost are code-side (a Scenario the
+- [ ] GAP-713 [source](../port/src/sim.cpp#L27412)  — // shortcut: the row's Fame Score stays a record of the lover. The game's
+- [ ] GAP-714 [source](../port/src/sim.cpp#L27426)  — // ChoiceSelectedAtIndex does not exist, and its DismissSelected @0x73f3daf7b4
+- [ ] GAP-715 [source](../port/src/sim.cpp#L27435)  — if (!h.breakUpPending) return false;
+- [ ] GAP-716 [source](../port/src/sim.cpp#L27436)  — h.breakUpPending = false;
+- [ ] GAP-717 [source](../port/src/sim.cpp#L27447)  — // shortcut: the port only ever breaks up a dating, engaged or married pair, so
+- [ ] GAP-718 [source](../port/src/sim.cpp#L27465)  — // shortcut: the port's partner carries a first name and no surname, so the
+- [ ] GAP-719 [source](../port/src/sim.cpp#L27537)  — // shortcut: the game announces the pairing from the Love menu's own
+- [ ] GAP-720 [source](../port/src/sim.cpp#L27609)  — h.breakUpPending = true;
+- [ ] GAP-721 [source](../port/src/sim.cpp#L27612)  — life.pendingCards.push_back(kPendingBreakUpAnnouncement);
+- [ ] GAP-722 [source](../port/src/sim.cpp#L27878)  — // remaining years are spent on one (REPORT.en.md 89).
+- [ ] GAP-723 [source](../port/src/sim.cpp#L27907)  — // shortcut: only the vowels and x take 'an' ("an Xbox"); a word the table
+- [ ] GAP-724 [source](../port/src/sim.cpp#L28548)  — // than printed with a bracket in it, the same shortcut section 90 took.
+- [ ] GAP-725 [source](../port/src/sim.cpp#L28600)  — // dump carries only the fragment (shortcut). The decline is #25531.
+- [ ] GAP-726 [source](../port/src/sim.cpp#L28612)  — // shortcut: the game charges the monthly cost for as long as the diet runs and
+- [ ] GAP-727 [source](../port/src/sim.cpp#L28624)  — // shortcut: the lesson count in {0} is not captured (10 is used) and the game's
+- [ ] GAP-728 [source](../port/src/sim.cpp#L28625)  — // move list is not modelled; a course advances one belt in the art's hierarchy.
+- [ ] GAP-729 [source](../port/src/sim.cpp#L28632)  — // shortcut: the lesson costs $1,000 (the game prices it in code the dump does not
+- [ ] GAP-730 [source](../port/src/sim.cpp#L28712)  — // shortcut: the menu's own prompt is not in the dump, so the body is the menu
+- [ ] GAP-731 [source](../port/src/sim.cpp#L28770)  — // shortcut: the adoption menu's prompt is not in the dump, so the body names the
+- [ ] GAP-732 [source](../port/src/sim.cpp#L28811)  — life.pendingCards.push_back(kPendingAdoptionName);  // REPORT.en.md 399
+- [ ] GAP-733 [source](../port/src/sim.cpp#L28999)  — // shortcut: the real class rolls its three likeliness columns in a formula that
+- [ ] GAP-734 [source](../port/src/sim.cpp#L29006)  — // friends and strangers, which this port's family model does not store, and it
+- [ ] GAP-735 [source](../port/src/sim.cpp#L29118)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-736 [source](../port/src/sim.cpp#L29134)  — // shortcut: the price is a port formula (2,500-75,000), because the real quote
+- [ ] GAP-737 [source](../port/src/sim.cpp#L29172)  — // Port formula, see the shortcut above: the real quote is class-side, and the
+- [ ] GAP-738 [source](../port/src/sim.cpp#L29198)  — life.pendingCards.push_back(kPendingHitmanOutcome);
+- [ ] GAP-739 [source](../port/src/sim.cpp#L29268)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-740 [source](../port/src/sim.cpp#L29289)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-741 [source](../port/src/sim.cpp#L29308)  — // from their tables and the player picks the getaway (shortcut). Each picker is
+- [ ] GAP-742 [source](../port/src/sim.cpp#L29350)  — life.pendingCards.push_back(kPendingRobberyOutcome);
+- [ ] GAP-743 [source](../port/src/sim.cpp#L29356)  — // small flat range rather than the game's unseen formula (shortcut). A caught
+- [ ] GAP-744 [source](../port/src/sim.cpp#L29395)  — life.pendingCards.push_back(kPendingCrimeCharge);
+- [ ] GAP-745 [source](../port/src/sim.cpp#L29411)  — // shortcut: the wager and the odds are the port's -- the original's bet screen
+- [ ] GAP-746 [source](../port/src/sim.cpp#L29437)  — life.pendingCards.push_back(kPendingHorseBet);
+- [ ] GAP-747 [source](../port/src/sim.cpp#L29472)  — life.pendingCards.push_back(kPendingHorseOutcome);
+- [ ] GAP-748 [source](../port/src/sim.cpp#L29621)  — // row's own enum cell and then reads every remaining cell into one list - the original
+- [ ] GAP-749 [source](../port/src/sim.cpp#L30244)  — // impacts are all the card moves (ceiling in the report).
+- [ ] GAP-750 [source](../port/src/table.cpp#L29)  — bool quoted = false, pending = false;
+- [ ] GAP-751 [source](../port/src/table.cpp#L41)  — if (c == '"') { quoted = true; pending = true; continue; }
+- [ ] GAP-752 [source](../port/src/table.cpp#L42)  — if (c == delim) { row.push_back(field); field.clear(); pending = true; continue; }
+- [ ] GAP-753 [source](../port/src/table.cpp#L43)  — if (c == '\n') { row.push_back(field); field.clear(); out.push_back(row); row.clear(); pending = false; continue; }
+- [ ] GAP-754 [source](../port/src/table.cpp#L46)  — pending = true;
+- [ ] GAP-755 [source](../port/src/table.cpp#L48)  — if (pending) { row.push_back(field); out.push_back(row); }
+- [ ] GAP-756 [source](../port/src/table.cpp#L113)  — // A column the real table does not have reads as absent, the same way num()
+- [ ] GAP-757 [source](../port/include/bl/deck.h#L3)  — // The game does not roll a fresh dice per check: RandomDeckBuilder.Build(percent)
+- [ ] GAP-758 [source](../port/include/bl/game.h#L75)  — // ('governor of <region>'). Empty when the table does not carry the country.
+- [ ] GAP-759 [source](../port/include/bl/game.h#L108)  — // with the country at birth: 50-67 depending on both.
+- [ ] GAP-760 [source](../port/include/bl/game.h#L218)  — bool pendingFuneral = false;
+- [ ] GAP-761 [source](../port/include/bl/game.h#L221)  — bool pendingFuneralPlan = false;
+- [ ] GAP-762 [source](../port/include/bl/game.h#L269)  — bool graduationPending = false;  // the graduation card owns that year (REPORT 262)
+- [ ] GAP-763 [source](../port/include/bl/game.h#L274)  — bool eyeExamPending = false;
+- [ ] GAP-764 [source](../port/include/bl/game.h#L295)  — bool pendingFuneralAshes = false;
+- [ ] GAP-765 [source](../port/include/bl/game.h#L394)  — bool militaryPending = false;  // the switch asked for it; enlistment happens at 18
+- [ ] GAP-766 [source](../port/include/bl/game.h#L696)  — // park stocks three lines when it is bought (shortcut: 363).
+- [ ] GAP-767 [source](../port/include/bl/game.h#L928)  — // own instead of reading the spouse's (shortcut: the native spouse is a full
+- [ ] GAP-768 [source](../port/include/bl/game.h#L931)  — bool nameChangePending = false;  // the identity card has not been offered yet
+- [ ] GAP-769 [source](../port/include/bl/game.h#L935)  — bool nameChangeDivorcePending = false;  // a divorce has not offered the name back
+- [ ] GAP-770 [source](../port/include/bl/game.h#L936)  — // The legal name change card's pending rename (REPORT.en.md 398).
+- [ ] GAP-771 [source](../port/include/bl/game.h#L992)  — bool aircraftRepairPending = false;
+- [ ] GAP-772 [source](../port/include/bl/game.h#L993)  — bool aircraftScrapPending = false;
+- [ ] GAP-773 [source](../port/include/bl/game.h#L1020)  — bool bookPending = false;
+- [ ] GAP-774 [source](../port/include/bl/game.h#L1044)  — bool breakUpPending = false;
+- [ ] GAP-775 [source](../port/include/bl/game.h#L1264)  — // personality values are -1 until the discipline card first draws them (ceiling: the
+- [ ] GAP-776 [source](../port/include/bl/game.h#L1276)  — // discipline card fills them and the pending card renders and clears them.
+- [ ] GAP-777 [source](../port/include/bl/game.h#L1283)  — // -- a shortcut), and the tracker counter every path bumps.
+- [ ] GAP-778 [source](../port/include/bl/game.h#L1298)  — // (the game keeps it on the workplace object the port does not model).
+- [ ] GAP-779 [source](../port/include/bl/script.h#L117)  — // genre equal to the house theme, "diff" a genre that does not match.
+- [ ] GAP-780 [source](../port/include/bl/script.h#L182)  — // False when the script names a country a16_countries-enc.json does not have.
+- [ ] GAP-781 [source](../port/include/bl/script.h#L187)  — // it. False when the script names a country a16_countries-enc.json does not have.
+- [ ] GAP-782 [source](../port/include/bl/sim.h#L42)  — std::string body;       // 'Body' or the narrative string, placeholders resolved
+- [ ] GAP-783 [source](../port/include/bl/sim.h#L114)  — enum PendingCard {
+- [ ] GAP-784 [source](../port/include/bl/sim.h#L115)  — kPendingNone = 0,
+- [ ] GAP-785 [source](../port/include/bl/sim.h#L116)  — kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
+- [ ] GAP-786 [source](../port/include/bl/sim.h#L117)  — kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
+- [ ] GAP-787 [source](../port/include/bl/sim.h#L118)  — kPendingPaternityResults = 3,     // the court order's result, right after the test
+- [ ] GAP-788 [source](../port/include/bl/sim.h#L119)  — kPendingProactivePaternity = 7,   // the ex asked, the hero agreed (REPORT.en.md 251)
+- [ ] GAP-789 [source](../port/include/bl/sim.h#L120)  — kPendingLicenseTest = 8,         // the test itself, the year after the offer (REPORT.en.md 255)
+- [ ] GAP-790 [source](../port/include/bl/sim.h#L121)  — kPendingSafeSex = 9,             // the hookup's own question, next age-up (REPORT.en.md 257)
+- [ ] GAP-791 [source](../port/include/bl/sim.h#L122)  — kPendingEyeExam = 10,            // the optometrist visit (REPORT.en.md 267)
+- [ ] GAP-792 [source](../port/include/bl/sim.h#L123)  — kPendingEyeOutcome = 11,         // its result card
+- [ ] GAP-793 [source](../port/include/bl/sim.h#L124)  — kPendingCrimeCharge = 12,        // the charge, right after the arrest (REPORT.en.md 273)
+- [ ] GAP-794 [source](../port/include/bl/sim.h#L125)  — kPendingCrimePlea = 13,          // the plea
+- [ ] GAP-795 [source](../port/include/bl/sim.h#L126)  — kPendingCrimeSentence = 14,      // the sentence
+- [ ] GAP-796 [source](../port/include/bl/sim.h#L127)  — kPendingHitmanOutcome = 15,      // the hired hit's result (REPORT.en.md 301)
+- [ ] GAP-797 [source](../port/include/bl/sim.h#L128)  — kPendingRobberyOutcome = 16,    // the heist's result (REPORT.en.md 302)
+- [ ] GAP-798 [source](../port/include/bl/sim.h#L129)  — kPendingHorseBet = 17,          // the race field and the pick (REPORT.en.md 306)
+- [ ] GAP-799 [source](../port/include/bl/sim.h#L130)  — kPendingHorseOutcome = 18,      // the race result (REPORT.en.md 306)
+- [ ] GAP-800 [source](../port/include/bl/sim.h#L131)  — kPendingFuneralPlan = 19,       // the disposition of a parent's remains (REPORT.en.md 307)
+- [ ] GAP-801 [source](../port/include/bl/sim.h#L132)  — kPendingFuneralAshes = 20,      // the urn the crematorium returns (REPORT.en.md 307)
+- [ ] GAP-802 [source](../port/include/bl/sim.h#L133)  — kPendingWitchResult = 21,       // a = native popup title, b = cure row or shortage
+- [ ] GAP-803 [source](../port/include/bl/sim.h#L134)  — kPendingWitchCure = 22,         // a = disease row; restores attributes on dismissal
+- [ ] GAP-804 [source](../port/include/bl/sim.h#L135)  — kPendingUniversityFund = 23,    // the tuition screen behind an accepted application (REPORT.en.md 317)
+- [ ] GAP-805 [source](../port/include/bl/sim.h#L136)  — kPendingCasinoBankrupt = 24,    // the casino's sixth losing year closes it (REPORT.en.md 320)
+- [ ] GAP-806 [source](../port/include/bl/sim.h#L137)  — kPendingZooBankrupt = 25,       // the inspector's warning after three losing years (REPORT.en.md 321)
+- [ ] GAP-807 [source](../port/include/bl/sim.h#L138)  — kPendingEmployeeRespect = 26,   // the yearly employee respect card (REPORT.en.md 330)
+- [ ] GAP-808 [source](../port/include/bl/sim.h#L139)  — kPendingEmployeeRecognize = 27, // the recognition card behind its second button
+- [ ] GAP-809 [source](../port/include/bl/sim.h#L140)  — kPendingEmployeeWarn = 28,      // the warning card behind its third button
+- [ ] GAP-810 [source](../port/include/bl/sim.h#L141)  — kPendingEmployeeBonus = 29,     // the bonus card behind its first button
+- [ ] GAP-811 [source](../port/include/bl/sim.h#L142)  — kPendingAircraftRepair = 30,    // the yearly tick's breakdown card (REPORT.en.md 334)
+- [ ] GAP-812 [source](../port/include/bl/sim.h#L143)  — kPendingAircraftScrap = 31,     // the scrap push for a worn-out aircraft (REPORT.en.md 334)
+- [ ] GAP-813 [source](../port/include/bl/sim.h#L144)  — kPendingMagazineOffer = 32,     // the magazine's photo-shoot offer (REPORT.en.md 335)
+- [ ] GAP-814 [source](../port/include/bl/sim.h#L145)  — kPendingBookOffer = 33,         // the publisher's book deal (REPORT.en.md 336)
+- [ ] GAP-815 [source](../port/include/bl/sim.h#L146)  — kPendingTalkShow = 45,           // the talk show invitation (REPORT.en.md 365)
+- [ ] GAP-816 [source](../port/include/bl/sim.h#L147)  — kPendingCommercial = 46,         // the commercial offer (REPORT.en.md 365)
+- [ ] GAP-817 [source](../port/include/bl/sim.h#L148)  — kPendingZooShopUnits = 47,       // the shop chain's unit card (REPORT.en.md 368)
+- [ ] GAP-818 [source](../port/include/bl/sim.h#L149)  — kPendingZooShopPrice = 48,       // the shop chain's price card (REPORT.en.md 368)
+- [ ] GAP-819 [source](../port/include/bl/sim.h#L150)  — kPendingZooShopProfile = 49,     // the product card the shop menu opens (REPORT.en.md 369)
+- [ ] GAP-820 [source](../port/include/bl/sim.h#L151)  — kPendingZooShopOrderUnits = 50,  // the product card's order answer (REPORT.en.md 370)
+- [ ] GAP-821 [source](../port/include/bl/sim.h#L152)  — kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
+- [ ] GAP-822 [source](../port/include/bl/sim.h#L153)  — kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
+- [ ] GAP-823 [source](../port/include/bl/sim.h#L154)  — kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
+- [ ] GAP-824 [source](../port/include/bl/sim.h#L155)  — kPendingZooInterview = 54,       // the zoo candidate interview (REPORT.en.md 389)
+- [ ] GAP-825 [source](../port/include/bl/sim.h#L156)  — kPendingCommunity = 55,         // the community-college card (REPORT.en.md 392)
+- [ ] GAP-826 [source](../port/include/bl/sim.h#L157)  — kPendingLegalName = 56,          // the legal name change's outcome card (REPORT.en.md 398)
+- [ ] GAP-827 [source](../port/include/bl/sim.h#L158)  — kPendingAdoptionName = 57,       // naming the adopted child (REPORT.en.md 399)
+- [ ] GAP-828 [source](../port/include/bl/sim.h#L159)  — kPendingSpouseName = 58,         // partner keeps their surname after marriage (400)
+- [ ] GAP-829 [source](../port/include/bl/sim.h#L160)  — kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
+- [ ] GAP-830 [source](../port/include/bl/sim.h#L161)  — kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
+- [ ] GAP-831 [source](../port/include/bl/sim.h#L162)  — kPendingBirth = 36,
+- [ ] GAP-832 [source](../port/include/bl/sim.h#L163)  — kPendingHrDiscipline = 37,      // the HR investigation a workplace card opens (339)
+- [ ] GAP-833 [source](../port/include/bl/sim.h#L164)  — kPendingHeroPregnancy = 38,     // the hero's own pregnancy card (342)
+- [ ] GAP-834 [source](../port/include/bl/sim.h#L165)  — kPendingHeroMiscarriage = 39,   // her pregnancy lost (342)
+- [ ] GAP-835 [source](../port/include/bl/sim.h#L166)  — kPendingHeroBirth = 40,         // her birth card (342)
+- [ ] GAP-836 [source](../port/include/bl/sim.h#L167)  — kPendingInsultComeback = 41,    // the insult's comeback card (REPORT.en.md 343)
+- [ ] GAP-837 [source](../port/include/bl/sim.h#L168)  — kPendingCasinoFeedback = 42,    // the card a resignation's answer chains (REPORT.en.md 352)
+- [ ] GAP-838 [source](../port/include/bl/sim.h#L169)  — kPendingZooFeedback = 43,
+- [ ] GAP-839 [source](../port/include/bl/sim.h#L170)  — kPendingZooDivision = 44,       // the merch order answer card (REPORT.en.md 363)
+- [ ] GAP-840 [source](../port/include/bl/sim.h#L171)  — kPendingLoverArgues = 4,          // the partner argues, after cheating is found out
+- [ ] GAP-841 [source](../port/include/bl/sim.h#L172)  — kPendingCustodyTrial = 5,         // the custody hearing, one year on (REPORT.en.md 223)
+- [ ] GAP-842 [source](../port/include/bl/sim.h#L173)  — kPendingAircraftDanger = 6,       // the first flight after buying the aircraft (REPORT.en.md 242)
+- [ ] GAP-843 [source](../port/include/bl/sim.h#L199)  — // Whether the hero is the child's father (REPORT.en.md 150). The game does not
+- [ ] GAP-844 [source](../port/include/bl/sim.h#L217)  — // per call and does not advance the age while the queue is not empty.
+- [ ] GAP-845 [source](../port/include/bl/sim.h#L221)  — struct PendingCard {
+- [ ] GAP-846 [source](../port/include/bl/sim.h#L226)  — PendingCard() = default;
+- [ ] GAP-847 [source](../port/include/bl/sim.h#L228)  — PendingCard(int k, int inA = -1, int inB = -1, std::string inText = {})
+- [ ] GAP-848 [source](../port/include/bl/sim.h#L231)  — std::vector<PendingCard> pendingCards;
+- [ ] GAP-849 [source](../port/include/bl/sim.h#L255)  — bool rumorOutPending = false;
+- [ ] GAP-850 [source](../port/include/bl/sim.h#L262)  — bool unfriendOutPending = false;
+- [ ] GAP-851 [source](../port/include/bl/sim.h#L270)  — bool attackInPending = false;
+- [ ] GAP-852 [source](../port/include/bl/sim.h#L300)  — // increment, so ageUp() calls it and createLife() does not.
+- [ ] GAP-853 [source](../port/include/bl/sim.h#L437)  — bool nameChangeSpouseYear(Life& life, AgeUp& out, const Life::PendingCard& pending);
+- [ ] GAP-854 [source](../port/include/bl/sim.h#L459)  — bool witchDoctorFollowup(Life& life, AgeUp& out, const Life::PendingCard& pending);
+- [ ] GAP-855 [source](../port/include/bl/sim.h#L542)  — // The year's own dispatch, without the counters, the family lines or the pending
+- [ ] GAP-856 [source](../port/include/bl/sim.h#L554)  — // button index; -1 lets the RNG pick one. A class the registry does not know
+- [ ] GAP-857 [source](../port/include/bl/sim.h#L606)  — // matches the house theme or does not, so a test reaches the two punter cards.
+- [ ] GAP-858 [source](../port/include/bl/sim.h#L652)  — // Resolves the real placeholder syntax used inside scenario strings:
+- [ ] GAP-859 [source](../port/include/bl/sim.h#L1046)  — // the life: it hands its pending cause to checkDeath.
+- [ ] GAP-860 [source](../port/include/bl/sim.h#L1173)  — // The prison subsystem's own stream, so the yearly conviction draw does not
+- [ ] GAP-861 [source](../REPORT.en.md#L15) ## Verdict in one line — Labels: [obs] = bytes/decompiled output read directly; [inf] = conclusion supported by observations; [unk] = unverified.
+- [ ] GAP-862 [source](../REPORT.en.md#L61) ## 2. The mod menu itself (source recovered) — - Blob 2 decodes to a 2,384-byte DEX (7 class_defs; decompiles to only R.java, a resource-ID stub).
+- [ ] GAP-863 [source](../REPORT.en.md#L72) ## 2. The mod menu itself (source recovered) — // catch ClassNotFoundException -> tag "Mod_menu" / "Error. Game's main activity does not exist"
+- [ ] GAP-864 [source](../REPORT.en.md#L134) ## 4. The native feature catalogue: unreadable statically, dumpable at runtime (see section 13) — - [correction, dynamic phase] "Not statically recoverable" does not mean "not obtainable". Those strings are **plaintext at runtime**: dump the process image of libmenu.so and diff its printable-string set against the on-disk file and 907 plaintext entries fall out (every hook target name and JNI signature included) — **without reversing its decryption routine**. See section 13.
+- [ ] GAP-865 [source](../REPORT.en.md#L150) ## 6. Telemetry, distribution, ad stack — [obs] Distribution/monetization: Main.java forces installing an external installer (com.adb.apkinstaller from https://liteapks.com/9adb-installer.html); the menu embeds a Telegram bot and a donate entry; template version 5.3 with placeholder package com.android.support — the public LiteApks / 9MOD mod-menu channel.
+- [ ] GAP-866 [source](../REPORT.en.md#L161) ## 6. Telemetry, distribution, ad stack — [obs] classes14.dex od/ccc/d/f/a/dd/d.java: static fields ApplicationInfo a / DexClassLoader b / Method h; string constants rebuilt from base64 fragments via f.a(b.a(...)) ("wDA=\n"+"9gTSLrK3How=\n", etc.); reads applicationInfo.publicSourceDir and processes ZipInputStreams -> a second-stage DEX loader / anti-tamper stub. The same dex carries misplaced-package stubs androidx/work/job/DataSyncWorker, android/content/res/AppComponentFactoryImpl, com/google/firebase/analytics/FirebaseMessageServiceImpl (package-name camouflage).
+- [ ] GAP-867 [source](../REPORT.en.md#L229) ## 10. Dynamic environment [obs] — - Root: set `vmRootEnable: false -> true` in `~/Library/Application Support/com.netease.mumu.nemux/bundles/mumu_0_*/setting/vm.json`, restart the VM; `adb shell id` then returns uid=0(root). The flag survives shutdown; MuMu does not rewrite it.
+- [ ] GAP-868 [source](../REPORT.en.md#L235) ## 11. Gate bypass and the loader chain [obs] — - First launch is blocked by the mod's own dialog "App Required / Please install 9ADB Installer from our website to continue." backed by `com.android.support.Main`:
+- [ ] GAP-869 [source](../REPORT.en.md#L297) ## 14. The content database, fully decrypted ([obs]) — 4. Batch-running that oracle over frida RPC decrypted **966 files**; of the remaining 118, 105 were plaintext to begin with (the engine never encrypted them, e.g. `a16_voltron_componentFilenames`, `BillingMode`, `IAPProductCatalog`) and **13 are .NET BinaryFormatter streams** (`00 01 00 00 00 FF FF FF FF` + `Assembly-CSharp, Version=0.0.0.0`). 11 of those parsed to JSON with `nrbf` (`a16_countries-enc` = 102 countries with real backing-field keys such as `<Name>k__BackingField`, `<Cities>k__BackingField`, `<Currency>k__BackingField`; plus 8 age4/age13 save samples with 297 fields each).
+- [ ] GAP-870 [source](../REPORT.en.md#L304) ## 15. Revised conclusions — - [obs] The mod = the generic LGL Mod Menu Java template + a custom native libmenu.so (ShadowHook + IL2CPP name resolution + LZMA). It **does not modify game files**: libil2cpp.so and global-metadata.dat inside the APK are clean, everything happens at runtime. Its entire gameplay cheat surface is one switch: free in-app purchase.
+- [ ] GAP-871 [source](../REPORT.en.md#L316) ## 16. Hook-site re-verification and correction ([obs], second dynamic pass) — 7. [unk] The exact trampoline destination is unresolved: decoding the B relative offset lands on read-only data or a segment gap, so no executable stub could be read; the trampoline layout stays unknown (it does not affect the "hooked" conclusion — the byte diff and the RWX pages are direct evidence).
+- [ ] GAP-872 [source](../REPORT.en.md#L327) ## 17. Part III: native C++ port (dynamic-phase output) — | include/bl/sim.h · src/sim.cpp | 83 · 439 | age-up life loop driven by real a16_* scenario tables (stats, karma/discipline, placeholder substitution, death) |
+- [ ] GAP-873 [source](../REPORT.en.md#L341) ## 17. Part III: native C++ port (dynamic-phase output) — **Real data wired [obs]**: `a16_dumb-scenarios-universal-enc` (258 rows / 42 cols: Index, Hero Min/Max Age, Student, Job, Vampire, Both Parents Alive, Hero Gender, Title, Body, CTA, Choice 1..4, Narrative 1..4, Karma/Discipline/Happiness/Intelligence/Appearance Impact 1..4), `a16_employee-recognition-scenarios-enc` (14 rows, supplies the Commonness Score weighted path), `a16_casino-casino-celebrity-name-enc` (106-row name pool), `a16_hero-filler-enc` (1132 rows), `a16_death-types-enc` (110 rows), `gamedata_json/a16_countries-enc.json` (102 countries). Placeholders `<a/b/c>`, `<num2-5>` and `<friend> <teacher> <classmate> <coworker> <parent> <lover> <company> <employee>` are substituted; anything unresolvable stays verbatim rather than guessed.
+- [ ] GAP-874 [source](../REPORT.en.md#L347) ## 17. Part III: native C++ port (dynamic-phase output) — **Not ported (honest list, full text in README)**: careers/education/relationships/money/property (a16_careers-enc loads but is unused), mini-games, heirlooms/artifacts, Darkly paywalls, time machine, Battle Pass, daily quests, notifications, ads, the whole UI layer (menu geometry is known: MENU_WIDTH 290 / HEIGHT 210 / CORNER 35.0f / ICON_SIZE 45 / ACCENT #7C4DFF but not reproduced), art and audio (8133 Texture2D not exported), 11 BinaryFormatter tables (including the two age13 saves that hit Nrbf RecursionError), unresolved placeholders such as `<rb>`, and a port-side simplified mortality rule.
+- [ ] GAP-875 [source](../REPORT.en.md#L385) ## 18. Phase 1: differential test bench (RNG parity + observed corpus) — Metadata literal tables are currently unreachable: the 18,847,828-byte file's header does not decode with the assumed layout, and the 8-byte table at 18314580 (59,446 ascending entries, second field `0x02xxxxxx`) is not a (offset,length) pair table. Probing stopped; the observed corpus is the working substitute.
+- [ ] GAP-876 [source](../REPORT.en.md#L389) ## 18. Phase 1: differential test bench (RNG parity + observed corpus) — - `templatize.py` mines name<->relation pairs from the same text and emits `obs_corpus/templates.csv` (55 rows: 27 scenarios + 28 logs; 21 rows carry slots) with `{halfsister}`, `{friend}`, `{classmate}`, `{spouse}`, `{dog}`, `{mother}` placeholders.
+- [ ] GAP-877 [source](../REPORT.en.md#L392) ## 18. Phase 1: differential test bench (RNG parity + observed corpus) — ### 18.6 Runner unblocked (UI side) [obs]
+- [ ] GAP-878 [source](../REPORT.en.md#L559) ## 20. Phase 1: the push-scenario selector, located and captured ([obs]) — Driver fix that unblocked trace collection: the pixel classifier scanned only
+- [ ] GAP-879 [source](../REPORT.en.md#L594) ## 21. Phase 1: replaying the game's own pick (push) + where a scenario's text lives — body (table placeholders such as `<parent>` are dropped rather than compared),
+- [ ] GAP-880 [source](../REPORT.en.md#L617) ## 21. Phase 1: replaying the game's own pick (push) + where a scenario's text lives — over named placeholders) or the literal pool has to be extracted from
+- [ ] GAP-881 [source](../REPORT.en.md#L618) ## 21. Phase 1: replaying the game's own pick (push) + where a scenario's text lives — `global-metadata.dat`; the header layout of this build does not match the
+- [ ] GAP-882 [source](../REPORT.en.md#L654) ## 22. Phase 1/2: the age-0 birth sequence in the port — different coin flip. The remaining port-only line is the conception circumstance row, i.e.
+- [ ] GAP-883 [source](../REPORT.en.md#L659) ## 22. Phase 1/2: the age-0 birth sequence in the port — still the placeholder draws in createLife() (happiness 70+d21, health 80+d21, smarts
+- [ ] GAP-884 [source](../REPORT.en.md#L663) ## 22. Phase 1/2: the age-0 birth sequence in the port — a16_birth-circumstances-enc -- recorded as a hypothesis, not yet coded, because it is not
+- [ ] GAP-885 [source](../REPORT.en.md#L724) ## 23. Phase 1/2: the newborn's attributes, solved from the shipping binary — but not implemented, because the port plays a single life per run. `shortcut:` the port keeps
+- [ ] GAP-886 [source](../REPORT.en.md#L737) ## 23. Phase 1/2: the newborn's attributes, solved from the shipping binary — after the shift (game 90/85/71/17/63/100 vs port 90/85/71/17/63/100). The remaining stat
+- [ ] GAP-887 [source](../REPORT.en.md#L815) ## 24. Scripted-event scenarios: registry, push form and log-line shape — against those templates (placeholder tokens dropped, token overlap >= 0.6) to recover the button
+- [ ] GAP-888 [source](../REPORT.en.md#L829) ## 24. Scripted-event scenarios: registry, push form and log-line shape — 24.8 Still missing. The yearly *selection* is not modelled: the port draws from
+- [ ] GAP-889 [source](../REPORT.en.md#L860) ## 24. Scripted-event scenarios: registry, push form and log-line shape — remaining log divergences are the dumb-table row draw at ages 2 and 6 (the game drew "milk",
+- [ ] GAP-890 [source](../REPORT.en.md#L864) ## 24. Scripted-event scenarios: registry, push form and log-line shape — 24.12 Registry log sentences for the auto-advancing scenes. The game's LifeLog does not store the
+- [ ] GAP-891 [source](../REPORT.en.md#L918) ## 24. Scripted-event scenarios: registry, push form and log-line shape — 25.6 Normal play does not call the universal picker. The existing picks probe in blh.js hooks every
+- [ ] GAP-892 [source](../REPORT.en.md#L926) ## 24. Scripted-event scenarios: registry, push form and log-line shape — gate-eligible rows, never the previous year's row) but incomplete in pool: holiday, calendar, career,
+- [ ] GAP-893 [source](../REPORT.en.md#L928) ## 24. Scripted-event scenarios: registry, push form and log-line shape — state the port does not model yet (in-game date for calendar/holiday, friend ids for friend
+- [ ] GAP-894 [source](../REPORT.en.md#L979) ## 26. The yearly dumb-scenario pool as a set union (port) — hero "Student", so no row matches yet -- correct, not a stub
+- [ ] GAP-895 [source](../REPORT.en.md#L984) ## 26. The yearly dumb-scenario pool as a set union (port) — shortcut: prison, royal, school (teacher), family (stepchild), friend, vacation and the
+- [ ] GAP-896 [source](../REPORT.en.md#L986) ## 26. The yearly dumb-scenario pool as a set union (port) — they gate on, so they are left out rather than approximated (comment in src/sim.cpp).
+- [ ] GAP-897 [source](../REPORT.en.md#L1003) ## 26. The yearly dumb-scenario pool as a set union (port) — ### 26.7 What the remaining sets still need
+- [ ] GAP-898 [source](../REPORT.en.md#L1006) ## 26. The yearly dumb-scenario pool as a set union (port) — (push replay feeds the port the game's own pick), so they are deferred rather than guessed.
+- [ ] GAP-899 [source](../REPORT.en.md#L1078) ## 27. The yearly dumb scenario is a 6-way roulette, not a set union — `shortcut:` comments in `src/sim.cpp` record what is approximated — prison/orphan/royal/military read
+- [ ] GAP-900 [source](../REPORT.en.md#L1080) ## 27. The yearly dumb scenario is a 6-way roulette, not a set union — the k=4..5 tail is only partially mapped; and the friend set is treated as non-empty because the port
+- [ ] GAP-901 [source](../REPORT.en.md#L1108) ## 27. The yearly dumb scenario is a 6-way roulette, not a set union — Stat drift stays at health/happiness +17…+69 across the window: the port does not reproduce the
+- [ ] GAP-902 [source](../REPORT.en.md#L1125) ## 27. The yearly dumb scenario is a 6-way roulette, not a set union — `shortcut:` the scripted table's `ActionList`/`Impacts`/`ResultNarratives` are not evaluated, so a
+- [ ] GAP-903 [source](../REPORT.en.md#L1190) ## 28. A year is several lines: per-person lifecycle, not one scenario — `<person>`, `<disease-new>`, `<high-school>`, `<job-title>` are the same placeholder syntax the
+- [ ] GAP-904 [source](../REPORT.en.md#L1193) ## 28. A year is several lines: per-person lifecycle, not one scenario — placeholder dictionary) is worth more than adding cases to the stand-in, because it also covers the
+- [ ] GAP-905 [source](../REPORT.en.md#L1201) ## 28. A year is several lines: per-person lifecycle, not one scenario — family (spouse, children, siblings, in-laws), which the port does not have yet.
+- [ ] GAP-906 [source](../REPORT.en.md#L1221) ## 28. A year is several lines: per-person lifecycle, not one scenario — So the seven "real gaps" of §27.5 are: three years of unimplemented scenario classes, and four years
+- [ ] GAP-907 [source](../REPORT.en.md#L1289) ## 29. The text engine behind every line: BracketParser — port does not model yet (parent objects, siblings, classmates, coworkers…), so this lands together
+- [ ] GAP-908 [source](../REPORT.en.md#L1337) ## 30. Newborn setup timing, and what the per-age stats stream can be used for — ### 30.4 Remaining known gaps
+- [ ] GAP-909 [source](../REPORT.en.md#L1342) ## 30. Newborn setup timing, and what the per-age stats stream can be used for — `shortcut:` comment next to `applyNewbornSetup()`.
+- [ ] GAP-910 [source](../REPORT.en.md#L1392) ## 31. The rest of the yearly sets: what is left of the roulette, and what blocks it — The roulette itself needs no more mapping. Each remaining category is a gate on hero state the port
+- [ ] GAP-911 [source](../REPORT.en.md#L1393) ## 31. The rest of the yearly sets: what is left of the roulette, and what blocks it — does not carry yet:
+- [ ] GAP-912 [source](../REPORT.en.md#L1408) ## 31. The rest of the yearly sets: what is left of the roulette, and what blocks it — So the remaining work here is **Phase-2 state** (prison, royal, vampire, orphanhood, military branch,
+- [ ] GAP-913 [source](../REPORT.en.md#L1444) ## 32. Impact cells are scores, not points, and health has exactly one writer — Not modelled in the port yet.
+- [ ] GAP-914 [source](../REPORT.en.md#L1552) ## 33. `<rb>` and `<rbN>`: the scenario-local draw cache — without abort. That trace contains no `<rb>` row, so it does not cover this change; the forced-row
+- [ ] GAP-915 [source](../REPORT.en.md#L1656) ## 34. The token vocabulary: deterministic slots, reference pools, gender brackets — data is `a16_fight-er-circumstance-enc` (42 rows, all boxing), and it does not fit the universal
+- [ ] GAP-916 [source](../REPORT.en.md#L1671) ## 34. The token vocabulary: deterministic slots, reference pools, gender brackets — `SelectedCircumstancePublic`/`Home`/`Return` - name exactly the slots the remaining tokens read from,
+- [ ] GAP-917 [source](../REPORT.en.md#L1706) ## 36. Where the per-person lifecycle lines come from (next work item) — per-person sentence set, written with bracket slots rather than `{0}` placeholders:
+- [ ] GAP-918 [source](../REPORT.en.md#L1853) ## 37. Per-person lifecycle lines: the family model behind them — `shortcut: class-word tracks ('None'/'Abbreviated'/'Working Class'/'Corporate') do not produce a ladder; upgrade when that ladder table is located.`
+- [ ] GAP-919 [source](../REPORT.en.md#L2074) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — the remaining work look like a matching problem. It is not. Splitting the captured
+- [ ] GAP-920 [source](../REPORT.en.md#L2098) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — `ScenarioSocialMediaJoinComplete`, `ScenarioRetentionLover` and `ScenarioLoveDate`. The menu
+- [ ] GAP-921 [source](../REPORT.en.md#L2125) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — | `ScenarioSocialMediaJoinComplete` | #49321 `You signed up for a SoundCloud account.` |
+- [ ] GAP-922 [source](../REPORT.en.md#L2166) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — **`ScenarioSocialMediaJoinComplete`** (1 captured, universal table). The literal pair
+- [ ] GAP-923 [source](../REPORT.en.md#L2189) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — - `bash tools/bench.sh /tmp/trace_c10.json` still runs 35 years; the remaining
+- [ ] GAP-924 [source](../REPORT.en.md#L2195) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — | remaining | why |
+- [ ] GAP-925 [source](../REPORT.en.md#L2199) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — | 5 narrative classes | `ScenarioFailingEyesight`, `ScenarioLoveDate`, `ScenarioRetentionLover`, `ScenarioCrimePickpocket`, `ScenarioPushSpendTime`: captured card but no log line, so the emitted sentence stays unverified |
+- [ ] GAP-926 [source](../REPORT.en.md#L2203) ## 39. Coverage, three ways: what is recoverable, what is menu, what is code — narrative instances, and the misses are unimplemented subsystems rather than
+- [ ] GAP-927 [source](../REPORT.en.md#L2281) ## 40. The tables the app names in its own code, and the loader that hid them — ### 40.5 The bully slot, and what is still unverified
+- [ ] GAP-928 [source](../REPORT.en.md#L2392) ## 41. Menu scenes: the five classes whose text is only in the executable — | ScenarioEthicsFindObject | the findable | nothing: the findables are a code array. duffle bag (literal 57755) is modelled and the line carries a shortcut: comment |
+- [ ] GAP-929 [source](../REPORT.en.md#L2427) ## 41. Menu scenes: the five classes whose text is only in the executable — The classmate names above come from the placeholder name pool (§34), not from the
+- [ ] GAP-930 [source](../REPORT.en.md#L2591) ## 43. The illness chain, and what a menu class costs to recover — | option labels | four literals: `It doesn't bother me` (#27502), `Go to the doctor` (#21936), the home remedy, `Search the web` |
+- [ ] GAP-931 [source](../REPORT.en.md#L2631) ## 43. The illness chain, and what a menu class costs to recover — the port does not render yet, so identification and port coverage stay separable.
+- [ ] GAP-932 [source](../REPORT.en.md#L2651) ## 43. The illness chain, and what a menu class costs to recover — - Unmeasured tails: the remedy and `Search the web` branch sentences (the port appends
+- [ ] GAP-933 [source](../REPORT.en.md#L2672) ## 44. The menu classes: seventeen cards, and what a rendered push costs — this batch: **rendered 107, gap 0** - the two remaining entries are the
+- [ ] GAP-934 [source](../REPORT.en.md#L2711) ## 44. The menu classes: seventeen cards, and what a rendered push costs — | `ScenarioBase` | film title | 1 | the director path; the film data lives in the genesis film tables (pending) |
+- [ ] GAP-935 [source](../REPORT.en.md#L2730) ## 44. The menu classes: seventeen cards, and what a rendered push costs — (#27937-#27943), so this is a placeholder list.
+- [ ] GAP-936 [source](../REPORT.en.md#L2736) ## 44. The menu classes: seventeen cards, and what a rendered push costs — * `{lady}`, `{stepparent}`, `{venue}` are one-word placeholder sets: the
+- [ ] GAP-937 [source](../REPORT.en.md#L2779) ## 44. The menu classes: seventeen cards, and what a rendered push costs — ### 44.7 What this says about the remaining cost
+- [ ] GAP-938 [source](../REPORT.en.md#L2798) ## 45. Prison: the first state branch the port owns — military service as "state the port does not model". Prison is the cheapest of
+- [ ] GAP-939 [source](../REPORT.en.md#L2853) ## 45. Prison: the first state branch the port owns — Four `shortcut:` comments mark them in the source, and they are the reason this
+- [ ] GAP-940 [source](../REPORT.en.md#L2863) ## 45. Prison: the first state branch the port owns — mapping is a placeholder until the sentencing function is read.
+- [ ] GAP-941 [source](../REPORT.en.md#L2936) ## 46. Orphanhood, and the family mortality that has to come first — Two `shortcut:` notes travel with it:
+- [ ] GAP-942 [source](../REPORT.en.md#L2978) ## 46. Orphanhood, and the family mortality that has to come first — | royalty | none | a16_country-royal-systems-enc, a16_royal-house-names-enc | birth roll, probability unread | next, blocked on that number |
+- [ ] GAP-943 [source](../REPORT.en.md#L3064) ## 47. The royal branch: a state the binary decides behind an indirect call — commoner instead of getting an invented seat), sets seat from Rank 1 Male/Female, and
+- [ ] GAP-944 [source](../REPORT.en.md#L3085) ## 47. The royal branch: a state the binary decides behind an indirect call — ### 47.5 The shortcuts, and why they are not guesses
+- [ ] GAP-945 [source](../REPORT.en.md#L3096) ## 47. The royal branch: a state the binary decides behind an indirect call — Each of the three carries a `shortcut:` comment at its site.
+- [ ] GAP-946 [source](../REPORT.en.md#L3196) ## 48. The vampire branch, and the gate that hid 218 rows — ### 48.6 Shortcuts
+- [ ] GAP-947 [source](../REPORT.en.md#L3201) ## 48. The vampire branch, and the gate that hid 218 rows — ({B}Min/Max Notoriety{B}, {B}Min/Max Essence{B} are columns the port does not model).
+- [ ] GAP-948 [source](../REPORT.en.md#L3246) ## 49. Two tokens the eligibility fix exposed, and the bracket nesting they revealed — back to the full list when every alternative is unfillable. No text is invented, and the branch
+- [ ] GAP-949 [source](../REPORT.en.md#L3320) ## 50. The military branch: a rank ladder, a war pool, and one compare() that never matched — - {B}include/bl/game.h{B}: {B}Hero::military{B}, {B}Hero::militaryPending{B} (line 110),
+- [ ] GAP-950 [source](../REPORT.en.md#L3345) ## 50. The military branch: a rank ladder, a war pool, and one compare() that never matched — to write again: a length argument that does not equal the literal's length silently never matches.
+- [ ] GAP-951 [source](../REPORT.en.md#L3361) ## 50. The military branch: a rank ladder, a war pool, and one compare() that never matched — ### 50.7 Shortcuts
+- [ ] GAP-952 [source](../REPORT.en.md#L3365) ## 50. The military branch: a rank ladder, a war pool, and one compare() that never matched — criminal record - which the port does not model).
+- [ ] GAP-953 [source](../REPORT.en.md#L3391) ## 51. The hero's own job: walking a16_careers-enc — On the remaining rows it is a category word instead - {B}None{B} 57, {B}Abbreviated{B} 29,
+- [ ] GAP-954 [source](../REPORT.en.md#L3393) ## 51. The hero's own job: walking a16_careers-enc — {B}Career{B} name as their title, and the port does not invent a ladder for them.
+- [ ] GAP-955 [source](../REPORT.en.md#L3418) ## 51. The hero's own job: walking a16_careers-enc — ### 51.5 Shortcuts
+- [ ] GAP-956 [source](../REPORT.en.md#L3426) ## 51. The hero's own job: walking a16_careers-enc — 3. Raises are not implemented, so #{B}24368{B} {B}I have been given a raise of {0}. My salary is now
+- [ ] GAP-957 [source](../REPORT.en.md#L3428) ## 51. The hero's own job: walking a16_careers-enc — 4. Quitting and being fired (#{B}24870{B}, #{B}25653{B}) are not emitted, and {B}Too Old Age{B} does not
+- [ ] GAP-958 [source](../REPORT.en.md#L3487) ## 52. The sports pool: seven sports and each sport's own words — ### 52.3 Shortcuts
+- [ ] GAP-959 [source](../REPORT.en.md#L3520) ## 53. The business pool: an industry, its facilities and its rivals — the card talks about your stores, your factories or your offices depending only on the industry.
+- [ ] GAP-960 [source](../REPORT.en.md#L3552) ## 53. The business pool: an industry, its facilities and its rivals — ### 53.3 Shortcuts
+- [ ] GAP-961 [source](../REPORT.en.md#L3562) ## 53. The business pool: an industry, its facilities and its rivals — industry table only when an industry is passed, and the pool's {B}<competitor>{B} does not say which
+- [ ] GAP-962 [source](../REPORT.en.md#L3590) ## 54. The music and album pools: genre-flagged titles — stage names; the port does not draw them yet.
+- [ ] GAP-963 [source](../REPORT.en.md#L3614) ## 54. The music and album pools: genre-flagged titles — ### 54.3 Shortcuts
+- [ ] GAP-964 [source](../REPORT.en.md#L3699) ## 55. The politics pool: an office drawn per country, and a title that holds a token — ### 55.3 Shortcuts
+- [ ] GAP-965 [source](../REPORT.en.md#L3727) ## 56. The nine remaining dumb-scenario pools: one runner, one token table — ## 56. The nine remaining dumb-scenario pools: one runner, one token table
+- [ ] GAP-966 [source](../REPORT.en.md#L3775) ## 56. The nine remaining dumb-scenario pools: one runner, one token table — pools, and the remaining cases are the three zoo job words, `<hustle-instrument>` (one item out of
+- [ ] GAP-967 [source](../REPORT.en.md#L3794) ## 56. The nine remaining dumb-scenario pools: one runner, one token table — does not load (as `<habitat-zoo>` did before `a16_zoo-habitat-names-enc` was added) now
+- [ ] GAP-968 [source](../REPORT.en.md#L3797) ## 56. The nine remaining dumb-scenario pools: one runner, one token table — ### 56.3 Shortcuts
+- [ ] GAP-969 [source](../REPORT.en.md#L3819) ## 56. The nine remaining dumb-scenario pools: one runner, one token table — - The whole `a16_dumb-scenarios-*` family is now read: the remaining unwired pools are none.
+- [ ] GAP-970 [source](../REPORT.en.md#L3862) ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them — draws from its own `relRng_` stream (seed ^ 0x1b873593e6546b64) so the main sequence does not shift.
+- [ ] GAP-971 [source](../REPORT.en.md#L3894) ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them — ### 57.3 Shortcuts
+- [ ] GAP-972 [source](../REPORT.en.md#L3899) ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them — `shortcut: unread gating columns, model them when the meter and the money side exist`
+- [ ] GAP-973 [source](../REPORT.en.md#L3900) ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them — - The partner is invented by the port: a drawn first name, an age within two years, a random
+- [ ] GAP-974 [source](../REPORT.en.md#L3901) ## 57. The relationship subsystem: a partner, an ex, and the pools that move between them — craziness. BitLife builds one from its dating flow, which the port does not have.
+- [ ] GAP-975 [source](../REPORT.en.md#L3940) ## 58. The secret-agent family: one service, five kinds of job, and a briefing assembled from sixty tables — 3. **A job.** The type is uniform over stealth, assassination, honeypot, hacking and intel. The target comes from `mission-target-people` through the type's own flag column (`Stealth` / `Assassination` / `Honeypot`; intel tails anybody, so it takes the whole table) weighted by `Commonness Score`, and the row's `Risk Score` feeds the odds: `clamp(0.55 + proficiency/200 - risk*0.04, 0.10, 0.95)`, so a risky target is survivable only for an experienced agent. A resolved target takes an article unless the drawn text already carries one (`<his/her> mistress` does, `corrupt police officer` does not).
+- [ ] GAP-976 [source](../REPORT.en.md#L3956) ## 58. The secret-agent family: one service, five kinds of job, and a briefing assembled from sixty tables — `spyToken` maps the family's vocabulary: `agent-spy` is the hero's code name — or the colleague's drawn name while `spyAgentIsOther_` is set, which is how the same token serves both `train-scenarios` (where it is the trainee) and `assassination-methods` (where it is the killer); `client-spy` / `client` / `victim` are a drawn name, with `victim` preferring the drawn target; `target` and `target-assassination` are the mission target; `agency`, `code-name`, `specialization`, `cover`, `front`, `agency-rival`, `gadget` (filtered by the hero's specialization, with the `Plural` flag appending an s), `password`, `disguise` (gender-matched), `operation`, `color`, `pronoun`, `friend` and the three name forms. `front` is built from `agency-fronts` and `agency-front-names`: the row's `Format` cell is itself a template (`<city> <suffix>, <color> <suffix>, <random-first-name-possessive> <suffix>`), so the pieces are filled in and any bracket that no piece claims is dropped.
+- [ ] GAP-977 [source](../REPORT.en.md#L3958) ## 58. The secret-agent family: one service, five kinds of job, and a briefing assembled from sixty tables — Pronouns inside mission rows always speak with the hero's gender, because the missions are the hero's own career; the two exceptions (`client-reasons`, `obstacle-stories`, `warnings`, `warn-agent-retorts`, the honeypot mark) set `pronounOtherSet_` / `pronounOtherFemale_` around the `resolve` call and restore the pair afterwards, so the runner does not drift for the rest of the year.
+- [ ] GAP-978 [source](../REPORT.en.md#L3964) ## 58. The secret-agent family: one service, five kinds of job, and a briefing assembled from sixty tables — ### 58.5 Shortcuts
+- [ ] GAP-979 [source](../REPORT.en.md#L3987) ## 59. The fight family: a combat career drawn from thirty-eight tables — largest remaining career-shaped gap in the port.
+- [ ] GAP-980 [source](../REPORT.en.md#L4089) ## 59. The fight family: a combat career drawn from thirty-eight tables — ### 59.5 Shortcuts
+- [ ] GAP-981 [source](../REPORT.en.md#L4091) ## 59. The fight family: a combat career drawn from thirty-eight tables — * The move system is not modelled. The 202-row move table is read only for the
+- [ ] GAP-982 [source](../REPORT.en.md#L4245) ## 60. The black market: eight item pools, an auction house, and a museum of dubious provenance — ### 60.4 Shortcuts
+- [ ] GAP-983 [source](../REPORT.en.md#L4250) ## 60. The black market: eight item pools, an auction house, and a museum of dubious provenance — {B}Black Market Only{B} are not modelled: the port has no storage unit, no refurbishment
+- [ ] GAP-984 [source](../REPORT.en.md#L4262) ## 60. The black market: eight item pools, an auction house, and a museum of dubious provenance — business model are not modelled; the hero is paid nothing for the job.
+- [ ] GAP-985 [source](../REPORT.en.md#L4383) ## 61. The casino: a house the hero owns, and seventeen kinds of year — | 1 | 0.15 | the house's own prompt-and-choice card, gated on hero age and gender, on the popularity band, on the theme, and on having an amenity, a game room, a celebrity or an act where the row asks for one. The first choice is the one taken, the same shortcut the UFL card uses |
+- [ ] GAP-986 [source](../REPORT.en.md#L4416) ## 61. The casino: a house the hero owns, and seventeen kinds of year — ### 61.5 Shortcuts
+- [ ] GAP-987 [source](../REPORT.en.md#L4426) ## 61. The casino: a house the hero owns, and seventeen kinds of year — * The gambler's own addiction is not modelled; the interaction pools' Min/Max Gambler Addiction
+- [ ] GAP-988 [source](../REPORT.en.md#L4544) ## 62. The commune: a doctrine, a totem, and forty-five tables behind one follower at a time — street-name pool with the `Add Random Street Type` flag appending " Street".
+- [ ] GAP-989 [source](../REPORT.en.md#L4547) ## 62. The commune: a doctrine, a totem, and forty-five tables behind one follower at a time — property, the totem and the first followers are free, which is a shortcut
+- [ ] GAP-990 [source](../REPORT.en.md#L4598) ## 62. The commune: a doctrine, a totem, and forty-five tables behind one follower at a time — ### 62.5 Shortcuts
+- [ ] GAP-991 [source](../REPORT.en.md#L4753) ## 63. The drug trade: a cartel, a batch, and thirty-eight dealer tables — ### 63.4 Shortcuts
+- [ ] GAP-992 [source](../REPORT.en.md#L4760) ## 63. The drug trade: a cartel, a batch, and thirty-eight dealer tables — - The prison line fires only when `inPrison` is set by something else; the dealer career does not put
+- [ ] GAP-993 [source](../REPORT.en.md#L4784) ## 63. The drug trade: a cartel, a batch, and thirty-eight dealer tables — the remaining eleven tables               1-14 each
+- [ ] GAP-994 [source](../REPORT.en.md#L4928) ## 64. The family: a made man at rank one, and seventeen mafia tables — ### 64.7 shortcuts
+- [ ] GAP-995 [source](../REPORT.en.md#L5119) ## 65. The zoo: a park the hero owns, thirty-five tables behind one animal at a time — ### 65.6 shortcuts
+- [ ] GAP-996 [source](../REPORT.en.md#L5128) ## 65. The zoo: a park the hero owns, thirty-five tables behind one animal at a time — * habitat capacity is not modelled: the habitat table's `Cost` is not paid and no
+- [ ] GAP-997 [source](../REPORT.en.md#L5273) ## 66. The landlord: a house the hero owns, a tenant in it, and the squatter who replaces them — ### 66.5 Shortcuts
+- [ ] GAP-998 [source](../REPORT.en.md#L5382) ## 67. The pet at home: one animal at a time, and the ten tables that describe its year — | 0.12 | the vet | health lost, the bill printed, and with `Can Be Fatal` plus a pet at 20 or below a 30% chance the animal does not pull through |
+- [ ] GAP-999 [source](../REPORT.en.md#L5393) ## 67. The pet at home: one animal at a time, and the ten tables that describe its year — ### 67.5 Shortcuts
+- [ ] GAP-1000 [source](../REPORT.en.md#L5399) ## 67. The pet at home: one animal at a time, and the ten tables that describe its year — - Heredity, breeding and the `Pure Bred` flag are not modelled: one pet, one card.
+- [ ] GAP-1001 [source](../REPORT.en.md#L5431) ## 68. The studio: a signed artist, an album a year, and the twenty-six tables behind a record — tables. The remaining music files (producer, SoundCloud, club takeover, talent scout, score
+- [ ] GAP-1002 [source](../REPORT.en.md#L5530) ## 68. The studio: a signed artist, an album a year, and the twenty-six tables behind a record — ### 68.6 Shortcuts
+- [ ] GAP-1003 [source](../REPORT.en.md#L5709) ## 69. The studio trades: a producer, a SoundCloud page, a scout, a composer and a club act — ### 69.6 Shortcuts
+- [ ] GAP-1004 [source](../REPORT.en.md#L5714) ## 69. The studio trades: a producer, a SoundCloud page, a scout, a composer and a club act — choice the card offers (the same shortcut as every other dumb-scenario pool).
+- [ ] GAP-1005 [source](../REPORT.en.md#L5783) ## 70. The vampire: a council, a familiar, and forty-four tables behind one night a year — | 52 | familiar-confused-string | the familiar does not understand |
+- [ ] GAP-1006 [source](../REPORT.en.md#L5883) ## 70. The vampire: a council, a familiar, and forty-four tables behind one night a year — ### 70.6 Shortcuts
+- [ ] GAP-1007 [source](../REPORT.en.md#L6105) ## 71. The outdoors: six ways out of the house, and forty-two tables behind a trip — ### 71.6 Shortcuts
+- [ ] GAP-1008 [source](../REPORT.en.md#L6173) ## 71. The outdoors: six ways out of the house, and forty-two tables behind a trip — landlocked park, which is the shortcut above rather than a residue.
+- [ ] GAP-1009 [source](../REPORT.en.md#L6224) ## 72. The hustle: three trades on the street, and twenty-two tables behind a day out there — and records it as a shortcut.
+- [ ] GAP-1010 [source](../REPORT.en.md#L6229) ## 72. The hustle: three trades on the street, and twenty-two tables behind a day out there — `below(5)` when it does not. Then, in order: a handout that fits the box 0.35 (its own
+- [ ] GAP-1011 [source](../REPORT.en.md#L6313) ## 72. The hustle: three trades on the street, and twenty-two tables behind a day out there — unreachable and every excuse comes from the default pool. Recorded as a shortcut rather
+- [ ] GAP-1012 [source](../REPORT.en.md#L6321) ## 72. The hustle: three trades on the street, and twenty-two tables behind a day out there — ### 72.5 Shortcuts
+- [ ] GAP-1013 [source](../REPORT.en.md#L6453) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — this table (shortcut, below).
+- [ ] GAP-1014 [source](../REPORT.en.md#L6496) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — carry per-option impacts the shared renderer does not know about - shortcut).
+- [ ] GAP-1015 [source](../REPORT.en.md#L6553) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — "loved one", and a Snippet that does not start with a bracket (12 of 43) also takes the prefix.
+- [ ] GAP-1016 [source](../REPORT.en.md#L6567) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — ### 73.7 Shortcuts
+- [ ] GAP-1017 [source](../REPORT.en.md#L6570) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — `Performance Impact N` columns that the shared renderer does not read, so the year applies
+- [ ] GAP-1018 [source](../REPORT.en.md#L6571) ## 73. The space program: a rank ladder, a mission a year, and thirty-five tables — plus or minus 2 Flight and +1 Technical instead (`shortcut: flat impacts, upgrade if the renderer
+- [ ] GAP-1019 [source](../REPORT.en.md#L6702) ## 74. The company: the books run every year, and nine tables behind them — The volume is worked back from the costs rather than invented, so a company whose market is
+- [ ] GAP-1020 [source](../REPORT.en.md#L6705) ## 74. The company: the books run every year, and nine tables behind them — Both figures drift one point a year back towards 50 - the market normalises, it does not grind
+- [ ] GAP-1021 [source](../REPORT.en.md#L6756) ## 74. The company: the books run every year, and nine tables behind them — invented affixes, none of which was resolved. 454 residues over one sweep; both call sites now
+- [ ] GAP-1022 [source](../REPORT.en.md#L6764) ## 74. The company: the books run every year, and nine tables behind them — ### 74.7 Shortcuts
+- [ ] GAP-1023 [source](../REPORT.en.md#L6932) ## 75. The car and the races: a class ladder, fifteen ways to spend a year, and thirty-one tables — ### 75.7 Shortcuts
+- [ ] GAP-1024 [source](../REPORT.en.md#L6939) ## 75. The car and the races: a class ladder, fifteen ways to spend a year, and thirty-one tables — - Placeholder/empty-value guard: the mission-style `if (title.empty()) return false;` tail is kept, so a branch that forgets its title silently produces nothing - three of section 71's activities died this way.
+- [ ] GAP-1025 [source](../REPORT.en.md#L6964) ## 75. The car and the races: a class ladder, fifteen ways to spend a year, and thirty-one tables — He said he does not ride around in anything that looks like it came from a
+- [ ] GAP-1026 [source](../REPORT.en.md#L7038) ## 76. The screen: an agent, the parts a year brings, and twenty tables — does not fit the hero is not offered to him.
+- [ ] GAP-1027 [source](../REPORT.en.md#L7096) ## 76. The screen: an agent, the parts a year brings, and twenty tables — its name is empty or its gender or age window does not fit.
+- [ ] GAP-1028 [source](../REPORT.en.md#L7117) ## 76. The screen: an agent, the parts a year brings, and twenty tables — - `<costar>` is the costar, drawn as a person when the row does not name one, and
+- [ ] GAP-1029 [source](../REPORT.en.md#L7138) ## 76. The screen: an agent, the parts a year brings, and twenty tables — 3. `life.age` does not exist - the age lives on the hero - and
+- [ ] GAP-1030 [source](../REPORT.en.md#L7154) ## 76. The screen: an agent, the parts a year brings, and twenty tables — ### 76.7 Shortcuts
+- [ ] GAP-1031 [source](../REPORT.en.md#L7157) ## 76. The screen: an agent, the parts a year brings, and twenty tables — picture in the same year is not modelled.
+- [ ] GAP-1032 [source](../REPORT.en.md#L7257) ## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables — At birth `makeFinance` builds a market for the hero: six listed companies drawn from `universal-stocks` weighted by its winner score, each with a price rolled inside its own band, three coins from `cryptocurrencies` at an invented price (the table has no price column), and a private company whose name comes from `stock-name-structure` (a sector-specific format of prefixes, suffixes, a colour and a surname).
+- [ ] GAP-1033 [source](../REPORT.en.md#L7310) ## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables — 6. **The hero is poor.** Every scripted life ends at or below zero: the harness enables one family at a time and no family of the port pays a wage for work it does not model. The first portfolio therefore has to be inherited (five shares, once, flagged on the hero) or the whole family would sit at a zero balance forever, the sell pool would never be reachable and the trade card could never buy. The affordability arithmetic was relaxed at the same time: a purchase rounds up to a single share when a fifth of the hero's cash is not enough for one, and gives up when even that is out of reach.
+- [ ] GAP-1034 [source](../REPORT.en.md#L7312) ## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables — ### 77.6 Shortcuts
+- [ ] GAP-1035 [source](../REPORT.en.md#L7315) ## 77. The market: a portfolio that moves every year, an advisor who may not stay, and eighteen tables — - Coins have an invented price (1 to 251) because `cryptocurrencies` carries no price band.
+- [ ] GAP-1036 [source](../REPORT.en.md#L7465) ## 78. The catwalk: a four-rung ladder, twelve ways to spend a year, and twenty-five tables — ### 78.8 Shortcuts
+- [ ] GAP-1037 [source](../REPORT.en.md#L7564) ## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables — - `makeLuxury` rolls a one-off windfall of `200,000,000` into `h.money` and prints `I came into $X.` in the journal. Shortcut: it is the same device `section 77` uses for the first portfolio.
+- [ ] GAP-1038 [source](../REPORT.en.md#L7612) ## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables — Two smaller things: the cuisine keeps the pool's own capitalisation (`cooking Filipino food`), and the society card body got a separator so the motto does not run into the requirement sentence. The wiring patch also collapsed a duplicated `model` parse block that a twice-run script had left in `src/script.cpp`.
+- [ ] GAP-1039 [source](../REPORT.en.md#L7614) ## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables — ### 79.6 Shortcuts
+- [ ] GAP-1040 [source](../REPORT.en.md#L7617) ## 79. The luxuries: a fortune to spend, sixteen ways to spend a year, and twenty-two tables — - `a16_luxury-island-structure-spend-time` has no cost column, so a structure costs an invented 5-24M
+- [ ] GAP-1041 [source](../REPORT.en.md#L7682) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — for the years the season does not claim, so nothing already written stopped firing.
+- [ ] GAP-1042 [source](../REPORT.en.md#L7745) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — the hero is winning at least half his games. This is invented - the data has no growth
+- [ ] GAP-1043 [source](../REPORT.en.md#L7749) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — minus one depending on the record.
+- [ ] GAP-1044 [source](../REPORT.en.md#L7763) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — one extra line, e.g. `Season stats: 2 goals, 2 assists, 5 blocked shots, 33 tackles, 53
+- [ ] GAP-1045 [source](../REPORT.en.md#L7824) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — ### 80.7 Shortcuts
+- [ ] GAP-1046 [source](../REPORT.en.md#L7836) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — awards table (a numeric id) is not modelled.
+- [ ] GAP-1047 [source](../REPORT.en.md#L7860) ## 80. The season: a book of games, a stat sheet, and nine more of the sports family — Season stats: 2 goals, 2 assists, 5 blocked shots, 33 tackles, 53 saves.
+- [ ] GAP-1048 [source](../REPORT.en.md#L7926) ## 81. The boat: a licence, a hull that ages, and four watercraft tables — The hero gets a boat at fourteen with a 25,000 dollar windfall (see the shortcuts). The port then
+- [ ] GAP-1049 [source](../REPORT.en.md#L7993) ## 81. The boat: a licence, a hull that ages, and four watercraft tables — ### 81.6 Shortcuts
+- [ ] GAP-1050 [source](../REPORT.en.md#L8002) ## 81. The boat: a licence, a hull that ages, and four watercraft tables — - **The upkeep formula is invented.** The data has no cost column for ownership; value / 50 + 120 is
+- [ ] GAP-1051 [source](../REPORT.en.md#L8009) ## 81. The boat: a licence, a hull that ages, and four watercraft tables — - **The Lifespan Years and Only One Per Watercraft columns are read but not yet enforced.**
+- [ ] GAP-1052 [source](../REPORT.en.md#L8083) ## 82. The sentence: a yard with its own economy, nine ways to spend a year inside, and ten prison tables — them the parole board. This section wires all seven of the remaining prison tables
+- [ ] GAP-1053 [source](../REPORT.en.md#L8180) ## 82. The sentence: a yard with its own economy, nine ways to spend a year inside, and ten prison tables — ### 82.6 Shortcuts
+- [ ] GAP-1054 [source](../REPORT.en.md#L8290) ## 83. The office: a staff to manage, eight employee tables, and a year on the other side of the desk — does not evaluate (see the shortcuts).
+- [ ] GAP-1055 [source](../REPORT.en.md#L8371) ## 83. The office: a staff to manage, eight employee tables, and a year on the other side of the desk — ### 83.6 Shortcuts
+- [ ] GAP-1056 [source](../REPORT.en.md#L8582) ## 84. The school: eleven pools of class, clique and rush, and a gender token that had been answering nothing — `h.health` instead, with a shortcut comment at the call site.
+- [ ] GAP-1057 [source](../REPORT.en.md#L8588) ## 84. The school: eleven pools of class, clique and rush, and a gender token that had been answering nothing — ### 84.6 Shortcuts
+- [ ] GAP-1058 [source](../REPORT.en.md#L8599) ## 84. The school: eleven pools of class, clique and rush, and a gender token that had been answering nothing — * Detentions, GPAs, report cards and school fees are not modelled; the year's whole visible
+- [ ] GAP-1059 [source](../REPORT.en.md#L8835) ## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket — hero's pair in place, which is a documented shortcut.
+- [ ] GAP-1060 [source](../REPORT.en.md#L8842) ## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket — either: `referenceToken` returns empty for keys the tags table does not carry
+- [ ] GAP-1061 [source](../REPORT.en.md#L8865) ## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket — does not compile, so the build failed and the probe that printed five clean runs
+- [ ] GAP-1062 [source](../REPORT.en.md#L8870) ## 85. The podcast: a show the hero builds, the same name twice, and a gender bracket — ### 85.6 Shortcuts
+- [ ] GAP-1063 [source](../REPORT.en.md#L9009) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — feeds the happiness delta, because a bribe does not make the voters happier. The
+- [ ] GAP-1064 [source](../REPORT.en.md#L9116) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — ### 86.6 Shortcuts
+- [ ] GAP-1065 [source](../REPORT.en.md#L9120) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — port can lose a seat. <!-- shortcut: no election cycle, add when a ballot exists -->
+- [ ] GAP-1066 [source](../REPORT.en.md#L9122) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — opposition, so the law branch always succeeds. <!-- shortcut: single-signature laws -->
+- [ ] GAP-1067 [source](../REPORT.en.md#L9124) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — rumour branches only move approval and Ethics. <!-- shortcut: rival is a name -->
+- [ ] GAP-1068 [source](../REPORT.en.md#L9126) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — approval is the mean of the nine standings. <!-- shortcut: one approval number -->
+- [ ] GAP-1069 [source](../REPORT.en.md#L9128) ## 86. The politician's year: two dumb pools that were never scored, and a level column read as four exclusions — journal, so the three agree. <!-- shortcut: one drawn amount -->
+- [ ] GAP-1070 [source](../REPORT.en.md#L9290) ## 87. The royal year: a family that spoke to nobody, and a branch ladder that poisoned its own tail — is the shape every earlier family uses and which does not survive an optional
+- [ ] GAP-1071 [source](../REPORT.en.md#L9374) ## 87. The royal year: a family that spoke to nobody, and a branch ladder that poisoned its own tail — ### 87.6 Shortcuts
+- [ ] GAP-1072 [source](../REPORT.en.md#L9514) ## 88. The anniversary: a family with a vocabulary and no year — poor for every price, or a gender gate that excludes them all -- does not fall
+- [ ] GAP-1073 [source](../REPORT.en.md#L9614) ## 88. The anniversary: a family with a vocabulary and no year — ### 88.6 Shortcuts
+- [ ] GAP-1074 [source](../REPORT.en.md#L9628) ## 88. The anniversary: a family with a vocabulary and no year — and `TURNED_UP_A_NOTCH` needs a rewarded video the port does not model.
+- [ ] GAP-1075 [source](../REPORT.en.md#L9739) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — does not model, so the shop skips them and a broke hero is left with the lifting
+- [ ] GAP-1076 [source](../REPORT.en.md#L9775) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — <He/She> said <he/she> doesn't need your <hand-me-downs/charity>.
+- [ ] GAP-1077 [source](../REPORT.en.md#L9777) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — <He/She> said <he/she> doesn't feel like the quality of your relationship is good enough to justify a gift of this magnitude.
+- [ ] GAP-1078 [source](../REPORT.en.md#L9890) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — shortcut line says what that gives up (`a ukulele` is written `an
+- [ ] GAP-1079 [source](../REPORT.en.md#L9891) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — ukulele` and the shop does not carry one).
+- [ ] GAP-1080 [source](../REPORT.en.md#L9918) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — ### 89.6 Shortcuts
+- [ ] GAP-1081 [source](../REPORT.en.md#L9920) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — 1. the rate and the year. `giftYear` fires on 0.30 of the couple's remaining
+- [ ] GAP-1082 [source](../REPORT.en.md#L9933) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — 50` stand in for two flags the corpus has and the port does not, and a
+- [ ] GAP-1083 [source](../REPORT.en.md#L9939) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — a house does not also visit the shop.
+- [ ] GAP-1084 [source](../REPORT.en.md#L10014) ## 89. The gift: one shelf, four price tables, and a partner who can only refuse — She said she doesn't feel like the quality of your relationship is good enough to justify a gift of this magnitude.
+- [ ] GAP-1085 [source](../REPORT.en.md#L10161) ## 90. The conversations: one audience column, a listener the port had to invent, and a six-sided coin for tolerance — The last row is the one that stayed a shortcut: `<musician2>` has no resolver
+- [ ] GAP-1086 [source](../REPORT.en.md#L10189) ## 90. The conversations: one audience column, a listener the port had to invent, and a six-sided coin for tolerance — ### 90.6 Shortcuts
+- [ ] GAP-1087 [source](../REPORT.en.md#L10309) ## 91. The social media year: one account, six tables, and a handle nobody could name — What the family does not have is prose for the two oldest branches. A post, a troll and
+- [ ] GAP-1088 [source](../REPORT.en.md#L10329) ## 91. The social media year: one account, six tables, and a handle nobody could name — that does not fit the hero is not drawn, and a token that cannot be filled is dropped
+- [ ] GAP-1089 [source](../REPORT.en.md#L10423) ## 91. The social media year: one account, six tables, and a handle nobody could name — print a bracket the year skips the row, the same shortcut section 90 took with its
+- [ ] GAP-1090 [source](../REPORT.en.md#L10429) ## 91. The social media year: one account, six tables, and a handle nobody could name — ### 91.6 Shortcuts
+- [ ] GAP-1091 [source](../REPORT.en.md#L10440) ## 91. The social media year: one account, six tables, and a handle nobody could name — the hero does not have. `a16_social-media-channels-onlyfans-tip-responses-enc`, 7
+- [ ] GAP-1092 [source](../REPORT.en.md#L10555) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — The remaining four files are the sleepover invitation and its acceptance feedback; they are
+- [ ] GAP-1093 [source](../REPORT.en.md#L10556) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — deferred to the next section because they are a four-choice card rather than a feedback line.
+- [ ] GAP-1094 [source](../REPORT.en.md#L10633) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — with the lover or with the same classmate, drawing a hookup row of the same level and appending
+- [ ] GAP-1095 [source](../REPORT.en.md#L10644) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — still holds a bracket after resolution is skipped rather than printed, which is the same shortcut
+- [ ] GAP-1096 [source](../REPORT.en.md#L10678) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — ### 92.5 Shortcuts
+- [ ] GAP-1097 [source](../REPORT.en.md#L10779) ## 92. The school year: a field trip with a theme, a prom that happens once, and a party whose parents are always away — She says she just doesn't think of you in that way.
+- [ ] GAP-1098 [source](../REPORT.en.md#L10863) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — twenty-five rows, which the card carries and the log does not.
+- [ ] GAP-1099 [source](../REPORT.en.md#L10882) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — (92.5 item 5) - the corpus's own friend list does not exist here, so a classmate of the right
+- [ ] GAP-1100 [source](../REPORT.en.md#L10938) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — 0 for a column the table does not have, and `pointsForImpact(0)` is not a no-op either - the
+- [ ] GAP-1101 [source](../REPORT.en.md#L10954) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — // drawn -1 or +1, so reading a column the row does not carry moved smarts
+- [ ] GAP-1102 [source](../REPORT.en.md#L10989) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — friend's relationship and the port keeps no friend relationship - the same shortcut the dance
+- [ ] GAP-1103 [source](../REPORT.en.md#L10993) ## 93. The sleepover: an invitation that can come from either side, and the impact columns the port had been inventing — ### 93.4 Shortcuts
+- [ ] GAP-1104 [source](../REPORT.en.md#L11249) ## 94. The celebrity dating app: a roster nothing pointed at, six tables of career, and a — The invented draw survives as the fallback for a missing table, the way every other table in
+- [ ] GAP-1105 [source](../REPORT.en.md#L11254) ## 94. The celebrity dating app: a roster nothing pointed at, six tables of career, and a — ### 94.5 Shortcuts
+- [ ] GAP-1106 [source](../REPORT.en.md#L11274) ## 94. The celebrity dating app: a roster nothing pointed at, six tables of career, and a — 7. The app's own store text (`#45183`) and the IAP that opens it are not modelled - the port
+- [ ] GAP-1107 [source](../REPORT.en.md#L11430) ## 95. The region under the city: a place table with no renderer, a birth city the port never — cities in total, and the region table knows 243 of them (in 30 countries). The remaining 72
+- [ ] GAP-1108 [source](../REPORT.en.md#L11516) ## 95. The region under the city: a place table with no renderer, a birth city the port never — ### 95.4 Shortcuts
+- [ ] GAP-1109 [source](../REPORT.en.md#L11518) ## 95. The region under the city: a place table with no renderer, a birth city the port never — 1. `<region>` has no rendered consumer yet, and this section does not invent one. The
+- [ ] GAP-1110 [source](../REPORT.en.md#L11522) ## 95. The region under the city: a place table with no renderer, a birth city the port never — System.Boolean, System.Boolean)` (il2cpp_dump.txt:7868) - which the port does not call;
+- [ ] GAP-1111 [source](../REPORT.en.md#L11571) ## 95. The region under the city: a place table with no renderer, a birth city the port never — a country the region table does not carry  (Nigeria, seed 3)
+- [ ] GAP-1112 [source](../REPORT.en.md#L11822) ## 96. The movie theater: a place table the game keeps in four slots, a card whose body has — path, so the twelve files stay unwired. They are recorded here so the next reader does not
+- [ ] GAP-1113 [source](../REPORT.en.md#L11825) ## 96. The movie theater: a place table the game keeps in four slots, a card whose body has — ### 96.6 Shortcuts
+- [ ] GAP-1114 [source](../REPORT.en.md#L11837) ## 96. The movie theater: a place table the game keeps in four slots, a card whose body has — 4. There is no children model in the port (src/sim.cpp:14191 records the shortcut), so the
+- [ ] GAP-1115 [source](../REPORT.en.md#L12031) ## 97. The generic pastime pool: the table three other features already drew from, and a — such and listed as a shortcut in 97.5.
+- [ ] GAP-1116 [source](../REPORT.en.md#L12087) ## 97. The generic pastime pool: the table three other features already drew from, and a — ### 97.5 Shortcuts
+- [ ] GAP-1117 [source](../REPORT.en.md#L12229) ## 98. The skip-school card: the same pastime pool asked for by a classmate, and the three — ScenarioSchoolSkipPush. It is a push aimed at a pupil rather than at an adult, so it does not
+- [ ] GAP-1118 [source](../REPORT.en.md#L12337) ## 98. The skip-school card: the same pastime pool asked for by a classmate, and the three — ### 98.5 Shortcuts
+- [ ] GAP-1119 [source](../REPORT.en.md#L12340) ## 98. The skip-school card: the same pastime pool asked for by a classmate, and the three — and the card is also reachable from the game's own push scheduler, which the port does not
+- [ ] GAP-1120 [source](../REPORT.en.md#L12441) ## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a — 98's last shortcut pointed here, and it was half right. `ScenarioMobsterSpendTimePush` is
+- [ ] GAP-1121 [source](../REPORT.en.md#L12572) ## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a — the card does not carry. Above the hero is the card's point, so the draw covers the four ranks
+- [ ] GAP-1122 [source](../REPORT.en.md#L12580) ## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a — ### 99.5 Shortcuts
+- [ ] GAP-1123 [source](../REPORT.en.md#L12583) ## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a — game's rate and its actor live in the mafia subsystem, which the port does not model.
+- [ ] GAP-1124 [source](../REPORT.en.md#L12596) ## 99. The mobster spend-time card: a pastime from the mafia's own country-keyed table, a — object it builds are not modelled: the port keeps no per-person relationship with a mafia
+- [ ] GAP-1125 [source](../REPORT.en.md#L12927) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — distribution, and gate 4 above is a relation the port's friend does not have, so both are
+- [ ] GAP-1126 [source](../REPORT.en.md#L12928) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — shortcuts (100.5).
+- [ ] GAP-1127 [source](../REPORT.en.md#L12974) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — Six of the ten are the port's `<friend-lover>` shortcut, three are the friend-age shortcut, and
+- [ ] GAP-1128 [source](../REPORT.en.md#L12975) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — one - row 44, whose hero ceiling is 12 while the card refuses to be pushed before 18 - is dead
+- [ ] GAP-1129 [source](../REPORT.en.md#L12979) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — ### 100.5 Shortcuts
+- [ ] GAP-1130 [source](../REPORT.en.md#L12983) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — friend younger than the hero would invent a distribution the corpus does not show, and it
+- [ ] GAP-1131 [source](../REPORT.en.md#L12984) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — would cost the seventeen rows that require a friend of at least 18, so the shortcut is kept
+- [ ] GAP-1132 [source](../REPORT.en.md#L12994) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — 4. The friend's relationship impact (the vtable call with value 3, or -3) is not modelled: the
+- [ ] GAP-1133 [source](../REPORT.en.md#L12998) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — dumper, so it is not modelled (100.2).
+- [ ] GAP-1134 [source](../REPORT.en.md#L13004) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — a partner, and the port's friend does not; the two possessive forms the table also uses
+- [ ] GAP-1135 [source](../REPORT.en.md#L13085) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — BODY   : Bruno Ares is venting to you about his wife's compulsive spending habits, and he asks if you think he should start hiding money from her.
+- [ ] GAP-1136 [source](../REPORT.en.md#L13151) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — BODY   : Bruno Ares is venting to you about his wife's compulsive spending habits, and he asks if you think he should start hiding money from her.
+- [ ] GAP-1137 [source](../REPORT.en.md#L13195) ## 100. The friend-advice card: forty-eight questions a friend asks, four buttons that are two — student. Row 36 is the block that shows shortcut 8 without any help: the card and its journal
+- [ ] GAP-1138 [source](../REPORT.en.md#L13264) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — section (101.5) but its forty-branch `RefreshScenario` was not mapped, so it is not ported.
+- [ ] GAP-1139 [source](../REPORT.en.md#L13322) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — `ChoiceSelectedAtIndex` `0x73f3c4ae78` does not trust the index. It indexes `ChoiceArray`,
+- [ ] GAP-1140 [source](../REPORT.en.md#L13395) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — neither party's sex ever constrains a row here and no row has an age ceiling - which is why the
+- [ ] GAP-1141 [source](../REPORT.en.md#L13436) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — ### 101.5 Shortcuts
+- [ ] GAP-1142 [source](../REPORT.en.md#L13438) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — 1. The push rate is invented. `prankRng_.chance(0.05)` (src/sim.cpp:23901) carries a shortcut
+- [ ] GAP-1143 [source](../REPORT.en.md#L13447) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — has nothing to switch between. Section 100's shortcut 1 is the same admission.
+- [ ] GAP-1144 [source](../REPORT.en.md#L13455) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — reports the label; the reaction text and the `fool` test are not modelled.
+- [ ] GAP-1145 [source](../REPORT.en.md#L13459) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — 7. The friend relationship move is dropped in every branch for the same reason as shortcut 3:
+- [ ] GAP-1146 [source](../REPORT.en.md#L13597) ## 101. The friend prank card: sixty-two pratfalls in two halves, four reactions, and the — character for character, and the four labels are the four the game ships. What the port does not
+- [ ] GAP-1147 [source](../REPORT.en.md#L13660) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — table's column list does not suggest (102.3).
+- [ ] GAP-1148 [source](../REPORT.en.md#L13704) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — the third label `It doesn't bother me` (0x5c3a750) and the two shared wrappers
+- [ ] GAP-1149 [source](../REPORT.en.md#L13732) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — 3. `It doesn't bother me`.
+- [ ] GAP-1150 [source](../REPORT.en.md#L13735) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — `ChoiceSelectedAtIndex` `0x73f3c5299c` does not trust the index either. It indexes `ChoiceArray`,
+- [ ] GAP-1151 [source](../REPORT.en.md#L13748) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — | it doesn't bother me | happiness -1, discipline +3, karma +3 | the card's own line, then `I didn't let it bother me.` |
+- [ ] GAP-1152 [source](../REPORT.en.md#L13805) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — 16, 50, 18 and 25. A ceiling exists on four rows only: 23 and 24 cap *both* people at 11 and 10,
+- [ ] GAP-1153 [source](../REPORT.en.md#L13819) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — is the one live ceiling: a female hero between 25 and 40 can be shown the menopause rumor and no
+- [ ] GAP-1154 [source](../REPORT.en.md#L13840) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — the "you are" phrasing and never adjusted. The port reproduces the cell; it does not repair it.
+- [ ] GAP-1155 [source](../REPORT.en.md#L13842) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — ### 102.5 Shortcuts
+- [ ] GAP-1156 [source](../REPORT.en.md#L13844) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — 1. The push rate is invented. `rumorRng_.chance(0.05)` (src/sim.cpp:24095) carries a shortcut
+- [ ] GAP-1157 [source](../REPORT.en.md#L13854) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — `FriendRelationshipStatusString` has nothing to switch between. Section 100's shortcut 1 and
+- [ ] GAP-1158 [source](../REPORT.en.md#L13855) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — section 101's shortcut 3 are the same admission.
+- [ ] GAP-1159 [source](../REPORT.en.md#L13858) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — two points; the port has no friend relationship bar (shortcut 3).
+- [ ] GAP-1160 [source](../REPORT.en.md#L13866) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — nothing reaches it from here. Section 101's shortcut 4 is the same trade.
+- [ ] GAP-1161 [source](../REPORT.en.md#L13871) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — (102.1) and it is the one member of this pair that is not ported at all.
+- [ ] GAP-1162 [source](../REPORT.en.md#L13873) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — never rendered. It is built only by `.ctor(SimPerson)`, which the port does not call: the
+- [ ] GAP-1163 [source](../REPORT.en.md#L13875) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — (shortcuts 6 and 7). Sections 101.4 and 101.5 made the same kind of note about the vampire half
+- [ ] GAP-1164 [source](../REPORT.en.md#L13942) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — === the it-doesn't-bother-me response: happiness -4, discipline 16, karma 16, and a second log line
+- [ ] GAP-1165 [source](../REPORT.en.md#L13947) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — CHOICE : It doesn't bother me
+- [ ] GAP-1166 [source](../REPORT.en.md#L13985) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — CHOICE : It doesn't bother me
+- [ ] GAP-1167 [source](../REPORT.en.md#L14006) ## 102. The friend rumor card: forty rumors in one half, four reactions, and the three — does not ship is the second card, the friend relationship the game charges on every answer,
+- [ ] GAP-1168 [source](../REPORT.en.md#L14024) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — Where this card differs from its siblings is the age axis. Its push gate does not ask for eighteen:
+- [ ] GAP-1169 [source](../REPORT.en.md#L14028) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — every row carries a hero floor and a friend floor, fifteen rows carry ceilings on top of them, and a
+- [ ] GAP-1170 [source](../REPORT.en.md#L14034) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — four calls rather than two. The card does not paste the friend's name in front of the row. It builds
+- [ ] GAP-1171 [source](../REPORT.en.md#L14053) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — of waiting for a button it draws the reply on its own stream, the same shortcut the prank and rumor
+- [ ] GAP-1172 [source](../REPORT.en.md#L14195) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — Those six are the picker's: `HeroMinAge` is a floor and `HeroMaxAge` a ceiling when set (zero reads
+- [ ] GAP-1173 [source](../REPORT.en.md#L14202) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — the card simply does not open; there is no relaxed second pass.
+- [ ] GAP-1174 [source](../REPORT.en.md#L14208) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — age: the port's friend slot stands at the hero's own age, the same shortcut the rumor card takes, so
+- [ ] GAP-1175 [source](../REPORT.en.md#L14209) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — the friend's floor and ceiling are applied to the hero's age. The port also strips the caller's
+- [ ] GAP-1176 [source](../REPORT.en.md#L14218) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — The floors are never optional. Hero Min Age is 21 on fifteen rows, 50 on fourteen, 18 and 5 on eight each, 14 on five, 10 on four, and one row each for 65, 17, 15, 12 and 8; Friend Min Age repeats those numbers and adds 60 on three rows with 65 and 55 on two each. The two floors disagree often enough to matter: on 49, 52, 54, 57, 58 and 59 the friend's floor sits above the hero's, and since the port keeps its friend at the hero's own age those rows simply wait for a later birthday. The ceilings are the rarer thing — Hero Max Age and Friend Max Age are filled on exactly the same fifteen rows, 30 through 44, and nowhere else in the table. Row 32 asks for a hero between ten and twenty-one and a friend between ten and twenty; row 34 allows a hero to twenty-five but a friend only to twenty-one; rows 33 and 37 are four-year windows at 14 to 18, row 44 is 14 to 17, row 36 is 10 to 16. Because the port's friend shares the hero's age, each row's window collapses to the overlap of the two: `[max(Hmin, Fmin, 5), min(Hmax, Fmax)]`. No row's overlap is empty, so unlike §102 every row here is age-reachable in principle — the undrawable rows are undrawable for another reason.
+- [ ] GAP-1177 [source](../REPORT.en.md#L14228) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — | 30-44 | both ceilings | matched, both against the hero's age |
+- [ ] GAP-1178 [source](../REPORT.en.md#L14234) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — ### 103.5 Shortcuts
+- [ ] GAP-1179 [source](../REPORT.en.md#L14236) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — 1. `shortcut: the class carries no push rate` (src/sim.cpp:24267-24271). The real predicate is age, prison and a friend, nothing else; the port opens the card on a 0.05 coin, the same number the rumor card uses, drawn from its own stream.
+- [ ] GAP-1180 [source](../REPORT.en.md#L14238) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — 3. The friend's age is the hero's (src/sim.cpp:24281). Every friend floor and friend ceiling in the table therefore collapses onto the hero's own age, which is what makes rows 49, 52, 54, 57, 58 and 59 late-life rows.
+- [ ] GAP-1181 [source](../REPORT.en.md#L14243) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — 8. The accept branch's alcohol block is not modelled: no `GetDrugForName("alcohol")`, no `ShouldBecomeAddictedToDrug`, no discipline -3 and no `SimAddiction` card chained in front of the card. Accepting an alcohol row in the port is worth happiness 16 and karma 8 and nothing else.
+- [ ] GAP-1182 [source](../REPORT.en.md#L14244) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — 9. The accept branch's reaction card is not modelled either: the six titles, the two `Enjoyment` StatChange rows, the hero and friend mood floats that decide whether the base draw is 0 to 100 or 0 to 19, the `_enjoymentScore` override (5 means 90 to 99, 1 means 0 to 19), and the three counters at +0xdc, +0x1c8 and +0x210.
+- [ ] GAP-1183 [source](../REPORT.en.md#L14338) ## 103. The friend party card: fifty-nine invitations, three replies, and the dictionary that — What the card adds to the port is not a new mechanic — the hero's year is already full of them — but a third door into the same friendship, opened nine years earlier than the prank and rumor cards and standing on prose the port does not own. The three cells come out of a file, the friend's name comes out of the resolver, the friendship word is the port's, and what is left for the port to get wrong is exactly what this section has been about: which dictionary the body is read against, where the apostrophe goes, and which of the three sentences the hero is supposed to be living when the year turns over.
+- [ ] GAP-1184 [source](../REPORT.en.md#L14362) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — columns nothing reads - `Vampire Hero` and `Vampire Friend Lover` - and the port does not filter on
+- [ ] GAP-1185 [source](../REPORT.en.md#L14379) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — The card does not print the friend's name in front of the row: it builds two small token dictionaries
+- [ ] GAP-1186 [source](../REPORT.en.md#L14390) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — The port models the card in full minus four approximations. It reproduces the four labels, the four
+- [ ] GAP-1187 [source](../REPORT.en.md#L14392) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — shortcut the prank, rumor and party cards take; it coins the fourth button because its generated
+- [ ] GAP-1188 [source](../REPORT.en.md#L14420) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `AgeAtCurrentSpouseMarriage + 18`; the ceiling is friend age + 10, raised to floor + 10 when that
+- [ ] GAP-1189 [source](../REPORT.en.md#L14421) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — would fall below the floor; the lover's age is `floor + GetRandomNumber(0, ceiling - floor)`. A
+- [ ] GAP-1190 [source](../REPORT.en.md#L14425) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — renders reads the generated age, so the port does not draw it (104.5), and the port's friend carries
+- [ ] GAP-1191 [source](../REPORT.en.md#L14504) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `IsVampire()` 0x73f30e1058 while the generated lover does not: its label is `String.Concat` of cell
+- [ ] GAP-1192 [source](../REPORT.en.md#L14548) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — it builds its reaction card and chains it in place, and that card is not ported.
+- [ ] GAP-1193 [source](../REPORT.en.md#L14562) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `{0} Appreciation` (#69489) off the friend's `PronounStringForType(6)`. The journaled text does not
+- [ ] GAP-1194 [source](../REPORT.en.md#L14615) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — anywhere in the static chain throws through the stub at 0x73f26d4aac rather than returning false.
+- [ ] GAP-1195 [source](../REPORT.en.md#L14618) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `HeroMaxAge` a ceiling when set (a zero reads as unbounded); then the row's `HeroGender`; then the
+- [ ] GAP-1196 [source](../REPORT.en.md#L14619) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `FriendMinAge` and `FriendMaxAge` pair; then the row's `FriendGender` - which this table does not
+- [ ] GAP-1197 [source](../REPORT.en.md#L14625) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — null; the card simply does not open. There is no relaxed second pass and no fallback row.
+- [ ] GAP-1198 [source](../REPORT.en.md#L14629) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — declared shortcut (104.5). Its model of the picker is the same six columns, but two of them are
+- [ ] GAP-1199 [source](../REPORT.en.md#L14630) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — supplied by the port's own invented values: the friend's age is the hero's own age, the same shortcut
+- [ ] GAP-1200 [source](../REPORT.en.md#L14631) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — the prank, rumor and party cards already take, which turns the friend's floor and ceiling into a
+- [ ] GAP-1201 [source](../REPORT.en.md#L14633) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — friend ceiling at all and both are inside the hero's own range from eighteen. The friend's sex is a
+- [ ] GAP-1202 [source](../REPORT.en.md#L14640) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — ### 104.4 The rows: fifty-two rows, two ceilings, and two columns nothing reads
+- [ ] GAP-1203 [source](../REPORT.en.md#L14648) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — The floors are almost constant and the ceilings are almost absent. `Hero Min Age` is 18 on 49 rows,
+- [ ] GAP-1204 [source](../REPORT.en.md#L14653) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — to `[max(Hmin, Fmin), min(Hmax, Fmax)]`, with the two 35 ceilings the only upper bounds the table
+- [ ] GAP-1205 [source](../REPORT.en.md#L14664) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — | 1, 2 | a friend ceiling of 35 | matched against the hero's own age; closed after thirty-five |
+- [ ] GAP-1206 [source](../REPORT.en.md#L14681) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 43 of the 52 log cells begin with the token and the remaining nine reach it within the first clause -
+- [ ] GAP-1207 [source](../REPORT.en.md#L14701) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 15 open at a hero age of fourteen that the gate floors at eighteen; and the remaining twenty-two -
+- [ ] GAP-1208 [source](../REPORT.en.md#L14707) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — ### 104.5 Shortcuts
+- [ ] GAP-1209 [source](../REPORT.en.md#L14709) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 1. `shortcut: the class carries no push rate` (src/sim.cpp:24461). The real predicate is the gate's
+- [ ] GAP-1210 [source](../REPORT.en.md#L14712) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 2. The hero's sexuality is not modelled (src/sim.cpp:24452). The game's third test is `hero[0x24] <=
+- [ ] GAP-1211 [source](../REPORT.en.md#L14715) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — `floor + GetRandomNumber(0, ceiling - floor)` and the port substitutes an age of its own, which is
+- [ ] GAP-1212 [source](../REPORT.en.md#L14725) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 6. The friend's age is the hero's (src/sim.cpp:24472). Every friend floor and ceiling therefore
+- [ ] GAP-1213 [source](../REPORT.en.md#L14742) ## 104. The friend-lover card: fifty-two proposals, one lover the card builds for the hero, and — 11. The reaction cards are not ported: the hook-up branch's `Scenario(SimLover, SimPerson, String)`,
+- [ ] GAP-1214 [source](../REPORT.en.md#L14911) ## 105. The coworker family: four workplace cards, one colleague the roster — two shortcuts the rest of this section names: the roster walk becomes a single slot, and
+- [ ] GAP-1215 [source](../REPORT.en.md#L15072) ## 105. The coworker family: four workplace cards, one colleague the roster — | Inappropriate | It doesn't bother me #27502 | bother | none | slot 0x408 with -2 and ImpactDiscipline(2) | the line plus ' I didn't let {1} behavior bother me.' #69559 | none |
+- [ ] GAP-1216 [source](../REPORT.en.md#L15146) ## 105. The coworker family: four workplace cards, one colleague the roster — friend-lover card, this gate does not read one. What the port cannot do is the roster:
+- [ ] GAP-1217 [source](../REPORT.en.md#L15176) ## 105. The coworker family: four workplace cards, one colleague the roster — are only drawn for a vampire hero, and the remaining 34 are the mortal office pranks.
+- [ ] GAP-1218 [source](../REPORT.en.md#L15190) ## 105. The coworker family: four workplace cards, one colleague the roster — ### 105.5 Shortcuts
+- [ ] GAP-1219 [source](../REPORT.en.md#L15219) ## 105. The coworker family: four workplace cards, one colleague the roster — willpower float at +0xa8 becomes a 50 percent coin, the same shortcut the friend-lover
+- [ ] GAP-1220 [source](../REPORT.en.md#L15238) ## 105. The coworker family: four workplace cards, one colleague the roster — already fired from the relationship year at 5 percent, and this section does not move
+- [ ] GAP-1221 [source](../REPORT.en.md#L15264) ## 105. The coworker family: four workplace cards, one colleague the roster — eleven, against the ceiling of fifteen the four caps allow (five annoyance, four behaviour,
+- [ ] GAP-1222 [source](../REPORT.en.md#L15266) ## 105. The coworker family: four workplace cards, one colleague the roster — every one of those four ceilings exactly -- five annoyances in a life, four inappropriate
+- [ ] GAP-1223 [source](../REPORT.en.md#L15364) ## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to — ScenarioFriendSpendTime does not read a16_friend-anything: its content is one row of
+- [ ] GAP-1224 [source](../REPORT.en.md#L15520) ## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to — ### 106.5 Shortcuts
+- [ ] GAP-1225 [source](../REPORT.en.md#L15528) ## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to — 2. The relationship bar does not move. The game moves the friend's slot 0x508 by +3 or -2
+- [ ] GAP-1226 [source](../REPORT.en.md#L15547) ## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to — out of an index that does not round-trip, the port drops the branch. This is the one
+- [ ] GAP-1227 [source](../REPORT.en.md#L15549) ## 106. The friend spend-time card: a pastime drawn from a table of 271, a friend free to — shortcut with a reason.
+- [ ] GAP-1228 [source](../REPORT.en.md#L15596) ## 107. The friend-rumor outbound card: nine reactions to the rumor the hero just spread — card's fourth choice -- "Start a rumor about him" -- does not only move stats: with
+- [ ] GAP-1229 [source](../REPORT.en.md#L15656) ## 107. The friend-rumor outbound card: nine reactions to the rumor the hero just spread — The port has no scenario push -- that has been a documented shortcut since section 101 --
+- [ ] GAP-1230 [source](../REPORT.en.md#L15658) ## 107. The friend-rumor outbound card: nine reactions to the rumor the hero just spread — friend's sex and a `rumorOutPending` flag on the life, and `friendRumorOutYear` renders
+- [ ] GAP-1231 [source](../REPORT.en.md#L15690) ## 107. The friend-rumor outbound card: nine reactions to the rumor the hero just spread — ### 107.5 Shortcuts
+- [ ] GAP-1232 [source](../REPORT.en.md#L15751) ## 108. The unfriend card: the friend leaves first, and three answers — mirror: the hero does not decide anything to make it happen. `ScenarioFriendUnfriendInbound`
+- [ ] GAP-1233 [source](../REPORT.en.md#L15771) ## 108. The unfriend card: the friend leaves first, and three answers — 1. `_friend` from `[self+0x170]`; null leaves through the throw stub 0x73f3c58d48.
+- [ ] GAP-1234 [source](../REPORT.en.md#L15855) ## 108. The unfriend card: the friend leaves first, and three answers — "Done for good" is in two pools, which is why a title alone does not identify the branch.
+- [ ] GAP-1235 [source](../REPORT.en.md#L15868) ## 108. The unfriend card: the friend leaves first, and three answers — ### 108.5 Shortcuts
+- [ ] GAP-1236 [source](../REPORT.en.md#L15885) ## 108. The unfriend card: the friend leaves first, and three answers — twenty years or more needs `[friend+0x188] YearsFriends`, which the port does not track.
+- [ ] GAP-1237 [source](../REPORT.en.md#L15892) ## 108. The unfriend card: the friend leaves first, and three answers — 7. The prison variant is not modelled. `inPrison` heroes skip the card entirely rather than
+- [ ] GAP-1238 [source](../REPORT.en.md#L15937) ## 109. The friend-status card: the best-friend request, the enemy, and the gate correction — `ScenarioFriendStatusInbound` (`.ctor(SimPerson, Int32) @0x73f3c54534`, `RefreshScenario @0x73f3c545d4`, `ChoiceSelectedAtIndex @0x73f3c54d7c`, `DismissSelected @0x73f3c55544`, `EmojiString @0x73f3c555b0`) holds `_friend` at `0x170`, the flavour in `_status` at `0x178` and `_narrative` at `0x180`. `RefreshScenario` reads `_status` once and does nothing at all for any value but 2 and 3 (`cmp w8,#3; b.eq 0x73f3c548bc`, `cmp w8,#2; b.ne` to the exit).
+- [ ] GAP-1239 [source](../REPORT.en.md#L15965) ## 109. The friend-status card: the best-friend request, the enemy, and the gate correction — ### 109.5 Shortcuts
+- [ ] GAP-1240 [source](../REPORT.en.md#L15967) ## 109. The friend-status card: the best-friend request, the enemy, and the gate correction — 1. The friend is a drawn slot, not an object (the family's standing shortcut, REPORT.en.md 102): the port draws `resolve("<friend>")` and a gender on this card's stream, and `GetFriendRelationshipStatusForDisplay` always reads `friend`.
+- [ ] GAP-1241 [source](../REPORT.en.md#L16090) ## 110. The prison unfriend card: the same friend, from behind bars — ### 110.4 Shortcuts
+- [ ] GAP-1242 [source](../REPORT.en.md#L16094) ## 110. The prison unfriend card: the same friend, from behind bars — 2. The step from `-4` to `-5` at `YearsFriends >= 20` is not modelled -- the drawn friend
+- [ ] GAP-1243 [source](../REPORT.en.md#L16098) ## 110. The prison unfriend card: the same friend, from behind bars — every card (the family's standing shortcut), so the same name can be unfriended twice.
+- [ ] GAP-1244 [source](../REPORT.en.md#L16165) ## 111. The unfriend outbound card: the hero's own half of the ending — | `0x5C30980` (idx 13651) | `Blocked` |
+- [ ] GAP-1245 [source](../REPORT.en.md#L16194) ## 111. The unfriend outbound card: the hero's own half of the ending — `unfriendOutPending`, `unfriendOutFriend` and `unfriendOutFemale` (`include/bl/sim.h:93-95`),
+- [ ] GAP-1246 [source](../REPORT.en.md#L16214) ## 111. The unfriend outbound card: the hero's own half of the ending — ### 111.4 Shortcuts
+- [ ] GAP-1247 [source](../REPORT.en.md#L16216) ## 111. The unfriend outbound card: the hero's own half of the ending — 1. The real trigger is the Relationships tab (`@0x73f357ba58`), which the port does not have.
+- [ ] GAP-1248 [source](../REPORT.en.md#L16221) ## 111. The unfriend outbound card: the hero's own half of the ending — relationship object (the family's standing shortcut), so the same name can be unfriended
+- [ ] GAP-1249 [source](../REPORT.en.md#L16257) ## 111. The unfriend outbound card: the hero's own half of the ending — 80- and 50-year runs) and reports `titles {'Begone': 25, 'Blocked': 24, 'Left on read': 28,
+- [ ] GAP-1250 [source](../REPORT.en.md#L16404) ## 112. The friend weapon encounter: a friend walks in armed — ### 112.4 Shortcuts
+- [ ] GAP-1251 [source](../REPORT.en.md#L16417) ## 112. The friend weapon encounter: a friend walks in armed — 4. The shared tail is not modelled: the port has no friend object to move by -6 and no
+- [ ] GAP-1252 [source](../REPORT.en.md#L16418) ## 112. The friend weapon encounter: a friend walks in armed — `ScenarioAttackInbound` to push, so the weapon encounter does not hand off to the assault
+- [ ] GAP-1253 [source](../REPORT.en.md#L16419) ## 112. The friend weapon encounter: a friend walks in armed — family and the -6 is not charged. This is the mirror of the sections 108 and 110 shortcut,
+- [ ] GAP-1254 [source](../REPORT.en.md#L16422) ## 112. The friend weapon encounter: a friend walks in armed — label `{0} Receptiveness` (`0x5C44C50`, idx 69689) -- a widget the port does not render -- so
+- [ ] GAP-1255 [source](../REPORT.en.md#L16427) ## 112. The friend weapon encounter: a friend walks in armed — `FriendStatus` field of the friend, which the drawn slot of the port does not carry (the
+- [ ] GAP-1256 [source](../REPORT.en.md#L16428) ## 112. The friend weapon encounter: a friend walks in armed — standing shortcut of the family, sections 105-111).
+- [ ] GAP-1257 [source](../REPORT.en.md#L16458) ## 113. The assault card: the friend who walked in armed comes back swinging — Section 112 ended on a shortcut. The friend weapon encounter's shared tail -- the block
+- [ ] GAP-1258 [source](../REPORT.en.md#L16470) ## 113. The assault card: the friend who walked in armed comes back swinging — section ports. The other eight keep their shortcut entries in 113.4.
+- [ ] GAP-1259 [source](../REPORT.en.md#L16543) ## 113. The assault card: the friend who walked in armed comes back swinging — the queue lives on the Life: attackInPending, attackInFriend, attackInFemale,
+- [ ] GAP-1260 [source](../REPORT.en.md#L16546) ## 113. The assault card: the friend who walked in armed comes back swinging — (port/src/sim.cpp:25519-25523) and returns. The relationship move stays a shortcut
+- [ ] GAP-1261 [source](../REPORT.en.md#L16554) ## 113. The assault card: the friend who walked in armed comes back swinging — 1. It refuses anything that is not queued: if attackInPending is false, or a forced
+- [ ] GAP-1262 [source](../REPORT.en.md#L16575) ## 113. The assault card: the friend who walked in armed comes back swinging — ### 113.4 Shortcuts
+- [ ] GAP-1263 [source](../REPORT.en.md#L16582) ## 113. The assault card: the friend who walked in armed comes back swinging — Random.value draw that sends an unsupported card to the throw helper, and the
+- [ ] GAP-1264 [source](../REPORT.en.md#L16583) ## 113. The assault card: the friend who walked in armed comes back swinging — secret-agent path behind [self+0x1c8]) is not modelled: the port only ever produces
+- [ ] GAP-1265 [source](../REPORT.en.md#L16585) ## 113. The assault card: the friend who walked in armed comes back swinging — 3. The weapon fallback is not modelled either. In the game a constructor that arrives
+- [ ] GAP-1266 [source](../REPORT.en.md#L16606) ## 113. The assault card: the friend who walked in armed comes back swinging — performs is still not modelled.
+- [ ] GAP-1267 [source](../REPORT.en.md#L16744) ## 114. The threesome: the friend who will not be left out — as on the friend-lover card, and is documented as a shortcut.
+- [ ] GAP-1268 [source](../REPORT.en.md#L16763) ## 114. The threesome: the friend who will not be left out — ### 114.4 Shortcuts
+- [ ] GAP-1269 [source](../REPORT.en.md#L16781) ## 114. The threesome: the friend who will not be left out — 7. The friend's relationship move of -2 (vtable slot 0x508) is not modelled: the
+- [ ] GAP-1270 [source](../REPORT.en.md#L16819) ## 114. The threesome: the friend who will not be left out — whose second button hands the year to a scene the port does not own. What the port
+- [ ] GAP-1271 [source](../REPORT.en.md#L16821) ## 114. The threesome: the friend who will not be left out — the child card and the obituary line stay out, and are named in the shortcuts
+- [ ] GAP-1272 [source](../REPORT.en.md#L16867) ## 115. The paywall marker: the two captured entries the port does not render — ## 115. The paywall marker: the two captured entries the port does not render
+- [ ] GAP-1273 [source](../REPORT.en.md#L16902) ## 115. The paywall marker: the two captured entries the port does not render — consumes, and the port has no shop surface for it to open. Rendering an invented
+- [ ] GAP-1274 [source](../REPORT.en.md#L16993) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — `Have a talk with {0}` (#22687), `It doesn't bother me` (#27502) and the report
+- [ ] GAP-1275 [source](../REPORT.en.md#L16998) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — doesn't #57652 -- so a label matching none of the four changes nothing at all.
+- [ ] GAP-1276 [source](../REPORT.en.md#L17018) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — - **It doesn't bother me** @0x73f2e35744 is the only lane that moves the hero: his
+- [ ] GAP-1277 [source](../REPORT.en.md#L17071) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — age 28  row 48  It doesn't bother me
+- [ ] GAP-1278 [source](../REPORT.en.md#L17083) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — ### 116.5 Shortcuts
+- [ ] GAP-1279 [source](../REPORT.en.md#L17087) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — and the two pushed follow-up cards are all read from the class but not modelled:
+- [ ] GAP-1280 [source](../REPORT.en.md#L17121) ## 116. The unprofessional supervisor: the workplace's second card, four answers to a boss who is also a colleague — choices {'Attack him': 17, "It doesn't bother me": 29, 'Report him to HR': 13,
+- [ ] GAP-1281 [source](../REPORT.en.md#L17245) ## 117. The team building invitation: the workplace's third card, and the one that spends a year of goodwill — employed or in the military, not yet shown this life. The push rate is the port's
+- [ ] GAP-1282 [source](../REPORT.en.md#L17285) ## 117. The team building invitation: the workplace's third card, and the one that spends a year of goodwill — ### 117.5 Shortcuts
+- [ ] GAP-1283 [source](../REPORT.en.md#L17301) ## 117. The team building invitation: the workplace's third card, and the one that spends a year of goodwill — the class but not modelled: the port keeps no coworker relationships and no
+- [ ] GAP-1284 [source](../REPORT.en.md#L17412) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — That first slot is the same slot the team-building card fills with the literal word "supervisor" (REPORT.en.md 117.4, where the shortcut was taken on the strength of this card's decoded sentence). Here the game's own output settles it: the sentence reads `Your supervisor at the company, Jam Roll, has taken a liking to you...`, so for a supervisor the relationship label **is** the role word, not a status like "married".
+- [ ] GAP-1285 [source](../REPORT.en.md#L17414) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — The title is the il2cpp literal #10909, `After Hours` (`0x5c61080`), stored at `[x19+0x38]` by the ctor, and the two buttons are literal #17913 `Do it` (`0x5c344c8`) and literal #34276 `Politely decline` (`0x5c61088`). `ChoiceSelectedAtIndex` resolves the answer the same way the two cards before it do: it takes the chosen label out of the list at `[self+0x108]` through the vtable slot `+0x2e8`, lowers it with `String::ToLower() @0x73f52aa938` and then substring-tests it, first against `'do it'` (#57642, cell `0x5c37ef0`) for the accept lane and then against `'decline'` (#57370, cell `0x5c610d8`) for the refusal. Anything else does nothing at all.
+- [ ] GAP-1286 [source](../REPORT.en.md#L17422) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — The lane then does four more things the port documents but does not model: it formats cell `0x5c610b8` (#49739, `You went {0} with your {1}, {2}.`) into a second scenario pushed as a follow-up and linked at `[self+0x128]`; it appends the achievement names of cells `0x5c610c0` (#14267 `Butter them up`), `0x5c610d0` (#23191 `How could I say no`), `0x5c610e0` (#15536 `Chillin' with the villain`) and `0x5c610c8` (#13923 `Bossy buddy`) to a builder; it draws a number with `GetRandomNumber(0, 100)` and formats the enjoyment pair `0x5c34a68` (#50126 `Your Enjoyment`) / `0x5c3dae0` (#69502 `{0} Enjoyment`) together with `0x73f30e64d0(supervisor, 6)`; and it completes the 'cliff diving' achievement (cell `0x5c334b8`, guarded by `_activity.Equals('cliff diving')` against cell `0x5c34bb8`) when the pastime was that one. Finally it pushes a memory line into the obituary pool -- cell `0x5c610a0`, literal #32835:
+- [ ] GAP-1287 [source](../REPORT.en.md#L17484) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — ### 118.5 Shortcuts
+- [ ] GAP-1288 [source](../REPORT.en.md#L17486) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — - **The three tests about the supervisor himself are not modelled.** The port's supervisor is a name, a sex and a presented counter, so the `30.0f` seniority floor, the `0x240` bar below `50.0f` and the `IsCurrentLover()` test have nothing to read. The `age >= 21` floor stands in for the first of them -- the game will not offer the card to a teenager either, since the hero has to hold a job for it to fire at all -- and the other two are dropped. A ported life can therefore be invited out by a boss the game would have filtered.
+- [ ] GAP-1289 [source](../REPORT.en.md#L17512) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — It checks the table, the age floor, the body against both sentences, that the first card of a life is the long one and every later card the short one, the pastime text against its row's cell rebuilt as a pattern, that no `<token>` survives into the sentence, the choice against the two buttons, the deltas of each lane (happiness 16 for **Do it**, discipline 4 for **Politely decline**), the exact journal line of each lane with the activity and the supervisor's name substituted back in, and the cap of five cards per life. It is the first probe of the family that has to read two sentences: the long one carries the workplace in its second slot and the short one does not, so the workplace, the name and the pronoun are taken from different groups depending on which shape matched.
+- [ ] GAP-1290 [source](../REPORT.en.md#L17538) ## 118. The after-hours invitation: the boss who asks, and the sentence he stops using — | tools/bench.sh /tmp/trace_c10.json | 167 lines, and `diff` against the 117 run is empty -- the ages 0..34 trace does not move |
+- [ ] GAP-1291 [source](../REPORT.en.md#L17579) ## 119. The lightning strike: the first card that can end the life — The two remaining stores are one flag and one field: `mov w8, #1; str w8, [self+0x134]` and the sound string at `[self+0x140]`. Nothing else in the class reads a table -- which is why the port's entry for the card carries an empty `table` and a null `row`.
+- [ ] GAP-1292 [source](../REPORT.en.md#L17581) ## 119. The lightning strike: the first card that can end the life — ### 119.3 The two branches, and the first pending death
+- [ ] GAP-1293 [source](../REPORT.en.md#L17621) ## 119. The lightning strike: the first card that can end the life — **The pending death.** `Hero::lightWillDie` (port/include/bl/game.h:771) is set on the damage lane when the health the strike found is below a `lightRng_.below(100)` draw, and `Sim::checkDeath` (port/src/sim.cpp:23319) now honours it before its own annual roll:
+- [ ] GAP-1294 [source](../REPORT.en.md#L17656) ## 119. The lightning strike: the first card that can end the life — ### 119.5 Shortcuts
+- [ ] GAP-1295 [source](../REPORT.en.md#L17658) ## 119. The lightning strike: the first card that can end the life — - **One strike per life.** The game re-offers the card every year it fits; its own brake is the life byte `0x5e0`, which the port does not carry. `Hero::lightDone` stands in for it, because a second strike could only replay a death that did not happen the first time.
+- [ ] GAP-1296 [source](../REPORT.en.md#L17659) ## 119. The lightning strike: the first card that can end the life — - **`hero[0xac]` read as the health the strike found.** The death roll compares a float at `0xac` against `GetRandomNumber(0, 100)`. `0xac` is not one of the four floats the lane just zeroed -- `0x88`..`0x98` are -- so it is some further state the port does not model, and the closest honest reading is the health value before the strike. A consequence worth stating: a hero at full health can never die of a strike in the port, because `100 < below(100)` is false whatever the draw.
+- [ ] GAP-1297 [source](../REPORT.en.md#L17660) ## 119. The lightning strike: the first card that can end the life — - **The two musician-concert slots** of the real switch are not reachable: the port draws its own array with `lightRng_` and does not call `referenceToken("musician")`, which would have moved the main stream.
+- [ ] GAP-1298 [source](../REPORT.en.md#L17690) ## 119. The lightning strike: the first card that can end the life — Three things come out of it. The card is a once-per-life event even though the game's gate allows repeats -- `cards per life {0: 3, 1: 77}` is the flag at work, and the three zeroes are seeds whose lives ended before the one-in-five roll came up. Both lanes land: 49 damage to 28 unharmed is near the 2:1 `below(2)` predicts, and the unharmed lane is the rarer one because it needs the draw **and** the life byte the port does not model. And the card can kill: four deaths, at 61 and 46, both sexes in both cases, each type `Fluke` with the table's lightning sentence resolved to the hero's own pronoun -- the first deaths in this port that no annual roll produced. The age floor shows up exactly as written: the earliest card is at 18, the first year the gate allows.
+- [ ] GAP-1299 [source](../REPORT.en.md#L17707) ## 119. The lightning strike: the first card that can end the life — The zero-line bench diff is the interesting one. The bench runs ages 0..34, where this card cannot appear before 18, and it reports the harness's own age-by-age streams and stat deltas rather than card counters -- so the drift above is real but does not reach it. `lightRng_` is what makes that true: the card draws its scene, its coin and its death roll on its own stream, and the main `rng_` sequence is exactly where it was in §118.
+- [ ] GAP-1300 [source](../REPORT.en.md#L17836) ## 120. The supervisor who wants you: the hookup table read from both ends — and the rest of the coworker sheet) is appended -- that panel is UI and the port does not
+- [ ] GAP-1301 [source](../REPORT.en.md#L17901) ## 120. The supervisor who wants you: the hookup table read from both ends — performance move and the supervisor bar are shortcut comments), and `pick == 0` is an advance
+- [ ] GAP-1302 [source](../REPORT.en.md#L17945) ## 120. The supervisor who wants you: the hookup table read from both ends — ### 120.5 Shortcuts
+- [ ] GAP-1303 [source](../REPORT.en.md#L17948) ## 120. The supervisor who wants you: the hookup table read from both ends — Widow / Widower / Divorced / Married to / Straight / Gay) is not modelled; the port has no
+- [ ] GAP-1304 [source](../REPORT.en.md#L17958) ## 120. The supervisor who wants you: the hookup table read from both ends — secret-keeping trio, the adjective pairs and the obituary memory line are not modelled.
+- [ ] GAP-1305 [source](../REPORT.en.md#L18017) ## 120. The supervisor who wants you: the hookup table read from both ends — possessive form was built by chopping the last character off the who-string and appending
+- [ ] GAP-1306 [source](../REPORT.en.md#L18053) ## 121. The witness: the street's first card, and the only one that asks what a bystander does — for nothing the port does not already track -- which is why it is the first card
+- [ ] GAP-1307 [source](../REPORT.en.md#L18224) ## 121. The witness: the street's first card, and the only one that asks what a bystander does — ### 121.5 Shortcuts
+- [ ] GAP-1308 [source](../REPORT.en.md#L18232) ## 121. The witness: the street's first card, and the only one that asks what a bystander does — place's crime list, which the port does not model (the same gap that keeps
+- [ ] GAP-1309 [source](../REPORT.en.md#L18467) ## 122. The drug find: the second card that can end the life, and the first one that pays — does not move a line. The gate is age twenty-one, no prison, `findPresented < 3`
+- [ ] GAP-1310 [source](../REPORT.en.md#L18502) ## 122. The drug find: the second card that can end the life, and the first one that pays — ### 122.5 Shortcuts
+- [ ] GAP-1311 [source](../REPORT.en.md#L18505) ## 122. The drug find: the second card that can end the life, and the first one that pays — `0x73f3bc8b34`, which a walk feature the port does not model pushes. The scene
+- [ ] GAP-1312 [source](../REPORT.en.md#L18515) ## 122. The drug find: the second card that can end the life, and the first one that pays — `SimAddiction` list the port does not carry, so the consume lane's addiction
+- [ ] GAP-1313 [source](../REPORT.en.md#L18576) ## 122. The drug find: the second card that can end the life, and the first one that pays — and the ages 0..34 bench trace does not move a line from section 121, because the
+- [ ] GAP-1314 [source](../REPORT.en.md#L18714) ## 123. The morning after: the one card in the family the hero never chooses — The card itself is short. No gate beyond the pending name, the title from the
+- [ ] GAP-1315 [source](../REPORT.en.md#L18740) ## 123. The morning after: the one card in the family the hero never chooses — ### 123.5 Shortcuts
+- [ ] GAP-1316 [source](../REPORT.en.md#L18754) ## 123. The morning after: the one card in the family the hero never chooses — another scenario the port does not carry.
+- [ ] GAP-1317 [source](../REPORT.en.md#L18816) ## 123. The morning after: the one card in the family the hero never chooses — still does not move a line from section 122 -- the card draws everything on
+- [ ] GAP-1318 [source](../REPORT.en.md#L18967) ## 124. The job referral: the one card a friend has to hand over — // shortcut: the port has no retirement system and line 3485 leaves every hero
+- [ ] GAP-1319 [source](../REPORT.en.md#L18972) ## 124. The job referral: the one card a friend has to hand over — if (h.age >= 66 && h.employed && !h.military && !h.militaryPending) h.employed = false;
+- [ ] GAP-1320 [source](../REPORT.en.md#L19036) ## 124. The job referral: the one card a friend has to hand over — band, the two templates and their placeholders, the employer being non-empty, the
+- [ ] GAP-1321 [source](../REPORT.en.md#L19082) ## 124. The job referral: the one card a friend has to hand over — ### 124.7 Shortcuts
+- [ ] GAP-1322 [source](../REPORT.en.md#L19090) ## 124. The job referral: the one card a friend has to hand over — resume are not modelled; the port draws a career row instead, with the
+- [ ] GAP-1323 [source](../REPORT.en.md#L19104) ## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking — `relationshipYear` approximation (src/sim.cpp:27390), which fires the family's
+- [ ] GAP-1324 [source](../REPORT.en.md#L19195) ## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking — That is the whole method. The card does not remove the partner, reset the score,
+- [ ] GAP-1325 [source](../REPORT.en.md#L19202) ## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking — * `Hero::breakUpPending`, `breakUpWord`, `breakUpName`, `breakUpFull`
+- [ ] GAP-1326 [source](../REPORT.en.md#L19249) ## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking — ### 125.7 Shortcuts
+- [ ] GAP-1327 [source](../REPORT.en.md#L19260) ## 125. The breakup announcement: the first card of the lover family, and the only one that reports instead of asking — `+0x23c`) are recorded above and not modelled: the port has one `exName`
+- [ ] GAP-1328 [source](../REPORT.en.md#L19369) ## 126. The terminal driver: the engine played instead of scripted — ### 126.5 Shortcuts
+- [ ] GAP-1329 [source](../REPORT.en.md#L19372) ## 126. The terminal driver: the engine played instead of scripted — shortcut, not a measured maximum of the game's own cards.
+- [ ] GAP-1330 [source](../REPORT.en.md#L19415) ## 127. Tooling: what the game can be asked for, and what it cannot — 2. A card whose `RefreshScenario` reads state it does not have throws inside the
+- [ ] GAP-1331 [source](../REPORT.en.md#L19441) ## 127. Tooling: what the game can be asked for, and what it cannot — `metadataUsagePairs` array, and this build's header does not lay it out where the
+- [ ] GAP-1332 [source](../REPORT.en.md#L19471) ## 128. Tooling: the whole symbol table, and an annotated disassembler that uses it — Keys are module-relative (`ptr - module.base`), so the table does not change when
+- [ ] GAP-1333 [source](../REPORT.en.md#L19493) ## 128. Tooling: the whole symbol table, and an annotated disassembler that uses it — a build-time constant, not a stub. The `orr w19, w0, w19` in
+- [ ] GAP-1334 [source](../REPORT.en.md#L19679) ## 131. The split becomes a tool: model follows racing — Remaining, in the same order: `tradeYear`, `casinoYear`, `outdoorYear`,
+- [ ] GAP-1335 [source](../REPORT.en.md#L19748) ## 132. The split finishes: nine families, 6,692 lines out of `sim.cpp` — ceiling the plan identified was "one file, one writer", and that is now nine
+- [ ] GAP-1336 [source](../REPORT.en.md#L19761) ## 133. Structural 1: a year can owe more than one card — The port's age-up returns exactly one card. The game does not: it can put several
+- [ ] GAP-1337 [source](../REPORT.en.md#L19763) ## 133. Structural 1: a year can owe more than one card — that by deferring two of them a whole year — the break-up announcement (§125) and
+- [ ] GAP-1338 [source](../REPORT.en.md#L19771) ## 133. Structural 1: a year can owe more than one card — enum PendingCard {
+- [ ] GAP-1339 [source](../REPORT.en.md#L19772) ## 133. Structural 1: a year can owe more than one card — kPendingBreakUpAnnouncement = 1,  // LoverBreakUp, right after the break-up card
+- [ ] GAP-1340 [source](../REPORT.en.md#L19773) ## 133. Structural 1: a year can owe more than one card — kPendingMorningAfter = 2,         // SupervisorSeduceSuccess, right after the hookup
+- [ ] GAP-1341 [source](../REPORT.en.md#L19776) ## 133. Structural 1: a year can owe more than one card — if (!life.pendingCards.empty()) {
+- [ ] GAP-1342 [source](../REPORT.en.md#L19777) ## 133. Structural 1: a year can owe more than one card — const int kind = life.pendingCards.front();
+- [ ] GAP-1343 [source](../REPORT.en.md#L19778) ## 133. Structural 1: a year can owe more than one card — life.pendingCards.erase(life.pendingCards.begin());
+- [ ] GAP-1344 [source](../REPORT.en.md#L19779) ## 133. Structural 1: a year can owe more than one card — if (kind == kPendingBreakUpAnnouncement) return loverBreakUpYear(life, out, -1);
+- [ ] GAP-1345 [source](../REPORT.en.md#L19780) ## 133. Structural 1: a year can owe more than one card — if (kind == kPendingMorningAfter) return morningYear(life, out, -1);
+- [ ] GAP-1346 [source](../REPORT.en.md#L19795) ## 133. Structural 1: a year can owe more than one card — * **the age does not advance while the queue is not empty**, so one year stays one
+- [ ] GAP-1347 [source](../REPORT.en.md#L19835) ## 133. Structural 1: a year can owe more than one card — calls", and a pending card would have silently eaten one. The loop now counts
+- [ ] GAP-1348 [source](../REPORT.en.md#L19924) ## 135. Structural 3: a sibling is an actor, not a row — chosen rather than invented:
+- [ ] GAP-1349 [source](../REPORT.en.md#L19966) ## 135. Structural 3: a sibling is an actor, not a row — ageUp        year/age counters, newborn setup, family lines, pending queue
+- [ ] GAP-1350 [source](../REPORT.en.md#L20024) ## 136. Structural 4: fame is a float, and the gate is the game's — that was blocked on it (`FamePaparazzi`, `FameBook`, `FameCommercial`) could not be
+- [ ] GAP-1351 [source](../REPORT.en.md#L20069) ## 136. Structural 4: fame is a float, and the gate is the game's — fame 50 impact 6 -> 100         ; +100 lands exactly on the ceiling
+- [ ] GAP-1352 [source](../REPORT.en.md#L20091) ## 137. Structural 5: retirement is the country's, not the port's — §124 invented a retirement age because the job-referral card could never fire while
+- [ ] GAP-1353 [source](../REPORT.en.md#L20147) ## 137. Structural 5: retirement is the country's, not the port's — ### 137.3 What is still missing
+- [ ] GAP-1354 [source](../REPORT.en.md#L20149) ## 137. Structural 5: retirement is the country's, not the port's — * `Occupation::AgeAtRetirement` and `Occupation::Pension` are not modelled: the
+- [ ] GAP-1355 [source](../REPORT.en.md#L20151) ## 137. Structural 5: retirement is the country's, not the port's — needs the occupation's own row, which the port does not keep yet.
+- [ ] GAP-1356 [source](../REPORT.en.md#L20174) ## 138. The content sprint opens with a token, not a card — column is recorded and not used — that is a shortcut, written at the code.
+- [ ] GAP-1357 [source](../REPORT.en.md#L20216) ## 138. The content sprint opens with a token, not a card — `ImpactKarma(3)`. Not yet read: which lane owns which impact pair, and the shared
+- [ ] GAP-1358 [source](../REPORT.en.md#L20246) ## 139. The paparazzi card, and the virtual call that turned out to be fame — ported, so the port skips it (shortcut at the code).
+- [ ] GAP-1359 [source](../REPORT.en.md#L20288) ## 140. A card-shaped view: the decode tool the sprint needed — `String::Format` wrappers, il2cpp runtime helpers, vtable stubs. The card itself —
+- [ ] GAP-1360 [source](../REPORT.en.md#L20359) ## 140. A card-shaped view: the decode tool the sprint needed — Every remaining card starts from a 20-40 line view of itself instead of a
+- [ ] GAP-1361 [source](../REPORT.en.md#L20367) ## 141. Birth control: the state three lover cards need — The sprint's next three cards are all written around one flag the port does not
+- [ ] GAP-1362 [source](../REPORT.en.md#L20448) ## 142. The birth-control demand, and the first lover card of the sprint — `PickRandomFromStringArray`, and that flow is not ported; offering a button whose
+- [ ] GAP-1363 [source](../REPORT.en.md#L20475) ## 142. The birth-control demand, and the first lover card of the sprint — the −3 discipline belongs to the argue branch the port does not offer). Per life: a
+- [ ] GAP-1364 [source](../REPORT.en.md#L20571) ## 144. The mirror card, and how its mapping actually works — follows the disapprove lane is not modelled.
+- [ ] GAP-1365 [source](../REPORT.en.md#L20596) ## 145. What the sprint is actually blocked on, measured — ## 145. What the sprint is actually blocked on, measured
+- [ ] GAP-1366 [source](../REPORT.en.md#L20634) ## 145. What the sprint is actually blocked on, measured — accounted for. The two entries `portgap` does not render are the `ScenarioMiniPaywall`
+- [ ] GAP-1367 [source](../REPORT.en.md#L20647) ## 146. The child model — getters, so the model was scoped to what the blocked cards actually read rather than
+- [ ] GAP-1368 [source](../REPORT.en.md#L20655) ## 146. The child model — SimChild.Spouse / ExSpouseArray / GrandchildArray      not modelled yet
+- [ ] GAP-1369 [source](../REPORT.en.md#L20662) ## 146. The child model — ### 146.1 What it deliberately does not do
+- [ ] GAP-1370 [source](../REPORT.en.md#L20665) ## 146. The child model — and a lifecycle line invented for it would be text the game does not have — the
+- [ ] GAP-1371 [source](../REPORT.en.md#L20736) ## 147. The court-order card, decoded to the last literal — ### 147.2 Why the card is not ported yet
+- [ ] GAP-1372 [source](../REPORT.en.md#L20738) ## 147. The court-order card, decoded to the last literal — Five of the six placeholders are decided: `{0}` the ex's relationship word
+- [ ] GAP-1373 [source](../REPORT.en.md#L20747) ## 147. The court-order card, decoded to the last literal — Give the child fixture a name and the three body placeholders follow: `{3}` is the
+- [ ] GAP-1374 [source](../REPORT.en.md#L20752) ## 148. Children are named, and the last placeholder is still open — ## 148. Children are named, and the last placeholder is still open
+- [ ] GAP-1375 [source](../REPORT.en.md#L20796) ## 148. Children are named, and the last placeholder is still open — same answer. The round records the choice rather than spending it.
+- [ ] GAP-1376 [source](../REPORT.en.md#L20800) ## 149. The court-order card, and the six arguments it took — §148 left one placeholder open. Reading the argument array settled all six, and the
+- [ ] GAP-1377 [source](../REPORT.en.md#L20826) ## 149. The court-order card, and the six arguments it took — shortcut, not disguised as knowledge.
+- [ ] GAP-1378 [source](../REPORT.en.md#L20845) ## 149. The court-order card, and the six arguments it took — The body is matched against the full six-placeholder pattern (ex word, ex name,
+- [ ] GAP-1379 [source](../REPORT.en.md#L20851) ## 149. The court-order card, and the six arguments it took — ### 149.4 What is still a shortcut
+- [ ] GAP-1380 [source](../REPORT.en.md#L20875) ## 150. The result of the test, and a decision the game makes by rolling — The card does not read a fact — it decides one: `GetRandomNumber(0, 1000)` against a
+- [ ] GAP-1381 [source](../REPORT.en.md#L20888) ## 150. The result of the test, and a decision the game makes by rolling — court order, take lane  ->  life.pendingCards.push_back(kPendingPaternityResults)
+- [ ] GAP-1382 [source](../REPORT.en.md#L20911) ## 150. The result of the test, and a decision the game makes by rolling — ### 150.4 Shortcuts
+- [ ] GAP-1383 [source](../REPORT.en.md#L20914) ## 150. The result of the test, and a decision the game makes by rolling — * the body's three placeholders are filled as *relation-word, child-noun, name* —
+- [ ] GAP-1384 [source](../REPORT.en.md#L20917) ## 150. The result of the test, and a decision the game makes by rolling — * a positive result does not yet start child support (`SimChild.ChildSupport`), which
+- [ ] GAP-1385 [source](../REPORT.en.md#L20976) ## 152. The counseling demand — The card §145 called blocked on children — its handler reads `Life::get_ChildArray`
+- [ ] GAP-1386 [source](../REPORT.en.md#L21023) ## 152. The counseling demand — ### 152.3 Still a shortcut
+- [ ] GAP-1387 [source](../REPORT.en.md#L21025) ## 152. The counseling demand — The `<disease>` and `<addiction>` subjects are not modelled: the port's session is
+- [ ] GAP-1388 [source](../REPORT.en.md#L21027) ## 152. The counseling demand — `GetRandomNumber(0,100)` roll the handler makes after the refusal is not modelled
+- [ ] GAP-1389 [source](../REPORT.en.md#L21051) ## 153. The partner argues: one reason out of ten — The card's buttons are not ported — the handler is as variant-rich as the Refresh —
+- [ ] GAP-1390 [source](../REPORT.en.md#L21060) ## 153. The partner argues: one reason out of ten — `seduceYear`'s cheating branch pushes `kPendingLoverArgues` where it already applied
+- [ ] GAP-1391 [source](../REPORT.en.md#L21089) ## 154. The gift flavour is not reachable, and that is the finding — the cheapest of the nine remaining variants, because the port already has the gift
+- [ ] GAP-1392 [source](../REPORT.en.md#L21314) ## 159. The elopement offer — The wedding chain §145 called blocked on the engagement status has its first card:
+- [ ] GAP-1393 [source](../REPORT.en.md#L21327) ## 159. The elopement offer — The planning card is not ported, so the lanes land on the two states the port has:
+- [ ] GAP-1394 [source](../REPORT.en.md#L21349) ## 159. The elopement offer — ### 159.3 The shortcut, stated
+- [ ] GAP-1395 [source](../REPORT.en.md#L21380) ## 160. The wedding plan, venue half — ### 160.1 The shortcut, stated plainly
+- [ ] GAP-1396 [source](../REPORT.en.md#L21384) ## 160. The wedding plan, venue half — per point. The honeymoon half is not modelled at all: no destination, no vacation
+- [ ] GAP-1397 [source](../REPORT.en.md#L21470) ## 162. Auditing the report's own open questions — | §147.2 | five of six court-order placeholders known, `{3}`/`{5}` unknown | **resolved** in §149 by reading the argument array |
+- [ ] GAP-1398 [source](../REPORT.en.md#L21477) ## 162. Auditing the report's own open questions — port's.* Both halves were placeholders, and the real gate exists — a different class,
+- [ ] GAP-1399 [source](../REPORT.en.md#L21506) ## 162. Auditing the report's own open questions — Twice the cards, because a grown child now qualifies. The remaining notes in the report
+- [ ] GAP-1400 [source](../REPORT.en.md#L21576) ## 164. The partner ends it, with buttons — the pairing — and then push `kPendingBreakUpAnnouncement`, so the journal comes from
+- [ ] GAP-1401 [source](../REPORT.en.md#L21580) ## 164. The partner ends it, with buttons — `shortcut:` the game's success roll for begging is not read. The port keeps the couple
+- [ ] GAP-1402 [source](../REPORT.en.md#L21607) ## 165. The relationship lifecycle, checked across cards — `breakUpPending`. Each has its own test and none of them looks at a whole life, which is
+- [ ] GAP-1403 [source](../REPORT.en.md#L21753) ## 168. Where the port actually stands, read off the instruments — ### 168.2 The one unrecovered row is a card that is not ported
+- [ ] GAP-1404 [source](../REPORT.en.md#L21759) ## 168. Where the port actually stands, read off the instruments — `ScenarioOutdoorAgeUpParentsGiveBik*` does not exist in `port/src/fam/outdoor.cpp`
+- [ ] GAP-1405 [source](../REPORT.en.md#L21853) ## 170. One of the four gaps closed, and the other twelve explained — Twelve of the thirteen are **flavour tables for cards that are not ported** — the
+- [ ] GAP-1406 [source](../REPORT.en.md#L21855) ## 170. One of the four gaps closed, and the other twelve explained — does not run, and naming them without those cards would be the fake coverage §169.3
+- [ ] GAP-1407 [source](../REPORT.en.md#L21896) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-honeypot-*` x3 | `ScenarioSecretAgentHoneypotMissionBriefing`, `...MissionDate`, `...MissionIntimateMoment`, `...MissionMeetDecisions` | not ported |
+- [ ] GAP-1408 [source](../REPORT.en.md#L21897) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-stealth-alarm-color` | `ScenarioSecretAgentStealthMissionBriefing`, `...Cover`, `...DisableSecurity`, `...FailureFeedback` | not ported |
+- [ ] GAP-1409 [source](../REPORT.en.md#L21898) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-hack-mission-*` x2 | no `Scenario*HackMission*` class exists; the strings are consumed by the stealth/briefing chain | not ported |
+- [ ] GAP-1410 [source](../REPORT.en.md#L21899) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-agency-front-color` | consumed by the agency briefing chain | not ported |
+- [ ] GAP-1411 [source](../REPORT.en.md#L21900) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-client-mission-terminated-color` | consumed by the mission-termination chain | not ported |
+- [ ] GAP-1412 [source](../REPORT.en.md#L21901) ## 171. Every one of the twelve names the card it belongs to — | `secret-agent-potential-agent-background-check-color` | the only `*BackgroundCheck*` classes are the landlord's and the zoo's -- this belongs to neither, so its consumer is `ScenarioSecretAgent*` | not ported |
+- [ ] GAP-1413 [source](../REPORT.en.md#L21902) ## 171. Every one of the twelve names the card it belongs to — | `casino-game-room-complaint` | `ScenarioCasinoGameRoom*` -- **ported** family | blocked on state |
+- [ ] GAP-1414 [source](../REPORT.en.md#L21903) ## 171. Every one of the twelve names the card it belongs to — | `casino-ledger-feedback` | the casino ledger chain | not ported |
+- [ ] GAP-1415 [source](../REPORT.en.md#L21904) ## 171. Every one of the twelve names the card it belongs to — | `black-market-auction-categories` | `ScenarioBlackMarketAuctionHouse*` -- **ported** family | blocked on data |
+- [ ] GAP-1416 [source](../REPORT.en.md#L21908) ## 171. Every one of the twelve names the card it belongs to — Both are blocked on something the port does not have, and both are one row deep:
+- [ ] GAP-1417 [source](../REPORT.en.md#L21921) ## 171. Every one of the twelve names the card it belongs to — Ten of twelve are owned by classes the port does not have -- the explanation §170 gave
+- [ ] GAP-1418 [source](../REPORT.en.md#L21986) ## 172. Two cards decoded, neither ported, and why — with their evidence so the next round does not spend itself reaching the same two
+- [ ] GAP-1419 [source](../REPORT.en.md#L22050) ## 174. The ex has married someone else — ### 174.1 The two verbs, and the one placeholder left empty
+- [ ] GAP-1420 [source](../REPORT.en.md#L22111) ## 175. The wall behind the ex-lover family is a layer, not a card — ### 175.2 What that means for the remaining 15 ex-lover classes
+- [ ] GAP-1421 [source](../REPORT.en.md#L22171) ## 176. The layer's shape, measured — The remaining ex-lover, cult, astronaut and zoo cards stop being fifteen-plus decoding
+- [ ] GAP-1422 [source](../REPORT.en.md#L22180) ## 177. The loaders decrypt, and that is a different job — §176 said the remaining work was "find the `Load*Set` the getter names, read its table".
+- [ ] GAP-1423 [source](../REPORT.en.md#L22217) ## 177. The loaders decrypt, and that is a different job — **Not started.** Recording it is the honest end of this round: the port's remaining
+- [ ] GAP-1424 [source](../REPORT.en.md#L22219) ## 177. The loaders decrypt, and that is a different job — (blocked on this chain), and only the first kind should be attempted until the second is
+- [ ] GAP-1425 [source](../REPORT.en.md#L22262) ## 179. A child misbehaves, ported from an untouched table — ### 179.1 The shortcut
+- [ ] GAP-1426 [source](../REPORT.en.md#L22427) ## 182. The child's arc: an adult leaves home — ### 182.3 What is still missing from the arc
+- [ ] GAP-1427 [source](../REPORT.en.md#L22431) ## 182. The child's arc: an adult leaves home — loaders — and they are recorded here rather than approximated.
+- [ ] GAP-1428 [source](../REPORT.en.md#L22456) ## 183. The custody family is one card with three stages — ### 183.1 Why it was not ported this round
+- [ ] GAP-1429 [source](../REPORT.en.md#L22461) ## 183. The custody family is one card with three stages — `pendingCards` chain of three or four cards with state held between them, and §133's
+- [ ] GAP-1430 [source](../REPORT.en.md#L22464) ## 183. The custody family is one card with three stages — Porting it needs one structural step first: **a pending card that carries data** (which
+- [ ] GAP-1431 [source](../REPORT.en.md#L22479) ## 183. The custody family is one card with three stages — 1. `PendingCard` gains a payload: the kind plus two ints (child index, row index).
+- [ ] GAP-1432 [source](../REPORT.en.md#L22485) ## 184. The queue carries a payload — §183 said the custody card needs a pending card that knows *which child and which row*
+- [ ] GAP-1433 [source](../REPORT.en.md#L22489) ## 184. The queue carries a payload — struct PendingCard {
+- [ ] GAP-1434 [source](../REPORT.en.md#L22493) ## 184. The queue carries a payload — PendingCard() = default;
+- [ ] GAP-1435 [source](../REPORT.en.md#L22495) ## 184. The queue carries a payload — PendingCard(int k, int inA = -1, int inB = -1) : kind(k), a(inA), b(inB) {}
+- [ ] GAP-1436 [source](../REPORT.en.md#L22497) ## 184. The queue carries a payload — std::vector<PendingCard> pendingCards;
+- [ ] GAP-1437 [source](../REPORT.en.md#L22501) ## 184. The queue carries a payload — pushes (`kPendingMorningAfter`, `kPendingLoverArgues`, `kPendingBreakUpAnnouncement`,
+- [ ] GAP-1438 [source](../REPORT.en.md#L22502) ## 184. The queue carries a payload — `kPendingPaternityResults`) still read `push_back(kPendingX)`, and only the drain reads
+- [ ] GAP-1439 [source](../REPORT.en.md#L22601) ## 186. A paranormal encounter, and the first card ported from the 28 — `shortcut:` `Danger Score` is **not** turned into damage. The game's own use of it was
+- [ ] GAP-1440 [source](../REPORT.en.md#L22602) ## 186. A paranormal encounter, and the first card ported from the 28 — not read, and a health hit on a random encounter would be a rule the port invented.
+- [ ] GAP-1441 [source](../REPORT.en.md#L22641) ## 187. Somebody is following you, and why the bench moved 61 lines — `shortcut:` `Can Assault` is not acted on — the assault card is a different class and is
+- [ ] GAP-1442 [source](../REPORT.en.md#L22642) ## 187. Somebody is following you, and why the bench moved 61 lines — not ported.
+- [ ] GAP-1443 [source](../REPORT.en.md#L22664) ## 187. Somebody is following you, and why the bench moved 61 lines — The remaining six are the card's own appearances. That is the difference between a diff
+- [ ] GAP-1444 [source](../REPORT.en.md#L22794) ## 190. One ambient card a year, chosen by weight — distribution the game does not publish.
+- [ ] GAP-1445 [source](../REPORT.en.md#L22955) ## 194. The hero's sense of self — `shortcut:` the identity the row names is **reported, not stored** — the port's `Hero` has
+- [ ] GAP-1446 [source](../REPORT.en.md#L22956) ## 194. The hero's sense of self — no identity field, and adding one is a structural change this card does not need to be
+- [ ] GAP-1447 [source](../REPORT.en.md#L22973) ## 195. The identity is a flag, not a name — §194 reported the gender card's identity and stored nothing, calling it a shortcut. Trying
+- [ ] GAP-1448 [source](../REPORT.en.md#L22974) ## 195. The identity is a flag, not a name — to close that shortcut found a wrong assumption in the process:
+- [ ] GAP-1449 [source](../REPORT.en.md#L23017) ## 196. One helper, one card, and the arithmetic the sprint has to face — a16_surrogate-run-off-scenarios-enc  NOT ported
+- [ ] GAP-1450 [source](../REPORT.en.md#L23023) ## 196. One helper, one card, and the arithmetic the sprint has to face — ### 196.1 Why the second one is not ported
+- [ ] GAP-1451 [source](../REPORT.en.md#L23026) ## 196. One helper, one card, and the arithmetic the sprint has to face — keeping the baby.` The token needs a **surrogate actor** the port does not have — the same
+- [ ] GAP-1452 [source](../REPORT.en.md#L23036) ## 196. One helper, one card, and the arithmetic the sprint has to face — 23 remaining
+- [ ] GAP-1453 [source](../REPORT.en.md#L23043) ## 196. One helper, one card, and the arithmetic the sprint has to face — At the pace of the last eleven rounds the 23 do not fit in the remaining 13. Three of those
+- [ ] GAP-1454 [source](../REPORT.en.md#L23051) ## 196. One helper, one card, and the arithmetic the sprint has to face — the candidates just checked were blocked on missing actors instead. So the realistic
+- [ ] GAP-1455 [source](../REPORT.en.md#L23052) ## 196. One helper, one card, and the arithmetic the sprint has to face — completion claim for this goal is *the sprint's rate raised and the remaining list honest*,
+- [ ] GAP-1456 [source](../REPORT.en.md#L23057) ## 197. The adoption beat, and a correction to §196's gloom — §196 counted 23 tables left and called most of them blocked on tokens. Checking what the
+- [ ] GAP-1457 [source](../REPORT.en.md#L23098) ## 197. The adoption beat, and a correction to §196's gloom — remaining work splits the same way §185 split it: a portable group that goes fast, and an
+- [ ] GAP-1458 [source](../REPORT.en.md#L23099) ## 197. The adoption beat, and a correction to §196's gloom — actor-blocked group that does not.
+- [ ] GAP-1459 [source](../REPORT.en.md#L23118) ## 198. The boost card: 125 rows that carry their own buttons — `shortcut:` the **size** of the boost is not in the table. The port moves the attribute by
+- [ ] GAP-1460 [source](../REPORT.en.md#L23140) ## 198. The boost card: 125 rows that carry their own buttons — both. If the remaining portable tables look like this one (buttons in the row), the sprint
+- [ ] GAP-1461 [source](../REPORT.en.md#L23159) ## 199. The termination card: decoded, wired, silent, reverted — blocked itself; that was found and fixed;
+- [ ] GAP-1462 [source](../REPORT.en.md#L23164) ## 199. The termination card: decoded, wired, silent, reverted — was not found in the round's remaining time.
+- [ ] GAP-1463 [source](../REPORT.en.md#L23261) ## 201. The termination card, second attempt: it was the gate all along — blocked     surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
+- [ ] GAP-1464 [source](../REPORT.en.md#L23268) ## 202. A relative refuses a money request — Person Min/Max Money, Hero Needs Money, Hero Doesn't Need Money,
+- [ ] GAP-1465 [source](../REPORT.en.md#L23307) ## 202. A relative refuses a money request — blocked: surrogate (actor), custody (chain), pray (asset/city), aircraft, drug
+- [ ] GAP-1466 [source](../REPORT.en.md#L23312) ## 203. The triage: which token blocks the most tables — Nineteen tables were left and all looked "actor-blocked". Counting the **entity tokens**
+- [ ] GAP-1467 [source](../REPORT.en.md#L23323) ## 203. The triage: which token blocks the most tables — `sim.cpp:2558`. So the biggest blocked group was never blocked.
+- [ ] GAP-1468 [source](../REPORT.en.md#L23334) ## 203. The triage: which token blocks the most tables — platform the hero posts to, which this card does not carry).
+- [ ] GAP-1469 [source](../REPORT.en.md#L23345) ## 203. The triage: which token blocks the most tables — <circumstance-public>   a public setting the port has no model for  -> blocked
+- [ ] GAP-1470 [source](../REPORT.en.md#L23346) ## 203. The triage: which token blocks the most tables — <musician-indefinite>   a career the port lacks   -> blocked
+- [ ] GAP-1471 [source](../REPORT.en.md#L23347) ## 203. The triage: which token blocks the most tables — <city> <friend> <aircraft>  partial or blocked
+- [ ] GAP-1472 [source](../REPORT.en.md#L23350) ## 203. The triage: which token blocks the most tables — So the honest count is not "19 blocked" but **"8 blocked on a token the port could add,
+- [ ] GAP-1473 [source](../REPORT.en.md#L23351) ## 203. The triage: which token blocks the most tables — 11 blocked on an actor"** — and the next round can take the cheapest of the first group
+- [ ] GAP-1474 [source](../REPORT.en.md#L23359) ## 210. A notification that remembers something — Hero Has/Doesn't Have Lover, Both Parents Alive, Hero Gender, Lover Gender
+- [ ] GAP-1475 [source](../REPORT.en.md#L23383) ## 210. A notification that remembers something — 11 remaining:  custody (chain), pray-asset, pray-wealth (asset/city), aircraft-danger,
+- [ ] GAP-1476 [source](../REPORT.en.md#L23396) ## 212. The world's news — The largest remaining table, and the cheapest: every token in its corpus is
+- [ ] GAP-1477 [source](../REPORT.en.md#L23419) ## 212. The world's news — 9 remaining, and each now needs an *actor*, not a token:
+- [ ] GAP-1478 [source](../REPORT.en.md#L23432) ## 242. Green again, and what it cost — aircraft danger     reached once in 30 lives                       -> pushed as a pending card
+- [ ] GAP-1479 [source](../REPORT.en.md#L23454) ## 242. Green again, and what it cost — 1. **Weights.** 240.1's ceiling: a family leads once per 110 years, so a card's rate is its
+- [ ] GAP-1480 [source](../REPORT.en.md#L23456) ## 242. Green again, and what it cost — weight drawn before the rotation; the lazy approximation is duplicating a rare entry in
+- [ ] GAP-1481 [source](../REPORT.en.md#L23485) ## 295. The pilot test, and the four tables' first half — shortcut: the lesson is charged $1,000 (the game prices it code-side) and the test's
+- [ ] GAP-1482 [source](../REPORT.en.md#L23511) ## 297. Plastic surgery — shortcut: the menu's own prompt is not in the dump, so the body is the menu label
+- [ ] GAP-1483 [source](../REPORT.en.md#L23538) ## 401. Guaranteed mutual hyphenation and native surname ordering — card updates the partner surname; it does not advance age/year. Copying Life
+- [ ] GAP-1484 [source](../REPORT.en.md#L23546) ## 401. Guaranteed mutual hyphenation and native surname ordering — shortcut: keep-own, male-partner and craziness>=70 hyphenated follow-ups still
+- [ ] GAP-1485 [source](../REPORT.en.md#L23547) ## 401. Guaranteed mutual hyphenation and native surname ordering — need the native willingness inputs. They remain unsupported rather than guessed.
+- [ ] GAP-1486 [source](../REPORT.en.md#L23549) ## 401. Guaranteed mutual hyphenation and native surname ordering — subset; this port has isolated streams and does not claim global RNG parity.
+- [ ] GAP-1487 [source](../REPORT.en.md#L23555) ## 401. Guaranteed mutual hyphenation and native surname ordering — same-age one-shot dequeue and replay from a copied pending Life. Existing marriage
+- [ ] GAP-1488 [source](../REPORT.en.md#L23586) ## 400. Spouse surname follow-up: the full-surname route — _narrative directly. The port queues kind 58 in Life::pendingCards and drains
+- [ ] GAP-1489 [source](../REPORT.en.md#L23588) ## 400. Spouse surname follow-up: the full-surname route — No second pending flag, new RNG stream, or guessed probability is needed.
+- [ ] GAP-1490 [source](../REPORT.en.md#L23590) ## 400. Spouse surname follow-up: the full-surname route — shortcut: automatic delivery covers only the full/take-partner constructor.
+- [ ] GAP-1491 [source](../REPORT.en.md#L23592) ## 400. Spouse surname follow-up: the full-surname route — not modeled by this port; their spouse-takes-name and mutual-hyphenation branches
+- [ ] GAP-1492 [source](../REPORT.en.md#L23593) ## 400. Spouse surname follow-up: the full-surname route — remain unimplemented, not randomly approximated. Spouse names use the port's
+- [ ] GAP-1493 [source](../REPORT.en.md#L23608) ## 400. Spouse surname follow-up: the full-surname route — actionable issues; remaining journal/snapshot call sites were checked locally.
+- [ ] GAP-1494 [source](../REPORT.en.md#L23610) ## 400. Spouse surname follow-up: the full-surname route — Further native recovery, not implemented here: +0xc0 is Att_craziness, +0x24
+- [ ] GAP-1495 [source](../REPORT.en.md#L23620) ## 400. Spouse surname follow-up: the full-surname route — Fame-object and AuraRing fidelity are prerequisites for the remaining routes.
+- [ ] GAP-1496 [source](../REPORT.en.md#L23630) ## 399. Naming the adopted child — a ceiling, so the lane now pushes the person into `life.family`. The child also arrives
+- [ ] GAP-1497 [source](../REPORT.en.md#L23649) ## 399. Naming the adopted child — **shortcut:** the card answers immediately on the next age-up rather than after the native
+- [ ] GAP-1498 [source](../REPORT.en.md#L23654) ## 399. Naming the adopted child — (`kPendingAdoptionName = 57`), `_re/port/src/sim.cpp` (`adoptionYear`'s family push and
+- [ ] GAP-1499 [source](../REPORT.en.md#L23695) ## 398. The legal name change — **shortcut:** the two name boxes are text inputs on screen, so the port draws both from its
+- [ ] GAP-1500 [source](../REPORT.en.md#L23703) ## 398. The legal name change — `_re/port/include/bl/sim.h` (`kPendingLegalName = 56`, `namePullRng_`),
+- [ ] GAP-1501 [source](../REPORT.en.md#L23728) ## 397. The identity card after a divorce — `Name` row, while `Go back to` quotes the maiden name, which the row deliberately does not
+- [ ] GAP-1502 [source](../REPORT.en.md#L23735) ## 397. The identity card after a divorce — lane), and the divorce side arms `Hero::nameChangeDivorcePending` at the two leaving lanes
+- [ ] GAP-1503 [source](../REPORT.en.md#L23743) ## 397. The identity card after a divorce — **shortcut:** one card, no spouse-side view — the native card can also rename the departed
+- [ ] GAP-1504 [source](../REPORT.en.md#L23747) ## 397. The identity card after a divorce — Files: `_re/port/include/bl/game.h` (`nameChangeMaiden`, `nameChangeDivorcePending`),
+- [ ] GAP-1505 [source](../REPORT.en.md#L23776) ## 396. The identity card after a wedding — `shortcut:` the port's partner record carries a given name only (`Hero::loverName`,
+- [ ] GAP-1506 [source](../REPORT.en.md#L23781) ## 396. The identity card after a wedding — The honorific half of the native `Name` row is not modelled, and the card is offered
+- [ ] GAP-1507 [source](../REPORT.en.md#L23789) ## 395. The university card's own body and buttons — does not have. Both are now the card's own. `ScenarioSchoolUniversity::RefreshScenario`
+- [ ] GAP-1508 [source](../REPORT.en.md#L23808) ## 395. The university card's own body and buttons — application in every replay (`shortcut:`, unchanged from §313).
+- [ ] GAP-1509 [source](../REPORT.en.md#L23810) ## 395. The university card's own body and buttons — Ceilings: the already-applied body, the Golden diploma resume perk, the royal exit and
+- [ ] GAP-1510 [source](../REPORT.en.md#L23811) ## 395. The university card's own body and buttons — the Fund this program button are not modelled, so their branch never runs here. The
+- [ ] GAP-1511 [source](../REPORT.en.md#L23847) ## 394. Physical therapy and surgery for a sports injury — ### Ceilings
+- [ ] GAP-1512 [source](../REPORT.en.md#L23849) ## 394. Physical therapy and surgery for a sports injury — - `shortcut:` the native therapy schedule, its price and its recovery odds were not
+- [ ] GAP-1513 [source](../REPORT.en.md#L23851) ## 394. Physical therapy and surgery for a sports injury — - `shortcut:` the native surgery success rate was not recovered. The port rolls two thirds,
+- [ ] GAP-1514 [source](../REPORT.en.md#L23854) ## 394. Physical therapy and surgery for a sports injury — - `shortcut:` the injury clears on the therapy card that takes the last rehab year rather
+- [ ] GAP-1515 [source](../REPORT.en.md#L23857) ## 394. Physical therapy and surgery for a sports injury — - `shortcut:` both rows are menu rows natively; the port has no sports menu, so they ride
+- [ ] GAP-1516 [source](../REPORT.en.md#L23859) ## 394. Physical therapy and surgery for a sports injury — - The native journal lines were not recovered; the port writes its own sentence for each
+- [ ] GAP-1517 [source](../REPORT.en.md#L23885) ## 393. Asking for a raise — becomes the current salary and `Salary Cap` becomes the ceiling, both parsed out of the
+- [ ] GAP-1518 [source](../REPORT.en.md#L23897) ## 393. Asking for a raise — ### Ceilings
+- [ ] GAP-1519 [source](../REPORT.en.md#L23899) ## 393. Asking for a raise — - `shortcut:` the native negotiation arithmetic was not recovered. The port rolls a raise
+- [ ] GAP-1520 [source](../REPORT.en.md#L23902) ## 393. Asking for a raise — - `shortcut:` natively the row is a menu action the player may take whenever they like;
+- [ ] GAP-1521 [source](../REPORT.en.md#L23905) ## 393. Asking for a raise — - `shortcut:` the salary ledger is opened lazily by this card (the first time it fires for
+- [ ] GAP-1522 [source](../REPORT.en.md#L23907) ## 393. Asking for a raise — - The native journal line for a raise was not recovered; the port writes its own plain
+- [ ] GAP-1523 [source](../REPORT.en.md#L23927) ## 392. The rejection card four ways out — ### Ceilings
+- [ ] GAP-1524 [source](../REPORT.en.md#L23929) ## 392. The rejection card four ways out — - `shortcut:` natively the player picks one of the four answers. The replay draws one at random (or takes the forced index in script mode), the same convention every other menu card here uses.
+- [ ] GAP-1525 [source](../REPORT.en.md#L23930) ## 392. The rejection card four ways out — - `shortcut:` the journal lines for the community, job and time-off answers were not recovered; the port writes its own plain sentence (the enlistment line is native).
+- [ ] GAP-1526 [source](../REPORT.en.md#L23931) ## 392. The rejection card four ways out — - `shortcut:` the native community-college tuition flow was not recovered, so the enrolment is free. The university lane still charges through the tuition screen (REPORT 317).
+- [ ] GAP-1527 [source](../REPORT.en.md#L23932) ## 392. The rejection card four ways out — - `shortcut:` the same three unlocked answers on the application card itself (`Get a job instead`, `Take some time off`) still take the application; only the rejection card was recovered far enough to route them.
+- [ ] GAP-1528 [source](../REPORT.en.md#L23939) ## 392. The rejection card four ways out — The full 176-test suite ran on the binary these notes describe (844d2ded1deae26a4c927b08ef203592d62e37276e38acf5668d321fd96121e5, 175 PASS / 1 FAIL): _re/tools/test_university_rejection.py drives all four answers and the community card, and one defect it found was in this section -- the refusal card was emitted with an empty body and its refusal journal line was dropped whenever the enlistment answer won. Both are fixed above (title Education, body #50200, and the refusal line now always heads the log with the lane sentence appended after it); the one remaining failure was test-side only and was fixed here. The companion run also caught _re/tools/test_university.py expecting the card verbatim and the old fixed answer.
+- [ ] GAP-1529 [source](../REPORT.en.md#L23952) ## 391. Renaming a zoo animal — ### Ceilings
+- [ ] GAP-1530 [source](../REPORT.en.md#L23954) ## 391. Renaming a zoo animal — - `shortcut:` the card fires on its own once the park is owned and eighteen is reached; natively the rename is a menu row the player taps. Every zoo card in this stretch rides the same wheel because the port has no zoo menu layer (see 373).
+- [ ] GAP-1531 [source](../REPORT.en.md#L23955) ## 391. Renaming a zoo animal — - `shortcut:` one `OK` answer, matching the recovered label set. Natively a name field takes arbitrary text; the port draws from the name table rather than inventing a prompt.
+- [ ] GAP-1532 [source](../REPORT.en.md#L23956) ## 391. Renaming a zoo animal — - `shortcut:` the card is a plain rename with no stat effect. The native card has no recovered impact either, so nothing was invented.
+- [ ] GAP-1533 [source](../REPORT.en.md#L23998) ## 389. The zoo candidate's interview — The hiring card used to close the hire on its own answer. Natively it does not:
+- [ ] GAP-1534 [source](../REPORT.en.md#L24004) ## 389. The zoo candidate's interview — a pending card answers the same year: the question is the table's own `Question` text,
+- [ ] GAP-1535 [source](../REPORT.en.md#L24010) ## 389. The zoo candidate's interview — `shortcut:` the native chain runs four classes (`HireCandidate` -> `InterviewQuestion` ->
+- [ ] GAP-1536 [source](../REPORT.en.md#L24039) ## 388. The zoo's hiring card — `shortcut:` the candidate's name is drawn from the port's own name pools (the native
+- [ ] GAP-1537 [source](../REPORT.en.md#L24040) ## 388. The zoo's hiring card — candidate object is a generated person the port does not model), the title uses the
+- [ ] GAP-1538 [source](../REPORT.en.md#L24069) ## 387. The zoo's comment card — `shortcut:` the port installs the suggested attraction straight from the card instead of
+- [ ] GAP-1539 [source](../REPORT.en.md#L24096) ## 386. The zoo's food supplier row — `shortcut:` the supplier table has no cost column -- only the name and its commonness
+- [ ] GAP-1540 [source](../REPORT.en.md#L24133) ## 385. The amenity menu's install and demolish rows — `shortcut:` demolishing refunds nothing (no refund flow recovered), and both cards
+- [ ] GAP-1541 [source](../REPORT.en.md#L24163) ## 384. The game room's rename and clear-out rows — `shortcut:` clearing out a room refunds nothing -- no refund flow was recovered --
+- [ ] GAP-1542 [source](../REPORT.en.md#L24198) ## 383. The two install cards — `shortcut:` the attraction's `Annual Upkeep Cost` column is not charged; the zoo
+- [ ] GAP-1543 [source](../REPORT.en.md#L24227) ## 382. The casino's invest card — the card exists for. The `shortcut:` is that the native flow opens this card from
+- [ ] GAP-1544 [source](../REPORT.en.md#L24249) ## 381. The two sale cards — `shortcut:` a sale is final: it clears the property the hero was holding. No
+- [ ] GAP-1545 [source](../REPORT.en.md#L24250) ## 381. The two sale cards — age-up would ever deal such a card, so the port does not put either one on the
+- [ ] GAP-1546 [source](../REPORT.en.md#L24311) ## 379. The zoo's habitat card — and its price as two more rows and does not invent prose around them.
+- [ ] GAP-1547 [source](../REPORT.en.md#L24322) ## 379. The zoo's habitat card — `shortcut:` the native slot arithmetic and its picker were not recovered, so the
+- [ ] GAP-1548 [source](../REPORT.en.md#L24360) ## 378. The casino's expand card — `shortcut:` the native price flow was not recovered, so charging the price difference
+- [ ] GAP-1549 [source](../REPORT.en.md#L24362) ## 378. The casino's expand card — price ever lands, this is the line to change. The card also does not redeal the casino's
+- [ ] GAP-1550 [source](../REPORT.en.md#L24364) ## 378. The casino's expand card — tier lifts the revenue multipliers and the monthly cost but does not by itself add a slot.
+- [ ] GAP-1551 [source](../REPORT.en.md#L24392) ## 377. The zoo's invest card — * No journal is written: the native narrative for this card was not recovered.
+- [ ] GAP-1552 [source](../REPORT.en.md#L24394) ## 377. The zoo's invest card — shortcut: the native amount control is a slider whose bounds were not recovered,
+- [ ] GAP-1553 [source](../REPORT.en.md#L24429) ## 376. The zoo's and the casino's rename cards — shortcut: the native control is a text field in both cards, and a script cannot
+- [ ] GAP-1554 [source](../REPORT.en.md#L24462) ## 375. The casino's theme card — * No journal is written: the native narrative for this card was not recovered.
+- [ ] GAP-1555 [source](../REPORT.en.md#L24464) ## 375. The casino's theme card — shortcut: the native picker is a dropdown the port cannot drive, so the card
+- [ ] GAP-1556 [source](../REPORT.en.md#L24495) ## 374. The casino's withdraw card — * No journal is written: the native narrative for this card was not recovered,
+- [ ] GAP-1557 [source](../REPORT.en.md#L24496) ## 374. The casino's withdraw card — and none is invented.
+- [ ] GAP-1558 [source](../REPORT.en.md#L24498) ## 374. The casino's withdraw card — shortcut: the native amount control is a slider and its bounds, default and
+- [ ] GAP-1559 [source](../REPORT.en.md#L24499) ## 374. The casino's withdraw card — rounding were not recovered, so the port withdraws half the balance rather than
+- [ ] GAP-1560 [source](../REPORT.en.md#L24515) ## 373. The zoo's admission fee — is offered as its own family, the same ceiling 364's Division of Labor row
+- [ ] GAP-1561 [source](../REPORT.en.md#L24530) ## 373. The zoo's admission fee — recovered, so none is invented.
+- [ ] GAP-1562 [source](../REPORT.en.md#L24536) ## 373. The zoo's admission fee — shortcut: the native slider bounds and the card's show conditions inside the
+- [ ] GAP-1563 [source](../REPORT.en.md#L24556) ## 372. The Noble Prize nomination — The port adds Sim::astroNobleYear (family astro-noble, gate l.hero.astronaut, one wheel ticket) with its own stream nobleRng_, the priority call right after astroCareerYear, the latch field astroPubPrize and the score field astroPubScore. The turn-down lane queues kPendingAstroResult, rendered by Sim::astroResultYear as a plain title/body/OK card, which is also the shape a bare Scenario has in the port. The log line is the nomination line; the answer cards write nothing.
+- [ ] GAP-1564 [source](../REPORT.en.md#L24558) ## 372. The Noble Prize nomination — Ceilings, all of them in the code beside the fields they affect:
+- [ ] GAP-1565 [source](../REPORT.en.md#L24561) ## 372. The Noble Prize nomination — - The peer review score is drawn on nobleRng_ when the publication is created instead of being composed from the publication's own quality; the producer of that number is outside this card and was not recovered.
+- [ ] GAP-1566 [source](../REPORT.en.md#L24602) ## 371. The contract offer card — `Sim::casinoCelebOfferYear` renders the card as pending kind `kPendingCasinoCelebOffer`; the
+- [ ] GAP-1567 [source](../REPORT.en.md#L24607) ## 371. The contract offer card — Ceilings:
+- [ ] GAP-1568 [source](../REPORT.en.md#L24674) ## 370. The product card's two answers — `'Units Remaining'` (`#44888`); one bar graph, `'Popularity'` (`#34316`).
+- [ ] GAP-1569 [source](../REPORT.en.md#L24684) ## 370. The product card's two answers — Both cards are pending kinds (`kPendingZooShopOrderUnits`, `kPendingZooShopAdjustPrice`) and the
+- [ ] GAP-1570 [source](../REPORT.en.md#L24689) ## 370. The product card's two answers — Ceilings:
+- [ ] GAP-1571 [source](../REPORT.en.md#L24730) ## 369. The gift shop's product card — `UnitsSoldLastYear +0x40`) and `'Units Remaining'` (`#44888`, `UnitsAvailable +0x20`). One bar graph holds
+- [ ] GAP-1572 [source](../REPORT.en.md#L24744) ## 369. The gift shop's product card — You will lose any remaining units you've purchased."
+- [ ] GAP-1573 [source](../REPORT.en.md#L24752) ## 369. The gift shop's product card — it hands off to push the pending kinds the stocking chain already registers
+- [ ] GAP-1574 [source](../REPORT.en.md#L24753) ## 369. The gift shop's product card — (`kPendingZooShopPrice`, `kPendingZooShopUnits`) and stage the shelf in `h.zooShopStaged` the way
+- [ ] GAP-1575 [source](../REPORT.en.md#L24759) ## 369. The gift shop's product card — Ceilings:
+- [ ] GAP-1576 [source](../REPORT.en.md#L24786) ## 368. The gift shop's stocking chain — for, so the park in section 363 stocked three lines when it was bought. What that shortcut
+- [ ] GAP-1577 [source](../REPORT.en.md#L24818) ## 368. The gift shop's stocking chain — at half that ceiling, with the integer-step flag set.
+- [ ] GAP-1578 [source](../REPORT.en.md#L24840) ## 368. The gift shop's stocking chain — ceiling is billed without gaining a line. The journal is a tag out of #43301 'This is a top
+- [ ] GAP-1579 [source](../REPORT.en.md#L24853) ## 368. The gift shop's stocking chain — offers the row whenever the menu is opened; one card every three years is a shortcut, since a
+- [ ] GAP-1580 [source](../REPORT.en.md#L24868) ## 368. The gift shop's stocking chain — ### Ceilings
+- [ ] GAP-1581 [source](../REPORT.en.md#L24870) ## 368. The gift shop's stocking chain — - The screen that offers the chain is not modelled: the first card is a yearly opportunity, and
+- [ ] GAP-1582 [source](../REPORT.en.md#L24890) ## 368. The gift shop's stocking chain — ceiling of the largest plot. Both lanes were seen (sixteen orders, twenty-one refusals), the three
+- [ ] GAP-1583 [source](../REPORT.en.md#L24974) ## 367. The astronaut's two career cards — ### Ceilings
+- [ ] GAP-1584 [source](../REPORT.en.md#L24978) ## 367. The astronaut's two career cards — port does not carry (REPORT.en.md 325 substitutes the same way for the supervisor card).
+- [ ] GAP-1585 [source](../REPORT.en.md#L24979) ## 367. The astronaut's two career cards — - The card's non-forced branch is not modelled: the port only retires an astronaut whose age
+- [ ] GAP-1586 [source](../REPORT.en.md#L25013) ## 366. The gift shop's shelves and its popularity — ceiling `+0x50` is a flat 500 and the condition byte `+0x54` starts at 100.
+- [ ] GAP-1587 [source](../REPORT.en.md#L25037) ## 366. The gift shop's shelves and its popularity — the ceilings).
+- [ ] GAP-1588 [source](../REPORT.en.md#L25109) ## 366. The gift shop's shelves and its popularity — ### Ceilings
+- [ ] GAP-1589 [source](../REPORT.en.md#L25114) ## 366. The gift shop's shelves and its popularity — popularity does not move as the animal ages.
+- [ ] GAP-1590 [source](../REPORT.en.md#L25119) ## 366. The gift shop's shelves and its popularity — — is not modelled. The port opens with the shelves full to capacity and never
+- [ ] GAP-1591 [source](../REPORT.en.md#L25127) ## 366. The gift shop's shelves and its popularity — * The catalogue's condition byte is not modelled at all: it is dead in the
+- [ ] GAP-1592 [source](../REPORT.en.md#L25150) ## 365. The talk show and the commercial — on the hero's own tick and pushed as pending cards - the same substitution the magazine
+- [ ] GAP-1593 [source](../REPORT.en.md#L25223) ## 365. The talk show and the commercial — criminal record: appeal /= 3        (not modelled - the port keeps no past-offence record)
+- [ ] GAP-1594 [source](../REPORT.en.md#L25236) ## 365. The talk show and the commercial — ticked from the age-up after the book's offer, and they answer from the pending kinds
+- [ ] GAP-1595 [source](../REPORT.en.md#L25237) ## 365. The talk show and the commercial — `kPendingTalkShow = 45` and `kPendingCommercial = 46`. The hero carries `talkShowName`,
+- [ ] GAP-1596 [source](../REPORT.en.md#L25240) ## 365. The talk show and the commercial — Ceilings, all *shortcut:* and cited in the source:
+- [ ] GAP-1597 [source](../REPORT.en.md#L25273) ## 365. The talk show and the commercial — it, and the wheel's new tickets can drain another pending card between a relative's
+- [ ] GAP-1598 [source](../REPORT.en.md#L25329) ## 364. The zoo's staff split and the division-of-labor card — with the first option pushes `kPendingZooDivision`, which renders the
+- [ ] GAP-1599 [source](../REPORT.en.md#L25336) ## 364. The zoo's staff split and the division-of-labor card — **Ceilings.** The minigame board itself is not modelled: the card re-splits the
+- [ ] GAP-1600 [source](../REPORT.en.md#L25338) ## 364. The zoo's staff split and the division-of-labor card — approximation the other mini-game cards in this port use. The split is applied at
+- [ ] GAP-1601 [source](../REPORT.en.md#L25339) ## 364. The zoo's staff split and the division-of-labor card — park creation and on each division card, but hiring or dismissing staff does not
+- [ ] GAP-1602 [source](../REPORT.en.md#L25420) ## 363. The gift shop and the merchandise order — `kPendingZooFeedback` (`Sim::zooFeedbackYear`).
+- [ ] GAP-1603 [source](../REPORT.en.md#L25422) ## 363. The gift shop and the merchandise order — Ceilings: the shop menu is not modelled, so `AddProduct`, `BuildDetails`, `SetPrice` and
+- [ ] GAP-1604 [source](../REPORT.en.md#L25431) ## 363. The gift shop and the merchandise order — Featured Animal rows are never printed; the refusal's own tail is not recovered, so the
+- [ ] GAP-1605 [source](../REPORT.en.md#L25445) ## 363. The gift shop and the merchandise order — ceilings because the port never prints them.
+- [ ] GAP-1606 [source](../REPORT.en.md#L25514) ## 362. The artist-in-residence's contract — Ceilings: the port has no dropdown and no slider, so the contract length is drawn from
+- [ ] GAP-1607 [source](../REPORT.en.md#L25522) ## 362. The artist-in-residence's contract — Expenses` and `Last Year's Revenue` are not modelled, the last two having no port
+- [ ] GAP-1608 [source](../REPORT.en.md#L25567) ## 361. The act cards' gates and the door — Ceilings: the native writes the two statements into separate narrative slots and the
+- [ ] GAP-1609 [source](../REPORT.en.md#L25568) ## 361. The act cards' gates and the door — port prints them as one line; the follow-up card's child scenario is only partially
+- [ ] GAP-1610 [source](../REPORT.en.md#L25604) ## 360. The casino's relationship words — mafia regulars (§357's ceiling), so the third word exists only where a card is pushed
+- [ ] GAP-1611 [source](../REPORT.en.md#L25612) ## 360. The casino's relationship words — Ceilings: the high-roller boundary is read off the port's own style ladder rather than
+- [ ] GAP-1612 [source](../REPORT.en.md#L25638) ## 359. The compliment card's own contract — **The body names a favourite the casino does not have.**
+- [ ] GAP-1613 [source](../REPORT.en.md#L25670) ## 359. The compliment card's own contract — Ceilings: the two vtable slots stay paired with the port's popularity bar (the same
+- [ ] GAP-1614 [source](../REPORT.en.md#L25671) ## 359. The compliment card's own contract — shortcut 324 recorded); the port keeps its own style draw to choose between `'casual
+- [ ] GAP-1615 [source](../REPORT.en.md#L25702) ## 358. The complaint card's missing game — complaining that your casino doesn't have {pronoun} favorite game, {game}." and the
+- [ ] GAP-1616 [source](../REPORT.en.md#L25710) ## 358. The complaint card's missing game — does not appear on this card.
+- [ ] GAP-1617 [source](../REPORT.en.md#L25723) ## 358. The complaint card's missing game — Ceilings: the port has no per-regular favourite list, so the casino's whole game
+- [ ] GAP-1618 [source](../REPORT.en.md#L25725) ## 358. The complaint card's missing game — ceiling recorded in 357), so `'Mafia member'` never prints; the cascade is not modelled
+- [ ] GAP-1619 [source](../REPORT.en.md#L25728) ## 358. The complaint card's missing game — contract was not recovered.
+- [ ] GAP-1620 [source](../REPORT.en.md#L25804) ## 357. The new regular's card — Ceilings, all marked `shortcut:` in the code:
+- [ ] GAP-1621 [source](../REPORT.en.md#L25809) ## 357. The new regular's card — - the mafia branch of the native generator is not modelled -- every newcomer
+- [ ] GAP-1622 [source](../REPORT.en.md#L25893) ## 356. The guest act's demand card — fame is not modelled anywhere in the port, so it is drawn once (20-99) the
+- [ ] GAP-1623 [source](../REPORT.en.md#L25902) ## 356. The guest act's demand card — pushed as the existing `kPendingCasinoFeedback` card from REPORT 352.
+- [ ] GAP-1624 [source](../REPORT.en.md#L25904) ## 356. The guest act's demand card — Ceilings, all marked `shortcut:` in the code:
+- [ ] GAP-1625 [source](../REPORT.en.md#L25962) ## 355. The casino's death cards — Ceilings: the port keeps a count of regulars rather than a persistent list, so a death draws one regular lazily — a name, a gender, a starting age of 18..62 and a lifespan of 55..85 — and removes that one from the count; a new regular can appear later. The guest act's age is likewise drawn against the year the act was booked, using the `casinoCelebMetAge` stamp 352 introduced. The friend and current-lover exemptions are not modelled, because the port's regulars and guest acts are never either. A regular who has already died is not tracked with a years-since-death counter. The tier word is drawn from the same stream as the card rather than read off the person, matching the shortcut 352 already records.
+- [ ] GAP-1626 [source](../REPORT.en.md#L25976) ## 354. The zoo keeper's death — The zoo's IncrementAge chain has one card the park does not choose: the keeper dies.
+- [ ] GAP-1627 [source](../REPORT.en.md#L25991) ## 354. The zoo keeper's death — carries its own verb and the other does not — while the body format #50546 and the journal
+- [ ] GAP-1628 [source](../REPORT.en.md#L26016) ## 354. The zoo keeper's death — Ceilings:
+- [ ] GAP-1629 [source](../REPORT.en.md#L26021) ## 354. The zoo keeper's death — - The friend/current-lover exemption is not modelled: the port's keeper is never either.
+- [ ] GAP-1630 [source](../REPORT.en.md#L26074) ## 353. The zoo keeper's resignation — with its own stream `zooResignRng_` so the years the card does not fire are unchanged. It
+- [ ] GAP-1631 [source](../REPORT.en.md#L26079) ## 353. The zoo keeper's resignation — full stop only when it does not already end in one — the rows in this table do, unlike the
+- [ ] GAP-1632 [source](../REPORT.en.md#L26084) ## 353. The zoo keeper's resignation — point the port does not otherwise keep. That applicant branch used to narrate a resignation
+- [ ] GAP-1633 [source](../REPORT.en.md#L26087) ## 353. The zoo keeper's resignation — Ceilings:
+- [ ] GAP-1634 [source](../REPORT.en.md#L26092) ## 353. The zoo keeper's resignation — - The raise chains `ScenarioZooEmployeeSalary`, whose body is not recovered, so the keeper
+- [ ] GAP-1635 [source](../REPORT.en.md#L26185) ## 352. The casino's two resignations — `Sim::casinoFeedbackYear`, which drains the follow-up through a new pending kind
+- [ ] GAP-1636 [source](../REPORT.en.md#L26186) ## 352. The casino's two resignations — kPendingCasinoFeedback (42). The cards keep their own stream, casinoResignRng_, so no
+- [ ] GAP-1637 [source](../REPORT.en.md#L26195) ## 352. The casino's two resignations — ### Ceilings
+- [ ] GAP-1638 [source](../REPORT.en.md#L26197) ## 352. The casino's two resignations — The Hollywood star gate is not modelled: a port guest is a name and a genre, not an
+- [ ] GAP-1639 [source](../REPORT.en.md#L26201) ## 352. The casino's two resignations — not recovered, so they cost nothing here and their follow-up is not pushed. A failed beg
+- [ ] GAP-1640 [source](../REPORT.en.md#L26223) ## 351. The casino's two amenity cards — over an amenity that does not fit the house theme, another praises one that does. The
+- [ ] GAP-1641 [source](../REPORT.en.md#L26293) ## 351. The casino's two amenity cards — ### Ceilings
+- [ ] GAP-1642 [source](../REPORT.en.md#L26298) ## 351. The casino's two amenity cards — type table's entry for it is not recovered, and every sentence it appears in reads that
+- [ ] GAP-1643 [source](../REPORT.en.md#L26322) ## 350. The casino's two act cards — complaint because the act does not fit, the compliment because the shipped eligibility
+- [ ] GAP-1644 [source](../REPORT.en.md#L26341) ## 350. The casino's two act cards — " saying their ", the act's theme, #6280 "-themed act doesn't fit the ", the casino's
+- [ ] GAP-1645 [source](../REPORT.en.md#L26400) ## 350. The casino's two act cards — ### Ceilings
+- [ ] GAP-1646 [source](../REPORT.en.md#L26456) ## 349. The zoo's customer service card — 0x29e17b0`, the division-of-labor minigame; ignoring does nothing. Both branches write
+- [ ] GAP-1647 [source](../REPORT.en.md#L26470) ## 349. The zoo's customer service card — Ceilings: the minigame is absent, so "Reallocate labor resources" ends at the same
+- [ ] GAP-1648 [source](../REPORT.en.md#L26471) ## 349. The zoo's customer service card — journal line as ignoring; the exterior title is not modelled; the manager is the park's
+- [ ] GAP-1649 [source](../REPORT.en.md#L26513) ## 348. The zoo's cleanliness card — 0x29e17b0`, the division-of-labor minigame; ignoring does nothing. Whichever answer is
+- [ ] GAP-1650 [source](../REPORT.en.md#L26524) ## 348. The zoo's cleanliness card — reallocation minigame the port does not have could raise it. The four-year cooldown is
+- [ ] GAP-1651 [source](../REPORT.en.md#L26528) ## 348. The zoo's cleanliness card — Ceilings: the port has no division-of-labor minigame, so both answers end at the same
+- [ ] GAP-1652 [source](../REPORT.en.md#L26530) ## 348. The zoo's cleanliness card — four years the way an ignored native card would. The exterior title is not modelled on
+- [ ] GAP-1653 [source](../REPORT.en.md#L26545) ## 347. The casino's three punter cards — casino has booked - the regular who complains the act does not fit the house theme, and
+- [ ] GAP-1654 [source](../REPORT.en.md#L26568) ## 347. The casino's three punter cards — be FALSE - the card only fires when the act's genre does not belong to the house theme -
+- [ ] GAP-1655 [source](../REPORT.en.md#L26628) ## 347. The casino's three punter cards — and `"diff"` one whose genre does not (`Sim::seedCasinoGuest`). It is a harness hook, not
+- [ ] GAP-1656 [source](../REPORT.en.md#L26631) ## 347. The casino's three punter cards — Ceilings: the port has no per-punter records, so the five-year spread the losing card
+- [ ] GAP-1657 [source](../REPORT.en.md#L26636) ## 347. The casino's three punter cards — The guest's genre is a draw, not a field of a celebrity entity the port does not have.
+- [ ] GAP-1658 [source](../REPORT.en.md#L26644) ## 347. The casino's three punter cards — theme; the compliment card deals 31 times and never when the genre does not. Both
+- [ ] GAP-1659 [source](../REPORT.en.md#L26662) ## 346. The zoo's theft card — they are opened from a management screen the port does not have, so they cannot fire in
+- [ ] GAP-1660 [source](../REPORT.en.md#L26689) ## 346. The zoo's theft card — rare breeds (`+0x55`) are skipped, and each remaining animal is appended N times where N
+- [ ] GAP-1661 [source](../REPORT.en.md#L26741) ## 346. The zoo's theft card — ### Ceilings
+- [ ] GAP-1662 [source](../REPORT.en.md#L26872) ## 345. The casino's two mob favours — getter (`+0x4f8`) is not recovered, so the journal uses one of the casino's own
+- [ ] GAP-1663 [source](../REPORT.en.md#L26880) ## 345. The casino's two mob favours — ### Ceilings
+- [ ] GAP-1664 [source](../REPORT.en.md#L26910) ## 345. The casino's two mob favours — now be separated from the pick by a drained pending card, or never arrive at all when
+- [ ] GAP-1665 [source](../REPORT.en.md#L26946) ## 344. The zoo's animals, pregnant and dead — 'Pregnancy'`` when it does not, with the park as its exterior title. Its body is
+- [ ] GAP-1666 [source](../REPORT.en.md#L27013) ## 344. The zoo's animals, pregnant and dead — ### Ceilings
+- [ ] GAP-1667 [source](../REPORT.en.md#L27015) ## 344. The zoo's animals, pregnant and dead — - The Golden Pacifier arm needs the in-app purchase, which the port does not model,
+- [ ] GAP-1668 [source](../REPORT.en.md#L27023) ## 344. The zoo's animals, pregnant and dead — prices are not modelled.
+- [ ] GAP-1669 [source](../REPORT.en.md#L27024) ## 344. The zoo's animals, pregnant and dead — - The birth card's habitat and overflow follow-ups are not modelled; the baby
+- [ ] GAP-1670 [source](../REPORT.en.md#L27079) ## 343. The insult's comeback card — `kPendingInsultComeback`. `Sim::insultComebackYear` renders it with the comeback as the
+- [ ] GAP-1671 [source](../REPORT.en.md#L27083) ## 343. The insult's comeback card — discipline card that caused it rather than immediately after the dismissal (ceiling).
+- [ ] GAP-1672 [source](../REPORT.en.md#L27085) ## 343. The insult's comeback card — ### Ceilings
+- [ ] GAP-1673 [source](../REPORT.en.md#L27091) ## 343. The insult's comeback card — pending card per year (the same shape as every other follow-up card here).
+- [ ] GAP-1674 [source](../REPORT.en.md#L27093) ## 343. The insult's comeback card — the button are not modelled; the port keeps its own `supInsulted` counter (REPORT 325).
+- [ ] GAP-1675 [source](../REPORT.en.md#L27160) ## 342. The hero's own pregnancy — and queues the new `kPendingHeroMiscarriage` or `kPendingHeroBirth`.
+- [ ] GAP-1676 [source](../REPORT.en.md#L27168) ## 342. The hero's own pregnancy — ### Ceilings
+- [ ] GAP-1677 [source](../REPORT.en.md#L27177) ## 342. The hero's own pregnancy — stands in for the couple's, and the vampire exclusion is not modelled because the port's
+- [ ] GAP-1678 [source](../REPORT.en.md#L27179) ## 342. The hero's own pregnancy — - The naming prompt is replaced by the game's own pool (REPORT 340's ceiling), so the
+- [ ] GAP-1679 [source](../REPORT.en.md#L27184) ## 342. The hero's own pregnancy — branch are not modelled.
+- [ ] GAP-1680 [source](../REPORT.en.md#L27280) ## 341. The friend's YouTube card — `Sim::friendYouTubeYear` takes the shape of the other friend cards. The menu does not
+- [ ] GAP-1681 [source](../REPORT.en.md#L27290) ## 341. The friend's YouTube card — ### Ceilings
+- [ ] GAP-1682 [source](../REPORT.en.md#L27298) ## 341. The friend's YouTube card — the default index are not modelled, and `GetRandomYouTubeChannel`'s CommonnessScore
+- [ ] GAP-1683 [source](../REPORT.en.md#L27303) ## 341. The friend's YouTube card — the 'acBijuuMike' achievement and the Jacksepticeye challenge byte are not modelled:
+- [ ] GAP-1684 [source](../REPORT.en.md#L27369) ## 340. Twins and triplets — ### Ceilings
+- [ ] GAP-1685 [source](../REPORT.en.md#L27374) ## 340. Twins and triplets — it does not apply the game's same-first-letter rule
+- [ ] GAP-1686 [source](../REPORT.en.md#L27377) ## 340. Twins and triplets — - The inherited-stat copy and the shared emoji are not modelled: the port's children
+- [ ] GAP-1687 [source](../REPORT.en.md#L27381) ## 340. Twins and triplets — not modelled either.
+- [ ] GAP-1688 [source](../REPORT.en.md#L27446) ## 339. The HR investigation — Termination does not happen here: the card chains `ScenarioJobTermination(8)`
+- [ ] GAP-1689 [source](../REPORT.en.md#L27467) ## 339. The HR investigation — `Sim::hrDisciplineYear` is a pending card, `kPendingHrDiscipline`, opened by the two
+- [ ] GAP-1690 [source](../REPORT.en.md#L27494) ## 339. The HR investigation — ### Ceilings
+- [ ] GAP-1691 [source](../REPORT.en.md#L27498) ## 339. The HR investigation — the gift and the fraternization cards are not modelled, so their reasons never
+- [ ] GAP-1692 [source](../REPORT.en.md#L27502) ## 339. The HR investigation — the score reads is drawn once per hero over 0..100 and stands in (`shortcut`).
+- [ ] GAP-1693 [source](../REPORT.en.md#L27542) ## 338. The pregnancy card and the miscarriage — survives. The port had the last beat (REPORT.en.md 151) behind a shortcut coin and no card
+- [ ] GAP-1694 [source](../REPORT.en.md#L27612) ## 338. The pregnancy card and the miscarriage — has no person model. On success it pushes `kPendingPregnancy`. `Sim::pregnancyYear` renders
+- [ ] GAP-1695 [source](../REPORT.en.md#L27617) ## 338. The pregnancy card and the miscarriage — `kPendingMiscarriage` or `kPendingBirth`; the pregnancy itself stays in flight until that
+- [ ] GAP-1696 [source](../REPORT.en.md#L27621) ## 338. The pregnancy card and the miscarriage — `Sim::birthYear` is the arrival from REPORT.en.md 151, now reached as a pending card rather
+- [ ] GAP-1697 [source](../REPORT.en.md#L27627) ## 338. The pregnancy card and the miscarriage — ### Ceilings
+- [ ] GAP-1698 [source](../REPORT.en.md#L27632) ## 338. The pregnancy card and the miscarriage — miscarriage multiplier) and her birth-control flag are not modelled, so her fertility is
+- [ ] GAP-1699 [source](../REPORT.en.md#L27635) ## 338. The pregnancy card and the miscarriage — gate reads a monetization flag through `GameState`, which the simulation does not hold.
+- [ ] GAP-1700 [source](../REPORT.en.md#L27636) ## 338. The pregnancy card and the miscarriage — Multiples are not modelled: the native birth card rolls a denominator of 50 (8 for donor or
+- [ ] GAP-1701 [source](../REPORT.en.md#L27639) ## 338. The pregnancy card and the miscarriage — child from its own pool instead, which is the same shortcut REPORT.en.md 151 already
+- [ ] GAP-1702 [source](../REPORT.en.md#L27718) ## 337. The hero's own attack — ### Ceilings
+- [ ] GAP-1703 [source](../REPORT.en.md#L27724) ## 337. The hero's own attack — a sentence. The target's attitude (-2 through vtable +0x408) is not modelled because
+- [ ] GAP-1704 [source](../REPORT.en.md#L27727) ## 337. The hero's own attack — achievement and the obituary are left out: each needs a subsystem the port does not
+- [ ] GAP-1705 [source](../REPORT.en.md#L27799) ## 336. The book deal — rolls the proceeds, and queues `kPendingBookOffer`; `Sim::fameBookYear` renders the card
+- [ ] GAP-1706 [source](../REPORT.en.md#L27804) ## 336. The book deal — ### Ceilings
+- [ ] GAP-1707 [source](../REPORT.en.md#L27810) ## 336. The book deal — ceiling, not an omission of recovered behaviour. The dismissal's narrative literal is
+- [ ] GAP-1708 [source](../REPORT.en.md#L27813) ## 336. The book deal — are not modelled, and neither is the book's own shelf beyond the count the gates read.
+- [ ] GAP-1709 [source](../REPORT.en.md#L27821) ## 336. The book deal — the proceeds ceiling the fee implies, and its outcome clause appears in both the log and the
+- [ ] GAP-1710 [source](../REPORT.en.md#L27881) ## 335. The magazine photo shoot — it as `kPendingMagazineOffer`; `Sim::fameMagazineYear` renders the card and answers it.
+- [ ] GAP-1711 [source](../REPORT.en.md#L27885) ## 335. The magazine photo shoot — ### Ceilings
+- [ ] GAP-1712 [source](../REPORT.en.md#L27894) ## 335. The magazine photo shoot — a topless shoot and the `acPoseWank` achievement are not modelled, and the place's own
+- [ ] GAP-1713 [source](../REPORT.en.md#L27896) ## 335. The magazine photo shoot — share the refresh — are not ported.
+- [ ] GAP-1714 [source](../REPORT.en.md#L27958) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — under 4 skips. Then the ladder gives the roll's ceiling by age against the lifespan — 100 past
+- [ ] GAP-1715 [source](../REPORT.en.md#L28002) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — two pending flags). `Sim::aircraftSetup` runs the ctor at purchase, `Sim::aircraftRunYear`
+- [ ] GAP-1716 [source](../REPORT.en.md#L28006) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — Descriptive Name Override and Suffix. Breaks and scraps queue as `kPendingAircraftRepair` and
+- [ ] GAP-1717 [source](../REPORT.en.md#L28007) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — `kPendingAircraftScrap` and are answered by `Sim::aircraftRepairYear` and
+- [ ] GAP-1718 [source](../REPORT.en.md#L28014) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — ### Ceilings
+- [ ] GAP-1719 [source](../REPORT.en.md#L28016) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — The economy multiplier M is 1 — the object it lives in is not modelled, so MonthlyExpense's
+- [ ] GAP-1720 [source](../REPORT.en.md#L28021) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — the port wears first. The Golden Wrench is an in-app purchase and is not modelled, so no
+- [ ] GAP-1721 [source](../REPORT.en.md#L28025) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — follow-up cards' screen furniture and the achievements/obits are not modelled.
+- [ ] GAP-1722 [source](../REPORT.en.md#L28041) ## 334. The aircraft's own life: wear, expenses, repairs and the scrapyard — tick never pushes and is not ported.
+- [ ] GAP-1723 [source](../REPORT.en.md#L28112) ## 333. The vampire hunt's animal — ### Ceilings
+- [ ] GAP-1724 [source](../REPORT.en.md#L28123) ## 333. The vampire hunt's animal — 'Help!' card's Scenario.Damage, achievements and obituary lines are not modelled;
+- [ ] GAP-1725 [source](../REPORT.en.md#L28159) ## 332. The back-to-school title pool — System.Enum::TryParse (0x28f0cec) and puts **every remaining cell** - the original title and
+- [ ] GAP-1726 [source](../REPORT.en.md#L28194) ## 332. The back-to-school title pool — ### Ceilings
+- [ ] GAP-1727 [source](../REPORT.en.md#L28289) ## 331. The coworker's compliment card — ### Ceilings
+- [ ] GAP-1728 [source](../REPORT.en.md#L28293) ## 331. The coworker's compliment card — list the port does not have.
+- [ ] GAP-1729 [source](../REPORT.en.md#L28299) ## 331. The coworker's compliment card — branch (only reachable below 15 anyway) is not modelled and that case takes the fallback.
+- [ ] GAP-1730 [source](../REPORT.en.md#L28303) ## 331. The coworker's compliment card — * The bar graph is not modelled, so the magnitude only survives through the relationship
+- [ ] GAP-1731 [source](../REPORT.en.md#L28401) ## 330. The employee respect card and its chain — compliment card: the yearly push is the business report, which the port does not run, so an office
+- [ ] GAP-1732 [source](../REPORT.en.md#L28403) ## 330. The employee respect card and its chain — pending-card queue in the same year, so a chain keeps showing its cards at one age.
+- [ ] GAP-1733 [source](../REPORT.en.md#L28412) ## 330. The employee respect card and its chain — starting tenth of the ceiling is what the card pays, and the result is written into the journal
+- [ ] GAP-1734 [source](../REPORT.en.md#L28415) ## 330. The employee respect card and its chain — ### Ceilings
+- [ ] GAP-1735 [source](../REPORT.en.md#L28418) ## 330. The employee respect card and its chain — business report, which the port does not model.
+- [ ] GAP-1736 [source](../REPORT.en.md#L28420) ## 330. The employee respect card and its chain — pays the ceiling's tenth, so the higher ratio bands are only reachable through money the port
+- [ ] GAP-1737 [source](../REPORT.en.md#L28426) ## 330. The employee respect card and its chain — * Achievements are not modelled, so the native "spat" achievement on a warning is skipped, and the
+- [ ] GAP-1738 [source](../REPORT.en.md#L28453) ## 329. The employee's feedback card — thing the zoo card does not have: an optional follow-up respect card, which is why this section also
+- [ ] GAP-1739 [source](../REPORT.en.md#L28537) ## 329. The employee's feedback card — * The respect card and the dead third arm are not implemented; this section is where their contract
+- [ ] GAP-1740 [source](../REPORT.en.md#L28540) ## 329. The employee's feedback card — ### Ceilings
+- [ ] GAP-1741 [source](../REPORT.en.md#L28543) ## 329. The employee's feedback card — * The year cache is not modelled: a year holds one card, so the equality branch cannot be reached.
+- [ ] GAP-1742 [source](../REPORT.en.md#L28549) ## 329. The employee's feedback card — competence field the port does not carry.
+- [ ] GAP-1743 [source](../REPORT.en.md#L28550) ## 329. The employee's feedback card — * NumTimesComplimentedSomeone and ContributeToCommunityGoal are not modelled.
+- [ ] GAP-1744 [source](../REPORT.en.md#L28621) ## 328. The zoo keeper's compliment card — not a port shortcut.
+- [ ] GAP-1745 [source](../REPORT.en.md#L28638) ## 328. The zoo keeper's compliment card — ### Ceilings
+- [ ] GAP-1746 [source](../REPORT.en.md#L28642) ## 328. The zoo keeper's compliment card — * The year cache is not modelled: a year can hold only one card, so the equality branch - which
+- [ ] GAP-1747 [source](../REPORT.en.md#L28652) ## 328. The zoo keeper's compliment card — not modelled - the port keeps no community goals and no such counter.
+- [ ] GAP-1748 [source](../REPORT.en.md#L28725) ## 327. The agent's feedback card — is dead code in 3.25.1 and is not implemented here.
+- [ ] GAP-1749 [source](../REPORT.en.md#L28727) ## 327. The agent's feedback card — is unrecovered, so the port does not write it.
+- [ ] GAP-1750 [source](../REPORT.en.md#L28744) ## 327. The agent's feedback card — ### Ceilings
+- [ ] GAP-1751 [source](../REPORT.en.md#L28759) ## 327. The agent's feedback card — stat stamp) is not implemented.
+- [ ] GAP-1752 [source](../REPORT.en.md#L28823) ## 326. The walk's animal encounter — GetRandomNumber(0,24/32/40) depending on the walk, and case 9 builds the card when the hero
+- [ ] GAP-1753 [source](../REPORT.en.md#L28833) ## 326. The walk's animal encounter — card arrives as an annual family rather than out of the walk's roll (shortcut); the continent
+- [ ] GAP-1754 [source](../REPORT.en.md#L28838) ## 326. The walk's animal encounter — ### Ceilings
+- [ ] GAP-1755 [source](../REPORT.en.md#L28848) ## 326. The walk's animal encounter — not recovered; the port writes the plain unsuccessful line there (#24104) instead of whatever
+- [ ] GAP-1756 [source](../REPORT.en.md#L28850) ## 326. The walk's animal encounter — * The achievement manager is not modelled, so the rescue achievements and "acKilledByHippo" fire
+- [ ] GAP-1757 [source](../REPORT.en.md#L28889) ## 325. The workplace discipline card — was still missing. This section ports ScenarioWorkplaceDisciplineSupervisor.
+- [ ] GAP-1758 [source](../REPORT.en.md#L28914) ## 325. The workplace discipline card — the ceilings) and a plain follow-up card titled one of #39989 "Stay classy", #40899 "Take
+- [ ] GAP-1759 [source](../REPORT.en.md#L28953) ## 325. The workplace discipline card — with the gift and the insult filling their third placeholder from a16_gifts-enc and
+- [ ] GAP-1760 [source](../REPORT.en.md#L28966) ## 325. The workplace discipline card — ### Ceilings, all deliberate
+- [ ] GAP-1761 [source](../REPORT.en.md#L28982) ## 325. The workplace discipline card — * The HR discipline card (ScenarioWorkplaceDisciplineHR, 0x298d34c) is not ported. Its own
+- [ ] GAP-1762 [source](../REPORT.en.md#L28983) ## 325. The workplace discipline card — body was not recovered, but its arithmetic was: it adds its seriousness to the same
+- [ ] GAP-1763 [source](../REPORT.en.md#L28998) ## 325. The workplace discipline card — * #44151 dumps "Try to seduce {0} so {0} forgets" with the same placeholder twice while the
+- [ ] GAP-1764 [source](../REPORT.en.md#L29036) ## 324. The casino's complimenting gambler — floor is wonderful - shipped with the same expansion and was still missing. This section ports
+- [ ] GAP-1765 [source](../REPORT.en.md#L29071) ## 324. The casino's complimenting gambler — the predicate is the complaint card's shape: a punter's favourite game that the casino does not install),
+- [ ] GAP-1766 [source](../REPORT.en.md#L29094) ## 324. The casino's complimenting gambler — Ceilings, all deliberate:
+- [ ] GAP-1767 [source](../REPORT.en.md#L29098) ## 324. The casino's complimenting gambler — card's refusal-crazy band (gambler craziness) is approximated by that happiness value, as in 322.
+- [ ] GAP-1768 [source](../REPORT.en.md#L29146) ## 323. The car's condition, the repair card and the scrap push — The check lives in SimHero::IncrementAge (0x2b12b1c, called from 0x2a6c5f4). It reads the model's Reliability Score and turns it into a ceiling: 100 for a score of 1 down to 5 for a score of 5, so a score of 1 is the most breakable car and 5 the least. It draws A = GetRandomNumber(0, ceiling) and B = GetRandomNumber(0, 20), and the car needs work when Condition + B < A. A car with work outstanding queues ScenarioCarRepair; a car whose condition is gone queues the *ScrapPush lane instead, and the repair card is not offered.
+- [ ] GAP-1769 [source](../REPORT.en.md#L29148) ## 323. The car's condition, the repair card and the scrap push — The part is picked from a16_car-parts-enc (0x2804e4c) by appending each row's Break Commonness Score to a candidate list and drawing one entry, so a part with a score of 5 comes up five times as often as one with a score of 1. The row carries the part's name, its Base Cost and the Broken Terms the card quotes. The price (0x2804f88) is part.BaseCost * (model.Cost / 30000) once the model costs 30000 or more, times a multiplier M this port has not recovered (M = 1 here, the only ceiling that changes a number).
+- [ ] GAP-1770 [source](../REPORT.en.md#L29150) ## 323. The car's condition, the repair card and the scrap push — The card is ScenarioCarRepair (ctor 0x3557134, Refresh 0x3559384, Choice 0x3559924). Its title is the car itself, Format(#70426 '{0} {1}', make, model); its body is #50813 'Your {0}car has {1}.' with the make and model in {0} (plus the word #66160 'stolen ' when the car has been stolen, a state this port does not model) and the part's Broken Terms in {1}, wrapped by #68715 "{0}\n\nWhat will you do?". Two rows sit above the buttons: #35747 'Repair' and #45558 'Vehicle Condition'. The buttons are #35752 'Repair it', #45180 'Use the Golden Wrench' and #24668 'I might fix it later'; the handler dispatches on the lowercased label (Contains "use" and Contains "later"), which is why the Golden Wrench lane can be left out without moving the other two.
+- [ ] GAP-1771 [source](../REPORT.en.md#L29152) ## 323. The car's condition, the repair card and the scrap push — Repairing charges the row's price through AdjustBankBalanceByAmount(-cost) (0x3559fec) and writes exactly one piece of state: the car's ActiveRepair is cleared. It does not move the condition, does not restamp AgeAtLastRepair and does not touch the scrap flag, and it logs #70735 '{0}I repaired the {1} on my {2}.'. Declining charges nothing, leaves ActiveRepair set (so the card comes back next year) and logs #69029 '{0}\nI decided not to repair it.'. When the balance will not cover the row the native game opens ScenarioInsufficientFinances (0x37c6e98) instead of charging, with #67050 'to repair your {0}' as its item.
+- [ ] GAP-1772 [source](../REPORT.en.md#L29158) ## 323. The car's condition, the repair card and the scrap push — The Golden Wrench button is an in-app purchase this port does not carry, so a car the hero cannot afford shows one lane only ("I might fix it later") instead of the native two, and the insufficient-funds card is folded into that: the port never opens a repair card it cannot pay for. Three further ceilings: the condition drifts down by one on a quarter of quiet years (the native accidents and race damage that move it are not ported); the damage roll and the part pick happen once per break rather than the native per-check; and a car is scrapped when its condition reaches 0, which no ported lane can cause on its own, so the scrap card is reached through the "carCondition" fixture.
+- [ ] GAP-1773 [source](../REPORT.en.md#L29181) ## 322. The casino's complaining gambler — relationship word + #5282 ", " + the name + #5667 ", is complaining that your casino doesn't have "
+- [ ] GAP-1774 [source](../REPORT.en.md#L29204) ## 322. The casino's complaining gambler — Ceilings, all deliberate:
+- [ ] GAP-1775 [source](../REPORT.en.md#L29213) ## 322. The casino's complaining gambler — scenario eligibility ladder, whose own rate is not recovered.
+- [ ] GAP-1776 [source](../REPORT.en.md#L29225) ## 322. The casino's complaining gambler — complaining that your casino doesn't have", possessive, "favorite game", game), and the choice is
+- [ ] GAP-1777 [source](../REPORT.en.md#L29239) ## 321. The zoo's books and the federal inspector — does not close on a timer: the inspector warns first, and the hero can buy the park another year.
+- [ ] GAP-1778 [source](../REPORT.en.md#L29248) ## 321. The zoo's books and the federal inspector — 0x29a3780) - and, unlike the casino, it does not reset the counter, so the warning returns every
+- [ ] GAP-1779 [source](../REPORT.en.md#L29275) ## 321. The zoo's books and the federal inspector — * Hero gains zooBank, zooNegativeYears, zooLedgerYear and zooBankruptQueued (game.h); pending kind
+- [ ] GAP-1780 [source](../REPORT.en.md#L29286) ## 321. The zoo's books and the federal inspector — Ceiling: the native profit formula is not recovered, so the pass calls the difference between the
+- [ ] GAP-1781 [source](../REPORT.en.md#L29308) ## 321. The zoo's books and the federal inspector — ### Ceilings
+- [ ] GAP-1782 [source](../REPORT.en.md#L29317) ## 321. The zoo's books and the federal inspector — the past list keeps) is not modelled.
+- [ ] GAP-1783 [source](../REPORT.en.md#L29336) ## 320. The casino's bankruptcy: six losing years and a card that closes the house — (src/fam/casino.cpp) while casinoBank < 0, and at six it queues kPendingCasinoBankrupt and resets.
+- [ ] GAP-1784 [source](../REPORT.en.md#L29379) ## 320. The casino's bankruptcy: six losing years and a card that closes the house — ### Ceilings
+- [ ] GAP-1785 [source](../REPORT.en.md#L29382) ## 320. The casino's bankruptcy: six losing years and a card that closes the house — the port drains pending cards in queue order.
+- [ ] GAP-1786 [source](../REPORT.en.md#L29385) ## 320. The casino's bankruptcy: six losing years and a card that closes the house — arrives on the next pending drain.
+- [ ] GAP-1787 [source](../REPORT.en.md#L29387) ## 320. The casino's bankruptcy: six losing years and a card that closes the house — * Clearing the rooms and amenities approximates ShutDownCasino, whose exact field set was not
+- [ ] GAP-1788 [source](../REPORT.en.md#L29465) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — `ScenarioCasinoAgeUpBankrupt`; the port does not model bankruptcy yet (see the ceilings).
+- [ ] GAP-1789 [source](../REPORT.en.md#L29499) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — ### Ceilings
+- [ ] GAP-1790 [source](../REPORT.en.md#L29501) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — * How often the native casino card fires is not recovered: both the review card and the ordinary
+- [ ] GAP-1791 [source](../REPORT.en.md#L29510) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — * The cost-of-living ratio needs a reference country whose string is not recovered; the port uses
+- [ ] GAP-1792 [source](../REPORT.en.md#L29515) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — room-buying and upgrade cards (which change type and units) are not ported, so the type ladder
+- [ ] GAP-1793 [source](../REPORT.en.md#L29517) ## 319. The casino's books: a silent yearly pass and the Casino Ledger card — * Bankruptcy (`ScenarioCasinoAgeUpBankrupt`) is not implemented.
+- [ ] GAP-1794 [source](../REPORT.en.md#L29553) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — `kPendingCrimeCharge` card, i.e. the 273 chain. Caught at 16 or under, with no criminal record in
+- [ ] GAP-1795 [source](../REPORT.en.md#L29561) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — identity gates of `GetAccomplice` are not modelled. The accept body is
+- [ ] GAP-1796 [source](../REPORT.en.md#L29572) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — **The pull (menu card) is not ported.** `SimPlace` builds it from the Crime menu
+- [ ] GAP-1797 [source](../REPORT.en.md#L29582) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — of that is reachable and none of it was invented.
+- [ ] GAP-1798 [source](../REPORT.en.md#L29584) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — **Ceilings** (all of them visible in the code comments beside `Sim::mischiefYear`):
+- [ ] GAP-1799 [source](../REPORT.en.md#L29590) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — * `GetCrimeScenarioForCrimeType`'s own sentence length was not recovered; the port reuses the 273
+- [ ] GAP-1800 [source](../REPORT.en.md#L29591) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — charge card and takes `crimeYears` from `{1, 1, 2, 3, 5}` by tier — a labelled shortcut.
+- [ ] GAP-1801 [source](../REPORT.en.md#L29592) ## 318. The mischief card: a friend, an activity, and a chance the police hear about it — * The caught-under-17 splice is unimplemented: neither target card exists in the port.
+- [ ] GAP-1802 [source](../REPORT.en.md#L29651) ## 317. The tuition screen and the student loan — card is queued by the accepted application (`kPendingUniversityFund`), so it lands on the
+- [ ] GAP-1803 [source](../REPORT.en.md#L29666) ## 317. The tuition screen and the student loan — **Ceilings, all marked in the source.**
+- [ ] GAP-1804 [source](../REPORT.en.md#L29668) ## 317. The tuition screen and the student loan — * The native ability score behind the scholarship decision was not recovered; the port's own
+- [ ] GAP-1805 [source](../REPORT.en.md#L29672) ## 317. The tuition screen and the student loan — not recovered, so its accept and refuse conditions are unknown.
+- [ ] GAP-1806 [source](../REPORT.en.md#L29676) ## 317. The tuition screen and the student loan — * The cash lane's body and log were not recovered; the port leaves the body empty rather than invent
+- [ ] GAP-1807 [source](../REPORT.en.md#L29678) ## 317. The tuition screen and the student loan — * `ScenarioSchoolFund`'s own `ExteriorTitle` was not recovered; the port keeps the education header.
+- [ ] GAP-1808 [source](../REPORT.en.md#L29727) ## 316. Twenty-six leisure tables: eighteen live, five unportable, three dead — **The eighteen live tables belong to eighteen cards the port does not have.** Grouped by the
+- [ ] GAP-1809 [source](../REPORT.en.md#L29786) ## 315. The ambient time-machine card: one invented family removed — ## 315. The ambient time-machine card: one invented family removed
+- [ ] GAP-1810 [source](../REPORT.en.md#L29809) ## 314. My Stuff and the accessory tables: backend data, cosmetic indexes, nothing to port — **The shop screens are backend-driven too.** `ScenarioSeasonsShopItem` (ctor 0x2a56730, Refresh 0x2a56760) renders `Buy {0} {1}\n({2})` (#14348) with `Current Balance` (#16783), `Time Left` (#43570) and `Hourly Price` (#23155) from the same payload. Insufficient funds is a scenario, not an alert: LIT#27554 `It looks like you don't have enough ` + a data token + LIT#3638 ` to buy this right now. Earn some more and try again later.`, with the button-label variants LIT#8489 and LIT#842. The charge itself is delegated and was not recovered.
+- [ ] GAP-1811 [source](../REPORT.en.md#L29813) ## 314. My Stuff and the accessory tables: backend data, cosmetic indexes, nothing to port — Conclusion: `a16_mystuff-catalog-enc` and the three accessory tables stay unreferenced by the port, and this is a finding rather than a gap. Porting the catalog would mean inventing the backend's row shape, and porting the accessories would mean inventing a graphics layer to carry indices the port's model does not have. The only client-side gate that does exist -- `StuffItem::GetScenarioForUse` (0x33086f8), which switches on the catalog's Function type and turns a timed life item into `ScenarioMyStuffTimedLife` (0x23596e0) or a `Locked` (#29115) card -- is likewise reached only through a payload.
+- [ ] GAP-1812 [source](../REPORT.en.md#L29826) ## 313. University: one threshold table, four ways out of a rejection — Shortcuts:
+- [ ] GAP-1813 [source](../REPORT.en.md#L29827) ## 313. University: one threshold table, four ways out of a rejection — - The native ability score is not recovered. The port uses its own `schoolGrades` and keeps the recovered 30-point bonus, so the undergraduate row's 45 means 15 grades; the fixture draw is 62-86 and always clears it.
+- [ ] GAP-1814 [source](../REPORT.en.md#L29828) ## 313. University: one threshold table, four ways out of a rejection — - The prerequisite school-type check, the five-year expulsion wait and the `Country.SchoolGraduationAge` gate are not modelled. Royalty admission is not modelled.
+- [ ] GAP-1815 [source](../REPORT.en.md#L29829) ## 313. University: one threshold table, four ways out of a rejection — - `ScenarioSchoolFund`, the student loan (`SimBankLoan`, `MaximumAgeForStudentLoanEligibility` 0x73f2c9244c) and scholarship/tuition are not modelled, so no debt is created. This is the same ceiling the port's college rung has always had.
+- [ ] GAP-1816 [source](../REPORT.en.md#L29831) ## 313. University: one threshold table, four ways out of a rejection — - College years do not stop the port's job line (the pre-existing `student = age < 18` shortcut in `dispatchYear`).
+- [ ] GAP-1817 [source](../REPORT.en.md#L29848) ## 312. God Mode: raw sliders, one orientation map, one strange log line — Shortcuts:
+- [ ] GAP-1818 [source](../REPORT.en.md#L29850) ## 312. God Mode: raw sliders, one orientation map, one strange log line — - Slider input is limited to 0-100. The native slider ranges were not recovered.
+- [ ] GAP-1819 [source](../REPORT.en.md#L29851) ## 312. God Mode: raw sliders, one orientation map, one strange log line — - The relationship phrase (`RelationshipStatusStringForEditPersonInPointOfView`) was not recovered, so the port's own `my <relation>` stands in for it. The child special-talent reroll is not modelled. Paywall/IAP and custom-life entry points are absent. The blank-line separator is not reproduced in `logLines`.
+- [ ] GAP-1820 [source](../REPORT.en.md#L29874) ## 311. Nine colour pools: what the secret-agent tables actually colour — Shortcuts:
+- [ ] GAP-1821 [source](../REPORT.en.md#L29878) ## 311. Nine colour pools: what the secret-agent tables actually colour — - Stealth shuffling approximates .NET `OrderBy(random)` with one unit key per element plus a stable sort; the door-colour info row is folded into the briefing; the wrong-wire interruption narrative was not recovered, so a wrong choice only reports the failure.
+- [ ] GAP-1822 [source](../REPORT.en.md#L29896) ## 310. The Time Machine: twenty birthdays on disk and a wholesale restore — - `Sim::useTimeMachine(life, out, years)` accepts only 1/3/5/10/15/20 with an existing snapshot (otherwise returns false: the native silent return), caches the prison and death flags, restores simulator and life, clears `pendingCards`, sets `Life::wasResurrected` on a death, and writes the card (title, body, CTA, the chosen "N years ago (Age X)" label) with the narrative row as its log line.
+- [ ] GAP-1823 [source](../REPORT.en.md#L29899) ## 310. The Time Machine: twenty birthdays on disk and a wholesale restore — Shortcuts, written down:
+- [ ] GAP-1824 [source](../REPORT.en.md#L29903) ## 310. The Time Machine: twenty birthdays on disk and a wholesale restore — - The prison line (#68766/#68767 "{0}\n\nYou've been in {1} for {2} {3}.") is not added: it needs the years already served, which the port does not keep. There is no graveyard to remove a grave from, no IAP, no unlimited-entitlement check, and the script's event list keeps the cards that were undone (the game rebuilds its log from the snapshot).
+- [ ] GAP-1825 [source](../REPORT.en.md#L29926) ## 309. The honeypot's pronouns: the mark has a gender of their own — with a blank gender cell keep the opposite-of-hero fallback (shortcut: the native
+- [ ] GAP-1826 [source](../REPORT.en.md#L29927) ## 309. The honeypot's pronouns: the mark has a gender of their own — handling of blank rows is not recovered).
+- [ ] GAP-1827 [source](../REPORT.en.md#L29947) ## 309. The honeypot's pronouns: the mark has a gender of their own — Ceiling: card yield is ~0.115 honeypot cards per life, so the check needs thousands of
+- [ ] GAP-1828 [source](../REPORT.en.md#L29948) ## 309. The honeypot's pronouns: the mark has a gender of their own — lives; blank-gender targets remain the opposite-of-hero shortcut.
+- [ ] GAP-1829 [source](../REPORT.en.md#L29952) ## 308. The witch doctor's medicine: one price, one roll, one risk table — The vampire coven has its own approximation (src/fam/vampire.cpp 203), but the ordinary
+- [ ] GAP-1830 [source](../REPORT.en.md#L29999) ## 308. The witch doctor's medicine: one price, one roll, one risk table — - The diagnosed cure chain is two pending cards (kPendingWitchResult, then
+- [ ] GAP-1831 [source](../REPORT.en.md#L30000) ## 308. The witch doctor's medicine: one price, one roll, one risk table — kPendingWitchCure) drained by the following ageUp calls before the age advances -- the
+- [ ] GAP-1832 [source](../REPORT.en.md#L30005) ## 308. The witch doctor's medicine: one price, one roll, one risk table — otherwise die between the two cards -- and every other pending family inherits it.
+- [ ] GAP-1833 [source](../REPORT.en.md#L30008) ## 308. The witch doctor's medicine: one price, one roll, one risk table — The loop now drains pendingCards before exiting, so a forced visit in the last
+- [ ] GAP-1834 [source](../REPORT.en.md#L30013) ## 308. The witch doctor's medicine: one price, one roll, one risk table — Shortcuts (not recovered from the artifact):
+- [ ] GAP-1835 [source](../REPORT.en.md#L30016) ## 308. The witch doctor's medicine: one price, one roll, one risk table — the native trigger is not ported. Nothing is invented in its place.
+- [ ] GAP-1836 [source](../REPORT.en.md#L30025) ## 308. The witch doctor's medicine: one price, one roll, one risk table — (79 cures, 43 deferred diagnosed restorations), plus the same-age cache (repeated visits
+- [ ] GAP-1837 [source](../REPORT.en.md#L30040) ## 307. The funeral chain: the disposition screen and the urn — leaves the unreferenced list (47 -> 46). The card denominator does not move: the ash table
+- [ ] GAP-1838 [source](../REPORT.en.md#L30055) ## 307. The funeral chain: the disposition screen and the urn — card stored and builds the disposition screen; cremation pushes a pending card and
+- [ ] GAP-1839 [source](../REPORT.en.md#L30082) ## 307. The funeral chain: the disposition screen and the urn — read against the hero as a shortcut; its native age subject has not been recovered. A row that survives the
+- [ ] GAP-1840 [source](../REPORT.en.md#L30086) ## 307. The funeral chain: the disposition screen and the urn — **The shortcuts.** The four prices are the numbers the live card printed once (Burial 7,710,
+- [ ] GAP-1841 [source](../REPORT.en.md#L30089) ## 307. The funeral chain: the disposition screen and the urn — unaffordable button does not reopen the menu: the card logs the Penniless sentence and the
+- [ ] GAP-1842 [source](../REPORT.en.md#L30091) ## 307. The funeral chain: the disposition screen and the urn — the modal is not modelled. The captured cremation wish is reused rather than modelling
+- [ ] GAP-1843 [source](../REPORT.en.md#L30094) ## 307. The funeral chain: the disposition screen and the urn — back to all nonempty places; the current seeded check does not exercise that fallback.
+- [ ] GAP-1844 [source](../REPORT.en.md#L30095) ## 307. The funeral chain: the disposition screen and the urn — AgeUp carries one card per call: planning and ashes are pending
+- [ ] GAP-1845 [source](../REPORT.en.md#L30099) ## 307. The funeral chain: the disposition screen and the urn — and 40 with an initial zero balance; later spending and earnings can change either. It
+- [ ] GAP-1846 [source](../REPORT.en.md#L30107) ## 307. The funeral chain: the disposition screen and the urn — the crash, the remaining 37 resumed against the unchanged binary). The funeral and
+- [ ] GAP-1847 [source](../REPORT.en.md#L30116) ## 306. The horse races: three cards from a16_horses-enc — leaves the unreferenced list (48 -> 47); the card denominator does not move, because a
+- [ ] GAP-1848 [source](../REPORT.en.md#L30150) ## 306. The horse races: three cards from a16_horses-enc — **The port.** Three cards, chained through the pending list like the §301-§302 lanes.
+- [ ] GAP-1849 [source](../REPORT.en.md#L30154) ## 306. The horse races: three cards from a16_horses-enc — journals #25790 and pushes kPendingHorseBet. Sim::horseBetYear, one year later, deals five
+- [ ] GAP-1850 [source](../REPORT.en.md#L30156) ## 306. The horse races: three cards from a16_horses-enc — the pick and the wager, and pushes kPendingHorseOutcome. Sim::horseOutcomeYear draws the
+- [ ] GAP-1851 [source](../REPORT.en.md#L30163) ## 306. The horse races: three cards from a16_horses-enc — **Shortcuts, marked in the source.**
+- [ ] GAP-1852 [source](../REPORT.en.md#L30228) ## 305. Two flavour pools: the prayer and the crowd's answer — count does not move; the two wired tables leave the unreferenced set (50 -> 48).
+- [ ] GAP-1853 [source](../REPORT.en.md#L30230) ## 305. Two flavour pools: the prayer and the crowd's answer — ### The remaining 48, triaged
+- [ ] GAP-1854 [source](../REPORT.en.md#L30254) ## 305. Two flavour pools: the prayer and the crowd's answer — evidence ceiling, and each needs one literal that the metadata dump does not carry:
+- [ ] GAP-1855 [source](../REPORT.en.md#L30305) ## 304. The jewelry shop: a purchase card from the same three tables — no literal for the plural shape was found, so the port does not sell them rather
+- [ ] GAP-1856 [source](../REPORT.en.md#L30312) ## 304. The jewelry shop: a purchase card from the same three tables — clamp band and the formula are the table's, the exact number is a shortcut because
+- [ ] GAP-1857 [source](../REPORT.en.md#L30363) ## 303. The proposal card: a ring from the three jewelry tables, a setting, and two lanes — exact number is a shortcut (the game also rolls the metal's own Cost Score into it).
+- [ ] GAP-1858 [source](../REPORT.en.md#L30390) ## 303. The proposal card: a ring from the three jewelry tables, a setting, and two lanes — **What is not ported.** `ScenarioLoverProposeOutbound` -- the hero proposing through
+- [ ] GAP-1859 [source](../REPORT.en.md#L30391) ## 303. The proposal card: a ring from the three jewelry tables, a setting, and two lanes — the Love menu -- needs a partner-facing menu the port does not have; its body literal
+- [ ] GAP-1860 [source](../REPORT.en.md#L30404) ## 302. The bank robbery card: three payload tables and the heist's two outcomes — `Sim::robberyYear` is a one-ticket wheel family for an adult who is not in prison. It rolls a 1-in-40 coin, rolls a disguise and a weapon row, and offers the getaway rows as the card's options. The game's card is one screen with three dropdowns and one `AgeUp` carries one choice, so the port rolls the first two pickers and lets the player pick the third: that shortcut is marked in the source. `robPower` is the sum of the three Effectiveness Scores (3..15) and the result is a pending card.
+- [ ] GAP-1861 [source](../REPORT.en.md#L30406) ## 302. The bank robbery card: three payload tables and the heist's two outcomes — `Sim::robberyOutcomeYear` rolls the score against 15: success pays a haul of 1,000 to 5,500 (no table carries an amount, marked as a shortcut), credits it to the hero's cash, reads #49432 and logs #69177 with the picked weapon, disguise and getaway; failure reads #49758, folds into the 273 arrest chain as `registry:ScenarioCrimeArrest` with "I was arrested for armed robbery!", and the charge is the prison table's own `armed robbery` row (seriousness 4, five years) rather than an invented crime name.
+- [ ] GAP-1862 [source](../REPORT.en.md#L30421) ## 301. The hitman chain: the found card, the quote, four outcomes and the threat — `Sim::hitmanYear` is a wheel family (2 tickets, matching the other activity cards) and needs an adult who is not in prison. It rolls a 1-in-50 coin, picks a living relative as the target and a name from the hitman table, and rolls the quote from the target's cash: 200 plus 5% of the balance. The shipped quote is computed inside the stripped class and no table carries it, so this is a port formula marked as a shortcut in the source; a flat multi-thousand figure was tried first and made the card unreachable, because the port's played-out cash curve ends in the hundreds to low thousands. The card auto-hires, like the port's other activity cards, and queues `kPendingHitmanOutcome`.
+- [ ] GAP-1863 [source](../REPORT.en.md#L30423) ## 301. The hitman chain: the found card, the quote, four outcomes and the threat — `Sim::hitmanOutcomeYear` runs as that pending card and rolls once: under 40 the hit lands (`#50389`, the target dies, `murders` rises, karma -30), under 65 the hitman runs off (`#50390`), under 80 it was an undercover cop (`#50392`), under 90 he apologises and refunds the money (`#50387`), otherwise the threat card (`#50388`) opens with "Pay her/him" and "Call the police". Paying costs the quote again and reads `#49090`; calling the police reads `#47940` and hands straight to the arrest. The weapon in `#50389`'s `{2}` is drawn from `a16_black-market-weapons-enc`, the one table that names weapons with their article.
+- [ ] GAP-1864 [source](../REPORT.en.md#L30425) ## 301. The hitman chain: the found card, the quote, four outcomes and the threat — Caught murders and caught hits now share the arrest step: the outcome event becomes `registry:ScenarioCrimeArrest` with an "I was arrested for attempted murder!" last line, and the charge arrives as its own pending card. That is what keeps the 273 chain's order invariant (arrest, charge, plea, sentence) - a caught murder previously jumped straight to the charge card and `test_crime_chain` caught it. Section 300's murder card is amended in the same way.
+- [ ] GAP-1865 [source](../REPORT.en.md#L30468) ## 300. The murder card: a16_murders-enc — shortcut: the real class rolls its three likeliness columns through a formula that is not readable from the table or the stripped class, so the port reads the same columns as straight tenths -- effectiveness for the clean hit, retaliation for the victim turning it around, caught for the police -- and reuses the arrest pipeline from 273 with ```h.crimeName``` set to "murder" or "attempted murder". The table still supplies every word the log prints.
+- [ ] GAP-1866 [source](../REPORT.en.md#L30470) ## 300. The murder card: a16_murders-enc — The victim comes from the living family: the real ```SimMurderTarget``` also reaches friends and strangers, which this port's family model does not store, and there is no affinity score to rank candidates by. The card runs on its own ```murderRng_``` stream (the 282 lesson) and is entered at 2 wheel tickets behind a 1-in-40 coin, so no sibling family's reach moves.
+- [ ] GAP-1867 [source](../REPORT.en.md#L30555) ## 298. Adoption — shortcut: the adoption menu's prompt is not in the dump; the body names the child's
+- [ ] GAP-1868 [source](../REPORT.en.md#L30636) ## 293. The Assets walk, and why the last tables are shells — shape of the remaining table tail:
+- [ ] GAP-1869 [source](../REPORT.en.md#L30658) ## 293. The Assets walk, and why the last tables are shells — verdict    the remaining ~60 tables are not pushed scenarios at all
+- [ ] GAP-1870 [source](../REPORT.en.md#L30692) ## 292. What the menu walk found, and what it did not — invented year, not a transcribed one.
+- [ ] GAP-1871 [source](../REPORT.en.md#L30721) ## 291. Martial arts, and the belt ladder — shortcut: the lesson count in {0} is not captured (10 is used) and the game's move
+- [ ] GAP-1872 [source](../REPORT.en.md#L30722) ## 291. Martial arts, and the belt ladder — list is not modelled; a course advances one belt in the hierarchy.
+- [ ] GAP-1873 [source](../REPORT.en.md#L30748) ## 290. The diet menu — shortcut: the game keeps a diet running with a menu to manage it and charges monthly;
+- [ ] GAP-1874 [source](../REPORT.en.md#L30753) ## 289. The bookshelf, and the menu capture 288 asked for — 288 said the remaining 64 tables need a menu-flow capture, not a playthrough. This is
+- [ ] GAP-1875 [source](../REPORT.en.md#L30797) ## 288. The 64 tables nobody has opened — remaining 64 are not a random tail: they belong to subsystems neither played life ever
+- [ ] GAP-1876 [source](../REPORT.en.md#L30888) ## 286. The headhunter — company is code-side, so it is assembled (marked as the shortcut).
+- [ ] GAP-1877 [source](../REPORT.en.md#L30997) ## 283. The prom is its own card — buttons  Run for prom {crown} / I don't care   (labels assembled; see shortcut)
+- [ ] GAP-1878 [source](../REPORT.en.md#L31031) ## 282. The school's name, and the generator 264 called missing — (the choice's weights are the port's: shortcut), stores the three names on the hero
+- [ ] GAP-1879 [source](../REPORT.en.md#L31106) ## 281. What the third character's later years added — ### 281.2 The encounter card is still prompt-blocked, but its verb pool is peeking out
+- [ ] GAP-1880 [source](../REPORT.en.md#L31200) ## 278. The eye exam is a mini-game, and the card says so — Start     the mini-game result is a coin (not modelled); pass and fail carry
+- [ ] GAP-1881 [source](../REPORT.en.md#L31240) ## 277. Where the port stands, and what it waits on — blocked surface                          needs
+- [ ] GAP-1882 [source](../REPORT.en.md#L31267) ## 277. Where the port stands, and what it waits on — The port is at the evidence ceiling: further work is a decision about which capture to
+- [ ] GAP-1883 [source](../REPORT.en.md#L31304) ## 276. The part-time job — and seed 26 now ends at 92 instead of 96. Three poses from 80 reach the 100 ceiling (24
+- [ ] GAP-1884 [source](../REPORT.en.md#L31416) ## 273. The crime chain: arrested, charged, pleaded, sentenced — kPendingCrimeCharge/Plea/Sentence   one card a year, the queue's own order
+- [ ] GAP-1885 [source](../REPORT.en.md#L31535) ## 270. A sibling's marriage and children — change. Appending the clauses is what the trace shows: the bare
+- [ ] GAP-1886 [source](../REPORT.en.md#L31601) ## 269. The family lifecycle's own rates — at 0.57. The remaining categories are babies (0.11 against 0.01) and marriages (0.10
+- [ ] GAP-1887 [source](../REPORT.en.md#L31643) ## 268. The composition gap, measured and corrected — year), and it does not disturb any card's calibration because those lines come from
+- [ ] GAP-1888 [source](../REPORT.en.md#L31661) ## 267. The optometrist, and the composition problem it exposed — first used three pending cards, and that pushed the cheating report (153) two years out
+- [ ] GAP-1889 [source](../REPORT.en.md#L31731) ## 266. A second played life, and 25 classes it added — 264.2 said the blocked families needed another played life. This is that life: the crime
+- [ ] GAP-1890 [source](../REPORT.en.md#L31752) ## 265. The battery, restored again — No new family landed. 264.2's blocked list was checked against the two holes that
+- [ ] GAP-1891 [source](../REPORT.en.md#L31760) ## 265. The battery, restored again — does not have; the prompts and lanes are code-side, so this is
+- [ ] GAP-1892 [source](../REPORT.en.md#L31792) ## 264. The evidence-gap register — ### 264.2 The classes that are blocked on data
+- [ ] GAP-1893 [source](../REPORT.en.md#L31821) ## 264. The evidence-gap register — ### 264.4 What would unblock the blocked half
+- [ ] GAP-1894 [source](../REPORT.en.md#L31880) ## 262. Graduation as its own card — schoolMilestoneLines: leaving the high-school band sets Hero::graduationPending
+- [ ] GAP-1895 [source](../REPORT.en.md#L31881) ## 262. Graduation as its own card — dispatchYear:        pendingFuneral first, then graduationPending, then the wheel
+- [ ] GAP-1896 [source](../REPORT.en.md#L31884) ## 262. Graduation as its own card — `Hero::graduationPending` keeps the card from being lost when another fixed event takes
+- [ ] GAP-1897 [source](../REPORT.en.md#L31924) ## 261. Starting school, and joining something — ### 261.2 What is still missing, and why
+- [ ] GAP-1898 [source](../REPORT.en.md#L31926) ## 261. Starting school, and joining something — The trace's start line names the school ("Allure Middle School"); the port's does not.
+- [ ] GAP-1899 [source](../REPORT.en.md#L31928) ## 261. Starting school, and joining something — the string does not appear in `gamedata_plain` or in the metadata literals, so it is
+- [ ] GAP-1900 [source](../REPORT.en.md#L31929) ## 261. Starting school, and joining something — built from word pools the dump does not carry. That half stays unwritten rather than
+- [ ] GAP-1901 [source](../REPORT.en.md#L31930) ## 261. Starting school, and joining something — invented (245.1's rule).
+- [ ] GAP-1902 [source](../REPORT.en.md#L32104) ## 257. Safe sex — hookup and the supervisor success -- and the card is pushed through the same pending queue
+- [ ] GAP-1903 [source](../REPORT.en.md#L32107) ## 257. Safe sex — ### 257.1 Shortcuts named
+- [ ] GAP-1904 [source](../REPORT.en.md#L32110) ## 257. Safe sex — availability  #31597/#31598 ("No condoms are available...") are not modelled: the
+- [ ] GAP-1905 [source](../REPORT.en.md#L32141) ## 256. The sibling squabble — ### 256.1 Shortcuts named
+- [ ] GAP-1906 [source](../REPORT.en.md#L32188) ## 255. The driver's licence — ### 255.1 Shortcuts named
+- [ ] GAP-1907 [source](../REPORT.en.md#L32193) ## 255. The driver's licence — outcome     a third card class (LicenseCarOutcome, title "Whatever") is not modelled:
+- [ ] GAP-1908 [source](../REPORT.en.md#L32335) ## 251. The ex who asks for a paternity test — accepted lane pushes the result through the pending queue the court order already had.
+- [ ] GAP-1909 [source](../REPORT.en.md#L32419) ## 249. A parent's death and the funeral — pair. A `pendingFuneral` flag set by the family lines now takes the year:
+- [ ] GAP-1910 [source](../REPORT.en.md#L32422) ## 249. A parent's death and the funeral — dispatchYear:  if (forcedChoice < 0 && life.hero.pendingFuneral) return funeralYear(...)
+- [ ] GAP-1911 [source](../REPORT.en.md#L32427) ## 249. A parent's death and the funeral — The remaining 7 are parents who died in a year the script forced a specific card (the
+- [ ] GAP-1912 [source](../REPORT.en.md#L32433) ## 249. A parent's death and the funeral — shortcut     the card's prompt was not captured; the title is the registry's (Death),
+- [ ] GAP-1913 [source](../REPORT.en.md#L32434) ## 249. A parent's death and the funeral — and the amount/beneficiary of an inheritance is not modelled yet
+- [ ] GAP-1914 [source](../REPORT.en.md#L32460) ## 248. The working week — ### 248.1 What is transcribed and what is shortcut
+- [ ] GAP-1915 [source](../REPORT.en.md#L32465) ## 248. The working week — shortcut     the card prompt itself was not captured; it is rebuilt from the log
+- [ ] GAP-1916 [source](../REPORT.en.md#L32467) ## 248. The working week — shortcut     no stat or salary deltas: the trace never shows the game's own numbers
+- [ ] GAP-1917 [source](../REPORT.en.md#L32468) ## 248. The working week — for either lane, so the port does not invent them
+- [ ] GAP-1918 [source](../REPORT.en.md#L32528) ## 247. The hero's own illnesses — does not have, and the rate at a sane floor.
+- [ ] GAP-1919 [source](../REPORT.en.md#L32574) ## 246. A full life, played — card it does not share, so the two streams describe different lives from age ~5 onward. The
+- [ ] GAP-1920 [source](../REPORT.en.md#L32622) ## 245. Probes, and the limit of driving the game — ### 245.1 Driving MuMu: what works, what does not
+- [ ] GAP-1921 [source](../REPORT.en.md#L32631) ## 245. Probes, and the limit of driving the game — Reached age 18-24 in three attempts; the honest ceiling of blind tapping is a short life.
+- [ ] GAP-1922 [source](../REPORT.en.md#L32707) ## 243. The distribution after rotation — the call does nothing. That closes the last programmatic route to a played life; the bench
+- [ ] GAP-1923 [source](../REPORT.en.md#L32732) ## 240. Rotation instead of a draw — ### 240.1 The honest ceiling
+- [ ] GAP-1924 [source](../REPORT.en.md#L32933) ## 233. A card carries its own buttons — filled in `renderRow` before the lane is picked, so it does not depend on which lane the
+- [ ] GAP-1925 [source](../REPORT.en.md#L32949) ## 234. Two rates that the tests had been leaning on — port-side approximations anyway (the game pushes these cards from its own scheduler), so
+- [ ] GAP-1926 [source](../REPORT.en.md#L33015) ## 230. What is still red, and why it cannot be tuned blind — the missing piece. Without it, every ordering decision is unverified.
+- [ ] GAP-1927 [source](../REPORT.en.md#L33069) ## 229. The blocks share the year — spawned instance dies at startup now (the Play-store stubs), so `blh_attach.py` launches
+- [ ] GAP-1928 [source](../REPORT.en.md#L33142) ## 223. The custody chain — The case card pushes `kPendingCustodyTrial`; the following age-up builds the arguments and
+- [ ] GAP-1929 [source](../REPORT.en.md#L33210) ## 226. `<friend>`, and the census that says the list is empty — The remaining fifty-five all run.
+- [ ] GAP-1930 [source](../REPORT.en.md#L33264) ## 213. The actor layer — The nine remaining card tables were said to need "an actor each". That was six of them,
+- [ ] GAP-1931 [source](../REPORT.en.md#L33326) ## 217. Home ownership — // shortcut: the price is Price Score * 10000, a scale the house table does not state.
+- [ ] GAP-1932 [source](../REPORT.en.md#L33333) ## 218. The spouse reacts — preview the port does not build.
+- [ ] GAP-1933 [source](../REPORT.en.md#L33434) ## 206. Closing measurement — 28 card-shaped tables       12 ported          16 remaining
+- [ ] GAP-1934 [source](../REPORT.en.md#L33435) ## 206. Closing measurement — of the 16:   8 blocked on an actor (surrogate, aircraft, asset, drug, musician)
+- [ ] GAP-1935 [source](../REPORT.en.md#L33436) ## 206. Closing measurement — 4 blocked on a chain (custody) or a public-setting model
+- [ ] GAP-1936 [source](../REPORT.en.md#L33437) ## 206. Closing measurement — 4 blocked on a token the port cannot yet answer
+- [ ] GAP-1937 [source](../REPORT.en.md#L33442) ## 206. Closing measurement — owns each (§171), the remaining tables are counted (§185, §203), and the rate needed to
+- [ ] GAP-1938 [source](../REPORT.en.md#L33448) ## 206. Closing measurement — 2. the four token-blocked tables, each a one-token change;
+- [ ] GAP-1939 [source](../REPORT.en.md#L33450) ## 206. Closing measurement — 4. the eight actor-blocked tables, which need an actor each and no plan.
+- [ ] GAP-1940 [source](../REPORT.en.md#L33484) ## 204. A drink is offered: three token forms, three columns — <circumstance-public>            blocked (no public-setting model)
+- [ ] GAP-1941 [source](../REPORT.en.md#L33485) ## 204. A drink is offered: three token forms, three columns — <musician-indefinite>            blocked (no music career in this card's path)
+- [ ] GAP-1942 [source](../REPORT.en.md#L33501) ## 204. A drink is offered: three token forms, three columns — remaining: 24
+- [ ] GAP-1943 [source](../REPORT.en.md#L33558) ## 178. Correction: "decrypts" is not a discriminator — the card that worked. What it changes in the plan is concrete: the remaining content is
+- [ ] GAP-1944 [source](../REPORT.en.md#L33559) ## 178. Correction: "decrypts" is not a discriminator — **not** blocked behind a decryption subsystem, because 1,071 plain tables cover 928
+- [x] GAP-1945 [source](../REPORT.en.md#L33567) ## 402. Full parity work inventory and rejected replay requests — The six _re/parity/*_TODO.md indexes retain30212 addressable, overlapping — Classified: documentation filename/reference, not a gameplay ceiling or parity proof.

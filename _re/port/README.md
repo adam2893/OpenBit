@@ -1,5 +1,7 @@
 # blport — native C++ port scaffold for BitLife 3.25.1 (com.candywriter.bitlife)
 
+> Historical scaffold notes follow. Feature omissions, RNG claims and “nothing invented” below are not current parity certification. Use the [canonical parity TODO](../../docs/superpowers/plans/2026-11-03-parity.md), [source census](../parity_inventory.json) and latest [report](../REPORT.en.md) for current scope, remaining work and evidence.
+
 Re-implements, in standard C++17 with no third-party dependencies, the parts of the
 Unity IL2CPP game that a platform port needs: the decrypted content-table data layer,
 the life-sim state + age-up loop, and the mod menu's cheat features. Nothing here is

@@ -5122,6 +5122,10 @@ bool Sim::forceScenario(const std::string& table, long long row) {
     std::fprintf(stderr, "forceScenario: table not loaded: %s\n", table.c_str());
     return false;
   }
+  if (static_cast<unsigned long long>(row) > tbl(table.c_str()).size()) {
+    std::fprintf(stderr, "forceScenario: row out of range: %s row %lld\n", table.c_str(), row);
+    return false;
+  }
   forcedTable_ = table;
   forcedRow_ = row;
   return true;
