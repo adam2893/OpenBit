@@ -4222,6 +4222,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice) {
     if (kind == kPendingZooShopAdjustPrice) return zooShopAdjustPriceYear(life, out, forcedChoice);
   if (kind == kPendingCasinoCelebOffer) return casinoCelebOfferYear(life, out, forcedChoice);
   if (kind == kPendingAstroResult) return astroResultYear(life, out, forcedChoice);
+  if (kind == kPendingZooInterview) return zooInterviewYear(life, out, forcedChoice);
     if (kind == kPendingPregnancy) return pregnancyYear(life, out, forcedChoice);
     if (kind == kPendingMiscarriage) return miscarriageYear(life, out, -1);
     if (kind == kPendingBirth) return birthYear(life, out, -1);
@@ -11693,14 +11694,65 @@ bool Sim::zooHireYear(Life& life, AgeUp& out, int forcedChoice) {
   out.choice = out.options[size_t(pick)];
   out.narrative = "I interviewed a candidate for the open " + type + " position.";  // #24494
   if (pick == 0) {
-    h.zooStaff += 1;
-    h.zooEmployeeCompetence = (h.zooEmployeeCompetence * 2 + comp) / 3;
-    h.zooEngagement = h.zooEngagement < 98 ? h.zooEngagement + 2 : 100;
-    out.extra.push_back("I hired " + who + " as a " + type + " for my zoo.");
+    // The hire runs through the interview table: natively the candidate screen hands
+    // off to an InterviewQuestion card and the answers are scored (REPORT.en.md 389).
+    h.zooHireName = who;
+    h.zooHireType = type;
+    h.zooHireComp = comp;
+    life.pendingCards.push_back(kPendingZooInterview);
   }
   return true;
 }
 
+bool Sim::zooInterviewYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (h.zooHireName.empty()) return false;
+  if (!ensureTable("a16_employee-interview-questions-enc")) return false;
+  const Table& t = tbl("a16_employee-interview-questions-enc");
+  const size_t r = weightedPick(t, "Commonness Score", zooMenuRng_);
+  if (r == size_t(-1)) return false;
+  std::vector<std::pair<std::string, int> > opts;
+  std::vector<std::string> names;
+  for (int k = 1; k <= 5; ++k) {
+    const std::string cn = "Choice " + std::to_string(k);
+    if (!t.has(cn)) continue;
+    const std::string c = trim(t.at(r, cn));
+    if (c.empty()) continue;
+    const std::string sn = cn + " Score";
+    opts.push_back(std::make_pair(resolve(c), int(t.num(r, sn))));
+    names.push_back(resolve(c));
+  }
+  if (opts.size() > 4) { opts.resize(4); names.resize(4); }
+  if (opts.empty()) { h.zooHireName.clear(); h.zooHireType.clear(); h.zooHireComp = 0; return false; }
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  const std::string who = h.zooHireName;
+  const std::string type = h.zooHireType;
+  out.table = "registry:ScenarioZooEmployeeHiring";
+  out.title = "Employee Candidate";  // #18688
+  out.body = resolve(trim(t.at(r, "Question")));  // the question is the table own text
+  out.body += "\n\n";
+  out.body += "How will you respond?";
+  out.options = names;
+  const int pick = forcedChoice < 0 ? int(zooMenuRng_.below(uint32_t(opts.size()))) : (forcedChoice >= int(opts.size()) ? int(opts.size()) - 1 : forcedChoice);
+  out.choice = out.options[size_t(pick)];
+  out.narrative = "I interviewed " + who + " for the open " + type + " position.";
+  if (opts[size_t(pick)].second >= 4) {
+    h.zooStaff += 1;
+    h.zooEmployeeCompetence = (h.zooEmployeeCompetence * 2 + h.zooHireComp) / 3;
+    h.zooEngagement = h.zooEngagement < 98 ? h.zooEngagement + 2 : 100;
+    out.extra.push_back("I hired " + who + " as a " + type + " for my zoo.");
+  } else {
+    out.extra.push_back("The candidate said " + lower(opts[size_t(pick)].first) + ", so there was no hire.");
+  }
+  h.zooHireName.clear();
+  h.zooHireType.clear();
+  h.zooHireComp = 0;
+  return true;
+}
 bool Sim::zooCommentCardYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;

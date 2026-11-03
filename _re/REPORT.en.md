@@ -23511,6 +23511,32 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 389. The zoo candidate's interview
+
+The hiring card used to close the hire on its own answer. Natively it does not:
+`ScenarioZooEmployeeHiring` hands the candidate to an `InterviewQuestion` card, whose
+`Choice N` rows carry a `Choice N Score`, and only a strong answer closes the hire. The
+port already ran that table for the office's hires, so the zoo chain now uses it too.
+
+On `Hire them` the candidate is parked (`zooHireName`, `zooHireType`, `zooHireComp`) and
+a pending card answers the same year: the question is the table's own `Question` text,
+the four best-populated `Choice N` rows become the answers with their `<city>` and
+`<industry/role>` tokens resolved, and the narrative records the interview. An answer
+scored four or better hires the candidate -- staff up one, keeper competence a third of
+the way toward the candidate's, engagement up two -- and anything less sends them away.
+
+`shortcut:` the native chain runs four classes (`HireCandidate` -> `InterviewQuestion` ->
+`InterviewAnswer` -> `HireComplete`); the port folds it into one card, so the player sees
+a single question rather than a short interview. The heading reuses the candidate row
+label `#18688 'Employee Candidate'` and the tail `'How will you respond?'` is port-side,
+because only the question text survived in the table. As in the office flow the turn-down
+line lowercases the quoted answer.
+
+`_re/tools/test_zoo_interview.py` sweeps twenty-five zoo owners in only-mode and walks
+the chain: `candidates: 56 | interviews: 33 | hires: 14 | refusals: 19`.
+
+The full 171-test suite ran on the binary these notes describe (7b59ee1116c8a87ca1e2..., 171 PASS / 1 FAIL). The failure was test_zoo_hire, which asserted that the hiring card itself logs the hire; since this section the hire is decided by the interview card that follows, so the test now skips the chained card and asserts the candidate card logs no hire. Re-run green at sixty candidates, thirty-three forward, twenty-seven ignored. No code changed.
+
 ## 388. The zoo's hiring card
 
 The candidate screen was recovered far enough to print: body `#22966 'Hire an employee

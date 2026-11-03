@@ -44,7 +44,10 @@ for seed in range(1, 41):
         if event.get("table") != TABLE:
             continue
         match = BODY.match(event.get("body") or "")
-        assert match, (seed, event.get("body"))
+        if not match:
+            # Same registry table: the interview card REPORT 389 chains behind this one.
+            assert "How will you respond?" in (event.get("body") or ""), (seed, event.get("body"))
+            continue
         assert event.get("title") == "Employee Candidate", event.get("title")
         assert event.get("choice") in ("Hire them", "Ignore it"), event.get("choice")
         comp = int(match.group("comp"))
@@ -53,8 +56,10 @@ for seed in range(1, 41):
         logs = event.get("logLines") or []
         assert any(line.startswith("I interviewed a candidate for the open ") for line in logs), (seed, logs)
         if event.get("choice") == "Hire them":
+            # Since REPORT 389 the hire itself is decided by the interview card that
+            # follows, so this card only moves the candidate forward.
             hires += 1
-            assert any(line.startswith("I hired ") and line.endswith(" for my zoo.") for line in logs), (seed, logs)
+            assert not [line for line in logs if line.startswith("I hired ")], (seed, logs)
         else:
             ignores += 1
             assert not [line for line in logs if line.startswith("I hired ")], (seed, logs)

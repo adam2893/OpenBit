@@ -152,6 +152,7 @@ enum PendingCard {
   kPendingZooShopAdjustPrice = 51, // the product card's price answer (REPORT.en.md 370)
   kPendingCasinoCelebOffer = 52,    // the contract offer card (REPORT.en.md 371)
   kPendingAstroResult = 53,         // the nomination's answer card (REPORT.en.md 372)
+  kPendingZooInterview = 54,        // the zoo candidate interview that follows the hiring card (REPORT.en.md 389)
   kPendingPregnancy = 34,         // the partner's pregnancy card (REPORT.en.md 338)
   kPendingMiscarriage = 35,       // the miscarriage card (REPORT.en.md 338)
   kPendingBirth = 36,
@@ -805,6 +806,7 @@ bool casinoCelebDeathYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooSupplierYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooCommentCardYear(Life& life, AgeUp& out, int forcedChoice);
   bool zooHireYear(Life& life, AgeUp& out, int forcedChoice);
+  bool zooInterviewYear(Life& life, AgeUp& out, int forcedChoice);
   double casinoTaxRate(double taxable) const;
   void ensureCultFields(Life& life);
   bool dealerYear(Life& life, AgeUp& out, int forcedChoice);
