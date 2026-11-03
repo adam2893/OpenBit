@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -1002,8 +1003,16 @@ bool parseScript(const std::string& json, ScriptSpec& spec, std::string* error) 
             return fail("push \"scenario\" must be a non-empty string");
           q = findValue(elem, "choice");
           long long c = -1;
-          if (q != std::string::npos && readInt(elem, q, c) != std::string::npos && c >= 0)
+          if (q != std::string::npos) {
+            skipWs(elem, q);
+            size_t next = readInt(elem, q, c);
+            if (next == std::string::npos || c < -1 || c > std::numeric_limits<int>::max() || elem[q] == '+')
+              return fail("push[" + std::to_string(spec.push.size()) + "] choice must be an integer from -1 to INT_MAX");
+            skipWs(elem, next);
+            if (next >= elem.size() || (elem[next] != ',' && elem[next] != '}'))
+              return fail("push[" + std::to_string(spec.push.size()) + "] choice must be a complete integer token");
             ps.choice = int(c);
+          }
           spec.push.push_back(ps);
           p = end + 1;
           skipWs(json, p);

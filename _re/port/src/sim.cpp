@@ -7244,8 +7244,13 @@ bool Sim::forceScenarioClass(const std::string& cls, int choice) {
     std::fprintf(stderr, "forceScenarioClass: Witch Doctor has only choice 0\n");
     return false;
   }
-  if (cls != "ScenarioWitchDoctor" && !findScenario(cls)) {
+  const RegScenario* scenario = findScenario(cls);
+  if (cls != "ScenarioWitchDoctor" && !scenario) {
     std::fprintf(stderr, "forceScenarioClass: unknown scenario class: %s\n", cls.c_str());
+    return false;
+  }
+  if (scenario && (choice < -1 || choice >= scenario->n)) {
+    std::fprintf(stderr, "forceScenarioClass: choice out of range: %s choice %d\n", cls.c_str(), choice);
     return false;
   }
   forcedClass_ = cls;

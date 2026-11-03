@@ -33733,3 +33733,50 @@ and non-WitchDoctor invalid-choice handling remain open P0.2 work. This chapter
 closes stale request reuse/replacement, not the whole replay or parity gate.
 The endpoint-only integrity and incomplete native-capture ceilings remain.
 
+## 406. Forced registry choices fail closed across parser, setter and producer
+
+P0.2 regression reproduced ScenarioOfferFood with explicit choice-2 returning
+a successful trace and the randomized Join them branch. Validating only the
+setter was insufficient: script parsing silently normalized negative or
+malformed choices to -1 and narrowed large integers before dispatch.
+
+forceScenarioClass now rejects explicit indices outside the modeled registry
+range, with -1 retained as the documented RNG sentinel and the existing Witch
+Doctor special case unchanged. ScenarioDiseaseContract registry count4 matches
+its special symptom renderer; zero-button scenes accept no explicit index.
+The local push-choice parser preserves -1, rejects non-integer/trailing tokens
+and values outside [-1,INT_MAX], then performs checked narrowing. Indexed errors
+propagate without successful trace output. Normal non-replay RNG selection is
+not changed. This is validation of the modeled replay surface, not certification
+of every original scenario/button contract.
+
+Independent scoped review identified a real producer compatibility failure:
+row_recover.py emitted template indices for automatic scenes, contrary to its
+own documented no-button contract. Three zero-button scenes produced choice0;
+sibling/disease narrative variants produced1/2 despite not representing buttons.
+A separate RED producer-to-CLI fixture reproduced the generated choices. The
+six observed auto-scene classes now omit synthetic button indices; genuine
+OfferFood branch0 is still emitted. Historical traces are not rewritten and
+unknown native outcome state is not invented from narrative variants.
+
+Expanded end-to-end checks cover eight registry classes with modeled counts0
+through4, invalid -2/count/INT_MAX, valid sentinel/first/last indices, exact
+OfferFood branch labels, omitted-choice equivalence to explicit-1, booleans,
+null/string/fractional values and integer-narrowing overflow. Real row-recovery
+CLI fixtures feed six auto-scenes and one genuine menu back through blsim.
+Choice/rejection, nineteen-lane lifecycle and Witch Doctor focused checks exit0;
+build exit0. Review found no changed-path out-of-bounds/narrowing issue; its
+producer compatibility finding was fixed and verified with executable fixtures.
+
+Complete durable suite406:189 PASS /0FAIL,planned=completed=189,exit0,
+interrupted=false,changed_inputs=[],snapshot_error=null,endpoint-sha256.
+Logs/manifests: /tmp/qdir/suite406-run.log and /tmp/qdir/suite406/.
+Before/after binary SHA-256:
+5d9ac7d713f08d940ebd1e389cd073716c201f2cca8c313a21b759c88f25001d.
+No source/header/tool/content/binary changes occurred during full acceptance.
+
+shortcut: this is not a general JSON-parser replacement. Existing keyed lookup
+and unrelated script grammar weaknesses remain separate. Pending-card replay
+interference, complete accepted-output provenance, native capture/state/RNG
+proof and immutable execution remain open canonical requirements.
+

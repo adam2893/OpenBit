@@ -553,7 +553,8 @@ class Sim {
   // Replays one scripted-event scenario by its real il2cpp class name, rendered
   // from the registry in sim.cpp (the game builds these from code plus il2cpp
   // string literals, so there is no table row to name). choice is the 0-based
-  // button index; -1 lets the RNG pick one. A class the registry does not know
+  // button index; -1 lets the RNG pick one. Other indices outside the registry
+  // button count are rejected, never silently randomized. A class the registry does not know
   // reports on stderr and returns false, so the bench sees the gap instead of a
   // silent fallback.
   bool forceScenarioClass(const std::string& cls, int choice);

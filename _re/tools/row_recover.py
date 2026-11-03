@@ -159,8 +159,16 @@ def log_words(s):
     return set(w for w in nkey(s).split() if len(w) >= 3)
 
 
+AUTO_ADVANCING = {
+    "ScenarioScriptEventSiblingBorn", "ScenarioPetDeath", "ScenarioScriptEventDiseaseContract",
+    "ScenarioFriendNew", "ScenarioScriptEventParentsBreakUp", "ScenarioScriptEventParentMarriesStepparent",
+}
+
+
 def match_choice(cls, logs):
-    """0-based index of the branch the game took, or None when it cannot tell."""
+    """0-based button index, never an auto-scene narrative-variant index."""
+    if cls in AUTO_ADVANCING:
+        return None
     tmpl = REGISTRY.get(cls)
     if not tmpl:
         return None
