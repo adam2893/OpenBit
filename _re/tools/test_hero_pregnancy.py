@@ -55,14 +55,17 @@ for seed in range(1, 21):
         if event.get("title") == "Pregnancy":
             cards += 1
             m = CARD.match(body)
-            assert m, (seed, event["age"], body)
+            if not m:
+                # The generic branch (no recognised lover) is #47766 verbatim, REPORT 342.
+                assert body == "You are pregnant!\n\nWhat will you do?", (seed, event["age"], body)
             assert event["age"] >= 13, (seed, event["age"])
             assert event.get("choice") in CHOICES, (seed, event.get("choice"))
             assert not event.get("residue"), (seed, event.get("residue"))
             if event["choice"] == "Keep the baby":
                 keeps += 1
                 kept = True
-                father = m.group("name")
+                # The generic branch carries no lover name, so the birth check below skips it.
+                father = m.group("name") if m else None
             else:
                 declines += 1
                 assert deltas["happiness"] == PTS_DECLINE, (seed, deltas)
@@ -81,7 +84,8 @@ for seed in range(1, 21):
             for c in born:
                 assert c["isHeroes"] is True, (seed, c)
                 assert c["twins"] == kids - 1, (seed, c)
-                assert c["otherParent"] == father, (seed, c)
+                if father is not None:
+                    assert c["otherParent"] == father, (seed, c)
         elif LOSS.match(body):
             losses += 1
             assert kept, (seed, event["age"], body)

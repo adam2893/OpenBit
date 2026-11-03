@@ -23511,6 +23511,28 @@ tests      89/89 green (test_plastic_surgery added)
 shortcut: the menu's own prompt is not in the dump, so the body is the menu label
 #21450, and a row without a Description falls back to its Procedure name.
 
+## 391. Renaming a zoo animal
+
+The zoo menu has a row for renaming an animal, and its body survived whole: `#15581 "Choose a new name for your animal today!"`. The name pool is `a16_zoo-animal-names-enc`, keyed by animal and breed and split by gender -- `Ms. <random-surname>` for a female secretary bird, `Mr. <random-surname>` for a male one, `Count Chocula` for a vampire bat, `Tiguana Notaro` for an iguana. The `<random-surname>` token is the portfolio-wide one `resolve()` already owns, so no new token machinery was needed. The card carries two rows, `Current Name` (`#16820`, recovered in 384) and `Name` (`#31091`), and a single `OK` (`#32432`). The journal line opens on `#24973 "I renamed "`.
+
+The port walks the herd, picks an animal at random, and prefers a row whose animal, breed and gender all match. It only falls back to any other row when the herd animal has no matching line at all -- which happens, because the table covers 1,345 name rows but not every breed the herd can hold. A name equal to the one the animal already has is rejected, so the card can never be a no-op.
+
+### Defects found while wiring it
+
+- 379 stored habitat names unresolved, and `resolve()` picks a different alternative on every call, so the habitat-named row on the card and the line the move wrote disagreed with each other. Both habitat build sites now resolve the name once, before storing it.
+- The agent gender was cached on the hero and never cleared when an agent was dropped or replaced, so the agent compliment card (327) could pronoun a replacement agent by the previous one gender. The field is now reset wherever an agent is cleared or hired, and the card reads it back from the celebrity-name row instead of assuming.
+
+### Ceilings
+
+- `shortcut:` the card fires on its own once the park is owned and eighteen is reached; natively the rename is a menu row the player taps. Every zoo card in this stretch rides the same wheel because the port has no zoo menu layer (see 373).
+- `shortcut:` one `OK` answer, matching the recovered label set. Natively a name field takes arbitrary text; the port draws from the name table rather than inventing a prompt.
+- `shortcut:` the card is a plain rename with no stat effect. The native card has no recovered impact either, so nothing was invented.
+
+### Verification
+
+`_re/tools/test_zoo_animal_rename.py` runs twelve zoo owners through forty years each and asserts the body shape, the `OK` answer, the three-year floor between cards, and that the journal line names the same pair of names the card displayed. It also carries a control without a zoo, which must never show the card. Measured: cards: 17 | renames: 17 | chains: 2, where a chain is a card whose `Current Name` equals the previous card new name -- the rename really took.
+The full 174-test suite ran on the binary these notes describe (676b3dc3e1ff2a5114d8d831ff3cb0fccd308668..., 173 PASS / 1 FAIL). The one failure was test_hero_pregnancy, which accepted only the lover-shaped pregnancy body and tripped on the generic branch (REPORT 342 #47766) after the new family shifted the wheel; the test now accepts that verbatim body and skips its lover-name check, and re-ran green at 21 cards / 12 keeps / 9 declines / 8 births / 4 losses. No code changed.
+
 ## 390. Moving an animal into a habitat
 
 The habitat cards (379, 380) could build and clear habitats but nothing ever put an

@@ -616,6 +616,7 @@ struct Hero {
   std::string zooHireName, zooHireType;  // the candidate waiting on their interview (389)
   int zooHireComp = 0;                   // that candidate own competence (389)
   int zooMoveInAge = -1;         // the year the animal move-in card fired (390)
+  int zooAnimalRenameAge = -1;   // the year the animal rename card fired (391)
   std::string zooHabitat;        // the habitat the card is about
   std::string zooAnimalSpecies;  // the species ("Big Cat")
   std::string zooAnimalBreed;    // the breed inside the species

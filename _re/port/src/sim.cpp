@@ -4593,6 +4593,8 @@ bool Sim::dispatchYear(Life& life, AgeUp& out, int forcedChoice) {
          "zoo-hire"},
         {&Sim::zooMoveInYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-move-in"},
+        {&Sim::zooAnimalRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
+         "zoo-animal-rename"},
         {&Sim::zooRenameYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
          "zoo-rename"},
         {&Sim::zooInstallAttractionYear, [](const Life& l) { return l.hero.ownsZoo; }, 1,
@@ -11708,6 +11710,53 @@ bool Sim::zooHireYear(Life& life, AgeUp& out, int forcedChoice) {
   return true;
 }
 
+bool Sim::zooAnimalRenameYear(Life& life, AgeUp& out, int forcedChoice) {
+  Hero& h = life.hero;
+  hero_ = &h;
+  life_ = &life;
+  if (!h.ownsZoo || h.age < 18 || h.inPrison) return false;
+  if (h.zooHerd.empty()) return false;
+  if (h.zooAnimalRenameAge >= 0 && h.age - h.zooAnimalRenameAge < 3) return false;
+  if (forcedChoice < 0 && !zooMenuRng_.chance(0.06)) return false;
+  if (!ensureTable("a16_zoo-animal-names-enc")) return false;
+  const Table& t = tbl("a16_zoo-animal-names-enc");
+  const size_t slot = zooMenuRng_.below(uint32_t(h.zooHerd.size()));
+  Hero::ZooHerdAnimal& animal = h.zooHerd[slot];
+  // The name table is keyed by animal and breed and carries both genders; a row whose
+  // gender is the wrong one still gives a usable name, so it is only a preference.
+  std::vector<size_t> of;
+  std::vector<size_t> any;
+  for (size_t r = 0; r < t.size(); ++r) {
+    const std::string nm = trim(t.at(r, "Name"));
+    if (nm.empty() || resolve(nm) == animal.name) continue;
+    any.push_back(r);
+    if (lower(trim(t.at(r, "Animal"))) != lower(animal.species)) continue;
+    if (lower(trim(t.at(r, "Breed"))) != lower(animal.breed)) continue;
+    if ((lower(trim(t.at(r, "Gender"))) == "female") != animal.female) continue;
+    of.push_back(r);
+  }
+  const std::vector<size_t>& pool = of.empty() ? any : of;
+  if (pool.empty()) return false;
+  const std::string next = resolve(trim(t.at(pool[zooMenuRng_.below(uint32_t(pool.size()))], "Name")));
+  if (next.empty() || next == animal.name) return false;
+  const std::string was = animal.name;
+  const std::vector<std::string> extra = out.extra;
+  out = AgeUp();
+  out.extra = extra;
+  h.zooAnimalRenameAge = h.age;
+  out.table = "registry:ScenarioZooAnimalName";
+  out.title = "Zoo";  // #50857
+  out.body = "Choose a new name for your animal today!";  // #15581
+  out.body += "\n\n";
+  out.body += "Current Name: " + was;  // #16820
+  out.body += "\n";
+  out.body += "Name: " + next;  // #31091
+  out.options = {"OK"};  // #32432
+  out.choice = out.options[0];
+  animal.name = next;
+  out.narrative = "I renamed " + was + " the " + animal.breed + " to " + next + ".";  // #24973
+  return true;
+}
 bool Sim::zooMoveInYear(Life& life, AgeUp& out, int forcedChoice) {
   Hero& h = life.hero;
   hero_ = &h;
