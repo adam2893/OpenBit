@@ -1,5 +1,23 @@
 # tools/ — Phase 1 differential bench
 
+## Acceptance commands (local or CI)
+
+From the repository root, with Python 3.11+ and a POSIX host:
+
+```bash
+cmake -S _re/port -B _re/port/build -DCMAKE_BUILD_TYPE=Release
+cmake --build _re/port/build -j 4
+python3 _re/tools/test_diff.py
+python3 _re/tools/test_suite_runner.py
+python3 _re/tools/run_suite.py --output /absolute/new/suite-output
+```
+
+Use a fresh output directory. Do not edit sources, headers, tools, content, or rebuild during acceptance. The runner executes every tools/test_*.py, stores each exit code and log, persists inputs_before.json before tests, then writes summary.json with counts and before/after SHA-256 hashes. Exit 0 means all scripts passed with matching endpoint hashes; 1 means script failures; 2 means invalid setup, changed inputs, or unavailable final hashes. SIGINT/SIGTERM exits nonzero and retains partial results. Owned process groups are released after normal and interrupted exits. Windows execution remains separate work.
+
+Integrity scope is endpoint-sha256: this detects persistent changes, not a modify/use/restore operation between snapshots. It does not provide immutable execution or certify native parity. Strict capture ordering, full before/after state, RNG and rewind epoch evidence remain open requirements.
+
+The comparator is diagnostic only (parity_certified=false). Exit 0 means no divergence within its normalized sets, age window and tolerant stat-drift contract, not behavioral equivalence. Missing reference ages, malformed observations, scenario-count differences and extra/missing normalized logs fail. Verbose mode emits complete JSON-lines: summary first, then detail records.
+
 Compares a life run **inside the original APK** with the same run in the native port
 (`../port/build/blsim`). The point is to make every later porting decision falsifiable:
 the first divergence is the work item.
@@ -18,7 +36,7 @@ blsim --script S.json ──►  stdout (events+logLines) ──►  port_trace.
 | `trace_common.py` | the one normalization both sides go through: lower-case, digits→`#`, quoted strings and capitalised name runs→`{name}`, other punctuation→space. Compares *what happened*, not how a name or number was spelled. |
 | `game_trace.py` | drive rounds → canonical trace. Reads the six UI stats out of the il2cpp backing fields (`<Att_intelligence>k__BackingField` is UI "Smarts"). |
 | `port_trace.py` | runs `blsim --script` and folds each event's `deltas` forward so every age has a stat line. |
-| `diff.py` | first divergence, in priority order: age coverage → per-age log lines → per-age stats drift. |
+| `diff.py` | first divergence, in priority order: age coverage → per-age normalized log sets → scenario counts → per-age stats drift. |
 
 ## Usage
 

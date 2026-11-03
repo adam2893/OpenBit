@@ -33600,3 +33600,53 @@ and that the census source hashes match. This chapter is appended to retain
 all preexisting report line references. The canonical ledger defines the next
 contracts, including differential age coverage and strict verifier exit status.
 
+## 403. Diagnostic omission checks and reproducible regression acceptance
+
+The P0.3 comparator no longer computes missing ages from an already intersected
+domain. Regression first reproduced game ages1,2 versus port age1 passing; it
+now reports age-coverage at2. CLI exit1 propagates diagnostic divergence and
+exit2 rejects malformed inputs, unavailable files and invalid tolerance. Tests
+cover option ordering, matching diagnostic traces, scenario-count differences,
+extra-only normalized logs, stream priority, duplicate/invalid ages, malformed
+log/scenario arrays, missing stats and nonfinite/non-numeric stats. Verbose
+output emits complete JSON-lines; its pretty-summary/truncated-detail defect
+was reproduced and corrected without truncating JSON records.
+
+The new tools/run_suite.py replaces ephemeral acceptance shell scripts. It
+rejects zero tests, unavailable build inputs and reused output directories,
+runs every tools/test_*.py, preserves per-test logs/exit codes and starting
+inputs_before.json, then records counts and both endpoint hash manifests in
+summary.json. Independent static review found normal-exit descendant leaks
+and missing starting/finalization evidence. RED/GREEN regressions now require
+pre-execution hashes, normal/interrupted owned-group release and preservation
+of completed results when final snapshot reads fail. The latter uses an
+injected filesystem error; subprocess lifecycle checks use actual owned
+processes and socket barriers. A reproduced macOS TERM-then-KILL orphan-reaping
+race intermittently returned EPERM; cleanup now sends one SIGKILL to remaining
+owned groups. Three bounded runner stability checks passed after correction.
+
+Acceptance: tools/test_diff.py and tools/test_suite_runner.py exit0. The
+complete durable suite403 finished187 PASS / 0 FAIL, planned=completed=187,
+exit0, interrupted=false, changed_inputs=[], snapshot_error=null. Logs and
+machine evidence are /tmp/qdir/suite403-run.log and /tmp/qdir/suite403/. Binary
+SHA-256 before/after:8b5af574d035b928cfab3c87feee13275ee7cf2aaa365be3905d568ab7fe7970.
+No C++ changes/rebuild were required; no source/header/tool/content/binary
+changes were made during this run. Reproducible local/CI commands are recorded
+in tools/README.md. Existing findings and the large untracked log were preserved.
+
+shortcut: comparator comparison_mode=diagnostic and parity_certified=false.
+Normalized text sets still lose order/multiplicity; stats still use a tolerated
+offset/drift contract. Current original and port traces lack complete per-event
+before/after state, unified ordering, RNG restoration and rewind epoch evidence.
+Raw original captures preserve more observations but not a lossless full-state
+protocol. No strict/native equivalence is certified by this chapter.
+
+shortcut: runner integrity_scope=endpoint-sha256. Matching before/after hashes
+detect persistent changes, not modify/use/restore between snapshots. Immutable
+execution remains an explicit open canonical TODO, not a claimed guarantee.
+The runner is POSIX-only; Windows process ownership remains separate work.
+Next capture prerequisite: drive10.py passes stream sizes positionally as RPC
+timeouts rather than the n keyword; correction needs an isolated regression.
+Bounded shifting buffers, count saturation and reset/non-atomic capture still
+prevent that future keyword fix alone from certifying lossless observation.
+
