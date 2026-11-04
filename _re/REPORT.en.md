@@ -33965,3 +33965,41 @@ Condom availability, extra native buttons/contexts, pregnancy/STDs, native RNG
 identity/distribution and broader queued choice continuations remain OPEN.
 All remaining content/DLC/IAP/platform/capture/state obligations stay open.
 
+## 412. Honor queued funeral disposition and ashes choices
+
+Forward forcedChoice only at kPendingFuneralPlan and kPendingFuneralAshes.
+Their existing selectable handlers already support explicit lanes and negative
+defaults; the dispatcher discarded the answer. No other queue path changes.
+Native metadata37936-37971 declares both ChoiceSelectedAtIndex methods; recorded
+section307 captures the chain, options and journals. No fresh decompilation.
+
+Natural bounded discovery: seeds1..60,age60,256 calls/life,ordinary setup and
+ageUp with returned deltas/clamps/checkDeath. Pinned seed15,US/default male,
+52 calls,age30,mother,cash943702; no injected money/queue/relation/due fields.
+Initial RED: planning0 yielded Donate her body to science,assert/SIGABRT6,
+Python exit1. After planning fix, independent ashes RED:0 yielded Throw them
+in the trash,assert/SIGABRT6,Python exit1. Logs:/tmp/bitlife-funeral-red412.log
+and /tmp/bitlife-funeral-ashes-red412.log. Final rebuild/focused GREEN exit0
+(/tmp/bitlife-build412.log,/tmp/bitlife-funeral-green412.log).
+
+New test_pending_funeral.py verifies all4 disposition choices plus default,
+exact labels/journals,existing modeled costs and cleanup; cremation creates
+the real pending ashes state. Copying BOTH Sim/Life from that state tests
+all3 ashes choices/default, prompt/options/journals, resolved sprinkle prefix,
+no additional cash charge, same age/year, consumed queue/flags/relation and
+subsequent annual advance. Existing funeral/safe-sex/replay/play checks exit0.
+Independent scoped review found no actionable findings.
+
+Frozen suite412:193/193 PASS,0FAIL,planned=completed193,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256; manifests/logs:/tmp/qdir/suite412/,outer:
+/tmp/bitlife-suite412-run.log. Identical before/after binary SHA-256:
+6321986d703a357f769755dac35add979bd87a67dd4b6e1bae4f12da708fb6d8.
+No source/header/tool/content/binary edits or rebuilds during acceptance.
+
+shortcut: input routing only, not native funeral parity. Fixed captured costs,
+currency/wishes,collapsed unaffordable modal,ash age/gender fallback semantics,
+full inventory/persistence and native RNG remain open. New fixture covers an
+affordable maternal chain; existing funeral test retains broader observed
+lanes. Full native/content/DLC/IAP/UI/state/recovery obligations remain OPEN.
+

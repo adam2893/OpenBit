@@ -4199,8 +4199,8 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice*
     if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
     if (kind == kPendingCasinoBankrupt) return casinoBankruptYear(life, out, -1);
     if (kind == kPendingZooBankrupt) return zooBankruptYear(life, out, forcedChoice);
-    if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, -1);
-    if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, -1);
+    if (kind == kPendingFuneralPlan) return funeralPlanningYear(life, out, forcedChoice);
+    if (kind == kPendingFuneralAshes) return funeralAshesYear(life, out, forcedChoice);
     if (kind == kPendingHrDiscipline) return hrDisciplineYear(life, out, -1);
     if (kind == kPendingHeroPregnancy) return heroPregnancyYear(life, out, forcedChoice);
     if (kind == kPendingHeroMiscarriage) return heroMiscarriageYear(life, out, -1);
