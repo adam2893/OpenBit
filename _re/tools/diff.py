@@ -41,9 +41,19 @@ def validate_trace(trace, label, require_ages=False):
             raise ValueError(label + " needs six finite stats at age " + str(age))
 
 
-def compare(game, port, stat_tol=3, verbose=True):
+def compare(game, port, stat_tol=3, verbose=True, *, strict_logs=False):
     validate_trace(game, "game", require_ages=True)
     validate_trace(port, "port")
+    if type(strict_logs) is not bool:
+        raise ValueError("strict_logs must be a boolean")
+    if strict_logs:
+        for label, trace in (("game", game), ("port", port)):
+            if trace.get("log_provenance") != "source-array-order-v1":
+                raise ValueError(label + " lacks raw ordered-log provenance")
+            for record in trace["ages"]:
+                lines = record.get("raw_logs")
+                if not isinstance(lines, list) or not all(isinstance(x, str) for x in lines):
+                    raise ValueError(label + " needs raw string logs at age " + str(record["age"]))
     if type(stat_tol) not in (int, float) or not math.isfinite(stat_tol) or stat_tol < 0:
         raise ValueError("stat tolerance must be finite and nonnegative")
     ga_all = {a["age"]: a for a in game["ages"]}
@@ -54,7 +64,7 @@ def compare(game, port, stat_tol=3, verbose=True):
     pa = {a: pa_all[a] for a in window if a in pa_all}
     report = {"ages_game": len(ga_all), "ages_port": len(pa_all),
               "window": [window[0], window[-1]] if window else [],
-              "comparison_mode": "diagnostic", "parity_certified": False,
+              "comparison_mode": "strict-logs" if strict_logs else "diagnostic", "parity_certified": False,
               "first_divergence": None, "detail": []}
 
     missing_ages = sorted(set(ga_all) - set(pa_all))
@@ -68,7 +78,18 @@ def compare(game, port, stat_tol=3, verbose=True):
     g_prev = p_prev = None
     for age in sorted(ga):
         g, p = ga[age], pa[age]
-        gl, pl = keyset(g["logs"]), keyset(p["logs"])
+        if strict_logs and g["raw_logs"] != p["raw_logs"]:
+            left, right = g["raw_logs"], p["raw_logs"]
+            index = next((i for i in range(min(len(left), len(right))) if left[i] != right[i]), min(len(left), len(right)))
+            mismatch = {"stream": "logs", "age": age, "index": index,
+                        "game_count": len(left), "port_count": len(right),
+                        "game_text": left[index] if index < len(left) else None,
+                        "port_text": right[index] if index < len(right) else None,
+                        "what": "raw observed log sequences differ"}
+            report["detail"].append(mismatch)
+            if report["first_divergence"] is None or report["first_divergence"]["stream"] in ("scenarios", "stats"):
+                report["first_divergence"] = mismatch
+        gl, pl = (set(), set()) if strict_logs else (keyset(g["logs"]), keyset(p["logs"]))
         only_g, only_p = gl - pl, pl - gl
         near = [(x, max((jac(x, y), y) for y in only_p)) for x in only_g] if only_p else []
         near = [n for n in near if n[1][0] >= 0.6]
@@ -125,13 +146,14 @@ if __name__ == "__main__":
     parser.add_argument("port")
     parser.add_argument("--stat-tol", type=int, default=3)
     parser.add_argument("-v", action="store_true")
+    parser.add_argument("--strict-logs", action="store_true", help="compare exact raw per-age occurrences; requires provenance, never certifies parity")
     args = parser.parse_args()
     if args.stat_tol < 0:
         parser.error("--stat-tol must be nonnegative")
     try:
         with open(args.game) as g, open(args.port) as p:
             game, port = json.load(g), json.load(p)
-        rep = compare(game, port, args.stat_tol)
+        rep = compare(game, port, args.stat_tol, strict_logs=args.strict_logs)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         parser.error(str(error))
     print(json.dumps({k: v for k, v in rep.items() if k != "detail"}, indent=None if args.v else 1))

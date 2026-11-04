@@ -20,10 +20,13 @@ def normalize(out):
     base = dict(out["hero"]["stats"])
     acc = dict(base)
     by_age = {}
+    raw_valid = isinstance(out.get("events"), list)
+    birth = out.get("birth")
+    raw_valid = raw_valid and isinstance(birth, list) and all(isinstance(x, str) for x in birth)
     # Age 0 is the birth log: those lines land before the first age-up, so they get
     # their own bucket with the newborn stats.
     if out.get("birth"):
-        by_age[0] = {"age": 0, "logs": list(out["birth"]), "scenarios": [], "stats": dict(base)}
+        by_age[0] = {"age": 0, "logs": list(out["birth"]), "raw_logs": list(out["birth"]), "scenarios": [], "stats": dict(base)}
     # SimHero.SetupEverythingElseForNewHero runs inside the first age-up, so the
     # age-1 fold starts from the 'newborn' snapshot, not from the ctor values.
     newborn = (out.get("newborn") or {}).get("stats")
@@ -31,14 +34,22 @@ def normalize(out):
         if newborn and ev["age"] == 1:
             acc = dict(newborn)
         acc = {k: acc.get(k, 0) + int(ev["deltas"].get(k, 0)) for k in STAT_KEYS}
-        rec = by_age.setdefault(ev["age"], {"age": ev["age"], "logs": [], "scenarios": [], "stats": None})
-        rec["logs"].extend(ev.get("logLines") or [])
+        rec = by_age.setdefault(ev["age"], {"age": ev["age"], "logs": [], "raw_logs": [], "scenarios": [], "stats": None})
+        lines = ev.get("logLines")
+        if isinstance(lines, list) and all(isinstance(x, str) for x in lines):
+            rec["raw_logs"].extend(lines)
+        else:
+            raw_valid = False
+        rec["logs"].extend(lines or [])
         rec["scenarios"].append({"title": ev.get("title"), "body": ev.get("body"),
                                  "cls": "%s!%s" % (ev.get("table"), ev.get("row"))})
         rec["stats"] = dict(acc)
-    return {"source": "port", "base_stats": base,
+    result = {"source": "port", "base_stats": base,
             "ages": [by_age[a] for a in sorted(by_age)],
             "final": out.get("final")}
+    if raw_valid:
+        result["log_provenance"] = "source-array-order-v1"
+    return result
 
 
 if __name__ == "__main__":

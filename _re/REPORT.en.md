@@ -34040,3 +34040,45 @@ Next foundation: preserve ordered observed log occurrences and strict compare
 without laundering legacy captures into lossless/native certification. All
 other canonical native/content/DLC/IAP/platform/recovery obligations stay OPEN.
 
+## 414. Strict observed log sequences without native certification
+
+P0.3 previously compared normalized sets: repeated/reordered lines and changed
+amounts/names could disappear. Add opt-in --strict-logs / compare(...,strict_logs=True)
+while retaining the default diagnostic contract. Exact per-age raw_logs arrays
+compare order,multiplicity,empty strings,spelling and numeric text. Both traces
+require exact log_provenance=source-array-order-v1 and every age a raw string
+array. Unknown/missing provenance or malformed sidecars fail API ValueError/
+CLI2 without a success report. Valid difference exits1; matching observations
+exit0. First mismatch reports index,counts and exact text (null only absent).
+
+Game projection retains raw entries alongside unchanged diagnostic deduped logs;
+repeated same-age rounds cannot mint provenance because overlap is unresolved.
+Missing/malformed arrays cannot mint it. Canonical passthrough never upgrades
+legacy captures. Port projection preserves birth/event log occurrences, rejecting
+missing original arrays as provenance. fresh_trace intentionally unchanged and
+ineligible: cursor/timestamp completeness evidence is not available.
+
+RED test_strict_logs.py initially observed original game projection losing raw
+duplicates/empty text and lacking provenance; separate comparator RED lacked
+strict_logs API. Missing-birth RED caught provenance laundering and was fixed
+by requiring original birth array. Logs:/tmp/bitlife-strict-red414.log,
+/tmp/bitlife-strict-comparator-red414.log,/tmp/bitlife-strict-birth-red414.log.
+GREEN strict/diff/capture-RPC checks exit0. Tests cover reorder,duplicate,amount,
+name,Unicode,newline,empty/prefix differences; marker/schema/type rejection,
+legacy/repeated rounds,producer boundaries,stream priority and CLI0/1/2 JSON-lines.
+Independent scoped review found no actionable findings. No C++ change/rebuild.
+
+Frozen suite414:195/195 PASS,0FAIL,planned=completed195,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256; manifests/logs:/tmp/qdir/suite414/,outer:
+/tmp/bitlife-suite414-run.log. Identical before/after binary SHA-256:
+d6de9474b260ed0a10194de2ee18bdab944f706b4cc2a1fecbc2d40672204e90.
+No source/header/tool/content/binary edits or rebuilds during acceptance.
+
+shortcut: marker is self-declared supplied-array projection provenance, NOT
+authentication,lossless native capture,emission chronology or global event order.
+Strict text leaves diagnostic age-window/scenario-count/tolerant-stat behavior
+unchanged and ALWAYS parity_certified=false. Full before/after state,RNG,
+cursors/overflow/reset/epochs,immutable execution and every remaining canonical
+content/DLC/IAP/platform/recovery obligation stay OPEN.
+

@@ -31,22 +31,34 @@ def normalize(rounds):
     # the drive-round shape is the only other thing this module understands.
     if isinstance(rounds, dict) and "ages" in rounds and "source" in rounds:
         return rounds
+    raw_valid = isinstance(rounds, list) or (isinstance(rounds, dict) and isinstance(rounds.get("rounds"), list))
     if isinstance(rounds, dict):
         rounds = rounds.get("rounds", [])
     by_age = {}
     order = []
+    observed_ages = set()
     for r in rounds:
         age = r.get("age")
         if age is None:
+            raw_valid = False
             continue
+        if age in observed_ages or type(age) is not int or age < 0:
+            raw_valid = False
+        observed_ages.add(age)
         rec = by_age.get(age)
         if rec is None:
-            rec = {"age": age, "logs": [], "scenarios": [], "stats": None, "rounds": []}
+            rec = {"age": age, "logs": [], "raw_logs": [], "scenarios": [], "stats": None, "rounds": []}
             by_age[age] = rec
             order.append(age)
         rec["rounds"].append(r.get("round"))
+        if not isinstance(r.get("logs"), list):
+            raw_valid = False
         for l in r.get("logs") or []:
             txt = l.get("text") if isinstance(l, dict) else l
+            if isinstance(txt, str):
+                rec["raw_logs"].append(txt)
+            else:
+                raw_valid = False
             if txt and txt not in rec["logs"]:
                 rec["logs"].append(txt)
         for s in r.get("scenarios") or []:
@@ -55,7 +67,11 @@ def normalize(rounds):
         st = stats_of((r.get("ticks") or [None])[-1]) or stats_of(r.get("hero"))
         if st:
             rec["stats"] = st
-    return {"source": "game", "ages": [by_age[a] for a in sorted(order)]}
+    result = {"source": "game", "ages": [by_age[a] for a in sorted(order)]}
+    # ponytail: supplied array order only; overlapping rounds/capture completeness unknown.
+    if raw_valid:
+        result["log_provenance"] = "source-array-order-v1"
+    return result
 
 
 if __name__ == "__main__":
