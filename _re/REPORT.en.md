@@ -34121,3 +34121,48 @@ helper appends are not proof against swallowed decode errors/missed hooks,
 native/global chronology or atomic game state. No device/live mod/purchase
 execution. Full native/state/content/DLC/IAP/platform/recovery parity stays OPEN.
 
+## 416. Cursor-driven capture with incomplete-evidence failure paths
+
+drive10 replaces retained-length polling/slicing with validated x_capture
+responses. It takes one initial baseline (preexisting backlog excluded), keeps
+a persistent accepted cursor and uses the same pre-action boundary for all
+polls/final fetch. Polls never consume; final fetch retains in-flight appends.
+Identity/version/safe integers/caps/first-next/start/drop/record count/schema
+validate before acceptance. No old-helper/count fallback. Overflow retains
+validated suffix and exact drop metadata then stops; reset/timeout/malformed
+responses stop actions without advancing the cursor. Failed final fetch keeps
+the last good poll. Hero/stall diagnostic failures and KeyboardInterrupt
+retain incomplete attempted-round evidence. Finally saves a rounds envelope,
+trimmed accepted cursor,scope/error/completeness; failures exit1. Existing
+action/recovery/stall screenshot behavior remains. Saved path message corrected.
+
+Consumer boundary: game_trace preserves declared capture metadata and withholds
+raw-order provenance for incomplete envelopes; strict diff also rejects declared
+incomplete canonical input even with an existing marker. The supplied-array
+marker was not strengthened to native/global event provenance.
+
+Replaced obsolete3tail-assignment test with actual RPCencoder in-memory fixtures
+and actual top-level driver-tail AST execution under stubbedactions/RPC/time/
+writes (no live imports/device). REDmissingcursor and oldloop incompatibility;
+normalizer metadata-laundering and strict incomplete-marker bypass REDs;
+KeyboardInterrupt REDexit130 then corrected incomplete exit1. Logs:
+/tmp/bitlife-driver-red416.log,/tmp/bitlife-driver-loop-red416.log,
+/tmp/bitlife-driver-normalize-red416.log,/tmp/bitlife-driver-strict-red416.log,
+/tmp/bitlife-driver-interrupt-red416.log. Focused driver/cursor/strict/diff
+checks GREENexit0; independent final review no actionable findings. Deferred
+minor coverage: N=1 loop harness does not exercise cross-round persistence
+or stalled screenshot/diagnostic branch; these paths were statically reviewed.
+
+Frozen suite416:196/196 PASS,0FAIL,planned=completed196,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256; manifests/logs:/tmp/qdir/suite416/,outer:
+/tmp/bitlife-suite416-run.log. Identical before/after binary SHA-256:
+d6de9474b260ed0a10194de2ee18bdab944f706b4cc2a1fecbc2d40672204e90.
+No source/header/tool/content/binary edits or rebuilds during acceptance.
+
+shortcut: validated helper-successful-append interval only, not failed decode/
+missed hook accounting,native/global chronology,atomic hero state or lossless
+native capture. No device/live mod/purchase execution; old captures cannot be
+repaired; drive9/other legacytail consumers remain outside this guarantee.
+Full native/state/content/DLC/IAP/platform/recovery parity remains OPEN.
+

@@ -96,60 +96,106 @@ def age_of(hero):
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 16
 
-def counts():
-    # diag is a few hundred bytes; logs(2000) is the whole log table. The
-    # driver only needs to know whether anything moved, so ask for counts.
-    d = blhrpc.rpc('diag', 1) or {}
-    n = d.get('n', {}) if isinstance(d, dict) else {}
-    return (n.get('logs', 0) or 0, n.get('scen', 0) or 0, n.get('ticks', 0) or 0)
+def capture_cursor(snapshot):
+    return dict(v=1, session=snapshot['session'], generation=snapshot['generation'],
+                streams={name:dict(next=row['next']) for name,row in snapshot['streams'].items()})
+
+
+def capture_fetch(cursor=None):
+    result = blhrpc.rpc('x_capture', timeout=1, args=[cursor])
+    if not isinstance(result, dict) or result.get('error'):
+        raise ValueError('capture unavailable: ' + str(result))
+    safe = lambda x: type(x) is int and 0 <= x <= 9007199254740991
+    if type(result.get('v')) is not int or result['v'] != 1 or not isinstance(result.get('session'), str) or not result['session'] or not safe(result.get('generation')):
+        raise ValueError('invalid capture identity')
+    if cursor and (result['session'],result['generation']) != (cursor['session'],cursor['generation']):
+        raise ValueError('capture epoch changed')
+    streams = result.get('streams')
+    if not isinstance(streams, dict) or set(streams) != {'logs','scenarios','ticks'}:
+        raise ValueError('invalid capture streams')
+    for name,cap in (('logs',3000),('scenarios',1000),('ticks',400)):
+        row = streams[name]
+        if not isinstance(row,dict) or not safe(row.get('first')) or not safe(row.get('next')) or not 0 <= row['next']-row['first'] <= cap:
+            raise ValueError('invalid capture bounds: ' + name)
+        if cursor:
+            previous = cursor['streams'][name]['next']
+            start = max(row['first'],previous)
+            if row['next'] < previous or not safe(row.get('start')) or row['start'] != start or not safe(row.get('dropped')) or row['dropped'] != max(0,row['first']-previous):
+                raise ValueError('invalid capture delta: ' + name)
+            records = row.get('records')
+            if not isinstance(records,list) or len(records) != row['next']-start or not all(isinstance(x,dict) for x in records):
+                raise ValueError('invalid capture records: ' + name)
+    return result
+
+def capture_record(snapshot, baseline):
+    streams = snapshot['streams']
+    return dict(logs=streams['logs']['records'],scenarios=streams['scenarios']['records'],ticks=streams['ticks']['records'],
+                capture=dict(v=1,session=snapshot['session'],generation=snapshot['generation'],from_cursor=baseline,
+                             streams={name:{k:v for k,v in row.items() if k!='records'} for name,row in streams.items()}),
+                capture_complete=not any(row['dropped'] for row in streams.values()))
+
 
 T0 = time.time()
 STALL = [0]
 trace = []
-for r in range(N):
-    c0 = counts()
-    acts = []; db = []; c1 = c0
-    for attempt in range(8):
-        acts.append(step(db) if attempt < 4 else recover(attempt - 4, db))
-        time.sleep(1.0)
-        c1 = counts()
-        # Any of the three growing means the tap landed: a log line resolved,
-        # a new card is up, or the year advanced. Waiting only for logs made
-        # the driver burn its recover battery on every intermediate card.
-        if any(b > a for a, b in zip(c0, c1)): break
-    if any(b > a for a, b in zip(c0, c1)):
-        STALL[0] = 0
-    else:
-        # A round that moved nothing is usually a screen the classifier cannot
-        # name. Three in a row means the driver has lost the life screen, and
-        # campaign 7 burned twenty rounds that way before anyone noticed.
-        STALL[0] += 1
-    DTRIES[0] = 0
-    n1 = c1[0]
-    if len(acts) == 8 and not any(b > a for a, b in zip(c0, c1)) and LAST[0]:
-        shutil.copy(LAST[0], '/tmp/stuck_r%d.png' % r)
-    # Prefix slicing is valid only while retained buffers have not shifted/reset.
-    # ponytail: bounded tails lack cursors; add sequence/overflow evidence for lossless capture.
-    logs = (blhrpc.rpc('logs', n=3000) or [])[c0[0]:]
-    scen = (blhrpc.rpc('scenarios', n=1000) or [])[c0[1]:]
-    ticks = (blhrpc.rpc('ticks', n=500) or [])[c0[2]:]
-    hero = blhrpc.rpc('hero', 1)
-    rec = {'round': r, 'acts': acts, 'dbg': db, 'age': age_of(hero), 'logs': logs, 'scenarios': scen,
-           'ticks': ticks, 'hero': (hero[-1] if isinstance(hero, list) and hero else hero)}
-    trace.append(rec)
-    first = db[0].get('kind') if db else None
-    print('r%-2d %-30s age=%s logs=%d scen=%d tick=%d t=%.0f first=%s' % (r, ','.join(acts), rec['age'], len(logs), len(scen), len(ticks), time.time() - T0, first), flush=True)
-    if STALL[0] >= 3:
-        # Shoot the screen again instead of copying the round's last capture: the
-        # two can be different screens, and guessing from a stale file cost a full
-        # debugging round on campaign 8. Print the classifier's own verdict and the
-        # hook counters so the log alone says whether the game moved at all.
-        p = dlg5.capture()
-        shutil.copy(p, '/tmp/stalled_r%d.png' % r)
-        st = dlg5.state(p)
-        hits = (blhrpc.rpc('diag', 1) or {}).get('hits', {})
-        print('stalled at r%d age=%s -> stopping; state=%s card=%s nb=%s hits=%s' % (
-            r, rec['age'], st['kind'], st['card'], len(st['buttons']), hits), flush=True)
-        break
-json.dump(trace, open('/Users/Adam/Documents/bitlife/_re/trace_game10.json', 'w'), indent=1)
-print('saved ->', '/Users/Adam/Documents/bitlife/_re/trace_game9.json')
+current = None
+accepted = None
+capture_error = None
+try:
+    accepted = capture_cursor(capture_fetch())
+    for r in range(N):
+        baseline = accepted
+        current = dict(round=r, acts=[], dbg=[], age=None, logs=[], scenarios=[], ticks=[])
+        snapshot = None
+        for attempt in range(8):
+            current['acts'].append(step(current['dbg']) if attempt < 4 else recover(attempt-4,current['dbg']))
+            time.sleep(1.0)
+            snapshot = capture_fetch(baseline)
+            current.update(capture_record(snapshot,baseline))
+            if not current['capture_complete']:
+                raise ValueError('capture overflow')
+            if any(snapshot['streams'][name]['next'] > baseline['streams'][name]['next'] for name in baseline['streams']):
+                break
+        # Polls never consume baseline. Final fetch includes in-flight appends.
+        snapshot = capture_fetch(baseline)
+        current.update(capture_record(snapshot,baseline))
+        if not current['capture_complete']:
+            raise ValueError('capture overflow')
+        moved = any(snapshot['streams'][name]['next'] > baseline['streams'][name]['next'] for name in baseline['streams'])
+        STALL[0] = 0 if moved else STALL[0]+1
+        DTRIES[0] = 0
+        if len(current['acts'])==8 and not moved and LAST[0]:
+            shutil.copy(LAST[0],'/tmp/stuck_r%d.png' % r)
+        hero = blhrpc.rpc('hero', timeout=1)
+        if not isinstance(hero,(dict,list)) or (isinstance(hero,dict) and hero.get('error')):
+            raise ValueError('hero capture unavailable: '+str(hero))
+        current['hero'] = hero[-1] if isinstance(hero,list) and hero else hero
+        current['age'] = age_of(hero)
+        trace.append(current)
+        accepted = capture_cursor(snapshot)
+        print('r%d age=%s logs=%d scen=%d tick=%d' % (r,current['age'],len(current['logs']),len(current['scenarios']),len(current['ticks'])),flush=True)
+        current = None
+        if STALL[0]>=3:
+            p = dlg5.capture()
+            shutil.copy(p,'/tmp/stalled_r%d.png' % r)
+            st = dlg5.state(p)
+            hits = blhrpc.rpc('diag',timeout=1)
+            if not isinstance(hits,dict) or hits.get('error'):
+                raise ValueError('stalled diagnostics unavailable: '+str(hits))
+            print('stalled at r%d state=%s hits=%s' % (r,st,hits.get('hits',{})),flush=True)
+            break
+except (Exception, KeyboardInterrupt) as error:
+    capture_error = str(error) or type(error).__name__
+    if current is None:
+        current = dict(round=len(trace),acts=[],dbg=[],age=None,logs=[],scenarios=[],ticks=[])
+    current['capture_error'] = capture_error
+    current['capture_complete'] = False
+    if not trace or trace[-1] is not current:
+        trace.append(current)
+finally:
+    result = dict(rounds=trace,capture_complete=capture_error is None,capture_error=capture_error,
+                  capture_cursor=accepted,capture_scope='helper-successful-appends')
+    json.dump(result,open('/Users/Adam/Documents/bitlife/_re/trace_game10.json','w'),indent=1)
+print('saved ->','/Users/Adam/Documents/bitlife/_re/trace_game10.json')
+if capture_error is not None:
+    sys.exit(1)

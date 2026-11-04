@@ -48,6 +48,8 @@ def compare(game, port, stat_tol=3, verbose=True, *, strict_logs=False):
         raise ValueError("strict_logs must be a boolean")
     if strict_logs:
         for label, trace in (("game", game), ("port", port)):
+            if trace.get("capture_complete", True) is not True:
+                raise ValueError(label + " declares incomplete capture")
             if trace.get("log_provenance") != "source-array-order-v1":
                 raise ValueError(label + " lacks raw ordered-log provenance")
             for record in trace["ages"]:

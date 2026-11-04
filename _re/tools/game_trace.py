@@ -31,7 +31,8 @@ def normalize(rounds):
     # the drive-round shape is the only other thing this module understands.
     if isinstance(rounds, dict) and "ages" in rounds and "source" in rounds:
         return rounds
-    raw_valid = isinstance(rounds, list) or (isinstance(rounds, dict) and isinstance(rounds.get("rounds"), list))
+    capture_meta = {k:rounds[k] for k in ("capture_complete","capture_error","capture_scope","capture_cursor") if isinstance(rounds,dict) and k in rounds}
+    raw_valid = capture_meta.get("capture_complete",True) is True and (isinstance(rounds, list) or (isinstance(rounds, dict) and isinstance(rounds.get("rounds"), list)))
     if isinstance(rounds, dict):
         rounds = rounds.get("rounds", [])
     by_age = {}
@@ -68,6 +69,7 @@ def normalize(rounds):
         if st:
             rec["stats"] = st
     result = {"source": "game", "ages": [by_age[a] for a in sorted(order)]}
+    result.update(capture_meta)
     # ponytail: supplied array order only; overlapping rounds/capture completeness unknown.
     if raw_valid:
         result["log_provenance"] = "source-array-order-v1"

@@ -34,7 +34,7 @@ for lines in ([],[""],["a","a"],["A\nB"]):
     assert strict(trace(lines),trace(lines))["first_divergence"] is None
 assert diff.compare(trace(["$10"]),trace(["$90"]))["first_divergence"] is None
 assert diff.compare(trace(["a","b"]),trace(["b","a"]))["first_divergence"] is None
-for mutate in (lambda t:t.pop("log_provenance"),lambda t:t.update(log_provenance=True),lambda t:t["ages"][0].pop("raw_logs"),lambda t:t["ages"][0].update(raw_logs=[None])):
+for mutate in (lambda t:t.update(capture_complete=False),lambda t:t.pop("log_provenance"),lambda t:t.update(log_provenance=True),lambda t:t["ages"][0].pop("raw_logs"),lambda t:t["ages"][0].update(raw_logs=[None])):
     invalid=trace([]);mutate(invalid)
     for a,b in ((invalid,trace([])),(trace([]),invalid)):
         try:strict(a,b)
@@ -51,6 +51,8 @@ p["ages"][0]["scenarios"]=[{}]
 assert strict(g,p)["first_divergence"]["stream"]=="logs"
 p["ages"].pop()
 assert strict(g,p)["first_divergence"]["stream"]=="age-coverage"
+incomplete=game_trace.normalize(dict(rounds=raw,capture_complete=False,capture_error="overflow"))
+assert incomplete.get("capture_complete") is False and "log_provenance" not in incomplete
 legacy=trace([]);legacy.pop("log_provenance");legacy["source"]="game"
 assert "log_provenance" not in game_trace.normalize(legacy)
 for rounds in (raw+raw,[dict(raw[0],logs=None)],[dict(raw[0],logs=[{}])]):

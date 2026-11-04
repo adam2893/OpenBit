@@ -28,7 +28,9 @@ the first divergence is the work item.
 
 `blhrpc.rpc('x_capture', args=[None])` returns version1 baseline metadata: session/generation and per-stream first/next exclusive successful-append indices. Pass that response as the next cursor to receive bounded records and exact dropped counts since each requested next. Each delta supplies `start`, the first returned record index; IDs derive from `(session,generation,stream,start+index)`. `first` remains the lower retained bound. Reads/retries do not consume state. Invalid/future cursors fail; clear changes generation, script reload changes injected UUID session. Missing session identity is unsupported. Legacy tail/diag exports remain available.
 
-This is producer-only: drive10 still uses unsafe count slicing until migrated. The protocol measures only helper-observed successful appends, not failed decoding/missed hooks, native/global chronology, atomic game state or lossless capture. Old captures cannot be repaired. No device execution is required by the offline actual-helper regression.
+drive10 uses a persistent accepted cursor. Every round's polls and final fetch use the same baseline; final fetch includes in-flight appends, accepted boundaries exclude the initial backlog. Schema/epoch/timeout errors and overflow stop actions, preserve validated suffix/poll evidence, save an incomplete envelope and exit1. Successful captures save an envelope with rounds, trimmed accepted cursor and capture_scope=helper-successful-appends. Interruptions/errors do not silently become complete. Normalization preserves declared capture status; incomplete input cannot obtain strict-log eligibility. Old helpers fail explicitly rather than falling back to count slicing.
+
+The protocol measures only helper-observed successful appends, not failed decoding/missed hooks, native/global chronology, atomic game state or lossless capture. Separate hero snapshots remain non-atomic. Old captures cannot be repaired. No device execution is required by offline helper/actual-driver-tail regressions. Legacy drive9 and other unmigrated tail consumers remain outside this driver guarantee.
 
 ## Pipeline
 
