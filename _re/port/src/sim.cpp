@@ -4187,7 +4187,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice*
     if (kind == kPendingCustodyTrial) return custodyTrialYear(life, out, -1);
     if (kind == kPendingProactivePaternity) return paternityResultsYear(life, out, -1);
     if (kind == kPendingLicenseTest) return licenseTestYear(life, out, -1);
-    if (kind == kPendingSafeSex) return safeSexYear(life, out, -1);
+    if (kind == kPendingSafeSex) return safeSexYear(life, out, forcedChoice);
     if (kind == kPendingCrimeCharge) return crimeChargeYear(life, out, -1);
     if (kind == kPendingCrimePlea) return crimePleaYear(life, out, -1);
     if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
@@ -4195,8 +4195,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice*
     if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
     if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
     if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
-    // The tuition screen is the one pending card the script harness can answer: its
-    // options are the four lanes, so a forced index picks the lane (REPORT.en.md 317).
+    // Tuition's four options accept a forced lane (REPORT.en.md 317).
     if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);
     if (kind == kPendingCasinoBankrupt) return casinoBankruptYear(life, out, -1);
     if (kind == kPendingZooBankrupt) return zooBankruptYear(life, out, forcedChoice);

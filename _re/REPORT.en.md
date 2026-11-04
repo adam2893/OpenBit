@@ -33931,3 +33931,37 @@ open. Next scoped routing evidence: pending safe-sex dispatch discards a choice
 the existing handler supports; genuine producer-created queue RED is required
 before changing that path. No dynamic result for that future task is claimed.
 
+## 411. Honor explicit choices on naturally queued safe-sex cards
+
+Pending dispatch discarded the public ageUp forcedChoice by passing -1 to
+safeSexYear. Forward only this selectable card's argument; other queue handlers
+retain their contracts. Correct the stale tuition-only comment.
+
+Evidence: section257 records the hookup-owned card, partner body, condom options
+and safe/unsafe journals; il2cpp_dump.txt:43079-43125 records ScenarioSafeSex
+button fields and ChoiceSelectedAtIndex. Existing friend-lover/supervisor
+producers set due/name and enqueue. No fresh native decompilation is claimed.
+
+Bounded public-API discovery (seeds1..60, age60,256 calls/life) found seed12,
+United States/default male,65 ordinary cards,age57,partner Layla Smith. The
+permanent test_pending_safe_sex.py pins that prefix in fresh Sims for0,1,-1,
+applies ordinary returned deltas/clamps and checkDeath, never injects pending
+state. RED: forced1 returned Use a condom; assertion/SIGABRT6,Python exit1
+(/tmp/bitlife-pending-safe-sex-red411.log). Rebuild and GREEN exit0 verify both
+exact choices/journals, default valid branch, body/options, same age/year,
+queue/due/name cleanup and subsequent annual advance without duplicate card.
+Affected safe-sex/replay/play/selection/health checks exit0; independent scoped
+review found no actionable issue. Build log:/tmp/bitlife-build411.log.
+
+Frozen full suite411:192/192 PASS,0FAIL,planned=completed192,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256 only; manifests/per-test logs:/tmp/qdir/suite411/,
+outer log:/tmp/bitlife-suite411-run.log. Identical before/after binary SHA-256:
+ed5a51f3f0c0607c33447c31144bdbf97a67d8a6bec0efed614aca269982063f.
+No source/header/tool/content/binary edits or rebuilds during full acceptance.
+
+shortcut: this fixes port input routing, not full native safe-sex parity.
+Condom availability, extra native buttons/contexts, pregnancy/STDs, native RNG
+identity/distribution and broader queued choice continuations remain OPEN.
+All remaining content/DLC/IAP/platform/capture/state obligations stay open.
+
