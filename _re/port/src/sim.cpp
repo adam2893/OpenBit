@@ -4193,7 +4193,7 @@ bool Sim::ageUpYear(Life& life, AgeUp& out, int forcedChoice, const TableChoice*
     if (kind == kPendingCrimeSentence) return crimeSentenceYear(life, out, -1);
     if (kind == kPendingHitmanOutcome) return hitmanOutcomeYear(life, out, -1);
     if (kind == kPendingRobberyOutcome) return robberyOutcomeYear(life, out, -1);
-    if (kind == kPendingHorseBet) return horseBetYear(life, out, -1);
+    if (kind == kPendingHorseBet) return horseBetYear(life, out, forcedChoice);
     if (kind == kPendingHorseOutcome) return horseOutcomeYear(life, out, -1);
     // Tuition's four options accept a forced lane (REPORT.en.md 317).
     if (kind == kPendingUniversityFund) return universityFundYear(life, out, forcedChoice);

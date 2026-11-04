@@ -34003,3 +34003,40 @@ full inventory/persistence and native RNG remain open. New fixture covers an
 affordable maternal chain; existing funeral test retains broader observed
 lanes. Full native/content/DLC/IAP/UI/state/recovery obligations remain OPEN.
 
+## 413. Honor naturally queued horse-picker input
+
+Forward forcedChoice only for kPendingHorseBet; leave the report-only outcome
+unchanged. Existing horseBetYear already selects a valid explicit option and
+stores the chosen horse before enqueueing the outcome. Dispatcher lost input.
+Report308 and native metadata41097-41106 distinguish indexed bet choice from
+outcome DismissSelected. No fresh native decompilation or odds recovery.
+
+Bounded default public discovery (seeds1..60,age60,256 calls/life) found seed5,
+US/default male,80 calls,age46,cash1052515 and sole pending picker; no injected
+cash/queue/fields. test_pending_horse.py replays fresh ordinary setup/ageUp
+with deltas/clamps/checkDeath for every0..4 and -1. RED forced0 chose G Baby
+instead of option0 Fair and Square,assert/SIGABRT6,Python exit1
+(/tmp/bitlife-horse-red413.log). Rebuild/focused GREEN exit0:
+/tmp/bitlife-build413.log,/tmp/bitlife-horse-green413.log.
+
+Regression checks identical dealt field, exact option/stored horse, no picker
+cash/age/year change, sole queued outcome, selected horse in result narrative,
+same-year drain, full horse-state cleanup and subsequent annual advance.
+Affected horse/funeral/safe-sex/replay/play checks exit0. Independent scoped
+review found no actionable findings.
+
+Frozen suite413:194/194 PASS,0FAIL,planned=completed194,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256; manifests/logs:/tmp/qdir/suite413/,outer:
+/tmp/bitlife-suite413-run.log. Identical before/after binary SHA-256:
+d6de9474b260ed0a10194de2ee18bdab944f706b4cc2a1fecbc2d40672204e90.
+No source/header/tool/content/binary edits or rebuilds during acceptance.
+
+shortcut: port input routing only. Report308's old one-year-later picker prose
+is not current timing: pending cards drain at the same age/year. Five-horse
+deal,wager/odds,weighted replacement for native mini-game,legality/tips,
+full native state/RNG remain unverified. No full horse-racing parity claimed.
+Next foundation: preserve ordered observed log occurrences and strict compare
+without laundering legacy captures into lossless/native certification. All
+other canonical native/content/DLC/IAP/platform/recovery obligations stay OPEN.
+
