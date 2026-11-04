@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
     hh.karma += ev.karma;
     hh.discipline += ev.discipline;
     hh.happiness += ev.happiness;
-    hh.health += ev.health;
+    hh.health += ev.health - ev.ailmentCost;
     hh.smarts += ev.smarts;
     hh.looks += ev.looks;
     int* stats[] = {&hh.karma, &hh.discipline, &hh.happiness, &hh.health, &hh.smarts, &hh.looks};

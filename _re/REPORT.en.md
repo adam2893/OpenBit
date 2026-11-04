@@ -33900,3 +33900,34 @@ is not whole-Life/Sim transactional rollback; the guarded CLI exits with error.
 Duplicate/token-label and transport-fault coverage, complete before/after state
 and all broader native/capture/immutable-execution obligations remain open.
 
+## 410. Demo annual illness damage matches the other frontends
+
+The remaining demo stat block added ev.health without subtracting ailmentCost,
+unlike script and played mode. The one-line main.cpp correction now applies
+ev.health-ev.ailmentCost before the existing shared0..100 clamp; no RNG, other
+stat, selection or gameplay path changed. The annual cost contract is already
+recorded in REPORT247/408.
+
+The expanded test_play_health.py compiles the actual demo application block
+extracted between its Hero reference and following age print, not a rewritten
+copy of its arithmetic. RED failed the positive-damage expectation. GREEN
+checks six independent vectors: damage95-13=82, lower clamp5+2-10=0, upper
+clamp95+20-10=100, combined-before-clamp95+10-13=92, unchanged zero cost and
+ordinary zero-illness card gain82+7=89. The real paired played/script fixture
+is retained. Build/focused checks exit0; scoped independent review found no
+actionable issue. This isolated-block fixture is not whole-demo CLI or native
+state equivalence, and it does not prove independent death-boundary behavior.
+
+Full durable suite410:191 PASS /0FAIL,planned=completed=191,exit0,
+interrupted=false,changed_inputs=[],snapshot_error=null,endpoint-sha256.
+Logs/manifests: /tmp/qdir/suite410-run.log and /tmp/qdir/suite410/.
+Before/after binary SHA-256:
+dce63a3426e6ba63f96a78125c9aac160c6e503987d44e84217a3c50128a71ee.
+No source/header/tool/content/binary edits occurred during full acceptance.
+
+shortcut: complete family/pending choice continuations, full frontend state/cap
+alignment, native RNG/provenance/capture proof and immutable execution remain
+open. Next scoped routing evidence: pending safe-sex dispatch discards a choice
+the existing handler supports; genuine producer-created queue RED is required
+before changing that path. No dynamic result for that future task is claimed.
+
