@@ -1,4 +1,4 @@
-import frida, json, os, sys, time, glob, traceback
+import frida, json, os, sys, time, glob, traceback, uuid
 LOG = '/Users/Adam/Documents/bitlife/_re/blh_hold.log'
 REQ = '/tmp/blh_req.'
 def log(m):
@@ -13,7 +13,7 @@ out = subprocess.run(['adb','-s','127.0.0.1:16384','shell','pidof','com.candywri
 pid = int(out.split()[0]) if out else 0
 log('spawned pid='+str(pid))
 s = dev.attach(pid)
-script = s.create_script(open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
+script = s.create_script('var CAPTURE_SESSION = '+json.dumps(uuid.uuid4().hex)+';\n'+open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
 script.on('message', lambda m,d: log('MSG '+str(m)[:250]))
 script.on('destroyed', lambda: log('!! SCRIPT DESTROYED (process died?)'))
 script.load()
@@ -94,7 +94,7 @@ while True:
             elif op == 'reload':
                 try: script.unload()
                 except Exception as e: log('unload: '+str(e))
-                script = s.create_script(open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
+                script = s.create_script('var CAPTURE_SESSION = '+json.dumps(uuid.uuid4().hex)+';\n'+open('/Users/Adam/Documents/bitlife/_re/blh.js').read())
                 script.on('message', lambda m,d: log('MSG '+str(m)[:250]))
                 script.on('destroyed', lambda: log('!! SCRIPT DESTROYED (process died?)'))
                 script.load()

@@ -24,6 +24,12 @@ Compares a life run **inside the original APK** with the same run in the native 
 (`../port/build/blsim`). The point is to make every later porting decision falsifiable:
 the first divergence is the work item.
 
+## Capture cursor producer protocol
+
+`blhrpc.rpc('x_capture', args=[None])` returns version1 baseline metadata: session/generation and per-stream first/next exclusive successful-append indices. Pass that response as the next cursor to receive bounded records and exact dropped counts since each requested next. Each delta supplies `start`, the first returned record index; IDs derive from `(session,generation,stream,start+index)`. `first` remains the lower retained bound. Reads/retries do not consume state. Invalid/future cursors fail; clear changes generation, script reload changes injected UUID session. Missing session identity is unsupported. Legacy tail/diag exports remain available.
+
+This is producer-only: drive10 still uses unsafe count slicing until migrated. The protocol measures only helper-observed successful appends, not failed decoding/missed hooks, native/global chronology, atomic game state or lossless capture. Old captures cannot be repaired. No device execution is required by the offline actual-helper regression.
+
 ## Pipeline
 
 ```

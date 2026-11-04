@@ -34082,3 +34082,42 @@ unchanged and ALWAYS parity_certified=false. Full before/after state,RNG,
 cursors/overflow/reset/epochs,immutable execution and every remaining canonical
 content/DLC/IAP/platform/recovery obligation stay OPEN.
 
+## 415. Append-owned capture cursor producer foundation
+
+The helper's retained lengths stop growing at logs3000/scenarios1000/ticks400;
+HITS includes failed/null decodes and cannot identify successful records. Add
+independent successful-append counters at all4 actual emission sites. Existing
+payloads/tail APIs/diag remain compatible. New x_capture RPC returns v1 baseline
+or bounded delta: session,generation,first/next,explicit record start,dropped
+and records. Exact IDs derive from(session,generation,stream,start+index).
+Reads/retries never consume; invalid/future cursors fail before slicing; clear
+bumps generation,initial/reload script creation injects fresh UUID sessions at
+all4 hold/attach sites. Unsupported missing session fails explicitly. Counter/
+generation exhaustion throws instead of wrapping. No native API change.
+
+Offline test_capture_cursor.py initially RED missing append ownership. Actual
+helper bodies run under Node without executing Frida; cap saturation,new
+appends,identical text/timestamps,exact overflow,retries,malformed/future
+cursors,clear/reload,unsupported session and exhaustion pass. Additional
+start-index RED required explicit returned-record identity rather than retained
+first; corrected and GREEN. Real AST-selected create_script expressions verify
+unique initial/reload UUID injection without importing side-effectful scripts.
+Logs:/tmp/bitlife-cursor-red415.log,/tmp/bitlife-cursor-start-red415.log.
+Node syntax and cursor/strict-log/drive10RPC focused checks exit0. Independent
+producer review found no actionable findings. Deferred minor test coverage:
+negative/fractional/unsafe integer combinations and successful MAX-1 transition
+are not separately exercised; guards were statically reviewed.
+
+Frozen suite415:196/196 PASS,0FAIL,planned=completed196,exit0,
+interrupted=false,integrity_ok=true,changed_inputs=[],snapshot_error=null.
+Endpoint-sha256; manifests/logs:/tmp/qdir/suite415/,outer:
+/tmp/bitlife-suite415-run.log. Identical before/after binary SHA-256:
+d6de9474b260ed0a10194de2ee18bdab944f706b4cc2a1fecbc2d40672204e90.
+No source/header/tool/content/binary edits or rebuilds during acceptance.
+
+shortcut: PRODUCER ONLY. drive10 remains unsafe count-based slicing until its
+next migration; no legacy capture repair or end-to-end cursor claim. Successful
+helper appends are not proof against swallowed decode errors/missed hooks,
+native/global chronology or atomic game state. No device/live mod/purchase
+execution. Full native/state/content/DLC/IAP/platform/recovery parity stays OPEN.
+

@@ -1,6 +1,41 @@
 function log(s){ send(String(s)); }
 var ready=false, nf=null, IMG=null;
 var st={ life:null, hero:null, ticks:[], missed:[], logs:[], scenarios:[], ageTicks:[], seed:null, rng:[], rngSeeds:{}, pushDumb:[], prod2:[], rngSamples:[], decks:[], draws:[], collDraws:[], drawTrue:0, drawFalse:0, deckMath:[], picks:[], prod:[], prodMap:{}, anchors:[], births:[], attSets:[], wraps:[], persons:[], mon:[], bags:[], picksAll:[], queues:[], statW:[] };
+// Successful helper appends only; not native/global chronology or decode-loss proof.
+var captureState={session:typeof CAPTURE_SESSION==='string' ? CAPTURE_SESSION : null,generation:0,next:{logs:0,scenarios:0,ticks:0}};
+var captureCaps={logs:3000,scenarios:1000,ticks:400};
+function captureAppend(name,record){
+  if(!Number.isSafeInteger(captureState.next[name]) || captureState.next[name]>=Number.MAX_SAFE_INTEGER) throw new Error('capture counter exhausted');
+  st[name].push(record); captureState.next[name]++;
+  if(st[name].length>captureCaps[name]) st[name].shift();
+}
+function captureRead(cursor){
+  if(!captureState.session) return {error:'unsupported-session'};
+  var names=['logs','scenarios','ticks'];
+  if(cursor!==null && cursor!==undefined){
+    if(!cursor || cursor.v!==1 || typeof cursor.session!=='string' || !Number.isSafeInteger(cursor.generation) || cursor.generation<0 || !cursor.streams) return {error:'invalid-cursor'};
+    for(var i=0;i<names.length;i++){
+      var c=cursor.streams[names[i]];
+      if(!c || !Number.isSafeInteger(c.next) || c.next<0) return {error:'invalid-cursor'};
+    }
+    if(cursor.session!==captureState.session || cursor.generation!==captureState.generation) return {error:'epoch-mismatch'};
+    for(var j=0;j<names.length;j++) if(cursor.streams[names[j]].next>captureState.next[names[j]]) return {error:'invalid-cursor'};
+  }
+  var out={v:1,session:captureState.session,generation:captureState.generation,streams:{}};
+  for(var k=0;k<names.length;k++){
+    var name=names[k],next=captureState.next[name],first=next-st[name].length;
+    var row={first:first,next:next};
+    if(cursor){var from=cursor.streams[name].next;row.start=Math.max(first,from);row.dropped=Math.max(0,first-from);row.records=st[name].slice(row.start-first);}
+    out.streams[name]=row;
+  }
+  return out;
+}
+function captureClear(){
+  if(captureState.generation>=Number.MAX_SAFE_INTEGER) throw new Error('capture generation exhausted');
+  captureState.generation++;
+  st.logs=[];st.scenarios=[];st.ticks=[];st.ageTicks=[];
+  captureState.next={logs:0,scenarios:0,ticks:0};return true;
+}
 function E(n){ return Module.findExportByName('libil2cpp.so', n); }
 function N(n,r,a){ var p=E(n); if(p===null){ st.missed.push(n); throw new Error('no export '+n); } return new NativeFunction(p,r,a); }
 function toJS(sp){ if(!sp || sp.isNull()) return null; var l=sp.add(0x10).readU32(); if(l>4000) return '<len '+l+'>'; return sp.add(0x14).readUtf16String(l); }
@@ -192,7 +227,7 @@ function install(){
     return null; }
   if(lifeK){ var lc=ctorPtr(lifeK); if(lc){ Interceptor.attach(lc,{ onEnter:function(a){ HITS.lifeCtor=(HITS.lifeCtor||0)+1; st.life=a[0]; } }); out.push('Life..ctor@'+lc); }
     var lp=methodPtr(lifeK,'LogPresentation',1);
-    if(lp){ Interceptor.attach(lp,{ onEnter:function(a){ HITS.log=(HITS.log||0)+1; try{ st.life=a[0]; var s=toJS(a[1]); if(s!==null){ var ag=null; try{ if(st.hero) ag=st.hero.add(0x20).readS32(); }catch(e0){} st.logs.push({t:Date.now(), text:s, age:ag, n:st.logs.length}); if(st.logs.length>3000) st.logs.shift(); } }catch(e1){} } }); out.push('Life.LogPresentation@'+lp); }
+    if(lp){ Interceptor.attach(lp,{ onEnter:function(a){ HITS.log=(HITS.log||0)+1; try{ st.life=a[0]; var s=toJS(a[1]); if(s!==null){ var ag=null; try{ if(st.hero) ag=st.hero.add(0x20).readS32(); }catch(e0){} captureAppend('logs',{t:Date.now(), text:s, age:ag, n:st.logs.length}); } }catch(e1){} } }); out.push('Life.LogPresentation@'+lp); }
     var lsp=methodPtr(lifeK,'LogScenarioPresentation',1);
     if(lsp){ Interceptor.attach(lsp,{ onEnter:function(a){ HITS.scen=(HITS.scen||0)+1; try{ st.life=a[0]; var sc=a[1]; var d=sc.isNull()?null:readObj(sc,['Title','Body','ExteriorTitle','HasDismissButton','_class','_Choice','MiniGame']);
       if(d){ d._ptr=sc.toString(); d.t=Date.now();
@@ -201,10 +236,10 @@ function install(){
         try{ var ca=sc.add(0x108).readPointer(); if(!ca.isNull()){ var nc=ca.add(0x18).readS32(); var itc=ca.add(0x10).readPointer(); var arr=[];
           for(var ci=0;ci<Math.min(nc,12);ci++){ var el=itc.add(0x20+ci*Process.pointerSize).readPointer(); if(el.isNull()) continue; arr.push(toJS(el.add(0x10).readPointer())); } d._choices=arr; } }catch(eCh){}
         try{ d._push = sc.add(0x131).readU8()? true : false; }catch(eP){}
-        st.scenarios.push(d); if(st.scenarios.length>1000) st.scenarios.shift(); } }catch(e2){} } }); out.push('Life.LogScenarioPresentation@'+lsp); }
+        captureAppend('scenarios',d); } }catch(e2){} } }); out.push('Life.LogScenarioPresentation@'+lsp); }
     var llk=findClass('','LifeLog');
     var ll=llk? methodPtr(llk,'Log',1) : null;
-    if(ll){ Interceptor.attach(ll,{ onEnter:function(a){ HITS.log=(HITS.log||0)+1; try{ var s2=toJS(a[1]); var ag2=null; try{ ag2=a[0].add(0x1c).readS32(); }catch(e0){} if(s2!==null){ st.logs.push({t:Date.now(), text:s2, age:ag2, src:'LifeLog.Log'}); if(st.logs.length>3000) st.logs.shift(); } }catch(e1){} } }); out.push('LifeLog.Log@'+ll); }
+    if(ll){ Interceptor.attach(ll,{ onEnter:function(a){ HITS.log=(HITS.log||0)+1; try{ var s2=toJS(a[1]); var ag2=null; try{ ag2=a[0].add(0x1c).readS32(); }catch(e0){} if(s2!==null){ captureAppend('logs',{t:Date.now(), text:s2, age:ag2, src:'LifeLog.Log'}); } }catch(e1){} } }); out.push('LifeLog.Log@'+ll); }
     var ia2=methodPtr(lifeK,'IncrementAge',0);
     if(ia2){ Interceptor.attach(ia2,{ onEnter:function(a){ HITS.lifeAge=(HITS.lifeAge||0)+1; st.life=a[0]; st.ageTicks.push({t:Date.now(), phase:'enter', hero:st.hero?st.hero.toString():null}); if(st.ageTicks.length>1000) st.ageTicks.shift(); } }); out.push('Life.IncrementAge@'+ia2); } }
   if(lifeK){
@@ -382,7 +417,7 @@ function install(){
       onLeave:function(){ try{ try{ MemoryAccessMonitor.disable(); }catch(eD){} st.births.push({t:Date.now(), t0:this.t0, hero:this.ptr, before:this.before, after:readObj(st.hero,null), attOff:st.attOff, mon:st.mon, chain:this.chain, rng:st.rngSamples.slice(this.ri0).filter(function(r){ return r.m==='Next/2'; })});
         if(st.births.length>50) st.births.shift(); }catch(e){} } }); out.push('SimHero.SetupEverythingElseForNewHero@'+seh); }catch(e){ out.push('setupHero hook failed '+e); } }
     var ia=methodPtr(heroK,'IncrementAge',0);
-    if(ia){ Interceptor.attach(ia,{ onEnter:function(a){ HITS.heroAge=(HITS.heroAge||0)+1; st.hero=a[0]; this.hero=a[0]; st.yearStart=Date.now(); }, onLeave:function(){ var s=snapshot('afterIncrementAge'); if(s){ s.yearStart=st.yearStart; st.ticks.push(s); if(st.ticks.length>400) st.ticks.shift(); } } }); out.push('SimHero.IncrementAge@'+ia); }
+    if(ia){ Interceptor.attach(ia,{ onEnter:function(a){ HITS.heroAge=(HITS.heroAge||0)+1; st.hero=a[0]; this.hero=a[0]; st.yearStart=Date.now(); }, onLeave:function(){ var s=snapshot('afterIncrementAge'); if(s){ s.yearStart=st.yearStart; captureAppend('ticks',s); } } }); out.push('SimHero.IncrementAge@'+ia); }
     // Health drifts every year in the game and the dumb-scenario tables carry no health column, so
     // name the writers instead of guessing: hook every Att_* setter and Impact* wrapper on SimPerson.
     (function(){
@@ -1839,7 +1874,8 @@ function attProbe(mode, friendStr, weaponStr){
       scenarios:function(n){ return st.scenarios.slice(-(n||20)); },
       ageticks:function(n){ return st.ageTicks.slice(-(n||20)); },
       statw:function(n){ return st.statW.slice(-(n||500)); },
-      clear:function(){ st.logs=[]; st.scenarios=[]; st.ticks=[]; st.ageTicks=[]; return true; },
+      capture:function(cursor){ return captureRead(cursor); },
+      clear:function(){ return captureClear(); },
       dec:function(b64){ try{ var r=call2('DecodeAndDecryptString',b64,key()); var v=toJS(r); return (v&&v.length>0)?{ok:true,v:v}:{ok:false,empty:true}; }catch(e){ return {ok:false,err:String(e)}; } },
       seed:function(){ return { seed: st.seed, rng: st.rng.slice(-40) }; },
       rand:function(n){ return { seeds:st.rngSeeds, total:st.rngSamples.length, rows:st.rngSamples.slice(-(n||600)) }; },
