@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Regenerate the self-contained static research snapshot from the local workspace."""
-import base64, gzip, json, shutil
+import base64, csv, gzip, json, shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +28,7 @@ names = records("decomp/names.jsonl")
 methods = records("decomp/method_ledger.jsonl")
 source_files = sorted((ROOT / "decomp/source").glob("*.md"))
 verifiers = sorted((ROOT / "decomp").glob("verify_*.py"))
+coverage_dir = ROOT / "decomp/coverage"
 port_units = sorted((ROOT / "port/src").rglob("*.cpp"))
 notes = []
 open_items = []
@@ -59,6 +60,30 @@ for p in verifiers:
     add_note("verifier-" + p.stem, p.name, str(p.relative_to(ROOT)),
              p.read_text(errors="replace"), "Bounded verifier source")
 
+for p in sorted(coverage_dir.iterdir()):
+    if not p.is_file():
+        continue
+    if p.suffix.lower() == ".csv":
+        with p.open(newline="", errors="replace") as handle:
+            rows = list(csv.DictReader(handle))
+        if p.name == "managed_methods.csv":
+            # Preserve full exact census in the artifact; expose representative searchable rows in-browser.
+            text = json.dumps(rows[:2500], separators=(",", ":"))
+            title = f"Managed method census · first 2,500 of {len(rows):,} rows"
+        elif p.name == "module_slots.csv":
+            text = json.dumps(rows[:500], separators=(",", ":"))
+            title = f"Generated module slots · first 500 of {len(rows):,} rows"
+        elif p.name == "native_bodies.csv":
+            text = json.dumps(rows[:2500], separators=(",", ":"))
+            title = f"Native body candidates · first 2,500 of {len(rows):,} rows"
+        else:
+            text = p.read_text(errors="replace")
+            title = p.stem.replace("_", " ").title()
+    else:
+        text = p.read_text(errors="replace")
+        title = next((x.lstrip("# ").strip() for x in text.splitlines() if x.startswith("#")), p.stem.replace("_", " ").title())
+    add_note("coverage-" + p.stem, title, str(p.relative_to(ROOT)), text, "Coverage audit")
+
 for p in port_units:
     add_note("port-" + p.stem, p.name, str(p.relative_to(ROOT)),
              p.read_text(errors="replace"), "Native C++ port unit")
@@ -87,6 +112,21 @@ for line in todo.splitlines():
                           "path": "decomp/TODO.md", "text": item, "category": "Open obligation"})
 
 current_text = (ROOT / "decomp/CURRENT_TASK.md").read_text(errors="replace")
+coverage_summary = json.loads((coverage_dir / "summary.json").read_text())
+coverage_tables = {}
+for filename in ["assembly_coverage.csv", "candidate_system_coverage.csv"]:
+    with (coverage_dir / filename).open(newline="", errors="replace") as handle:
+        coverage_tables[filename] = list(csv.DictReader(handle))
+coverage_audit = {
+    "generatedAt": "2026-11-13",
+    "artifactPath": "https://github.com/adam2893/OpenBit/blob/main/_re/decomp/coverage/summary.json",
+    "summary": coverage_summary,
+    "tables": coverage_tables,
+    "files": {
+        p.name: {"bytes": p.stat().st_size, "path": "decomp/coverage/" + p.name}
+        for p in sorted(coverage_dir.iterdir()) if p.is_file()
+    },
+}
 entities = []
 for n in names:
     entities.append({
@@ -107,6 +147,7 @@ out = {
     "target": {"id": manifest.get("target_id"), "provenance": manifest.get("provenance"),
                "checkpoint": manifest.get("repository_checkpoint"), "artifacts": manifest.get("artifacts", []),
                "scope": manifest.get("scope", {})},
+    "coverageAudit": coverage_audit,
     "current": {
         "title": "AddYear native recovery", "updated": "2026-11-13",
         "checkpoint": "Round 257 recovered the 156-byte UTF-16 appender body, including exact short-tag behavior, low-16-bit writes, and the terminator. Heap growth and allocation contracts still block integration.",
