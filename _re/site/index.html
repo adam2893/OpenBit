@@ -1,0 +1,97 @@
+<!--
+THESIS: An evidence atlas helps researchers choose the next defensible native recovery unit; the usual completion dashboard hides missing denominators.
+OWN-WORLD: Graphite instrument panes, orange active-lane marks, green bounded checks, and written provenance labels; flat, table-led surfaces.
+STORY: Researchers see the active AddYear gate, inspect its source trail, then select the next function or subsystem.
+FIRST VIEWPORT: Thesis and active unit at left, current checkpoint at right, followed by caveat, inventory strip, and observe/lift/build/verify rail.
+FORM: Provenance-first evidence atlas, grounded direction 7, Operate; seed 68a68140. The roll degraded, with no challengers or quality board.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171b1d"><meta name="description" content="A searchable, provenance-aware dashboard for BitLife native decompilation research.">
+  <title>Native Recovery Atlas · BitLife</title><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <a class="brand" href="#overview" aria-label="Native Recovery Atlas home"><span class="brand-mark">NR</span><span><b>RECOVERY ATLAS</b><small>BITLIFE · ARM64 / IL2CPP</small></span></a>
+      <div class="rail-caption">WORKSPACE</div>
+      <nav aria-label="Workspace">
+        <a class="nav-link active" href="#overview"><i>⌂</i>Overview<span class="nav-dot"></span></a>
+        <a class="nav-link" href="#workflow"><i>⌁</i>Next investigation</a>
+        <a class="nav-link" href="#evidence"><i>⌕</i>Evidence index</a>
+        <a class="nav-link" href="#traces"><i>≋</i>Trace lanes</a>
+        <a class="nav-link" href="#subsystems"><i>◫</i>Subsystems</a>
+        <a class="nav-link" href="#validation"><i>⤴</i>Validation</a>
+      </nav>
+      <div class="rail-spacer"></div>
+      <div class="constraint"><span class="status-dot"></span><div><b>PORT TARGET</b><p>Readable, buildable<br>portable native C++</p><small>NO INTERPRETER</small></div></div>
+      <div class="rail-footer"><span class="pulse"></span>LOCAL EVIDENCE SNAPSHOT <span id="generated-label">·</span></div>
+    </aside>
+
+    <main>
+      <header class="topbar"><div class="breadcrumbs">RESEARCH <span>/</span> <b>BITLIFE NATIVE RECOVERY</b></div><div class="top-actions"><a class="project-link" href="https://github.com/adam2893/OpenBit" target="_blank" rel="noreferrer">OPENBIT REPOSITORY ↗</a><span class="snapshot"><i></i>STATIC SNAPSHOT</span><button class="icon-button" id="help-button" aria-label="About this dashboard">?</button></div></header>
+      <section class="intro" id="overview">
+        <div class="intro-copy"><div class="eyebrow"><span class="orange-bar"></span>FIELD CONSOLE <span class="divider">/</span> <span id="target-id">LOADING TARGET</span></div>
+          <h1>Read the evidence.<br><em>Choose the next cut.</em></h1>
+          <p class="lede">A working map of native recovery: what has been observed, what has a bounded proof, and what still blocks a readable C++ reconstruction.</p>
+          <div class="intro-meta"><span><i class="meta-mark">◉</i> ARM64 native path</span><span><i class="meta-mark">⌘</i> IL2CPP metadata</span><span><i class="meta-mark">◎</i> Provenance attached</span></div>
+        </div>
+        <div class="focus-panel"><div class="panel-head"><span class="live-label"><i></i> CURRENT INVESTIGATION</span><span class="panel-index">01 / ACTIVE</span></div><div class="focus-body"><div class="focus-kicker">SUBSYSTEM · UI / LIFE LOG</div><h2>AddYear native recovery</h2><p id="checkpoint-summary">Loading the latest continuation...</p><a href="#workflow" class="text-action">Open next-step queue <span>↗</span></a></div><div class="focus-foot"><span>LAST CHECKPOINT</span><b>ROUND 257</b><span class="foot-sep">·</span><span>13 NOV 2026</span></div></div>
+      </section>
+
+      <section class="truth-strip" aria-label="Project status caveats"><span class="truth-icon">!</span><div><b>Bounded recovery is not program coverage.</b><span id="coverage-caveat">No exhaustive method denominator is established; this console does not turn named entities into a completion percentage.</span></div><a href="#validation">Read the limits <span>↗</span></a></section>
+
+      <section class="metrics" aria-label="Repository-derived inventory">
+        <div class="metric"><div class="metric-label">NAMED ENTITIES <span class="info" title="Entries in decomp/names.jsonl">i</span></div><div class="metric-value" id="entity-count">—</div><div class="metric-note"><span class="metric-mark">⌘</span> Provenance ledger entries</div></div>
+        <div class="metric"><div class="metric-label">FUNCTION RECORDS</div><div class="metric-value" id="function-count">—</div><div class="metric-note" id="byte-note">Named functions & candidates</div></div>
+        <div class="metric"><div class="metric-label">SPAN BYTES</div><div class="metric-value" id="byte-count">—</div><div class="metric-note" id="byte-coverage">Recorded function spans only</div></div>
+        <div class="metric"><div class="metric-label">BOUNDED CHECKS <span class="info" title="Persisted verifier cohort snapshot">i</span></div><div class="metric-value" id="check-count">—<small> / snapshot</small></div><div class="metric-note"><span class="good-text">●</span> Full cohort recorded</div></div>
+        <div class="metric"><div class="metric-label">SOURCE NOTES</div><div class="metric-value" id="source-count">—</div><div class="metric-note"><span class="metric-mark">▤</span> Native recovery writeups</div></div>
+        <div class="metric"><div class="metric-label">OPEN OBLIGATIONS</div><div class="metric-value" id="open-count">—</div><div class="metric-note"><span class="warn-text">●</span> From decomp backlog</div></div>
+      </section>
+
+      <section class="cycle-section" aria-labelledby="cycle-title">
+        <div class="cycle-heading"><div><div class="eyebrow small"><span class="orange-bar"></span>RECONSTRUCTION LOOP</div><h2 id="cycle-title">Observation → lift → build → verify</h2></div><span class="cycle-note">C++ stays the destination; acceptance stays evidence-led.</span></div>
+        <div class="cycle-flow">
+          <article class="cycle-stage"><span class="cycle-index">A / OBSERVE</span><b>Capture & trace</b><p id="observe-copy">Indexing repository traces…</p><span class="cycle-state neutral">EVIDENCE INDEXED</span></article><span class="cycle-arrow">›</span>
+          <article class="cycle-stage active-stage"><span class="cycle-index">B / LIFT</span><b>Recover native behavior</b><p id="lift-copy">Loading current native unit…</p><span class="cycle-state active-state">ROUND 257 · ACTIVE</span></article><span class="cycle-arrow">›</span>
+          <article class="cycle-stage"><span class="cycle-index">C / BUILD</span><b>Reconstruct in C++</b><p id="build-copy">Loading current port status…</p><span class="cycle-state neutral">PORT TRACK SEPARATE</span></article><span class="cycle-arrow">›</span>
+          <article class="cycle-stage"><span class="cycle-index">D / VERIFY</span><b>Compare & close gates</b><p id="verify-copy">Loading verifier boundary…</p><span class="cycle-state caution-state">NO RUNTIME PARITY CLAIM</span></article>
+        </div>
+      </section>
+
+      <section class="workbench" id="workflow">
+        <div class="section-heading"><div><div class="eyebrow small"><span class="orange-bar"></span>INVESTIGATION ROUTER</div><h2>What should be investigated next?</h2><p>Ranked from the live checkpoint and open acceptance gates. Select a lane to inspect its evidence.</p></div><button class="outline-button" id="rank-queue">↻ Rank from backlog</button></div>
+        <div class="queue-layout"><div class="queue-list" id="queue-list" aria-live="polite"></div><aside class="queue-aside"><div class="aside-label">SELECTION BASIS</div><div class="basis-step"><span>01</span><p>Finish direct dependencies of the active AddYear path.</p></div><div class="basis-step"><span>02</span><p>Keep acceptance scoped to what the evidence can prove.</p></div><div class="basis-step"><span>03</span><p>Promote integration only after byte, ownership, and unwind gates close.</p></div><div class="native-goal"><span>≋</span><div><b>PORT DESTINATION</b><p>Readable C++17<br>portable · no interpreter</p></div></div></aside></div>
+      </section>
+
+      <section class="lanes-section" id="subsystems">
+        <div class="section-heading compact"><div><div class="eyebrow small"><span class="orange-bar"></span>RECOVERY LANES</div><h2>Subsystem map</h2></div><div class="map-legend"><span><i class="legend-green"></i> bounded evidence</span><span><i class="legend-amber"></i> open gate</span><span><i class="legend-gray"></i> unstarted / inventory</span></div></div>
+        <div class="lane-table-wrap"><table class="lane-table"><thead><tr><th>LANE</th><th>OBSERVED MATERIAL</th><th>WORK PRODUCTS</th><th>ACCEPTANCE POSTURE</th><th></th></tr></thead><tbody id="lane-rows"></tbody></table></div>
+        <p class="table-footnote"><span>↳</span> Lane states summarize repository records; they are not method coverage ratios.</p>
+      </section>
+
+      <section class="trace-section" id="traces">
+        <div class="section-heading compact"><div><div class="eyebrow small"><span class="orange-bar"></span>OBSERVED EXECUTION MATERIAL</div><h2>Trace & lane index</h2><p>Captured JSON trace files from this workspace, indexed as artifacts. Their scenarios are not a native coverage denominator.</p></div><button class="outline-button" id="show-traces">Search trace records ↗</button></div>
+        <div class="trace-tape" id="trace-tape"></div>
+      </section>
+
+      <section class="lower-grid">
+        <div class="evidence-panel" id="evidence"><div class="section-heading compact"><div><div class="eyebrow small"><span class="orange-bar"></span>REPOSITORY INDEX</div><h2>Search evidence & notes</h2></div><span class="count-tag" id="evidence-total">0 RECORDS</span></div>
+          <div class="search-row"><label class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Function, address, file, subsystem…" autocomplete="off"><kbd>/</kbd></label><select id="kind-filter" aria-label="Filter evidence type"><option value="all">All evidence</option><option value="function">Functions</option><option value="native_role">Native roles</option><option value="note">Source notes</option><option value="block">Blocks & landing pads</option></select></div>
+          <div class="result-tabs"><button class="result-tab active" data-tab="all">ALL <span id="tab-all">—</span></button><button class="result-tab" data-tab="functions">FUNCTIONS <span id="tab-functions">—</span></button><button class="result-tab" data-tab="notes">NOTES <span id="tab-notes">—</span></button><button class="result-tab" data-tab="pocs">C++ UNITS <span id="tab-pocs">—</span></button></div>
+          <div class="results" id="results" aria-live="polite"></div><div class="results-footer"><span id="result-range">Loading records…</span><button id="load-more" class="load-more">Load more ↓</button></div>
+        </div>
+        <aside class="validation-panel" id="validation"><div class="eyebrow small"><span class="orange-bar"></span>DIFFERENTIAL / VALIDATION</div><h2>Proof, with its boundary.</h2><p class="validation-lede">Round 256 records a full persisted verifier-cohort run. Its own acceptance text limits what that result means.</p><div class="run-stamp"><div class="stamp-icon">✓</div><div><b>VERIFIER COHORT</b><span id="run-line">231 bounded checks · exit 0</span></div><span class="run-time">ROUND 256</span></div><ul class="validation-facts"><li><span>◆</span><p>Verifier scripts pin native bytes and finite behavioral models.</p></li><li><span>◆</span><p>This checkpoint reports <b>no target execution</b>.</p></li><li><span>◆</span><p>Runtime equivalence, retail provenance, and whole-program coverage remain open.</p></li></ul><div class="validation-links"><button id="open-verifier">Open verifier snapshot ↗</button><button id="open-protocol">Read recovery protocol ↗</button></div><div class="diff-boundary"><span class="diff-symbol">Δ</span><div><b>PORT SCENARIO REPORT</b><p id="port-coverage">21 / 90 scenarios · 23%</p><small>Separate C++ port report; not native block coverage or a current differential pass.</small><a href="https://github.com/adam2893/OpenBit/blob/main/README.md">Open source report ↗</a><p id="diff-status">No current native differential result attached.</p><a href="https://github.com/adam2893/OpenBit/tree/main/_re/tools">Open port bench tools ↗</a></div></div></aside>
+      </section>
+
+      <section class="execution-section"><div class="execution-copy"><div class="eyebrow small"><span class="orange-bar"></span>AUTHORITATIVE EXECUTION</div><h2>Run the proof where the target lives.</h2><p>GitHub Pages is a read-only snapshot. Native execution, debugger sessions, verifier reruns, and C++ builds belong in the local repository and instrumented environment.</p></div><div class="command-block"><div class="command-tabs"><button class="command-tab active" data-command="verify">VERIFY</button><button class="command-tab" data-command="build">BUILD</button><button class="command-tab" data-command="diff">DIFF</button></div><div class="command-top"><span><i></i> LOCAL REPOSITORY</span><span>READ ONLY ON PAGES</span></div><code id="command-text">python3 decomp/verify_all.py</code><div class="command-bottom"><span id="command-hint">From the repository root · runs the decomp verifier cohort</span><button id="copy-command" aria-label="Copy command">COPY</button></div></div></section>
+      <footer><div><span class="brand-mark mini">NR</span><span>Native Recovery Atlas <i>·</i> repository-derived research view</span></div><span id="footer-source">Source: decomp/ · snapshot date 13 Nov 2026</span><button id="open-current">Open current task file ↗</button></footer>
+    </main>
+  </div>
+  <dialog id="detail-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="dialog-content"></div></dialog>
+  <script src="./app.js"></script>
+</body>
+</html>
