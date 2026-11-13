@@ -19,6 +19,24 @@ const laneSeeds = [
   {id:"cxa_",title:"C++ exception support",kind:"NATIVE ABI",obs:"Throw, allocation, storage, cleanup, diagnostics",work:"Native body units + bounded verifiers",state:"Ownership & bindings open",tone:"amber",search:"cxa exception throw allocation"}
 ];
 
+function initCoverageAudit(){
+ const a=DATA.coverageAudit;if(!a)return;
+ const n=a.summary.native, sc=a.summary.scope;
+ $("#audit-provenance").textContent=`Artifact-bound static census · generated ${a.generatedAt} · target ${a.summary.artifact_sha256.slice(0,16)}… · metadata ${a.summary.metadata_sha256.slice(0,16)}…`;
+ const cards=[
+  ["MANAGED METHODS",a.summary.methods.toLocaleString(),`${a.summary.owners.toLocaleString()} owners · ${a.summary.images} images · ${a.summary.generated_modules} generated modules`],
+  ["NATIVE FDE CANDIDATES",n.unique_fde_entries.toLocaleString(),`${n.eh_frame_hdr_records.toLocaleString()} unwind records · ${n.unique_fde_bytes.toLocaleString()} unique FDE bytes`],
+  ["FULL BYTE PINS",n.full_byte_pinned_fde_bodies.toLocaleString(),`${n.full_byte_pinned_fde_bytes.toLocaleString()} bytes · ${n.matched_evidence_ranges} matched evidence ranges`],
+  ["STRICT SOURCE ACCEPTED","0",`${a.summary.acceptance.integrated_behavior_tested} integrated · ${a.summary.acceptance.reconstructed_verified} reconstructed verified`]
+ ];
+ $("#audit-summary").innerHTML=cards.map(c=>`<article class="audit-metric"><span>${esc(c[0])}</span><b>${esc(c[1])}</b><small>${esc(c[2])}</small></article>`).join("");
+ const candidates=Object.entries(a.summary.candidate_game_systems).sort((x,y)=>y[1].method_definitions-x[1].method_definitions);
+ $("#candidate-rows").innerHTML=candidates.map(([name,x])=>`<tr><td>${esc(name.replaceAll("_"," "))}</td><td>${x.method_definitions.toLocaleString()}</td><td>${x.mapped_executable_methods.toLocaleString()}</td><td>${x.stages.source_backed_partial}</td><td>${x.strict_source_accepted}</td></tr>`).join("");
+ const scopes=Object.entries(sc), stageNames=[["inventory_only","Inventory only"],["named_only","Named only"],["decompiled_draft","Decompiled draft"],["source_backed_partial","Byte-pinned partial"],["reconstructed_verified","Reconstructed verified"],["integrated_behavior_tested","Integrated / behavior tested"]];
+ $("#scope-stages").innerHTML=scopes.map(([name,x])=>`<div class="scope-block"><div class="scope-heading"><b>${esc(name.replaceAll("_"," "))}</b><span>${x.method_definitions.toLocaleString()} definitions · ${x.mapped_executable_methods.toLocaleString()} mapped · ${x.ambiguous_or_null_mapping.toLocaleString()} null / ambiguous</span></div><div class="stage-list">${stageNames.map(([key,label])=>`<span>${esc(label)} <b>${x.stages[key].toLocaleString()}</b></span>`).join("")}</div><div class="stage-bar" aria-label="Method stage counts">${stageNames.map(([key])=>`<i class="stage-${key}" style="width:${x.method_definitions?Math.max(x.stages[key]/x.method_definitions*100,key==="source_backed_partial"?0.35:0):0}%" title="${esc(key.replaceAll("_"," "))}: ${x.stages[key]}"></i>`).join("")}</div></div>`).join("");
+ $("#audit-limits").innerHTML=`<b>Acceptance gate</b><p>${esc(a.summary.acceptance.reason)}</p><b>Audit limits</b><ul>${a.summary.limits.slice(0,5).map(l=>`<li>${esc(l)}</li>`).join("")}</ul><a href="${esc(a.artifactPath)}">Open complete summary JSON ↗</a>`;
+}
+
 function noteBy(term){return DATA.notes.find(n=>n.id.includes(term));}
 function init(){
   const v=DATA.verifier;
@@ -45,6 +63,7 @@ function init(){
   $("#evidence-total").textContent=(DATA.counts.entities+DATA.notes.length).toLocaleString()+" RECORDS";
   $("#footer-source").textContent=`Source: decomp/ · snapshot date 13 Nov 2026 · round ${v.round}`;
   renderQueue(); renderLanes(); renderSearch(); renderTraces();
+  initCoverageAudit();
   $("#tab-all").textContent=(DATA.entities.length+DATA.notes.length).toLocaleString();
   $("#tab-functions").textContent=DATA.counts.functions;
   $("#tab-notes").textContent=DATA.notes.filter(n=>n.category!=="Native C++ port unit").length.toLocaleString();
